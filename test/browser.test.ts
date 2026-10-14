@@ -13,13 +13,13 @@ beforeAll(() => {
   tests("examples/counter.rs", "counter", withWeb);
   tests("examples/todo.rs", "todo", withWeb);
   tests("examples/countdown.rs", "countdown", withWeb);
-  tests("test/asserts.rs", "asserts");
+  tests("test/asserts.rs", "asserts", withWeb);
   // For real browsers (ADR 0027): `--cfg browser` turns on tests that need one.
   const forBrowser = (rs: string, name: string, flags: string[] = []) =>
     run([compiler, "--test", rs, "-o", join(target, "browser-tests", name, `${name}.js`), ...flags, "--cfg=browser"]);
   forBrowser("examples/counter.rs", "counter", withWeb);
   forBrowser("examples/todo.rs", "todo", withWeb);
-  forBrowser("test/asserts.rs", "asserts", ["--"]);
+  forBrowser("test/asserts.rs", "asserts", withWeb);
 }, 600_000);
 
 // ADR 0026: `#[test]` functions, in Rust, compiled by `rust-js --test` and

@@ -67,3 +67,7 @@ call, as an emitter's event's arguments are, `Emits<E>::Args`: one written
 out is the arguments, `emit("request", req, res)`, another spread, and
 `()`, an empty array, none. A tuple is an array (ADR 0020), so a slice's
 rule holds.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

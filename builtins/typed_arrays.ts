@@ -27,12 +27,14 @@ const method = (doc: string, js: string, signature: string) => {
   line(`    }`);
   line();
 };
-/** An extern function of a module: a constructor or a static. */
-const extern = (doc: string, js: string, signature: string, variadic = false) => {
-  line(`        /// ${doc}`);
-  line(`        #[link_name = ${JSON.stringify(js)}]`);
-  if (variadic) line(`        #[cfg_attr(rust_js, rust_js::variadic)]`);
-  line(`        pub safe fn ${signature};`);
+/** A function of a module: a constructor or a static. */
+const moduleFn = (doc: string, js: string, signature: string, variadic = false) => {
+  line(`    /// ${doc}`);
+  line(`    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`);
+  if (variadic) line(`    #[cfg_attr(rust_js, rust_js::variadic)]`);
+  line(`    pub fn ${signature} {`);
+  line(`        unreachable!()`);
+  line(`    }`);
   line();
 };
 const close = () => {
@@ -74,11 +76,9 @@ line();
 line("pub mod array_buffer {");
 line("    use super::*;");
 line();
-line('    unsafe extern "Rust" {');
-extern(`[\`new ArrayBuffer(length)\`](${page("ArrayBuffer/ArrayBuffer")}): \`length\` bytes, each 0.`, "new ArrayBuffer", "new(length: u32) -> &'static ArrayBuffer");
-extern(`[\`ArrayBuffer.isView(value)\`](${page("ArrayBuffer/isView")}): whether \`value\` is a typed array or a \`DataView\`.`, "ArrayBuffer.isView", "is_view(value: &JsObject) -> bool");
+moduleFn(`[\`new ArrayBuffer(length)\`](${page("ArrayBuffer/ArrayBuffer")}): \`length\` bytes, each 0.`, "new ArrayBuffer", "new(length: u32) -> &'static ArrayBuffer");
+moduleFn(`[\`ArrayBuffer.isView(value)\`](${page("ArrayBuffer/isView")}): whether \`value\` is a typed array or a \`DataView\`.`, "ArrayBuffer.isView", "is_view(value: &JsObject) -> bool");
 close();
-line("    }");
 line("}");
 line();
 line(`/// [\`SharedArrayBuffer\`](${page("SharedArrayBuffer")}): bytes workers share.`);
@@ -96,10 +96,8 @@ line();
 line("pub mod shared_array_buffer {");
 line("    use super::*;");
 line();
-line('    unsafe extern "Rust" {');
-extern(`[\`new SharedArrayBuffer(length)\`](${page("SharedArrayBuffer/SharedArrayBuffer")}): \`length\` bytes, each 0.`, "new SharedArrayBuffer", "new(length: u32) -> &'static SharedArrayBuffer");
+moduleFn(`[\`new SharedArrayBuffer(length)\`](${page("SharedArrayBuffer/SharedArrayBuffer")}): \`length\` bytes, each 0.`, "new SharedArrayBuffer", "new(length: u32) -> &'static SharedArrayBuffer");
 close();
-line("    }");
 line("}");
 
 line();
@@ -223,13 +221,9 @@ for (const [name, e] of ELEMENTS) {
   line(`    /// [\`${name}.BYTES_PER_ELEMENT\`](${page("TypedArray/BYTES_PER_ELEMENT")}): how many bytes an element is.`);
   line(`    pub const BYTES_PER_ELEMENT: u32 = ${BYTES[e]};`);
   line();
-  line('    unsafe extern "Rust" {');
-  extern(`[\`new ${name}(length)\`](${page(`${name}/${name}`)}): \`length\` elements, each 0.`, `new ${name}`, `new(length: u32) -> &'static ${name}`);
-  extern(`[\`${name}.from(items)\`](${t("from")}): a typed array of \`items\`.`, `${name}.from`, `from(items: &[${e}]) -> &'static ${name}`);
-  extern(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: &[${e}]) -> &'static ${name}`, true);
-  close();
-  line("    }");
-  line();
+  moduleFn(`[\`new ${name}(length)\`](${page(`${name}/${name}`)}): \`length\` elements, each 0.`, `new ${name}`, `new(length: u32) -> &'static ${name}`);
+  moduleFn(`[\`${name}.from(items)\`](${t("from")}): a typed array of \`items\`.`, `${name}.from`, `from(items: &[${e}]) -> &'static ${name}`);
+  moduleFn(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: &[${e}]) -> &'static ${name}`, true);
   method(`[\`new ${name}(buffer)\`](${page(`${name}/${name}`)}): a view of all of \`buffer\`.`, `new ${name}`, `new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static ${name}<B>`);
   method(`[\`new ${name}(buffer, byteOffset, length)\`](${page(`${name}/${name}`)}): a view of \`length\` elements from \`byte_offset\`.`, `new ${name}`, `new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static ${name}<B>`);
   close();

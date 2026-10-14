@@ -7,7 +7,6 @@ use crate::lower::traits;
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
-use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};
 use rustc_middle::ty::TyCtxt;
@@ -23,32 +22,28 @@ pub(super) fn reject_unsupported(
     markers: &[(LocalDefId, Symbol)],
 ) -> bool {
     let mut valid = true;
-    // What the crate exports by a symbol of its own, `#[no_mangle]` or
-    // `#[export_name]`: an `extern` declaration of one is a JS binding
-    // naming a global no JS has, and the function is the crate's, by its path.
-    let exported: HashSet<Symbol> = tcx
-        .hir_crate_items(())
-        .definitions()
-        .filter(|&id| matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) && !tcx.is_foreign_item(id))
-        .filter_map(|id| {
-            let attrs = tcx.codegen_fn_attrs(id);
-            match attrs.flags.contains(CodegenFnAttrFlags::NO_MANGLE) {
-                true => Some(attrs.symbol_name.unwrap_or_else(|| tcx.item_name(id.to_def_id()))),
-                false => attrs.symbol_name,
-            }
-        })
-        .collect();
     for def_id in tcx.hir_crate_items(()).definitions() {
         let what = match tcx.def_kind(def_id) {
-            DefKind::Fn
-                if tcx.is_foreign_item(def_id)
-                    && exported.contains(
-                        &tcx.codegen_fn_attrs(def_id)
-                            .symbol_name
-                            .unwrap_or_else(|| tcx.item_name(def_id.to_def_id())),
-                    ) =>
-            {
-                "an `extern` declaration of this crate's own `#[no_mangle]` function"
+            // A function in an `extern` block: a binding of one is an
+            // ordinary function, the one form (ADR 0039).
+            DefKind::Fn if tcx.is_foreign_item(def_id) => {
+                let refused = super::super::bindings::extern_fn_refused(tcx, def_id.to_def_id());
+                tcx.dcx().span_err(tcx.def_span(def_id), refused);
+                valid = false;
+                continue;
+            }
+            // An `extern` type: a JS type is one form, a struct of a
+            // `JsObject` (ADR 0111), stable Rust.
+            DefKind::ForeignTy => {
+                let name = tcx.item_name(def_id.to_def_id());
+                tcx.dcx().span_err(
+                    tcx.def_span(def_id),
+                    format!(
+                        "rust-js declares a JS type as a struct of a `JsObject`, `pub struct {name}(PhantomData<js::JsObject>);`, not an `extern` type (ADR 0373)"
+                    ),
+                );
+                valid = false;
+                continue;
             }
             // `#[eii] static HELLO: u64;`, which the linker makes another
             // item: rust-js has none to link it to, and JS would read a name

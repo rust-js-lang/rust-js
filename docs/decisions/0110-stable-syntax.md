@@ -63,3 +63,7 @@ and rustc refuses one it asks for, `#![feature]`, as the release does, unless
   which plain rustc built them with: ADR 0112 has rust-js compile them.
 - **A plain rustc, a user's own `cargo check`, didn't know the `rust_js`
   tool**: ADR 0113 writes its attributes as `cfg_attr(rust_js, ..)`.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

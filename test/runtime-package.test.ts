@@ -132,10 +132,7 @@ pub fn rw_read() -> u32 {
 // may count its arguments, as `Math.max` does (ADR 0330).
 test("an undefined given to JS is an argument, never left out", () => {
   const dir = fixture("given-undefined");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "Math.max"]
-    safe fn math_max(a: f64, b: Option<f64>) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[allow(unused_variables)] fn math_max(a: f64, b: Option<f64>) -> f64 { unreachable!() }
 
 pub fn bound() -> f64 {
     math_max(1.0, None)

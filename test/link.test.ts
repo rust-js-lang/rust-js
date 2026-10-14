@@ -121,12 +121,16 @@ test("module-load statements resolve imports around their local bindings", async
   const dir = fixture("link-on-load");
   writeFileSync(join(dir, "lib.rs"), `
     mod util { pub fn value(n: u32) -> u32 { n + 1 } }
-    unsafe extern "Rust" {
-      #[link_name = "globalThis.auditSeed"]
-      safe fn seed() -> u32;
-      #[link_name = "globalThis.auditLoaded"]
-      safe fn loaded(n: u32);
-    }
+      #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditSeed")]
+      fn seed() -> u32 {
+          unreachable!()
+      }
+
+      #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditLoaded")]
+      #[allow(unused_variables)]
+      fn loaded(n: u32) {
+          unreachable!()
+      }
     js::on_load! {
       let value = seed();
       loaded(value);

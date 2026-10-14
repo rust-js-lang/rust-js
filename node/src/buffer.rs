@@ -1005,16 +1005,20 @@ unsafe extern "Rust" {
     /// [`buffer.constants`](https://nodejs.org/api/buffer.html#bufferconstants).
     #[link_name = "buffer#constants"]
     pub safe static constants: &'static BufferConstants;
+}
 
-    /// [`buffer.transcode(source, fromEnc, toEnc)`](https://nodejs.org/api/buffer.html#buffertranscodesource-fromenc-toenc):
-    /// `source`'s text, as `from_enc`, in `to_enc`.
-    #[link_name = "buffer#transcode"]
-    pub safe fn transcode(source: &Uint8Array, from_enc: TranscodeEncoding, to_enc: TranscodeEncoding) -> &'static Buffer;
+/// [`buffer.transcode(source, fromEnc, toEnc)`](https://nodejs.org/api/buffer.html#buffertranscodesource-fromenc-toenc):
+/// `source`'s text, as `from_enc`, in `to_enc`.
+#[cfg_attr(rust_js, rust_js::link_name = "buffer#transcode")]
+pub fn transcode(source: &Uint8Array, from_enc: TranscodeEncoding, to_enc: TranscodeEncoding) -> &'static Buffer {
+    unreachable!()
+}
 
-    /// [`buffer.resolveObjectURL(id)`](https://nodejs.org/api/buffer.html#bufferresolveobjecturlid):
-    /// the `Blob` a `blob:` URL `URL.createObjectURL` made is, or `None`.
-    #[link_name = "buffer#resolveObjectURL"]
-    pub safe fn resolve_object_url(id: &str) -> Option<&'static Blob>;
+/// [`buffer.resolveObjectURL(id)`](https://nodejs.org/api/buffer.html#bufferresolveobjecturlid):
+/// the `Blob` a `blob:` URL `URL.createObjectURL` made is, or `None`.
+#[cfg_attr(rust_js, rust_js::link_name = "buffer#resolveObjectURL")]
+pub fn resolve_object_url(id: &str) -> Option<&'static Blob> {
+    unreachable!()
 }
 
 /// [`buffer.constants`](constants).

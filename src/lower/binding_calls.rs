@@ -21,6 +21,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Expr> {
+        if self.tcx.is_foreign_item(def_id) {
+            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
+            return Err(self.tcx.dcx().span_err(span, refused));
+        }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
         // Its last argument, a slice, is JS's rest arguments: what an
         // array written out holds, or the slice spread (ADR 0221).

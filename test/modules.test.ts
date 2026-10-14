@@ -406,11 +406,14 @@ test("a namespace import is named as the module of its bindings", async () => {
   writeFileSync(join(dir, "menu.js"), "export function Root() { return 1; }\nexport function Item() { return 2; }\n");
   writeFileSync(join(dir, "lib.rs"), `#[allow(non_snake_case)]
 mod ContextMenu {
-    unsafe extern "Rust" {
-        #[link_name = "./menu.js#*.Root"]
-        pub safe fn Root() -> u32;
-        #[link_name = "./menu.js#*.Item"]
-        pub safe fn Item() -> u32;
+    #[cfg_attr(rust_js, rust_js::link_name = "./menu.js#*.Root")]
+    pub fn Root() -> u32 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./menu.js#*.Item")]
+    pub fn Item() -> u32 {
+        unreachable!()
     }
 }
 
@@ -433,11 +436,14 @@ test("a default import of a class's statics is named as the class", async () => 
   const dir = fixture("default-statics");
   writeFileSync(join(dir, "greeter.js"), "export default class Greeter {\n  static hello() { return 1; }\n  static bye() { return 2; }\n}\n");
   writeFileSync(join(dir, "lib.rs"), `mod greeter {
-    unsafe extern "Rust" {
-        #[link_name = "./greeter.js#default.hello"]
-        pub safe fn hello() -> u32;
-        #[link_name = "./greeter.js#default.bye"]
-        pub safe fn bye() -> u32;
+    #[cfg_attr(rust_js, rust_js::link_name = "./greeter.js#default.hello")]
+    pub fn hello() -> u32 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./greeter.js#default.bye")]
+    pub fn bye() -> u32 {
+        unreachable!()
     }
 }
 
@@ -518,10 +524,7 @@ test("a module's default of another module's function is re-exported", async () 
 test("js::on_load! is what the module runs when it's loaded", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("on-load");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.loaded"]
-    safe fn loaded(what: &str);
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.loaded")] #[allow(unused_variables)] fn loaded(what: &str) { unreachable!() }
 
 fn which() -> usize {
     1

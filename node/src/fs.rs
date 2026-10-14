@@ -5,11 +5,6 @@ use js::JsError;
 use crate::BufferEncoding;
 
 unsafe extern "Rust" {
-    /// [`readFileSync(path, encoding)`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options):
-    /// the file's text, read as `encoding`; what it throws, the file missing
-    /// say, an `Err`.
-    #[link_name = "fs#readFileSync"]
-    pub safe fn read_file_sync(path: &str, options: BufferEncoding) -> Result<String, &'static JsError>;
 
     /// [`readdir(path, callback)`](https://nodejs.org/api/fs.html#fsreaddirpath-options-callback):
     /// `callback` given the names in the directory `path`, or what failed.
@@ -20,6 +15,14 @@ unsafe extern "Rust" {
     /// `callback` given what `path` is, a file or a directory, or what failed.
     #[link_name = "fs#stat"]
     pub safe static stat: for<'a> fn(&'a str, Box<dyn FnOnce(Option<&'static JsError>, &'static Stats)>);
+}
+
+/// [`readFileSync(path, encoding)`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options):
+/// the file's text, read as `encoding`; what it throws, the file missing
+/// say, an `Err`.
+#[cfg_attr(rust_js, rust_js::link_name = "fs#readFileSync")]
+pub fn read_file_sync(path: &str, options: BufferEncoding) -> Result<String, &'static JsError> {
+    unreachable!()
 }
 
 /// [`fs.Stats`](https://nodejs.org/api/fs.html#class-fsstats): what

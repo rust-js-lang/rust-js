@@ -13,19 +13,24 @@ use js::{JsObject, RegExp, encode_uri_component, json, reg_exp};
 
 // A replacer and `matchAll`, typed for the patterns here: a JS replacer is
 // given the match, then each group, so its type is its pattern's (js::RegExp).
-unsafe extern "Rust" {
-    /// `text.replace(pattern, (match, a, b) => ..)`: a closure for each match.
-    #[link_name = "replace"]
-    safe fn replace_matches(
-        this: &str,
-        pattern: &RegExp,
-        with: Box<dyn Fn(String, String, String) -> String>,
-    ) -> String;
-    #[link_name = "matchAll"]
-    safe fn match_all(this: &str, pattern: &RegExp) -> &'static JsObject;
-    /// Each match of a pattern with one group, as `(match, group)`.
-    #[link_name = "Array.from"]
-    safe fn matches_of(matches: &JsObject) -> Vec<(String, String)>;
+/// `text.replace(pattern, (match, a, b) => ..)`: a closure for each match.
+#[cfg_attr(rust_js, rust_js::link_name = "replace")]
+#[allow(unused_variables)]
+fn replace_matches(this: &str, pattern: &RegExp, with: Box<dyn Fn(String, String, String) -> String>) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
+#[allow(unused_variables)]
+fn match_all(this: &str, pattern: &RegExp) -> &'static JsObject {
+    unreachable!()
+}
+
+/// Each match of a pattern with one group, as `(match, group)`.
+#[cfg_attr(rust_js, rust_js::link_name = "Array.from")]
+#[allow(unused_variables)]
+fn matches_of(matches: &JsObject) -> Vec<(String, String)> {
+    unreachable!()
 }
 
 /// Sucrase's options: JSX as `react/jsx-runtime`'s calls, as a bundler writes it.

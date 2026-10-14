@@ -27,9 +27,10 @@ use crate::programs::{Outcome, Prepared, Program, prepare};
 use crate::projects::{Project, js_name};
 use crate::tree::build_tree;
 
-unsafe extern "Rust" {
-    #[link_name = "../compiler-client.js#compileInWorker"]
-    safe fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root: &str, test: bool) -> Promise<Compiled>;
+#[cfg_attr(rust_js, rust_js::link_name = "../compiler-client.js#compileInWorker")]
+#[allow(unused_variables)]
+fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root: &str, test: bool) -> Promise<Compiled> {
+    unreachable!()
 }
 
 /// What the JavaScript side shows.

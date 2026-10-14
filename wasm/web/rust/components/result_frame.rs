@@ -14,9 +14,10 @@ use crate::programs::{Outcome, Program, Report, outcome};
 use crate::styles::HEADING;
 
 // The frame's report, which frame-report.js reads.
-unsafe extern "Rust" {
-    #[link_name = "../frame-report.js#readReport"]
-    safe fn message_data(event: &Event) -> Option<Report>;
+#[cfg_attr(rust_js, rust_js::link_name = "../frame-report.js#readReport")]
+#[allow(unused_variables)]
+fn message_data(event: &Event) -> Option<Report> {
+    unreachable!()
 }
 
 pub struct ResultFrameProps {

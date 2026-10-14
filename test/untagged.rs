@@ -75,10 +75,11 @@ pub fn numbers(values: Vec<f64>) -> Vec<Src<'static>> {
     values.into_iter().map(Src::Number).collect()
 }
 
-unsafe extern "Rust" {
-    /// JS's `String(value)`, given one: the value, as JS takes it.
-    #[link_name = "String"]
-    safe fn to_text(value: Src<'_>) -> String;
+/// JS's `String(value)`, given one: the value, as JS takes it.
+#[cfg_attr(rust_js, rust_js::link_name = "String")]
+#[allow(unused_variables)]
+fn to_text(value: Src<'_>) -> String {
+    unreachable!()
 }
 
 pub fn shown(n: f64) -> String {

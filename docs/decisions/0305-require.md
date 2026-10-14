@@ -45,3 +45,7 @@ thread_local! {
 - **It's the JavaScript a person writes**: the original's `require(..)`.
 - **It's the same program**: its bundler, or Node, loads the module
   where `require` asks for it, as the original's does.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

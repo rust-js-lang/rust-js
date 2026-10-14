@@ -4,9 +4,10 @@ use webapi::{document};
 use webapi::events::{Click, Keydown};
 use webapi::{AddEventListenerOptions, Event, EventListenerOptions, EventTargetExt, HTMLButtonElement, PointerEvent, abort_controller, listener};
 
-unsafe extern "Rust" {
-    #[link_name = "globalThis.record"]
-    safe fn record(value: i32);
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+#[allow(unused_variables)]
+fn record(value: i32) {
+    unreachable!()
 }
 
 pub fn methods(button: &HTMLButtonElement) {

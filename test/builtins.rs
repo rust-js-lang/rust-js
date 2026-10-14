@@ -124,9 +124,10 @@ pub fn identical(same: bool) -> (bool, bool) {
     (js::object::is(a, b), js::object::is(&f64::NAN, &f64::NAN))
 }
 
-unsafe extern "Rust" {
-    #[link_name = "Promise.reject"]
-    safe fn rejected(reason: &str) -> js::Promise<Result<u32, &'static js::JsError>>;
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
+#[allow(unused_variables)]
+fn rejected(reason: &str) -> js::Promise<Result<u32, &'static js::JsError>> {
+    unreachable!()
 }
 
 /// What was thrown: an `Error`'s message, or that it's no `Error`.

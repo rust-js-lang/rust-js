@@ -23,39 +23,100 @@ unsafe extern "Rust" {
     safe static basic_setup: &'static Extension;
     #[link_name = "@codemirror/theme-one-dark#oneDark"]
     safe static one_dark: &'static Extension;
-    #[link_name = "@codemirror/lang-rust#rust"]
-    safe fn rust_language() -> &'static Extension;
-    #[link_name = "@codemirror/lang-javascript#javascript"]
-    safe fn javascript_language() -> &'static Extension;
-    /// Extensions together are one.
-    #[link_name = "this"]
-    safe fn together(this: Vec<&'static Extension>) -> &'static Extension;
-    #[link_name = "new @codemirror/state#Compartment"]
-    safe fn new_compartment() -> &'static Compartment;
-    #[link_name = "of"]
-    safe fn compartment_of(this: &Compartment, content: &Extension) -> &'static Extension;
-    #[link_name = "reconfigure"]
-    safe fn reconfigure(this: &Compartment, content: &Extension) -> &'static Effect;
-    #[link_name = "codemirror#EditorView.contentAttributes.of"]
-    safe fn content_attributes(attributes: &JsObject) -> &'static Extension;
-    #[link_name = "@codemirror/state#EditorState.readOnly.of"]
-    safe fn read_only(value: bool) -> &'static Extension;
-    #[link_name = "@codemirror/state#EditorState.create"]
-    safe fn create_state(config: &StateConfig) -> &'static EditorState;
-    #[link_name = "new codemirror#EditorView"]
-    safe fn new_editor(config: &EditorConfig) -> &'static EditorView;
-    #[link_name = "destroy"]
-    pub safe fn destroy(this: &EditorView);
-    #[link_name = "get state"]
-    pub safe fn editor_state(this: &EditorView) -> &'static EditorState;
-    #[link_name = "setState"]
-    safe fn set_editor_state(this: &EditorView, state: &EditorState);
-    #[link_name = "dispatch"]
-    safe fn dispatch(this: &EditorView, transaction: &Transaction);
-    #[link_name = "get doc"]
-    safe fn doc(this: &EditorState) -> &'static Text;
-    #[link_name = "toString"]
-    safe fn text_string(this: &Text) -> String;
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@codemirror/lang-rust#rust")]
+fn rust_language() -> &'static Extension {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@codemirror/lang-javascript#javascript")]
+fn javascript_language() -> &'static Extension {
+    unreachable!()
+}
+
+/// Extensions together are one.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn together(this: Vec<&'static Extension>) -> &'static Extension {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @codemirror/state#Compartment")]
+fn new_compartment() -> &'static Compartment {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "of")]
+#[allow(unused_variables)]
+fn compartment_of(this: &Compartment, content: &Extension) -> &'static Extension {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "reconfigure")]
+#[allow(unused_variables)]
+fn reconfigure(this: &Compartment, content: &Extension) -> &'static Effect {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "codemirror#EditorView.contentAttributes.of")]
+#[allow(unused_variables)]
+fn content_attributes(attributes: &JsObject) -> &'static Extension {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@codemirror/state#EditorState.readOnly.of")]
+#[allow(unused_variables)]
+fn read_only(value: bool) -> &'static Extension {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@codemirror/state#EditorState.create")]
+#[allow(unused_variables)]
+fn create_state(config: &StateConfig) -> &'static EditorState {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new codemirror#EditorView")]
+#[allow(unused_variables)]
+fn new_editor(config: &EditorConfig) -> &'static EditorView {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+#[allow(unused_variables)]
+pub fn destroy(this: &EditorView) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get state")]
+#[allow(unused_variables)]
+pub fn editor_state(this: &EditorView) -> &'static EditorState {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "setState")]
+#[allow(unused_variables)]
+fn set_editor_state(this: &EditorView, state: &EditorState) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "dispatch")]
+#[allow(unused_variables)]
+fn dispatch(this: &EditorView, transaction: &Transaction) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get doc")]
+#[allow(unused_variables)]
+fn doc(this: &EditorState) -> &'static Text {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "toString")]
+#[allow(unused_variables)]
+fn text_string(this: &Text) -> String {
+    unreachable!()
 }
 
 // CodeMirror's configurations: JS objects that only CodeMirror reads.

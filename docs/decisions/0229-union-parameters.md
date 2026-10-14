@@ -158,3 +158,7 @@ pub fn upload(body: impl IntoUploadBody) {
   that wrote `.into()` is now ambiguous, and drops it.
 - webapi has a trait per union, and its functions of one are generic.
 - A field of a union, and a result, still convert and `match` as now.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

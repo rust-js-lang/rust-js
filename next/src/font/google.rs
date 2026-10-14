@@ -554,7772 +554,11654 @@ pub struct VariableFontWithoutAxes<'a> {
     pub subsets: Option<&'a [Subset]>,
 }
 
-unsafe extern "Rust" {
-    /// [ABeeZee](https://fonts.google.com/specimen/ABeeZee), a static font.
-    #[link_name = "next/font/google#ABeeZee"]
-    pub safe fn ABeeZee(options: StaticFont<'_>) -> NextFont;
-
-    /// [ADLaM Display](https://fonts.google.com/specimen/ADLaM+Display), a static font.
-    #[link_name = "next/font/google#ADLaM_Display"]
-    pub safe fn ADLaM_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [AR One Sans](https://fonts.google.com/specimen/AR+One+Sans), a variable font.
-    #[link_name = "next/font/google#AR_One_Sans"]
-    pub safe fn AR_One_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Abel](https://fonts.google.com/specimen/Abel), a static font.
-    #[link_name = "next/font/google#Abel"]
-    pub safe fn Abel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Abhaya Libre](https://fonts.google.com/specimen/Abhaya+Libre), a static font.
-    #[link_name = "next/font/google#Abhaya_Libre"]
-    pub safe fn Abhaya_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aboreto](https://fonts.google.com/specimen/Aboreto), a static font.
-    #[link_name = "next/font/google#Aboreto"]
-    pub safe fn Aboreto(options: StaticFont<'_>) -> NextFont;
-
-    /// [Abril Fatface](https://fonts.google.com/specimen/Abril+Fatface), a static font.
-    #[link_name = "next/font/google#Abril_Fatface"]
-    pub safe fn Abril_Fatface(options: StaticFont<'_>) -> NextFont;
-
-    /// [Abyssinica SIL](https://fonts.google.com/specimen/Abyssinica+SIL), a static font.
-    #[link_name = "next/font/google#Abyssinica_SIL"]
-    pub safe fn Abyssinica_SIL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aclonica](https://fonts.google.com/specimen/Aclonica), a static font.
-    #[link_name = "next/font/google#Aclonica"]
-    pub safe fn Aclonica(options: StaticFont<'_>) -> NextFont;
-
-    /// [Acme](https://fonts.google.com/specimen/Acme), a static font.
-    #[link_name = "next/font/google#Acme"]
-    pub safe fn Acme(options: StaticFont<'_>) -> NextFont;
-
-    /// [Actor](https://fonts.google.com/specimen/Actor), a static font.
-    #[link_name = "next/font/google#Actor"]
-    pub safe fn Actor(options: StaticFont<'_>) -> NextFont;
-
-    /// [Adamina](https://fonts.google.com/specimen/Adamina), a static font.
-    #[link_name = "next/font/google#Adamina"]
-    pub safe fn Adamina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Advent Pro](https://fonts.google.com/specimen/Advent+Pro), a variable font.
-    #[link_name = "next/font/google#Advent_Pro"]
-    pub safe fn Advent_Pro(options: VariableFont<'_>) -> NextFont;
-
-    /// [Afacad](https://fonts.google.com/specimen/Afacad), a variable font.
-    #[link_name = "next/font/google#Afacad"]
-    pub safe fn Afacad(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Afacad Flux](https://fonts.google.com/specimen/Afacad+Flux), a variable font.
-    #[link_name = "next/font/google#Afacad_Flux"]
-    pub safe fn Afacad_Flux(options: VariableFont<'_>) -> NextFont;
-
-    /// [Agbalumo](https://fonts.google.com/specimen/Agbalumo), a static font.
-    #[link_name = "next/font/google#Agbalumo"]
-    pub safe fn Agbalumo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Agdasima](https://fonts.google.com/specimen/Agdasima), a static font.
-    #[link_name = "next/font/google#Agdasima"]
-    pub safe fn Agdasima(options: StaticFont<'_>) -> NextFont;
-
-    /// [Agu Display](https://fonts.google.com/specimen/Agu+Display), a variable font.
-    #[link_name = "next/font/google#Agu_Display"]
-    pub safe fn Agu_Display(options: VariableFont<'_>) -> NextFont;
-
-    /// [Aguafina Script](https://fonts.google.com/specimen/Aguafina+Script), a static font.
-    #[link_name = "next/font/google#Aguafina_Script"]
-    pub safe fn Aguafina_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Akatab](https://fonts.google.com/specimen/Akatab), a static font.
-    #[link_name = "next/font/google#Akatab"]
-    pub safe fn Akatab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Akaya Kanadaka](https://fonts.google.com/specimen/Akaya+Kanadaka), a static font.
-    #[link_name = "next/font/google#Akaya_Kanadaka"]
-    pub safe fn Akaya_Kanadaka(options: StaticFont<'_>) -> NextFont;
-
-    /// [Akaya Telivigala](https://fonts.google.com/specimen/Akaya+Telivigala), a static font.
-    #[link_name = "next/font/google#Akaya_Telivigala"]
-    pub safe fn Akaya_Telivigala(options: StaticFont<'_>) -> NextFont;
-
-    /// [Akronim](https://fonts.google.com/specimen/Akronim), a static font.
-    #[link_name = "next/font/google#Akronim"]
-    pub safe fn Akronim(options: StaticFont<'_>) -> NextFont;
-
-    /// [Akshar](https://fonts.google.com/specimen/Akshar), a variable font.
-    #[link_name = "next/font/google#Akshar"]
-    pub safe fn Akshar(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Akt](https://fonts.google.com/specimen/Akt), a variable font.
-    #[link_name = "next/font/google#Akt"]
-    pub safe fn Akt(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Aladin](https://fonts.google.com/specimen/Aladin), a static font.
-    #[link_name = "next/font/google#Aladin"]
-    pub safe fn Aladin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alan Sans](https://fonts.google.com/specimen/Alan+Sans), a variable font.
-    #[link_name = "next/font/google#Alan_Sans"]
-    pub safe fn Alan_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alata](https://fonts.google.com/specimen/Alata), a static font.
-    #[link_name = "next/font/google#Alata"]
-    pub safe fn Alata(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alatsi](https://fonts.google.com/specimen/Alatsi), a static font.
-    #[link_name = "next/font/google#Alatsi"]
-    pub safe fn Alatsi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Albert Sans](https://fonts.google.com/specimen/Albert+Sans), a variable font.
-    #[link_name = "next/font/google#Albert_Sans"]
-    pub safe fn Albert_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Aldrich](https://fonts.google.com/specimen/Aldrich), a static font.
-    #[link_name = "next/font/google#Aldrich"]
-    pub safe fn Aldrich(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alef](https://fonts.google.com/specimen/Alef), a static font.
-    #[link_name = "next/font/google#Alef"]
-    pub safe fn Alef(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alegreya](https://fonts.google.com/specimen/Alegreya), a variable font.
-    #[link_name = "next/font/google#Alegreya"]
-    pub safe fn Alegreya(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alegreya SC](https://fonts.google.com/specimen/Alegreya+SC), a static font.
-    #[link_name = "next/font/google#Alegreya_SC"]
-    pub safe fn Alegreya_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alegreya Sans](https://fonts.google.com/specimen/Alegreya+Sans), a static font.
-    #[link_name = "next/font/google#Alegreya_Sans"]
-    pub safe fn Alegreya_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alegreya Sans SC](https://fonts.google.com/specimen/Alegreya+Sans+SC), a static font.
-    #[link_name = "next/font/google#Alegreya_Sans_SC"]
-    pub safe fn Alegreya_Sans_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aleo](https://fonts.google.com/specimen/Aleo), a variable font.
-    #[link_name = "next/font/google#Aleo"]
-    pub safe fn Aleo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alex Brush](https://fonts.google.com/specimen/Alex+Brush), a static font.
-    #[link_name = "next/font/google#Alex_Brush"]
-    pub safe fn Alex_Brush(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alexandria](https://fonts.google.com/specimen/Alexandria), a variable font.
-    #[link_name = "next/font/google#Alexandria"]
-    pub safe fn Alexandria(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alfa Slab One](https://fonts.google.com/specimen/Alfa+Slab+One), a static font.
-    #[link_name = "next/font/google#Alfa_Slab_One"]
-    pub safe fn Alfa_Slab_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alice](https://fonts.google.com/specimen/Alice), a static font.
-    #[link_name = "next/font/google#Alice"]
-    pub safe fn Alice(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alien Block](https://fonts.google.com/specimen/Alien+Block), a static font.
-    #[link_name = "next/font/google#Alien_Block"]
-    pub safe fn Alien_Block(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alike](https://fonts.google.com/specimen/Alike), a static font.
-    #[link_name = "next/font/google#Alike"]
-    pub safe fn Alike(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alike Angular](https://fonts.google.com/specimen/Alike+Angular), a static font.
-    #[link_name = "next/font/google#Alike_Angular"]
-    pub safe fn Alike_Angular(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alkalami](https://fonts.google.com/specimen/Alkalami), a static font.
-    #[link_name = "next/font/google#Alkalami"]
-    pub safe fn Alkalami(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alkatra](https://fonts.google.com/specimen/Alkatra), a variable font.
-    #[link_name = "next/font/google#Alkatra"]
-    pub safe fn Alkatra(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Allan](https://fonts.google.com/specimen/Allan), a static font.
-    #[link_name = "next/font/google#Allan"]
-    pub safe fn Allan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Allerta](https://fonts.google.com/specimen/Allerta), a static font.
-    #[link_name = "next/font/google#Allerta"]
-    pub safe fn Allerta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Allerta Stencil](https://fonts.google.com/specimen/Allerta+Stencil), a static font.
-    #[link_name = "next/font/google#Allerta_Stencil"]
-    pub safe fn Allerta_Stencil(options: StaticFont<'_>) -> NextFont;
-
-    /// [Allison](https://fonts.google.com/specimen/Allison), a static font.
-    #[link_name = "next/font/google#Allison"]
-    pub safe fn Allison(options: StaticFont<'_>) -> NextFont;
-
-    /// [Allkin](https://fonts.google.com/specimen/Allkin), a static font.
-    #[link_name = "next/font/google#Allkin"]
-    pub safe fn Allkin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Allura](https://fonts.google.com/specimen/Allura), a static font.
-    #[link_name = "next/font/google#Allura"]
-    pub safe fn Allura(options: StaticFont<'_>) -> NextFont;
-
-    /// [Almarai](https://fonts.google.com/specimen/Almarai), a static font.
-    #[link_name = "next/font/google#Almarai"]
-    pub safe fn Almarai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Almendra](https://fonts.google.com/specimen/Almendra), a static font.
-    #[link_name = "next/font/google#Almendra"]
-    pub safe fn Almendra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Almendra Display](https://fonts.google.com/specimen/Almendra+Display), a static font.
-    #[link_name = "next/font/google#Almendra_Display"]
-    pub safe fn Almendra_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Almendra SC](https://fonts.google.com/specimen/Almendra+SC), a static font.
-    #[link_name = "next/font/google#Almendra_SC"]
-    pub safe fn Almendra_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alumni Sans](https://fonts.google.com/specimen/Alumni+Sans), a variable font.
-    #[link_name = "next/font/google#Alumni_Sans"]
-    pub safe fn Alumni_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alumni Sans Collegiate One](https://fonts.google.com/specimen/Alumni+Sans+Collegiate+One), a static font.
-    #[link_name = "next/font/google#Alumni_Sans_Collegiate_One"]
-    pub safe fn Alumni_Sans_Collegiate_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alumni Sans Inline One](https://fonts.google.com/specimen/Alumni+Sans+Inline+One), a static font.
-    #[link_name = "next/font/google#Alumni_Sans_Inline_One"]
-    pub safe fn Alumni_Sans_Inline_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alumni Sans Pinstripe](https://fonts.google.com/specimen/Alumni+Sans+Pinstripe), a static font.
-    #[link_name = "next/font/google#Alumni_Sans_Pinstripe"]
-    pub safe fn Alumni_Sans_Pinstripe(options: StaticFont<'_>) -> NextFont;
-
-    /// [Alumni Sans SC](https://fonts.google.com/specimen/Alumni+Sans+SC), a variable font.
-    #[link_name = "next/font/google#Alumni_Sans_SC"]
-    pub safe fn Alumni_Sans_SC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Alyamama](https://fonts.google.com/specimen/Alyamama), a variable font.
-    #[link_name = "next/font/google#Alyamama"]
-    pub safe fn Alyamama(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Amarante](https://fonts.google.com/specimen/Amarante), a static font.
-    #[link_name = "next/font/google#Amarante"]
-    pub safe fn Amarante(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amaranth](https://fonts.google.com/specimen/Amaranth), a static font.
-    #[link_name = "next/font/google#Amaranth"]
-    pub safe fn Amaranth(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amarna](https://fonts.google.com/specimen/Amarna), a variable font.
-    #[link_name = "next/font/google#Amarna"]
-    pub safe fn Amarna(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Amatic SC](https://fonts.google.com/specimen/Amatic+SC), a static font.
-    #[link_name = "next/font/google#Amatic_SC"]
-    pub safe fn Amatic_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amethysta](https://fonts.google.com/specimen/Amethysta), a static font.
-    #[link_name = "next/font/google#Amethysta"]
-    pub safe fn Amethysta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amiko](https://fonts.google.com/specimen/Amiko), a static font.
-    #[link_name = "next/font/google#Amiko"]
-    pub safe fn Amiko(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amiri](https://fonts.google.com/specimen/Amiri), a static font.
-    #[link_name = "next/font/google#Amiri"]
-    pub safe fn Amiri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amiri Quran](https://fonts.google.com/specimen/Amiri+Quran), a static font.
-    #[link_name = "next/font/google#Amiri_Quran"]
-    pub safe fn Amiri_Quran(options: StaticFont<'_>) -> NextFont;
-
-    /// [Amita](https://fonts.google.com/specimen/Amita), a static font.
-    #[link_name = "next/font/google#Amita"]
-    pub safe fn Amita(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anaheim](https://fonts.google.com/specimen/Anaheim), a variable font.
-    #[link_name = "next/font/google#Anaheim"]
-    pub safe fn Anaheim(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ancizar Sans](https://fonts.google.com/specimen/Ancizar+Sans), a variable font.
-    #[link_name = "next/font/google#Ancizar_Sans"]
-    pub safe fn Ancizar_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ancizar Serif](https://fonts.google.com/specimen/Ancizar+Serif), a variable font.
-    #[link_name = "next/font/google#Ancizar_Serif"]
-    pub safe fn Ancizar_Serif(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Andada Pro](https://fonts.google.com/specimen/Andada+Pro), a variable font.
-    #[link_name = "next/font/google#Andada_Pro"]
-    pub safe fn Andada_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Andika](https://fonts.google.com/specimen/Andika), a static font.
-    #[link_name = "next/font/google#Andika"]
-    pub safe fn Andika(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anek Bangla](https://fonts.google.com/specimen/Anek+Bangla), a variable font.
-    #[link_name = "next/font/google#Anek_Bangla"]
-    pub safe fn Anek_Bangla(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Devanagari](https://fonts.google.com/specimen/Anek+Devanagari), a variable font.
-    #[link_name = "next/font/google#Anek_Devanagari"]
-    pub safe fn Anek_Devanagari(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Gujarati](https://fonts.google.com/specimen/Anek+Gujarati), a variable font.
-    #[link_name = "next/font/google#Anek_Gujarati"]
-    pub safe fn Anek_Gujarati(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Gurmukhi](https://fonts.google.com/specimen/Anek+Gurmukhi), a variable font.
-    #[link_name = "next/font/google#Anek_Gurmukhi"]
-    pub safe fn Anek_Gurmukhi(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Kannada](https://fonts.google.com/specimen/Anek+Kannada), a variable font.
-    #[link_name = "next/font/google#Anek_Kannada"]
-    pub safe fn Anek_Kannada(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Latin](https://fonts.google.com/specimen/Anek+Latin), a variable font.
-    #[link_name = "next/font/google#Anek_Latin"]
-    pub safe fn Anek_Latin(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Malayalam](https://fonts.google.com/specimen/Anek+Malayalam), a variable font.
-    #[link_name = "next/font/google#Anek_Malayalam"]
-    pub safe fn Anek_Malayalam(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Odia](https://fonts.google.com/specimen/Anek+Odia), a variable font.
-    #[link_name = "next/font/google#Anek_Odia"]
-    pub safe fn Anek_Odia(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Tamil](https://fonts.google.com/specimen/Anek+Tamil), a variable font.
-    #[link_name = "next/font/google#Anek_Tamil"]
-    pub safe fn Anek_Tamil(options: VariableFont<'_>) -> NextFont;
-
-    /// [Anek Telugu](https://fonts.google.com/specimen/Anek+Telugu), a variable font.
-    #[link_name = "next/font/google#Anek_Telugu"]
-    pub safe fn Anek_Telugu(options: VariableFont<'_>) -> NextFont;
-
-    /// [Angkor](https://fonts.google.com/specimen/Angkor), a static font.
-    #[link_name = "next/font/google#Angkor"]
-    pub safe fn Angkor(options: StaticFont<'_>) -> NextFont;
-
-    /// [Annapurna SIL](https://fonts.google.com/specimen/Annapurna+SIL), a static font.
-    #[link_name = "next/font/google#Annapurna_SIL"]
-    pub safe fn Annapurna_SIL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Annie Use Your Telescope](https://fonts.google.com/specimen/Annie+Use+Your+Telescope), a static font.
-    #[link_name = "next/font/google#Annie_Use_Your_Telescope"]
-    pub safe fn Annie_Use_Your_Telescope(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anonymous Pro](https://fonts.google.com/specimen/Anonymous+Pro), a static font.
-    #[link_name = "next/font/google#Anonymous_Pro"]
-    pub safe fn Anonymous_Pro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anta](https://fonts.google.com/specimen/Anta), a static font.
-    #[link_name = "next/font/google#Anta"]
-    pub safe fn Anta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Antic](https://fonts.google.com/specimen/Antic), a static font.
-    #[link_name = "next/font/google#Antic"]
-    pub safe fn Antic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Antic Didone](https://fonts.google.com/specimen/Antic+Didone), a static font.
-    #[link_name = "next/font/google#Antic_Didone"]
-    pub safe fn Antic_Didone(options: StaticFont<'_>) -> NextFont;
-
-    /// [Antic Slab](https://fonts.google.com/specimen/Antic+Slab), a static font.
-    #[link_name = "next/font/google#Antic_Slab"]
-    pub safe fn Antic_Slab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anton](https://fonts.google.com/specimen/Anton), a static font.
-    #[link_name = "next/font/google#Anton"]
-    pub safe fn Anton(options: StaticFont<'_>) -> NextFont;
-
-    /// [Anton SC](https://fonts.google.com/specimen/Anton+SC), a static font.
-    #[link_name = "next/font/google#Anton_SC"]
-    pub safe fn Anton_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Antonio](https://fonts.google.com/specimen/Antonio), a variable font.
-    #[link_name = "next/font/google#Antonio"]
-    pub safe fn Antonio(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Anuphan](https://fonts.google.com/specimen/Anuphan), a variable font.
-    #[link_name = "next/font/google#Anuphan"]
-    pub safe fn Anuphan(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Anybody](https://fonts.google.com/specimen/Anybody), a variable font.
-    #[link_name = "next/font/google#Anybody"]
-    pub safe fn Anybody(options: VariableFont<'_>) -> NextFont;
-
-    /// [Aoboshi One](https://fonts.google.com/specimen/Aoboshi+One), a static font.
-    #[link_name = "next/font/google#Aoboshi_One"]
-    pub safe fn Aoboshi_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arapey](https://fonts.google.com/specimen/Arapey), a static font.
-    #[link_name = "next/font/google#Arapey"]
-    pub safe fn Arapey(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arbutus](https://fonts.google.com/specimen/Arbutus), a static font.
-    #[link_name = "next/font/google#Arbutus"]
-    pub safe fn Arbutus(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arbutus Slab](https://fonts.google.com/specimen/Arbutus+Slab), a static font.
-    #[link_name = "next/font/google#Arbutus_Slab"]
-    pub safe fn Arbutus_Slab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Architects Daughter](https://fonts.google.com/specimen/Architects+Daughter), a static font.
-    #[link_name = "next/font/google#Architects_Daughter"]
-    pub safe fn Architects_Daughter(options: StaticFont<'_>) -> NextFont;
-
-    /// [Archivo](https://fonts.google.com/specimen/Archivo), a variable font.
-    #[link_name = "next/font/google#Archivo"]
-    pub safe fn Archivo(options: VariableFont<'_>) -> NextFont;
-
-    /// [Archivo Black](https://fonts.google.com/specimen/Archivo+Black), a static font.
-    #[link_name = "next/font/google#Archivo_Black"]
-    pub safe fn Archivo_Black(options: StaticFont<'_>) -> NextFont;
-
-    /// [Archivo Narrow](https://fonts.google.com/specimen/Archivo+Narrow), a variable font.
-    #[link_name = "next/font/google#Archivo_Narrow"]
-    pub safe fn Archivo_Narrow(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Are You Serious](https://fonts.google.com/specimen/Are+You+Serious), a static font.
-    #[link_name = "next/font/google#Are_You_Serious"]
-    pub safe fn Are_You_Serious(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aref Ruqaa](https://fonts.google.com/specimen/Aref+Ruqaa), a static font.
-    #[link_name = "next/font/google#Aref_Ruqaa"]
-    pub safe fn Aref_Ruqaa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aref Ruqaa Ink](https://fonts.google.com/specimen/Aref+Ruqaa+Ink), a static font.
-    #[link_name = "next/font/google#Aref_Ruqaa_Ink"]
-    pub safe fn Aref_Ruqaa_Ink(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arima](https://fonts.google.com/specimen/Arima), a variable font.
-    #[link_name = "next/font/google#Arima"]
-    pub safe fn Arima(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Arimo](https://fonts.google.com/specimen/Arimo), a variable font.
-    #[link_name = "next/font/google#Arimo"]
-    pub safe fn Arimo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Arizonia](https://fonts.google.com/specimen/Arizonia), a static font.
-    #[link_name = "next/font/google#Arizonia"]
-    pub safe fn Arizonia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Armata](https://fonts.google.com/specimen/Armata), a static font.
-    #[link_name = "next/font/google#Armata"]
-    pub safe fn Armata(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arsenal](https://fonts.google.com/specimen/Arsenal), a static font.
-    #[link_name = "next/font/google#Arsenal"]
-    pub safe fn Arsenal(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arsenal SC](https://fonts.google.com/specimen/Arsenal+SC), a static font.
-    #[link_name = "next/font/google#Arsenal_SC"]
-    pub safe fn Arsenal_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Artifika](https://fonts.google.com/specimen/Artifika), a static font.
-    #[link_name = "next/font/google#Artifika"]
-    pub safe fn Artifika(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arvo](https://fonts.google.com/specimen/Arvo), a static font.
-    #[link_name = "next/font/google#Arvo"]
-    pub safe fn Arvo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Arya](https://fonts.google.com/specimen/Arya), a static font.
-    #[link_name = "next/font/google#Arya"]
-    pub safe fn Arya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Asap](https://fonts.google.com/specimen/Asap), a variable font.
-    #[link_name = "next/font/google#Asap"]
-    pub safe fn Asap(options: VariableFont<'_>) -> NextFont;
-
-    /// [Asap Condensed](https://fonts.google.com/specimen/Asap+Condensed), a static font.
-    #[link_name = "next/font/google#Asap_Condensed"]
-    pub safe fn Asap_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Asar](https://fonts.google.com/specimen/Asar), a static font.
-    #[link_name = "next/font/google#Asar"]
-    pub safe fn Asar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Asimovian](https://fonts.google.com/specimen/Asimovian), a static font.
-    #[link_name = "next/font/google#Asimovian"]
-    pub safe fn Asimovian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Asset](https://fonts.google.com/specimen/Asset), a static font.
-    #[link_name = "next/font/google#Asset"]
-    pub safe fn Asset(options: StaticFont<'_>) -> NextFont;
-
-    /// [Assistant](https://fonts.google.com/specimen/Assistant), a variable font.
-    #[link_name = "next/font/google#Assistant"]
-    pub safe fn Assistant(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Asta Sans](https://fonts.google.com/specimen/Asta+Sans), a variable font.
-    #[link_name = "next/font/google#Asta_Sans"]
-    pub safe fn Asta_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Astloch](https://fonts.google.com/specimen/Astloch), a static font.
-    #[link_name = "next/font/google#Astloch"]
-    pub safe fn Astloch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Asul](https://fonts.google.com/specimen/Asul), a static font.
-    #[link_name = "next/font/google#Asul"]
-    pub safe fn Asul(options: StaticFont<'_>) -> NextFont;
-
-    /// [Athiti](https://fonts.google.com/specimen/Athiti), a static font.
-    #[link_name = "next/font/google#Athiti"]
-    pub safe fn Athiti(options: StaticFont<'_>) -> NextFont;
-
-    /// [Atkinson Hyperlegible](https://fonts.google.com/specimen/Atkinson+Hyperlegible), a static font.
-    #[link_name = "next/font/google#Atkinson_Hyperlegible"]
-    pub safe fn Atkinson_Hyperlegible(options: StaticFont<'_>) -> NextFont;
-
-    /// [Atkinson Hyperlegible Mono](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Mono), a variable font.
-    #[link_name = "next/font/google#Atkinson_Hyperlegible_Mono"]
-    pub safe fn Atkinson_Hyperlegible_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next), a variable font.
-    #[link_name = "next/font/google#Atkinson_Hyperlegible_Next"]
-    pub safe fn Atkinson_Hyperlegible_Next(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Atma](https://fonts.google.com/specimen/Atma), a static font.
-    #[link_name = "next/font/google#Atma"]
-    pub safe fn Atma(options: StaticFont<'_>) -> NextFont;
-
-    /// [Atomic Age](https://fonts.google.com/specimen/Atomic+Age), a static font.
-    #[link_name = "next/font/google#Atomic_Age"]
-    pub safe fn Atomic_Age(options: StaticFont<'_>) -> NextFont;
-
-    /// [Aubrey](https://fonts.google.com/specimen/Aubrey), a static font.
-    #[link_name = "next/font/google#Aubrey"]
-    pub safe fn Aubrey(options: StaticFont<'_>) -> NextFont;
-
-    /// [Audiowide](https://fonts.google.com/specimen/Audiowide), a static font.
-    #[link_name = "next/font/google#Audiowide"]
-    pub safe fn Audiowide(options: StaticFont<'_>) -> NextFont;
-
-    /// [Autour One](https://fonts.google.com/specimen/Autour+One), a static font.
-    #[link_name = "next/font/google#Autour_One"]
-    pub safe fn Autour_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Average](https://fonts.google.com/specimen/Average), a static font.
-    #[link_name = "next/font/google#Average"]
-    pub safe fn Average(options: StaticFont<'_>) -> NextFont;
-
-    /// [Average Sans](https://fonts.google.com/specimen/Average+Sans), a static font.
-    #[link_name = "next/font/google#Average_Sans"]
-    pub safe fn Average_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Averia Gruesa Libre](https://fonts.google.com/specimen/Averia+Gruesa+Libre), a static font.
-    #[link_name = "next/font/google#Averia_Gruesa_Libre"]
-    pub safe fn Averia_Gruesa_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Averia Libre](https://fonts.google.com/specimen/Averia+Libre), a static font.
-    #[link_name = "next/font/google#Averia_Libre"]
-    pub safe fn Averia_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Averia Sans Libre](https://fonts.google.com/specimen/Averia+Sans+Libre), a static font.
-    #[link_name = "next/font/google#Averia_Sans_Libre"]
-    pub safe fn Averia_Sans_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Averia Serif Libre](https://fonts.google.com/specimen/Averia+Serif+Libre), a static font.
-    #[link_name = "next/font/google#Averia_Serif_Libre"]
-    pub safe fn Averia_Serif_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Azeret Mono](https://fonts.google.com/specimen/Azeret+Mono), a variable font.
-    #[link_name = "next/font/google#Azeret_Mono"]
-    pub safe fn Azeret_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [B612](https://fonts.google.com/specimen/B612), a static font.
-    #[link_name = "next/font/google#B612"]
-    pub safe fn B612(options: StaticFont<'_>) -> NextFont;
-
-    /// [B612 Mono](https://fonts.google.com/specimen/B612+Mono), a static font.
-    #[link_name = "next/font/google#B612_Mono"]
-    pub safe fn B612_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [BBH Bartle](https://fonts.google.com/specimen/BBH+Bartle), a static font.
-    #[link_name = "next/font/google#BBH_Bartle"]
-    pub safe fn BBH_Bartle(options: StaticFont<'_>) -> NextFont;
-
-    /// [BBH Bogle](https://fonts.google.com/specimen/BBH+Bogle), a static font.
-    #[link_name = "next/font/google#BBH_Bogle"]
-    pub safe fn BBH_Bogle(options: StaticFont<'_>) -> NextFont;
-
-    /// [BBH Hegarty](https://fonts.google.com/specimen/BBH+Hegarty), a static font.
-    #[link_name = "next/font/google#BBH_Hegarty"]
-    pub safe fn BBH_Hegarty(options: StaticFont<'_>) -> NextFont;
-
-    /// [BIZ UDGothic](https://fonts.google.com/specimen/BIZ+UDGothic), a static font.
-    #[link_name = "next/font/google#BIZ_UDGothic"]
-    pub safe fn BIZ_UDGothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [BIZ UDMincho](https://fonts.google.com/specimen/BIZ+UDMincho), a static font.
-    #[link_name = "next/font/google#BIZ_UDMincho"]
-    pub safe fn BIZ_UDMincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [BIZ UDPGothic](https://fonts.google.com/specimen/BIZ+UDPGothic), a static font.
-    #[link_name = "next/font/google#BIZ_UDPGothic"]
-    pub safe fn BIZ_UDPGothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [BIZ UDPMincho](https://fonts.google.com/specimen/BIZ+UDPMincho), a static font.
-    #[link_name = "next/font/google#BIZ_UDPMincho"]
-    pub safe fn BIZ_UDPMincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [BJCree](https://fonts.google.com/specimen/BJCree), a static font.
-    #[link_name = "next/font/google#BJCree"]
-    pub safe fn BJCree(options: StaticFont<'_>) -> NextFont;
-
-    /// [Babylonica](https://fonts.google.com/specimen/Babylonica), a static font.
-    #[link_name = "next/font/google#Babylonica"]
-    pub safe fn Babylonica(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bacasime Antique](https://fonts.google.com/specimen/Bacasime+Antique), a static font.
-    #[link_name = "next/font/google#Bacasime_Antique"]
-    pub safe fn Bacasime_Antique(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bad Script](https://fonts.google.com/specimen/Bad+Script), a static font.
-    #[link_name = "next/font/google#Bad_Script"]
-    pub safe fn Bad_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Badeen Display](https://fonts.google.com/specimen/Badeen+Display), a static font.
-    #[link_name = "next/font/google#Badeen_Display"]
-    pub safe fn Badeen_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bagel Fat One](https://fonts.google.com/specimen/Bagel+Fat+One), a static font.
-    #[link_name = "next/font/google#Bagel_Fat_One"]
-    pub safe fn Bagel_Fat_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bahiana](https://fonts.google.com/specimen/Bahiana), a static font.
-    #[link_name = "next/font/google#Bahiana"]
-    pub safe fn Bahiana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bahianita](https://fonts.google.com/specimen/Bahianita), a static font.
-    #[link_name = "next/font/google#Bahianita"]
-    pub safe fn Bahianita(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bai Jamjuree](https://fonts.google.com/specimen/Bai+Jamjuree), a static font.
-    #[link_name = "next/font/google#Bai_Jamjuree"]
-    pub safe fn Bai_Jamjuree(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bakbak One](https://fonts.google.com/specimen/Bakbak+One), a static font.
-    #[link_name = "next/font/google#Bakbak_One"]
-    pub safe fn Bakbak_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ballet](https://fonts.google.com/specimen/Ballet), a variable font.
-    #[link_name = "next/font/google#Ballet"]
-    pub safe fn Ballet(options: VariableFont<'_>) -> NextFont;
-
-    /// [Baloo 2](https://fonts.google.com/specimen/Baloo+2), a variable font.
-    #[link_name = "next/font/google#Baloo_2"]
-    pub safe fn Baloo_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Bhai 2](https://fonts.google.com/specimen/Baloo+Bhai+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Bhai_2"]
-    pub safe fn Baloo_Bhai_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Bhaijaan 2](https://fonts.google.com/specimen/Baloo+Bhaijaan+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Bhaijaan_2"]
-    pub safe fn Baloo_Bhaijaan_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Bhaina 2](https://fonts.google.com/specimen/Baloo+Bhaina+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Bhaina_2"]
-    pub safe fn Baloo_Bhaina_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Chettan 2](https://fonts.google.com/specimen/Baloo+Chettan+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Chettan_2"]
-    pub safe fn Baloo_Chettan_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Da 2](https://fonts.google.com/specimen/Baloo+Da+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Da_2"]
-    pub safe fn Baloo_Da_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Paaji 2](https://fonts.google.com/specimen/Baloo+Paaji+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Paaji_2"]
-    pub safe fn Baloo_Paaji_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Tamma 2](https://fonts.google.com/specimen/Baloo+Tamma+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Tamma_2"]
-    pub safe fn Baloo_Tamma_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Tammudu 2](https://fonts.google.com/specimen/Baloo+Tammudu+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Tammudu_2"]
-    pub safe fn Baloo_Tammudu_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baloo Thambi 2](https://fonts.google.com/specimen/Baloo+Thambi+2), a variable font.
-    #[link_name = "next/font/google#Baloo_Thambi_2"]
-    pub safe fn Baloo_Thambi_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Balsamiq Sans](https://fonts.google.com/specimen/Balsamiq+Sans), a static font.
-    #[link_name = "next/font/google#Balsamiq_Sans"]
-    pub safe fn Balsamiq_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Balthazar](https://fonts.google.com/specimen/Balthazar), a static font.
-    #[link_name = "next/font/google#Balthazar"]
-    pub safe fn Balthazar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bangers](https://fonts.google.com/specimen/Bangers), a static font.
-    #[link_name = "next/font/google#Bangers"]
-    pub safe fn Bangers(options: StaticFont<'_>) -> NextFont;
-
-    /// [Barlow](https://fonts.google.com/specimen/Barlow), a static font.
-    #[link_name = "next/font/google#Barlow"]
-    pub safe fn Barlow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed), a static font.
-    #[link_name = "next/font/google#Barlow_Condensed"]
-    pub safe fn Barlow_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Barlow Semi Condensed](https://fonts.google.com/specimen/Barlow+Semi+Condensed), a static font.
-    #[link_name = "next/font/google#Barlow_Semi_Condensed"]
-    pub safe fn Barlow_Semi_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Barriecito](https://fonts.google.com/specimen/Barriecito), a static font.
-    #[link_name = "next/font/google#Barriecito"]
-    pub safe fn Barriecito(options: StaticFont<'_>) -> NextFont;
-
-    /// [Barrio](https://fonts.google.com/specimen/Barrio), a static font.
-    #[link_name = "next/font/google#Barrio"]
-    pub safe fn Barrio(options: StaticFont<'_>) -> NextFont;
-
-    /// [Basic](https://fonts.google.com/specimen/Basic), a static font.
-    #[link_name = "next/font/google#Basic"]
-    pub safe fn Basic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Baskervville](https://fonts.google.com/specimen/Baskervville), a variable font.
-    #[link_name = "next/font/google#Baskervville"]
-    pub safe fn Baskervville(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Baskervville SC](https://fonts.google.com/specimen/Baskervville+SC), a variable font.
-    #[link_name = "next/font/google#Baskervville_SC"]
-    pub safe fn Baskervville_SC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Battambang](https://fonts.google.com/specimen/Battambang), a static font.
-    #[link_name = "next/font/google#Battambang"]
-    pub safe fn Battambang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Baumans](https://fonts.google.com/specimen/Baumans), a static font.
-    #[link_name = "next/font/google#Baumans"]
-    pub safe fn Baumans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bayon](https://fonts.google.com/specimen/Bayon), a static font.
-    #[link_name = "next/font/google#Bayon"]
-    pub safe fn Bayon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro), a static font.
-    #[link_name = "next/font/google#Be_Vietnam_Pro"]
-    pub safe fn Be_Vietnam_Pro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Beau Rivage](https://fonts.google.com/specimen/Beau+Rivage), a static font.
-    #[link_name = "next/font/google#Beau_Rivage"]
-    pub safe fn Beau_Rivage(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bebas Neue](https://fonts.google.com/specimen/Bebas+Neue), a static font.
-    #[link_name = "next/font/google#Bebas_Neue"]
-    pub safe fn Bebas_Neue(options: StaticFont<'_>) -> NextFont;
-
-    /// [Beiruti](https://fonts.google.com/specimen/Beiruti), a variable font.
-    #[link_name = "next/font/google#Beiruti"]
-    pub safe fn Beiruti(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Belanosima](https://fonts.google.com/specimen/Belanosima), a static font.
-    #[link_name = "next/font/google#Belanosima"]
-    pub safe fn Belanosima(options: StaticFont<'_>) -> NextFont;
-
-    /// [Belgrano](https://fonts.google.com/specimen/Belgrano), a static font.
-    #[link_name = "next/font/google#Belgrano"]
-    pub safe fn Belgrano(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bellefair](https://fonts.google.com/specimen/Bellefair), a static font.
-    #[link_name = "next/font/google#Bellefair"]
-    pub safe fn Bellefair(options: StaticFont<'_>) -> NextFont;
-
-    /// [Belleza](https://fonts.google.com/specimen/Belleza), a static font.
-    #[link_name = "next/font/google#Belleza"]
-    pub safe fn Belleza(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bellota](https://fonts.google.com/specimen/Bellota), a static font.
-    #[link_name = "next/font/google#Bellota"]
-    pub safe fn Bellota(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bellota Text](https://fonts.google.com/specimen/Bellota+Text), a static font.
-    #[link_name = "next/font/google#Bellota_Text"]
-    pub safe fn Bellota_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [BenchNine](https://fonts.google.com/specimen/BenchNine), a static font.
-    #[link_name = "next/font/google#BenchNine"]
-    pub safe fn BenchNine(options: StaticFont<'_>) -> NextFont;
-
-    /// [Benne](https://fonts.google.com/specimen/Benne), a static font.
-    #[link_name = "next/font/google#Benne"]
-    pub safe fn Benne(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bentham](https://fonts.google.com/specimen/Bentham), a static font.
-    #[link_name = "next/font/google#Bentham"]
-    pub safe fn Bentham(options: StaticFont<'_>) -> NextFont;
-
-    /// [Berkshire Swash](https://fonts.google.com/specimen/Berkshire+Swash), a static font.
-    #[link_name = "next/font/google#Berkshire_Swash"]
-    pub safe fn Berkshire_Swash(options: StaticFont<'_>) -> NextFont;
-
-    /// [Besley](https://fonts.google.com/specimen/Besley), a variable font.
-    #[link_name = "next/font/google#Besley"]
-    pub safe fn Besley(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Betania Patmos](https://fonts.google.com/specimen/Betania+Patmos), a static font.
-    #[link_name = "next/font/google#Betania_Patmos"]
-    pub safe fn Betania_Patmos(options: StaticFont<'_>) -> NextFont;
-
-    /// [Betania Patmos GDL](https://fonts.google.com/specimen/Betania+Patmos+GDL), a static font.
-    #[link_name = "next/font/google#Betania_Patmos_GDL"]
-    pub safe fn Betania_Patmos_GDL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Betania Patmos In](https://fonts.google.com/specimen/Betania+Patmos+In), a static font.
-    #[link_name = "next/font/google#Betania_Patmos_In"]
-    pub safe fn Betania_Patmos_In(options: StaticFont<'_>) -> NextFont;
-
-    /// [Betania Patmos In GDL](https://fonts.google.com/specimen/Betania+Patmos+In+GDL), a static font.
-    #[link_name = "next/font/google#Betania_Patmos_In_GDL"]
-    pub safe fn Betania_Patmos_In_GDL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Beth Ellen](https://fonts.google.com/specimen/Beth+Ellen), a static font.
-    #[link_name = "next/font/google#Beth_Ellen"]
-    pub safe fn Beth_Ellen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bevan](https://fonts.google.com/specimen/Bevan), a static font.
-    #[link_name = "next/font/google#Bevan"]
-    pub safe fn Bevan(options: StaticFont<'_>) -> NextFont;
-
-    /// [BhuTuka Expanded One](https://fonts.google.com/specimen/BhuTuka+Expanded+One), a static font.
-    #[link_name = "next/font/google#BhuTuka_Expanded_One"]
-    pub safe fn BhuTuka_Expanded_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Big Shoulders](https://fonts.google.com/specimen/Big+Shoulders), a variable font.
-    #[link_name = "next/font/google#Big_Shoulders"]
-    pub safe fn Big_Shoulders(options: VariableFont<'_>) -> NextFont;
-
-    /// [Big Shoulders Inline](https://fonts.google.com/specimen/Big+Shoulders+Inline), a variable font.
-    #[link_name = "next/font/google#Big_Shoulders_Inline"]
-    pub safe fn Big_Shoulders_Inline(options: VariableFont<'_>) -> NextFont;
-
-    /// [Big Shoulders Stencil](https://fonts.google.com/specimen/Big+Shoulders+Stencil), a variable font.
-    #[link_name = "next/font/google#Big_Shoulders_Stencil"]
-    pub safe fn Big_Shoulders_Stencil(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bigelow Rules](https://fonts.google.com/specimen/Bigelow+Rules), a static font.
-    #[link_name = "next/font/google#Bigelow_Rules"]
-    pub safe fn Bigelow_Rules(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bigshot One](https://fonts.google.com/specimen/Bigshot+One), a static font.
-    #[link_name = "next/font/google#Bigshot_One"]
-    pub safe fn Bigshot_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bilbo](https://fonts.google.com/specimen/Bilbo), a static font.
-    #[link_name = "next/font/google#Bilbo"]
-    pub safe fn Bilbo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bilbo Swash Caps](https://fonts.google.com/specimen/Bilbo+Swash+Caps), a static font.
-    #[link_name = "next/font/google#Bilbo_Swash_Caps"]
-    pub safe fn Bilbo_Swash_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [BioRhyme](https://fonts.google.com/specimen/BioRhyme), a variable font.
-    #[link_name = "next/font/google#BioRhyme"]
-    pub safe fn BioRhyme(options: VariableFont<'_>) -> NextFont;
-
-    /// [BioRhyme Expanded](https://fonts.google.com/specimen/BioRhyme+Expanded), a static font.
-    #[link_name = "next/font/google#BioRhyme_Expanded"]
-    pub safe fn BioRhyme_Expanded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Birthstone](https://fonts.google.com/specimen/Birthstone), a static font.
-    #[link_name = "next/font/google#Birthstone"]
-    pub safe fn Birthstone(options: StaticFont<'_>) -> NextFont;
-
-    /// [Birthstone Bounce](https://fonts.google.com/specimen/Birthstone+Bounce), a static font.
-    #[link_name = "next/font/google#Birthstone_Bounce"]
-    pub safe fn Birthstone_Bounce(options: StaticFont<'_>) -> NextFont;
-
-    /// [Biryani](https://fonts.google.com/specimen/Biryani), a static font.
-    #[link_name = "next/font/google#Biryani"]
-    pub safe fn Biryani(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bitcount](https://fonts.google.com/specimen/Bitcount), a variable font.
-    #[link_name = "next/font/google#Bitcount"]
-    pub safe fn Bitcount(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Grid Double](https://fonts.google.com/specimen/Bitcount+Grid+Double), a variable font.
-    #[link_name = "next/font/google#Bitcount_Grid_Double"]
-    pub safe fn Bitcount_Grid_Double(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Grid Double Ink](https://fonts.google.com/specimen/Bitcount+Grid+Double+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Grid_Double_Ink"]
-    pub safe fn Bitcount_Grid_Double_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Grid Single](https://fonts.google.com/specimen/Bitcount+Grid+Single), a variable font.
-    #[link_name = "next/font/google#Bitcount_Grid_Single"]
-    pub safe fn Bitcount_Grid_Single(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Grid Single Ink](https://fonts.google.com/specimen/Bitcount+Grid+Single+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Grid_Single_Ink"]
-    pub safe fn Bitcount_Grid_Single_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Ink](https://fonts.google.com/specimen/Bitcount+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Ink"]
-    pub safe fn Bitcount_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Prop Double](https://fonts.google.com/specimen/Bitcount+Prop+Double), a variable font.
-    #[link_name = "next/font/google#Bitcount_Prop_Double"]
-    pub safe fn Bitcount_Prop_Double(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Prop Double Ink](https://fonts.google.com/specimen/Bitcount+Prop+Double+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Prop_Double_Ink"]
-    pub safe fn Bitcount_Prop_Double_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Prop Single](https://fonts.google.com/specimen/Bitcount+Prop+Single), a variable font.
-    #[link_name = "next/font/google#Bitcount_Prop_Single"]
-    pub safe fn Bitcount_Prop_Single(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Prop Single Ink](https://fonts.google.com/specimen/Bitcount+Prop+Single+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Prop_Single_Ink"]
-    pub safe fn Bitcount_Prop_Single_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Single](https://fonts.google.com/specimen/Bitcount+Single), a variable font.
-    #[link_name = "next/font/google#Bitcount_Single"]
-    pub safe fn Bitcount_Single(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitcount Single Ink](https://fonts.google.com/specimen/Bitcount+Single+Ink), a variable font.
-    #[link_name = "next/font/google#Bitcount_Single_Ink"]
-    pub safe fn Bitcount_Single_Ink(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bitter](https://fonts.google.com/specimen/Bitter), a variable font.
-    #[link_name = "next/font/google#Bitter"]
-    pub safe fn Bitter(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Black And White Picture](https://fonts.google.com/specimen/Black+And+White+Picture), a static font.
-    #[link_name = "next/font/google#Black_And_White_Picture"]
-    pub safe fn Black_And_White_Picture(options: StaticFont<'_>) -> NextFont;
-
-    /// [Black Han Sans](https://fonts.google.com/specimen/Black+Han+Sans), a static font.
-    #[link_name = "next/font/google#Black_Han_Sans"]
-    pub safe fn Black_Han_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Black Ops One](https://fonts.google.com/specimen/Black+Ops+One), a static font.
-    #[link_name = "next/font/google#Black_Ops_One"]
-    pub safe fn Black_Ops_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Blaka](https://fonts.google.com/specimen/Blaka), a static font.
-    #[link_name = "next/font/google#Blaka"]
-    pub safe fn Blaka(options: StaticFont<'_>) -> NextFont;
-
-    /// [Blaka Hollow](https://fonts.google.com/specimen/Blaka+Hollow), a static font.
-    #[link_name = "next/font/google#Blaka_Hollow"]
-    pub safe fn Blaka_Hollow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Blaka Ink](https://fonts.google.com/specimen/Blaka+Ink), a static font.
-    #[link_name = "next/font/google#Blaka_Ink"]
-    pub safe fn Blaka_Ink(options: StaticFont<'_>) -> NextFont;
-
-    /// [Blinker](https://fonts.google.com/specimen/Blinker), a static font.
-    #[link_name = "next/font/google#Blinker"]
-    pub safe fn Blinker(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bodoni Moda](https://fonts.google.com/specimen/Bodoni+Moda), a variable font.
-    #[link_name = "next/font/google#Bodoni_Moda"]
-    pub safe fn Bodoni_Moda(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bodoni Moda SC](https://fonts.google.com/specimen/Bodoni+Moda+SC), a variable font.
-    #[link_name = "next/font/google#Bodoni_Moda_SC"]
-    pub safe fn Bodoni_Moda_SC(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bokor](https://fonts.google.com/specimen/Bokor), a static font.
-    #[link_name = "next/font/google#Bokor"]
-    pub safe fn Bokor(options: StaticFont<'_>) -> NextFont;
-
-    /// [Boldonse](https://fonts.google.com/specimen/Boldonse), a static font.
-    #[link_name = "next/font/google#Boldonse"]
-    pub safe fn Boldonse(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bona Nova](https://fonts.google.com/specimen/Bona+Nova), a static font.
-    #[link_name = "next/font/google#Bona_Nova"]
-    pub safe fn Bona_Nova(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bona Nova SC](https://fonts.google.com/specimen/Bona+Nova+SC), a static font.
-    #[link_name = "next/font/google#Bona_Nova_SC"]
-    pub safe fn Bona_Nova_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bonbon](https://fonts.google.com/specimen/Bonbon), a static font.
-    #[link_name = "next/font/google#Bonbon"]
-    pub safe fn Bonbon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bonheur Royale](https://fonts.google.com/specimen/Bonheur+Royale), a static font.
-    #[link_name = "next/font/google#Bonheur_Royale"]
-    pub safe fn Bonheur_Royale(options: StaticFont<'_>) -> NextFont;
-
-    /// [Boogaloo](https://fonts.google.com/specimen/Boogaloo), a static font.
-    #[link_name = "next/font/google#Boogaloo"]
-    pub safe fn Boogaloo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Borel](https://fonts.google.com/specimen/Borel), a static font.
-    #[link_name = "next/font/google#Borel"]
-    pub safe fn Borel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bowlby One](https://fonts.google.com/specimen/Bowlby+One), a static font.
-    #[link_name = "next/font/google#Bowlby_One"]
-    pub safe fn Bowlby_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bowlby One SC](https://fonts.google.com/specimen/Bowlby+One+SC), a static font.
-    #[link_name = "next/font/google#Bowlby_One_SC"]
-    pub safe fn Bowlby_One_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bpmf Huninn](https://fonts.google.com/specimen/Bpmf+Huninn), a static font.
-    #[link_name = "next/font/google#Bpmf_Huninn"]
-    pub safe fn Bpmf_Huninn(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bpmf Iansui](https://fonts.google.com/specimen/Bpmf+Iansui), a static font.
-    #[link_name = "next/font/google#Bpmf_Iansui"]
-    pub safe fn Bpmf_Iansui(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bpmf Zihi Kai Std](https://fonts.google.com/specimen/Bpmf+Zihi+Kai+Std), a static font.
-    #[link_name = "next/font/google#Bpmf_Zihi_Kai_Std"]
-    pub safe fn Bpmf_Zihi_Kai_Std(options: StaticFont<'_>) -> NextFont;
-
-    /// [Braah One](https://fonts.google.com/specimen/Braah+One), a static font.
-    #[link_name = "next/font/google#Braah_One"]
-    pub safe fn Braah_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Brawler](https://fonts.google.com/specimen/Brawler), a static font.
-    #[link_name = "next/font/google#Brawler"]
-    pub safe fn Brawler(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bree Serif](https://fonts.google.com/specimen/Bree+Serif), a static font.
-    #[link_name = "next/font/google#Bree_Serif"]
-    pub safe fn Bree_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), a variable font.
-    #[link_name = "next/font/google#Bricolage_Grotesque"]
-    pub safe fn Bricolage_Grotesque(options: VariableFont<'_>) -> NextFont;
-
-    /// [Bruno Ace](https://fonts.google.com/specimen/Bruno+Ace), a static font.
-    #[link_name = "next/font/google#Bruno_Ace"]
-    pub safe fn Bruno_Ace(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bruno Ace SC](https://fonts.google.com/specimen/Bruno+Ace+SC), a static font.
-    #[link_name = "next/font/google#Bruno_Ace_SC"]
-    pub safe fn Bruno_Ace_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Brygada 1918](https://fonts.google.com/specimen/Brygada+1918), a variable font.
-    #[link_name = "next/font/google#Brygada_1918"]
-    pub safe fn Brygada_1918(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Bubblegum Sans](https://fonts.google.com/specimen/Bubblegum+Sans), a static font.
-    #[link_name = "next/font/google#Bubblegum_Sans"]
-    pub safe fn Bubblegum_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bubbler One](https://fonts.google.com/specimen/Bubbler+One), a static font.
-    #[link_name = "next/font/google#Bubbler_One"]
-    pub safe fn Bubbler_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Buda](https://fonts.google.com/specimen/Buda), a static font.
-    #[link_name = "next/font/google#Buda"]
-    pub safe fn Buda(options: StaticFont<'_>) -> NextFont;
-
-    /// [Buenard](https://fonts.google.com/specimen/Buenard), a variable font.
-    #[link_name = "next/font/google#Buenard"]
-    pub safe fn Buenard(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Bungee](https://fonts.google.com/specimen/Bungee), a static font.
-    #[link_name = "next/font/google#Bungee"]
-    pub safe fn Bungee(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Hairline](https://fonts.google.com/specimen/Bungee+Hairline), a static font.
-    #[link_name = "next/font/google#Bungee_Hairline"]
-    pub safe fn Bungee_Hairline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Inline](https://fonts.google.com/specimen/Bungee+Inline), a static font.
-    #[link_name = "next/font/google#Bungee_Inline"]
-    pub safe fn Bungee_Inline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Outline](https://fonts.google.com/specimen/Bungee+Outline), a static font.
-    #[link_name = "next/font/google#Bungee_Outline"]
-    pub safe fn Bungee_Outline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Shade](https://fonts.google.com/specimen/Bungee+Shade), a static font.
-    #[link_name = "next/font/google#Bungee_Shade"]
-    pub safe fn Bungee_Shade(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Spice](https://fonts.google.com/specimen/Bungee+Spice), a static font.
-    #[link_name = "next/font/google#Bungee_Spice"]
-    pub safe fn Bungee_Spice(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bungee Tint](https://fonts.google.com/specimen/Bungee+Tint), a static font.
-    #[link_name = "next/font/google#Bungee_Tint"]
-    pub safe fn Bungee_Tint(options: StaticFont<'_>) -> NextFont;
-
-    /// [Butcherman](https://fonts.google.com/specimen/Butcherman), a static font.
-    #[link_name = "next/font/google#Butcherman"]
-    pub safe fn Butcherman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Butterfly Kids](https://fonts.google.com/specimen/Butterfly+Kids), a static font.
-    #[link_name = "next/font/google#Butterfly_Kids"]
-    pub safe fn Butterfly_Kids(options: StaticFont<'_>) -> NextFont;
-
-    /// [Bytesized](https://fonts.google.com/specimen/Bytesized), a static font.
-    #[link_name = "next/font/google#Bytesized"]
-    pub safe fn Bytesized(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cabin](https://fonts.google.com/specimen/Cabin), a variable font.
-    #[link_name = "next/font/google#Cabin"]
-    pub safe fn Cabin(options: VariableFont<'_>) -> NextFont;
-
-    /// [Cabin Condensed](https://fonts.google.com/specimen/Cabin+Condensed), a static font.
-    #[link_name = "next/font/google#Cabin_Condensed"]
-    pub safe fn Cabin_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cabin Sketch](https://fonts.google.com/specimen/Cabin+Sketch), a static font.
-    #[link_name = "next/font/google#Cabin_Sketch"]
-    pub safe fn Cabin_Sketch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cactus Classical Serif](https://fonts.google.com/specimen/Cactus+Classical+Serif), a static font.
-    #[link_name = "next/font/google#Cactus_Classical_Serif"]
-    pub safe fn Cactus_Classical_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Caesar Dressing](https://fonts.google.com/specimen/Caesar+Dressing), a static font.
-    #[link_name = "next/font/google#Caesar_Dressing"]
-    pub safe fn Caesar_Dressing(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cagliostro](https://fonts.google.com/specimen/Cagliostro), a static font.
-    #[link_name = "next/font/google#Cagliostro"]
-    pub safe fn Cagliostro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cairo](https://fonts.google.com/specimen/Cairo), a variable font.
-    #[link_name = "next/font/google#Cairo"]
-    pub safe fn Cairo(options: VariableFont<'_>) -> NextFont;
-
-    /// [Cairo Play](https://fonts.google.com/specimen/Cairo+Play), a variable font.
-    #[link_name = "next/font/google#Cairo_Play"]
-    pub safe fn Cairo_Play(options: VariableFont<'_>) -> NextFont;
-
-    /// [Cal Sans](https://fonts.google.com/specimen/Cal+Sans), a static font.
-    #[link_name = "next/font/google#Cal_Sans"]
-    pub safe fn Cal_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Caladea](https://fonts.google.com/specimen/Caladea), a static font.
-    #[link_name = "next/font/google#Caladea"]
-    pub safe fn Caladea(options: StaticFont<'_>) -> NextFont;
-
-    /// [Calistoga](https://fonts.google.com/specimen/Calistoga), a static font.
-    #[link_name = "next/font/google#Calistoga"]
-    pub safe fn Calistoga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Calligraffitti](https://fonts.google.com/specimen/Calligraffitti), a static font.
-    #[link_name = "next/font/google#Calligraffitti"]
-    pub safe fn Calligraffitti(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cambay](https://fonts.google.com/specimen/Cambay), a static font.
-    #[link_name = "next/font/google#Cambay"]
-    pub safe fn Cambay(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cambo](https://fonts.google.com/specimen/Cambo), a static font.
-    #[link_name = "next/font/google#Cambo"]
-    pub safe fn Cambo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Candal](https://fonts.google.com/specimen/Candal), a static font.
-    #[link_name = "next/font/google#Candal"]
-    pub safe fn Candal(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cantarell](https://fonts.google.com/specimen/Cantarell), a static font.
-    #[link_name = "next/font/google#Cantarell"]
-    pub safe fn Cantarell(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cantata One](https://fonts.google.com/specimen/Cantata+One), a static font.
-    #[link_name = "next/font/google#Cantata_One"]
-    pub safe fn Cantata_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cantora One](https://fonts.google.com/specimen/Cantora+One), a static font.
-    #[link_name = "next/font/google#Cantora_One"]
-    pub safe fn Cantora_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Caprasimo](https://fonts.google.com/specimen/Caprasimo), a static font.
-    #[link_name = "next/font/google#Caprasimo"]
-    pub safe fn Caprasimo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Capriola](https://fonts.google.com/specimen/Capriola), a static font.
-    #[link_name = "next/font/google#Capriola"]
-    pub safe fn Capriola(options: StaticFont<'_>) -> NextFont;
-
-    /// [Caramel](https://fonts.google.com/specimen/Caramel), a static font.
-    #[link_name = "next/font/google#Caramel"]
-    pub safe fn Caramel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carattere](https://fonts.google.com/specimen/Carattere), a static font.
-    #[link_name = "next/font/google#Carattere"]
-    pub safe fn Carattere(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cardo](https://fonts.google.com/specimen/Cardo), a static font.
-    #[link_name = "next/font/google#Cardo"]
-    pub safe fn Cardo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carlito](https://fonts.google.com/specimen/Carlito), a static font.
-    #[link_name = "next/font/google#Carlito"]
-    pub safe fn Carlito(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carme](https://fonts.google.com/specimen/Carme), a static font.
-    #[link_name = "next/font/google#Carme"]
-    pub safe fn Carme(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carrois Gothic](https://fonts.google.com/specimen/Carrois+Gothic), a static font.
-    #[link_name = "next/font/google#Carrois_Gothic"]
-    pub safe fn Carrois_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carrois Gothic SC](https://fonts.google.com/specimen/Carrois+Gothic+SC), a static font.
-    #[link_name = "next/font/google#Carrois_Gothic_SC"]
-    pub safe fn Carrois_Gothic_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Carter One](https://fonts.google.com/specimen/Carter+One), a static font.
-    #[link_name = "next/font/google#Carter_One"]
-    pub safe fn Carter_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cascadia Code](https://fonts.google.com/specimen/Cascadia+Code), a variable font.
-    #[link_name = "next/font/google#Cascadia_Code"]
-    pub safe fn Cascadia_Code(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cascadia Mono](https://fonts.google.com/specimen/Cascadia+Mono), a variable font.
-    #[link_name = "next/font/google#Cascadia_Mono"]
-    pub safe fn Cascadia_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Castoro](https://fonts.google.com/specimen/Castoro), a static font.
-    #[link_name = "next/font/google#Castoro"]
-    pub safe fn Castoro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Castoro Titling](https://fonts.google.com/specimen/Castoro+Titling), a static font.
-    #[link_name = "next/font/google#Castoro_Titling"]
-    pub safe fn Castoro_Titling(options: StaticFont<'_>) -> NextFont;
-
-    /// [Catamaran](https://fonts.google.com/specimen/Catamaran), a variable font.
-    #[link_name = "next/font/google#Catamaran"]
-    pub safe fn Catamaran(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Caudex](https://fonts.google.com/specimen/Caudex), a static font.
-    #[link_name = "next/font/google#Caudex"]
-    pub safe fn Caudex(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cause](https://fonts.google.com/specimen/Cause), a variable font.
-    #[link_name = "next/font/google#Cause"]
-    pub safe fn Cause(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Caveat](https://fonts.google.com/specimen/Caveat), a variable font.
-    #[link_name = "next/font/google#Caveat"]
-    pub safe fn Caveat(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Caveat Brush](https://fonts.google.com/specimen/Caveat+Brush), a static font.
-    #[link_name = "next/font/google#Caveat_Brush"]
-    pub safe fn Caveat_Brush(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cedarville Cursive](https://fonts.google.com/specimen/Cedarville+Cursive), a static font.
-    #[link_name = "next/font/google#Cedarville_Cursive"]
-    pub safe fn Cedarville_Cursive(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ceviche One](https://fonts.google.com/specimen/Ceviche+One), a static font.
-    #[link_name = "next/font/google#Ceviche_One"]
-    pub safe fn Ceviche_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch), a static font.
-    #[link_name = "next/font/google#Chakra_Petch"]
-    pub safe fn Chakra_Petch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Changa](https://fonts.google.com/specimen/Changa), a variable font.
-    #[link_name = "next/font/google#Changa"]
-    pub safe fn Changa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Changa One](https://fonts.google.com/specimen/Changa+One), a static font.
-    #[link_name = "next/font/google#Changa_One"]
-    pub safe fn Changa_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chango](https://fonts.google.com/specimen/Chango), a static font.
-    #[link_name = "next/font/google#Chango"]
-    pub safe fn Chango(options: StaticFont<'_>) -> NextFont;
-
-    /// [Charis SIL](https://fonts.google.com/specimen/Charis+SIL), a static font.
-    #[link_name = "next/font/google#Charis_SIL"]
-    pub safe fn Charis_SIL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Charm](https://fonts.google.com/specimen/Charm), a static font.
-    #[link_name = "next/font/google#Charm"]
-    pub safe fn Charm(options: StaticFont<'_>) -> NextFont;
-
-    /// [Charmonman](https://fonts.google.com/specimen/Charmonman), a static font.
-    #[link_name = "next/font/google#Charmonman"]
-    pub safe fn Charmonman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chathura](https://fonts.google.com/specimen/Chathura), a static font.
-    #[link_name = "next/font/google#Chathura"]
-    pub safe fn Chathura(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chau Philomene One](https://fonts.google.com/specimen/Chau+Philomene+One), a static font.
-    #[link_name = "next/font/google#Chau_Philomene_One"]
-    pub safe fn Chau_Philomene_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chela One](https://fonts.google.com/specimen/Chela+One), a static font.
-    #[link_name = "next/font/google#Chela_One"]
-    pub safe fn Chela_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chelsea Market](https://fonts.google.com/specimen/Chelsea+Market), a static font.
-    #[link_name = "next/font/google#Chelsea_Market"]
-    pub safe fn Chelsea_Market(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chenla](https://fonts.google.com/specimen/Chenla), a static font.
-    #[link_name = "next/font/google#Chenla"]
-    pub safe fn Chenla(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cherish](https://fonts.google.com/specimen/Cherish), a static font.
-    #[link_name = "next/font/google#Cherish"]
-    pub safe fn Cherish(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cherry Bomb One](https://fonts.google.com/specimen/Cherry+Bomb+One), a static font.
-    #[link_name = "next/font/google#Cherry_Bomb_One"]
-    pub safe fn Cherry_Bomb_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cherry Cream Soda](https://fonts.google.com/specimen/Cherry+Cream+Soda), a static font.
-    #[link_name = "next/font/google#Cherry_Cream_Soda"]
-    pub safe fn Cherry_Cream_Soda(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cherry Swash](https://fonts.google.com/specimen/Cherry+Swash), a static font.
-    #[link_name = "next/font/google#Cherry_Swash"]
-    pub safe fn Cherry_Swash(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chewy](https://fonts.google.com/specimen/Chewy), a static font.
-    #[link_name = "next/font/google#Chewy"]
-    pub safe fn Chewy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chicle](https://fonts.google.com/specimen/Chicle), a static font.
-    #[link_name = "next/font/google#Chicle"]
-    pub safe fn Chicle(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chilanka](https://fonts.google.com/specimen/Chilanka), a static font.
-    #[link_name = "next/font/google#Chilanka"]
-    pub safe fn Chilanka(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chiron GoRound TC](https://fonts.google.com/specimen/Chiron+GoRound+TC), a variable font.
-    #[link_name = "next/font/google#Chiron_GoRound_TC"]
-    pub safe fn Chiron_GoRound_TC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Chiron Hei HK](https://fonts.google.com/specimen/Chiron+Hei+HK), a variable font.
-    #[link_name = "next/font/google#Chiron_Hei_HK"]
-    pub safe fn Chiron_Hei_HK(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Chiron Sung HK](https://fonts.google.com/specimen/Chiron+Sung+HK), a variable font.
-    #[link_name = "next/font/google#Chiron_Sung_HK"]
-    pub safe fn Chiron_Sung_HK(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Chivo](https://fonts.google.com/specimen/Chivo), a variable font.
-    #[link_name = "next/font/google#Chivo"]
-    pub safe fn Chivo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Chivo Mono](https://fonts.google.com/specimen/Chivo+Mono), a variable font.
-    #[link_name = "next/font/google#Chivo_Mono"]
-    pub safe fn Chivo_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Chocolate Classical Sans](https://fonts.google.com/specimen/Chocolate+Classical+Sans), a static font.
-    #[link_name = "next/font/google#Chocolate_Classical_Sans"]
-    pub safe fn Chocolate_Classical_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chokokutai](https://fonts.google.com/specimen/Chokokutai), a static font.
-    #[link_name = "next/font/google#Chokokutai"]
-    pub safe fn Chokokutai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Chonburi](https://fonts.google.com/specimen/Chonburi), a static font.
-    #[link_name = "next/font/google#Chonburi"]
-    pub safe fn Chonburi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cinzel](https://fonts.google.com/specimen/Cinzel), a variable font.
-    #[link_name = "next/font/google#Cinzel"]
-    pub safe fn Cinzel(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cinzel Decorative](https://fonts.google.com/specimen/Cinzel+Decorative), a static font.
-    #[link_name = "next/font/google#Cinzel_Decorative"]
-    pub safe fn Cinzel_Decorative(options: StaticFont<'_>) -> NextFont;
-
-    /// [Clicker Script](https://fonts.google.com/specimen/Clicker+Script), a static font.
-    #[link_name = "next/font/google#Clicker_Script"]
-    pub safe fn Clicker_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Climate Crisis](https://fonts.google.com/specimen/Climate+Crisis), a variable font.
-    #[link_name = "next/font/google#Climate_Crisis"]
-    pub safe fn Climate_Crisis(options: VariableFont<'_>) -> NextFont;
-
-    /// [Coda](https://fonts.google.com/specimen/Coda), a static font.
-    #[link_name = "next/font/google#Coda"]
-    pub safe fn Coda(options: StaticFont<'_>) -> NextFont;
-
-    /// [Codystar](https://fonts.google.com/specimen/Codystar), a static font.
-    #[link_name = "next/font/google#Codystar"]
-    pub safe fn Codystar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Coiny](https://fonts.google.com/specimen/Coiny), a static font.
-    #[link_name = "next/font/google#Coiny"]
-    pub safe fn Coiny(options: StaticFont<'_>) -> NextFont;
-
-    /// [Combo](https://fonts.google.com/specimen/Combo), a static font.
-    #[link_name = "next/font/google#Combo"]
-    pub safe fn Combo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Comfortaa](https://fonts.google.com/specimen/Comfortaa), a variable font.
-    #[link_name = "next/font/google#Comfortaa"]
-    pub safe fn Comfortaa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Comforter](https://fonts.google.com/specimen/Comforter), a static font.
-    #[link_name = "next/font/google#Comforter"]
-    pub safe fn Comforter(options: StaticFont<'_>) -> NextFont;
-
-    /// [Comforter Brush](https://fonts.google.com/specimen/Comforter+Brush), a static font.
-    #[link_name = "next/font/google#Comforter_Brush"]
-    pub safe fn Comforter_Brush(options: StaticFont<'_>) -> NextFont;
-
-    /// [Comic Neue](https://fonts.google.com/specimen/Comic+Neue), a static font.
-    #[link_name = "next/font/google#Comic_Neue"]
-    pub safe fn Comic_Neue(options: StaticFont<'_>) -> NextFont;
-
-    /// [Comic Relief](https://fonts.google.com/specimen/Comic+Relief), a static font.
-    #[link_name = "next/font/google#Comic_Relief"]
-    pub safe fn Comic_Relief(options: StaticFont<'_>) -> NextFont;
-
-    /// [Coming Soon](https://fonts.google.com/specimen/Coming+Soon), a static font.
-    #[link_name = "next/font/google#Coming_Soon"]
-    pub safe fn Coming_Soon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Comme](https://fonts.google.com/specimen/Comme), a variable font.
-    #[link_name = "next/font/google#Comme"]
-    pub safe fn Comme(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Commissioner](https://fonts.google.com/specimen/Commissioner), a variable font.
-    #[link_name = "next/font/google#Commissioner"]
-    pub safe fn Commissioner(options: VariableFont<'_>) -> NextFont;
-
-    /// [Concert One](https://fonts.google.com/specimen/Concert+One), a static font.
-    #[link_name = "next/font/google#Concert_One"]
-    pub safe fn Concert_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Condiment](https://fonts.google.com/specimen/Condiment), a static font.
-    #[link_name = "next/font/google#Condiment"]
-    pub safe fn Condiment(options: StaticFont<'_>) -> NextFont;
-
-    /// [Content](https://fonts.google.com/specimen/Content), a static font.
-    #[link_name = "next/font/google#Content"]
-    pub safe fn Content(options: StaticFont<'_>) -> NextFont;
-
-    /// [Contrail One](https://fonts.google.com/specimen/Contrail+One), a static font.
-    #[link_name = "next/font/google#Contrail_One"]
-    pub safe fn Contrail_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Convergence](https://fonts.google.com/specimen/Convergence), a static font.
-    #[link_name = "next/font/google#Convergence"]
-    pub safe fn Convergence(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cookie](https://fonts.google.com/specimen/Cookie), a static font.
-    #[link_name = "next/font/google#Cookie"]
-    pub safe fn Cookie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Copse](https://fonts.google.com/specimen/Copse), a static font.
-    #[link_name = "next/font/google#Copse"]
-    pub safe fn Copse(options: StaticFont<'_>) -> NextFont;
-
-    /// [Coral Pixels](https://fonts.google.com/specimen/Coral+Pixels), a static font.
-    #[link_name = "next/font/google#Coral_Pixels"]
-    pub safe fn Coral_Pixels(options: StaticFont<'_>) -> NextFont;
-
-    /// [Corben](https://fonts.google.com/specimen/Corben), a static font.
-    #[link_name = "next/font/google#Corben"]
-    pub safe fn Corben(options: StaticFont<'_>) -> NextFont;
-
-    /// [Corinthia](https://fonts.google.com/specimen/Corinthia), a static font.
-    #[link_name = "next/font/google#Corinthia"]
-    pub safe fn Corinthia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cormorant](https://fonts.google.com/specimen/Cormorant), a variable font.
-    #[link_name = "next/font/google#Cormorant"]
-    pub safe fn Cormorant(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond), a variable font.
-    #[link_name = "next/font/google#Cormorant_Garamond"]
-    pub safe fn Cormorant_Garamond(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cormorant Infant](https://fonts.google.com/specimen/Cormorant+Infant), a variable font.
-    #[link_name = "next/font/google#Cormorant_Infant"]
-    pub safe fn Cormorant_Infant(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cormorant SC](https://fonts.google.com/specimen/Cormorant+SC), a static font.
-    #[link_name = "next/font/google#Cormorant_SC"]
-    pub safe fn Cormorant_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cormorant Unicase](https://fonts.google.com/specimen/Cormorant+Unicase), a static font.
-    #[link_name = "next/font/google#Cormorant_Unicase"]
-    pub safe fn Cormorant_Unicase(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cormorant Upright](https://fonts.google.com/specimen/Cormorant+Upright), a static font.
-    #[link_name = "next/font/google#Cormorant_Upright"]
-    pub safe fn Cormorant_Upright(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cossette Texte](https://fonts.google.com/specimen/Cossette+Texte), a static font.
-    #[link_name = "next/font/google#Cossette_Texte"]
-    pub safe fn Cossette_Texte(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cossette Titre](https://fonts.google.com/specimen/Cossette+Titre), a static font.
-    #[link_name = "next/font/google#Cossette_Titre"]
-    pub safe fn Cossette_Titre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Courgette](https://fonts.google.com/specimen/Courgette), a static font.
-    #[link_name = "next/font/google#Courgette"]
-    pub safe fn Courgette(options: StaticFont<'_>) -> NextFont;
-
-    /// [Courier Prime](https://fonts.google.com/specimen/Courier+Prime), a static font.
-    #[link_name = "next/font/google#Courier_Prime"]
-    pub safe fn Courier_Prime(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cousine](https://fonts.google.com/specimen/Cousine), a static font.
-    #[link_name = "next/font/google#Cousine"]
-    pub safe fn Cousine(options: StaticFont<'_>) -> NextFont;
-
-    /// [Coustard](https://fonts.google.com/specimen/Coustard), a static font.
-    #[link_name = "next/font/google#Coustard"]
-    pub safe fn Coustard(options: StaticFont<'_>) -> NextFont;
-
-    /// [Covered By Your Grace](https://fonts.google.com/specimen/Covered+By+Your+Grace), a static font.
-    #[link_name = "next/font/google#Covered_By_Your_Grace"]
-    pub safe fn Covered_By_Your_Grace(options: StaticFont<'_>) -> NextFont;
-
-    /// [Crafty Girls](https://fonts.google.com/specimen/Crafty+Girls), a static font.
-    #[link_name = "next/font/google#Crafty_Girls"]
-    pub safe fn Crafty_Girls(options: StaticFont<'_>) -> NextFont;
-
-    /// [Creepster](https://fonts.google.com/specimen/Creepster), a static font.
-    #[link_name = "next/font/google#Creepster"]
-    pub safe fn Creepster(options: StaticFont<'_>) -> NextFont;
-
-    /// [Crete Round](https://fonts.google.com/specimen/Crete+Round), a static font.
-    #[link_name = "next/font/google#Crete_Round"]
-    pub safe fn Crete_Round(options: StaticFont<'_>) -> NextFont;
-
-    /// [Crimson Pro](https://fonts.google.com/specimen/Crimson+Pro), a variable font.
-    #[link_name = "next/font/google#Crimson_Pro"]
-    pub safe fn Crimson_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Crimson Text](https://fonts.google.com/specimen/Crimson+Text), a static font.
-    #[link_name = "next/font/google#Crimson_Text"]
-    pub safe fn Crimson_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Croissant One](https://fonts.google.com/specimen/Croissant+One), a static font.
-    #[link_name = "next/font/google#Croissant_One"]
-    pub safe fn Croissant_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Crushed](https://fonts.google.com/specimen/Crushed), a static font.
-    #[link_name = "next/font/google#Crushed"]
-    pub safe fn Crushed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cuprum](https://fonts.google.com/specimen/Cuprum), a variable font.
-    #[link_name = "next/font/google#Cuprum"]
-    pub safe fn Cuprum(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Cute Font](https://fonts.google.com/specimen/Cute+Font), a static font.
-    #[link_name = "next/font/google#Cute_Font"]
-    pub safe fn Cute_Font(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cutive](https://fonts.google.com/specimen/Cutive), a static font.
-    #[link_name = "next/font/google#Cutive"]
-    pub safe fn Cutive(options: StaticFont<'_>) -> NextFont;
-
-    /// [Cutive Mono](https://fonts.google.com/specimen/Cutive+Mono), a static font.
-    #[link_name = "next/font/google#Cutive_Mono"]
-    pub safe fn Cutive_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [DM Mono](https://fonts.google.com/specimen/DM+Mono), a static font.
-    #[link_name = "next/font/google#DM_Mono"]
-    pub safe fn DM_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [DM Sans](https://fonts.google.com/specimen/DM+Sans), a variable font.
-    #[link_name = "next/font/google#DM_Sans"]
-    pub safe fn DM_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [DM Serif Display](https://fonts.google.com/specimen/DM+Serif+Display), a static font.
-    #[link_name = "next/font/google#DM_Serif_Display"]
-    pub safe fn DM_Serif_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [DM Serif Text](https://fonts.google.com/specimen/DM+Serif+Text), a static font.
-    #[link_name = "next/font/google#DM_Serif_Text"]
-    pub safe fn DM_Serif_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dai Banna SIL](https://fonts.google.com/specimen/Dai+Banna+SIL), a static font.
-    #[link_name = "next/font/google#Dai_Banna_SIL"]
-    pub safe fn Dai_Banna_SIL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Damion](https://fonts.google.com/specimen/Damion), a static font.
-    #[link_name = "next/font/google#Damion"]
-    pub safe fn Damion(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dancing Script](https://fonts.google.com/specimen/Dancing+Script), a variable font.
-    #[link_name = "next/font/google#Dancing_Script"]
-    pub safe fn Dancing_Script(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Danfo](https://fonts.google.com/specimen/Danfo), a variable font.
-    #[link_name = "next/font/google#Danfo"]
-    pub safe fn Danfo(options: VariableFont<'_>) -> NextFont;
-
-    /// [Dangrek](https://fonts.google.com/specimen/Dangrek), a static font.
-    #[link_name = "next/font/google#Dangrek"]
-    pub safe fn Dangrek(options: StaticFont<'_>) -> NextFont;
-
-    /// [Darker Grotesque](https://fonts.google.com/specimen/Darker+Grotesque), a variable font.
-    #[link_name = "next/font/google#Darker_Grotesque"]
-    pub safe fn Darker_Grotesque(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Darumadrop One](https://fonts.google.com/specimen/Darumadrop+One), a static font.
-    #[link_name = "next/font/google#Darumadrop_One"]
-    pub safe fn Darumadrop_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Datatype](https://fonts.google.com/specimen/Datatype), a variable font.
-    #[link_name = "next/font/google#Datatype"]
-    pub safe fn Datatype(options: VariableFont<'_>) -> NextFont;
-
-    /// [David Libre](https://fonts.google.com/specimen/David+Libre), a static font.
-    #[link_name = "next/font/google#David_Libre"]
-    pub safe fn David_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dawning of a New Day](https://fonts.google.com/specimen/Dawning+of+a+New+Day), a static font.
-    #[link_name = "next/font/google#Dawning_of_a_New_Day"]
-    pub safe fn Dawning_of_a_New_Day(options: StaticFont<'_>) -> NextFont;
-
-    /// [Days One](https://fonts.google.com/specimen/Days+One), a static font.
-    #[link_name = "next/font/google#Days_One"]
-    pub safe fn Days_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dekko](https://fonts.google.com/specimen/Dekko), a static font.
-    #[link_name = "next/font/google#Dekko"]
-    pub safe fn Dekko(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dela Gothic One](https://fonts.google.com/specimen/Dela+Gothic+One), a static font.
-    #[link_name = "next/font/google#Dela_Gothic_One"]
-    pub safe fn Dela_Gothic_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Delicious Handrawn](https://fonts.google.com/specimen/Delicious+Handrawn), a static font.
-    #[link_name = "next/font/google#Delicious_Handrawn"]
-    pub safe fn Delicious_Handrawn(options: StaticFont<'_>) -> NextFont;
-
-    /// [Delius](https://fonts.google.com/specimen/Delius), a static font.
-    #[link_name = "next/font/google#Delius"]
-    pub safe fn Delius(options: StaticFont<'_>) -> NextFont;
-
-    /// [Delius Swash Caps](https://fonts.google.com/specimen/Delius+Swash+Caps), a static font.
-    #[link_name = "next/font/google#Delius_Swash_Caps"]
-    pub safe fn Delius_Swash_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Delius Unicase](https://fonts.google.com/specimen/Delius+Unicase), a static font.
-    #[link_name = "next/font/google#Delius_Unicase"]
-    pub safe fn Delius_Unicase(options: StaticFont<'_>) -> NextFont;
-
-    /// [Della Respira](https://fonts.google.com/specimen/Della+Respira), a static font.
-    #[link_name = "next/font/google#Della_Respira"]
-    pub safe fn Della_Respira(options: StaticFont<'_>) -> NextFont;
-
-    /// [Denk One](https://fonts.google.com/specimen/Denk+One), a static font.
-    #[link_name = "next/font/google#Denk_One"]
-    pub safe fn Denk_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Devonshire](https://fonts.google.com/specimen/Devonshire), a static font.
-    #[link_name = "next/font/google#Devonshire"]
-    pub safe fn Devonshire(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dhurjati](https://fonts.google.com/specimen/Dhurjati), a static font.
-    #[link_name = "next/font/google#Dhurjati"]
-    pub safe fn Dhurjati(options: StaticFont<'_>) -> NextFont;
-
-    /// [Didact Gothic](https://fonts.google.com/specimen/Didact+Gothic), a static font.
-    #[link_name = "next/font/google#Didact_Gothic"]
-    pub safe fn Didact_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Diphylleia](https://fonts.google.com/specimen/Diphylleia), a static font.
-    #[link_name = "next/font/google#Diphylleia"]
-    pub safe fn Diphylleia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Diplomata](https://fonts.google.com/specimen/Diplomata), a static font.
-    #[link_name = "next/font/google#Diplomata"]
-    pub safe fn Diplomata(options: StaticFont<'_>) -> NextFont;
-
-    /// [Diplomata SC](https://fonts.google.com/specimen/Diplomata+SC), a static font.
-    #[link_name = "next/font/google#Diplomata_SC"]
-    pub safe fn Diplomata_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Do Hyeon](https://fonts.google.com/specimen/Do+Hyeon), a static font.
-    #[link_name = "next/font/google#Do_Hyeon"]
-    pub safe fn Do_Hyeon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dokdo](https://fonts.google.com/specimen/Dokdo), a static font.
-    #[link_name = "next/font/google#Dokdo"]
-    pub safe fn Dokdo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Domine](https://fonts.google.com/specimen/Domine), a variable font.
-    #[link_name = "next/font/google#Domine"]
-    pub safe fn Domine(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Donegal One](https://fonts.google.com/specimen/Donegal+One), a static font.
-    #[link_name = "next/font/google#Donegal_One"]
-    pub safe fn Donegal_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dongle](https://fonts.google.com/specimen/Dongle), a static font.
-    #[link_name = "next/font/google#Dongle"]
-    pub safe fn Dongle(options: StaticFont<'_>) -> NextFont;
-
-    /// [Doppio One](https://fonts.google.com/specimen/Doppio+One), a static font.
-    #[link_name = "next/font/google#Doppio_One"]
-    pub safe fn Doppio_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dorsa](https://fonts.google.com/specimen/Dorsa), a static font.
-    #[link_name = "next/font/google#Dorsa"]
-    pub safe fn Dorsa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Dosis](https://fonts.google.com/specimen/Dosis), a variable font.
-    #[link_name = "next/font/google#Dosis"]
-    pub safe fn Dosis(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [DotGothic16](https://fonts.google.com/specimen/DotGothic16), a static font.
-    #[link_name = "next/font/google#DotGothic16"]
-    pub safe fn DotGothic16(options: StaticFont<'_>) -> NextFont;
-
-    /// [Doto](https://fonts.google.com/specimen/Doto), a variable font.
-    #[link_name = "next/font/google#Doto"]
-    pub safe fn Doto(options: VariableFont<'_>) -> NextFont;
-
-    /// [Dr Sugiyama](https://fonts.google.com/specimen/Dr+Sugiyama), a static font.
-    #[link_name = "next/font/google#Dr_Sugiyama"]
-    pub safe fn Dr_Sugiyama(options: StaticFont<'_>) -> NextFont;
-
-    /// [Duru Sans](https://fonts.google.com/specimen/Duru+Sans), a static font.
-    #[link_name = "next/font/google#Duru_Sans"]
-    pub safe fn Duru_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [DynaPuff](https://fonts.google.com/specimen/DynaPuff), a variable font.
-    #[link_name = "next/font/google#DynaPuff"]
-    pub safe fn DynaPuff(options: VariableFont<'_>) -> NextFont;
-
-    /// [Dynalight](https://fonts.google.com/specimen/Dynalight), a static font.
-    #[link_name = "next/font/google#Dynalight"]
-    pub safe fn Dynalight(options: StaticFont<'_>) -> NextFont;
-
-    /// [EB Garamond](https://fonts.google.com/specimen/EB+Garamond), a variable font.
-    #[link_name = "next/font/google#EB_Garamond"]
-    pub safe fn EB_Garamond(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Eagle Lake](https://fonts.google.com/specimen/Eagle+Lake), a static font.
-    #[link_name = "next/font/google#Eagle_Lake"]
-    pub safe fn Eagle_Lake(options: StaticFont<'_>) -> NextFont;
-
-    /// [East Sea Dokdo](https://fonts.google.com/specimen/East+Sea+Dokdo), a static font.
-    #[link_name = "next/font/google#East_Sea_Dokdo"]
-    pub safe fn East_Sea_Dokdo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Eater](https://fonts.google.com/specimen/Eater), a static font.
-    #[link_name = "next/font/google#Eater"]
-    pub safe fn Eater(options: StaticFont<'_>) -> NextFont;
-
-    /// [Economica](https://fonts.google.com/specimen/Economica), a static font.
-    #[link_name = "next/font/google#Economica"]
-    pub safe fn Economica(options: StaticFont<'_>) -> NextFont;
-
-    /// [Eczar](https://fonts.google.com/specimen/Eczar), a variable font.
-    #[link_name = "next/font/google#Eczar"]
-    pub safe fn Eczar(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu AU VIC WA NT Arrows](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Arrows), a variable font.
-    #[link_name = "next/font/google#Edu_AU_VIC_WA_NT_Arrows"]
-    pub safe fn Edu_AU_VIC_WA_NT_Arrows(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu AU VIC WA NT Dots](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Dots), a variable font.
-    #[link_name = "next/font/google#Edu_AU_VIC_WA_NT_Dots"]
-    pub safe fn Edu_AU_VIC_WA_NT_Dots(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu AU VIC WA NT Guides](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Guides), a variable font.
-    #[link_name = "next/font/google#Edu_AU_VIC_WA_NT_Guides"]
-    pub safe fn Edu_AU_VIC_WA_NT_Guides(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu AU VIC WA NT Hand](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Hand), a variable font.
-    #[link_name = "next/font/google#Edu_AU_VIC_WA_NT_Hand"]
-    pub safe fn Edu_AU_VIC_WA_NT_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu AU VIC WA NT Pre](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Pre), a variable font.
-    #[link_name = "next/font/google#Edu_AU_VIC_WA_NT_Pre"]
-    pub safe fn Edu_AU_VIC_WA_NT_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu NSW ACT Cursive](https://fonts.google.com/specimen/Edu+NSW+ACT+Cursive), a variable font.
-    #[link_name = "next/font/google#Edu_NSW_ACT_Cursive"]
-    pub safe fn Edu_NSW_ACT_Cursive(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu NSW ACT Foundation](https://fonts.google.com/specimen/Edu+NSW+ACT+Foundation), a variable font.
-    #[link_name = "next/font/google#Edu_NSW_ACT_Foundation"]
-    pub safe fn Edu_NSW_ACT_Foundation(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu NSW ACT Hand Pre](https://fonts.google.com/specimen/Edu+NSW+ACT+Hand+Pre), a variable font.
-    #[link_name = "next/font/google#Edu_NSW_ACT_Hand_Pre"]
-    pub safe fn Edu_NSW_ACT_Hand_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu QLD Beginner](https://fonts.google.com/specimen/Edu+QLD+Beginner), a variable font.
-    #[link_name = "next/font/google#Edu_QLD_Beginner"]
-    pub safe fn Edu_QLD_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu QLD Hand](https://fonts.google.com/specimen/Edu+QLD+Hand), a variable font.
-    #[link_name = "next/font/google#Edu_QLD_Hand"]
-    pub safe fn Edu_QLD_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu SA Beginner](https://fonts.google.com/specimen/Edu+SA+Beginner), a variable font.
-    #[link_name = "next/font/google#Edu_SA_Beginner"]
-    pub safe fn Edu_SA_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu SA Hand](https://fonts.google.com/specimen/Edu+SA+Hand), a variable font.
-    #[link_name = "next/font/google#Edu_SA_Hand"]
-    pub safe fn Edu_SA_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu TAS Beginner](https://fonts.google.com/specimen/Edu+TAS+Beginner), a variable font.
-    #[link_name = "next/font/google#Edu_TAS_Beginner"]
-    pub safe fn Edu_TAS_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu VIC WA NT Beginner](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Beginner), a variable font.
-    #[link_name = "next/font/google#Edu_VIC_WA_NT_Beginner"]
-    pub safe fn Edu_VIC_WA_NT_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu VIC WA NT Hand](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Hand), a variable font.
-    #[link_name = "next/font/google#Edu_VIC_WA_NT_Hand"]
-    pub safe fn Edu_VIC_WA_NT_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Edu VIC WA NT Hand Pre](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Hand+Pre), a variable font.
-    #[link_name = "next/font/google#Edu_VIC_WA_NT_Hand_Pre"]
-    pub safe fn Edu_VIC_WA_NT_Hand_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [El Messiri](https://fonts.google.com/specimen/El+Messiri), a variable font.
-    #[link_name = "next/font/google#El_Messiri"]
-    pub safe fn El_Messiri(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Electrolize](https://fonts.google.com/specimen/Electrolize), a static font.
-    #[link_name = "next/font/google#Electrolize"]
-    pub safe fn Electrolize(options: StaticFont<'_>) -> NextFont;
-
-    /// [Elms Sans](https://fonts.google.com/specimen/Elms+Sans), a variable font.
-    #[link_name = "next/font/google#Elms_Sans"]
-    pub safe fn Elms_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Elsie](https://fonts.google.com/specimen/Elsie), a static font.
-    #[link_name = "next/font/google#Elsie"]
-    pub safe fn Elsie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Elsie Swash Caps](https://fonts.google.com/specimen/Elsie+Swash+Caps), a static font.
-    #[link_name = "next/font/google#Elsie_Swash_Caps"]
-    pub safe fn Elsie_Swash_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Emblema One](https://fonts.google.com/specimen/Emblema+One), a static font.
-    #[link_name = "next/font/google#Emblema_One"]
-    pub safe fn Emblema_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Emilys Candy](https://fonts.google.com/specimen/Emilys+Candy), a static font.
-    #[link_name = "next/font/google#Emilys_Candy"]
-    pub safe fn Emilys_Candy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Encode Sans](https://fonts.google.com/specimen/Encode+Sans), a variable font.
-    #[link_name = "next/font/google#Encode_Sans"]
-    pub safe fn Encode_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Encode Sans Condensed](https://fonts.google.com/specimen/Encode+Sans+Condensed), a static font.
-    #[link_name = "next/font/google#Encode_Sans_Condensed"]
-    pub safe fn Encode_Sans_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Encode Sans Expanded](https://fonts.google.com/specimen/Encode+Sans+Expanded), a static font.
-    #[link_name = "next/font/google#Encode_Sans_Expanded"]
-    pub safe fn Encode_Sans_Expanded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Encode Sans SC](https://fonts.google.com/specimen/Encode+Sans+SC), a variable font.
-    #[link_name = "next/font/google#Encode_Sans_SC"]
-    pub safe fn Encode_Sans_SC(options: VariableFont<'_>) -> NextFont;
-
-    /// [Encode Sans Semi Condensed](https://fonts.google.com/specimen/Encode+Sans+Semi+Condensed), a static font.
-    #[link_name = "next/font/google#Encode_Sans_Semi_Condensed"]
-    pub safe fn Encode_Sans_Semi_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Encode Sans Semi Expanded](https://fonts.google.com/specimen/Encode+Sans+Semi+Expanded), a static font.
-    #[link_name = "next/font/google#Encode_Sans_Semi_Expanded"]
-    pub safe fn Encode_Sans_Semi_Expanded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Engagement](https://fonts.google.com/specimen/Engagement), a static font.
-    #[link_name = "next/font/google#Engagement"]
-    pub safe fn Engagement(options: StaticFont<'_>) -> NextFont;
-
-    /// [Englebert](https://fonts.google.com/specimen/Englebert), a static font.
-    #[link_name = "next/font/google#Englebert"]
-    pub safe fn Englebert(options: StaticFont<'_>) -> NextFont;
-
-    /// [Enriqueta](https://fonts.google.com/specimen/Enriqueta), a static font.
-    #[link_name = "next/font/google#Enriqueta"]
-    pub safe fn Enriqueta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ephesis](https://fonts.google.com/specimen/Ephesis), a static font.
-    #[link_name = "next/font/google#Ephesis"]
-    pub safe fn Ephesis(options: StaticFont<'_>) -> NextFont;
-
-    /// [Epilogue](https://fonts.google.com/specimen/Epilogue), a variable font.
-    #[link_name = "next/font/google#Epilogue"]
-    pub safe fn Epilogue(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Epunda Sans](https://fonts.google.com/specimen/Epunda+Sans), a variable font.
-    #[link_name = "next/font/google#Epunda_Sans"]
-    pub safe fn Epunda_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Epunda Slab](https://fonts.google.com/specimen/Epunda+Slab), a variable font.
-    #[link_name = "next/font/google#Epunda_Slab"]
-    pub safe fn Epunda_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Erica One](https://fonts.google.com/specimen/Erica+One), a static font.
-    #[link_name = "next/font/google#Erica_One"]
-    pub safe fn Erica_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Esteban](https://fonts.google.com/specimen/Esteban), a static font.
-    #[link_name = "next/font/google#Esteban"]
-    pub safe fn Esteban(options: StaticFont<'_>) -> NextFont;
-
-    /// [Estedad](https://fonts.google.com/specimen/Estedad), a variable font.
-    #[link_name = "next/font/google#Estedad"]
-    pub safe fn Estedad(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Estonia](https://fonts.google.com/specimen/Estonia), a static font.
-    #[link_name = "next/font/google#Estonia"]
-    pub safe fn Estonia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Euphoria Script](https://fonts.google.com/specimen/Euphoria+Script), a static font.
-    #[link_name = "next/font/google#Euphoria_Script"]
-    pub safe fn Euphoria_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ewert](https://fonts.google.com/specimen/Ewert), a static font.
-    #[link_name = "next/font/google#Ewert"]
-    pub safe fn Ewert(options: StaticFont<'_>) -> NextFont;
-
-    /// [Exile](https://fonts.google.com/specimen/Exile), a static font.
-    #[link_name = "next/font/google#Exile"]
-    pub safe fn Exile(options: StaticFont<'_>) -> NextFont;
-
-    /// [Exo](https://fonts.google.com/specimen/Exo), a variable font.
-    #[link_name = "next/font/google#Exo"]
-    pub safe fn Exo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Exo 2](https://fonts.google.com/specimen/Exo+2), a variable font.
-    #[link_name = "next/font/google#Exo_2"]
-    pub safe fn Exo_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Expletus Sans](https://fonts.google.com/specimen/Expletus+Sans), a variable font.
-    #[link_name = "next/font/google#Expletus_Sans"]
-    pub safe fn Expletus_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Explora](https://fonts.google.com/specimen/Explora), a static font.
-    #[link_name = "next/font/google#Explora"]
-    pub safe fn Explora(options: StaticFont<'_>) -> NextFont;
-
-    /// [Faculty Glyphic](https://fonts.google.com/specimen/Faculty+Glyphic), a static font.
-    #[link_name = "next/font/google#Faculty_Glyphic"]
-    pub safe fn Faculty_Glyphic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fahkwang](https://fonts.google.com/specimen/Fahkwang), a static font.
-    #[link_name = "next/font/google#Fahkwang"]
-    pub safe fn Fahkwang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Familjen Grotesk](https://fonts.google.com/specimen/Familjen+Grotesk), a variable font.
-    #[link_name = "next/font/google#Familjen_Grotesk"]
-    pub safe fn Familjen_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fanwood Text](https://fonts.google.com/specimen/Fanwood+Text), a static font.
-    #[link_name = "next/font/google#Fanwood_Text"]
-    pub safe fn Fanwood_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Farro](https://fonts.google.com/specimen/Farro), a static font.
-    #[link_name = "next/font/google#Farro"]
-    pub safe fn Farro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Farsan](https://fonts.google.com/specimen/Farsan), a static font.
-    #[link_name = "next/font/google#Farsan"]
-    pub safe fn Farsan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fascinate](https://fonts.google.com/specimen/Fascinate), a static font.
-    #[link_name = "next/font/google#Fascinate"]
-    pub safe fn Fascinate(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fascinate Inline](https://fonts.google.com/specimen/Fascinate+Inline), a static font.
-    #[link_name = "next/font/google#Fascinate_Inline"]
-    pub safe fn Fascinate_Inline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Faster One](https://fonts.google.com/specimen/Faster+One), a static font.
-    #[link_name = "next/font/google#Faster_One"]
-    pub safe fn Faster_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fasthand](https://fonts.google.com/specimen/Fasthand), a static font.
-    #[link_name = "next/font/google#Fasthand"]
-    pub safe fn Fasthand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fauna One](https://fonts.google.com/specimen/Fauna+One), a static font.
-    #[link_name = "next/font/google#Fauna_One"]
-    pub safe fn Fauna_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Faustina](https://fonts.google.com/specimen/Faustina), a variable font.
-    #[link_name = "next/font/google#Faustina"]
-    pub safe fn Faustina(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Federant](https://fonts.google.com/specimen/Federant), a static font.
-    #[link_name = "next/font/google#Federant"]
-    pub safe fn Federant(options: StaticFont<'_>) -> NextFont;
-
-    /// [Federo](https://fonts.google.com/specimen/Federo), a static font.
-    #[link_name = "next/font/google#Federo"]
-    pub safe fn Federo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Felipa](https://fonts.google.com/specimen/Felipa), a static font.
-    #[link_name = "next/font/google#Felipa"]
-    pub safe fn Felipa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fenix](https://fonts.google.com/specimen/Fenix), a static font.
-    #[link_name = "next/font/google#Fenix"]
-    pub safe fn Fenix(options: StaticFont<'_>) -> NextFont;
-
-    /// [Festive](https://fonts.google.com/specimen/Festive), a static font.
-    #[link_name = "next/font/google#Festive"]
-    pub safe fn Festive(options: StaticFont<'_>) -> NextFont;
-
-    /// [Figtree](https://fonts.google.com/specimen/Figtree), a variable font.
-    #[link_name = "next/font/google#Figtree"]
-    pub safe fn Figtree(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Finger Paint](https://fonts.google.com/specimen/Finger+Paint), a static font.
-    #[link_name = "next/font/google#Finger_Paint"]
-    pub safe fn Finger_Paint(options: StaticFont<'_>) -> NextFont;
-
-    /// [Finlandica Headline](https://fonts.google.com/specimen/Finlandica+Headline), a variable font.
-    #[link_name = "next/font/google#Finlandica_Headline"]
-    pub safe fn Finlandica_Headline(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Finlandica Text](https://fonts.google.com/specimen/Finlandica+Text), a variable font.
-    #[link_name = "next/font/google#Finlandica_Text"]
-    pub safe fn Finlandica_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fira Code](https://fonts.google.com/specimen/Fira+Code), a variable font.
-    #[link_name = "next/font/google#Fira_Code"]
-    pub safe fn Fira_Code(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fira Mono](https://fonts.google.com/specimen/Fira+Mono), a static font.
-    #[link_name = "next/font/google#Fira_Mono"]
-    pub safe fn Fira_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fira Sans](https://fonts.google.com/specimen/Fira+Sans), a static font.
-    #[link_name = "next/font/google#Fira_Sans"]
-    pub safe fn Fira_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fira Sans Condensed](https://fonts.google.com/specimen/Fira+Sans+Condensed), a static font.
-    #[link_name = "next/font/google#Fira_Sans_Condensed"]
-    pub safe fn Fira_Sans_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fira Sans Extra Condensed](https://fonts.google.com/specimen/Fira+Sans+Extra+Condensed), a static font.
-    #[link_name = "next/font/google#Fira_Sans_Extra_Condensed"]
-    pub safe fn Fira_Sans_Extra_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fjalla One](https://fonts.google.com/specimen/Fjalla+One), a static font.
-    #[link_name = "next/font/google#Fjalla_One"]
-    pub safe fn Fjalla_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fjord One](https://fonts.google.com/specimen/Fjord+One), a static font.
-    #[link_name = "next/font/google#Fjord_One"]
-    pub safe fn Fjord_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Flamenco](https://fonts.google.com/specimen/Flamenco), a static font.
-    #[link_name = "next/font/google#Flamenco"]
-    pub safe fn Flamenco(options: StaticFont<'_>) -> NextFont;
-
-    /// [Flavors](https://fonts.google.com/specimen/Flavors), a static font.
-    #[link_name = "next/font/google#Flavors"]
-    pub safe fn Flavors(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fleur De Leah](https://fonts.google.com/specimen/Fleur+De+Leah), a static font.
-    #[link_name = "next/font/google#Fleur_De_Leah"]
-    pub safe fn Fleur_De_Leah(options: StaticFont<'_>) -> NextFont;
-
-    /// [Flow Block](https://fonts.google.com/specimen/Flow+Block), a static font.
-    #[link_name = "next/font/google#Flow_Block"]
-    pub safe fn Flow_Block(options: StaticFont<'_>) -> NextFont;
-
-    /// [Flow Circular](https://fonts.google.com/specimen/Flow+Circular), a static font.
-    #[link_name = "next/font/google#Flow_Circular"]
-    pub safe fn Flow_Circular(options: StaticFont<'_>) -> NextFont;
-
-    /// [Flow Rounded](https://fonts.google.com/specimen/Flow+Rounded), a static font.
-    #[link_name = "next/font/google#Flow_Rounded"]
-    pub safe fn Flow_Rounded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Foldit](https://fonts.google.com/specimen/Foldit), a variable font.
-    #[link_name = "next/font/google#Foldit"]
-    pub safe fn Foldit(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fondamento](https://fonts.google.com/specimen/Fondamento), a static font.
-    #[link_name = "next/font/google#Fondamento"]
-    pub safe fn Fondamento(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fontdiner Swanky](https://fonts.google.com/specimen/Fontdiner+Swanky), a static font.
-    #[link_name = "next/font/google#Fontdiner_Swanky"]
-    pub safe fn Fontdiner_Swanky(options: StaticFont<'_>) -> NextFont;
-
-    /// [Forum](https://fonts.google.com/specimen/Forum), a static font.
-    #[link_name = "next/font/google#Forum"]
-    pub safe fn Forum(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fragment Mono](https://fonts.google.com/specimen/Fragment+Mono), a static font.
-    #[link_name = "next/font/google#Fragment_Mono"]
-    pub safe fn Fragment_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Francois One](https://fonts.google.com/specimen/Francois+One), a static font.
-    #[link_name = "next/font/google#Francois_One"]
-    pub safe fn Francois_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Frank Ruhl Libre](https://fonts.google.com/specimen/Frank+Ruhl+Libre), a variable font.
-    #[link_name = "next/font/google#Frank_Ruhl_Libre"]
-    pub safe fn Frank_Ruhl_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fraunces](https://fonts.google.com/specimen/Fraunces), a variable font.
-    #[link_name = "next/font/google#Fraunces"]
-    pub safe fn Fraunces(options: VariableFont<'_>) -> NextFont;
-
-    /// [Freckle Face](https://fonts.google.com/specimen/Freckle+Face), a static font.
-    #[link_name = "next/font/google#Freckle_Face"]
-    pub safe fn Freckle_Face(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fredericka the Great](https://fonts.google.com/specimen/Fredericka+the+Great), a static font.
-    #[link_name = "next/font/google#Fredericka_the_Great"]
-    pub safe fn Fredericka_the_Great(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fredoka](https://fonts.google.com/specimen/Fredoka), a variable font.
-    #[link_name = "next/font/google#Fredoka"]
-    pub safe fn Fredoka(options: VariableFont<'_>) -> NextFont;
-
-    /// [Freehand](https://fonts.google.com/specimen/Freehand), a static font.
-    #[link_name = "next/font/google#Freehand"]
-    pub safe fn Freehand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Freeman](https://fonts.google.com/specimen/Freeman), a static font.
-    #[link_name = "next/font/google#Freeman"]
-    pub safe fn Freeman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fresca](https://fonts.google.com/specimen/Fresca), a static font.
-    #[link_name = "next/font/google#Fresca"]
-    pub safe fn Fresca(options: StaticFont<'_>) -> NextFont;
-
-    /// [Frijole](https://fonts.google.com/specimen/Frijole), a static font.
-    #[link_name = "next/font/google#Frijole"]
-    pub safe fn Frijole(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fruktur](https://fonts.google.com/specimen/Fruktur), a static font.
-    #[link_name = "next/font/google#Fruktur"]
-    pub safe fn Fruktur(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fugaz One](https://fonts.google.com/specimen/Fugaz+One), a static font.
-    #[link_name = "next/font/google#Fugaz_One"]
-    pub safe fn Fugaz_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Fuggles](https://fonts.google.com/specimen/Fuggles), a static font.
-    #[link_name = "next/font/google#Fuggles"]
-    pub safe fn Fuggles(options: StaticFont<'_>) -> NextFont;
-
-    /// [Funnel Display](https://fonts.google.com/specimen/Funnel+Display), a variable font.
-    #[link_name = "next/font/google#Funnel_Display"]
-    pub safe fn Funnel_Display(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Funnel Sans](https://fonts.google.com/specimen/Funnel+Sans), a variable font.
-    #[link_name = "next/font/google#Funnel_Sans"]
-    pub safe fn Funnel_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fustat](https://fonts.google.com/specimen/Fustat), a variable font.
-    #[link_name = "next/font/google#Fustat"]
-    pub safe fn Fustat(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Fuzzy Bubbles](https://fonts.google.com/specimen/Fuzzy+Bubbles), a static font.
-    #[link_name = "next/font/google#Fuzzy_Bubbles"]
-    pub safe fn Fuzzy_Bubbles(options: StaticFont<'_>) -> NextFont;
-
-    /// [GFS Didot](https://fonts.google.com/specimen/GFS+Didot), a static font.
-    #[link_name = "next/font/google#GFS_Didot"]
-    pub safe fn GFS_Didot(options: StaticFont<'_>) -> NextFont;
-
-    /// [GFS Neohellenic](https://fonts.google.com/specimen/GFS+Neohellenic), a static font.
-    #[link_name = "next/font/google#GFS_Neohellenic"]
-    pub safe fn GFS_Neohellenic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ga Maamli](https://fonts.google.com/specimen/Ga+Maamli), a static font.
-    #[link_name = "next/font/google#Ga_Maamli"]
-    pub safe fn Ga_Maamli(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gabarito](https://fonts.google.com/specimen/Gabarito), a variable font.
-    #[link_name = "next/font/google#Gabarito"]
-    pub safe fn Gabarito(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Gabriela](https://fonts.google.com/specimen/Gabriela), a static font.
-    #[link_name = "next/font/google#Gabriela"]
-    pub safe fn Gabriela(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gaegu](https://fonts.google.com/specimen/Gaegu), a static font.
-    #[link_name = "next/font/google#Gaegu"]
-    pub safe fn Gaegu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gafata](https://fonts.google.com/specimen/Gafata), a static font.
-    #[link_name = "next/font/google#Gafata"]
-    pub safe fn Gafata(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gajraj One](https://fonts.google.com/specimen/Gajraj+One), a static font.
-    #[link_name = "next/font/google#Gajraj_One"]
-    pub safe fn Gajraj_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Galada](https://fonts.google.com/specimen/Galada), a static font.
-    #[link_name = "next/font/google#Galada"]
-    pub safe fn Galada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Galdeano](https://fonts.google.com/specimen/Galdeano), a static font.
-    #[link_name = "next/font/google#Galdeano"]
-    pub safe fn Galdeano(options: StaticFont<'_>) -> NextFont;
-
-    /// [Galindo](https://fonts.google.com/specimen/Galindo), a static font.
-    #[link_name = "next/font/google#Galindo"]
-    pub safe fn Galindo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gamja Flower](https://fonts.google.com/specimen/Gamja+Flower), a static font.
-    #[link_name = "next/font/google#Gamja_Flower"]
-    pub safe fn Gamja_Flower(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gantari](https://fonts.google.com/specimen/Gantari), a variable font.
-    #[link_name = "next/font/google#Gantari"]
-    pub safe fn Gantari(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Gasoek One](https://fonts.google.com/specimen/Gasoek+One), a static font.
-    #[link_name = "next/font/google#Gasoek_One"]
-    pub safe fn Gasoek_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gayathri](https://fonts.google.com/specimen/Gayathri), a static font.
-    #[link_name = "next/font/google#Gayathri"]
-    pub safe fn Gayathri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Geist](https://fonts.google.com/specimen/Geist), a variable font.
-    #[link_name = "next/font/google#Geist"]
-    pub safe fn Geist(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Geist Mono](https://fonts.google.com/specimen/Geist+Mono), a variable font.
-    #[link_name = "next/font/google#Geist_Mono"]
-    pub safe fn Geist_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Geist Pixel](https://fonts.google.com/specimen/Geist+Pixel), a variable font.
-    #[link_name = "next/font/google#Geist_Pixel"]
-    pub safe fn Geist_Pixel(options: VariableFont<'_>) -> NextFont;
-
-    /// [Gelasio](https://fonts.google.com/specimen/Gelasio), a variable font.
-    #[link_name = "next/font/google#Gelasio"]
-    pub safe fn Gelasio(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Gemunu Libre](https://fonts.google.com/specimen/Gemunu+Libre), a variable font.
-    #[link_name = "next/font/google#Gemunu_Libre"]
-    pub safe fn Gemunu_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Genos](https://fonts.google.com/specimen/Genos), a variable font.
-    #[link_name = "next/font/google#Genos"]
-    pub safe fn Genos(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Gentium Book Plus](https://fonts.google.com/specimen/Gentium+Book+Plus), a static font.
-    #[link_name = "next/font/google#Gentium_Book_Plus"]
-    pub safe fn Gentium_Book_Plus(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gentium Plus](https://fonts.google.com/specimen/Gentium+Plus), a static font.
-    #[link_name = "next/font/google#Gentium_Plus"]
-    pub safe fn Gentium_Plus(options: StaticFont<'_>) -> NextFont;
-
-    /// [Geo](https://fonts.google.com/specimen/Geo), a static font.
-    #[link_name = "next/font/google#Geo"]
-    pub safe fn Geo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Geologica](https://fonts.google.com/specimen/Geologica), a variable font.
-    #[link_name = "next/font/google#Geologica"]
-    pub safe fn Geologica(options: VariableFont<'_>) -> NextFont;
-
-    /// [Geom](https://fonts.google.com/specimen/Geom), a variable font.
-    #[link_name = "next/font/google#Geom"]
-    pub safe fn Geom(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Geomini](https://fonts.google.com/specimen/Geomini), a variable font.
-    #[link_name = "next/font/google#Geomini"]
-    pub safe fn Geomini(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Georama](https://fonts.google.com/specimen/Georama), a variable font.
-    #[link_name = "next/font/google#Georama"]
-    pub safe fn Georama(options: VariableFont<'_>) -> NextFont;
-
-    /// [Geostar](https://fonts.google.com/specimen/Geostar), a static font.
-    #[link_name = "next/font/google#Geostar"]
-    pub safe fn Geostar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Geostar Fill](https://fonts.google.com/specimen/Geostar+Fill), a static font.
-    #[link_name = "next/font/google#Geostar_Fill"]
-    pub safe fn Geostar_Fill(options: StaticFont<'_>) -> NextFont;
-
-    /// [Germania One](https://fonts.google.com/specimen/Germania+One), a static font.
-    #[link_name = "next/font/google#Germania_One"]
-    pub safe fn Germania_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gideon Roman](https://fonts.google.com/specimen/Gideon+Roman), a static font.
-    #[link_name = "next/font/google#Gideon_Roman"]
-    pub safe fn Gideon_Roman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gidole](https://fonts.google.com/specimen/Gidole), a static font.
-    #[link_name = "next/font/google#Gidole"]
-    pub safe fn Gidole(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gidugu](https://fonts.google.com/specimen/Gidugu), a static font.
-    #[link_name = "next/font/google#Gidugu"]
-    pub safe fn Gidugu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gilda Display](https://fonts.google.com/specimen/Gilda+Display), a static font.
-    #[link_name = "next/font/google#Gilda_Display"]
-    pub safe fn Gilda_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Girassol](https://fonts.google.com/specimen/Girassol), a static font.
-    #[link_name = "next/font/google#Girassol"]
-    pub safe fn Girassol(options: StaticFont<'_>) -> NextFont;
-
-    /// [Give You Glory](https://fonts.google.com/specimen/Give+You+Glory), a static font.
-    #[link_name = "next/font/google#Give_You_Glory"]
-    pub safe fn Give_You_Glory(options: StaticFont<'_>) -> NextFont;
-
-    /// [Glass Antiqua](https://fonts.google.com/specimen/Glass+Antiqua), a static font.
-    #[link_name = "next/font/google#Glass_Antiqua"]
-    pub safe fn Glass_Antiqua(options: StaticFont<'_>) -> NextFont;
-
-    /// [Glegoo](https://fonts.google.com/specimen/Glegoo), a static font.
-    #[link_name = "next/font/google#Glegoo"]
-    pub safe fn Glegoo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gloock](https://fonts.google.com/specimen/Gloock), a static font.
-    #[link_name = "next/font/google#Gloock"]
-    pub safe fn Gloock(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gloria Hallelujah](https://fonts.google.com/specimen/Gloria+Hallelujah), a static font.
-    #[link_name = "next/font/google#Gloria_Hallelujah"]
-    pub safe fn Gloria_Hallelujah(options: StaticFont<'_>) -> NextFont;
-
-    /// [Glory](https://fonts.google.com/specimen/Glory), a variable font.
-    #[link_name = "next/font/google#Glory"]
-    pub safe fn Glory(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Gluten](https://fonts.google.com/specimen/Gluten), a variable font.
-    #[link_name = "next/font/google#Gluten"]
-    pub safe fn Gluten(options: VariableFont<'_>) -> NextFont;
-
-    /// [Goblin One](https://fonts.google.com/specimen/Goblin+One), a static font.
-    #[link_name = "next/font/google#Goblin_One"]
-    pub safe fn Goblin_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gochi Hand](https://fonts.google.com/specimen/Gochi+Hand), a static font.
-    #[link_name = "next/font/google#Gochi_Hand"]
-    pub safe fn Gochi_Hand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Goldman](https://fonts.google.com/specimen/Goldman), a static font.
-    #[link_name = "next/font/google#Goldman"]
-    pub safe fn Goldman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Golos Text](https://fonts.google.com/specimen/Golos+Text), a variable font.
-    #[link_name = "next/font/google#Golos_Text"]
-    pub safe fn Golos_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Google Sans](https://fonts.google.com/specimen/Google+Sans), a variable font.
-    #[link_name = "next/font/google#Google_Sans"]
-    pub safe fn Google_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Google Sans Code](https://fonts.google.com/specimen/Google+Sans+Code), a variable font.
-    #[link_name = "next/font/google#Google_Sans_Code"]
-    pub safe fn Google_Sans_Code(options: VariableFont<'_>) -> NextFont;
-
-    /// [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex), a variable font.
-    #[link_name = "next/font/google#Google_Sans_Flex"]
-    pub safe fn Google_Sans_Flex(options: VariableFont<'_>) -> NextFont;
-
-    /// [Gorditas](https://fonts.google.com/specimen/Gorditas), a static font.
-    #[link_name = "next/font/google#Gorditas"]
-    pub safe fn Gorditas(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gothic A1](https://fonts.google.com/specimen/Gothic+A1), a static font.
-    #[link_name = "next/font/google#Gothic_A1"]
-    pub safe fn Gothic_A1(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gotu](https://fonts.google.com/specimen/Gotu), a static font.
-    #[link_name = "next/font/google#Gotu"]
-    pub safe fn Gotu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Goudy Bookletter 1911](https://fonts.google.com/specimen/Goudy+Bookletter+1911), a static font.
-    #[link_name = "next/font/google#Goudy_Bookletter_1911"]
-    pub safe fn Goudy_Bookletter_1911(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gowun Batang](https://fonts.google.com/specimen/Gowun+Batang), a static font.
-    #[link_name = "next/font/google#Gowun_Batang"]
-    pub safe fn Gowun_Batang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum), a static font.
-    #[link_name = "next/font/google#Gowun_Dodum"]
-    pub safe fn Gowun_Dodum(options: StaticFont<'_>) -> NextFont;
-
-    /// [Graduate](https://fonts.google.com/specimen/Graduate), a static font.
-    #[link_name = "next/font/google#Graduate"]
-    pub safe fn Graduate(options: StaticFont<'_>) -> NextFont;
-
-    /// [Grand Hotel](https://fonts.google.com/specimen/Grand+Hotel), a static font.
-    #[link_name = "next/font/google#Grand_Hotel"]
-    pub safe fn Grand_Hotel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Grandiflora One](https://fonts.google.com/specimen/Grandiflora+One), a static font.
-    #[link_name = "next/font/google#Grandiflora_One"]
-    pub safe fn Grandiflora_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Grandstander](https://fonts.google.com/specimen/Grandstander), a variable font.
-    #[link_name = "next/font/google#Grandstander"]
-    pub safe fn Grandstander(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Grape Nuts](https://fonts.google.com/specimen/Grape+Nuts), a static font.
-    #[link_name = "next/font/google#Grape_Nuts"]
-    pub safe fn Grape_Nuts(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gravitas One](https://fonts.google.com/specimen/Gravitas+One), a static font.
-    #[link_name = "next/font/google#Gravitas_One"]
-    pub safe fn Gravitas_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Great Vibes](https://fonts.google.com/specimen/Great+Vibes), a static font.
-    #[link_name = "next/font/google#Great_Vibes"]
-    pub safe fn Great_Vibes(options: StaticFont<'_>) -> NextFont;
-
-    /// [Grechen Fuemen](https://fonts.google.com/specimen/Grechen+Fuemen), a static font.
-    #[link_name = "next/font/google#Grechen_Fuemen"]
-    pub safe fn Grechen_Fuemen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Grenze](https://fonts.google.com/specimen/Grenze), a variable font.
-    #[link_name = "next/font/google#Grenze"]
-    pub safe fn Grenze(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Grenze Gotisch](https://fonts.google.com/specimen/Grenze+Gotisch), a variable font.
-    #[link_name = "next/font/google#Grenze_Gotisch"]
-    pub safe fn Grenze_Gotisch(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Grey Qo](https://fonts.google.com/specimen/Grey+Qo), a static font.
-    #[link_name = "next/font/google#Grey_Qo"]
-    pub safe fn Grey_Qo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Griffy](https://fonts.google.com/specimen/Griffy), a static font.
-    #[link_name = "next/font/google#Griffy"]
-    pub safe fn Griffy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gruppo](https://fonts.google.com/specimen/Gruppo), a static font.
-    #[link_name = "next/font/google#Gruppo"]
-    pub safe fn Gruppo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gudea](https://fonts.google.com/specimen/Gudea), a static font.
-    #[link_name = "next/font/google#Gudea"]
-    pub safe fn Gudea(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gugi](https://fonts.google.com/specimen/Gugi), a static font.
-    #[link_name = "next/font/google#Gugi"]
-    pub safe fn Gugi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gulzar](https://fonts.google.com/specimen/Gulzar), a static font.
-    #[link_name = "next/font/google#Gulzar"]
-    pub safe fn Gulzar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gupter](https://fonts.google.com/specimen/Gupter), a static font.
-    #[link_name = "next/font/google#Gupter"]
-    pub safe fn Gupter(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gurajada](https://fonts.google.com/specimen/Gurajada), a static font.
-    #[link_name = "next/font/google#Gurajada"]
-    pub safe fn Gurajada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gveret Levin](https://fonts.google.com/specimen/Gveret+Levin), a static font.
-    #[link_name = "next/font/google#Gveret_Levin"]
-    pub safe fn Gveret_Levin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Gwendolyn](https://fonts.google.com/specimen/Gwendolyn), a static font.
-    #[link_name = "next/font/google#Gwendolyn"]
-    pub safe fn Gwendolyn(options: StaticFont<'_>) -> NextFont;
-
-    /// [Habibi](https://fonts.google.com/specimen/Habibi), a static font.
-    #[link_name = "next/font/google#Habibi"]
-    pub safe fn Habibi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hachi Maru Pop](https://fonts.google.com/specimen/Hachi+Maru+Pop), a static font.
-    #[link_name = "next/font/google#Hachi_Maru_Pop"]
-    pub safe fn Hachi_Maru_Pop(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hahmlet](https://fonts.google.com/specimen/Hahmlet), a variable font.
-    #[link_name = "next/font/google#Hahmlet"]
-    pub safe fn Hahmlet(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Halant](https://fonts.google.com/specimen/Halant), a static font.
-    #[link_name = "next/font/google#Halant"]
-    pub safe fn Halant(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hammersmith One](https://fonts.google.com/specimen/Hammersmith+One), a static font.
-    #[link_name = "next/font/google#Hammersmith_One"]
-    pub safe fn Hammersmith_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hanalei](https://fonts.google.com/specimen/Hanalei), a static font.
-    #[link_name = "next/font/google#Hanalei"]
-    pub safe fn Hanalei(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hanalei Fill](https://fonts.google.com/specimen/Hanalei+Fill), a static font.
-    #[link_name = "next/font/google#Hanalei_Fill"]
-    pub safe fn Hanalei_Fill(options: StaticFont<'_>) -> NextFont;
-
-    /// [Handjet](https://fonts.google.com/specimen/Handjet), a variable font.
-    #[link_name = "next/font/google#Handjet"]
-    pub safe fn Handjet(options: VariableFont<'_>) -> NextFont;
-
-    /// [Handlee](https://fonts.google.com/specimen/Handlee), a static font.
-    #[link_name = "next/font/google#Handlee"]
-    pub safe fn Handlee(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hanken Grotesk](https://fonts.google.com/specimen/Hanken+Grotesk), a variable font.
-    #[link_name = "next/font/google#Hanken_Grotesk"]
-    pub safe fn Hanken_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Hanuman](https://fonts.google.com/specimen/Hanuman), a variable font.
-    #[link_name = "next/font/google#Hanuman"]
-    pub safe fn Hanuman(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Happy Monkey](https://fonts.google.com/specimen/Happy+Monkey), a static font.
-    #[link_name = "next/font/google#Happy_Monkey"]
-    pub safe fn Happy_Monkey(options: StaticFont<'_>) -> NextFont;
-
-    /// [Harmattan](https://fonts.google.com/specimen/Harmattan), a static font.
-    #[link_name = "next/font/google#Harmattan"]
-    pub safe fn Harmattan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Headland One](https://fonts.google.com/specimen/Headland+One), a static font.
-    #[link_name = "next/font/google#Headland_One"]
-    pub safe fn Headland_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hedvig Letters Sans](https://fonts.google.com/specimen/Hedvig+Letters+Sans), a static font.
-    #[link_name = "next/font/google#Hedvig_Letters_Sans"]
-    pub safe fn Hedvig_Letters_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hedvig Letters Serif](https://fonts.google.com/specimen/Hedvig+Letters+Serif), a variable font.
-    #[link_name = "next/font/google#Hedvig_Letters_Serif"]
-    pub safe fn Hedvig_Letters_Serif(options: VariableFont<'_>) -> NextFont;
-
-    /// [Heebo](https://fonts.google.com/specimen/Heebo), a variable font.
-    #[link_name = "next/font/google#Heebo"]
-    pub safe fn Heebo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Henny Penny](https://fonts.google.com/specimen/Henny+Penny), a static font.
-    #[link_name = "next/font/google#Henny_Penny"]
-    pub safe fn Henny_Penny(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hepta Slab](https://fonts.google.com/specimen/Hepta+Slab), a variable font.
-    #[link_name = "next/font/google#Hepta_Slab"]
-    pub safe fn Hepta_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Herr Von Muellerhoff](https://fonts.google.com/specimen/Herr+Von+Muellerhoff), a static font.
-    #[link_name = "next/font/google#Herr_Von_Muellerhoff"]
-    pub safe fn Herr_Von_Muellerhoff(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hi Melody](https://fonts.google.com/specimen/Hi+Melody), a static font.
-    #[link_name = "next/font/google#Hi_Melody"]
-    pub safe fn Hi_Melody(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hibur Mono](https://fonts.google.com/specimen/Hibur+Mono), a static font.
-    #[link_name = "next/font/google#Hibur_Mono"]
-    pub safe fn Hibur_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hina Mincho](https://fonts.google.com/specimen/Hina+Mincho), a static font.
-    #[link_name = "next/font/google#Hina_Mincho"]
-    pub safe fn Hina_Mincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind](https://fonts.google.com/specimen/Hind), a static font.
-    #[link_name = "next/font/google#Hind"]
-    pub safe fn Hind(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind Guntur](https://fonts.google.com/specimen/Hind+Guntur), a static font.
-    #[link_name = "next/font/google#Hind_Guntur"]
-    pub safe fn Hind_Guntur(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind Madurai](https://fonts.google.com/specimen/Hind+Madurai), a static font.
-    #[link_name = "next/font/google#Hind_Madurai"]
-    pub safe fn Hind_Madurai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind Mysuru](https://fonts.google.com/specimen/Hind+Mysuru), a static font.
-    #[link_name = "next/font/google#Hind_Mysuru"]
-    pub safe fn Hind_Mysuru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind Siliguri](https://fonts.google.com/specimen/Hind+Siliguri), a static font.
-    #[link_name = "next/font/google#Hind_Siliguri"]
-    pub safe fn Hind_Siliguri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hind Vadodara](https://fonts.google.com/specimen/Hind+Vadodara), a static font.
-    #[link_name = "next/font/google#Hind_Vadodara"]
-    pub safe fn Hind_Vadodara(options: StaticFont<'_>) -> NextFont;
-
-    /// [Holtwood One SC](https://fonts.google.com/specimen/Holtwood+One+SC), a static font.
-    #[link_name = "next/font/google#Holtwood_One_SC"]
-    pub safe fn Holtwood_One_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Homemade Apple](https://fonts.google.com/specimen/Homemade+Apple), a static font.
-    #[link_name = "next/font/google#Homemade_Apple"]
-    pub safe fn Homemade_Apple(options: StaticFont<'_>) -> NextFont;
-
-    /// [Homenaje](https://fonts.google.com/specimen/Homenaje), a static font.
-    #[link_name = "next/font/google#Homenaje"]
-    pub safe fn Homenaje(options: StaticFont<'_>) -> NextFont;
-
-    /// [Honk](https://fonts.google.com/specimen/Honk), a variable font.
-    #[link_name = "next/font/google#Honk"]
-    pub safe fn Honk(options: VariableFont<'_>) -> NextFont;
-
-    /// [Host Grotesk](https://fonts.google.com/specimen/Host+Grotesk), a variable font.
-    #[link_name = "next/font/google#Host_Grotesk"]
-    pub safe fn Host_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Hubballi](https://fonts.google.com/specimen/Hubballi), a static font.
-    #[link_name = "next/font/google#Hubballi"]
-    pub safe fn Hubballi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hubot Sans](https://fonts.google.com/specimen/Hubot+Sans), a variable font.
-    #[link_name = "next/font/google#Hubot_Sans"]
-    pub safe fn Hubot_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Huninn](https://fonts.google.com/specimen/Huninn), a static font.
-    #[link_name = "next/font/google#Huninn"]
-    pub safe fn Huninn(options: StaticFont<'_>) -> NextFont;
-
-    /// [Hurricane](https://fonts.google.com/specimen/Hurricane), a static font.
-    #[link_name = "next/font/google#Hurricane"]
-    pub safe fn Hurricane(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Mono"]
-    pub safe fn IBM_Plex_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans](https://fonts.google.com/specimen/IBM+Plex+Sans), a variable font.
-    #[link_name = "next/font/google#IBM_Plex_Sans"]
-    pub safe fn IBM_Plex_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Arabic](https://fonts.google.com/specimen/IBM+Plex+Sans+Arabic), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Arabic"]
-    pub safe fn IBM_Plex_Sans_Arabic(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Condensed](https://fonts.google.com/specimen/IBM+Plex+Sans+Condensed), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Condensed"]
-    pub safe fn IBM_Plex_Sans_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Devanagari](https://fonts.google.com/specimen/IBM+Plex+Sans+Devanagari), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Devanagari"]
-    pub safe fn IBM_Plex_Sans_Devanagari(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Hebrew](https://fonts.google.com/specimen/IBM+Plex+Sans+Hebrew), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Hebrew"]
-    pub safe fn IBM_Plex_Sans_Hebrew(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans JP](https://fonts.google.com/specimen/IBM+Plex+Sans+JP), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_JP"]
-    pub safe fn IBM_Plex_Sans_JP(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans KR](https://fonts.google.com/specimen/IBM+Plex+Sans+KR), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_KR"]
-    pub safe fn IBM_Plex_Sans_KR(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Thai](https://fonts.google.com/specimen/IBM+Plex+Sans+Thai), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Thai"]
-    pub safe fn IBM_Plex_Sans_Thai(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Sans Thai Looped](https://fonts.google.com/specimen/IBM+Plex+Sans+Thai+Looped), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Sans_Thai_Looped"]
-    pub safe fn IBM_Plex_Sans_Thai_Looped(options: StaticFont<'_>) -> NextFont;
-
-    /// [IBM Plex Serif](https://fonts.google.com/specimen/IBM+Plex+Serif), a static font.
-    #[link_name = "next/font/google#IBM_Plex_Serif"]
-    pub safe fn IBM_Plex_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell DW Pica](https://fonts.google.com/specimen/IM+Fell+DW+Pica), a static font.
-    #[link_name = "next/font/google#IM_Fell_DW_Pica"]
-    pub safe fn IM_Fell_DW_Pica(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell DW Pica SC](https://fonts.google.com/specimen/IM+Fell+DW+Pica+SC), a static font.
-    #[link_name = "next/font/google#IM_Fell_DW_Pica_SC"]
-    pub safe fn IM_Fell_DW_Pica_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell Double Pica](https://fonts.google.com/specimen/IM+Fell+Double+Pica), a static font.
-    #[link_name = "next/font/google#IM_Fell_Double_Pica"]
-    pub safe fn IM_Fell_Double_Pica(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell Double Pica SC](https://fonts.google.com/specimen/IM+Fell+Double+Pica+SC), a static font.
-    #[link_name = "next/font/google#IM_Fell_Double_Pica_SC"]
-    pub safe fn IM_Fell_Double_Pica_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell English](https://fonts.google.com/specimen/IM+Fell+English), a static font.
-    #[link_name = "next/font/google#IM_Fell_English"]
-    pub safe fn IM_Fell_English(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell English SC](https://fonts.google.com/specimen/IM+Fell+English+SC), a static font.
-    #[link_name = "next/font/google#IM_Fell_English_SC"]
-    pub safe fn IM_Fell_English_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell French Canon](https://fonts.google.com/specimen/IM+Fell+French+Canon), a static font.
-    #[link_name = "next/font/google#IM_Fell_French_Canon"]
-    pub safe fn IM_Fell_French_Canon(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell French Canon SC](https://fonts.google.com/specimen/IM+Fell+French+Canon+SC), a static font.
-    #[link_name = "next/font/google#IM_Fell_French_Canon_SC"]
-    pub safe fn IM_Fell_French_Canon_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell Great Primer](https://fonts.google.com/specimen/IM+Fell+Great+Primer), a static font.
-    #[link_name = "next/font/google#IM_Fell_Great_Primer"]
-    pub safe fn IM_Fell_Great_Primer(options: StaticFont<'_>) -> NextFont;
-
-    /// [IM Fell Great Primer SC](https://fonts.google.com/specimen/IM+Fell+Great+Primer+SC), a static font.
-    #[link_name = "next/font/google#IM_Fell_Great_Primer_SC"]
-    pub safe fn IM_Fell_Great_Primer_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Iansui](https://fonts.google.com/specimen/Iansui), a static font.
-    #[link_name = "next/font/google#Iansui"]
-    pub safe fn Iansui(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ibarra Real Nova](https://fonts.google.com/specimen/Ibarra+Real+Nova), a variable font.
-    #[link_name = "next/font/google#Ibarra_Real_Nova"]
-    pub safe fn Ibarra_Real_Nova(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Iceberg](https://fonts.google.com/specimen/Iceberg), a static font.
-    #[link_name = "next/font/google#Iceberg"]
-    pub safe fn Iceberg(options: StaticFont<'_>) -> NextFont;
-
-    /// [Iceland](https://fonts.google.com/specimen/Iceland), a static font.
-    #[link_name = "next/font/google#Iceland"]
-    pub safe fn Iceland(options: StaticFont<'_>) -> NextFont;
-
-    /// [Idiqlat](https://fonts.google.com/specimen/Idiqlat), a static font.
-    #[link_name = "next/font/google#Idiqlat"]
-    pub safe fn Idiqlat(options: StaticFont<'_>) -> NextFont;
-
-    /// [Imbue](https://fonts.google.com/specimen/Imbue), a variable font.
-    #[link_name = "next/font/google#Imbue"]
-    pub safe fn Imbue(options: VariableFont<'_>) -> NextFont;
-
-    /// [Imperial Script](https://fonts.google.com/specimen/Imperial+Script), a static font.
-    #[link_name = "next/font/google#Imperial_Script"]
-    pub safe fn Imperial_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Imprima](https://fonts.google.com/specimen/Imprima), a static font.
-    #[link_name = "next/font/google#Imprima"]
-    pub safe fn Imprima(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans), a variable font.
-    #[link_name = "next/font/google#Inclusive_Sans"]
-    pub safe fn Inclusive_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Inconsolata](https://fonts.google.com/specimen/Inconsolata), a variable font.
-    #[link_name = "next/font/google#Inconsolata"]
-    pub safe fn Inconsolata(options: VariableFont<'_>) -> NextFont;
-
-    /// [Inder](https://fonts.google.com/specimen/Inder), a static font.
-    #[link_name = "next/font/google#Inder"]
-    pub safe fn Inder(options: StaticFont<'_>) -> NextFont;
-
-    /// [Indie Flower](https://fonts.google.com/specimen/Indie+Flower), a static font.
-    #[link_name = "next/font/google#Indie_Flower"]
-    pub safe fn Indie_Flower(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ingrid Darling](https://fonts.google.com/specimen/Ingrid+Darling), a static font.
-    #[link_name = "next/font/google#Ingrid_Darling"]
-    pub safe fn Ingrid_Darling(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inika](https://fonts.google.com/specimen/Inika), a static font.
-    #[link_name = "next/font/google#Inika"]
-    pub safe fn Inika(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inknut Antiqua](https://fonts.google.com/specimen/Inknut+Antiqua), a static font.
-    #[link_name = "next/font/google#Inknut_Antiqua"]
-    pub safe fn Inknut_Antiqua(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inria Sans](https://fonts.google.com/specimen/Inria+Sans), a static font.
-    #[link_name = "next/font/google#Inria_Sans"]
-    pub safe fn Inria_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inria Serif](https://fonts.google.com/specimen/Inria+Serif), a static font.
-    #[link_name = "next/font/google#Inria_Serif"]
-    pub safe fn Inria_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Inspiration](https://fonts.google.com/specimen/Inspiration), a static font.
-    #[link_name = "next/font/google#Inspiration"]
-    pub safe fn Inspiration(options: StaticFont<'_>) -> NextFont;
-
-    /// [Instrument Sans](https://fonts.google.com/specimen/Instrument+Sans), a variable font.
-    #[link_name = "next/font/google#Instrument_Sans"]
-    pub safe fn Instrument_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif), a static font.
-    #[link_name = "next/font/google#Instrument_Serif"]
-    pub safe fn Instrument_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Intel One Mono](https://fonts.google.com/specimen/Intel+One+Mono), a variable font.
-    #[link_name = "next/font/google#Intel_One_Mono"]
-    pub safe fn Intel_One_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Inter](https://fonts.google.com/specimen/Inter), a variable font.
-    #[link_name = "next/font/google#Inter"]
-    pub safe fn Inter(options: VariableFont<'_>) -> NextFont;
-
-    /// [Inter Tight](https://fonts.google.com/specimen/Inter+Tight), a variable font.
-    #[link_name = "next/font/google#Inter_Tight"]
-    pub safe fn Inter_Tight(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Iosevka Charon](https://fonts.google.com/specimen/Iosevka+Charon), a static font.
-    #[link_name = "next/font/google#Iosevka_Charon"]
-    pub safe fn Iosevka_Charon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Iosevka Charon Mono](https://fonts.google.com/specimen/Iosevka+Charon+Mono), a static font.
-    #[link_name = "next/font/google#Iosevka_Charon_Mono"]
-    pub safe fn Iosevka_Charon_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Irish Grover](https://fonts.google.com/specimen/Irish+Grover), a static font.
-    #[link_name = "next/font/google#Irish_Grover"]
-    pub safe fn Irish_Grover(options: StaticFont<'_>) -> NextFont;
-
-    /// [Island Moments](https://fonts.google.com/specimen/Island+Moments), a static font.
-    #[link_name = "next/font/google#Island_Moments"]
-    pub safe fn Island_Moments(options: StaticFont<'_>) -> NextFont;
-
-    /// [Istok Web](https://fonts.google.com/specimen/Istok+Web), a static font.
-    #[link_name = "next/font/google#Istok_Web"]
-    pub safe fn Istok_Web(options: StaticFont<'_>) -> NextFont;
-
-    /// [Italiana](https://fonts.google.com/specimen/Italiana), a static font.
-    #[link_name = "next/font/google#Italiana"]
-    pub safe fn Italiana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Italianno](https://fonts.google.com/specimen/Italianno), a static font.
-    #[link_name = "next/font/google#Italianno"]
-    pub safe fn Italianno(options: StaticFont<'_>) -> NextFont;
-
-    /// [Itim](https://fonts.google.com/specimen/Itim), a static font.
-    #[link_name = "next/font/google#Itim"]
-    pub safe fn Itim(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquard 12](https://fonts.google.com/specimen/Jacquard+12), a static font.
-    #[link_name = "next/font/google#Jacquard_12"]
-    pub safe fn Jacquard_12(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquard 12 Charted](https://fonts.google.com/specimen/Jacquard+12+Charted), a static font.
-    #[link_name = "next/font/google#Jacquard_12_Charted"]
-    pub safe fn Jacquard_12_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquard 24](https://fonts.google.com/specimen/Jacquard+24), a static font.
-    #[link_name = "next/font/google#Jacquard_24"]
-    pub safe fn Jacquard_24(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquard 24 Charted](https://fonts.google.com/specimen/Jacquard+24+Charted), a static font.
-    #[link_name = "next/font/google#Jacquard_24_Charted"]
-    pub safe fn Jacquard_24_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquarda Bastarda 9](https://fonts.google.com/specimen/Jacquarda+Bastarda+9), a static font.
-    #[link_name = "next/font/google#Jacquarda_Bastarda_9"]
-    pub safe fn Jacquarda_Bastarda_9(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacquarda Bastarda 9 Charted](https://fonts.google.com/specimen/Jacquarda+Bastarda+9+Charted), a static font.
-    #[link_name = "next/font/google#Jacquarda_Bastarda_9_Charted"]
-    pub safe fn Jacquarda_Bastarda_9_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacques Francois](https://fonts.google.com/specimen/Jacques+Francois), a static font.
-    #[link_name = "next/font/google#Jacques_Francois"]
-    pub safe fn Jacques_Francois(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jacques Francois Shadow](https://fonts.google.com/specimen/Jacques+Francois+Shadow), a static font.
-    #[link_name = "next/font/google#Jacques_Francois_Shadow"]
-    pub safe fn Jacques_Francois_Shadow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jaini](https://fonts.google.com/specimen/Jaini), a static font.
-    #[link_name = "next/font/google#Jaini"]
-    pub safe fn Jaini(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jaini Purva](https://fonts.google.com/specimen/Jaini+Purva), a static font.
-    #[link_name = "next/font/google#Jaini_Purva"]
-    pub safe fn Jaini_Purva(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jaldi](https://fonts.google.com/specimen/Jaldi), a static font.
-    #[link_name = "next/font/google#Jaldi"]
-    pub safe fn Jaldi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jaro](https://fonts.google.com/specimen/Jaro), a variable font.
-    #[link_name = "next/font/google#Jaro"]
-    pub safe fn Jaro(options: VariableFont<'_>) -> NextFont;
-
-    /// [Jersey 10](https://fonts.google.com/specimen/Jersey+10), a static font.
-    #[link_name = "next/font/google#Jersey_10"]
-    pub safe fn Jersey_10(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 10 Charted](https://fonts.google.com/specimen/Jersey+10+Charted), a static font.
-    #[link_name = "next/font/google#Jersey_10_Charted"]
-    pub safe fn Jersey_10_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 15](https://fonts.google.com/specimen/Jersey+15), a static font.
-    #[link_name = "next/font/google#Jersey_15"]
-    pub safe fn Jersey_15(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 15 Charted](https://fonts.google.com/specimen/Jersey+15+Charted), a static font.
-    #[link_name = "next/font/google#Jersey_15_Charted"]
-    pub safe fn Jersey_15_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 20](https://fonts.google.com/specimen/Jersey+20), a static font.
-    #[link_name = "next/font/google#Jersey_20"]
-    pub safe fn Jersey_20(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 20 Charted](https://fonts.google.com/specimen/Jersey+20+Charted), a static font.
-    #[link_name = "next/font/google#Jersey_20_Charted"]
-    pub safe fn Jersey_20_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 25](https://fonts.google.com/specimen/Jersey+25), a static font.
-    #[link_name = "next/font/google#Jersey_25"]
-    pub safe fn Jersey_25(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jersey 25 Charted](https://fonts.google.com/specimen/Jersey+25+Charted), a static font.
-    #[link_name = "next/font/google#Jersey_25_Charted"]
-    pub safe fn Jersey_25_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), a variable font.
-    #[link_name = "next/font/google#JetBrains_Mono"]
-    pub safe fn JetBrains_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Jim Nightshade](https://fonts.google.com/specimen/Jim+Nightshade), a static font.
-    #[link_name = "next/font/google#Jim_Nightshade"]
-    pub safe fn Jim_Nightshade(options: StaticFont<'_>) -> NextFont;
-
-    /// [Joan](https://fonts.google.com/specimen/Joan), a static font.
-    #[link_name = "next/font/google#Joan"]
-    pub safe fn Joan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jockey One](https://fonts.google.com/specimen/Jockey+One), a static font.
-    #[link_name = "next/font/google#Jockey_One"]
-    pub safe fn Jockey_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jolly Lodger](https://fonts.google.com/specimen/Jolly+Lodger), a static font.
-    #[link_name = "next/font/google#Jolly_Lodger"]
-    pub safe fn Jolly_Lodger(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jomhuria](https://fonts.google.com/specimen/Jomhuria), a static font.
-    #[link_name = "next/font/google#Jomhuria"]
-    pub safe fn Jomhuria(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jomolhari](https://fonts.google.com/specimen/Jomolhari), a static font.
-    #[link_name = "next/font/google#Jomolhari"]
-    pub safe fn Jomolhari(options: StaticFont<'_>) -> NextFont;
-
-    /// [Josefin Sans](https://fonts.google.com/specimen/Josefin+Sans), a variable font.
-    #[link_name = "next/font/google#Josefin_Sans"]
-    pub safe fn Josefin_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Josefin Slab](https://fonts.google.com/specimen/Josefin+Slab), a variable font.
-    #[link_name = "next/font/google#Josefin_Slab"]
-    pub safe fn Josefin_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Jost](https://fonts.google.com/specimen/Jost), a variable font.
-    #[link_name = "next/font/google#Jost"]
-    pub safe fn Jost(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Joti One](https://fonts.google.com/specimen/Joti+One), a static font.
-    #[link_name = "next/font/google#Joti_One"]
-    pub safe fn Joti_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jua](https://fonts.google.com/specimen/Jua), a static font.
-    #[link_name = "next/font/google#Jua"]
-    pub safe fn Jua(options: StaticFont<'_>) -> NextFont;
-
-    /// [Judson](https://fonts.google.com/specimen/Judson), a static font.
-    #[link_name = "next/font/google#Judson"]
-    pub safe fn Judson(options: StaticFont<'_>) -> NextFont;
-
-    /// [Julee](https://fonts.google.com/specimen/Julee), a static font.
-    #[link_name = "next/font/google#Julee"]
-    pub safe fn Julee(options: StaticFont<'_>) -> NextFont;
-
-    /// [Julius Sans One](https://fonts.google.com/specimen/Julius+Sans+One), a static font.
-    #[link_name = "next/font/google#Julius_Sans_One"]
-    pub safe fn Julius_Sans_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Junge](https://fonts.google.com/specimen/Junge), a static font.
-    #[link_name = "next/font/google#Junge"]
-    pub safe fn Junge(options: StaticFont<'_>) -> NextFont;
-
-    /// [Jura](https://fonts.google.com/specimen/Jura), a variable font.
-    #[link_name = "next/font/google#Jura"]
-    pub safe fn Jura(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Just Another Hand](https://fonts.google.com/specimen/Just+Another+Hand), a static font.
-    #[link_name = "next/font/google#Just_Another_Hand"]
-    pub safe fn Just_Another_Hand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Just Me Again Down Here](https://fonts.google.com/specimen/Just+Me+Again+Down+Here), a static font.
-    #[link_name = "next/font/google#Just_Me_Again_Down_Here"]
-    pub safe fn Just_Me_Again_Down_Here(options: StaticFont<'_>) -> NextFont;
-
-    /// [K2D](https://fonts.google.com/specimen/K2D), a static font.
-    #[link_name = "next/font/google#K2D"]
-    pub safe fn K2D(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kablammo](https://fonts.google.com/specimen/Kablammo), a variable font.
-    #[link_name = "next/font/google#Kablammo"]
-    pub safe fn Kablammo(options: VariableFont<'_>) -> NextFont;
-
-    /// [Kadwa](https://fonts.google.com/specimen/Kadwa), a static font.
-    #[link_name = "next/font/google#Kadwa"]
-    pub safe fn Kadwa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kaisei Decol](https://fonts.google.com/specimen/Kaisei+Decol), a static font.
-    #[link_name = "next/font/google#Kaisei_Decol"]
-    pub safe fn Kaisei_Decol(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kaisei HarunoUmi](https://fonts.google.com/specimen/Kaisei+HarunoUmi), a static font.
-    #[link_name = "next/font/google#Kaisei_HarunoUmi"]
-    pub safe fn Kaisei_HarunoUmi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kaisei Opti](https://fonts.google.com/specimen/Kaisei+Opti), a static font.
-    #[link_name = "next/font/google#Kaisei_Opti"]
-    pub safe fn Kaisei_Opti(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kaisei Tokumin](https://fonts.google.com/specimen/Kaisei+Tokumin), a static font.
-    #[link_name = "next/font/google#Kaisei_Tokumin"]
-    pub safe fn Kaisei_Tokumin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kalam](https://fonts.google.com/specimen/Kalam), a static font.
-    #[link_name = "next/font/google#Kalam"]
-    pub safe fn Kalam(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kalnia](https://fonts.google.com/specimen/Kalnia), a variable font.
-    #[link_name = "next/font/google#Kalnia"]
-    pub safe fn Kalnia(options: VariableFont<'_>) -> NextFont;
-
-    /// [Kalnia Glaze](https://fonts.google.com/specimen/Kalnia+Glaze), a variable font.
-    #[link_name = "next/font/google#Kalnia_Glaze"]
-    pub safe fn Kalnia_Glaze(options: VariableFont<'_>) -> NextFont;
-
-    /// [Kameron](https://fonts.google.com/specimen/Kameron), a variable font.
-    #[link_name = "next/font/google#Kameron"]
-    pub safe fn Kameron(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Kanchenjunga](https://fonts.google.com/specimen/Kanchenjunga), a static font.
-    #[link_name = "next/font/google#Kanchenjunga"]
-    pub safe fn Kanchenjunga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kanit](https://fonts.google.com/specimen/Kanit), a static font.
-    #[link_name = "next/font/google#Kanit"]
-    pub safe fn Kanit(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kantumruy Pro](https://fonts.google.com/specimen/Kantumruy+Pro), a variable font.
-    #[link_name = "next/font/google#Kantumruy_Pro"]
-    pub safe fn Kantumruy_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Kapakana](https://fonts.google.com/specimen/Kapakana), a variable font.
-    #[link_name = "next/font/google#Kapakana"]
-    pub safe fn Kapakana(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Karantina](https://fonts.google.com/specimen/Karantina), a static font.
-    #[link_name = "next/font/google#Karantina"]
-    pub safe fn Karantina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Karla](https://fonts.google.com/specimen/Karla), a variable font.
-    #[link_name = "next/font/google#Karla"]
-    pub safe fn Karla(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Karla Tamil Inclined](https://fonts.google.com/specimen/Karla+Tamil+Inclined), a static font.
-    #[link_name = "next/font/google#Karla_Tamil_Inclined"]
-    pub safe fn Karla_Tamil_Inclined(options: StaticFont<'_>) -> NextFont;
-
-    /// [Karla Tamil Upright](https://fonts.google.com/specimen/Karla+Tamil+Upright), a static font.
-    #[link_name = "next/font/google#Karla_Tamil_Upright"]
-    pub safe fn Karla_Tamil_Upright(options: StaticFont<'_>) -> NextFont;
-
-    /// [Karma](https://fonts.google.com/specimen/Karma), a static font.
-    #[link_name = "next/font/google#Karma"]
-    pub safe fn Karma(options: StaticFont<'_>) -> NextFont;
-
-    /// [Katibeh](https://fonts.google.com/specimen/Katibeh), a static font.
-    #[link_name = "next/font/google#Katibeh"]
-    pub safe fn Katibeh(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kaushan Script](https://fonts.google.com/specimen/Kaushan+Script), a static font.
-    #[link_name = "next/font/google#Kaushan_Script"]
-    pub safe fn Kaushan_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kavivanar](https://fonts.google.com/specimen/Kavivanar), a static font.
-    #[link_name = "next/font/google#Kavivanar"]
-    pub safe fn Kavivanar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kavoon](https://fonts.google.com/specimen/Kavoon), a static font.
-    #[link_name = "next/font/google#Kavoon"]
-    pub safe fn Kavoon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kay Pho Du](https://fonts.google.com/specimen/Kay+Pho+Du), a static font.
-    #[link_name = "next/font/google#Kay_Pho_Du"]
-    pub safe fn Kay_Pho_Du(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kdam Thmor Pro](https://fonts.google.com/specimen/Kdam+Thmor+Pro), a static font.
-    #[link_name = "next/font/google#Kdam_Thmor_Pro"]
-    pub safe fn Kdam_Thmor_Pro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Keania One](https://fonts.google.com/specimen/Keania+One), a static font.
-    #[link_name = "next/font/google#Keania_One"]
-    pub safe fn Keania_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kedebideri](https://fonts.google.com/specimen/Kedebideri), a static font.
-    #[link_name = "next/font/google#Kedebideri"]
-    pub safe fn Kedebideri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kelly Slab](https://fonts.google.com/specimen/Kelly+Slab), a static font.
-    #[link_name = "next/font/google#Kelly_Slab"]
-    pub safe fn Kelly_Slab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kenia](https://fonts.google.com/specimen/Kenia), a static font.
-    #[link_name = "next/font/google#Kenia"]
-    pub safe fn Kenia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Khand](https://fonts.google.com/specimen/Khand), a static font.
-    #[link_name = "next/font/google#Khand"]
-    pub safe fn Khand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Khmer](https://fonts.google.com/specimen/Khmer), a static font.
-    #[link_name = "next/font/google#Khmer"]
-    pub safe fn Khmer(options: StaticFont<'_>) -> NextFont;
-
-    /// [Khula](https://fonts.google.com/specimen/Khula), a static font.
-    #[link_name = "next/font/google#Khula"]
-    pub safe fn Khula(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kings](https://fonts.google.com/specimen/Kings), a static font.
-    #[link_name = "next/font/google#Kings"]
-    pub safe fn Kings(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kirang Haerang](https://fonts.google.com/specimen/Kirang+Haerang), a static font.
-    #[link_name = "next/font/google#Kirang_Haerang"]
-    pub safe fn Kirang_Haerang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kite One](https://fonts.google.com/specimen/Kite+One), a static font.
-    #[link_name = "next/font/google#Kite_One"]
-    pub safe fn Kite_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kiwi Maru](https://fonts.google.com/specimen/Kiwi+Maru), a static font.
-    #[link_name = "next/font/google#Kiwi_Maru"]
-    pub safe fn Kiwi_Maru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Klee One](https://fonts.google.com/specimen/Klee+One), a static font.
-    #[link_name = "next/font/google#Klee_One"]
-    pub safe fn Klee_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Knewave](https://fonts.google.com/specimen/Knewave), a static font.
-    #[link_name = "next/font/google#Knewave"]
-    pub safe fn Knewave(options: StaticFont<'_>) -> NextFont;
-
-    /// [KoHo](https://fonts.google.com/specimen/KoHo), a static font.
-    #[link_name = "next/font/google#KoHo"]
-    pub safe fn KoHo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kodchasan](https://fonts.google.com/specimen/Kodchasan), a static font.
-    #[link_name = "next/font/google#Kodchasan"]
-    pub safe fn Kodchasan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kode Mono](https://fonts.google.com/specimen/Kode+Mono), a variable font.
-    #[link_name = "next/font/google#Kode_Mono"]
-    pub safe fn Kode_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Koh Santepheap](https://fonts.google.com/specimen/Koh+Santepheap), a static font.
-    #[link_name = "next/font/google#Koh_Santepheap"]
-    pub safe fn Koh_Santepheap(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kolker Brush](https://fonts.google.com/specimen/Kolker+Brush), a static font.
-    #[link_name = "next/font/google#Kolker_Brush"]
-    pub safe fn Kolker_Brush(options: StaticFont<'_>) -> NextFont;
-
-    /// [Konkhmer Sleokchher](https://fonts.google.com/specimen/Konkhmer+Sleokchher), a static font.
-    #[link_name = "next/font/google#Konkhmer_Sleokchher"]
-    pub safe fn Konkhmer_Sleokchher(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kosugi](https://fonts.google.com/specimen/Kosugi), a static font.
-    #[link_name = "next/font/google#Kosugi"]
-    pub safe fn Kosugi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kosugi Maru](https://fonts.google.com/specimen/Kosugi+Maru), a static font.
-    #[link_name = "next/font/google#Kosugi_Maru"]
-    pub safe fn Kosugi_Maru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kotta One](https://fonts.google.com/specimen/Kotta+One), a static font.
-    #[link_name = "next/font/google#Kotta_One"]
-    pub safe fn Kotta_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Koulen](https://fonts.google.com/specimen/Koulen), a static font.
-    #[link_name = "next/font/google#Koulen"]
-    pub safe fn Koulen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kranky](https://fonts.google.com/specimen/Kranky), a static font.
-    #[link_name = "next/font/google#Kranky"]
-    pub safe fn Kranky(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kreon](https://fonts.google.com/specimen/Kreon), a variable font.
-    #[link_name = "next/font/google#Kreon"]
-    pub safe fn Kreon(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Kristi](https://fonts.google.com/specimen/Kristi), a static font.
-    #[link_name = "next/font/google#Kristi"]
-    pub safe fn Kristi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Krona One](https://fonts.google.com/specimen/Krona+One), a static font.
-    #[link_name = "next/font/google#Krona_One"]
-    pub safe fn Krona_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Krub](https://fonts.google.com/specimen/Krub), a static font.
-    #[link_name = "next/font/google#Krub"]
-    pub safe fn Krub(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kufam](https://fonts.google.com/specimen/Kufam), a variable font.
-    #[link_name = "next/font/google#Kufam"]
-    pub safe fn Kufam(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Kulim Park](https://fonts.google.com/specimen/Kulim+Park), a static font.
-    #[link_name = "next/font/google#Kulim_Park"]
-    pub safe fn Kulim_Park(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kumar One](https://fonts.google.com/specimen/Kumar+One), a static font.
-    #[link_name = "next/font/google#Kumar_One"]
-    pub safe fn Kumar_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kumar One Outline](https://fonts.google.com/specimen/Kumar+One+Outline), a static font.
-    #[link_name = "next/font/google#Kumar_One_Outline"]
-    pub safe fn Kumar_One_Outline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Kumbh Sans](https://fonts.google.com/specimen/Kumbh+Sans), a variable font.
-    #[link_name = "next/font/google#Kumbh_Sans"]
-    pub safe fn Kumbh_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Kurale](https://fonts.google.com/specimen/Kurale), a static font.
-    #[link_name = "next/font/google#Kurale"]
-    pub safe fn Kurale(options: StaticFont<'_>) -> NextFont;
-
-    /// [LINE Seed JP](https://fonts.google.com/specimen/LINE+Seed+JP), a static font.
-    #[link_name = "next/font/google#LINE_Seed_JP"]
-    pub safe fn LINE_Seed_JP(options: StaticFont<'_>) -> NextFont;
-
-    /// [LXGW Marker Gothic](https://fonts.google.com/specimen/LXGW+Marker+Gothic), a static font.
-    #[link_name = "next/font/google#LXGW_Marker_Gothic"]
-    pub safe fn LXGW_Marker_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [LXGW WenKai Mono TC](https://fonts.google.com/specimen/LXGW+WenKai+Mono+TC), a static font.
-    #[link_name = "next/font/google#LXGW_WenKai_Mono_TC"]
-    pub safe fn LXGW_WenKai_Mono_TC(options: StaticFont<'_>) -> NextFont;
-
-    /// [LXGW WenKai TC](https://fonts.google.com/specimen/LXGW+WenKai+TC), a static font.
-    #[link_name = "next/font/google#LXGW_WenKai_TC"]
-    pub safe fn LXGW_WenKai_TC(options: StaticFont<'_>) -> NextFont;
-
-    /// [La Belle Aurore](https://fonts.google.com/specimen/La+Belle+Aurore), a static font.
-    #[link_name = "next/font/google#La_Belle_Aurore"]
-    pub safe fn La_Belle_Aurore(options: StaticFont<'_>) -> NextFont;
-
-    /// [Labrada](https://fonts.google.com/specimen/Labrada), a variable font.
-    #[link_name = "next/font/google#Labrada"]
-    pub safe fn Labrada(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lacquer](https://fonts.google.com/specimen/Lacquer), a static font.
-    #[link_name = "next/font/google#Lacquer"]
-    pub safe fn Lacquer(options: StaticFont<'_>) -> NextFont;
-
-    /// [Laila](https://fonts.google.com/specimen/Laila), a static font.
-    #[link_name = "next/font/google#Laila"]
-    pub safe fn Laila(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lakki Reddy](https://fonts.google.com/specimen/Lakki+Reddy), a static font.
-    #[link_name = "next/font/google#Lakki_Reddy"]
-    pub safe fn Lakki_Reddy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lalezar](https://fonts.google.com/specimen/Lalezar), a static font.
-    #[link_name = "next/font/google#Lalezar"]
-    pub safe fn Lalezar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lancelot](https://fonts.google.com/specimen/Lancelot), a static font.
-    #[link_name = "next/font/google#Lancelot"]
-    pub safe fn Lancelot(options: StaticFont<'_>) -> NextFont;
-
-    /// [Langar](https://fonts.google.com/specimen/Langar), a static font.
-    #[link_name = "next/font/google#Langar"]
-    pub safe fn Langar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lateef](https://fonts.google.com/specimen/Lateef), a static font.
-    #[link_name = "next/font/google#Lateef"]
-    pub safe fn Lateef(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lato](https://fonts.google.com/specimen/Lato), a static font.
-    #[link_name = "next/font/google#Lato"]
-    pub safe fn Lato(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lavishly Yours](https://fonts.google.com/specimen/Lavishly+Yours), a static font.
-    #[link_name = "next/font/google#Lavishly_Yours"]
-    pub safe fn Lavishly_Yours(options: StaticFont<'_>) -> NextFont;
-
-    /// [League Gothic](https://fonts.google.com/specimen/League+Gothic), a variable font.
-    #[link_name = "next/font/google#League_Gothic"]
-    pub safe fn League_Gothic(options: VariableFont<'_>) -> NextFont;
-
-    /// [League Script](https://fonts.google.com/specimen/League+Script), a static font.
-    #[link_name = "next/font/google#League_Script"]
-    pub safe fn League_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [League Spartan](https://fonts.google.com/specimen/League+Spartan), a variable font.
-    #[link_name = "next/font/google#League_Spartan"]
-    pub safe fn League_Spartan(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Leckerli One](https://fonts.google.com/specimen/Leckerli+One), a static font.
-    #[link_name = "next/font/google#Leckerli_One"]
-    pub safe fn Leckerli_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ledger](https://fonts.google.com/specimen/Ledger), a static font.
-    #[link_name = "next/font/google#Ledger"]
-    pub safe fn Ledger(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lekton](https://fonts.google.com/specimen/Lekton), a static font.
-    #[link_name = "next/font/google#Lekton"]
-    pub safe fn Lekton(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lemon](https://fonts.google.com/specimen/Lemon), a static font.
-    #[link_name = "next/font/google#Lemon"]
-    pub safe fn Lemon(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lemonada](https://fonts.google.com/specimen/Lemonada), a variable font.
-    #[link_name = "next/font/google#Lemonada"]
-    pub safe fn Lemonada(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend](https://fonts.google.com/specimen/Lexend), a variable font.
-    #[link_name = "next/font/google#Lexend"]
-    pub safe fn Lexend(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Deca](https://fonts.google.com/specimen/Lexend+Deca), a variable font.
-    #[link_name = "next/font/google#Lexend_Deca"]
-    pub safe fn Lexend_Deca(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Exa](https://fonts.google.com/specimen/Lexend+Exa), a variable font.
-    #[link_name = "next/font/google#Lexend_Exa"]
-    pub safe fn Lexend_Exa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Giga](https://fonts.google.com/specimen/Lexend+Giga), a variable font.
-    #[link_name = "next/font/google#Lexend_Giga"]
-    pub safe fn Lexend_Giga(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Mega](https://fonts.google.com/specimen/Lexend+Mega), a variable font.
-    #[link_name = "next/font/google#Lexend_Mega"]
-    pub safe fn Lexend_Mega(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Peta](https://fonts.google.com/specimen/Lexend+Peta), a variable font.
-    #[link_name = "next/font/google#Lexend_Peta"]
-    pub safe fn Lexend_Peta(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Tera](https://fonts.google.com/specimen/Lexend+Tera), a variable font.
-    #[link_name = "next/font/google#Lexend_Tera"]
-    pub safe fn Lexend_Tera(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lexend Zetta](https://fonts.google.com/specimen/Lexend+Zetta), a variable font.
-    #[link_name = "next/font/google#Lexend_Zetta"]
-    pub safe fn Lexend_Zetta(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Libertinus Keyboard](https://fonts.google.com/specimen/Libertinus+Keyboard), a static font.
-    #[link_name = "next/font/google#Libertinus_Keyboard"]
-    pub safe fn Libertinus_Keyboard(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libertinus Math](https://fonts.google.com/specimen/Libertinus+Math), a static font.
-    #[link_name = "next/font/google#Libertinus_Math"]
-    pub safe fn Libertinus_Math(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libertinus Mono](https://fonts.google.com/specimen/Libertinus+Mono), a static font.
-    #[link_name = "next/font/google#Libertinus_Mono"]
-    pub safe fn Libertinus_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libertinus Sans](https://fonts.google.com/specimen/Libertinus+Sans), a static font.
-    #[link_name = "next/font/google#Libertinus_Sans"]
-    pub safe fn Libertinus_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libertinus Serif](https://fonts.google.com/specimen/Libertinus+Serif), a static font.
-    #[link_name = "next/font/google#Libertinus_Serif"]
-    pub safe fn Libertinus_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libertinus Serif Display](https://fonts.google.com/specimen/Libertinus+Serif+Display), a static font.
-    #[link_name = "next/font/google#Libertinus_Serif_Display"]
-    pub safe fn Libertinus_Serif_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 128](https://fonts.google.com/specimen/Libre+Barcode+128), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_128"]
-    pub safe fn Libre_Barcode_128(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 128 Text](https://fonts.google.com/specimen/Libre+Barcode+128+Text), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_128_Text"]
-    pub safe fn Libre_Barcode_128_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 39](https://fonts.google.com/specimen/Libre+Barcode+39), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_39"]
-    pub safe fn Libre_Barcode_39(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 39 Extended](https://fonts.google.com/specimen/Libre+Barcode+39+Extended), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_39_Extended"]
-    pub safe fn Libre_Barcode_39_Extended(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 39 Extended Text](https://fonts.google.com/specimen/Libre+Barcode+39+Extended+Text), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_39_Extended_Text"]
-    pub safe fn Libre_Barcode_39_Extended_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode 39 Text](https://fonts.google.com/specimen/Libre+Barcode+39+Text), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_39_Text"]
-    pub safe fn Libre_Barcode_39_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Barcode EAN13 Text](https://fonts.google.com/specimen/Libre+Barcode+EAN13+Text), a static font.
-    #[link_name = "next/font/google#Libre_Barcode_EAN13_Text"]
-    pub safe fn Libre_Barcode_EAN13_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Baskerville](https://fonts.google.com/specimen/Libre+Baskerville), a variable font.
-    #[link_name = "next/font/google#Libre_Baskerville"]
-    pub safe fn Libre_Baskerville(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Libre Bodoni](https://fonts.google.com/specimen/Libre+Bodoni), a variable font.
-    #[link_name = "next/font/google#Libre_Bodoni"]
-    pub safe fn Libre_Bodoni(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Libre Caslon Display](https://fonts.google.com/specimen/Libre+Caslon+Display), a static font.
-    #[link_name = "next/font/google#Libre_Caslon_Display"]
-    pub safe fn Libre_Caslon_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Caslon Text](https://fonts.google.com/specimen/Libre+Caslon+Text), a static font.
-    #[link_name = "next/font/google#Libre_Caslon_Text"]
-    pub safe fn Libre_Caslon_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Libre Franklin](https://fonts.google.com/specimen/Libre+Franklin), a variable font.
-    #[link_name = "next/font/google#Libre_Franklin"]
-    pub safe fn Libre_Franklin(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Licorice](https://fonts.google.com/specimen/Licorice), a static font.
-    #[link_name = "next/font/google#Licorice"]
-    pub safe fn Licorice(options: StaticFont<'_>) -> NextFont;
-
-    /// [Life Savers](https://fonts.google.com/specimen/Life+Savers), a static font.
-    #[link_name = "next/font/google#Life_Savers"]
-    pub safe fn Life_Savers(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lilex](https://fonts.google.com/specimen/Lilex), a variable font.
-    #[link_name = "next/font/google#Lilex"]
-    pub safe fn Lilex(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Lilita One](https://fonts.google.com/specimen/Lilita+One), a static font.
-    #[link_name = "next/font/google#Lilita_One"]
-    pub safe fn Lilita_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lily Script One](https://fonts.google.com/specimen/Lily+Script+One), a static font.
-    #[link_name = "next/font/google#Lily_Script_One"]
-    pub safe fn Lily_Script_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Limelight](https://fonts.google.com/specimen/Limelight), a static font.
-    #[link_name = "next/font/google#Limelight"]
-    pub safe fn Limelight(options: StaticFont<'_>) -> NextFont;
-
-    /// [Linden Hill](https://fonts.google.com/specimen/Linden+Hill), a static font.
-    #[link_name = "next/font/google#Linden_Hill"]
-    pub safe fn Linden_Hill(options: StaticFont<'_>) -> NextFont;
-
-    /// [Linefont](https://fonts.google.com/specimen/Linefont), a variable font.
-    #[link_name = "next/font/google#Linefont"]
-    pub safe fn Linefont(options: VariableFont<'_>) -> NextFont;
-
-    /// [Lisu Bosa](https://fonts.google.com/specimen/Lisu+Bosa), a static font.
-    #[link_name = "next/font/google#Lisu_Bosa"]
-    pub safe fn Lisu_Bosa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Liter](https://fonts.google.com/specimen/Liter), a static font.
-    #[link_name = "next/font/google#Liter"]
-    pub safe fn Liter(options: StaticFont<'_>) -> NextFont;
-
-    /// [Literata](https://fonts.google.com/specimen/Literata), a variable font.
-    #[link_name = "next/font/google#Literata"]
-    pub safe fn Literata(options: VariableFont<'_>) -> NextFont;
-
-    /// [Liu Jian Mao Cao](https://fonts.google.com/specimen/Liu+Jian+Mao+Cao), a static font.
-    #[link_name = "next/font/google#Liu_Jian_Mao_Cao"]
-    pub safe fn Liu_Jian_Mao_Cao(options: StaticFont<'_>) -> NextFont;
-
-    /// [Livvic](https://fonts.google.com/specimen/Livvic), a static font.
-    #[link_name = "next/font/google#Livvic"]
-    pub safe fn Livvic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lobster](https://fonts.google.com/specimen/Lobster), a static font.
-    #[link_name = "next/font/google#Lobster"]
-    pub safe fn Lobster(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lobster Two](https://fonts.google.com/specimen/Lobster+Two), a static font.
-    #[link_name = "next/font/google#Lobster_Two"]
-    pub safe fn Lobster_Two(options: StaticFont<'_>) -> NextFont;
-
-    /// [Londrina Outline](https://fonts.google.com/specimen/Londrina+Outline), a static font.
-    #[link_name = "next/font/google#Londrina_Outline"]
-    pub safe fn Londrina_Outline(options: StaticFont<'_>) -> NextFont;
-
-    /// [Londrina Shadow](https://fonts.google.com/specimen/Londrina+Shadow), a static font.
-    #[link_name = "next/font/google#Londrina_Shadow"]
-    pub safe fn Londrina_Shadow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Londrina Sketch](https://fonts.google.com/specimen/Londrina+Sketch), a static font.
-    #[link_name = "next/font/google#Londrina_Sketch"]
-    pub safe fn Londrina_Sketch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Londrina Solid](https://fonts.google.com/specimen/Londrina+Solid), a static font.
-    #[link_name = "next/font/google#Londrina_Solid"]
-    pub safe fn Londrina_Solid(options: StaticFont<'_>) -> NextFont;
-
-    /// [Long Cang](https://fonts.google.com/specimen/Long+Cang), a static font.
-    #[link_name = "next/font/google#Long_Cang"]
-    pub safe fn Long_Cang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lora](https://fonts.google.com/specimen/Lora), a variable font.
-    #[link_name = "next/font/google#Lora"]
-    pub safe fn Lora(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Love Light](https://fonts.google.com/specimen/Love+Light), a static font.
-    #[link_name = "next/font/google#Love_Light"]
-    pub safe fn Love_Light(options: StaticFont<'_>) -> NextFont;
-
-    /// [Love Ya Like A Sister](https://fonts.google.com/specimen/Love+Ya+Like+A+Sister), a static font.
-    #[link_name = "next/font/google#Love_Ya_Like_A_Sister"]
-    pub safe fn Love_Ya_Like_A_Sister(options: StaticFont<'_>) -> NextFont;
-
-    /// [Loved by the King](https://fonts.google.com/specimen/Loved+by+the+King), a static font.
-    #[link_name = "next/font/google#Loved_by_the_King"]
-    pub safe fn Loved_by_the_King(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lovers Quarrel](https://fonts.google.com/specimen/Lovers+Quarrel), a static font.
-    #[link_name = "next/font/google#Lovers_Quarrel"]
-    pub safe fn Lovers_Quarrel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Luckiest Guy](https://fonts.google.com/specimen/Luckiest+Guy), a static font.
-    #[link_name = "next/font/google#Luckiest_Guy"]
-    pub safe fn Luckiest_Guy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lugrasimo](https://fonts.google.com/specimen/Lugrasimo), a static font.
-    #[link_name = "next/font/google#Lugrasimo"]
-    pub safe fn Lugrasimo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lumanosimo](https://fonts.google.com/specimen/Lumanosimo), a static font.
-    #[link_name = "next/font/google#Lumanosimo"]
-    pub safe fn Lumanosimo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lunasima](https://fonts.google.com/specimen/Lunasima), a static font.
-    #[link_name = "next/font/google#Lunasima"]
-    pub safe fn Lunasima(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lusitana](https://fonts.google.com/specimen/Lusitana), a static font.
-    #[link_name = "next/font/google#Lusitana"]
-    pub safe fn Lusitana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Lustria](https://fonts.google.com/specimen/Lustria), a static font.
-    #[link_name = "next/font/google#Lustria"]
-    pub safe fn Lustria(options: StaticFont<'_>) -> NextFont;
-
-    /// [Luxurious Roman](https://fonts.google.com/specimen/Luxurious+Roman), a static font.
-    #[link_name = "next/font/google#Luxurious_Roman"]
-    pub safe fn Luxurious_Roman(options: StaticFont<'_>) -> NextFont;
-
-    /// [Luxurious Script](https://fonts.google.com/specimen/Luxurious+Script), a static font.
-    #[link_name = "next/font/google#Luxurious_Script"]
-    pub safe fn Luxurious_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [M PLUS 1](https://fonts.google.com/specimen/M+PLUS+1), a variable font.
-    #[link_name = "next/font/google#M_PLUS_1"]
-    pub safe fn M_PLUS_1(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [M PLUS 1 Code](https://fonts.google.com/specimen/M+PLUS+1+Code), a variable font.
-    #[link_name = "next/font/google#M_PLUS_1_Code"]
-    pub safe fn M_PLUS_1_Code(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [M PLUS 1p](https://fonts.google.com/specimen/M+PLUS+1p), a static font.
-    #[link_name = "next/font/google#M_PLUS_1p"]
-    pub safe fn M_PLUS_1p(options: StaticFont<'_>) -> NextFont;
-
-    /// [M PLUS 2](https://fonts.google.com/specimen/M+PLUS+2), a variable font.
-    #[link_name = "next/font/google#M_PLUS_2"]
-    pub safe fn M_PLUS_2(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [M PLUS Code Latin](https://fonts.google.com/specimen/M+PLUS+Code+Latin), a variable font.
-    #[link_name = "next/font/google#M_PLUS_Code_Latin"]
-    pub safe fn M_PLUS_Code_Latin(options: VariableFont<'_>) -> NextFont;
-
-    /// [M PLUS Rounded 1c](https://fonts.google.com/specimen/M+PLUS+Rounded+1c), a static font.
-    #[link_name = "next/font/google#M_PLUS_Rounded_1c"]
-    pub safe fn M_PLUS_Rounded_1c(options: StaticFont<'_>) -> NextFont;
-
-    /// [M PLUS U](https://fonts.google.com/specimen/M+PLUS+U), a variable font.
-    #[link_name = "next/font/google#M_PLUS_U"]
-    pub safe fn M_PLUS_U(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ma Shan Zheng](https://fonts.google.com/specimen/Ma+Shan+Zheng), a static font.
-    #[link_name = "next/font/google#Ma_Shan_Zheng"]
-    pub safe fn Ma_Shan_Zheng(options: StaticFont<'_>) -> NextFont;
-
-    /// [Macondo](https://fonts.google.com/specimen/Macondo), a static font.
-    #[link_name = "next/font/google#Macondo"]
-    pub safe fn Macondo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Macondo Swash Caps](https://fonts.google.com/specimen/Macondo+Swash+Caps), a static font.
-    #[link_name = "next/font/google#Macondo_Swash_Caps"]
-    pub safe fn Macondo_Swash_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mada](https://fonts.google.com/specimen/Mada), a variable font.
-    #[link_name = "next/font/google#Mada"]
-    pub safe fn Mada(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Madimi One](https://fonts.google.com/specimen/Madimi+One), a static font.
-    #[link_name = "next/font/google#Madimi_One"]
-    pub safe fn Madimi_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Magra](https://fonts.google.com/specimen/Magra), a static font.
-    #[link_name = "next/font/google#Magra"]
-    pub safe fn Magra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Maiden Orange](https://fonts.google.com/specimen/Maiden+Orange), a static font.
-    #[link_name = "next/font/google#Maiden_Orange"]
-    pub safe fn Maiden_Orange(options: StaticFont<'_>) -> NextFont;
-
-    /// [Maitree](https://fonts.google.com/specimen/Maitree), a static font.
-    #[link_name = "next/font/google#Maitree"]
-    pub safe fn Maitree(options: StaticFont<'_>) -> NextFont;
-
-    /// [Major Mono Display](https://fonts.google.com/specimen/Major+Mono+Display), a static font.
-    #[link_name = "next/font/google#Major_Mono_Display"]
-    pub safe fn Major_Mono_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mako](https://fonts.google.com/specimen/Mako), a static font.
-    #[link_name = "next/font/google#Mako"]
-    pub safe fn Mako(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mali](https://fonts.google.com/specimen/Mali), a static font.
-    #[link_name = "next/font/google#Mali"]
-    pub safe fn Mali(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mallanna](https://fonts.google.com/specimen/Mallanna), a static font.
-    #[link_name = "next/font/google#Mallanna"]
-    pub safe fn Mallanna(options: StaticFont<'_>) -> NextFont;
-
-    /// [Maname](https://fonts.google.com/specimen/Maname), a static font.
-    #[link_name = "next/font/google#Maname"]
-    pub safe fn Maname(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mandali](https://fonts.google.com/specimen/Mandali), a static font.
-    #[link_name = "next/font/google#Mandali"]
-    pub safe fn Mandali(options: StaticFont<'_>) -> NextFont;
-
-    /// [Manjari](https://fonts.google.com/specimen/Manjari), a static font.
-    #[link_name = "next/font/google#Manjari"]
-    pub safe fn Manjari(options: StaticFont<'_>) -> NextFont;
-
-    /// [Manrope](https://fonts.google.com/specimen/Manrope), a variable font.
-    #[link_name = "next/font/google#Manrope"]
-    pub safe fn Manrope(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mansalva](https://fonts.google.com/specimen/Mansalva), a static font.
-    #[link_name = "next/font/google#Mansalva"]
-    pub safe fn Mansalva(options: StaticFont<'_>) -> NextFont;
-
-    /// [Manuale](https://fonts.google.com/specimen/Manuale), a variable font.
-    #[link_name = "next/font/google#Manuale"]
-    pub safe fn Manuale(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Manufacturing Consent](https://fonts.google.com/specimen/Manufacturing+Consent), a static font.
-    #[link_name = "next/font/google#Manufacturing_Consent"]
-    pub safe fn Manufacturing_Consent(options: StaticFont<'_>) -> NextFont;
-
-    /// [Marcellus](https://fonts.google.com/specimen/Marcellus), a static font.
-    #[link_name = "next/font/google#Marcellus"]
-    pub safe fn Marcellus(options: StaticFont<'_>) -> NextFont;
-
-    /// [Marcellus SC](https://fonts.google.com/specimen/Marcellus+SC), a static font.
-    #[link_name = "next/font/google#Marcellus_SC"]
-    pub safe fn Marcellus_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Marck Script](https://fonts.google.com/specimen/Marck+Script), a static font.
-    #[link_name = "next/font/google#Marck_Script"]
-    pub safe fn Marck_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Margarine](https://fonts.google.com/specimen/Margarine), a static font.
-    #[link_name = "next/font/google#Margarine"]
-    pub safe fn Margarine(options: StaticFont<'_>) -> NextFont;
-
-    /// [Marhey](https://fonts.google.com/specimen/Marhey), a variable font.
-    #[link_name = "next/font/google#Marhey"]
-    pub safe fn Marhey(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Markazi Text](https://fonts.google.com/specimen/Markazi+Text), a variable font.
-    #[link_name = "next/font/google#Markazi_Text"]
-    pub safe fn Markazi_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Marko One](https://fonts.google.com/specimen/Marko+One), a static font.
-    #[link_name = "next/font/google#Marko_One"]
-    pub safe fn Marko_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Marmelad](https://fonts.google.com/specimen/Marmelad), a static font.
-    #[link_name = "next/font/google#Marmelad"]
-    pub safe fn Marmelad(options: StaticFont<'_>) -> NextFont;
-
-    /// [Martel](https://fonts.google.com/specimen/Martel), a static font.
-    #[link_name = "next/font/google#Martel"]
-    pub safe fn Martel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Martel Sans](https://fonts.google.com/specimen/Martel+Sans), a static font.
-    #[link_name = "next/font/google#Martel_Sans"]
-    pub safe fn Martel_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Martian Mono](https://fonts.google.com/specimen/Martian+Mono), a variable font.
-    #[link_name = "next/font/google#Martian_Mono"]
-    pub safe fn Martian_Mono(options: VariableFont<'_>) -> NextFont;
-
-    /// [Marvel](https://fonts.google.com/specimen/Marvel), a static font.
-    #[link_name = "next/font/google#Marvel"]
-    pub safe fn Marvel(options: StaticFont<'_>) -> NextFont;
-
-    /// [Matangi](https://fonts.google.com/specimen/Matangi), a variable font.
-    #[link_name = "next/font/google#Matangi"]
-    pub safe fn Matangi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mate](https://fonts.google.com/specimen/Mate), a static font.
-    #[link_name = "next/font/google#Mate"]
-    pub safe fn Mate(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mate SC](https://fonts.google.com/specimen/Mate+SC), a static font.
-    #[link_name = "next/font/google#Mate_SC"]
-    pub safe fn Mate_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Matemasie](https://fonts.google.com/specimen/Matemasie), a static font.
-    #[link_name = "next/font/google#Matemasie"]
-    pub safe fn Matemasie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Maven Pro](https://fonts.google.com/specimen/Maven+Pro), a variable font.
-    #[link_name = "next/font/google#Maven_Pro"]
-    pub safe fn Maven_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [McLaren](https://fonts.google.com/specimen/McLaren), a static font.
-    #[link_name = "next/font/google#McLaren"]
-    pub safe fn McLaren(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mea Culpa](https://fonts.google.com/specimen/Mea+Culpa), a static font.
-    #[link_name = "next/font/google#Mea_Culpa"]
-    pub safe fn Mea_Culpa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Meddon](https://fonts.google.com/specimen/Meddon), a static font.
-    #[link_name = "next/font/google#Meddon"]
-    pub safe fn Meddon(options: StaticFont<'_>) -> NextFont;
-
-    /// [MedievalSharp](https://fonts.google.com/specimen/MedievalSharp), a static font.
-    #[link_name = "next/font/google#MedievalSharp"]
-    pub safe fn MedievalSharp(options: StaticFont<'_>) -> NextFont;
-
-    /// [Medula One](https://fonts.google.com/specimen/Medula+One), a static font.
-    #[link_name = "next/font/google#Medula_One"]
-    pub safe fn Medula_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Meera Inimai](https://fonts.google.com/specimen/Meera+Inimai), a static font.
-    #[link_name = "next/font/google#Meera_Inimai"]
-    pub safe fn Meera_Inimai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Megrim](https://fonts.google.com/specimen/Megrim), a static font.
-    #[link_name = "next/font/google#Megrim"]
-    pub safe fn Megrim(options: StaticFont<'_>) -> NextFont;
-
-    /// [Meie Script](https://fonts.google.com/specimen/Meie+Script), a static font.
-    #[link_name = "next/font/google#Meie_Script"]
-    pub safe fn Meie_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Menbere](https://fonts.google.com/specimen/Menbere), a variable font.
-    #[link_name = "next/font/google#Menbere"]
-    pub safe fn Menbere(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Meow Script](https://fonts.google.com/specimen/Meow+Script), a static font.
-    #[link_name = "next/font/google#Meow_Script"]
-    pub safe fn Meow_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Merienda](https://fonts.google.com/specimen/Merienda), a variable font.
-    #[link_name = "next/font/google#Merienda"]
-    pub safe fn Merienda(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Merriweather](https://fonts.google.com/specimen/Merriweather), a variable font.
-    #[link_name = "next/font/google#Merriweather"]
-    pub safe fn Merriweather(options: VariableFont<'_>) -> NextFont;
-
-    /// [Merriweather Sans](https://fonts.google.com/specimen/Merriweather+Sans), a variable font.
-    #[link_name = "next/font/google#Merriweather_Sans"]
-    pub safe fn Merriweather_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Metal](https://fonts.google.com/specimen/Metal), a static font.
-    #[link_name = "next/font/google#Metal"]
-    pub safe fn Metal(options: StaticFont<'_>) -> NextFont;
-
-    /// [Metal Mania](https://fonts.google.com/specimen/Metal+Mania), a static font.
-    #[link_name = "next/font/google#Metal_Mania"]
-    pub safe fn Metal_Mania(options: StaticFont<'_>) -> NextFont;
-
-    /// [Metamorphous](https://fonts.google.com/specimen/Metamorphous), a static font.
-    #[link_name = "next/font/google#Metamorphous"]
-    pub safe fn Metamorphous(options: StaticFont<'_>) -> NextFont;
-
-    /// [Metrophobic](https://fonts.google.com/specimen/Metrophobic), a static font.
-    #[link_name = "next/font/google#Metrophobic"]
-    pub safe fn Metrophobic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Michroma](https://fonts.google.com/specimen/Michroma), a static font.
-    #[link_name = "next/font/google#Michroma"]
-    pub safe fn Michroma(options: StaticFont<'_>) -> NextFont;
-
-    /// [Micro 5](https://fonts.google.com/specimen/Micro+5), a static font.
-    #[link_name = "next/font/google#Micro_5"]
-    pub safe fn Micro_5(options: StaticFont<'_>) -> NextFont;
-
-    /// [Micro 5 Charted](https://fonts.google.com/specimen/Micro+5+Charted), a static font.
-    #[link_name = "next/font/google#Micro_5_Charted"]
-    pub safe fn Micro_5_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Milonga](https://fonts.google.com/specimen/Milonga), a static font.
-    #[link_name = "next/font/google#Milonga"]
-    pub safe fn Milonga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Miltonian](https://fonts.google.com/specimen/Miltonian), a static font.
-    #[link_name = "next/font/google#Miltonian"]
-    pub safe fn Miltonian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Miltonian Tattoo](https://fonts.google.com/specimen/Miltonian+Tattoo), a static font.
-    #[link_name = "next/font/google#Miltonian_Tattoo"]
-    pub safe fn Miltonian_Tattoo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mina](https://fonts.google.com/specimen/Mina), a static font.
-    #[link_name = "next/font/google#Mina"]
-    pub safe fn Mina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mingzat](https://fonts.google.com/specimen/Mingzat), a static font.
-    #[link_name = "next/font/google#Mingzat"]
-    pub safe fn Mingzat(options: StaticFont<'_>) -> NextFont;
-
-    /// [Miniver](https://fonts.google.com/specimen/Miniver), a static font.
-    #[link_name = "next/font/google#Miniver"]
-    pub safe fn Miniver(options: StaticFont<'_>) -> NextFont;
-
-    /// [Miranda Sans](https://fonts.google.com/specimen/Miranda+Sans), a variable font.
-    #[link_name = "next/font/google#Miranda_Sans"]
-    pub safe fn Miranda_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Miriam Libre](https://fonts.google.com/specimen/Miriam+Libre), a variable font.
-    #[link_name = "next/font/google#Miriam_Libre"]
-    pub safe fn Miriam_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mirza](https://fonts.google.com/specimen/Mirza), a static font.
-    #[link_name = "next/font/google#Mirza"]
-    pub safe fn Mirza(options: StaticFont<'_>) -> NextFont;
-
-    /// [Miss Fajardose](https://fonts.google.com/specimen/Miss+Fajardose), a static font.
-    #[link_name = "next/font/google#Miss_Fajardose"]
-    pub safe fn Miss_Fajardose(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mitr](https://fonts.google.com/specimen/Mitr), a static font.
-    #[link_name = "next/font/google#Mitr"]
-    pub safe fn Mitr(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mochiy Pop One](https://fonts.google.com/specimen/Mochiy+Pop+One), a static font.
-    #[link_name = "next/font/google#Mochiy_Pop_One"]
-    pub safe fn Mochiy_Pop_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mochiy Pop P One](https://fonts.google.com/specimen/Mochiy+Pop+P+One), a static font.
-    #[link_name = "next/font/google#Mochiy_Pop_P_One"]
-    pub safe fn Mochiy_Pop_P_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Modak](https://fonts.google.com/specimen/Modak), a static font.
-    #[link_name = "next/font/google#Modak"]
-    pub safe fn Modak(options: StaticFont<'_>) -> NextFont;
-
-    /// [Modern Antiqua](https://fonts.google.com/specimen/Modern+Antiqua), a static font.
-    #[link_name = "next/font/google#Modern_Antiqua"]
-    pub safe fn Modern_Antiqua(options: StaticFont<'_>) -> NextFont;
-
-    /// [Moderustic](https://fonts.google.com/specimen/Moderustic), a variable font.
-    #[link_name = "next/font/google#Moderustic"]
-    pub safe fn Moderustic(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mogra](https://fonts.google.com/specimen/Mogra), a static font.
-    #[link_name = "next/font/google#Mogra"]
-    pub safe fn Mogra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mohave](https://fonts.google.com/specimen/Mohave), a variable font.
-    #[link_name = "next/font/google#Mohave"]
-    pub safe fn Mohave(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Moirai One](https://fonts.google.com/specimen/Moirai+One), a static font.
-    #[link_name = "next/font/google#Moirai_One"]
-    pub safe fn Moirai_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Molengo](https://fonts.google.com/specimen/Molengo), a static font.
-    #[link_name = "next/font/google#Molengo"]
-    pub safe fn Molengo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Molle](https://fonts.google.com/specimen/Molle), a static font.
-    #[link_name = "next/font/google#Molle"]
-    pub safe fn Molle(options: StaticFont<'_>) -> NextFont;
-
-    /// [Momo Signature](https://fonts.google.com/specimen/Momo+Signature), a static font.
-    #[link_name = "next/font/google#Momo_Signature"]
-    pub safe fn Momo_Signature(options: StaticFont<'_>) -> NextFont;
-
-    /// [Momo Trust Display](https://fonts.google.com/specimen/Momo+Trust+Display), a static font.
-    #[link_name = "next/font/google#Momo_Trust_Display"]
-    pub safe fn Momo_Trust_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Momo Trust Sans](https://fonts.google.com/specimen/Momo+Trust+Sans), a variable font.
-    #[link_name = "next/font/google#Momo_Trust_Sans"]
-    pub safe fn Momo_Trust_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mona Sans](https://fonts.google.com/specimen/Mona+Sans), a variable font.
-    #[link_name = "next/font/google#Mona_Sans"]
-    pub safe fn Mona_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Monda](https://fonts.google.com/specimen/Monda), a variable font.
-    #[link_name = "next/font/google#Monda"]
-    pub safe fn Monda(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Monofett](https://fonts.google.com/specimen/Monofett), a static font.
-    #[link_name = "next/font/google#Monofett"]
-    pub safe fn Monofett(options: StaticFont<'_>) -> NextFont;
-
-    /// [Monomakh](https://fonts.google.com/specimen/Monomakh), a static font.
-    #[link_name = "next/font/google#Monomakh"]
-    pub safe fn Monomakh(options: StaticFont<'_>) -> NextFont;
-
-    /// [Monomaniac One](https://fonts.google.com/specimen/Monomaniac+One), a static font.
-    #[link_name = "next/font/google#Monomaniac_One"]
-    pub safe fn Monomaniac_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Monoton](https://fonts.google.com/specimen/Monoton), a static font.
-    #[link_name = "next/font/google#Monoton"]
-    pub safe fn Monoton(options: StaticFont<'_>) -> NextFont;
-
-    /// [Monsieur La Doulaise](https://fonts.google.com/specimen/Monsieur+La+Doulaise), a static font.
-    #[link_name = "next/font/google#Monsieur_La_Doulaise"]
-    pub safe fn Monsieur_La_Doulaise(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montaga](https://fonts.google.com/specimen/Montaga), a static font.
-    #[link_name = "next/font/google#Montaga"]
-    pub safe fn Montaga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montagu Slab](https://fonts.google.com/specimen/Montagu+Slab), a variable font.
-    #[link_name = "next/font/google#Montagu_Slab"]
-    pub safe fn Montagu_Slab(options: VariableFont<'_>) -> NextFont;
-
-    /// [MonteCarlo](https://fonts.google.com/specimen/MonteCarlo), a static font.
-    #[link_name = "next/font/google#MonteCarlo"]
-    pub safe fn MonteCarlo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montenegrin Gothic One](https://fonts.google.com/specimen/Montenegrin+Gothic+One), a static font.
-    #[link_name = "next/font/google#Montenegrin_Gothic_One"]
-    pub safe fn Montenegrin_Gothic_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montez](https://fonts.google.com/specimen/Montez), a static font.
-    #[link_name = "next/font/google#Montez"]
-    pub safe fn Montez(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montserrat](https://fonts.google.com/specimen/Montserrat), a variable font.
-    #[link_name = "next/font/google#Montserrat"]
-    pub safe fn Montserrat(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Montserrat Alternates](https://fonts.google.com/specimen/Montserrat+Alternates), a static font.
-    #[link_name = "next/font/google#Montserrat_Alternates"]
-    pub safe fn Montserrat_Alternates(options: StaticFont<'_>) -> NextFont;
-
-    /// [Montserrat Underline](https://fonts.google.com/specimen/Montserrat+Underline), a variable font.
-    #[link_name = "next/font/google#Montserrat_Underline"]
-    pub safe fn Montserrat_Underline(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Moo Lah Lah](https://fonts.google.com/specimen/Moo+Lah+Lah), a static font.
-    #[link_name = "next/font/google#Moo_Lah_Lah"]
-    pub safe fn Moo_Lah_Lah(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mooli](https://fonts.google.com/specimen/Mooli), a static font.
-    #[link_name = "next/font/google#Mooli"]
-    pub safe fn Mooli(options: StaticFont<'_>) -> NextFont;
-
-    /// [Moon Dance](https://fonts.google.com/specimen/Moon+Dance), a static font.
-    #[link_name = "next/font/google#Moon_Dance"]
-    pub safe fn Moon_Dance(options: StaticFont<'_>) -> NextFont;
-
-    /// [Moul](https://fonts.google.com/specimen/Moul), a static font.
-    #[link_name = "next/font/google#Moul"]
-    pub safe fn Moul(options: StaticFont<'_>) -> NextFont;
-
-    /// [Moulpali](https://fonts.google.com/specimen/Moulpali), a static font.
-    #[link_name = "next/font/google#Moulpali"]
-    pub safe fn Moulpali(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mountains of Christmas](https://fonts.google.com/specimen/Mountains+of+Christmas), a static font.
-    #[link_name = "next/font/google#Mountains_of_Christmas"]
-    pub safe fn Mountains_of_Christmas(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mouse Memoirs](https://fonts.google.com/specimen/Mouse+Memoirs), a static font.
-    #[link_name = "next/font/google#Mouse_Memoirs"]
-    pub safe fn Mouse_Memoirs(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mozilla Headline](https://fonts.google.com/specimen/Mozilla+Headline), a variable font.
-    #[link_name = "next/font/google#Mozilla_Headline"]
-    pub safe fn Mozilla_Headline(options: VariableFont<'_>) -> NextFont;
-
-    /// [Mozilla Text](https://fonts.google.com/specimen/Mozilla+Text), a variable font.
-    #[link_name = "next/font/google#Mozilla_Text"]
-    pub safe fn Mozilla_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Mr Bedfort](https://fonts.google.com/specimen/Mr+Bedfort), a static font.
-    #[link_name = "next/font/google#Mr_Bedfort"]
-    pub safe fn Mr_Bedfort(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe), a static font.
-    #[link_name = "next/font/google#Mr_Dafoe"]
-    pub safe fn Mr_Dafoe(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mr De Haviland](https://fonts.google.com/specimen/Mr+De+Haviland), a static font.
-    #[link_name = "next/font/google#Mr_De_Haviland"]
-    pub safe fn Mr_De_Haviland(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mrs Saint Delafield](https://fonts.google.com/specimen/Mrs+Saint+Delafield), a static font.
-    #[link_name = "next/font/google#Mrs_Saint_Delafield"]
-    pub safe fn Mrs_Saint_Delafield(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mrs Sheppards](https://fonts.google.com/specimen/Mrs+Sheppards), a static font.
-    #[link_name = "next/font/google#Mrs_Sheppards"]
-    pub safe fn Mrs_Sheppards(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ms Madi](https://fonts.google.com/specimen/Ms+Madi), a static font.
-    #[link_name = "next/font/google#Ms_Madi"]
-    pub safe fn Ms_Madi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mukta](https://fonts.google.com/specimen/Mukta), a static font.
-    #[link_name = "next/font/google#Mukta"]
-    pub safe fn Mukta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mukta Mahee](https://fonts.google.com/specimen/Mukta+Mahee), a static font.
-    #[link_name = "next/font/google#Mukta_Mahee"]
-    pub safe fn Mukta_Mahee(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mukta Malar](https://fonts.google.com/specimen/Mukta+Malar), a static font.
-    #[link_name = "next/font/google#Mukta_Malar"]
-    pub safe fn Mukta_Malar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mukta Vaani](https://fonts.google.com/specimen/Mukta+Vaani), a static font.
-    #[link_name = "next/font/google#Mukta_Vaani"]
-    pub safe fn Mukta_Vaani(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mulish](https://fonts.google.com/specimen/Mulish), a variable font.
-    #[link_name = "next/font/google#Mulish"]
-    pub safe fn Mulish(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Murecho](https://fonts.google.com/specimen/Murecho), a variable font.
-    #[link_name = "next/font/google#Murecho"]
-    pub safe fn Murecho(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [MuseoModerno](https://fonts.google.com/specimen/MuseoModerno), a variable font.
-    #[link_name = "next/font/google#MuseoModerno"]
-    pub safe fn MuseoModerno(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [My Soul](https://fonts.google.com/specimen/My+Soul), a static font.
-    #[link_name = "next/font/google#My_Soul"]
-    pub safe fn My_Soul(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mynerve](https://fonts.google.com/specimen/Mynerve), a static font.
-    #[link_name = "next/font/google#Mynerve"]
-    pub safe fn Mynerve(options: StaticFont<'_>) -> NextFont;
-
-    /// [Mystery Quest](https://fonts.google.com/specimen/Mystery+Quest), a static font.
-    #[link_name = "next/font/google#Mystery_Quest"]
-    pub safe fn Mystery_Quest(options: StaticFont<'_>) -> NextFont;
-
-    /// [NTR](https://fonts.google.com/specimen/NTR), a static font.
-    #[link_name = "next/font/google#NTR"]
-    pub safe fn NTR(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nabla](https://fonts.google.com/specimen/Nabla), a variable font.
-    #[link_name = "next/font/google#Nabla"]
-    pub safe fn Nabla(options: VariableFont<'_>) -> NextFont;
-
-    /// [Namdhinggo](https://fonts.google.com/specimen/Namdhinggo), a static font.
-    #[link_name = "next/font/google#Namdhinggo"]
-    pub safe fn Namdhinggo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nanum Brush Script](https://fonts.google.com/specimen/Nanum+Brush+Script), a static font.
-    #[link_name = "next/font/google#Nanum_Brush_Script"]
-    pub safe fn Nanum_Brush_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nanum Gothic](https://fonts.google.com/specimen/Nanum+Gothic), a static font.
-    #[link_name = "next/font/google#Nanum_Gothic"]
-    pub safe fn Nanum_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nanum Gothic Coding](https://fonts.google.com/specimen/Nanum+Gothic+Coding), a static font.
-    #[link_name = "next/font/google#Nanum_Gothic_Coding"]
-    pub safe fn Nanum_Gothic_Coding(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nanum Myeongjo](https://fonts.google.com/specimen/Nanum+Myeongjo), a static font.
-    #[link_name = "next/font/google#Nanum_Myeongjo"]
-    pub safe fn Nanum_Myeongjo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nanum Pen Script](https://fonts.google.com/specimen/Nanum+Pen+Script), a static font.
-    #[link_name = "next/font/google#Nanum_Pen_Script"]
-    pub safe fn Nanum_Pen_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Narnoor](https://fonts.google.com/specimen/Narnoor), a static font.
-    #[link_name = "next/font/google#Narnoor"]
-    pub safe fn Narnoor(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nata Sans](https://fonts.google.com/specimen/Nata+Sans), a variable font.
-    #[link_name = "next/font/google#Nata_Sans"]
-    pub safe fn Nata_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [National Park](https://fonts.google.com/specimen/National+Park), a variable font.
-    #[link_name = "next/font/google#National_Park"]
-    pub safe fn National_Park(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Neonderthaw](https://fonts.google.com/specimen/Neonderthaw), a static font.
-    #[link_name = "next/font/google#Neonderthaw"]
-    pub safe fn Neonderthaw(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nerko One](https://fonts.google.com/specimen/Nerko+One), a static font.
-    #[link_name = "next/font/google#Nerko_One"]
-    pub safe fn Nerko_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Neucha](https://fonts.google.com/specimen/Neucha), a static font.
-    #[link_name = "next/font/google#Neucha"]
-    pub safe fn Neucha(options: StaticFont<'_>) -> NextFont;
-
-    /// [Neuton](https://fonts.google.com/specimen/Neuton), a static font.
-    #[link_name = "next/font/google#Neuton"]
-    pub safe fn Neuton(options: StaticFont<'_>) -> NextFont;
-
-    /// [New Amsterdam](https://fonts.google.com/specimen/New+Amsterdam), a static font.
-    #[link_name = "next/font/google#New_Amsterdam"]
-    pub safe fn New_Amsterdam(options: StaticFont<'_>) -> NextFont;
-
-    /// [New Rocker](https://fonts.google.com/specimen/New+Rocker), a static font.
-    #[link_name = "next/font/google#New_Rocker"]
-    pub safe fn New_Rocker(options: StaticFont<'_>) -> NextFont;
-
-    /// [New Tegomin](https://fonts.google.com/specimen/New+Tegomin), a static font.
-    #[link_name = "next/font/google#New_Tegomin"]
-    pub safe fn New_Tegomin(options: StaticFont<'_>) -> NextFont;
-
-    /// [News Cycle](https://fonts.google.com/specimen/News+Cycle), a static font.
-    #[link_name = "next/font/google#News_Cycle"]
-    pub safe fn News_Cycle(options: StaticFont<'_>) -> NextFont;
-
-    /// [Newsreader](https://fonts.google.com/specimen/Newsreader), a variable font.
-    #[link_name = "next/font/google#Newsreader"]
-    pub safe fn Newsreader(options: VariableFont<'_>) -> NextFont;
-
-    /// [Niconne](https://fonts.google.com/specimen/Niconne), a static font.
-    #[link_name = "next/font/google#Niconne"]
-    pub safe fn Niconne(options: StaticFont<'_>) -> NextFont;
-
-    /// [Niramit](https://fonts.google.com/specimen/Niramit), a static font.
-    #[link_name = "next/font/google#Niramit"]
-    pub safe fn Niramit(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nixie One](https://fonts.google.com/specimen/Nixie+One), a static font.
-    #[link_name = "next/font/google#Nixie_One"]
-    pub safe fn Nixie_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nobile](https://fonts.google.com/specimen/Nobile), a static font.
-    #[link_name = "next/font/google#Nobile"]
-    pub safe fn Nobile(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nokora](https://fonts.google.com/specimen/Nokora), a variable font.
-    #[link_name = "next/font/google#Nokora"]
-    pub safe fn Nokora(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Norican](https://fonts.google.com/specimen/Norican), a static font.
-    #[link_name = "next/font/google#Norican"]
-    pub safe fn Norican(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nosifer](https://fonts.google.com/specimen/Nosifer), a static font.
-    #[link_name = "next/font/google#Nosifer"]
-    pub safe fn Nosifer(options: StaticFont<'_>) -> NextFont;
-
-    /// [Notable](https://fonts.google.com/specimen/Notable), a static font.
-    #[link_name = "next/font/google#Notable"]
-    pub safe fn Notable(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nothing You Could Do](https://fonts.google.com/specimen/Nothing+You+Could+Do), a static font.
-    #[link_name = "next/font/google#Nothing_You_Could_Do"]
-    pub safe fn Nothing_You_Could_Do(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noticia Text](https://fonts.google.com/specimen/Noticia+Text), a static font.
-    #[link_name = "next/font/google#Noticia_Text"]
-    pub safe fn Noticia_Text(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Color Emoji](https://fonts.google.com/specimen/Noto+Color+Emoji), a static font.
-    #[link_name = "next/font/google#Noto_Color_Emoji"]
-    pub safe fn Noto_Color_Emoji(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Emoji](https://fonts.google.com/specimen/Noto+Emoji), a variable font.
-    #[link_name = "next/font/google#Noto_Emoji"]
-    pub safe fn Noto_Emoji(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Kufi Arabic](https://fonts.google.com/specimen/Noto+Kufi+Arabic), a variable font.
-    #[link_name = "next/font/google#Noto_Kufi_Arabic"]
-    pub safe fn Noto_Kufi_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Music](https://fonts.google.com/specimen/Noto+Music), a static font.
-    #[link_name = "next/font/google#Noto_Music"]
-    pub safe fn Noto_Music(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Naskh Arabic](https://fonts.google.com/specimen/Noto+Naskh+Arabic), a variable font.
-    #[link_name = "next/font/google#Noto_Naskh_Arabic"]
-    pub safe fn Noto_Naskh_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Nastaliq Urdu](https://fonts.google.com/specimen/Noto+Nastaliq+Urdu), a variable font.
-    #[link_name = "next/font/google#Noto_Nastaliq_Urdu"]
-    pub safe fn Noto_Nastaliq_Urdu(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Rashi Hebrew](https://fonts.google.com/specimen/Noto+Rashi+Hebrew), a variable font.
-    #[link_name = "next/font/google#Noto_Rashi_Hebrew"]
-    pub safe fn Noto_Rashi_Hebrew(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans](https://fonts.google.com/specimen/Noto+Sans), a variable font.
-    #[link_name = "next/font/google#Noto_Sans"]
-    pub safe fn Noto_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Adlam](https://fonts.google.com/specimen/Noto+Sans+Adlam), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Adlam"]
-    pub safe fn Noto_Sans_Adlam(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Adlam Unjoined](https://fonts.google.com/specimen/Noto+Sans+Adlam+Unjoined), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Adlam_Unjoined"]
-    pub safe fn Noto_Sans_Adlam_Unjoined(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Anatolian Hieroglyphs](https://fonts.google.com/specimen/Noto+Sans+Anatolian+Hieroglyphs), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Anatolian_Hieroglyphs"]
-    pub safe fn Noto_Sans_Anatolian_Hieroglyphs(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Arabic](https://fonts.google.com/specimen/Noto+Sans+Arabic), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Arabic"]
-    pub safe fn Noto_Sans_Arabic(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Armenian](https://fonts.google.com/specimen/Noto+Sans+Armenian), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Armenian"]
-    pub safe fn Noto_Sans_Armenian(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Avestan](https://fonts.google.com/specimen/Noto+Sans+Avestan), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Avestan"]
-    pub safe fn Noto_Sans_Avestan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Balinese](https://fonts.google.com/specimen/Noto+Sans+Balinese), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Balinese"]
-    pub safe fn Noto_Sans_Balinese(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Bamum](https://fonts.google.com/specimen/Noto+Sans+Bamum), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Bamum"]
-    pub safe fn Noto_Sans_Bamum(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Bassa Vah](https://fonts.google.com/specimen/Noto+Sans+Bassa+Vah), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Bassa_Vah"]
-    pub safe fn Noto_Sans_Bassa_Vah(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Batak](https://fonts.google.com/specimen/Noto+Sans+Batak), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Batak"]
-    pub safe fn Noto_Sans_Batak(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Bengali](https://fonts.google.com/specimen/Noto+Sans+Bengali), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Bengali"]
-    pub safe fn Noto_Sans_Bengali(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Bhaiksuki](https://fonts.google.com/specimen/Noto+Sans+Bhaiksuki), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Bhaiksuki"]
-    pub safe fn Noto_Sans_Bhaiksuki(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Brahmi](https://fonts.google.com/specimen/Noto+Sans+Brahmi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Brahmi"]
-    pub safe fn Noto_Sans_Brahmi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Buginese](https://fonts.google.com/specimen/Noto+Sans+Buginese), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Buginese"]
-    pub safe fn Noto_Sans_Buginese(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Buhid](https://fonts.google.com/specimen/Noto+Sans+Buhid), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Buhid"]
-    pub safe fn Noto_Sans_Buhid(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Canadian Aboriginal](https://fonts.google.com/specimen/Noto+Sans+Canadian+Aboriginal), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Canadian_Aboriginal"]
-    pub safe fn Noto_Sans_Canadian_Aboriginal(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Carian](https://fonts.google.com/specimen/Noto+Sans+Carian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Carian"]
-    pub safe fn Noto_Sans_Carian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Caucasian Albanian](https://fonts.google.com/specimen/Noto+Sans+Caucasian+Albanian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Caucasian_Albanian"]
-    pub safe fn Noto_Sans_Caucasian_Albanian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Chakma](https://fonts.google.com/specimen/Noto+Sans+Chakma), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Chakma"]
-    pub safe fn Noto_Sans_Chakma(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Cham](https://fonts.google.com/specimen/Noto+Sans+Cham), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Cham"]
-    pub safe fn Noto_Sans_Cham(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Cherokee](https://fonts.google.com/specimen/Noto+Sans+Cherokee), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Cherokee"]
-    pub safe fn Noto_Sans_Cherokee(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Chorasmian](https://fonts.google.com/specimen/Noto+Sans+Chorasmian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Chorasmian"]
-    pub safe fn Noto_Sans_Chorasmian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Coptic](https://fonts.google.com/specimen/Noto+Sans+Coptic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Coptic"]
-    pub safe fn Noto_Sans_Coptic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Cuneiform](https://fonts.google.com/specimen/Noto+Sans+Cuneiform), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Cuneiform"]
-    pub safe fn Noto_Sans_Cuneiform(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Cypriot](https://fonts.google.com/specimen/Noto+Sans+Cypriot), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Cypriot"]
-    pub safe fn Noto_Sans_Cypriot(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Cypro Minoan](https://fonts.google.com/specimen/Noto+Sans+Cypro+Minoan), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Cypro_Minoan"]
-    pub safe fn Noto_Sans_Cypro_Minoan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Deseret](https://fonts.google.com/specimen/Noto+Sans+Deseret), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Deseret"]
-    pub safe fn Noto_Sans_Deseret(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Devanagari](https://fonts.google.com/specimen/Noto+Sans+Devanagari), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Devanagari"]
-    pub safe fn Noto_Sans_Devanagari(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Display](https://fonts.google.com/specimen/Noto+Sans+Display), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Display"]
-    pub safe fn Noto_Sans_Display(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Duployan](https://fonts.google.com/specimen/Noto+Sans+Duployan), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Duployan"]
-    pub safe fn Noto_Sans_Duployan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Egyptian Hieroglyphs](https://fonts.google.com/specimen/Noto+Sans+Egyptian+Hieroglyphs), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Egyptian_Hieroglyphs"]
-    pub safe fn Noto_Sans_Egyptian_Hieroglyphs(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Elbasan](https://fonts.google.com/specimen/Noto+Sans+Elbasan), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Elbasan"]
-    pub safe fn Noto_Sans_Elbasan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Elymaic](https://fonts.google.com/specimen/Noto+Sans+Elymaic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Elymaic"]
-    pub safe fn Noto_Sans_Elymaic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Ethiopic](https://fonts.google.com/specimen/Noto+Sans+Ethiopic), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Ethiopic"]
-    pub safe fn Noto_Sans_Ethiopic(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Georgian](https://fonts.google.com/specimen/Noto+Sans+Georgian), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Georgian"]
-    pub safe fn Noto_Sans_Georgian(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Glagolitic](https://fonts.google.com/specimen/Noto+Sans+Glagolitic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Glagolitic"]
-    pub safe fn Noto_Sans_Glagolitic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Gothic](https://fonts.google.com/specimen/Noto+Sans+Gothic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Gothic"]
-    pub safe fn Noto_Sans_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Grantha](https://fonts.google.com/specimen/Noto+Sans+Grantha), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Grantha"]
-    pub safe fn Noto_Sans_Grantha(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Gujarati](https://fonts.google.com/specimen/Noto+Sans+Gujarati), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Gujarati"]
-    pub safe fn Noto_Sans_Gujarati(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Gunjala Gondi](https://fonts.google.com/specimen/Noto+Sans+Gunjala+Gondi), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Gunjala_Gondi"]
-    pub safe fn Noto_Sans_Gunjala_Gondi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Gurmukhi](https://fonts.google.com/specimen/Noto+Sans+Gurmukhi), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Gurmukhi"]
-    pub safe fn Noto_Sans_Gurmukhi(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans HK](https://fonts.google.com/specimen/Noto+Sans+HK), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_HK"]
-    pub safe fn Noto_Sans_HK(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Hanifi Rohingya](https://fonts.google.com/specimen/Noto+Sans+Hanifi+Rohingya), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Hanifi_Rohingya"]
-    pub safe fn Noto_Sans_Hanifi_Rohingya(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Hanunoo](https://fonts.google.com/specimen/Noto+Sans+Hanunoo), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Hanunoo"]
-    pub safe fn Noto_Sans_Hanunoo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Hatran](https://fonts.google.com/specimen/Noto+Sans+Hatran), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Hatran"]
-    pub safe fn Noto_Sans_Hatran(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Hebrew](https://fonts.google.com/specimen/Noto+Sans+Hebrew), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Hebrew"]
-    pub safe fn Noto_Sans_Hebrew(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Imperial Aramaic](https://fonts.google.com/specimen/Noto+Sans+Imperial+Aramaic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Imperial_Aramaic"]
-    pub safe fn Noto_Sans_Imperial_Aramaic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Indic Siyaq Numbers](https://fonts.google.com/specimen/Noto+Sans+Indic+Siyaq+Numbers), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Indic_Siyaq_Numbers"]
-    pub safe fn Noto_Sans_Indic_Siyaq_Numbers(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Inscriptional Pahlavi](https://fonts.google.com/specimen/Noto+Sans+Inscriptional+Pahlavi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Inscriptional_Pahlavi"]
-    pub safe fn Noto_Sans_Inscriptional_Pahlavi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Inscriptional Parthian](https://fonts.google.com/specimen/Noto+Sans+Inscriptional+Parthian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Inscriptional_Parthian"]
-    pub safe fn Noto_Sans_Inscriptional_Parthian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans JP](https://fonts.google.com/specimen/Noto+Sans+JP), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_JP"]
-    pub safe fn Noto_Sans_JP(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Javanese](https://fonts.google.com/specimen/Noto+Sans+Javanese), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Javanese"]
-    pub safe fn Noto_Sans_Javanese(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans KR](https://fonts.google.com/specimen/Noto+Sans+KR), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_KR"]
-    pub safe fn Noto_Sans_KR(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Kaithi](https://fonts.google.com/specimen/Noto+Sans+Kaithi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Kaithi"]
-    pub safe fn Noto_Sans_Kaithi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Kannada](https://fonts.google.com/specimen/Noto+Sans+Kannada), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Kannada"]
-    pub safe fn Noto_Sans_Kannada(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Kawi](https://fonts.google.com/specimen/Noto+Sans+Kawi), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Kawi"]
-    pub safe fn Noto_Sans_Kawi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Kayah Li](https://fonts.google.com/specimen/Noto+Sans+Kayah+Li), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Kayah_Li"]
-    pub safe fn Noto_Sans_Kayah_Li(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Kharoshthi](https://fonts.google.com/specimen/Noto+Sans+Kharoshthi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Kharoshthi"]
-    pub safe fn Noto_Sans_Kharoshthi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Khmer](https://fonts.google.com/specimen/Noto+Sans+Khmer), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Khmer"]
-    pub safe fn Noto_Sans_Khmer(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Khojki](https://fonts.google.com/specimen/Noto+Sans+Khojki), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Khojki"]
-    pub safe fn Noto_Sans_Khojki(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Khudawadi](https://fonts.google.com/specimen/Noto+Sans+Khudawadi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Khudawadi"]
-    pub safe fn Noto_Sans_Khudawadi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Lao](https://fonts.google.com/specimen/Noto+Sans+Lao), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Lao"]
-    pub safe fn Noto_Sans_Lao(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Lao Looped](https://fonts.google.com/specimen/Noto+Sans+Lao+Looped), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Lao_Looped"]
-    pub safe fn Noto_Sans_Lao_Looped(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Lepcha](https://fonts.google.com/specimen/Noto+Sans+Lepcha), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Lepcha"]
-    pub safe fn Noto_Sans_Lepcha(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Limbu](https://fonts.google.com/specimen/Noto+Sans+Limbu), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Limbu"]
-    pub safe fn Noto_Sans_Limbu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Linear A](https://fonts.google.com/specimen/Noto+Sans+Linear+A), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Linear_A"]
-    pub safe fn Noto_Sans_Linear_A(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Linear B](https://fonts.google.com/specimen/Noto+Sans+Linear+B), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Linear_B"]
-    pub safe fn Noto_Sans_Linear_B(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Lisu](https://fonts.google.com/specimen/Noto+Sans+Lisu), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Lisu"]
-    pub safe fn Noto_Sans_Lisu(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Lycian](https://fonts.google.com/specimen/Noto+Sans+Lycian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Lycian"]
-    pub safe fn Noto_Sans_Lycian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Lydian](https://fonts.google.com/specimen/Noto+Sans+Lydian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Lydian"]
-    pub safe fn Noto_Sans_Lydian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mahajani](https://fonts.google.com/specimen/Noto+Sans+Mahajani), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mahajani"]
-    pub safe fn Noto_Sans_Mahajani(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Malayalam](https://fonts.google.com/specimen/Noto+Sans+Malayalam), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Malayalam"]
-    pub safe fn Noto_Sans_Malayalam(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mandaic](https://fonts.google.com/specimen/Noto+Sans+Mandaic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mandaic"]
-    pub safe fn Noto_Sans_Mandaic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Manichaean](https://fonts.google.com/specimen/Noto+Sans+Manichaean), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Manichaean"]
-    pub safe fn Noto_Sans_Manichaean(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Marchen](https://fonts.google.com/specimen/Noto+Sans+Marchen), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Marchen"]
-    pub safe fn Noto_Sans_Marchen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Masaram Gondi](https://fonts.google.com/specimen/Noto+Sans+Masaram+Gondi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Masaram_Gondi"]
-    pub safe fn Noto_Sans_Masaram_Gondi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Math](https://fonts.google.com/specimen/Noto+Sans+Math), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Math"]
-    pub safe fn Noto_Sans_Math(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mayan Numerals](https://fonts.google.com/specimen/Noto+Sans+Mayan+Numerals), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mayan_Numerals"]
-    pub safe fn Noto_Sans_Mayan_Numerals(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Medefaidrin](https://fonts.google.com/specimen/Noto+Sans+Medefaidrin), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Medefaidrin"]
-    pub safe fn Noto_Sans_Medefaidrin(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Meetei Mayek](https://fonts.google.com/specimen/Noto+Sans+Meetei+Mayek), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Meetei_Mayek"]
-    pub safe fn Noto_Sans_Meetei_Mayek(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Mende Kikakui](https://fonts.google.com/specimen/Noto+Sans+Mende+Kikakui), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mende_Kikakui"]
-    pub safe fn Noto_Sans_Mende_Kikakui(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Meroitic](https://fonts.google.com/specimen/Noto+Sans+Meroitic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Meroitic"]
-    pub safe fn Noto_Sans_Meroitic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Miao](https://fonts.google.com/specimen/Noto+Sans+Miao), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Miao"]
-    pub safe fn Noto_Sans_Miao(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Modi](https://fonts.google.com/specimen/Noto+Sans+Modi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Modi"]
-    pub safe fn Noto_Sans_Modi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mongolian](https://fonts.google.com/specimen/Noto+Sans+Mongolian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mongolian"]
-    pub safe fn Noto_Sans_Mongolian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mono](https://fonts.google.com/specimen/Noto+Sans+Mono), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Mono"]
-    pub safe fn Noto_Sans_Mono(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Mro](https://fonts.google.com/specimen/Noto+Sans+Mro), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Mro"]
-    pub safe fn Noto_Sans_Mro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Multani](https://fonts.google.com/specimen/Noto+Sans+Multani), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Multani"]
-    pub safe fn Noto_Sans_Multani(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Myanmar](https://fonts.google.com/specimen/Noto+Sans+Myanmar), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Myanmar"]
-    pub safe fn Noto_Sans_Myanmar(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans NKo](https://fonts.google.com/specimen/Noto+Sans+NKo), a static font.
-    #[link_name = "next/font/google#Noto_Sans_NKo"]
-    pub safe fn Noto_Sans_NKo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans NKo Unjoined](https://fonts.google.com/specimen/Noto+Sans+NKo+Unjoined), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_NKo_Unjoined"]
-    pub safe fn Noto_Sans_NKo_Unjoined(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Nabataean](https://fonts.google.com/specimen/Noto+Sans+Nabataean), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Nabataean"]
-    pub safe fn Noto_Sans_Nabataean(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Nag Mundari](https://fonts.google.com/specimen/Noto+Sans+Nag+Mundari), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Nag_Mundari"]
-    pub safe fn Noto_Sans_Nag_Mundari(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Nandinagari](https://fonts.google.com/specimen/Noto+Sans+Nandinagari), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Nandinagari"]
-    pub safe fn Noto_Sans_Nandinagari(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans New Tai Lue](https://fonts.google.com/specimen/Noto+Sans+New+Tai+Lue), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_New_Tai_Lue"]
-    pub safe fn Noto_Sans_New_Tai_Lue(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Newa](https://fonts.google.com/specimen/Noto+Sans+Newa), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Newa"]
-    pub safe fn Noto_Sans_Newa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Nushu](https://fonts.google.com/specimen/Noto+Sans+Nushu), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Nushu"]
-    pub safe fn Noto_Sans_Nushu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Ogham](https://fonts.google.com/specimen/Noto+Sans+Ogham), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Ogham"]
-    pub safe fn Noto_Sans_Ogham(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Ol Chiki](https://fonts.google.com/specimen/Noto+Sans+Ol+Chiki), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Ol_Chiki"]
-    pub safe fn Noto_Sans_Ol_Chiki(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Old Hungarian](https://fonts.google.com/specimen/Noto+Sans+Old+Hungarian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Hungarian"]
-    pub safe fn Noto_Sans_Old_Hungarian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old Italic](https://fonts.google.com/specimen/Noto+Sans+Old+Italic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Italic"]
-    pub safe fn Noto_Sans_Old_Italic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old North Arabian](https://fonts.google.com/specimen/Noto+Sans+Old+North+Arabian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_North_Arabian"]
-    pub safe fn Noto_Sans_Old_North_Arabian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old Permic](https://fonts.google.com/specimen/Noto+Sans+Old+Permic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Permic"]
-    pub safe fn Noto_Sans_Old_Permic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old Persian](https://fonts.google.com/specimen/Noto+Sans+Old+Persian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Persian"]
-    pub safe fn Noto_Sans_Old_Persian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old Sogdian](https://fonts.google.com/specimen/Noto+Sans+Old+Sogdian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Sogdian"]
-    pub safe fn Noto_Sans_Old_Sogdian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old South Arabian](https://fonts.google.com/specimen/Noto+Sans+Old+South+Arabian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_South_Arabian"]
-    pub safe fn Noto_Sans_Old_South_Arabian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Old Turkic](https://fonts.google.com/specimen/Noto+Sans+Old+Turkic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Old_Turkic"]
-    pub safe fn Noto_Sans_Old_Turkic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Oriya](https://fonts.google.com/specimen/Noto+Sans+Oriya), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Oriya"]
-    pub safe fn Noto_Sans_Oriya(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Osage](https://fonts.google.com/specimen/Noto+Sans+Osage), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Osage"]
-    pub safe fn Noto_Sans_Osage(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Osmanya](https://fonts.google.com/specimen/Noto+Sans+Osmanya), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Osmanya"]
-    pub safe fn Noto_Sans_Osmanya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Pahawh Hmong](https://fonts.google.com/specimen/Noto+Sans+Pahawh+Hmong), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Pahawh_Hmong"]
-    pub safe fn Noto_Sans_Pahawh_Hmong(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Palmyrene](https://fonts.google.com/specimen/Noto+Sans+Palmyrene), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Palmyrene"]
-    pub safe fn Noto_Sans_Palmyrene(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Pau Cin Hau](https://fonts.google.com/specimen/Noto+Sans+Pau+Cin+Hau), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Pau_Cin_Hau"]
-    pub safe fn Noto_Sans_Pau_Cin_Hau(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans PhagsPa](https://fonts.google.com/specimen/Noto+Sans+PhagsPa), a static font.
-    #[link_name = "next/font/google#Noto_Sans_PhagsPa"]
-    pub safe fn Noto_Sans_PhagsPa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Phoenician](https://fonts.google.com/specimen/Noto+Sans+Phoenician), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Phoenician"]
-    pub safe fn Noto_Sans_Phoenician(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Psalter Pahlavi](https://fonts.google.com/specimen/Noto+Sans+Psalter+Pahlavi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Psalter_Pahlavi"]
-    pub safe fn Noto_Sans_Psalter_Pahlavi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Rejang](https://fonts.google.com/specimen/Noto+Sans+Rejang), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Rejang"]
-    pub safe fn Noto_Sans_Rejang(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Runic](https://fonts.google.com/specimen/Noto+Sans+Runic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Runic"]
-    pub safe fn Noto_Sans_Runic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans SC](https://fonts.google.com/specimen/Noto+Sans+SC), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_SC"]
-    pub safe fn Noto_Sans_SC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Samaritan](https://fonts.google.com/specimen/Noto+Sans+Samaritan), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Samaritan"]
-    pub safe fn Noto_Sans_Samaritan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Saurashtra](https://fonts.google.com/specimen/Noto+Sans+Saurashtra), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Saurashtra"]
-    pub safe fn Noto_Sans_Saurashtra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Sharada](https://fonts.google.com/specimen/Noto+Sans+Sharada), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Sharada"]
-    pub safe fn Noto_Sans_Sharada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Shavian](https://fonts.google.com/specimen/Noto+Sans+Shavian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Shavian"]
-    pub safe fn Noto_Sans_Shavian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Siddham](https://fonts.google.com/specimen/Noto+Sans+Siddham), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Siddham"]
-    pub safe fn Noto_Sans_Siddham(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans SignWriting](https://fonts.google.com/specimen/Noto+Sans+SignWriting), a static font.
-    #[link_name = "next/font/google#Noto_Sans_SignWriting"]
-    pub safe fn Noto_Sans_SignWriting(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Sinhala](https://fonts.google.com/specimen/Noto+Sans+Sinhala), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Sinhala"]
-    pub safe fn Noto_Sans_Sinhala(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Sogdian](https://fonts.google.com/specimen/Noto+Sans+Sogdian), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Sogdian"]
-    pub safe fn Noto_Sans_Sogdian(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Sora Sompeng](https://fonts.google.com/specimen/Noto+Sans+Sora+Sompeng), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Sora_Sompeng"]
-    pub safe fn Noto_Sans_Sora_Sompeng(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Soyombo](https://fonts.google.com/specimen/Noto+Sans+Soyombo), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Soyombo"]
-    pub safe fn Noto_Sans_Soyombo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Sundanese](https://fonts.google.com/specimen/Noto+Sans+Sundanese), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Sundanese"]
-    pub safe fn Noto_Sans_Sundanese(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Sunuwar](https://fonts.google.com/specimen/Noto+Sans+Sunuwar), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Sunuwar"]
-    pub safe fn Noto_Sans_Sunuwar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Syloti Nagri](https://fonts.google.com/specimen/Noto+Sans+Syloti+Nagri), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Syloti_Nagri"]
-    pub safe fn Noto_Sans_Syloti_Nagri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Symbols](https://fonts.google.com/specimen/Noto+Sans+Symbols), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Symbols"]
-    pub safe fn Noto_Sans_Symbols(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Symbols 2](https://fonts.google.com/specimen/Noto+Sans+Symbols+2), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Symbols_2"]
-    pub safe fn Noto_Sans_Symbols_2(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Syriac](https://fonts.google.com/specimen/Noto+Sans+Syriac), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Syriac"]
-    pub safe fn Noto_Sans_Syriac(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Syriac Eastern](https://fonts.google.com/specimen/Noto+Sans+Syriac+Eastern), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Syriac_Eastern"]
-    pub safe fn Noto_Sans_Syriac_Eastern(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Syriac Western](https://fonts.google.com/specimen/Noto+Sans+Syriac+Western), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Syriac_Western"]
-    pub safe fn Noto_Sans_Syriac_Western(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans TC](https://fonts.google.com/specimen/Noto+Sans+TC), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_TC"]
-    pub safe fn Noto_Sans_TC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Tagalog](https://fonts.google.com/specimen/Noto+Sans+Tagalog), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tagalog"]
-    pub safe fn Noto_Sans_Tagalog(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tagbanwa](https://fonts.google.com/specimen/Noto+Sans+Tagbanwa), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tagbanwa"]
-    pub safe fn Noto_Sans_Tagbanwa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tai Le](https://fonts.google.com/specimen/Noto+Sans+Tai+Le), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tai_Le"]
-    pub safe fn Noto_Sans_Tai_Le(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tai Tham](https://fonts.google.com/specimen/Noto+Sans+Tai+Tham), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Tai_Tham"]
-    pub safe fn Noto_Sans_Tai_Tham(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Tai Viet](https://fonts.google.com/specimen/Noto+Sans+Tai+Viet), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tai_Viet"]
-    pub safe fn Noto_Sans_Tai_Viet(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Takri](https://fonts.google.com/specimen/Noto+Sans+Takri), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Takri"]
-    pub safe fn Noto_Sans_Takri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tamil](https://fonts.google.com/specimen/Noto+Sans+Tamil), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Tamil"]
-    pub safe fn Noto_Sans_Tamil(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tamil Supplement](https://fonts.google.com/specimen/Noto+Sans+Tamil+Supplement), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tamil_Supplement"]
-    pub safe fn Noto_Sans_Tamil_Supplement(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tangsa](https://fonts.google.com/specimen/Noto+Sans+Tangsa), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Tangsa"]
-    pub safe fn Noto_Sans_Tangsa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Telugu](https://fonts.google.com/specimen/Noto+Sans+Telugu), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Telugu"]
-    pub safe fn Noto_Sans_Telugu(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Thaana](https://fonts.google.com/specimen/Noto+Sans+Thaana), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Thaana"]
-    pub safe fn Noto_Sans_Thaana(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Thai](https://fonts.google.com/specimen/Noto+Sans+Thai), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Thai"]
-    pub safe fn Noto_Sans_Thai(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Thai Looped](https://fonts.google.com/specimen/Noto+Sans+Thai+Looped), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Thai_Looped"]
-    pub safe fn Noto_Sans_Thai_Looped(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tifinagh](https://fonts.google.com/specimen/Noto+Sans+Tifinagh), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tifinagh"]
-    pub safe fn Noto_Sans_Tifinagh(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Tirhuta](https://fonts.google.com/specimen/Noto+Sans+Tirhuta), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Tirhuta"]
-    pub safe fn Noto_Sans_Tirhuta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Ugaritic](https://fonts.google.com/specimen/Noto+Sans+Ugaritic), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Ugaritic"]
-    pub safe fn Noto_Sans_Ugaritic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Vai](https://fonts.google.com/specimen/Noto+Sans+Vai), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Vai"]
-    pub safe fn Noto_Sans_Vai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Vithkuqi](https://fonts.google.com/specimen/Noto+Sans+Vithkuqi), a variable font.
-    #[link_name = "next/font/google#Noto_Sans_Vithkuqi"]
-    pub safe fn Noto_Sans_Vithkuqi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Sans Wancho](https://fonts.google.com/specimen/Noto+Sans+Wancho), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Wancho"]
-    pub safe fn Noto_Sans_Wancho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Warang Citi](https://fonts.google.com/specimen/Noto+Sans+Warang+Citi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Warang_Citi"]
-    pub safe fn Noto_Sans_Warang_Citi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Yi](https://fonts.google.com/specimen/Noto+Sans+Yi), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Yi"]
-    pub safe fn Noto_Sans_Yi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Sans Zanabazar Square](https://fonts.google.com/specimen/Noto+Sans+Zanabazar+Square), a static font.
-    #[link_name = "next/font/google#Noto_Sans_Zanabazar_Square"]
-    pub safe fn Noto_Sans_Zanabazar_Square(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif](https://fonts.google.com/specimen/Noto+Serif), a variable font.
-    #[link_name = "next/font/google#Noto_Serif"]
-    pub safe fn Noto_Serif(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Ahom](https://fonts.google.com/specimen/Noto+Serif+Ahom), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Ahom"]
-    pub safe fn Noto_Serif_Ahom(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Armenian](https://fonts.google.com/specimen/Noto+Serif+Armenian), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Armenian"]
-    pub safe fn Noto_Serif_Armenian(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Balinese](https://fonts.google.com/specimen/Noto+Serif+Balinese), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Balinese"]
-    pub safe fn Noto_Serif_Balinese(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Bengali](https://fonts.google.com/specimen/Noto+Serif+Bengali), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Bengali"]
-    pub safe fn Noto_Serif_Bengali(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Devanagari](https://fonts.google.com/specimen/Noto+Serif+Devanagari), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Devanagari"]
-    pub safe fn Noto_Serif_Devanagari(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Display](https://fonts.google.com/specimen/Noto+Serif+Display), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Display"]
-    pub safe fn Noto_Serif_Display(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Dives Akuru](https://fonts.google.com/specimen/Noto+Serif+Dives+Akuru), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Dives_Akuru"]
-    pub safe fn Noto_Serif_Dives_Akuru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Dogra](https://fonts.google.com/specimen/Noto+Serif+Dogra), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Dogra"]
-    pub safe fn Noto_Serif_Dogra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Ethiopic](https://fonts.google.com/specimen/Noto+Serif+Ethiopic), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Ethiopic"]
-    pub safe fn Noto_Serif_Ethiopic(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Georgian](https://fonts.google.com/specimen/Noto+Serif+Georgian), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Georgian"]
-    pub safe fn Noto_Serif_Georgian(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Grantha](https://fonts.google.com/specimen/Noto+Serif+Grantha), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Grantha"]
-    pub safe fn Noto_Serif_Grantha(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Gujarati](https://fonts.google.com/specimen/Noto+Serif+Gujarati), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Gujarati"]
-    pub safe fn Noto_Serif_Gujarati(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Gurmukhi](https://fonts.google.com/specimen/Noto+Serif+Gurmukhi), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Gurmukhi"]
-    pub safe fn Noto_Serif_Gurmukhi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif HK](https://fonts.google.com/specimen/Noto+Serif+HK), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_HK"]
-    pub safe fn Noto_Serif_HK(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Hebrew](https://fonts.google.com/specimen/Noto+Serif+Hebrew), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Hebrew"]
-    pub safe fn Noto_Serif_Hebrew(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Hentaigana](https://fonts.google.com/specimen/Noto+Serif+Hentaigana), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Hentaigana"]
-    pub safe fn Noto_Serif_Hentaigana(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif JP](https://fonts.google.com/specimen/Noto+Serif+JP), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_JP"]
-    pub safe fn Noto_Serif_JP(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif KR](https://fonts.google.com/specimen/Noto+Serif+KR), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_KR"]
-    pub safe fn Noto_Serif_KR(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Kannada](https://fonts.google.com/specimen/Noto+Serif+Kannada), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Kannada"]
-    pub safe fn Noto_Serif_Kannada(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Khitan Small Script](https://fonts.google.com/specimen/Noto+Serif+Khitan+Small+Script), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Khitan_Small_Script"]
-    pub safe fn Noto_Serif_Khitan_Small_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Khmer](https://fonts.google.com/specimen/Noto+Serif+Khmer), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Khmer"]
-    pub safe fn Noto_Serif_Khmer(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Khojki](https://fonts.google.com/specimen/Noto+Serif+Khojki), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Khojki"]
-    pub safe fn Noto_Serif_Khojki(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Lao](https://fonts.google.com/specimen/Noto+Serif+Lao), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Lao"]
-    pub safe fn Noto_Serif_Lao(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Makasar](https://fonts.google.com/specimen/Noto+Serif+Makasar), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Makasar"]
-    pub safe fn Noto_Serif_Makasar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Malayalam](https://fonts.google.com/specimen/Noto+Serif+Malayalam), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Malayalam"]
-    pub safe fn Noto_Serif_Malayalam(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Myanmar](https://fonts.google.com/specimen/Noto+Serif+Myanmar), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Myanmar"]
-    pub safe fn Noto_Serif_Myanmar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif NP Hmong](https://fonts.google.com/specimen/Noto+Serif+NP+Hmong), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_NP_Hmong"]
-    pub safe fn Noto_Serif_NP_Hmong(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Old Uyghur](https://fonts.google.com/specimen/Noto+Serif+Old+Uyghur), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Old_Uyghur"]
-    pub safe fn Noto_Serif_Old_Uyghur(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Oriya](https://fonts.google.com/specimen/Noto+Serif+Oriya), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Oriya"]
-    pub safe fn Noto_Serif_Oriya(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Ottoman Siyaq](https://fonts.google.com/specimen/Noto+Serif+Ottoman+Siyaq), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Ottoman_Siyaq"]
-    pub safe fn Noto_Serif_Ottoman_Siyaq(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif SC](https://fonts.google.com/specimen/Noto+Serif+SC), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_SC"]
-    pub safe fn Noto_Serif_SC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Sinhala](https://fonts.google.com/specimen/Noto+Serif+Sinhala), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Sinhala"]
-    pub safe fn Noto_Serif_Sinhala(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif TC](https://fonts.google.com/specimen/Noto+Serif+TC), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_TC"]
-    pub safe fn Noto_Serif_TC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Tamil](https://fonts.google.com/specimen/Noto+Serif+Tamil), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Tamil"]
-    pub safe fn Noto_Serif_Tamil(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Tangut](https://fonts.google.com/specimen/Noto+Serif+Tangut), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Tangut"]
-    pub safe fn Noto_Serif_Tangut(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Telugu](https://fonts.google.com/specimen/Noto+Serif+Telugu), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Telugu"]
-    pub safe fn Noto_Serif_Telugu(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Thai](https://fonts.google.com/specimen/Noto+Serif+Thai), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Thai"]
-    pub safe fn Noto_Serif_Thai(options: VariableFont<'_>) -> NextFont;
-
-    /// [Noto Serif Tibetan](https://fonts.google.com/specimen/Noto+Serif+Tibetan), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Tibetan"]
-    pub safe fn Noto_Serif_Tibetan(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Todhri](https://fonts.google.com/specimen/Noto+Serif+Todhri), a static font.
-    #[link_name = "next/font/google#Noto_Serif_Todhri"]
-    pub safe fn Noto_Serif_Todhri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Noto Serif Toto](https://fonts.google.com/specimen/Noto+Serif+Toto), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Toto"]
-    pub safe fn Noto_Serif_Toto(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Vithkuqi](https://fonts.google.com/specimen/Noto+Serif+Vithkuqi), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Vithkuqi"]
-    pub safe fn Noto_Serif_Vithkuqi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Serif Yezidi](https://fonts.google.com/specimen/Noto+Serif+Yezidi), a variable font.
-    #[link_name = "next/font/google#Noto_Serif_Yezidi"]
-    pub safe fn Noto_Serif_Yezidi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Traditional Nushu](https://fonts.google.com/specimen/Noto+Traditional+Nushu), a variable font.
-    #[link_name = "next/font/google#Noto_Traditional_Nushu"]
-    pub safe fn Noto_Traditional_Nushu(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Noto Znamenny Musical Notation](https://fonts.google.com/specimen/Noto+Znamenny+Musical+Notation), a static font.
-    #[link_name = "next/font/google#Noto_Znamenny_Musical_Notation"]
-    pub safe fn Noto_Znamenny_Musical_Notation(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Cut](https://fonts.google.com/specimen/Nova+Cut), a static font.
-    #[link_name = "next/font/google#Nova_Cut"]
-    pub safe fn Nova_Cut(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Flat](https://fonts.google.com/specimen/Nova+Flat), a static font.
-    #[link_name = "next/font/google#Nova_Flat"]
-    pub safe fn Nova_Flat(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Mono](https://fonts.google.com/specimen/Nova+Mono), a static font.
-    #[link_name = "next/font/google#Nova_Mono"]
-    pub safe fn Nova_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Oval](https://fonts.google.com/specimen/Nova+Oval), a static font.
-    #[link_name = "next/font/google#Nova_Oval"]
-    pub safe fn Nova_Oval(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Round](https://fonts.google.com/specimen/Nova+Round), a static font.
-    #[link_name = "next/font/google#Nova_Round"]
-    pub safe fn Nova_Round(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Script](https://fonts.google.com/specimen/Nova+Script), a static font.
-    #[link_name = "next/font/google#Nova_Script"]
-    pub safe fn Nova_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Slim](https://fonts.google.com/specimen/Nova+Slim), a static font.
-    #[link_name = "next/font/google#Nova_Slim"]
-    pub safe fn Nova_Slim(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nova Square](https://fonts.google.com/specimen/Nova+Square), a static font.
-    #[link_name = "next/font/google#Nova_Square"]
-    pub safe fn Nova_Square(options: StaticFont<'_>) -> NextFont;
-
-    /// [Numans](https://fonts.google.com/specimen/Numans), a static font.
-    #[link_name = "next/font/google#Numans"]
-    pub safe fn Numans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Nunito](https://fonts.google.com/specimen/Nunito), a variable font.
-    #[link_name = "next/font/google#Nunito"]
-    pub safe fn Nunito(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Nunito Sans](https://fonts.google.com/specimen/Nunito+Sans), a variable font.
-    #[link_name = "next/font/google#Nunito_Sans"]
-    pub safe fn Nunito_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Nuosu SIL](https://fonts.google.com/specimen/Nuosu+SIL), a static font.
-    #[link_name = "next/font/google#Nuosu_SIL"]
-    pub safe fn Nuosu_SIL(options: StaticFont<'_>) -> NextFont;
-
-    /// [Odibee Sans](https://fonts.google.com/specimen/Odibee+Sans), a static font.
-    #[link_name = "next/font/google#Odibee_Sans"]
-    pub safe fn Odibee_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Odor Mean Chey](https://fonts.google.com/specimen/Odor+Mean+Chey), a static font.
-    #[link_name = "next/font/google#Odor_Mean_Chey"]
-    pub safe fn Odor_Mean_Chey(options: StaticFont<'_>) -> NextFont;
-
-    /// [Offside](https://fonts.google.com/specimen/Offside), a static font.
-    #[link_name = "next/font/google#Offside"]
-    pub safe fn Offside(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oi](https://fonts.google.com/specimen/Oi), a static font.
-    #[link_name = "next/font/google#Oi"]
-    pub safe fn Oi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ojuju](https://fonts.google.com/specimen/Ojuju), a variable font.
-    #[link_name = "next/font/google#Ojuju"]
-    pub safe fn Ojuju(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Old Standard TT](https://fonts.google.com/specimen/Old+Standard+TT), a static font.
-    #[link_name = "next/font/google#Old_Standard_TT"]
-    pub safe fn Old_Standard_TT(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oldenburg](https://fonts.google.com/specimen/Oldenburg), a static font.
-    #[link_name = "next/font/google#Oldenburg"]
-    pub safe fn Oldenburg(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ole](https://fonts.google.com/specimen/Ole), a static font.
-    #[link_name = "next/font/google#Ole"]
-    pub safe fn Ole(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oleo Script](https://fonts.google.com/specimen/Oleo+Script), a static font.
-    #[link_name = "next/font/google#Oleo_Script"]
-    pub safe fn Oleo_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oleo Script Swash Caps](https://fonts.google.com/specimen/Oleo+Script+Swash+Caps), a static font.
-    #[link_name = "next/font/google#Oleo_Script_Swash_Caps"]
-    pub safe fn Oleo_Script_Swash_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Onest](https://fonts.google.com/specimen/Onest), a variable font.
-    #[link_name = "next/font/google#Onest"]
-    pub safe fn Onest(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Oooh Baby](https://fonts.google.com/specimen/Oooh+Baby), a static font.
-    #[link_name = "next/font/google#Oooh_Baby"]
-    pub safe fn Oooh_Baby(options: StaticFont<'_>) -> NextFont;
-
-    /// [Open Sans](https://fonts.google.com/specimen/Open+Sans), a variable font.
-    #[link_name = "next/font/google#Open_Sans"]
-    pub safe fn Open_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Oranienbaum](https://fonts.google.com/specimen/Oranienbaum), a static font.
-    #[link_name = "next/font/google#Oranienbaum"]
-    pub safe fn Oranienbaum(options: StaticFont<'_>) -> NextFont;
-
-    /// [Orbit](https://fonts.google.com/specimen/Orbit), a static font.
-    #[link_name = "next/font/google#Orbit"]
-    pub safe fn Orbit(options: StaticFont<'_>) -> NextFont;
-
-    /// [Orbitron](https://fonts.google.com/specimen/Orbitron), a variable font.
-    #[link_name = "next/font/google#Orbitron"]
-    pub safe fn Orbitron(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Oregano](https://fonts.google.com/specimen/Oregano), a static font.
-    #[link_name = "next/font/google#Oregano"]
-    pub safe fn Oregano(options: StaticFont<'_>) -> NextFont;
-
-    /// [Orelega One](https://fonts.google.com/specimen/Orelega+One), a static font.
-    #[link_name = "next/font/google#Orelega_One"]
-    pub safe fn Orelega_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Orienta](https://fonts.google.com/specimen/Orienta), a static font.
-    #[link_name = "next/font/google#Orienta"]
-    pub safe fn Orienta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Original Surfer](https://fonts.google.com/specimen/Original+Surfer), a static font.
-    #[link_name = "next/font/google#Original_Surfer"]
-    pub safe fn Original_Surfer(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oswald](https://fonts.google.com/specimen/Oswald), a variable font.
-    #[link_name = "next/font/google#Oswald"]
-    pub safe fn Oswald(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Outfit](https://fonts.google.com/specimen/Outfit), a variable font.
-    #[link_name = "next/font/google#Outfit"]
-    pub safe fn Outfit(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Over the Rainbow](https://fonts.google.com/specimen/Over+the+Rainbow), a static font.
-    #[link_name = "next/font/google#Over_the_Rainbow"]
-    pub safe fn Over_the_Rainbow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Overlock](https://fonts.google.com/specimen/Overlock), a static font.
-    #[link_name = "next/font/google#Overlock"]
-    pub safe fn Overlock(options: StaticFont<'_>) -> NextFont;
-
-    /// [Overlock SC](https://fonts.google.com/specimen/Overlock+SC), a static font.
-    #[link_name = "next/font/google#Overlock_SC"]
-    pub safe fn Overlock_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Overpass](https://fonts.google.com/specimen/Overpass), a variable font.
-    #[link_name = "next/font/google#Overpass"]
-    pub safe fn Overpass(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Overpass Mono](https://fonts.google.com/specimen/Overpass+Mono), a variable font.
-    #[link_name = "next/font/google#Overpass_Mono"]
-    pub safe fn Overpass_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ovo](https://fonts.google.com/specimen/Ovo), a static font.
-    #[link_name = "next/font/google#Ovo"]
-    pub safe fn Ovo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oxanium](https://fonts.google.com/specimen/Oxanium), a variable font.
-    #[link_name = "next/font/google#Oxanium"]
-    pub safe fn Oxanium(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Oxygen](https://fonts.google.com/specimen/Oxygen), a static font.
-    #[link_name = "next/font/google#Oxygen"]
-    pub safe fn Oxygen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Oxygen Mono](https://fonts.google.com/specimen/Oxygen+Mono), a static font.
-    #[link_name = "next/font/google#Oxygen_Mono"]
-    pub safe fn Oxygen_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Mono](https://fonts.google.com/specimen/PT+Mono), a static font.
-    #[link_name = "next/font/google#PT_Mono"]
-    pub safe fn PT_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Sans](https://fonts.google.com/specimen/PT+Sans), a static font.
-    #[link_name = "next/font/google#PT_Sans"]
-    pub safe fn PT_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Sans Caption](https://fonts.google.com/specimen/PT+Sans+Caption), a static font.
-    #[link_name = "next/font/google#PT_Sans_Caption"]
-    pub safe fn PT_Sans_Caption(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Sans Narrow](https://fonts.google.com/specimen/PT+Sans+Narrow), a static font.
-    #[link_name = "next/font/google#PT_Sans_Narrow"]
-    pub safe fn PT_Sans_Narrow(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Serif](https://fonts.google.com/specimen/PT+Serif), a static font.
-    #[link_name = "next/font/google#PT_Serif"]
-    pub safe fn PT_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [PT Serif Caption](https://fonts.google.com/specimen/PT+Serif+Caption), a static font.
-    #[link_name = "next/font/google#PT_Serif_Caption"]
-    pub safe fn PT_Serif_Caption(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pacifico](https://fonts.google.com/specimen/Pacifico), a static font.
-    #[link_name = "next/font/google#Pacifico"]
-    pub safe fn Pacifico(options: StaticFont<'_>) -> NextFont;
-
-    /// [Padauk](https://fonts.google.com/specimen/Padauk), a static font.
-    #[link_name = "next/font/google#Padauk"]
-    pub safe fn Padauk(options: StaticFont<'_>) -> NextFont;
-
-    /// [Padyakke Expanded One](https://fonts.google.com/specimen/Padyakke+Expanded+One), a static font.
-    #[link_name = "next/font/google#Padyakke_Expanded_One"]
-    pub safe fn Padyakke_Expanded_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Palanquin](https://fonts.google.com/specimen/Palanquin), a static font.
-    #[link_name = "next/font/google#Palanquin"]
-    pub safe fn Palanquin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Palanquin Dark](https://fonts.google.com/specimen/Palanquin+Dark), a static font.
-    #[link_name = "next/font/google#Palanquin_Dark"]
-    pub safe fn Palanquin_Dark(options: StaticFont<'_>) -> NextFont;
-
-    /// [Palette Mosaic](https://fonts.google.com/specimen/Palette+Mosaic), a static font.
-    #[link_name = "next/font/google#Palette_Mosaic"]
-    pub safe fn Palette_Mosaic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pangolin](https://fonts.google.com/specimen/Pangolin), a static font.
-    #[link_name = "next/font/google#Pangolin"]
-    pub safe fn Pangolin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Paprika](https://fonts.google.com/specimen/Paprika), a static font.
-    #[link_name = "next/font/google#Paprika"]
-    pub safe fn Paprika(options: StaticFont<'_>) -> NextFont;
-
-    /// [Parastoo](https://fonts.google.com/specimen/Parastoo), a variable font.
-    #[link_name = "next/font/google#Parastoo"]
-    pub safe fn Parastoo(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Parisienne](https://fonts.google.com/specimen/Parisienne), a static font.
-    #[link_name = "next/font/google#Parisienne"]
-    pub safe fn Parisienne(options: StaticFont<'_>) -> NextFont;
-
-    /// [Parkinsans](https://fonts.google.com/specimen/Parkinsans), a variable font.
-    #[link_name = "next/font/google#Parkinsans"]
-    pub safe fn Parkinsans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Passero One](https://fonts.google.com/specimen/Passero+One), a static font.
-    #[link_name = "next/font/google#Passero_One"]
-    pub safe fn Passero_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Passion One](https://fonts.google.com/specimen/Passion+One), a static font.
-    #[link_name = "next/font/google#Passion_One"]
-    pub safe fn Passion_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Passions Conflict](https://fonts.google.com/specimen/Passions+Conflict), a static font.
-    #[link_name = "next/font/google#Passions_Conflict"]
-    pub safe fn Passions_Conflict(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pathway Extreme](https://fonts.google.com/specimen/Pathway+Extreme), a variable font.
-    #[link_name = "next/font/google#Pathway_Extreme"]
-    pub safe fn Pathway_Extreme(options: VariableFont<'_>) -> NextFont;
-
-    /// [Pathway Gothic One](https://fonts.google.com/specimen/Pathway+Gothic+One), a static font.
-    #[link_name = "next/font/google#Pathway_Gothic_One"]
-    pub safe fn Pathway_Gothic_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Patrick Hand](https://fonts.google.com/specimen/Patrick+Hand), a static font.
-    #[link_name = "next/font/google#Patrick_Hand"]
-    pub safe fn Patrick_Hand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Patrick Hand SC](https://fonts.google.com/specimen/Patrick+Hand+SC), a static font.
-    #[link_name = "next/font/google#Patrick_Hand_SC"]
-    pub safe fn Patrick_Hand_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pattaya](https://fonts.google.com/specimen/Pattaya), a static font.
-    #[link_name = "next/font/google#Pattaya"]
-    pub safe fn Pattaya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Patua One](https://fonts.google.com/specimen/Patua+One), a static font.
-    #[link_name = "next/font/google#Patua_One"]
-    pub safe fn Patua_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pavanam](https://fonts.google.com/specimen/Pavanam), a static font.
-    #[link_name = "next/font/google#Pavanam"]
-    pub safe fn Pavanam(options: StaticFont<'_>) -> NextFont;
-
-    /// [Paytone One](https://fonts.google.com/specimen/Paytone+One), a static font.
-    #[link_name = "next/font/google#Paytone_One"]
-    pub safe fn Paytone_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Peddana](https://fonts.google.com/specimen/Peddana), a static font.
-    #[link_name = "next/font/google#Peddana"]
-    pub safe fn Peddana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Peralta](https://fonts.google.com/specimen/Peralta), a static font.
-    #[link_name = "next/font/google#Peralta"]
-    pub safe fn Peralta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Permanent Marker](https://fonts.google.com/specimen/Permanent+Marker), a static font.
-    #[link_name = "next/font/google#Permanent_Marker"]
-    pub safe fn Permanent_Marker(options: StaticFont<'_>) -> NextFont;
-
-    /// [Petemoss](https://fonts.google.com/specimen/Petemoss), a static font.
-    #[link_name = "next/font/google#Petemoss"]
-    pub safe fn Petemoss(options: StaticFont<'_>) -> NextFont;
-
-    /// [Petit Formal Script](https://fonts.google.com/specimen/Petit+Formal+Script), a static font.
-    #[link_name = "next/font/google#Petit_Formal_Script"]
-    pub safe fn Petit_Formal_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Petrona](https://fonts.google.com/specimen/Petrona), a variable font.
-    #[link_name = "next/font/google#Petrona"]
-    pub safe fn Petrona(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Phetsarath](https://fonts.google.com/specimen/Phetsarath), a static font.
-    #[link_name = "next/font/google#Phetsarath"]
-    pub safe fn Phetsarath(options: StaticFont<'_>) -> NextFont;
-
-    /// [Philosopher](https://fonts.google.com/specimen/Philosopher), a static font.
-    #[link_name = "next/font/google#Philosopher"]
-    pub safe fn Philosopher(options: StaticFont<'_>) -> NextFont;
-
-    /// [Phudu](https://fonts.google.com/specimen/Phudu), a variable font.
-    #[link_name = "next/font/google#Phudu"]
-    pub safe fn Phudu(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Piazzolla](https://fonts.google.com/specimen/Piazzolla), a variable font.
-    #[link_name = "next/font/google#Piazzolla"]
-    pub safe fn Piazzolla(options: VariableFont<'_>) -> NextFont;
-
-    /// [Piedra](https://fonts.google.com/specimen/Piedra), a static font.
-    #[link_name = "next/font/google#Piedra"]
-    pub safe fn Piedra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pinyon Script](https://fonts.google.com/specimen/Pinyon+Script), a static font.
-    #[link_name = "next/font/google#Pinyon_Script"]
-    pub safe fn Pinyon_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pirata One](https://fonts.google.com/specimen/Pirata+One), a static font.
-    #[link_name = "next/font/google#Pirata_One"]
-    pub safe fn Pirata_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans), a variable font.
-    #[link_name = "next/font/google#Pixelify_Sans"]
-    pub safe fn Pixelify_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Plaster](https://fonts.google.com/specimen/Plaster), a static font.
-    #[link_name = "next/font/google#Plaster"]
-    pub safe fn Plaster(options: StaticFont<'_>) -> NextFont;
-
-    /// [Platypi](https://fonts.google.com/specimen/Platypi), a variable font.
-    #[link_name = "next/font/google#Platypi"]
-    pub safe fn Platypi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Play](https://fonts.google.com/specimen/Play), a static font.
-    #[link_name = "next/font/google#Play"]
-    pub safe fn Play(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playball](https://fonts.google.com/specimen/Playball), a static font.
-    #[link_name = "next/font/google#Playball"]
-    pub safe fn Playball(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playfair](https://fonts.google.com/specimen/Playfair), a variable font.
-    #[link_name = "next/font/google#Playfair"]
-    pub safe fn Playfair(options: VariableFont<'_>) -> NextFont;
-
-    /// [Playfair Display](https://fonts.google.com/specimen/Playfair+Display), a variable font.
-    #[link_name = "next/font/google#Playfair_Display"]
-    pub safe fn Playfair_Display(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playfair Display SC](https://fonts.google.com/specimen/Playfair+Display+SC), a static font.
-    #[link_name = "next/font/google#Playfair_Display_SC"]
-    pub safe fn Playfair_Display_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playpen Sans](https://fonts.google.com/specimen/Playpen+Sans), a variable font.
-    #[link_name = "next/font/google#Playpen_Sans"]
-    pub safe fn Playpen_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playpen Sans Arabic](https://fonts.google.com/specimen/Playpen+Sans+Arabic), a variable font.
-    #[link_name = "next/font/google#Playpen_Sans_Arabic"]
-    pub safe fn Playpen_Sans_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playpen Sans Deva](https://fonts.google.com/specimen/Playpen+Sans+Deva), a variable font.
-    #[link_name = "next/font/google#Playpen_Sans_Deva"]
-    pub safe fn Playpen_Sans_Deva(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playpen Sans Hebrew](https://fonts.google.com/specimen/Playpen+Sans+Hebrew), a variable font.
-    #[link_name = "next/font/google#Playpen_Sans_Hebrew"]
-    pub safe fn Playpen_Sans_Hebrew(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playpen Sans Thai](https://fonts.google.com/specimen/Playpen+Sans+Thai), a variable font.
-    #[link_name = "next/font/google#Playpen_Sans_Thai"]
-    pub safe fn Playpen_Sans_Thai(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AR](https://fonts.google.com/specimen/Playwrite+AR), a variable font.
-    #[link_name = "next/font/google#Playwrite_AR"]
-    pub safe fn Playwrite_AR(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AR Guides](https://fonts.google.com/specimen/Playwrite+AR+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AR_Guides"]
-    pub safe fn Playwrite_AR_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AT](https://fonts.google.com/specimen/Playwrite+AT), a variable font.
-    #[link_name = "next/font/google#Playwrite_AT"]
-    pub safe fn Playwrite_AT(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AT Guides](https://fonts.google.com/specimen/Playwrite+AT+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AT_Guides"]
-    pub safe fn Playwrite_AT_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AU NSW](https://fonts.google.com/specimen/Playwrite+AU+NSW), a variable font.
-    #[link_name = "next/font/google#Playwrite_AU_NSW"]
-    pub safe fn Playwrite_AU_NSW(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AU NSW Guides](https://fonts.google.com/specimen/Playwrite+AU+NSW+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AU_NSW_Guides"]
-    pub safe fn Playwrite_AU_NSW_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AU QLD](https://fonts.google.com/specimen/Playwrite+AU+QLD), a variable font.
-    #[link_name = "next/font/google#Playwrite_AU_QLD"]
-    pub safe fn Playwrite_AU_QLD(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AU QLD Guides](https://fonts.google.com/specimen/Playwrite+AU+QLD+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AU_QLD_Guides"]
-    pub safe fn Playwrite_AU_QLD_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AU SA](https://fonts.google.com/specimen/Playwrite+AU+SA), a variable font.
-    #[link_name = "next/font/google#Playwrite_AU_SA"]
-    pub safe fn Playwrite_AU_SA(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AU SA Guides](https://fonts.google.com/specimen/Playwrite+AU+SA+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AU_SA_Guides"]
-    pub safe fn Playwrite_AU_SA_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AU TAS](https://fonts.google.com/specimen/Playwrite+AU+TAS), a variable font.
-    #[link_name = "next/font/google#Playwrite_AU_TAS"]
-    pub safe fn Playwrite_AU_TAS(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AU TAS Guides](https://fonts.google.com/specimen/Playwrite+AU+TAS+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AU_TAS_Guides"]
-    pub safe fn Playwrite_AU_TAS_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite AU VIC](https://fonts.google.com/specimen/Playwrite+AU+VIC), a variable font.
-    #[link_name = "next/font/google#Playwrite_AU_VIC"]
-    pub safe fn Playwrite_AU_VIC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite AU VIC Guides](https://fonts.google.com/specimen/Playwrite+AU+VIC+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_AU_VIC_Guides"]
-    pub safe fn Playwrite_AU_VIC_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite BE VLG](https://fonts.google.com/specimen/Playwrite+BE+VLG), a variable font.
-    #[link_name = "next/font/google#Playwrite_BE_VLG"]
-    pub safe fn Playwrite_BE_VLG(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite BE VLG Guides](https://fonts.google.com/specimen/Playwrite+BE+VLG+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_BE_VLG_Guides"]
-    pub safe fn Playwrite_BE_VLG_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite BE WAL](https://fonts.google.com/specimen/Playwrite+BE+WAL), a variable font.
-    #[link_name = "next/font/google#Playwrite_BE_WAL"]
-    pub safe fn Playwrite_BE_WAL(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite BE WAL Guides](https://fonts.google.com/specimen/Playwrite+BE+WAL+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_BE_WAL_Guides"]
-    pub safe fn Playwrite_BE_WAL_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite BR](https://fonts.google.com/specimen/Playwrite+BR), a variable font.
-    #[link_name = "next/font/google#Playwrite_BR"]
-    pub safe fn Playwrite_BR(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite BR Guides](https://fonts.google.com/specimen/Playwrite+BR+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_BR_Guides"]
-    pub safe fn Playwrite_BR_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite CA](https://fonts.google.com/specimen/Playwrite+CA), a variable font.
-    #[link_name = "next/font/google#Playwrite_CA"]
-    pub safe fn Playwrite_CA(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite CA Guides](https://fonts.google.com/specimen/Playwrite+CA+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_CA_Guides"]
-    pub safe fn Playwrite_CA_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite CL](https://fonts.google.com/specimen/Playwrite+CL), a variable font.
-    #[link_name = "next/font/google#Playwrite_CL"]
-    pub safe fn Playwrite_CL(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite CL Guides](https://fonts.google.com/specimen/Playwrite+CL+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_CL_Guides"]
-    pub safe fn Playwrite_CL_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite CO](https://fonts.google.com/specimen/Playwrite+CO), a variable font.
-    #[link_name = "next/font/google#Playwrite_CO"]
-    pub safe fn Playwrite_CO(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite CO Guides](https://fonts.google.com/specimen/Playwrite+CO+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_CO_Guides"]
-    pub safe fn Playwrite_CO_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite CU](https://fonts.google.com/specimen/Playwrite+CU), a variable font.
-    #[link_name = "next/font/google#Playwrite_CU"]
-    pub safe fn Playwrite_CU(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite CU Guides](https://fonts.google.com/specimen/Playwrite+CU+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_CU_Guides"]
-    pub safe fn Playwrite_CU_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite CZ](https://fonts.google.com/specimen/Playwrite+CZ), a variable font.
-    #[link_name = "next/font/google#Playwrite_CZ"]
-    pub safe fn Playwrite_CZ(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite CZ Guides](https://fonts.google.com/specimen/Playwrite+CZ+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_CZ_Guides"]
-    pub safe fn Playwrite_CZ_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DE Grund](https://fonts.google.com/specimen/Playwrite+DE+Grund), a variable font.
-    #[link_name = "next/font/google#Playwrite_DE_Grund"]
-    pub safe fn Playwrite_DE_Grund(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DE Grund Guides](https://fonts.google.com/specimen/Playwrite+DE+Grund+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DE_Grund_Guides"]
-    pub safe fn Playwrite_DE_Grund_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DE LA](https://fonts.google.com/specimen/Playwrite+DE+LA), a variable font.
-    #[link_name = "next/font/google#Playwrite_DE_LA"]
-    pub safe fn Playwrite_DE_LA(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DE LA Guides](https://fonts.google.com/specimen/Playwrite+DE+LA+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DE_LA_Guides"]
-    pub safe fn Playwrite_DE_LA_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DE SAS](https://fonts.google.com/specimen/Playwrite+DE+SAS), a variable font.
-    #[link_name = "next/font/google#Playwrite_DE_SAS"]
-    pub safe fn Playwrite_DE_SAS(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DE SAS Guides](https://fonts.google.com/specimen/Playwrite+DE+SAS+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DE_SAS_Guides"]
-    pub safe fn Playwrite_DE_SAS_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DE VA](https://fonts.google.com/specimen/Playwrite+DE+VA), a variable font.
-    #[link_name = "next/font/google#Playwrite_DE_VA"]
-    pub safe fn Playwrite_DE_VA(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DE VA Guides](https://fonts.google.com/specimen/Playwrite+DE+VA+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DE_VA_Guides"]
-    pub safe fn Playwrite_DE_VA_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DK Loopet](https://fonts.google.com/specimen/Playwrite+DK+Loopet), a variable font.
-    #[link_name = "next/font/google#Playwrite_DK_Loopet"]
-    pub safe fn Playwrite_DK_Loopet(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DK Loopet Guides](https://fonts.google.com/specimen/Playwrite+DK+Loopet+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DK_Loopet_Guides"]
-    pub safe fn Playwrite_DK_Loopet_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite DK Uloopet](https://fonts.google.com/specimen/Playwrite+DK+Uloopet), a variable font.
-    #[link_name = "next/font/google#Playwrite_DK_Uloopet"]
-    pub safe fn Playwrite_DK_Uloopet(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite DK Uloopet Guides](https://fonts.google.com/specimen/Playwrite+DK+Uloopet+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_DK_Uloopet_Guides"]
-    pub safe fn Playwrite_DK_Uloopet_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite ES](https://fonts.google.com/specimen/Playwrite+ES), a variable font.
-    #[link_name = "next/font/google#Playwrite_ES"]
-    pub safe fn Playwrite_ES(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite ES Deco](https://fonts.google.com/specimen/Playwrite+ES+Deco), a variable font.
-    #[link_name = "next/font/google#Playwrite_ES_Deco"]
-    pub safe fn Playwrite_ES_Deco(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite ES Deco Guides](https://fonts.google.com/specimen/Playwrite+ES+Deco+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_ES_Deco_Guides"]
-    pub safe fn Playwrite_ES_Deco_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite ES Guides](https://fonts.google.com/specimen/Playwrite+ES+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_ES_Guides"]
-    pub safe fn Playwrite_ES_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite FR Moderne](https://fonts.google.com/specimen/Playwrite+FR+Moderne), a variable font.
-    #[link_name = "next/font/google#Playwrite_FR_Moderne"]
-    pub safe fn Playwrite_FR_Moderne(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite FR Moderne Guides](https://fonts.google.com/specimen/Playwrite+FR+Moderne+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_FR_Moderne_Guides"]
-    pub safe fn Playwrite_FR_Moderne_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite FR Trad](https://fonts.google.com/specimen/Playwrite+FR+Trad), a variable font.
-    #[link_name = "next/font/google#Playwrite_FR_Trad"]
-    pub safe fn Playwrite_FR_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite FR Trad Guides](https://fonts.google.com/specimen/Playwrite+FR+Trad+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_FR_Trad_Guides"]
-    pub safe fn Playwrite_FR_Trad_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite GB J](https://fonts.google.com/specimen/Playwrite+GB+J), a variable font.
-    #[link_name = "next/font/google#Playwrite_GB_J"]
-    pub safe fn Playwrite_GB_J(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite GB J Guides](https://fonts.google.com/specimen/Playwrite+GB+J+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_GB_J_Guides"]
-    pub safe fn Playwrite_GB_J_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite GB S](https://fonts.google.com/specimen/Playwrite+GB+S), a variable font.
-    #[link_name = "next/font/google#Playwrite_GB_S"]
-    pub safe fn Playwrite_GB_S(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite GB S Guides](https://fonts.google.com/specimen/Playwrite+GB+S+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_GB_S_Guides"]
-    pub safe fn Playwrite_GB_S_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite HR](https://fonts.google.com/specimen/Playwrite+HR), a variable font.
-    #[link_name = "next/font/google#Playwrite_HR"]
-    pub safe fn Playwrite_HR(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite HR Guides](https://fonts.google.com/specimen/Playwrite+HR+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_HR_Guides"]
-    pub safe fn Playwrite_HR_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite HR Lijeva](https://fonts.google.com/specimen/Playwrite+HR+Lijeva), a variable font.
-    #[link_name = "next/font/google#Playwrite_HR_Lijeva"]
-    pub safe fn Playwrite_HR_Lijeva(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite HR Lijeva Guides](https://fonts.google.com/specimen/Playwrite+HR+Lijeva+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_HR_Lijeva_Guides"]
-    pub safe fn Playwrite_HR_Lijeva_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite HU](https://fonts.google.com/specimen/Playwrite+HU), a variable font.
-    #[link_name = "next/font/google#Playwrite_HU"]
-    pub safe fn Playwrite_HU(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite HU Guides](https://fonts.google.com/specimen/Playwrite+HU+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_HU_Guides"]
-    pub safe fn Playwrite_HU_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite ID](https://fonts.google.com/specimen/Playwrite+ID), a variable font.
-    #[link_name = "next/font/google#Playwrite_ID"]
-    pub safe fn Playwrite_ID(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite ID Guides](https://fonts.google.com/specimen/Playwrite+ID+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_ID_Guides"]
-    pub safe fn Playwrite_ID_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite IE](https://fonts.google.com/specimen/Playwrite+IE), a variable font.
-    #[link_name = "next/font/google#Playwrite_IE"]
-    pub safe fn Playwrite_IE(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite IE Guides](https://fonts.google.com/specimen/Playwrite+IE+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_IE_Guides"]
-    pub safe fn Playwrite_IE_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite IN](https://fonts.google.com/specimen/Playwrite+IN), a variable font.
-    #[link_name = "next/font/google#Playwrite_IN"]
-    pub safe fn Playwrite_IN(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite IN Guides](https://fonts.google.com/specimen/Playwrite+IN+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_IN_Guides"]
-    pub safe fn Playwrite_IN_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite IS](https://fonts.google.com/specimen/Playwrite+IS), a variable font.
-    #[link_name = "next/font/google#Playwrite_IS"]
-    pub safe fn Playwrite_IS(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite IS Guides](https://fonts.google.com/specimen/Playwrite+IS+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_IS_Guides"]
-    pub safe fn Playwrite_IS_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite IT Moderna](https://fonts.google.com/specimen/Playwrite+IT+Moderna), a variable font.
-    #[link_name = "next/font/google#Playwrite_IT_Moderna"]
-    pub safe fn Playwrite_IT_Moderna(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite IT Moderna Guides](https://fonts.google.com/specimen/Playwrite+IT+Moderna+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_IT_Moderna_Guides"]
-    pub safe fn Playwrite_IT_Moderna_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite IT Trad](https://fonts.google.com/specimen/Playwrite+IT+Trad), a variable font.
-    #[link_name = "next/font/google#Playwrite_IT_Trad"]
-    pub safe fn Playwrite_IT_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite IT Trad Guides](https://fonts.google.com/specimen/Playwrite+IT+Trad+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_IT_Trad_Guides"]
-    pub safe fn Playwrite_IT_Trad_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite MX](https://fonts.google.com/specimen/Playwrite+MX), a variable font.
-    #[link_name = "next/font/google#Playwrite_MX"]
-    pub safe fn Playwrite_MX(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite MX Guides](https://fonts.google.com/specimen/Playwrite+MX+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_MX_Guides"]
-    pub safe fn Playwrite_MX_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite NG Modern](https://fonts.google.com/specimen/Playwrite+NG+Modern), a variable font.
-    #[link_name = "next/font/google#Playwrite_NG_Modern"]
-    pub safe fn Playwrite_NG_Modern(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite NG Modern Guides](https://fonts.google.com/specimen/Playwrite+NG+Modern+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_NG_Modern_Guides"]
-    pub safe fn Playwrite_NG_Modern_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite NL](https://fonts.google.com/specimen/Playwrite+NL), a variable font.
-    #[link_name = "next/font/google#Playwrite_NL"]
-    pub safe fn Playwrite_NL(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite NL Guides](https://fonts.google.com/specimen/Playwrite+NL+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_NL_Guides"]
-    pub safe fn Playwrite_NL_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite NO](https://fonts.google.com/specimen/Playwrite+NO), a variable font.
-    #[link_name = "next/font/google#Playwrite_NO"]
-    pub safe fn Playwrite_NO(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite NO Guides](https://fonts.google.com/specimen/Playwrite+NO+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_NO_Guides"]
-    pub safe fn Playwrite_NO_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite NZ](https://fonts.google.com/specimen/Playwrite+NZ), a variable font.
-    #[link_name = "next/font/google#Playwrite_NZ"]
-    pub safe fn Playwrite_NZ(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite NZ Basic](https://fonts.google.com/specimen/Playwrite+NZ+Basic), a variable font.
-    #[link_name = "next/font/google#Playwrite_NZ_Basic"]
-    pub safe fn Playwrite_NZ_Basic(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite NZ Basic Guides](https://fonts.google.com/specimen/Playwrite+NZ+Basic+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_NZ_Basic_Guides"]
-    pub safe fn Playwrite_NZ_Basic_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite NZ Guides](https://fonts.google.com/specimen/Playwrite+NZ+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_NZ_Guides"]
-    pub safe fn Playwrite_NZ_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite PE](https://fonts.google.com/specimen/Playwrite+PE), a variable font.
-    #[link_name = "next/font/google#Playwrite_PE"]
-    pub safe fn Playwrite_PE(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite PE Guides](https://fonts.google.com/specimen/Playwrite+PE+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_PE_Guides"]
-    pub safe fn Playwrite_PE_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite PL](https://fonts.google.com/specimen/Playwrite+PL), a variable font.
-    #[link_name = "next/font/google#Playwrite_PL"]
-    pub safe fn Playwrite_PL(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite PL Guides](https://fonts.google.com/specimen/Playwrite+PL+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_PL_Guides"]
-    pub safe fn Playwrite_PL_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite PT](https://fonts.google.com/specimen/Playwrite+PT), a variable font.
-    #[link_name = "next/font/google#Playwrite_PT"]
-    pub safe fn Playwrite_PT(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite PT Guides](https://fonts.google.com/specimen/Playwrite+PT+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_PT_Guides"]
-    pub safe fn Playwrite_PT_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite RO](https://fonts.google.com/specimen/Playwrite+RO), a variable font.
-    #[link_name = "next/font/google#Playwrite_RO"]
-    pub safe fn Playwrite_RO(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite RO Guides](https://fonts.google.com/specimen/Playwrite+RO+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_RO_Guides"]
-    pub safe fn Playwrite_RO_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite SK](https://fonts.google.com/specimen/Playwrite+SK), a variable font.
-    #[link_name = "next/font/google#Playwrite_SK"]
-    pub safe fn Playwrite_SK(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite SK Guides](https://fonts.google.com/specimen/Playwrite+SK+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_SK_Guides"]
-    pub safe fn Playwrite_SK_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite TZ](https://fonts.google.com/specimen/Playwrite+TZ), a variable font.
-    #[link_name = "next/font/google#Playwrite_TZ"]
-    pub safe fn Playwrite_TZ(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite TZ Guides](https://fonts.google.com/specimen/Playwrite+TZ+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_TZ_Guides"]
-    pub safe fn Playwrite_TZ_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite US Modern](https://fonts.google.com/specimen/Playwrite+US+Modern), a variable font.
-    #[link_name = "next/font/google#Playwrite_US_Modern"]
-    pub safe fn Playwrite_US_Modern(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite US Modern Guides](https://fonts.google.com/specimen/Playwrite+US+Modern+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_US_Modern_Guides"]
-    pub safe fn Playwrite_US_Modern_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite US Trad](https://fonts.google.com/specimen/Playwrite+US+Trad), a variable font.
-    #[link_name = "next/font/google#Playwrite_US_Trad"]
-    pub safe fn Playwrite_US_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite US Trad Guides](https://fonts.google.com/specimen/Playwrite+US+Trad+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_US_Trad_Guides"]
-    pub safe fn Playwrite_US_Trad_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite VN](https://fonts.google.com/specimen/Playwrite+VN), a variable font.
-    #[link_name = "next/font/google#Playwrite_VN"]
-    pub safe fn Playwrite_VN(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite VN Guides](https://fonts.google.com/specimen/Playwrite+VN+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_VN_Guides"]
-    pub safe fn Playwrite_VN_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Playwrite ZA](https://fonts.google.com/specimen/Playwrite+ZA), a variable font.
-    #[link_name = "next/font/google#Playwrite_ZA"]
-    pub safe fn Playwrite_ZA(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Playwrite ZA Guides](https://fonts.google.com/specimen/Playwrite+ZA+Guides), a static font.
-    #[link_name = "next/font/google#Playwrite_ZA_Guides"]
-    pub safe fn Playwrite_ZA_Guides(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pliant](https://fonts.google.com/specimen/Pliant), a variable font.
-    #[link_name = "next/font/google#Pliant"]
-    pub safe fn Pliant(options: VariableFont<'_>) -> NextFont;
-
-    /// [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans), a variable font.
-    #[link_name = "next/font/google#Plus_Jakarta_Sans"]
-    pub safe fn Plus_Jakarta_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Pochaevsk](https://fonts.google.com/specimen/Pochaevsk), a static font.
-    #[link_name = "next/font/google#Pochaevsk"]
-    pub safe fn Pochaevsk(options: StaticFont<'_>) -> NextFont;
-
-    /// [Podkova](https://fonts.google.com/specimen/Podkova), a variable font.
-    #[link_name = "next/font/google#Podkova"]
-    pub safe fn Podkova(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Poetsen One](https://fonts.google.com/specimen/Poetsen+One), a static font.
-    #[link_name = "next/font/google#Poetsen_One"]
-    pub safe fn Poetsen_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Poiret One](https://fonts.google.com/specimen/Poiret+One), a static font.
-    #[link_name = "next/font/google#Poiret_One"]
-    pub safe fn Poiret_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Poller One](https://fonts.google.com/specimen/Poller+One), a static font.
-    #[link_name = "next/font/google#Poller_One"]
-    pub safe fn Poller_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Poltawski Nowy](https://fonts.google.com/specimen/Poltawski+Nowy), a variable font.
-    #[link_name = "next/font/google#Poltawski_Nowy"]
-    pub safe fn Poltawski_Nowy(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Poly](https://fonts.google.com/specimen/Poly), a static font.
-    #[link_name = "next/font/google#Poly"]
-    pub safe fn Poly(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pompiere](https://fonts.google.com/specimen/Pompiere), a static font.
-    #[link_name = "next/font/google#Pompiere"]
-    pub safe fn Pompiere(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ponnala](https://fonts.google.com/specimen/Ponnala), a static font.
-    #[link_name = "next/font/google#Ponnala"]
-    pub safe fn Ponnala(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ponomar](https://fonts.google.com/specimen/Ponomar), a static font.
-    #[link_name = "next/font/google#Ponomar"]
-    pub safe fn Ponomar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pontano Sans](https://fonts.google.com/specimen/Pontano+Sans), a variable font.
-    #[link_name = "next/font/google#Pontano_Sans"]
-    pub safe fn Pontano_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Poor Story](https://fonts.google.com/specimen/Poor+Story), a static font.
-    #[link_name = "next/font/google#Poor_Story"]
-    pub safe fn Poor_Story(options: StaticFont<'_>) -> NextFont;
-
-    /// [Poppins](https://fonts.google.com/specimen/Poppins), a static font.
-    #[link_name = "next/font/google#Poppins"]
-    pub safe fn Poppins(options: StaticFont<'_>) -> NextFont;
-
-    /// [Port Lligat Sans](https://fonts.google.com/specimen/Port+Lligat+Sans), a static font.
-    #[link_name = "next/font/google#Port_Lligat_Sans"]
-    pub safe fn Port_Lligat_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Port Lligat Slab](https://fonts.google.com/specimen/Port+Lligat+Slab), a static font.
-    #[link_name = "next/font/google#Port_Lligat_Slab"]
-    pub safe fn Port_Lligat_Slab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Potta One](https://fonts.google.com/specimen/Potta+One), a static font.
-    #[link_name = "next/font/google#Potta_One"]
-    pub safe fn Potta_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pragati Narrow](https://fonts.google.com/specimen/Pragati+Narrow), a static font.
-    #[link_name = "next/font/google#Pragati_Narrow"]
-    pub safe fn Pragati_Narrow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Praise](https://fonts.google.com/specimen/Praise), a static font.
-    #[link_name = "next/font/google#Praise"]
-    pub safe fn Praise(options: StaticFont<'_>) -> NextFont;
-
-    /// [Prata](https://fonts.google.com/specimen/Prata), a static font.
-    #[link_name = "next/font/google#Prata"]
-    pub safe fn Prata(options: StaticFont<'_>) -> NextFont;
-
-    /// [Preahvihear](https://fonts.google.com/specimen/Preahvihear), a static font.
-    #[link_name = "next/font/google#Preahvihear"]
-    pub safe fn Preahvihear(options: StaticFont<'_>) -> NextFont;
-
-    /// [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P), a static font.
-    #[link_name = "next/font/google#Press_Start_2P"]
-    pub safe fn Press_Start_2P(options: StaticFont<'_>) -> NextFont;
-
-    /// [Pridi](https://fonts.google.com/specimen/Pridi), a static font.
-    #[link_name = "next/font/google#Pridi"]
-    pub safe fn Pridi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Princess Sofia](https://fonts.google.com/specimen/Princess+Sofia), a static font.
-    #[link_name = "next/font/google#Princess_Sofia"]
-    pub safe fn Princess_Sofia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Prociono](https://fonts.google.com/specimen/Prociono), a static font.
-    #[link_name = "next/font/google#Prociono"]
-    pub safe fn Prociono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Prompt](https://fonts.google.com/specimen/Prompt), a static font.
-    #[link_name = "next/font/google#Prompt"]
-    pub safe fn Prompt(options: StaticFont<'_>) -> NextFont;
-
-    /// [Prosto One](https://fonts.google.com/specimen/Prosto+One), a static font.
-    #[link_name = "next/font/google#Prosto_One"]
-    pub safe fn Prosto_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Protest Guerrilla](https://fonts.google.com/specimen/Protest+Guerrilla), a static font.
-    #[link_name = "next/font/google#Protest_Guerrilla"]
-    pub safe fn Protest_Guerrilla(options: StaticFont<'_>) -> NextFont;
-
-    /// [Protest Revolution](https://fonts.google.com/specimen/Protest+Revolution), a static font.
-    #[link_name = "next/font/google#Protest_Revolution"]
-    pub safe fn Protest_Revolution(options: StaticFont<'_>) -> NextFont;
-
-    /// [Protest Riot](https://fonts.google.com/specimen/Protest+Riot), a static font.
-    #[link_name = "next/font/google#Protest_Riot"]
-    pub safe fn Protest_Riot(options: StaticFont<'_>) -> NextFont;
-
-    /// [Protest Strike](https://fonts.google.com/specimen/Protest+Strike), a static font.
-    #[link_name = "next/font/google#Protest_Strike"]
-    pub safe fn Protest_Strike(options: StaticFont<'_>) -> NextFont;
-
-    /// [Proza Libre](https://fonts.google.com/specimen/Proza+Libre), a static font.
-    #[link_name = "next/font/google#Proza_Libre"]
-    pub safe fn Proza_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Public Sans](https://fonts.google.com/specimen/Public+Sans), a variable font.
-    #[link_name = "next/font/google#Public_Sans"]
-    pub safe fn Public_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Puppies Play](https://fonts.google.com/specimen/Puppies+Play), a static font.
-    #[link_name = "next/font/google#Puppies_Play"]
-    pub safe fn Puppies_Play(options: StaticFont<'_>) -> NextFont;
-
-    /// [Puritan](https://fonts.google.com/specimen/Puritan), a static font.
-    #[link_name = "next/font/google#Puritan"]
-    pub safe fn Puritan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Purple Purse](https://fonts.google.com/specimen/Purple+Purse), a static font.
-    #[link_name = "next/font/google#Purple_Purse"]
-    pub safe fn Purple_Purse(options: StaticFont<'_>) -> NextFont;
-
-    /// [Qahiri](https://fonts.google.com/specimen/Qahiri), a static font.
-    #[link_name = "next/font/google#Qahiri"]
-    pub safe fn Qahiri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Quando](https://fonts.google.com/specimen/Quando), a static font.
-    #[link_name = "next/font/google#Quando"]
-    pub safe fn Quando(options: StaticFont<'_>) -> NextFont;
-
-    /// [Quantico](https://fonts.google.com/specimen/Quantico), a static font.
-    #[link_name = "next/font/google#Quantico"]
-    pub safe fn Quantico(options: StaticFont<'_>) -> NextFont;
-
-    /// [Quattrocento](https://fonts.google.com/specimen/Quattrocento), a static font.
-    #[link_name = "next/font/google#Quattrocento"]
-    pub safe fn Quattrocento(options: StaticFont<'_>) -> NextFont;
-
-    /// [Quattrocento Sans](https://fonts.google.com/specimen/Quattrocento+Sans), a static font.
-    #[link_name = "next/font/google#Quattrocento_Sans"]
-    pub safe fn Quattrocento_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Questrial](https://fonts.google.com/specimen/Questrial), a static font.
-    #[link_name = "next/font/google#Questrial"]
-    pub safe fn Questrial(options: StaticFont<'_>) -> NextFont;
-
-    /// [Quicksand](https://fonts.google.com/specimen/Quicksand), a variable font.
-    #[link_name = "next/font/google#Quicksand"]
-    pub safe fn Quicksand(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Quintessential](https://fonts.google.com/specimen/Quintessential), a static font.
-    #[link_name = "next/font/google#Quintessential"]
-    pub safe fn Quintessential(options: StaticFont<'_>) -> NextFont;
-
-    /// [Qwigley](https://fonts.google.com/specimen/Qwigley), a static font.
-    #[link_name = "next/font/google#Qwigley"]
-    pub safe fn Qwigley(options: StaticFont<'_>) -> NextFont;
-
-    /// [Qwitcher Grypen](https://fonts.google.com/specimen/Qwitcher+Grypen), a static font.
-    #[link_name = "next/font/google#Qwitcher_Grypen"]
-    pub safe fn Qwitcher_Grypen(options: StaticFont<'_>) -> NextFont;
-
-    /// [REM](https://fonts.google.com/specimen/REM), a variable font.
-    #[link_name = "next/font/google#REM"]
-    pub safe fn REM(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Racing Sans One](https://fonts.google.com/specimen/Racing+Sans+One), a static font.
-    #[link_name = "next/font/google#Racing_Sans_One"]
-    pub safe fn Racing_Sans_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Radio Canada](https://fonts.google.com/specimen/Radio+Canada), a variable font.
-    #[link_name = "next/font/google#Radio_Canada"]
-    pub safe fn Radio_Canada(options: VariableFont<'_>) -> NextFont;
-
-    /// [Radio Canada Big](https://fonts.google.com/specimen/Radio+Canada+Big), a variable font.
-    #[link_name = "next/font/google#Radio_Canada_Big"]
-    pub safe fn Radio_Canada_Big(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Radley](https://fonts.google.com/specimen/Radley), a static font.
-    #[link_name = "next/font/google#Radley"]
-    pub safe fn Radley(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rajdhani](https://fonts.google.com/specimen/Rajdhani), a static font.
-    #[link_name = "next/font/google#Rajdhani"]
-    pub safe fn Rajdhani(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rakkas](https://fonts.google.com/specimen/Rakkas), a static font.
-    #[link_name = "next/font/google#Rakkas"]
-    pub safe fn Rakkas(options: StaticFont<'_>) -> NextFont;
-
-    /// [Raleway](https://fonts.google.com/specimen/Raleway), a variable font.
-    #[link_name = "next/font/google#Raleway"]
-    pub safe fn Raleway(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Raleway Dots](https://fonts.google.com/specimen/Raleway+Dots), a static font.
-    #[link_name = "next/font/google#Raleway_Dots"]
-    pub safe fn Raleway_Dots(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ramabhadra](https://fonts.google.com/specimen/Ramabhadra), a static font.
-    #[link_name = "next/font/google#Ramabhadra"]
-    pub safe fn Ramabhadra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ramaraja](https://fonts.google.com/specimen/Ramaraja), a static font.
-    #[link_name = "next/font/google#Ramaraja"]
-    pub safe fn Ramaraja(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rambla](https://fonts.google.com/specimen/Rambla), a static font.
-    #[link_name = "next/font/google#Rambla"]
-    pub safe fn Rambla(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rammetto One](https://fonts.google.com/specimen/Rammetto+One), a static font.
-    #[link_name = "next/font/google#Rammetto_One"]
-    pub safe fn Rammetto_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rampart One](https://fonts.google.com/specimen/Rampart+One), a static font.
-    #[link_name = "next/font/google#Rampart_One"]
-    pub safe fn Rampart_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ramsina](https://fonts.google.com/specimen/Ramsina), a static font.
-    #[link_name = "next/font/google#Ramsina"]
-    pub safe fn Ramsina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ranchers](https://fonts.google.com/specimen/Ranchers), a static font.
-    #[link_name = "next/font/google#Ranchers"]
-    pub safe fn Ranchers(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rancho](https://fonts.google.com/specimen/Rancho), a static font.
-    #[link_name = "next/font/google#Rancho"]
-    pub safe fn Rancho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ranga](https://fonts.google.com/specimen/Ranga), a static font.
-    #[link_name = "next/font/google#Ranga"]
-    pub safe fn Ranga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rasa](https://fonts.google.com/specimen/Rasa), a variable font.
-    #[link_name = "next/font/google#Rasa"]
-    pub safe fn Rasa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Rationale](https://fonts.google.com/specimen/Rationale), a static font.
-    #[link_name = "next/font/google#Rationale"]
-    pub safe fn Rationale(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ravi Prakash](https://fonts.google.com/specimen/Ravi+Prakash), a static font.
-    #[link_name = "next/font/google#Ravi_Prakash"]
-    pub safe fn Ravi_Prakash(options: StaticFont<'_>) -> NextFont;
-
-    /// [Readex Pro](https://fonts.google.com/specimen/Readex+Pro), a variable font.
-    #[link_name = "next/font/google#Readex_Pro"]
-    pub safe fn Readex_Pro(options: VariableFont<'_>) -> NextFont;
-
-    /// [Recursive](https://fonts.google.com/specimen/Recursive), a variable font.
-    #[link_name = "next/font/google#Recursive"]
-    pub safe fn Recursive(options: VariableFont<'_>) -> NextFont;
-
-    /// [Red Hat Display](https://fonts.google.com/specimen/Red+Hat+Display), a variable font.
-    #[link_name = "next/font/google#Red_Hat_Display"]
-    pub safe fn Red_Hat_Display(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Red Hat Mono](https://fonts.google.com/specimen/Red+Hat+Mono), a variable font.
-    #[link_name = "next/font/google#Red_Hat_Mono"]
-    pub safe fn Red_Hat_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Red Hat Text](https://fonts.google.com/specimen/Red+Hat+Text), a variable font.
-    #[link_name = "next/font/google#Red_Hat_Text"]
-    pub safe fn Red_Hat_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Red Rose](https://fonts.google.com/specimen/Red+Rose), a variable font.
-    #[link_name = "next/font/google#Red_Rose"]
-    pub safe fn Red_Rose(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Redacted](https://fonts.google.com/specimen/Redacted), a static font.
-    #[link_name = "next/font/google#Redacted"]
-    pub safe fn Redacted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Redacted Script](https://fonts.google.com/specimen/Redacted+Script), a static font.
-    #[link_name = "next/font/google#Redacted_Script"]
-    pub safe fn Redacted_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Reddit Mono](https://fonts.google.com/specimen/Reddit+Mono), a variable font.
-    #[link_name = "next/font/google#Reddit_Mono"]
-    pub safe fn Reddit_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Reddit Sans](https://fonts.google.com/specimen/Reddit+Sans), a variable font.
-    #[link_name = "next/font/google#Reddit_Sans"]
-    pub safe fn Reddit_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Reddit Sans Condensed](https://fonts.google.com/specimen/Reddit+Sans+Condensed), a variable font.
-    #[link_name = "next/font/google#Reddit_Sans_Condensed"]
-    pub safe fn Reddit_Sans_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Redressed](https://fonts.google.com/specimen/Redressed), a static font.
-    #[link_name = "next/font/google#Redressed"]
-    pub safe fn Redressed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Reem Kufi](https://fonts.google.com/specimen/Reem+Kufi), a variable font.
-    #[link_name = "next/font/google#Reem_Kufi"]
-    pub safe fn Reem_Kufi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Reem Kufi Fun](https://fonts.google.com/specimen/Reem+Kufi+Fun), a variable font.
-    #[link_name = "next/font/google#Reem_Kufi_Fun"]
-    pub safe fn Reem_Kufi_Fun(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Reem Kufi Ink](https://fonts.google.com/specimen/Reem+Kufi+Ink), a static font.
-    #[link_name = "next/font/google#Reem_Kufi_Ink"]
-    pub safe fn Reem_Kufi_Ink(options: StaticFont<'_>) -> NextFont;
-
-    /// [Reenie Beanie](https://fonts.google.com/specimen/Reenie+Beanie), a static font.
-    #[link_name = "next/font/google#Reenie_Beanie"]
-    pub safe fn Reenie_Beanie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Reggae One](https://fonts.google.com/specimen/Reggae+One), a static font.
-    #[link_name = "next/font/google#Reggae_One"]
-    pub safe fn Reggae_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rethink Sans](https://fonts.google.com/specimen/Rethink+Sans), a variable font.
-    #[link_name = "next/font/google#Rethink_Sans"]
-    pub safe fn Rethink_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Revalia](https://fonts.google.com/specimen/Revalia), a static font.
-    #[link_name = "next/font/google#Revalia"]
-    pub safe fn Revalia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rhodium Libre](https://fonts.google.com/specimen/Rhodium+Libre), a static font.
-    #[link_name = "next/font/google#Rhodium_Libre"]
-    pub safe fn Rhodium_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ribeye](https://fonts.google.com/specimen/Ribeye), a static font.
-    #[link_name = "next/font/google#Ribeye"]
-    pub safe fn Ribeye(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ribeye Marrow](https://fonts.google.com/specimen/Ribeye+Marrow), a static font.
-    #[link_name = "next/font/google#Ribeye_Marrow"]
-    pub safe fn Ribeye_Marrow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Righteous](https://fonts.google.com/specimen/Righteous), a static font.
-    #[link_name = "next/font/google#Righteous"]
-    pub safe fn Righteous(options: StaticFont<'_>) -> NextFont;
-
-    /// [Risque](https://fonts.google.com/specimen/Risque), a static font.
-    #[link_name = "next/font/google#Risque"]
-    pub safe fn Risque(options: StaticFont<'_>) -> NextFont;
-
-    /// [Road Rage](https://fonts.google.com/specimen/Road+Rage), a static font.
-    #[link_name = "next/font/google#Road_Rage"]
-    pub safe fn Road_Rage(options: StaticFont<'_>) -> NextFont;
-
-    /// [Roboto](https://fonts.google.com/specimen/Roboto), a variable font.
-    #[link_name = "next/font/google#Roboto"]
-    pub safe fn Roboto(options: VariableFont<'_>) -> NextFont;
-
-    /// [Roboto Condensed](https://fonts.google.com/specimen/Roboto+Condensed), a variable font.
-    #[link_name = "next/font/google#Roboto_Condensed"]
-    pub safe fn Roboto_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Roboto Flex](https://fonts.google.com/specimen/Roboto+Flex), a variable font.
-    #[link_name = "next/font/google#Roboto_Flex"]
-    pub safe fn Roboto_Flex(options: VariableFont<'_>) -> NextFont;
-
-    /// [Roboto Mono](https://fonts.google.com/specimen/Roboto+Mono), a variable font.
-    #[link_name = "next/font/google#Roboto_Mono"]
-    pub safe fn Roboto_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Roboto Serif](https://fonts.google.com/specimen/Roboto+Serif), a variable font.
-    #[link_name = "next/font/google#Roboto_Serif"]
-    pub safe fn Roboto_Serif(options: VariableFont<'_>) -> NextFont;
-
-    /// [Roboto Slab](https://fonts.google.com/specimen/Roboto+Slab), a variable font.
-    #[link_name = "next/font/google#Roboto_Slab"]
-    pub safe fn Roboto_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Rochester](https://fonts.google.com/specimen/Rochester), a static font.
-    #[link_name = "next/font/google#Rochester"]
-    pub safe fn Rochester(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rock 3D](https://fonts.google.com/specimen/Rock+3D), a static font.
-    #[link_name = "next/font/google#Rock_3D"]
-    pub safe fn Rock_3D(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rock Salt](https://fonts.google.com/specimen/Rock+Salt), a static font.
-    #[link_name = "next/font/google#Rock_Salt"]
-    pub safe fn Rock_Salt(options: StaticFont<'_>) -> NextFont;
-
-    /// [RocknRoll One](https://fonts.google.com/specimen/RocknRoll+One), a static font.
-    #[link_name = "next/font/google#RocknRoll_One"]
-    pub safe fn RocknRoll_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rokkitt](https://fonts.google.com/specimen/Rokkitt), a variable font.
-    #[link_name = "next/font/google#Rokkitt"]
-    pub safe fn Rokkitt(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Romanesco](https://fonts.google.com/specimen/Romanesco), a static font.
-    #[link_name = "next/font/google#Romanesco"]
-    pub safe fn Romanesco(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ropa Sans](https://fonts.google.com/specimen/Ropa+Sans), a static font.
-    #[link_name = "next/font/google#Ropa_Sans"]
-    pub safe fn Ropa_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rosario](https://fonts.google.com/specimen/Rosario), a variable font.
-    #[link_name = "next/font/google#Rosario"]
-    pub safe fn Rosario(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Rosarivo](https://fonts.google.com/specimen/Rosarivo), a static font.
-    #[link_name = "next/font/google#Rosarivo"]
-    pub safe fn Rosarivo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rouge Script](https://fonts.google.com/specimen/Rouge+Script), a static font.
-    #[link_name = "next/font/google#Rouge_Script"]
-    pub safe fn Rouge_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rowdies](https://fonts.google.com/specimen/Rowdies), a static font.
-    #[link_name = "next/font/google#Rowdies"]
-    pub safe fn Rowdies(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rozha One](https://fonts.google.com/specimen/Rozha+One), a static font.
-    #[link_name = "next/font/google#Rozha_One"]
-    pub safe fn Rozha_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik](https://fonts.google.com/specimen/Rubik), a variable font.
-    #[link_name = "next/font/google#Rubik"]
-    pub safe fn Rubik(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Rubik 80s Fade](https://fonts.google.com/specimen/Rubik+80s+Fade), a static font.
-    #[link_name = "next/font/google#Rubik_80s_Fade"]
-    pub safe fn Rubik_80s_Fade(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Beastly](https://fonts.google.com/specimen/Rubik+Beastly), a static font.
-    #[link_name = "next/font/google#Rubik_Beastly"]
-    pub safe fn Rubik_Beastly(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Broken Fax](https://fonts.google.com/specimen/Rubik+Broken+Fax), a static font.
-    #[link_name = "next/font/google#Rubik_Broken_Fax"]
-    pub safe fn Rubik_Broken_Fax(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Bubbles](https://fonts.google.com/specimen/Rubik+Bubbles), a static font.
-    #[link_name = "next/font/google#Rubik_Bubbles"]
-    pub safe fn Rubik_Bubbles(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Burned](https://fonts.google.com/specimen/Rubik+Burned), a static font.
-    #[link_name = "next/font/google#Rubik_Burned"]
-    pub safe fn Rubik_Burned(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Dirt](https://fonts.google.com/specimen/Rubik+Dirt), a static font.
-    #[link_name = "next/font/google#Rubik_Dirt"]
-    pub safe fn Rubik_Dirt(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Distressed](https://fonts.google.com/specimen/Rubik+Distressed), a static font.
-    #[link_name = "next/font/google#Rubik_Distressed"]
-    pub safe fn Rubik_Distressed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Doodle Shadow](https://fonts.google.com/specimen/Rubik+Doodle+Shadow), a static font.
-    #[link_name = "next/font/google#Rubik_Doodle_Shadow"]
-    pub safe fn Rubik_Doodle_Shadow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Doodle Triangles](https://fonts.google.com/specimen/Rubik+Doodle+Triangles), a static font.
-    #[link_name = "next/font/google#Rubik_Doodle_Triangles"]
-    pub safe fn Rubik_Doodle_Triangles(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Gemstones](https://fonts.google.com/specimen/Rubik+Gemstones), a static font.
-    #[link_name = "next/font/google#Rubik_Gemstones"]
-    pub safe fn Rubik_Gemstones(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Glitch](https://fonts.google.com/specimen/Rubik+Glitch), a static font.
-    #[link_name = "next/font/google#Rubik_Glitch"]
-    pub safe fn Rubik_Glitch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Glitch Pop](https://fonts.google.com/specimen/Rubik+Glitch+Pop), a static font.
-    #[link_name = "next/font/google#Rubik_Glitch_Pop"]
-    pub safe fn Rubik_Glitch_Pop(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Iso](https://fonts.google.com/specimen/Rubik+Iso), a static font.
-    #[link_name = "next/font/google#Rubik_Iso"]
-    pub safe fn Rubik_Iso(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Lines](https://fonts.google.com/specimen/Rubik+Lines), a static font.
-    #[link_name = "next/font/google#Rubik_Lines"]
-    pub safe fn Rubik_Lines(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Maps](https://fonts.google.com/specimen/Rubik+Maps), a static font.
-    #[link_name = "next/font/google#Rubik_Maps"]
-    pub safe fn Rubik_Maps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Marker Hatch](https://fonts.google.com/specimen/Rubik+Marker+Hatch), a static font.
-    #[link_name = "next/font/google#Rubik_Marker_Hatch"]
-    pub safe fn Rubik_Marker_Hatch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Maze](https://fonts.google.com/specimen/Rubik+Maze), a static font.
-    #[link_name = "next/font/google#Rubik_Maze"]
-    pub safe fn Rubik_Maze(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Microbe](https://fonts.google.com/specimen/Rubik+Microbe), a static font.
-    #[link_name = "next/font/google#Rubik_Microbe"]
-    pub safe fn Rubik_Microbe(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Mono One](https://fonts.google.com/specimen/Rubik+Mono+One), a static font.
-    #[link_name = "next/font/google#Rubik_Mono_One"]
-    pub safe fn Rubik_Mono_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Moonrocks](https://fonts.google.com/specimen/Rubik+Moonrocks), a static font.
-    #[link_name = "next/font/google#Rubik_Moonrocks"]
-    pub safe fn Rubik_Moonrocks(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Pixels](https://fonts.google.com/specimen/Rubik+Pixels), a static font.
-    #[link_name = "next/font/google#Rubik_Pixels"]
-    pub safe fn Rubik_Pixels(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Puddles](https://fonts.google.com/specimen/Rubik+Puddles), a static font.
-    #[link_name = "next/font/google#Rubik_Puddles"]
-    pub safe fn Rubik_Puddles(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Scribble](https://fonts.google.com/specimen/Rubik+Scribble), a static font.
-    #[link_name = "next/font/google#Rubik_Scribble"]
-    pub safe fn Rubik_Scribble(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Spray Paint](https://fonts.google.com/specimen/Rubik+Spray+Paint), a static font.
-    #[link_name = "next/font/google#Rubik_Spray_Paint"]
-    pub safe fn Rubik_Spray_Paint(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Storm](https://fonts.google.com/specimen/Rubik+Storm), a static font.
-    #[link_name = "next/font/google#Rubik_Storm"]
-    pub safe fn Rubik_Storm(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Vinyl](https://fonts.google.com/specimen/Rubik+Vinyl), a static font.
-    #[link_name = "next/font/google#Rubik_Vinyl"]
-    pub safe fn Rubik_Vinyl(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rubik Wet Paint](https://fonts.google.com/specimen/Rubik+Wet+Paint), a static font.
-    #[link_name = "next/font/google#Rubik_Wet_Paint"]
-    pub safe fn Rubik_Wet_Paint(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruda](https://fonts.google.com/specimen/Ruda), a variable font.
-    #[link_name = "next/font/google#Ruda"]
-    pub safe fn Ruda(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Rufina](https://fonts.google.com/specimen/Rufina), a static font.
-    #[link_name = "next/font/google#Rufina"]
-    pub safe fn Rufina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruge Boogie](https://fonts.google.com/specimen/Ruge+Boogie), a static font.
-    #[link_name = "next/font/google#Ruge_Boogie"]
-    pub safe fn Ruge_Boogie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruluko](https://fonts.google.com/specimen/Ruluko), a static font.
-    #[link_name = "next/font/google#Ruluko"]
-    pub safe fn Ruluko(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rum Raisin](https://fonts.google.com/specimen/Rum+Raisin), a static font.
-    #[link_name = "next/font/google#Rum_Raisin"]
-    pub safe fn Rum_Raisin(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruslan Display](https://fonts.google.com/specimen/Ruslan+Display), a static font.
-    #[link_name = "next/font/google#Ruslan_Display"]
-    pub safe fn Ruslan_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Russo One](https://fonts.google.com/specimen/Russo+One), a static font.
-    #[link_name = "next/font/google#Russo_One"]
-    pub safe fn Russo_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruthie](https://fonts.google.com/specimen/Ruthie), a static font.
-    #[link_name = "next/font/google#Ruthie"]
-    pub safe fn Ruthie(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ruwudu](https://fonts.google.com/specimen/Ruwudu), a static font.
-    #[link_name = "next/font/google#Ruwudu"]
-    pub safe fn Ruwudu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Rye](https://fonts.google.com/specimen/Rye), a static font.
-    #[link_name = "next/font/google#Rye"]
-    pub safe fn Rye(options: StaticFont<'_>) -> NextFont;
-
-    /// [SN Pro](https://fonts.google.com/specimen/SN+Pro), a variable font.
-    #[link_name = "next/font/google#SN_Pro"]
-    pub safe fn SN_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [STIX Two Math](https://fonts.google.com/specimen/STIX+Two+Math), a static font.
-    #[link_name = "next/font/google#STIX_Two_Math"]
-    pub safe fn STIX_Two_Math(options: StaticFont<'_>) -> NextFont;
-
-    /// [STIX Two Text](https://fonts.google.com/specimen/STIX+Two+Text), a variable font.
-    #[link_name = "next/font/google#STIX_Two_Text"]
-    pub safe fn STIX_Two_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [SUSE](https://fonts.google.com/specimen/SUSE), a variable font.
-    #[link_name = "next/font/google#SUSE"]
-    pub safe fn SUSE(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [SUSE Mono](https://fonts.google.com/specimen/SUSE+Mono), a variable font.
-    #[link_name = "next/font/google#SUSE_Mono"]
-    pub safe fn SUSE_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sacramento](https://fonts.google.com/specimen/Sacramento), a static font.
-    #[link_name = "next/font/google#Sacramento"]
-    pub safe fn Sacramento(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sahitya](https://fonts.google.com/specimen/Sahitya), a static font.
-    #[link_name = "next/font/google#Sahitya"]
-    pub safe fn Sahitya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sail](https://fonts.google.com/specimen/Sail), a static font.
-    #[link_name = "next/font/google#Sail"]
-    pub safe fn Sail(options: StaticFont<'_>) -> NextFont;
-
-    /// [Saira](https://fonts.google.com/specimen/Saira), a variable font.
-    #[link_name = "next/font/google#Saira"]
-    pub safe fn Saira(options: VariableFont<'_>) -> NextFont;
-
-    /// [Saira Condensed](https://fonts.google.com/specimen/Saira+Condensed), a static font.
-    #[link_name = "next/font/google#Saira_Condensed"]
-    pub safe fn Saira_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Saira Extra Condensed](https://fonts.google.com/specimen/Saira+Extra+Condensed), a static font.
-    #[link_name = "next/font/google#Saira_Extra_Condensed"]
-    pub safe fn Saira_Extra_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Saira Semi Condensed](https://fonts.google.com/specimen/Saira+Semi+Condensed), a static font.
-    #[link_name = "next/font/google#Saira_Semi_Condensed"]
-    pub safe fn Saira_Semi_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Saira Stencil](https://fonts.google.com/specimen/Saira+Stencil), a variable font.
-    #[link_name = "next/font/google#Saira_Stencil"]
-    pub safe fn Saira_Stencil(options: VariableFont<'_>) -> NextFont;
-
-    /// [Salsa](https://fonts.google.com/specimen/Salsa), a static font.
-    #[link_name = "next/font/google#Salsa"]
-    pub safe fn Salsa(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sanchez](https://fonts.google.com/specimen/Sanchez), a static font.
-    #[link_name = "next/font/google#Sanchez"]
-    pub safe fn Sanchez(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sancreek](https://fonts.google.com/specimen/Sancreek), a static font.
-    #[link_name = "next/font/google#Sancreek"]
-    pub safe fn Sancreek(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sankofa Display](https://fonts.google.com/specimen/Sankofa+Display), a static font.
-    #[link_name = "next/font/google#Sankofa_Display"]
-    pub safe fn Sankofa_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sansation](https://fonts.google.com/specimen/Sansation), a static font.
-    #[link_name = "next/font/google#Sansation"]
-    pub safe fn Sansation(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sansita](https://fonts.google.com/specimen/Sansita), a static font.
-    #[link_name = "next/font/google#Sansita"]
-    pub safe fn Sansita(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sansita Swashed](https://fonts.google.com/specimen/Sansita+Swashed), a variable font.
-    #[link_name = "next/font/google#Sansita_Swashed"]
-    pub safe fn Sansita_Swashed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sarabun](https://fonts.google.com/specimen/Sarabun), a static font.
-    #[link_name = "next/font/google#Sarabun"]
-    pub safe fn Sarabun(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sarala](https://fonts.google.com/specimen/Sarala), a static font.
-    #[link_name = "next/font/google#Sarala"]
-    pub safe fn Sarala(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sarina](https://fonts.google.com/specimen/Sarina), a static font.
-    #[link_name = "next/font/google#Sarina"]
-    pub safe fn Sarina(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sarpanch](https://fonts.google.com/specimen/Sarpanch), a static font.
-    #[link_name = "next/font/google#Sarpanch"]
-    pub safe fn Sarpanch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sassy Frass](https://fonts.google.com/specimen/Sassy+Frass), a static font.
-    #[link_name = "next/font/google#Sassy_Frass"]
-    pub safe fn Sassy_Frass(options: StaticFont<'_>) -> NextFont;
-
-    /// [Satisfy](https://fonts.google.com/specimen/Satisfy), a static font.
-    #[link_name = "next/font/google#Satisfy"]
-    pub safe fn Satisfy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Savate](https://fonts.google.com/specimen/Savate), a variable font.
-    #[link_name = "next/font/google#Savate"]
-    pub safe fn Savate(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sawarabi Gothic](https://fonts.google.com/specimen/Sawarabi+Gothic), a static font.
-    #[link_name = "next/font/google#Sawarabi_Gothic"]
-    pub safe fn Sawarabi_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sawarabi Mincho](https://fonts.google.com/specimen/Sawarabi+Mincho), a static font.
-    #[link_name = "next/font/google#Sawarabi_Mincho"]
-    pub safe fn Sawarabi_Mincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Scada](https://fonts.google.com/specimen/Scada), a static font.
-    #[link_name = "next/font/google#Scada"]
-    pub safe fn Scada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Scheherazade New](https://fonts.google.com/specimen/Scheherazade+New), a static font.
-    #[link_name = "next/font/google#Scheherazade_New"]
-    pub safe fn Scheherazade_New(options: StaticFont<'_>) -> NextFont;
-
-    /// [Schibsted Grotesk](https://fonts.google.com/specimen/Schibsted+Grotesk), a variable font.
-    #[link_name = "next/font/google#Schibsted_Grotesk"]
-    pub safe fn Schibsted_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Schoolbell](https://fonts.google.com/specimen/Schoolbell), a static font.
-    #[link_name = "next/font/google#Schoolbell"]
-    pub safe fn Schoolbell(options: StaticFont<'_>) -> NextFont;
-
-    /// [Science Gothic](https://fonts.google.com/specimen/Science+Gothic), a variable font.
-    #[link_name = "next/font/google#Science_Gothic"]
-    pub safe fn Science_Gothic(options: VariableFont<'_>) -> NextFont;
-
-    /// [Scope One](https://fonts.google.com/specimen/Scope+One), a static font.
-    #[link_name = "next/font/google#Scope_One"]
-    pub safe fn Scope_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Seaweed Script](https://fonts.google.com/specimen/Seaweed+Script), a static font.
-    #[link_name = "next/font/google#Seaweed_Script"]
-    pub safe fn Seaweed_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Secular One](https://fonts.google.com/specimen/Secular+One), a static font.
-    #[link_name = "next/font/google#Secular_One"]
-    pub safe fn Secular_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sedan](https://fonts.google.com/specimen/Sedan), a static font.
-    #[link_name = "next/font/google#Sedan"]
-    pub safe fn Sedan(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sedan SC](https://fonts.google.com/specimen/Sedan+SC), a static font.
-    #[link_name = "next/font/google#Sedan_SC"]
-    pub safe fn Sedan_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sedgwick Ave](https://fonts.google.com/specimen/Sedgwick+Ave), a static font.
-    #[link_name = "next/font/google#Sedgwick_Ave"]
-    pub safe fn Sedgwick_Ave(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sedgwick Ave Display](https://fonts.google.com/specimen/Sedgwick+Ave+Display), a static font.
-    #[link_name = "next/font/google#Sedgwick_Ave_Display"]
-    pub safe fn Sedgwick_Ave_Display(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sekuya](https://fonts.google.com/specimen/Sekuya), a static font.
-    #[link_name = "next/font/google#Sekuya"]
-    pub safe fn Sekuya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sen](https://fonts.google.com/specimen/Sen), a variable font.
-    #[link_name = "next/font/google#Sen"]
-    pub safe fn Sen(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Send Flowers](https://fonts.google.com/specimen/Send+Flowers), a static font.
-    #[link_name = "next/font/google#Send_Flowers"]
-    pub safe fn Send_Flowers(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sevillana](https://fonts.google.com/specimen/Sevillana), a static font.
-    #[link_name = "next/font/google#Sevillana"]
-    pub safe fn Sevillana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Seymour One](https://fonts.google.com/specimen/Seymour+One), a static font.
-    #[link_name = "next/font/google#Seymour_One"]
-    pub safe fn Seymour_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shadows Into Light](https://fonts.google.com/specimen/Shadows+Into+Light), a static font.
-    #[link_name = "next/font/google#Shadows_Into_Light"]
-    pub safe fn Shadows_Into_Light(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shadows Into Light Two](https://fonts.google.com/specimen/Shadows+Into+Light+Two), a static font.
-    #[link_name = "next/font/google#Shadows_Into_Light_Two"]
-    pub safe fn Shadows_Into_Light_Two(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shafarik](https://fonts.google.com/specimen/Shafarik), a static font.
-    #[link_name = "next/font/google#Shafarik"]
-    pub safe fn Shafarik(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shalimar](https://fonts.google.com/specimen/Shalimar), a static font.
-    #[link_name = "next/font/google#Shalimar"]
-    pub safe fn Shalimar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans), a variable font.
-    #[link_name = "next/font/google#Shantell_Sans"]
-    pub safe fn Shantell_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Shanti](https://fonts.google.com/specimen/Shanti), a static font.
-    #[link_name = "next/font/google#Shanti"]
-    pub safe fn Shanti(options: StaticFont<'_>) -> NextFont;
-
-    /// [Share](https://fonts.google.com/specimen/Share), a static font.
-    #[link_name = "next/font/google#Share"]
-    pub safe fn Share(options: StaticFont<'_>) -> NextFont;
-
-    /// [Share Tech](https://fonts.google.com/specimen/Share+Tech), a static font.
-    #[link_name = "next/font/google#Share_Tech"]
-    pub safe fn Share_Tech(options: StaticFont<'_>) -> NextFont;
-
-    /// [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono), a static font.
-    #[link_name = "next/font/google#Share_Tech_Mono"]
-    pub safe fn Share_Tech_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shippori Antique](https://fonts.google.com/specimen/Shippori+Antique), a static font.
-    #[link_name = "next/font/google#Shippori_Antique"]
-    pub safe fn Shippori_Antique(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shippori Antique B1](https://fonts.google.com/specimen/Shippori+Antique+B1), a static font.
-    #[link_name = "next/font/google#Shippori_Antique_B1"]
-    pub safe fn Shippori_Antique_B1(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shippori Mincho](https://fonts.google.com/specimen/Shippori+Mincho), a static font.
-    #[link_name = "next/font/google#Shippori_Mincho"]
-    pub safe fn Shippori_Mincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shippori Mincho B1](https://fonts.google.com/specimen/Shippori+Mincho+B1), a static font.
-    #[link_name = "next/font/google#Shippori_Mincho_B1"]
-    pub safe fn Shippori_Mincho_B1(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shizuru](https://fonts.google.com/specimen/Shizuru), a static font.
-    #[link_name = "next/font/google#Shizuru"]
-    pub safe fn Shizuru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shojumaru](https://fonts.google.com/specimen/Shojumaru), a static font.
-    #[link_name = "next/font/google#Shojumaru"]
-    pub safe fn Shojumaru(options: StaticFont<'_>) -> NextFont;
-
-    /// [Short Stack](https://fonts.google.com/specimen/Short+Stack), a static font.
-    #[link_name = "next/font/google#Short_Stack"]
-    pub safe fn Short_Stack(options: StaticFont<'_>) -> NextFont;
-
-    /// [Shrikhand](https://fonts.google.com/specimen/Shrikhand), a static font.
-    #[link_name = "next/font/google#Shrikhand"]
-    pub safe fn Shrikhand(options: StaticFont<'_>) -> NextFont;
-
-    /// [Siemreap](https://fonts.google.com/specimen/Siemreap), a static font.
-    #[link_name = "next/font/google#Siemreap"]
-    pub safe fn Siemreap(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sigmar](https://fonts.google.com/specimen/Sigmar), a static font.
-    #[link_name = "next/font/google#Sigmar"]
-    pub safe fn Sigmar(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sigmar One](https://fonts.google.com/specimen/Sigmar+One), a static font.
-    #[link_name = "next/font/google#Sigmar_One"]
-    pub safe fn Sigmar_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Signika](https://fonts.google.com/specimen/Signika), a variable font.
-    #[link_name = "next/font/google#Signika"]
-    pub safe fn Signika(options: VariableFont<'_>) -> NextFont;
-
-    /// [Signika Negative](https://fonts.google.com/specimen/Signika+Negative), a variable font.
-    #[link_name = "next/font/google#Signika_Negative"]
-    pub safe fn Signika_Negative(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Silkscreen](https://fonts.google.com/specimen/Silkscreen), a static font.
-    #[link_name = "next/font/google#Silkscreen"]
-    pub safe fn Silkscreen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Simonetta](https://fonts.google.com/specimen/Simonetta), a static font.
-    #[link_name = "next/font/google#Simonetta"]
-    pub safe fn Simonetta(options: StaticFont<'_>) -> NextFont;
-
-    /// [Single Day](https://fonts.google.com/specimen/Single+Day), a static font.
-    #[link_name = "next/font/google#Single_Day"]
-    pub safe fn Single_Day(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sintony](https://fonts.google.com/specimen/Sintony), a static font.
-    #[link_name = "next/font/google#Sintony"]
-    pub safe fn Sintony(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sirin Stencil](https://fonts.google.com/specimen/Sirin+Stencil), a static font.
-    #[link_name = "next/font/google#Sirin_Stencil"]
-    pub safe fn Sirin_Stencil(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sirivennela](https://fonts.google.com/specimen/Sirivennela), a static font.
-    #[link_name = "next/font/google#Sirivennela"]
-    pub safe fn Sirivennela(options: StaticFont<'_>) -> NextFont;
-
-    /// [Six Caps](https://fonts.google.com/specimen/Six+Caps), a static font.
-    #[link_name = "next/font/google#Six_Caps"]
-    pub safe fn Six_Caps(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sixtyfour](https://fonts.google.com/specimen/Sixtyfour), a variable font.
-    #[link_name = "next/font/google#Sixtyfour"]
-    pub safe fn Sixtyfour(options: VariableFont<'_>) -> NextFont;
-
-    /// [Sixtyfour Convergence](https://fonts.google.com/specimen/Sixtyfour+Convergence), a variable font.
-    #[link_name = "next/font/google#Sixtyfour_Convergence"]
-    pub safe fn Sixtyfour_Convergence(options: VariableFont<'_>) -> NextFont;
-
-    /// [Skranji](https://fonts.google.com/specimen/Skranji), a static font.
-    #[link_name = "next/font/google#Skranji"]
-    pub safe fn Skranji(options: StaticFont<'_>) -> NextFont;
-
-    /// [Slabo 13px](https://fonts.google.com/specimen/Slabo+13px), a static font.
-    #[link_name = "next/font/google#Slabo_13px"]
-    pub safe fn Slabo_13px(options: StaticFont<'_>) -> NextFont;
-
-    /// [Slabo 27px](https://fonts.google.com/specimen/Slabo+27px), a static font.
-    #[link_name = "next/font/google#Slabo_27px"]
-    pub safe fn Slabo_27px(options: StaticFont<'_>) -> NextFont;
-
-    /// [Slackey](https://fonts.google.com/specimen/Slackey), a static font.
-    #[link_name = "next/font/google#Slackey"]
-    pub safe fn Slackey(options: StaticFont<'_>) -> NextFont;
-
-    /// [Slackside One](https://fonts.google.com/specimen/Slackside+One), a static font.
-    #[link_name = "next/font/google#Slackside_One"]
-    pub safe fn Slackside_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Smokum](https://fonts.google.com/specimen/Smokum), a static font.
-    #[link_name = "next/font/google#Smokum"]
-    pub safe fn Smokum(options: StaticFont<'_>) -> NextFont;
-
-    /// [Smooch](https://fonts.google.com/specimen/Smooch), a static font.
-    #[link_name = "next/font/google#Smooch"]
-    pub safe fn Smooch(options: StaticFont<'_>) -> NextFont;
-
-    /// [Smooch Sans](https://fonts.google.com/specimen/Smooch+Sans), a variable font.
-    #[link_name = "next/font/google#Smooch_Sans"]
-    pub safe fn Smooch_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Smythe](https://fonts.google.com/specimen/Smythe), a static font.
-    #[link_name = "next/font/google#Smythe"]
-    pub safe fn Smythe(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sniglet](https://fonts.google.com/specimen/Sniglet), a static font.
-    #[link_name = "next/font/google#Sniglet"]
-    pub safe fn Sniglet(options: StaticFont<'_>) -> NextFont;
-
-    /// [Snippet](https://fonts.google.com/specimen/Snippet), a static font.
-    #[link_name = "next/font/google#Snippet"]
-    pub safe fn Snippet(options: StaticFont<'_>) -> NextFont;
-
-    /// [Snowburst One](https://fonts.google.com/specimen/Snowburst+One), a static font.
-    #[link_name = "next/font/google#Snowburst_One"]
-    pub safe fn Snowburst_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sofadi One](https://fonts.google.com/specimen/Sofadi+One), a static font.
-    #[link_name = "next/font/google#Sofadi_One"]
-    pub safe fn Sofadi_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sofia](https://fonts.google.com/specimen/Sofia), a static font.
-    #[link_name = "next/font/google#Sofia"]
-    pub safe fn Sofia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sofia Sans](https://fonts.google.com/specimen/Sofia+Sans), a variable font.
-    #[link_name = "next/font/google#Sofia_Sans"]
-    pub safe fn Sofia_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sofia Sans Condensed](https://fonts.google.com/specimen/Sofia+Sans+Condensed), a variable font.
-    #[link_name = "next/font/google#Sofia_Sans_Condensed"]
-    pub safe fn Sofia_Sans_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sofia Sans Extra Condensed](https://fonts.google.com/specimen/Sofia+Sans+Extra+Condensed), a variable font.
-    #[link_name = "next/font/google#Sofia_Sans_Extra_Condensed"]
-    pub safe fn Sofia_Sans_Extra_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sofia Sans Semi Condensed](https://fonts.google.com/specimen/Sofia+Sans+Semi+Condensed), a variable font.
-    #[link_name = "next/font/google#Sofia_Sans_Semi_Condensed"]
-    pub safe fn Sofia_Sans_Semi_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Solitreo](https://fonts.google.com/specimen/Solitreo), a static font.
-    #[link_name = "next/font/google#Solitreo"]
-    pub safe fn Solitreo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Solway](https://fonts.google.com/specimen/Solway), a static font.
-    #[link_name = "next/font/google#Solway"]
-    pub safe fn Solway(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sometype Mono](https://fonts.google.com/specimen/Sometype+Mono), a variable font.
-    #[link_name = "next/font/google#Sometype_Mono"]
-    pub safe fn Sometype_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Song Myung](https://fonts.google.com/specimen/Song+Myung), a static font.
-    #[link_name = "next/font/google#Song_Myung"]
-    pub safe fn Song_Myung(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sono](https://fonts.google.com/specimen/Sono), a variable font.
-    #[link_name = "next/font/google#Sono"]
-    pub safe fn Sono(options: VariableFont<'_>) -> NextFont;
-
-    /// [Sonsie One](https://fonts.google.com/specimen/Sonsie+One), a static font.
-    #[link_name = "next/font/google#Sonsie_One"]
-    pub safe fn Sonsie_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sora](https://fonts.google.com/specimen/Sora), a variable font.
-    #[link_name = "next/font/google#Sora"]
-    pub safe fn Sora(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Sorts Mill Goudy](https://fonts.google.com/specimen/Sorts+Mill+Goudy), a static font.
-    #[link_name = "next/font/google#Sorts_Mill_Goudy"]
-    pub safe fn Sorts_Mill_Goudy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sour Gummy](https://fonts.google.com/specimen/Sour+Gummy), a variable font.
-    #[link_name = "next/font/google#Sour_Gummy"]
-    pub safe fn Sour_Gummy(options: VariableFont<'_>) -> NextFont;
-
-    /// [Source Code Pro](https://fonts.google.com/specimen/Source+Code+Pro), a variable font.
-    #[link_name = "next/font/google#Source_Code_Pro"]
-    pub safe fn Source_Code_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), a variable font.
-    #[link_name = "next/font/google#Source_Sans_3"]
-    pub safe fn Source_Sans_3(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Source Serif 4](https://fonts.google.com/specimen/Source+Serif+4), a variable font.
-    #[link_name = "next/font/google#Source_Serif_4"]
-    pub safe fn Source_Serif_4(options: VariableFont<'_>) -> NextFont;
-
-    /// [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), a variable font.
-    #[link_name = "next/font/google#Space_Grotesk"]
-    pub safe fn Space_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Space Mono](https://fonts.google.com/specimen/Space+Mono), a static font.
-    #[link_name = "next/font/google#Space_Mono"]
-    pub safe fn Space_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Special Elite](https://fonts.google.com/specimen/Special+Elite), a static font.
-    #[link_name = "next/font/google#Special_Elite"]
-    pub safe fn Special_Elite(options: StaticFont<'_>) -> NextFont;
-
-    /// [Special Gothic](https://fonts.google.com/specimen/Special+Gothic), a variable font.
-    #[link_name = "next/font/google#Special_Gothic"]
-    pub safe fn Special_Gothic(options: VariableFont<'_>) -> NextFont;
-
-    /// [Special Gothic Condensed One](https://fonts.google.com/specimen/Special+Gothic+Condensed+One), a static font.
-    #[link_name = "next/font/google#Special_Gothic_Condensed_One"]
-    pub safe fn Special_Gothic_Condensed_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Special Gothic Expanded One](https://fonts.google.com/specimen/Special+Gothic+Expanded+One), a static font.
-    #[link_name = "next/font/google#Special_Gothic_Expanded_One"]
-    pub safe fn Special_Gothic_Expanded_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spectral](https://fonts.google.com/specimen/Spectral), a static font.
-    #[link_name = "next/font/google#Spectral"]
-    pub safe fn Spectral(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spectral SC](https://fonts.google.com/specimen/Spectral+SC), a static font.
-    #[link_name = "next/font/google#Spectral_SC"]
-    pub safe fn Spectral_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spicy Rice](https://fonts.google.com/specimen/Spicy+Rice), a static font.
-    #[link_name = "next/font/google#Spicy_Rice"]
-    pub safe fn Spicy_Rice(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spinnaker](https://fonts.google.com/specimen/Spinnaker), a static font.
-    #[link_name = "next/font/google#Spinnaker"]
-    pub safe fn Spinnaker(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spirax](https://fonts.google.com/specimen/Spirax), a static font.
-    #[link_name = "next/font/google#Spirax"]
-    pub safe fn Spirax(options: StaticFont<'_>) -> NextFont;
-
-    /// [Splash](https://fonts.google.com/specimen/Splash), a static font.
-    #[link_name = "next/font/google#Splash"]
-    pub safe fn Splash(options: StaticFont<'_>) -> NextFont;
-
-    /// [Spline Sans](https://fonts.google.com/specimen/Spline+Sans), a variable font.
-    #[link_name = "next/font/google#Spline_Sans"]
-    pub safe fn Spline_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Spline Sans Mono](https://fonts.google.com/specimen/Spline+Sans+Mono), a variable font.
-    #[link_name = "next/font/google#Spline_Sans_Mono"]
-    pub safe fn Spline_Sans_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Squada One](https://fonts.google.com/specimen/Squada+One), a static font.
-    #[link_name = "next/font/google#Squada_One"]
-    pub safe fn Squada_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Square Peg](https://fonts.google.com/specimen/Square+Peg), a static font.
-    #[link_name = "next/font/google#Square_Peg"]
-    pub safe fn Square_Peg(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sree Krushnadevaraya](https://fonts.google.com/specimen/Sree+Krushnadevaraya), a static font.
-    #[link_name = "next/font/google#Sree_Krushnadevaraya"]
-    pub safe fn Sree_Krushnadevaraya(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sriracha](https://fonts.google.com/specimen/Sriracha), a static font.
-    #[link_name = "next/font/google#Sriracha"]
-    pub safe fn Sriracha(options: StaticFont<'_>) -> NextFont;
-
-    /// [Srisakdi](https://fonts.google.com/specimen/Srisakdi), a static font.
-    #[link_name = "next/font/google#Srisakdi"]
-    pub safe fn Srisakdi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Staatliches](https://fonts.google.com/specimen/Staatliches), a static font.
-    #[link_name = "next/font/google#Staatliches"]
-    pub safe fn Staatliches(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stack Sans Headline](https://fonts.google.com/specimen/Stack+Sans+Headline), a variable font.
-    #[link_name = "next/font/google#Stack_Sans_Headline"]
-    pub safe fn Stack_Sans_Headline(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Stack Sans Notch](https://fonts.google.com/specimen/Stack+Sans+Notch), a variable font.
-    #[link_name = "next/font/google#Stack_Sans_Notch"]
-    pub safe fn Stack_Sans_Notch(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Stack Sans Text](https://fonts.google.com/specimen/Stack+Sans+Text), a variable font.
-    #[link_name = "next/font/google#Stack_Sans_Text"]
-    pub safe fn Stack_Sans_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Stalemate](https://fonts.google.com/specimen/Stalemate), a static font.
-    #[link_name = "next/font/google#Stalemate"]
-    pub safe fn Stalemate(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stalinist One](https://fonts.google.com/specimen/Stalinist+One), a static font.
-    #[link_name = "next/font/google#Stalinist_One"]
-    pub safe fn Stalinist_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stardos Stencil](https://fonts.google.com/specimen/Stardos+Stencil), a static font.
-    #[link_name = "next/font/google#Stardos_Stencil"]
-    pub safe fn Stardos_Stencil(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stick](https://fonts.google.com/specimen/Stick), a static font.
-    #[link_name = "next/font/google#Stick"]
-    pub safe fn Stick(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stick No Bills](https://fonts.google.com/specimen/Stick+No+Bills), a variable font.
-    #[link_name = "next/font/google#Stick_No_Bills"]
-    pub safe fn Stick_No_Bills(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Stint Ultra Condensed](https://fonts.google.com/specimen/Stint+Ultra+Condensed), a static font.
-    #[link_name = "next/font/google#Stint_Ultra_Condensed"]
-    pub safe fn Stint_Ultra_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stint Ultra Expanded](https://fonts.google.com/specimen/Stint+Ultra+Expanded), a static font.
-    #[link_name = "next/font/google#Stint_Ultra_Expanded"]
-    pub safe fn Stint_Ultra_Expanded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stoke](https://fonts.google.com/specimen/Stoke), a static font.
-    #[link_name = "next/font/google#Stoke"]
-    pub safe fn Stoke(options: StaticFont<'_>) -> NextFont;
-
-    /// [Story Script](https://fonts.google.com/specimen/Story+Script), a static font.
-    #[link_name = "next/font/google#Story_Script"]
-    pub safe fn Story_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Strait](https://fonts.google.com/specimen/Strait), a static font.
-    #[link_name = "next/font/google#Strait"]
-    pub safe fn Strait(options: StaticFont<'_>) -> NextFont;
-
-    /// [Strichpunkt Sans](https://fonts.google.com/specimen/Strichpunkt+Sans), a variable font.
-    #[link_name = "next/font/google#Strichpunkt_Sans"]
-    pub safe fn Strichpunkt_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Style Script](https://fonts.google.com/specimen/Style+Script), a static font.
-    #[link_name = "next/font/google#Style_Script"]
-    pub safe fn Style_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [Stylish](https://fonts.google.com/specimen/Stylish), a static font.
-    #[link_name = "next/font/google#Stylish"]
-    pub safe fn Stylish(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sue Ellen Francisco](https://fonts.google.com/specimen/Sue+Ellen+Francisco), a static font.
-    #[link_name = "next/font/google#Sue_Ellen_Francisco"]
-    pub safe fn Sue_Ellen_Francisco(options: StaticFont<'_>) -> NextFont;
-
-    /// [Suez One](https://fonts.google.com/specimen/Suez+One), a static font.
-    #[link_name = "next/font/google#Suez_One"]
-    pub safe fn Suez_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sulphur Point](https://fonts.google.com/specimen/Sulphur+Point), a static font.
-    #[link_name = "next/font/google#Sulphur_Point"]
-    pub safe fn Sulphur_Point(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sumana](https://fonts.google.com/specimen/Sumana), a static font.
-    #[link_name = "next/font/google#Sumana"]
-    pub safe fn Sumana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sunflower](https://fonts.google.com/specimen/Sunflower), a static font.
-    #[link_name = "next/font/google#Sunflower"]
-    pub safe fn Sunflower(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sunshiney](https://fonts.google.com/specimen/Sunshiney), a static font.
-    #[link_name = "next/font/google#Sunshiney"]
-    pub safe fn Sunshiney(options: StaticFont<'_>) -> NextFont;
-
-    /// [Supermercado One](https://fonts.google.com/specimen/Supermercado+One), a static font.
-    #[link_name = "next/font/google#Supermercado_One"]
-    pub safe fn Supermercado_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Sura](https://fonts.google.com/specimen/Sura), a static font.
-    #[link_name = "next/font/google#Sura"]
-    pub safe fn Sura(options: StaticFont<'_>) -> NextFont;
-
-    /// [Suranna](https://fonts.google.com/specimen/Suranna), a static font.
-    #[link_name = "next/font/google#Suranna"]
-    pub safe fn Suranna(options: StaticFont<'_>) -> NextFont;
-
-    /// [Suravaram](https://fonts.google.com/specimen/Suravaram), a static font.
-    #[link_name = "next/font/google#Suravaram"]
-    pub safe fn Suravaram(options: StaticFont<'_>) -> NextFont;
-
-    /// [Suwannaphum](https://fonts.google.com/specimen/Suwannaphum), a static font.
-    #[link_name = "next/font/google#Suwannaphum"]
-    pub safe fn Suwannaphum(options: StaticFont<'_>) -> NextFont;
-
-    /// [Swanky and Moo Moo](https://fonts.google.com/specimen/Swanky+and+Moo+Moo), a static font.
-    #[link_name = "next/font/google#Swanky_and_Moo_Moo"]
-    pub safe fn Swanky_and_Moo_Moo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Syncopate](https://fonts.google.com/specimen/Syncopate), a static font.
-    #[link_name = "next/font/google#Syncopate"]
-    pub safe fn Syncopate(options: StaticFont<'_>) -> NextFont;
-
-    /// [Syne](https://fonts.google.com/specimen/Syne), a variable font.
-    #[link_name = "next/font/google#Syne"]
-    pub safe fn Syne(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Syne Mono](https://fonts.google.com/specimen/Syne+Mono), a static font.
-    #[link_name = "next/font/google#Syne_Mono"]
-    pub safe fn Syne_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Syne Tactile](https://fonts.google.com/specimen/Syne+Tactile), a static font.
-    #[link_name = "next/font/google#Syne_Tactile"]
-    pub safe fn Syne_Tactile(options: StaticFont<'_>) -> NextFont;
-
-    /// [TASA Explorer](https://fonts.google.com/specimen/TASA+Explorer), a variable font.
-    #[link_name = "next/font/google#TASA_Explorer"]
-    pub safe fn TASA_Explorer(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [TASA Orbiter](https://fonts.google.com/specimen/TASA+Orbiter), a variable font.
-    #[link_name = "next/font/google#TASA_Orbiter"]
-    pub safe fn TASA_Orbiter(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Tac One](https://fonts.google.com/specimen/Tac+One), a static font.
-    #[link_name = "next/font/google#Tac_One"]
-    pub safe fn Tac_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tagesschrift](https://fonts.google.com/specimen/Tagesschrift), a static font.
-    #[link_name = "next/font/google#Tagesschrift"]
-    pub safe fn Tagesschrift(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tai Heritage Pro](https://fonts.google.com/specimen/Tai+Heritage+Pro), a static font.
-    #[link_name = "next/font/google#Tai_Heritage_Pro"]
-    pub safe fn Tai_Heritage_Pro(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tajawal](https://fonts.google.com/specimen/Tajawal), a static font.
-    #[link_name = "next/font/google#Tajawal"]
-    pub safe fn Tajawal(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tangerine](https://fonts.google.com/specimen/Tangerine), a static font.
-    #[link_name = "next/font/google#Tangerine"]
-    pub safe fn Tangerine(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tapestry](https://fonts.google.com/specimen/Tapestry), a static font.
-    #[link_name = "next/font/google#Tapestry"]
-    pub safe fn Tapestry(options: StaticFont<'_>) -> NextFont;
-
-    /// [Taprom](https://fonts.google.com/specimen/Taprom), a static font.
-    #[link_name = "next/font/google#Taprom"]
-    pub safe fn Taprom(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tauri](https://fonts.google.com/specimen/Tauri), a static font.
-    #[link_name = "next/font/google#Tauri"]
-    pub safe fn Tauri(options: StaticFont<'_>) -> NextFont;
-
-    /// [Taviraj](https://fonts.google.com/specimen/Taviraj), a static font.
-    #[link_name = "next/font/google#Taviraj"]
-    pub safe fn Taviraj(options: StaticFont<'_>) -> NextFont;
-
-    /// [Teachers](https://fonts.google.com/specimen/Teachers), a variable font.
-    #[link_name = "next/font/google#Teachers"]
-    pub safe fn Teachers(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Teko](https://fonts.google.com/specimen/Teko), a variable font.
-    #[link_name = "next/font/google#Teko"]
-    pub safe fn Teko(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Tektur](https://fonts.google.com/specimen/Tektur), a variable font.
-    #[link_name = "next/font/google#Tektur"]
-    pub safe fn Tektur(options: VariableFont<'_>) -> NextFont;
-
-    /// [Telex](https://fonts.google.com/specimen/Telex), a static font.
-    #[link_name = "next/font/google#Telex"]
-    pub safe fn Telex(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tenali Ramakrishna](https://fonts.google.com/specimen/Tenali+Ramakrishna), a static font.
-    #[link_name = "next/font/google#Tenali_Ramakrishna"]
-    pub safe fn Tenali_Ramakrishna(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tenor Sans](https://fonts.google.com/specimen/Tenor+Sans), a static font.
-    #[link_name = "next/font/google#Tenor_Sans"]
-    pub safe fn Tenor_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Text Me One](https://fonts.google.com/specimen/Text+Me+One), a static font.
-    #[link_name = "next/font/google#Text_Me_One"]
-    pub safe fn Text_Me_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Texturina](https://fonts.google.com/specimen/Texturina), a variable font.
-    #[link_name = "next/font/google#Texturina"]
-    pub safe fn Texturina(options: VariableFont<'_>) -> NextFont;
-
-    /// [Thasadith](https://fonts.google.com/specimen/Thasadith), a static font.
-    #[link_name = "next/font/google#Thasadith"]
-    pub safe fn Thasadith(options: StaticFont<'_>) -> NextFont;
-
-    /// [The Girl Next Door](https://fonts.google.com/specimen/The+Girl+Next+Door), a static font.
-    #[link_name = "next/font/google#The_Girl_Next_Door"]
-    pub safe fn The_Girl_Next_Door(options: StaticFont<'_>) -> NextFont;
-
-    /// [The Nautigal](https://fonts.google.com/specimen/The+Nautigal), a static font.
-    #[link_name = "next/font/google#The_Nautigal"]
-    pub safe fn The_Nautigal(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tienne](https://fonts.google.com/specimen/Tienne), a static font.
-    #[link_name = "next/font/google#Tienne"]
-    pub safe fn Tienne(options: StaticFont<'_>) -> NextFont;
-
-    /// [TikTok Sans](https://fonts.google.com/specimen/TikTok+Sans), a variable font.
-    #[link_name = "next/font/google#TikTok_Sans"]
-    pub safe fn TikTok_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Tillana](https://fonts.google.com/specimen/Tillana), a static font.
-    #[link_name = "next/font/google#Tillana"]
-    pub safe fn Tillana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tilt Neon](https://fonts.google.com/specimen/Tilt+Neon), a variable font.
-    #[link_name = "next/font/google#Tilt_Neon"]
-    pub safe fn Tilt_Neon(options: VariableFont<'_>) -> NextFont;
-
-    /// [Tilt Prism](https://fonts.google.com/specimen/Tilt+Prism), a variable font.
-    #[link_name = "next/font/google#Tilt_Prism"]
-    pub safe fn Tilt_Prism(options: VariableFont<'_>) -> NextFont;
-
-    /// [Tilt Warp](https://fonts.google.com/specimen/Tilt+Warp), a variable font.
-    #[link_name = "next/font/google#Tilt_Warp"]
-    pub safe fn Tilt_Warp(options: VariableFont<'_>) -> NextFont;
-
-    /// [Timmana](https://fonts.google.com/specimen/Timmana), a static font.
-    #[link_name = "next/font/google#Timmana"]
-    pub safe fn Timmana(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tinos](https://fonts.google.com/specimen/Tinos), a static font.
-    #[link_name = "next/font/google#Tinos"]
-    pub safe fn Tinos(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiny5](https://fonts.google.com/specimen/Tiny5), a static font.
-    #[link_name = "next/font/google#Tiny5"]
-    pub safe fn Tiny5(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Bangla](https://fonts.google.com/specimen/Tiro+Bangla), a static font.
-    #[link_name = "next/font/google#Tiro_Bangla"]
-    pub safe fn Tiro_Bangla(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Devanagari Hindi](https://fonts.google.com/specimen/Tiro+Devanagari+Hindi), a static font.
-    #[link_name = "next/font/google#Tiro_Devanagari_Hindi"]
-    pub safe fn Tiro_Devanagari_Hindi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Devanagari Marathi](https://fonts.google.com/specimen/Tiro+Devanagari+Marathi), a static font.
-    #[link_name = "next/font/google#Tiro_Devanagari_Marathi"]
-    pub safe fn Tiro_Devanagari_Marathi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Devanagari Sanskrit](https://fonts.google.com/specimen/Tiro+Devanagari+Sanskrit), a static font.
-    #[link_name = "next/font/google#Tiro_Devanagari_Sanskrit"]
-    pub safe fn Tiro_Devanagari_Sanskrit(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Gurmukhi](https://fonts.google.com/specimen/Tiro+Gurmukhi), a static font.
-    #[link_name = "next/font/google#Tiro_Gurmukhi"]
-    pub safe fn Tiro_Gurmukhi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Kannada](https://fonts.google.com/specimen/Tiro+Kannada), a static font.
-    #[link_name = "next/font/google#Tiro_Kannada"]
-    pub safe fn Tiro_Kannada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Tamil](https://fonts.google.com/specimen/Tiro+Tamil), a static font.
-    #[link_name = "next/font/google#Tiro_Tamil"]
-    pub safe fn Tiro_Tamil(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tiro Telugu](https://fonts.google.com/specimen/Tiro+Telugu), a static font.
-    #[link_name = "next/font/google#Tiro_Telugu"]
-    pub safe fn Tiro_Telugu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tirra](https://fonts.google.com/specimen/Tirra), a static font.
-    #[link_name = "next/font/google#Tirra"]
-    pub safe fn Tirra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Titan One](https://fonts.google.com/specimen/Titan+One), a static font.
-    #[link_name = "next/font/google#Titan_One"]
-    pub safe fn Titan_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Titillium Web](https://fonts.google.com/specimen/Titillium+Web), a static font.
-    #[link_name = "next/font/google#Titillium_Web"]
-    pub safe fn Titillium_Web(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tomorrow](https://fonts.google.com/specimen/Tomorrow), a static font.
-    #[link_name = "next/font/google#Tomorrow"]
-    pub safe fn Tomorrow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tourney](https://fonts.google.com/specimen/Tourney), a variable font.
-    #[link_name = "next/font/google#Tourney"]
-    pub safe fn Tourney(options: VariableFont<'_>) -> NextFont;
-
-    /// [Trade Winds](https://fonts.google.com/specimen/Trade+Winds), a static font.
-    #[link_name = "next/font/google#Trade_Winds"]
-    pub safe fn Trade_Winds(options: StaticFont<'_>) -> NextFont;
-
-    /// [Train One](https://fonts.google.com/specimen/Train+One), a static font.
-    #[link_name = "next/font/google#Train_One"]
-    pub safe fn Train_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Triodion](https://fonts.google.com/specimen/Triodion), a static font.
-    #[link_name = "next/font/google#Triodion"]
-    pub safe fn Triodion(options: StaticFont<'_>) -> NextFont;
-
-    /// [Trirong](https://fonts.google.com/specimen/Trirong), a static font.
-    #[link_name = "next/font/google#Trirong"]
-    pub safe fn Trirong(options: StaticFont<'_>) -> NextFont;
-
-    /// [Trispace](https://fonts.google.com/specimen/Trispace), a variable font.
-    #[link_name = "next/font/google#Trispace"]
-    pub safe fn Trispace(options: VariableFont<'_>) -> NextFont;
-
-    /// [Trocchi](https://fonts.google.com/specimen/Trocchi), a static font.
-    #[link_name = "next/font/google#Trocchi"]
-    pub safe fn Trocchi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Trochut](https://fonts.google.com/specimen/Trochut), a static font.
-    #[link_name = "next/font/google#Trochut"]
-    pub safe fn Trochut(options: StaticFont<'_>) -> NextFont;
-
-    /// [Truculenta](https://fonts.google.com/specimen/Truculenta), a variable font.
-    #[link_name = "next/font/google#Truculenta"]
-    pub safe fn Truculenta(options: VariableFont<'_>) -> NextFont;
-
-    /// [Trykker](https://fonts.google.com/specimen/Trykker), a static font.
-    #[link_name = "next/font/google#Trykker"]
-    pub safe fn Trykker(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tsukimi Rounded](https://fonts.google.com/specimen/Tsukimi+Rounded), a static font.
-    #[link_name = "next/font/google#Tsukimi_Rounded"]
-    pub safe fn Tsukimi_Rounded(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tuffy](https://fonts.google.com/specimen/Tuffy), a static font.
-    #[link_name = "next/font/google#Tuffy"]
-    pub safe fn Tuffy(options: StaticFont<'_>) -> NextFont;
-
-    /// [Tulpen One](https://fonts.google.com/specimen/Tulpen+One), a static font.
-    #[link_name = "next/font/google#Tulpen_One"]
-    pub safe fn Tulpen_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Turret Road](https://fonts.google.com/specimen/Turret+Road), a static font.
-    #[link_name = "next/font/google#Turret_Road"]
-    pub safe fn Turret_Road(options: StaticFont<'_>) -> NextFont;
-
-    /// [Twinkle Star](https://fonts.google.com/specimen/Twinkle+Star), a static font.
-    #[link_name = "next/font/google#Twinkle_Star"]
-    pub safe fn Twinkle_Star(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ubuntu](https://fonts.google.com/specimen/Ubuntu), a static font.
-    #[link_name = "next/font/google#Ubuntu"]
-    pub safe fn Ubuntu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ubuntu Condensed](https://fonts.google.com/specimen/Ubuntu+Condensed), a static font.
-    #[link_name = "next/font/google#Ubuntu_Condensed"]
-    pub safe fn Ubuntu_Condensed(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ubuntu Mono](https://fonts.google.com/specimen/Ubuntu+Mono), a static font.
-    #[link_name = "next/font/google#Ubuntu_Mono"]
-    pub safe fn Ubuntu_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ubuntu Sans](https://fonts.google.com/specimen/Ubuntu+Sans), a variable font.
-    #[link_name = "next/font/google#Ubuntu_Sans"]
-    pub safe fn Ubuntu_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Ubuntu Sans Mono](https://fonts.google.com/specimen/Ubuntu+Sans+Mono), a variable font.
-    #[link_name = "next/font/google#Ubuntu_Sans_Mono"]
-    pub safe fn Ubuntu_Sans_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Uchen](https://fonts.google.com/specimen/Uchen), a static font.
-    #[link_name = "next/font/google#Uchen"]
-    pub safe fn Uchen(options: StaticFont<'_>) -> NextFont;
-
-    /// [Ultra](https://fonts.google.com/specimen/Ultra), a static font.
-    #[link_name = "next/font/google#Ultra"]
-    pub safe fn Ultra(options: StaticFont<'_>) -> NextFont;
-
-    /// [Unbounded](https://fonts.google.com/specimen/Unbounded), a variable font.
-    #[link_name = "next/font/google#Unbounded"]
-    pub safe fn Unbounded(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Uncial Antiqua](https://fonts.google.com/specimen/Uncial+Antiqua), a static font.
-    #[link_name = "next/font/google#Uncial_Antiqua"]
-    pub safe fn Uncial_Antiqua(options: StaticFont<'_>) -> NextFont;
-
-    /// [Underdog](https://fonts.google.com/specimen/Underdog), a static font.
-    #[link_name = "next/font/google#Underdog"]
-    pub safe fn Underdog(options: StaticFont<'_>) -> NextFont;
-
-    /// [Unica One](https://fonts.google.com/specimen/Unica+One), a static font.
-    #[link_name = "next/font/google#Unica_One"]
-    pub safe fn Unica_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [UnifrakturCook](https://fonts.google.com/specimen/UnifrakturCook), a static font.
-    #[link_name = "next/font/google#UnifrakturCook"]
-    pub safe fn UnifrakturCook(options: StaticFont<'_>) -> NextFont;
-
-    /// [UnifrakturMaguntia](https://fonts.google.com/specimen/UnifrakturMaguntia), a static font.
-    #[link_name = "next/font/google#UnifrakturMaguntia"]
-    pub safe fn UnifrakturMaguntia(options: StaticFont<'_>) -> NextFont;
-
-    /// [Unkempt](https://fonts.google.com/specimen/Unkempt), a static font.
-    #[link_name = "next/font/google#Unkempt"]
-    pub safe fn Unkempt(options: StaticFont<'_>) -> NextFont;
-
-    /// [Unlock](https://fonts.google.com/specimen/Unlock), a static font.
-    #[link_name = "next/font/google#Unlock"]
-    pub safe fn Unlock(options: StaticFont<'_>) -> NextFont;
-
-    /// [Unna](https://fonts.google.com/specimen/Unna), a static font.
-    #[link_name = "next/font/google#Unna"]
-    pub safe fn Unna(options: StaticFont<'_>) -> NextFont;
-
-    /// [UoqMunThenKhung](https://fonts.google.com/specimen/UoqMunThenKhung), a static font.
-    #[link_name = "next/font/google#UoqMunThenKhung"]
-    pub safe fn UoqMunThenKhung(options: StaticFont<'_>) -> NextFont;
-
-    /// [Updock](https://fonts.google.com/specimen/Updock), a static font.
-    #[link_name = "next/font/google#Updock"]
-    pub safe fn Updock(options: StaticFont<'_>) -> NextFont;
-
-    /// [Urbanist](https://fonts.google.com/specimen/Urbanist), a variable font.
-    #[link_name = "next/font/google#Urbanist"]
-    pub safe fn Urbanist(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [VT323](https://fonts.google.com/specimen/VT323), a static font.
-    #[link_name = "next/font/google#VT323"]
-    pub safe fn VT323(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vampiro One](https://fonts.google.com/specimen/Vampiro+One), a static font.
-    #[link_name = "next/font/google#Vampiro_One"]
-    pub safe fn Vampiro_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Varela](https://fonts.google.com/specimen/Varela), a static font.
-    #[link_name = "next/font/google#Varela"]
-    pub safe fn Varela(options: StaticFont<'_>) -> NextFont;
-
-    /// [Varela Round](https://fonts.google.com/specimen/Varela+Round), a static font.
-    #[link_name = "next/font/google#Varela_Round"]
-    pub safe fn Varela_Round(options: StaticFont<'_>) -> NextFont;
-
-    /// [Varta](https://fonts.google.com/specimen/Varta), a variable font.
-    #[link_name = "next/font/google#Varta"]
-    pub safe fn Varta(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Vast Shadow](https://fonts.google.com/specimen/Vast+Shadow), a static font.
-    #[link_name = "next/font/google#Vast_Shadow"]
-    pub safe fn Vast_Shadow(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vazirmatn](https://fonts.google.com/specimen/Vazirmatn), a variable font.
-    #[link_name = "next/font/google#Vazirmatn"]
-    pub safe fn Vazirmatn(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Vend Sans](https://fonts.google.com/specimen/Vend+Sans), a variable font.
-    #[link_name = "next/font/google#Vend_Sans"]
-    pub safe fn Vend_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Vesper Libre](https://fonts.google.com/specimen/Vesper+Libre), a static font.
-    #[link_name = "next/font/google#Vesper_Libre"]
-    pub safe fn Vesper_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Viaoda Libre](https://fonts.google.com/specimen/Viaoda+Libre), a static font.
-    #[link_name = "next/font/google#Viaoda_Libre"]
-    pub safe fn Viaoda_Libre(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vibes](https://fonts.google.com/specimen/Vibes), a static font.
-    #[link_name = "next/font/google#Vibes"]
-    pub safe fn Vibes(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vibur](https://fonts.google.com/specimen/Vibur), a static font.
-    #[link_name = "next/font/google#Vibur"]
-    pub safe fn Vibur(options: StaticFont<'_>) -> NextFont;
-
-    /// [Victor Mono](https://fonts.google.com/specimen/Victor+Mono), a variable font.
-    #[link_name = "next/font/google#Victor_Mono"]
-    pub safe fn Victor_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Vidaloka](https://fonts.google.com/specimen/Vidaloka), a static font.
-    #[link_name = "next/font/google#Vidaloka"]
-    pub safe fn Vidaloka(options: StaticFont<'_>) -> NextFont;
-
-    /// [Viga](https://fonts.google.com/specimen/Viga), a static font.
-    #[link_name = "next/font/google#Viga"]
-    pub safe fn Viga(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vina Sans](https://fonts.google.com/specimen/Vina+Sans), a static font.
-    #[link_name = "next/font/google#Vina_Sans"]
-    pub safe fn Vina_Sans(options: StaticFont<'_>) -> NextFont;
-
-    /// [Voces](https://fonts.google.com/specimen/Voces), a static font.
-    #[link_name = "next/font/google#Voces"]
-    pub safe fn Voces(options: StaticFont<'_>) -> NextFont;
-
-    /// [Volkhov](https://fonts.google.com/specimen/Volkhov), a static font.
-    #[link_name = "next/font/google#Volkhov"]
-    pub safe fn Volkhov(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vollkorn](https://fonts.google.com/specimen/Vollkorn), a variable font.
-    #[link_name = "next/font/google#Vollkorn"]
-    pub safe fn Vollkorn(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Vollkorn SC](https://fonts.google.com/specimen/Vollkorn+SC), a static font.
-    #[link_name = "next/font/google#Vollkorn_SC"]
-    pub safe fn Vollkorn_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Voltaire](https://fonts.google.com/specimen/Voltaire), a static font.
-    #[link_name = "next/font/google#Voltaire"]
-    pub safe fn Voltaire(options: StaticFont<'_>) -> NextFont;
-
-    /// [Vujahday Script](https://fonts.google.com/specimen/Vujahday+Script), a static font.
-    #[link_name = "next/font/google#Vujahday_Script"]
-    pub safe fn Vujahday_Script(options: StaticFont<'_>) -> NextFont;
-
-    /// [WDXL Lubrifont JP N](https://fonts.google.com/specimen/WDXL+Lubrifont+JP+N), a static font.
-    #[link_name = "next/font/google#WDXL_Lubrifont_JP_N"]
-    pub safe fn WDXL_Lubrifont_JP_N(options: StaticFont<'_>) -> NextFont;
-
-    /// [WDXL Lubrifont SC](https://fonts.google.com/specimen/WDXL+Lubrifont+SC), a static font.
-    #[link_name = "next/font/google#WDXL_Lubrifont_SC"]
-    pub safe fn WDXL_Lubrifont_SC(options: StaticFont<'_>) -> NextFont;
-
-    /// [WDXL Lubrifont TC](https://fonts.google.com/specimen/WDXL+Lubrifont+TC), a static font.
-    #[link_name = "next/font/google#WDXL_Lubrifont_TC"]
-    pub safe fn WDXL_Lubrifont_TC(options: StaticFont<'_>) -> NextFont;
-
-    /// [Waiting for the Sunrise](https://fonts.google.com/specimen/Waiting+for+the+Sunrise), a static font.
-    #[link_name = "next/font/google#Waiting_for_the_Sunrise"]
-    pub safe fn Waiting_for_the_Sunrise(options: StaticFont<'_>) -> NextFont;
-
-    /// [Wallpoet](https://fonts.google.com/specimen/Wallpoet), a static font.
-    #[link_name = "next/font/google#Wallpoet"]
-    pub safe fn Wallpoet(options: StaticFont<'_>) -> NextFont;
-
-    /// [Walter Turncoat](https://fonts.google.com/specimen/Walter+Turncoat), a static font.
-    #[link_name = "next/font/google#Walter_Turncoat"]
-    pub safe fn Walter_Turncoat(options: StaticFont<'_>) -> NextFont;
-
-    /// [Warnes](https://fonts.google.com/specimen/Warnes), a static font.
-    #[link_name = "next/font/google#Warnes"]
-    pub safe fn Warnes(options: StaticFont<'_>) -> NextFont;
-
-    /// [Water Brush](https://fonts.google.com/specimen/Water+Brush), a static font.
-    #[link_name = "next/font/google#Water_Brush"]
-    pub safe fn Water_Brush(options: StaticFont<'_>) -> NextFont;
-
-    /// [Waterfall](https://fonts.google.com/specimen/Waterfall), a static font.
-    #[link_name = "next/font/google#Waterfall"]
-    pub safe fn Waterfall(options: StaticFont<'_>) -> NextFont;
-
-    /// [Wavefont](https://fonts.google.com/specimen/Wavefont), a variable font.
-    #[link_name = "next/font/google#Wavefont"]
-    pub safe fn Wavefont(options: VariableFont<'_>) -> NextFont;
-
-    /// [Wellfleet](https://fonts.google.com/specimen/Wellfleet), a static font.
-    #[link_name = "next/font/google#Wellfleet"]
-    pub safe fn Wellfleet(options: StaticFont<'_>) -> NextFont;
-
-    /// [Wendy One](https://fonts.google.com/specimen/Wendy+One), a static font.
-    #[link_name = "next/font/google#Wendy_One"]
-    pub safe fn Wendy_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Whisper](https://fonts.google.com/specimen/Whisper), a static font.
-    #[link_name = "next/font/google#Whisper"]
-    pub safe fn Whisper(options: StaticFont<'_>) -> NextFont;
-
-    /// [WindSong](https://fonts.google.com/specimen/WindSong), a static font.
-    #[link_name = "next/font/google#WindSong"]
-    pub safe fn WindSong(options: StaticFont<'_>) -> NextFont;
-
-    /// [Winky Rough](https://fonts.google.com/specimen/Winky+Rough), a variable font.
-    #[link_name = "next/font/google#Winky_Rough"]
-    pub safe fn Winky_Rough(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Winky Sans](https://fonts.google.com/specimen/Winky+Sans), a variable font.
-    #[link_name = "next/font/google#Winky_Sans"]
-    pub safe fn Winky_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Wire One](https://fonts.google.com/specimen/Wire+One), a static font.
-    #[link_name = "next/font/google#Wire_One"]
-    pub safe fn Wire_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Wittgenstein](https://fonts.google.com/specimen/Wittgenstein), a variable font.
-    #[link_name = "next/font/google#Wittgenstein"]
-    pub safe fn Wittgenstein(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Wix Madefor Display](https://fonts.google.com/specimen/Wix+Madefor+Display), a variable font.
-    #[link_name = "next/font/google#Wix_Madefor_Display"]
-    pub safe fn Wix_Madefor_Display(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Wix Madefor Text](https://fonts.google.com/specimen/Wix+Madefor+Text), a variable font.
-    #[link_name = "next/font/google#Wix_Madefor_Text"]
-    pub safe fn Wix_Madefor_Text(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Work Sans](https://fonts.google.com/specimen/Work+Sans), a variable font.
-    #[link_name = "next/font/google#Work_Sans"]
-    pub safe fn Work_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Workbench](https://fonts.google.com/specimen/Workbench), a variable font.
-    #[link_name = "next/font/google#Workbench"]
-    pub safe fn Workbench(options: VariableFont<'_>) -> NextFont;
-
-    /// [Xanh Mono](https://fonts.google.com/specimen/Xanh+Mono), a static font.
-    #[link_name = "next/font/google#Xanh_Mono"]
-    pub safe fn Xanh_Mono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yaldevi](https://fonts.google.com/specimen/Yaldevi), a variable font.
-    #[link_name = "next/font/google#Yaldevi"]
-    pub safe fn Yaldevi(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Yanone Kaffeesatz](https://fonts.google.com/specimen/Yanone+Kaffeesatz), a variable font.
-    #[link_name = "next/font/google#Yanone_Kaffeesatz"]
-    pub safe fn Yanone_Kaffeesatz(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Yantramanav](https://fonts.google.com/specimen/Yantramanav), a static font.
-    #[link_name = "next/font/google#Yantramanav"]
-    pub safe fn Yantramanav(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yarndings 12](https://fonts.google.com/specimen/Yarndings+12), a static font.
-    #[link_name = "next/font/google#Yarndings_12"]
-    pub safe fn Yarndings_12(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yarndings 12 Charted](https://fonts.google.com/specimen/Yarndings+12+Charted), a static font.
-    #[link_name = "next/font/google#Yarndings_12_Charted"]
-    pub safe fn Yarndings_12_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yarndings 20](https://fonts.google.com/specimen/Yarndings+20), a static font.
-    #[link_name = "next/font/google#Yarndings_20"]
-    pub safe fn Yarndings_20(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yarndings 20 Charted](https://fonts.google.com/specimen/Yarndings+20+Charted), a static font.
-    #[link_name = "next/font/google#Yarndings_20_Charted"]
-    pub safe fn Yarndings_20_Charted(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yatra One](https://fonts.google.com/specimen/Yatra+One), a static font.
-    #[link_name = "next/font/google#Yatra_One"]
-    pub safe fn Yatra_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yellowtail](https://fonts.google.com/specimen/Yellowtail), a static font.
-    #[link_name = "next/font/google#Yellowtail"]
-    pub safe fn Yellowtail(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yeon Sung](https://fonts.google.com/specimen/Yeon+Sung), a static font.
-    #[link_name = "next/font/google#Yeon_Sung"]
-    pub safe fn Yeon_Sung(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yeseva One](https://fonts.google.com/specimen/Yeseva+One), a static font.
-    #[link_name = "next/font/google#Yeseva_One"]
-    pub safe fn Yeseva_One(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yesteryear](https://fonts.google.com/specimen/Yesteryear), a static font.
-    #[link_name = "next/font/google#Yesteryear"]
-    pub safe fn Yesteryear(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yomogi](https://fonts.google.com/specimen/Yomogi), a static font.
-    #[link_name = "next/font/google#Yomogi"]
-    pub safe fn Yomogi(options: StaticFont<'_>) -> NextFont;
-
-    /// [Young Serif](https://fonts.google.com/specimen/Young+Serif), a static font.
-    #[link_name = "next/font/google#Young_Serif"]
-    pub safe fn Young_Serif(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yrsa](https://fonts.google.com/specimen/Yrsa), a variable font.
-    #[link_name = "next/font/google#Yrsa"]
-    pub safe fn Yrsa(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ysabeau](https://fonts.google.com/specimen/Ysabeau), a variable font.
-    #[link_name = "next/font/google#Ysabeau"]
-    pub safe fn Ysabeau(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ysabeau Infant](https://fonts.google.com/specimen/Ysabeau+Infant), a variable font.
-    #[link_name = "next/font/google#Ysabeau_Infant"]
-    pub safe fn Ysabeau_Infant(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ysabeau Office](https://fonts.google.com/specimen/Ysabeau+Office), a variable font.
-    #[link_name = "next/font/google#Ysabeau_Office"]
-    pub safe fn Ysabeau_Office(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Ysabeau SC](https://fonts.google.com/specimen/Ysabeau+SC), a variable font.
-    #[link_name = "next/font/google#Ysabeau_SC"]
-    pub safe fn Ysabeau_SC(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Yuji Boku](https://fonts.google.com/specimen/Yuji+Boku), a static font.
-    #[link_name = "next/font/google#Yuji_Boku"]
-    pub safe fn Yuji_Boku(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuji Hentaigana Akari](https://fonts.google.com/specimen/Yuji+Hentaigana+Akari), a static font.
-    #[link_name = "next/font/google#Yuji_Hentaigana_Akari"]
-    pub safe fn Yuji_Hentaigana_Akari(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuji Hentaigana Akebono](https://fonts.google.com/specimen/Yuji+Hentaigana+Akebono), a static font.
-    #[link_name = "next/font/google#Yuji_Hentaigana_Akebono"]
-    pub safe fn Yuji_Hentaigana_Akebono(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuji Mai](https://fonts.google.com/specimen/Yuji+Mai), a static font.
-    #[link_name = "next/font/google#Yuji_Mai"]
-    pub safe fn Yuji_Mai(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuji Syuku](https://fonts.google.com/specimen/Yuji+Syuku), a static font.
-    #[link_name = "next/font/google#Yuji_Syuku"]
-    pub safe fn Yuji_Syuku(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yusei Magic](https://fonts.google.com/specimen/Yusei+Magic), a static font.
-    #[link_name = "next/font/google#Yusei_Magic"]
-    pub safe fn Yusei_Magic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuyu](https://fonts.google.com/specimen/Yuyu), a static font.
-    #[link_name = "next/font/google#Yuyu"]
-    pub safe fn Yuyu(options: StaticFont<'_>) -> NextFont;
-
-    /// [Yuyu Short](https://fonts.google.com/specimen/Yuyu+Short), a static font.
-    #[link_name = "next/font/google#Yuyu_Short"]
-    pub safe fn Yuyu_Short(options: StaticFont<'_>) -> NextFont;
-
-    /// [ZCOOL KuaiLe](https://fonts.google.com/specimen/ZCOOL+KuaiLe), a static font.
-    #[link_name = "next/font/google#ZCOOL_KuaiLe"]
-    pub safe fn ZCOOL_KuaiLe(options: StaticFont<'_>) -> NextFont;
-
-    /// [ZCOOL QingKe HuangYou](https://fonts.google.com/specimen/ZCOOL+QingKe+HuangYou), a static font.
-    #[link_name = "next/font/google#ZCOOL_QingKe_HuangYou"]
-    pub safe fn ZCOOL_QingKe_HuangYou(options: StaticFont<'_>) -> NextFont;
-
-    /// [ZCOOL XiaoWei](https://fonts.google.com/specimen/ZCOOL+XiaoWei), a static font.
-    #[link_name = "next/font/google#ZCOOL_XiaoWei"]
-    pub safe fn ZCOOL_XiaoWei(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zain](https://fonts.google.com/specimen/Zain), a static font.
-    #[link_name = "next/font/google#Zain"]
-    pub safe fn Zain(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zalando Sans](https://fonts.google.com/specimen/Zalando+Sans), a variable font.
-    #[link_name = "next/font/google#Zalando_Sans"]
-    pub safe fn Zalando_Sans(options: VariableFont<'_>) -> NextFont;
-
-    /// [Zalando Sans Expanded](https://fonts.google.com/specimen/Zalando+Sans+Expanded), a variable font.
-    #[link_name = "next/font/google#Zalando_Sans_Expanded"]
-    pub safe fn Zalando_Sans_Expanded(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Zalando Sans SemiExpanded](https://fonts.google.com/specimen/Zalando+Sans+SemiExpanded), a variable font.
-    #[link_name = "next/font/google#Zalando_Sans_SemiExpanded"]
-    pub safe fn Zalando_Sans_SemiExpanded(options: VariableFontWithoutAxes<'_>) -> NextFont;
-
-    /// [Zen Antique](https://fonts.google.com/specimen/Zen+Antique), a static font.
-    #[link_name = "next/font/google#Zen_Antique"]
-    pub safe fn Zen_Antique(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Antique Soft](https://fonts.google.com/specimen/Zen+Antique+Soft), a static font.
-    #[link_name = "next/font/google#Zen_Antique_Soft"]
-    pub safe fn Zen_Antique_Soft(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Dots](https://fonts.google.com/specimen/Zen+Dots), a static font.
-    #[link_name = "next/font/google#Zen_Dots"]
-    pub safe fn Zen_Dots(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Kaku Gothic Antique](https://fonts.google.com/specimen/Zen+Kaku+Gothic+Antique), a static font.
-    #[link_name = "next/font/google#Zen_Kaku_Gothic_Antique"]
-    pub safe fn Zen_Kaku_Gothic_Antique(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Kaku Gothic New](https://fonts.google.com/specimen/Zen+Kaku+Gothic+New), a static font.
-    #[link_name = "next/font/google#Zen_Kaku_Gothic_New"]
-    pub safe fn Zen_Kaku_Gothic_New(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Kurenaido](https://fonts.google.com/specimen/Zen+Kurenaido), a static font.
-    #[link_name = "next/font/google#Zen_Kurenaido"]
-    pub safe fn Zen_Kurenaido(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Loop](https://fonts.google.com/specimen/Zen+Loop), a static font.
-    #[link_name = "next/font/google#Zen_Loop"]
-    pub safe fn Zen_Loop(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic), a static font.
-    #[link_name = "next/font/google#Zen_Maru_Gothic"]
-    pub safe fn Zen_Maru_Gothic(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Old Mincho](https://fonts.google.com/specimen/Zen+Old+Mincho), a static font.
-    #[link_name = "next/font/google#Zen_Old_Mincho"]
-    pub safe fn Zen_Old_Mincho(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zen Tokyo Zoo](https://fonts.google.com/specimen/Zen+Tokyo+Zoo), a static font.
-    #[link_name = "next/font/google#Zen_Tokyo_Zoo"]
-    pub safe fn Zen_Tokyo_Zoo(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zeyada](https://fonts.google.com/specimen/Zeyada), a static font.
-    #[link_name = "next/font/google#Zeyada"]
-    pub safe fn Zeyada(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zhi Mang Xing](https://fonts.google.com/specimen/Zhi+Mang+Xing), a static font.
-    #[link_name = "next/font/google#Zhi_Mang_Xing"]
-    pub safe fn Zhi_Mang_Xing(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zilla Slab](https://fonts.google.com/specimen/Zilla+Slab), a static font.
-    #[link_name = "next/font/google#Zilla_Slab"]
-    pub safe fn Zilla_Slab(options: StaticFont<'_>) -> NextFont;
-
-    /// [Zilla Slab Highlight](https://fonts.google.com/specimen/Zilla+Slab+Highlight), a static font.
-    #[link_name = "next/font/google#Zilla_Slab_Highlight"]
-    pub safe fn Zilla_Slab_Highlight(options: StaticFont<'_>) -> NextFont;
+/// [ABeeZee](https://fonts.google.com/specimen/ABeeZee), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#ABeeZee")]
+pub fn ABeeZee(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [ADLaM Display](https://fonts.google.com/specimen/ADLaM+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#ADLaM_Display")]
+pub fn ADLaM_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [AR One Sans](https://fonts.google.com/specimen/AR+One+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#AR_One_Sans")]
+pub fn AR_One_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Abel](https://fonts.google.com/specimen/Abel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Abel")]
+pub fn Abel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Abhaya Libre](https://fonts.google.com/specimen/Abhaya+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Abhaya_Libre")]
+pub fn Abhaya_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aboreto](https://fonts.google.com/specimen/Aboreto), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aboreto")]
+pub fn Aboreto(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Abril Fatface](https://fonts.google.com/specimen/Abril+Fatface), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Abril_Fatface")]
+pub fn Abril_Fatface(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Abyssinica SIL](https://fonts.google.com/specimen/Abyssinica+SIL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Abyssinica_SIL")]
+pub fn Abyssinica_SIL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aclonica](https://fonts.google.com/specimen/Aclonica), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aclonica")]
+pub fn Aclonica(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Acme](https://fonts.google.com/specimen/Acme), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Acme")]
+pub fn Acme(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Actor](https://fonts.google.com/specimen/Actor), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Actor")]
+pub fn Actor(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Adamina](https://fonts.google.com/specimen/Adamina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Adamina")]
+pub fn Adamina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Advent Pro](https://fonts.google.com/specimen/Advent+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Advent_Pro")]
+pub fn Advent_Pro(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Afacad](https://fonts.google.com/specimen/Afacad), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Afacad")]
+pub fn Afacad(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Afacad Flux](https://fonts.google.com/specimen/Afacad+Flux), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Afacad_Flux")]
+pub fn Afacad_Flux(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Agbalumo](https://fonts.google.com/specimen/Agbalumo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Agbalumo")]
+pub fn Agbalumo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Agdasima](https://fonts.google.com/specimen/Agdasima), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Agdasima")]
+pub fn Agdasima(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Agu Display](https://fonts.google.com/specimen/Agu+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Agu_Display")]
+pub fn Agu_Display(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aguafina Script](https://fonts.google.com/specimen/Aguafina+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aguafina_Script")]
+pub fn Aguafina_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akatab](https://fonts.google.com/specimen/Akatab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akatab")]
+pub fn Akatab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akaya Kanadaka](https://fonts.google.com/specimen/Akaya+Kanadaka), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akaya_Kanadaka")]
+pub fn Akaya_Kanadaka(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akaya Telivigala](https://fonts.google.com/specimen/Akaya+Telivigala), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akaya_Telivigala")]
+pub fn Akaya_Telivigala(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akronim](https://fonts.google.com/specimen/Akronim), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akronim")]
+pub fn Akronim(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akshar](https://fonts.google.com/specimen/Akshar), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akshar")]
+pub fn Akshar(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Akt](https://fonts.google.com/specimen/Akt), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Akt")]
+pub fn Akt(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aladin](https://fonts.google.com/specimen/Aladin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aladin")]
+pub fn Aladin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alan Sans](https://fonts.google.com/specimen/Alan+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alan_Sans")]
+pub fn Alan_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alata](https://fonts.google.com/specimen/Alata), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alata")]
+pub fn Alata(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alatsi](https://fonts.google.com/specimen/Alatsi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alatsi")]
+pub fn Alatsi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Albert Sans](https://fonts.google.com/specimen/Albert+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Albert_Sans")]
+pub fn Albert_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aldrich](https://fonts.google.com/specimen/Aldrich), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aldrich")]
+pub fn Aldrich(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alef](https://fonts.google.com/specimen/Alef), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alef")]
+pub fn Alef(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alegreya](https://fonts.google.com/specimen/Alegreya), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alegreya")]
+pub fn Alegreya(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alegreya SC](https://fonts.google.com/specimen/Alegreya+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alegreya_SC")]
+pub fn Alegreya_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alegreya Sans](https://fonts.google.com/specimen/Alegreya+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alegreya_Sans")]
+pub fn Alegreya_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alegreya Sans SC](https://fonts.google.com/specimen/Alegreya+Sans+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alegreya_Sans_SC")]
+pub fn Alegreya_Sans_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aleo](https://fonts.google.com/specimen/Aleo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aleo")]
+pub fn Aleo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alex Brush](https://fonts.google.com/specimen/Alex+Brush), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alex_Brush")]
+pub fn Alex_Brush(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alexandria](https://fonts.google.com/specimen/Alexandria), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alexandria")]
+pub fn Alexandria(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alfa Slab One](https://fonts.google.com/specimen/Alfa+Slab+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alfa_Slab_One")]
+pub fn Alfa_Slab_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alice](https://fonts.google.com/specimen/Alice), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alice")]
+pub fn Alice(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alien Block](https://fonts.google.com/specimen/Alien+Block), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alien_Block")]
+pub fn Alien_Block(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alike](https://fonts.google.com/specimen/Alike), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alike")]
+pub fn Alike(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alike Angular](https://fonts.google.com/specimen/Alike+Angular), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alike_Angular")]
+pub fn Alike_Angular(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alkalami](https://fonts.google.com/specimen/Alkalami), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alkalami")]
+pub fn Alkalami(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alkatra](https://fonts.google.com/specimen/Alkatra), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alkatra")]
+pub fn Alkatra(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allan](https://fonts.google.com/specimen/Allan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allan")]
+pub fn Allan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allerta](https://fonts.google.com/specimen/Allerta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allerta")]
+pub fn Allerta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allerta Stencil](https://fonts.google.com/specimen/Allerta+Stencil), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allerta_Stencil")]
+pub fn Allerta_Stencil(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allison](https://fonts.google.com/specimen/Allison), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allison")]
+pub fn Allison(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allkin](https://fonts.google.com/specimen/Allkin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allkin")]
+pub fn Allkin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Allura](https://fonts.google.com/specimen/Allura), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Allura")]
+pub fn Allura(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Almarai](https://fonts.google.com/specimen/Almarai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Almarai")]
+pub fn Almarai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Almendra](https://fonts.google.com/specimen/Almendra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Almendra")]
+pub fn Almendra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Almendra Display](https://fonts.google.com/specimen/Almendra+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Almendra_Display")]
+pub fn Almendra_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Almendra SC](https://fonts.google.com/specimen/Almendra+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Almendra_SC")]
+pub fn Almendra_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alumni Sans](https://fonts.google.com/specimen/Alumni+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alumni_Sans")]
+pub fn Alumni_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alumni Sans Collegiate One](https://fonts.google.com/specimen/Alumni+Sans+Collegiate+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alumni_Sans_Collegiate_One")]
+pub fn Alumni_Sans_Collegiate_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alumni Sans Inline One](https://fonts.google.com/specimen/Alumni+Sans+Inline+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alumni_Sans_Inline_One")]
+pub fn Alumni_Sans_Inline_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alumni Sans Pinstripe](https://fonts.google.com/specimen/Alumni+Sans+Pinstripe), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alumni_Sans_Pinstripe")]
+pub fn Alumni_Sans_Pinstripe(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alumni Sans SC](https://fonts.google.com/specimen/Alumni+Sans+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alumni_Sans_SC")]
+pub fn Alumni_Sans_SC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Alyamama](https://fonts.google.com/specimen/Alyamama), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Alyamama")]
+pub fn Alyamama(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amarante](https://fonts.google.com/specimen/Amarante), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amarante")]
+pub fn Amarante(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amaranth](https://fonts.google.com/specimen/Amaranth), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amaranth")]
+pub fn Amaranth(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amarna](https://fonts.google.com/specimen/Amarna), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amarna")]
+pub fn Amarna(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amatic SC](https://fonts.google.com/specimen/Amatic+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amatic_SC")]
+pub fn Amatic_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amethysta](https://fonts.google.com/specimen/Amethysta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amethysta")]
+pub fn Amethysta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amiko](https://fonts.google.com/specimen/Amiko), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amiko")]
+pub fn Amiko(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amiri](https://fonts.google.com/specimen/Amiri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amiri")]
+pub fn Amiri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amiri Quran](https://fonts.google.com/specimen/Amiri+Quran), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amiri_Quran")]
+pub fn Amiri_Quran(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Amita](https://fonts.google.com/specimen/Amita), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Amita")]
+pub fn Amita(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anaheim](https://fonts.google.com/specimen/Anaheim), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anaheim")]
+pub fn Anaheim(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ancizar Sans](https://fonts.google.com/specimen/Ancizar+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ancizar_Sans")]
+pub fn Ancizar_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ancizar Serif](https://fonts.google.com/specimen/Ancizar+Serif), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ancizar_Serif")]
+pub fn Ancizar_Serif(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Andada Pro](https://fonts.google.com/specimen/Andada+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Andada_Pro")]
+pub fn Andada_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Andika](https://fonts.google.com/specimen/Andika), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Andika")]
+pub fn Andika(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Bangla](https://fonts.google.com/specimen/Anek+Bangla), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Bangla")]
+pub fn Anek_Bangla(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Devanagari](https://fonts.google.com/specimen/Anek+Devanagari), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Devanagari")]
+pub fn Anek_Devanagari(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Gujarati](https://fonts.google.com/specimen/Anek+Gujarati), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Gujarati")]
+pub fn Anek_Gujarati(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Gurmukhi](https://fonts.google.com/specimen/Anek+Gurmukhi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Gurmukhi")]
+pub fn Anek_Gurmukhi(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Kannada](https://fonts.google.com/specimen/Anek+Kannada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Kannada")]
+pub fn Anek_Kannada(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Latin](https://fonts.google.com/specimen/Anek+Latin), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Latin")]
+pub fn Anek_Latin(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Malayalam](https://fonts.google.com/specimen/Anek+Malayalam), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Malayalam")]
+pub fn Anek_Malayalam(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Odia](https://fonts.google.com/specimen/Anek+Odia), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Odia")]
+pub fn Anek_Odia(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Tamil](https://fonts.google.com/specimen/Anek+Tamil), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Tamil")]
+pub fn Anek_Tamil(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anek Telugu](https://fonts.google.com/specimen/Anek+Telugu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anek_Telugu")]
+pub fn Anek_Telugu(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Angkor](https://fonts.google.com/specimen/Angkor), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Angkor")]
+pub fn Angkor(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Annapurna SIL](https://fonts.google.com/specimen/Annapurna+SIL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Annapurna_SIL")]
+pub fn Annapurna_SIL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Annie Use Your Telescope](https://fonts.google.com/specimen/Annie+Use+Your+Telescope), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Annie_Use_Your_Telescope")]
+pub fn Annie_Use_Your_Telescope(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anonymous Pro](https://fonts.google.com/specimen/Anonymous+Pro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anonymous_Pro")]
+pub fn Anonymous_Pro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anta](https://fonts.google.com/specimen/Anta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anta")]
+pub fn Anta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Antic](https://fonts.google.com/specimen/Antic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Antic")]
+pub fn Antic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Antic Didone](https://fonts.google.com/specimen/Antic+Didone), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Antic_Didone")]
+pub fn Antic_Didone(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Antic Slab](https://fonts.google.com/specimen/Antic+Slab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Antic_Slab")]
+pub fn Antic_Slab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anton](https://fonts.google.com/specimen/Anton), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anton")]
+pub fn Anton(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anton SC](https://fonts.google.com/specimen/Anton+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anton_SC")]
+pub fn Anton_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Antonio](https://fonts.google.com/specimen/Antonio), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Antonio")]
+pub fn Antonio(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anuphan](https://fonts.google.com/specimen/Anuphan), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anuphan")]
+pub fn Anuphan(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Anybody](https://fonts.google.com/specimen/Anybody), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Anybody")]
+pub fn Anybody(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aoboshi One](https://fonts.google.com/specimen/Aoboshi+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aoboshi_One")]
+pub fn Aoboshi_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arapey](https://fonts.google.com/specimen/Arapey), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arapey")]
+pub fn Arapey(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arbutus](https://fonts.google.com/specimen/Arbutus), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arbutus")]
+pub fn Arbutus(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arbutus Slab](https://fonts.google.com/specimen/Arbutus+Slab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arbutus_Slab")]
+pub fn Arbutus_Slab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Architects Daughter](https://fonts.google.com/specimen/Architects+Daughter), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Architects_Daughter")]
+pub fn Architects_Daughter(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Archivo](https://fonts.google.com/specimen/Archivo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Archivo")]
+pub fn Archivo(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Archivo Black](https://fonts.google.com/specimen/Archivo+Black), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Archivo_Black")]
+pub fn Archivo_Black(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Archivo Narrow](https://fonts.google.com/specimen/Archivo+Narrow), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Archivo_Narrow")]
+pub fn Archivo_Narrow(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Are You Serious](https://fonts.google.com/specimen/Are+You+Serious), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Are_You_Serious")]
+pub fn Are_You_Serious(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aref Ruqaa](https://fonts.google.com/specimen/Aref+Ruqaa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aref_Ruqaa")]
+pub fn Aref_Ruqaa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aref Ruqaa Ink](https://fonts.google.com/specimen/Aref+Ruqaa+Ink), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aref_Ruqaa_Ink")]
+pub fn Aref_Ruqaa_Ink(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arima](https://fonts.google.com/specimen/Arima), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arima")]
+pub fn Arima(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arimo](https://fonts.google.com/specimen/Arimo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arimo")]
+pub fn Arimo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arizonia](https://fonts.google.com/specimen/Arizonia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arizonia")]
+pub fn Arizonia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Armata](https://fonts.google.com/specimen/Armata), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Armata")]
+pub fn Armata(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arsenal](https://fonts.google.com/specimen/Arsenal), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arsenal")]
+pub fn Arsenal(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arsenal SC](https://fonts.google.com/specimen/Arsenal+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arsenal_SC")]
+pub fn Arsenal_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Artifika](https://fonts.google.com/specimen/Artifika), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Artifika")]
+pub fn Artifika(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arvo](https://fonts.google.com/specimen/Arvo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arvo")]
+pub fn Arvo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Arya](https://fonts.google.com/specimen/Arya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Arya")]
+pub fn Arya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asap](https://fonts.google.com/specimen/Asap), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asap")]
+pub fn Asap(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asap Condensed](https://fonts.google.com/specimen/Asap+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asap_Condensed")]
+pub fn Asap_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asar](https://fonts.google.com/specimen/Asar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asar")]
+pub fn Asar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asimovian](https://fonts.google.com/specimen/Asimovian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asimovian")]
+pub fn Asimovian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asset](https://fonts.google.com/specimen/Asset), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asset")]
+pub fn Asset(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Assistant](https://fonts.google.com/specimen/Assistant), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Assistant")]
+pub fn Assistant(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asta Sans](https://fonts.google.com/specimen/Asta+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asta_Sans")]
+pub fn Asta_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Astloch](https://fonts.google.com/specimen/Astloch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Astloch")]
+pub fn Astloch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Asul](https://fonts.google.com/specimen/Asul), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Asul")]
+pub fn Asul(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Athiti](https://fonts.google.com/specimen/Athiti), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Athiti")]
+pub fn Athiti(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Atkinson Hyperlegible](https://fonts.google.com/specimen/Atkinson+Hyperlegible), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Atkinson_Hyperlegible")]
+pub fn Atkinson_Hyperlegible(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Atkinson Hyperlegible Mono](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Atkinson_Hyperlegible_Mono")]
+pub fn Atkinson_Hyperlegible_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Atkinson_Hyperlegible_Next")]
+pub fn Atkinson_Hyperlegible_Next(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Atma](https://fonts.google.com/specimen/Atma), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Atma")]
+pub fn Atma(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Atomic Age](https://fonts.google.com/specimen/Atomic+Age), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Atomic_Age")]
+pub fn Atomic_Age(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Aubrey](https://fonts.google.com/specimen/Aubrey), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Aubrey")]
+pub fn Aubrey(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Audiowide](https://fonts.google.com/specimen/Audiowide), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Audiowide")]
+pub fn Audiowide(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Autour One](https://fonts.google.com/specimen/Autour+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Autour_One")]
+pub fn Autour_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Average](https://fonts.google.com/specimen/Average), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Average")]
+pub fn Average(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Average Sans](https://fonts.google.com/specimen/Average+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Average_Sans")]
+pub fn Average_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Averia Gruesa Libre](https://fonts.google.com/specimen/Averia+Gruesa+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Averia_Gruesa_Libre")]
+pub fn Averia_Gruesa_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Averia Libre](https://fonts.google.com/specimen/Averia+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Averia_Libre")]
+pub fn Averia_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Averia Sans Libre](https://fonts.google.com/specimen/Averia+Sans+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Averia_Sans_Libre")]
+pub fn Averia_Sans_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Averia Serif Libre](https://fonts.google.com/specimen/Averia+Serif+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Averia_Serif_Libre")]
+pub fn Averia_Serif_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Azeret Mono](https://fonts.google.com/specimen/Azeret+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Azeret_Mono")]
+pub fn Azeret_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [B612](https://fonts.google.com/specimen/B612), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#B612")]
+pub fn B612(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [B612 Mono](https://fonts.google.com/specimen/B612+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#B612_Mono")]
+pub fn B612_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BBH Bartle](https://fonts.google.com/specimen/BBH+Bartle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BBH_Bartle")]
+pub fn BBH_Bartle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BBH Bogle](https://fonts.google.com/specimen/BBH+Bogle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BBH_Bogle")]
+pub fn BBH_Bogle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BBH Hegarty](https://fonts.google.com/specimen/BBH+Hegarty), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BBH_Hegarty")]
+pub fn BBH_Hegarty(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BIZ UDGothic](https://fonts.google.com/specimen/BIZ+UDGothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BIZ_UDGothic")]
+pub fn BIZ_UDGothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BIZ UDMincho](https://fonts.google.com/specimen/BIZ+UDMincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BIZ_UDMincho")]
+pub fn BIZ_UDMincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BIZ UDPGothic](https://fonts.google.com/specimen/BIZ+UDPGothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BIZ_UDPGothic")]
+pub fn BIZ_UDPGothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BIZ UDPMincho](https://fonts.google.com/specimen/BIZ+UDPMincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BIZ_UDPMincho")]
+pub fn BIZ_UDPMincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BJCree](https://fonts.google.com/specimen/BJCree), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BJCree")]
+pub fn BJCree(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Babylonica](https://fonts.google.com/specimen/Babylonica), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Babylonica")]
+pub fn Babylonica(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bacasime Antique](https://fonts.google.com/specimen/Bacasime+Antique), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bacasime_Antique")]
+pub fn Bacasime_Antique(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bad Script](https://fonts.google.com/specimen/Bad+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bad_Script")]
+pub fn Bad_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Badeen Display](https://fonts.google.com/specimen/Badeen+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Badeen_Display")]
+pub fn Badeen_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bagel Fat One](https://fonts.google.com/specimen/Bagel+Fat+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bagel_Fat_One")]
+pub fn Bagel_Fat_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bahiana](https://fonts.google.com/specimen/Bahiana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bahiana")]
+pub fn Bahiana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bahianita](https://fonts.google.com/specimen/Bahianita), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bahianita")]
+pub fn Bahianita(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bai Jamjuree](https://fonts.google.com/specimen/Bai+Jamjuree), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bai_Jamjuree")]
+pub fn Bai_Jamjuree(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bakbak One](https://fonts.google.com/specimen/Bakbak+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bakbak_One")]
+pub fn Bakbak_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ballet](https://fonts.google.com/specimen/Ballet), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ballet")]
+pub fn Ballet(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo 2](https://fonts.google.com/specimen/Baloo+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_2")]
+pub fn Baloo_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Bhai 2](https://fonts.google.com/specimen/Baloo+Bhai+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Bhai_2")]
+pub fn Baloo_Bhai_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Bhaijaan 2](https://fonts.google.com/specimen/Baloo+Bhaijaan+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Bhaijaan_2")]
+pub fn Baloo_Bhaijaan_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Bhaina 2](https://fonts.google.com/specimen/Baloo+Bhaina+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Bhaina_2")]
+pub fn Baloo_Bhaina_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Chettan 2](https://fonts.google.com/specimen/Baloo+Chettan+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Chettan_2")]
+pub fn Baloo_Chettan_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Da 2](https://fonts.google.com/specimen/Baloo+Da+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Da_2")]
+pub fn Baloo_Da_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Paaji 2](https://fonts.google.com/specimen/Baloo+Paaji+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Paaji_2")]
+pub fn Baloo_Paaji_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Tamma 2](https://fonts.google.com/specimen/Baloo+Tamma+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Tamma_2")]
+pub fn Baloo_Tamma_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Tammudu 2](https://fonts.google.com/specimen/Baloo+Tammudu+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Tammudu_2")]
+pub fn Baloo_Tammudu_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baloo Thambi 2](https://fonts.google.com/specimen/Baloo+Thambi+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baloo_Thambi_2")]
+pub fn Baloo_Thambi_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Balsamiq Sans](https://fonts.google.com/specimen/Balsamiq+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Balsamiq_Sans")]
+pub fn Balsamiq_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Balthazar](https://fonts.google.com/specimen/Balthazar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Balthazar")]
+pub fn Balthazar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bangers](https://fonts.google.com/specimen/Bangers), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bangers")]
+pub fn Bangers(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Barlow](https://fonts.google.com/specimen/Barlow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Barlow")]
+pub fn Barlow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Barlow_Condensed")]
+pub fn Barlow_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Barlow Semi Condensed](https://fonts.google.com/specimen/Barlow+Semi+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Barlow_Semi_Condensed")]
+pub fn Barlow_Semi_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Barriecito](https://fonts.google.com/specimen/Barriecito), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Barriecito")]
+pub fn Barriecito(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Barrio](https://fonts.google.com/specimen/Barrio), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Barrio")]
+pub fn Barrio(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Basic](https://fonts.google.com/specimen/Basic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Basic")]
+pub fn Basic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baskervville](https://fonts.google.com/specimen/Baskervville), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baskervville")]
+pub fn Baskervville(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baskervville SC](https://fonts.google.com/specimen/Baskervville+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baskervville_SC")]
+pub fn Baskervville_SC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Battambang](https://fonts.google.com/specimen/Battambang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Battambang")]
+pub fn Battambang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Baumans](https://fonts.google.com/specimen/Baumans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Baumans")]
+pub fn Baumans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bayon](https://fonts.google.com/specimen/Bayon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bayon")]
+pub fn Bayon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Be_Vietnam_Pro")]
+pub fn Be_Vietnam_Pro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Beau Rivage](https://fonts.google.com/specimen/Beau+Rivage), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Beau_Rivage")]
+pub fn Beau_Rivage(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bebas Neue](https://fonts.google.com/specimen/Bebas+Neue), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bebas_Neue")]
+pub fn Bebas_Neue(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Beiruti](https://fonts.google.com/specimen/Beiruti), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Beiruti")]
+pub fn Beiruti(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Belanosima](https://fonts.google.com/specimen/Belanosima), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Belanosima")]
+pub fn Belanosima(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Belgrano](https://fonts.google.com/specimen/Belgrano), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Belgrano")]
+pub fn Belgrano(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bellefair](https://fonts.google.com/specimen/Bellefair), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bellefair")]
+pub fn Bellefair(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Belleza](https://fonts.google.com/specimen/Belleza), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Belleza")]
+pub fn Belleza(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bellota](https://fonts.google.com/specimen/Bellota), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bellota")]
+pub fn Bellota(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bellota Text](https://fonts.google.com/specimen/Bellota+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bellota_Text")]
+pub fn Bellota_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BenchNine](https://fonts.google.com/specimen/BenchNine), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BenchNine")]
+pub fn BenchNine(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Benne](https://fonts.google.com/specimen/Benne), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Benne")]
+pub fn Benne(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bentham](https://fonts.google.com/specimen/Bentham), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bentham")]
+pub fn Bentham(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Berkshire Swash](https://fonts.google.com/specimen/Berkshire+Swash), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Berkshire_Swash")]
+pub fn Berkshire_Swash(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Besley](https://fonts.google.com/specimen/Besley), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Besley")]
+pub fn Besley(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Betania Patmos](https://fonts.google.com/specimen/Betania+Patmos), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Betania_Patmos")]
+pub fn Betania_Patmos(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Betania Patmos GDL](https://fonts.google.com/specimen/Betania+Patmos+GDL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Betania_Patmos_GDL")]
+pub fn Betania_Patmos_GDL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Betania Patmos In](https://fonts.google.com/specimen/Betania+Patmos+In), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Betania_Patmos_In")]
+pub fn Betania_Patmos_In(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Betania Patmos In GDL](https://fonts.google.com/specimen/Betania+Patmos+In+GDL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Betania_Patmos_In_GDL")]
+pub fn Betania_Patmos_In_GDL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Beth Ellen](https://fonts.google.com/specimen/Beth+Ellen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Beth_Ellen")]
+pub fn Beth_Ellen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bevan](https://fonts.google.com/specimen/Bevan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bevan")]
+pub fn Bevan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BhuTuka Expanded One](https://fonts.google.com/specimen/BhuTuka+Expanded+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BhuTuka_Expanded_One")]
+pub fn BhuTuka_Expanded_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Big Shoulders](https://fonts.google.com/specimen/Big+Shoulders), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Big_Shoulders")]
+pub fn Big_Shoulders(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Big Shoulders Inline](https://fonts.google.com/specimen/Big+Shoulders+Inline), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Big_Shoulders_Inline")]
+pub fn Big_Shoulders_Inline(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Big Shoulders Stencil](https://fonts.google.com/specimen/Big+Shoulders+Stencil), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Big_Shoulders_Stencil")]
+pub fn Big_Shoulders_Stencil(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bigelow Rules](https://fonts.google.com/specimen/Bigelow+Rules), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bigelow_Rules")]
+pub fn Bigelow_Rules(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bigshot One](https://fonts.google.com/specimen/Bigshot+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bigshot_One")]
+pub fn Bigshot_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bilbo](https://fonts.google.com/specimen/Bilbo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bilbo")]
+pub fn Bilbo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bilbo Swash Caps](https://fonts.google.com/specimen/Bilbo+Swash+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bilbo_Swash_Caps")]
+pub fn Bilbo_Swash_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BioRhyme](https://fonts.google.com/specimen/BioRhyme), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BioRhyme")]
+pub fn BioRhyme(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [BioRhyme Expanded](https://fonts.google.com/specimen/BioRhyme+Expanded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#BioRhyme_Expanded")]
+pub fn BioRhyme_Expanded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Birthstone](https://fonts.google.com/specimen/Birthstone), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Birthstone")]
+pub fn Birthstone(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Birthstone Bounce](https://fonts.google.com/specimen/Birthstone+Bounce), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Birthstone_Bounce")]
+pub fn Birthstone_Bounce(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Biryani](https://fonts.google.com/specimen/Biryani), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Biryani")]
+pub fn Biryani(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount](https://fonts.google.com/specimen/Bitcount), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount")]
+pub fn Bitcount(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Grid Double](https://fonts.google.com/specimen/Bitcount+Grid+Double), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Grid_Double")]
+pub fn Bitcount_Grid_Double(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Grid Double Ink](https://fonts.google.com/specimen/Bitcount+Grid+Double+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Grid_Double_Ink")]
+pub fn Bitcount_Grid_Double_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Grid Single](https://fonts.google.com/specimen/Bitcount+Grid+Single), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Grid_Single")]
+pub fn Bitcount_Grid_Single(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Grid Single Ink](https://fonts.google.com/specimen/Bitcount+Grid+Single+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Grid_Single_Ink")]
+pub fn Bitcount_Grid_Single_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Ink](https://fonts.google.com/specimen/Bitcount+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Ink")]
+pub fn Bitcount_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Prop Double](https://fonts.google.com/specimen/Bitcount+Prop+Double), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Prop_Double")]
+pub fn Bitcount_Prop_Double(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Prop Double Ink](https://fonts.google.com/specimen/Bitcount+Prop+Double+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Prop_Double_Ink")]
+pub fn Bitcount_Prop_Double_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Prop Single](https://fonts.google.com/specimen/Bitcount+Prop+Single), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Prop_Single")]
+pub fn Bitcount_Prop_Single(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Prop Single Ink](https://fonts.google.com/specimen/Bitcount+Prop+Single+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Prop_Single_Ink")]
+pub fn Bitcount_Prop_Single_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Single](https://fonts.google.com/specimen/Bitcount+Single), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Single")]
+pub fn Bitcount_Single(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitcount Single Ink](https://fonts.google.com/specimen/Bitcount+Single+Ink), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitcount_Single_Ink")]
+pub fn Bitcount_Single_Ink(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bitter](https://fonts.google.com/specimen/Bitter), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bitter")]
+pub fn Bitter(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Black And White Picture](https://fonts.google.com/specimen/Black+And+White+Picture), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Black_And_White_Picture")]
+pub fn Black_And_White_Picture(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Black Han Sans](https://fonts.google.com/specimen/Black+Han+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Black_Han_Sans")]
+pub fn Black_Han_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Black Ops One](https://fonts.google.com/specimen/Black+Ops+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Black_Ops_One")]
+pub fn Black_Ops_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Blaka](https://fonts.google.com/specimen/Blaka), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Blaka")]
+pub fn Blaka(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Blaka Hollow](https://fonts.google.com/specimen/Blaka+Hollow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Blaka_Hollow")]
+pub fn Blaka_Hollow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Blaka Ink](https://fonts.google.com/specimen/Blaka+Ink), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Blaka_Ink")]
+pub fn Blaka_Ink(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Blinker](https://fonts.google.com/specimen/Blinker), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Blinker")]
+pub fn Blinker(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bodoni Moda](https://fonts.google.com/specimen/Bodoni+Moda), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bodoni_Moda")]
+pub fn Bodoni_Moda(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bodoni Moda SC](https://fonts.google.com/specimen/Bodoni+Moda+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bodoni_Moda_SC")]
+pub fn Bodoni_Moda_SC(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bokor](https://fonts.google.com/specimen/Bokor), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bokor")]
+pub fn Bokor(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Boldonse](https://fonts.google.com/specimen/Boldonse), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Boldonse")]
+pub fn Boldonse(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bona Nova](https://fonts.google.com/specimen/Bona+Nova), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bona_Nova")]
+pub fn Bona_Nova(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bona Nova SC](https://fonts.google.com/specimen/Bona+Nova+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bona_Nova_SC")]
+pub fn Bona_Nova_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bonbon](https://fonts.google.com/specimen/Bonbon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bonbon")]
+pub fn Bonbon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bonheur Royale](https://fonts.google.com/specimen/Bonheur+Royale), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bonheur_Royale")]
+pub fn Bonheur_Royale(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Boogaloo](https://fonts.google.com/specimen/Boogaloo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Boogaloo")]
+pub fn Boogaloo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Borel](https://fonts.google.com/specimen/Borel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Borel")]
+pub fn Borel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bowlby One](https://fonts.google.com/specimen/Bowlby+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bowlby_One")]
+pub fn Bowlby_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bowlby One SC](https://fonts.google.com/specimen/Bowlby+One+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bowlby_One_SC")]
+pub fn Bowlby_One_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bpmf Huninn](https://fonts.google.com/specimen/Bpmf+Huninn), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bpmf_Huninn")]
+pub fn Bpmf_Huninn(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bpmf Iansui](https://fonts.google.com/specimen/Bpmf+Iansui), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bpmf_Iansui")]
+pub fn Bpmf_Iansui(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bpmf Zihi Kai Std](https://fonts.google.com/specimen/Bpmf+Zihi+Kai+Std), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bpmf_Zihi_Kai_Std")]
+pub fn Bpmf_Zihi_Kai_Std(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Braah One](https://fonts.google.com/specimen/Braah+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Braah_One")]
+pub fn Braah_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Brawler](https://fonts.google.com/specimen/Brawler), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Brawler")]
+pub fn Brawler(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bree Serif](https://fonts.google.com/specimen/Bree+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bree_Serif")]
+pub fn Bree_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bricolage_Grotesque")]
+pub fn Bricolage_Grotesque(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bruno Ace](https://fonts.google.com/specimen/Bruno+Ace), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bruno_Ace")]
+pub fn Bruno_Ace(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bruno Ace SC](https://fonts.google.com/specimen/Bruno+Ace+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bruno_Ace_SC")]
+pub fn Bruno_Ace_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Brygada 1918](https://fonts.google.com/specimen/Brygada+1918), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Brygada_1918")]
+pub fn Brygada_1918(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bubblegum Sans](https://fonts.google.com/specimen/Bubblegum+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bubblegum_Sans")]
+pub fn Bubblegum_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bubbler One](https://fonts.google.com/specimen/Bubbler+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bubbler_One")]
+pub fn Bubbler_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Buda](https://fonts.google.com/specimen/Buda), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Buda")]
+pub fn Buda(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Buenard](https://fonts.google.com/specimen/Buenard), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Buenard")]
+pub fn Buenard(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee](https://fonts.google.com/specimen/Bungee), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee")]
+pub fn Bungee(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Hairline](https://fonts.google.com/specimen/Bungee+Hairline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Hairline")]
+pub fn Bungee_Hairline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Inline](https://fonts.google.com/specimen/Bungee+Inline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Inline")]
+pub fn Bungee_Inline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Outline](https://fonts.google.com/specimen/Bungee+Outline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Outline")]
+pub fn Bungee_Outline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Shade](https://fonts.google.com/specimen/Bungee+Shade), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Shade")]
+pub fn Bungee_Shade(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Spice](https://fonts.google.com/specimen/Bungee+Spice), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Spice")]
+pub fn Bungee_Spice(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bungee Tint](https://fonts.google.com/specimen/Bungee+Tint), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bungee_Tint")]
+pub fn Bungee_Tint(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Butcherman](https://fonts.google.com/specimen/Butcherman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Butcherman")]
+pub fn Butcherman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Butterfly Kids](https://fonts.google.com/specimen/Butterfly+Kids), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Butterfly_Kids")]
+pub fn Butterfly_Kids(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Bytesized](https://fonts.google.com/specimen/Bytesized), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Bytesized")]
+pub fn Bytesized(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cabin](https://fonts.google.com/specimen/Cabin), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cabin")]
+pub fn Cabin(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cabin Condensed](https://fonts.google.com/specimen/Cabin+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cabin_Condensed")]
+pub fn Cabin_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cabin Sketch](https://fonts.google.com/specimen/Cabin+Sketch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cabin_Sketch")]
+pub fn Cabin_Sketch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cactus Classical Serif](https://fonts.google.com/specimen/Cactus+Classical+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cactus_Classical_Serif")]
+pub fn Cactus_Classical_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caesar Dressing](https://fonts.google.com/specimen/Caesar+Dressing), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caesar_Dressing")]
+pub fn Caesar_Dressing(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cagliostro](https://fonts.google.com/specimen/Cagliostro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cagliostro")]
+pub fn Cagliostro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cairo](https://fonts.google.com/specimen/Cairo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cairo")]
+pub fn Cairo(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cairo Play](https://fonts.google.com/specimen/Cairo+Play), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cairo_Play")]
+pub fn Cairo_Play(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cal Sans](https://fonts.google.com/specimen/Cal+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cal_Sans")]
+pub fn Cal_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caladea](https://fonts.google.com/specimen/Caladea), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caladea")]
+pub fn Caladea(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Calistoga](https://fonts.google.com/specimen/Calistoga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Calistoga")]
+pub fn Calistoga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Calligraffitti](https://fonts.google.com/specimen/Calligraffitti), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Calligraffitti")]
+pub fn Calligraffitti(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cambay](https://fonts.google.com/specimen/Cambay), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cambay")]
+pub fn Cambay(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cambo](https://fonts.google.com/specimen/Cambo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cambo")]
+pub fn Cambo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Candal](https://fonts.google.com/specimen/Candal), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Candal")]
+pub fn Candal(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cantarell](https://fonts.google.com/specimen/Cantarell), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cantarell")]
+pub fn Cantarell(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cantata One](https://fonts.google.com/specimen/Cantata+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cantata_One")]
+pub fn Cantata_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cantora One](https://fonts.google.com/specimen/Cantora+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cantora_One")]
+pub fn Cantora_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caprasimo](https://fonts.google.com/specimen/Caprasimo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caprasimo")]
+pub fn Caprasimo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Capriola](https://fonts.google.com/specimen/Capriola), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Capriola")]
+pub fn Capriola(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caramel](https://fonts.google.com/specimen/Caramel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caramel")]
+pub fn Caramel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carattere](https://fonts.google.com/specimen/Carattere), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carattere")]
+pub fn Carattere(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cardo](https://fonts.google.com/specimen/Cardo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cardo")]
+pub fn Cardo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carlito](https://fonts.google.com/specimen/Carlito), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carlito")]
+pub fn Carlito(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carme](https://fonts.google.com/specimen/Carme), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carme")]
+pub fn Carme(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carrois Gothic](https://fonts.google.com/specimen/Carrois+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carrois_Gothic")]
+pub fn Carrois_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carrois Gothic SC](https://fonts.google.com/specimen/Carrois+Gothic+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carrois_Gothic_SC")]
+pub fn Carrois_Gothic_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Carter One](https://fonts.google.com/specimen/Carter+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Carter_One")]
+pub fn Carter_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cascadia Code](https://fonts.google.com/specimen/Cascadia+Code), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cascadia_Code")]
+pub fn Cascadia_Code(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cascadia Mono](https://fonts.google.com/specimen/Cascadia+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cascadia_Mono")]
+pub fn Cascadia_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Castoro](https://fonts.google.com/specimen/Castoro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Castoro")]
+pub fn Castoro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Castoro Titling](https://fonts.google.com/specimen/Castoro+Titling), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Castoro_Titling")]
+pub fn Castoro_Titling(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Catamaran](https://fonts.google.com/specimen/Catamaran), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Catamaran")]
+pub fn Catamaran(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caudex](https://fonts.google.com/specimen/Caudex), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caudex")]
+pub fn Caudex(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cause](https://fonts.google.com/specimen/Cause), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cause")]
+pub fn Cause(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caveat](https://fonts.google.com/specimen/Caveat), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caveat")]
+pub fn Caveat(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Caveat Brush](https://fonts.google.com/specimen/Caveat+Brush), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Caveat_Brush")]
+pub fn Caveat_Brush(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cedarville Cursive](https://fonts.google.com/specimen/Cedarville+Cursive), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cedarville_Cursive")]
+pub fn Cedarville_Cursive(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ceviche One](https://fonts.google.com/specimen/Ceviche+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ceviche_One")]
+pub fn Ceviche_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chakra_Petch")]
+pub fn Chakra_Petch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Changa](https://fonts.google.com/specimen/Changa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Changa")]
+pub fn Changa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Changa One](https://fonts.google.com/specimen/Changa+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Changa_One")]
+pub fn Changa_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chango](https://fonts.google.com/specimen/Chango), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chango")]
+pub fn Chango(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Charis SIL](https://fonts.google.com/specimen/Charis+SIL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Charis_SIL")]
+pub fn Charis_SIL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Charm](https://fonts.google.com/specimen/Charm), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Charm")]
+pub fn Charm(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Charmonman](https://fonts.google.com/specimen/Charmonman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Charmonman")]
+pub fn Charmonman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chathura](https://fonts.google.com/specimen/Chathura), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chathura")]
+pub fn Chathura(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chau Philomene One](https://fonts.google.com/specimen/Chau+Philomene+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chau_Philomene_One")]
+pub fn Chau_Philomene_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chela One](https://fonts.google.com/specimen/Chela+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chela_One")]
+pub fn Chela_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chelsea Market](https://fonts.google.com/specimen/Chelsea+Market), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chelsea_Market")]
+pub fn Chelsea_Market(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chenla](https://fonts.google.com/specimen/Chenla), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chenla")]
+pub fn Chenla(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cherish](https://fonts.google.com/specimen/Cherish), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cherish")]
+pub fn Cherish(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cherry Bomb One](https://fonts.google.com/specimen/Cherry+Bomb+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cherry_Bomb_One")]
+pub fn Cherry_Bomb_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cherry Cream Soda](https://fonts.google.com/specimen/Cherry+Cream+Soda), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cherry_Cream_Soda")]
+pub fn Cherry_Cream_Soda(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cherry Swash](https://fonts.google.com/specimen/Cherry+Swash), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cherry_Swash")]
+pub fn Cherry_Swash(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chewy](https://fonts.google.com/specimen/Chewy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chewy")]
+pub fn Chewy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chicle](https://fonts.google.com/specimen/Chicle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chicle")]
+pub fn Chicle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chilanka](https://fonts.google.com/specimen/Chilanka), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chilanka")]
+pub fn Chilanka(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chiron GoRound TC](https://fonts.google.com/specimen/Chiron+GoRound+TC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chiron_GoRound_TC")]
+pub fn Chiron_GoRound_TC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chiron Hei HK](https://fonts.google.com/specimen/Chiron+Hei+HK), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chiron_Hei_HK")]
+pub fn Chiron_Hei_HK(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chiron Sung HK](https://fonts.google.com/specimen/Chiron+Sung+HK), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chiron_Sung_HK")]
+pub fn Chiron_Sung_HK(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chivo](https://fonts.google.com/specimen/Chivo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chivo")]
+pub fn Chivo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chivo Mono](https://fonts.google.com/specimen/Chivo+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chivo_Mono")]
+pub fn Chivo_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chocolate Classical Sans](https://fonts.google.com/specimen/Chocolate+Classical+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chocolate_Classical_Sans")]
+pub fn Chocolate_Classical_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chokokutai](https://fonts.google.com/specimen/Chokokutai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chokokutai")]
+pub fn Chokokutai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Chonburi](https://fonts.google.com/specimen/Chonburi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Chonburi")]
+pub fn Chonburi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cinzel](https://fonts.google.com/specimen/Cinzel), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cinzel")]
+pub fn Cinzel(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cinzel Decorative](https://fonts.google.com/specimen/Cinzel+Decorative), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cinzel_Decorative")]
+pub fn Cinzel_Decorative(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Clicker Script](https://fonts.google.com/specimen/Clicker+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Clicker_Script")]
+pub fn Clicker_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Climate Crisis](https://fonts.google.com/specimen/Climate+Crisis), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Climate_Crisis")]
+pub fn Climate_Crisis(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Coda](https://fonts.google.com/specimen/Coda), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Coda")]
+pub fn Coda(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Codystar](https://fonts.google.com/specimen/Codystar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Codystar")]
+pub fn Codystar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Coiny](https://fonts.google.com/specimen/Coiny), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Coiny")]
+pub fn Coiny(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Combo](https://fonts.google.com/specimen/Combo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Combo")]
+pub fn Combo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comfortaa](https://fonts.google.com/specimen/Comfortaa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comfortaa")]
+pub fn Comfortaa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comforter](https://fonts.google.com/specimen/Comforter), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comforter")]
+pub fn Comforter(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comforter Brush](https://fonts.google.com/specimen/Comforter+Brush), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comforter_Brush")]
+pub fn Comforter_Brush(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comic Neue](https://fonts.google.com/specimen/Comic+Neue), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comic_Neue")]
+pub fn Comic_Neue(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comic Relief](https://fonts.google.com/specimen/Comic+Relief), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comic_Relief")]
+pub fn Comic_Relief(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Coming Soon](https://fonts.google.com/specimen/Coming+Soon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Coming_Soon")]
+pub fn Coming_Soon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Comme](https://fonts.google.com/specimen/Comme), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Comme")]
+pub fn Comme(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Commissioner](https://fonts.google.com/specimen/Commissioner), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Commissioner")]
+pub fn Commissioner(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Concert One](https://fonts.google.com/specimen/Concert+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Concert_One")]
+pub fn Concert_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Condiment](https://fonts.google.com/specimen/Condiment), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Condiment")]
+pub fn Condiment(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Content](https://fonts.google.com/specimen/Content), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Content")]
+pub fn Content(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Contrail One](https://fonts.google.com/specimen/Contrail+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Contrail_One")]
+pub fn Contrail_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Convergence](https://fonts.google.com/specimen/Convergence), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Convergence")]
+pub fn Convergence(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cookie](https://fonts.google.com/specimen/Cookie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cookie")]
+pub fn Cookie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Copse](https://fonts.google.com/specimen/Copse), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Copse")]
+pub fn Copse(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Coral Pixels](https://fonts.google.com/specimen/Coral+Pixels), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Coral_Pixels")]
+pub fn Coral_Pixels(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Corben](https://fonts.google.com/specimen/Corben), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Corben")]
+pub fn Corben(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Corinthia](https://fonts.google.com/specimen/Corinthia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Corinthia")]
+pub fn Corinthia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant](https://fonts.google.com/specimen/Cormorant), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant")]
+pub fn Cormorant(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant_Garamond")]
+pub fn Cormorant_Garamond(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant Infant](https://fonts.google.com/specimen/Cormorant+Infant), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant_Infant")]
+pub fn Cormorant_Infant(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant SC](https://fonts.google.com/specimen/Cormorant+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant_SC")]
+pub fn Cormorant_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant Unicase](https://fonts.google.com/specimen/Cormorant+Unicase), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant_Unicase")]
+pub fn Cormorant_Unicase(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cormorant Upright](https://fonts.google.com/specimen/Cormorant+Upright), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cormorant_Upright")]
+pub fn Cormorant_Upright(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cossette Texte](https://fonts.google.com/specimen/Cossette+Texte), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cossette_Texte")]
+pub fn Cossette_Texte(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cossette Titre](https://fonts.google.com/specimen/Cossette+Titre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cossette_Titre")]
+pub fn Cossette_Titre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Courgette](https://fonts.google.com/specimen/Courgette), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Courgette")]
+pub fn Courgette(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Courier Prime](https://fonts.google.com/specimen/Courier+Prime), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Courier_Prime")]
+pub fn Courier_Prime(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cousine](https://fonts.google.com/specimen/Cousine), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cousine")]
+pub fn Cousine(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Coustard](https://fonts.google.com/specimen/Coustard), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Coustard")]
+pub fn Coustard(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Covered By Your Grace](https://fonts.google.com/specimen/Covered+By+Your+Grace), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Covered_By_Your_Grace")]
+pub fn Covered_By_Your_Grace(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Crafty Girls](https://fonts.google.com/specimen/Crafty+Girls), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Crafty_Girls")]
+pub fn Crafty_Girls(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Creepster](https://fonts.google.com/specimen/Creepster), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Creepster")]
+pub fn Creepster(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Crete Round](https://fonts.google.com/specimen/Crete+Round), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Crete_Round")]
+pub fn Crete_Round(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Crimson Pro](https://fonts.google.com/specimen/Crimson+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Crimson_Pro")]
+pub fn Crimson_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Crimson Text](https://fonts.google.com/specimen/Crimson+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Crimson_Text")]
+pub fn Crimson_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Croissant One](https://fonts.google.com/specimen/Croissant+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Croissant_One")]
+pub fn Croissant_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Crushed](https://fonts.google.com/specimen/Crushed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Crushed")]
+pub fn Crushed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cuprum](https://fonts.google.com/specimen/Cuprum), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cuprum")]
+pub fn Cuprum(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cute Font](https://fonts.google.com/specimen/Cute+Font), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cute_Font")]
+pub fn Cute_Font(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cutive](https://fonts.google.com/specimen/Cutive), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cutive")]
+pub fn Cutive(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Cutive Mono](https://fonts.google.com/specimen/Cutive+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Cutive_Mono")]
+pub fn Cutive_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DM Mono](https://fonts.google.com/specimen/DM+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DM_Mono")]
+pub fn DM_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DM Sans](https://fonts.google.com/specimen/DM+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DM_Sans")]
+pub fn DM_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DM Serif Display](https://fonts.google.com/specimen/DM+Serif+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DM_Serif_Display")]
+pub fn DM_Serif_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DM Serif Text](https://fonts.google.com/specimen/DM+Serif+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DM_Serif_Text")]
+pub fn DM_Serif_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dai Banna SIL](https://fonts.google.com/specimen/Dai+Banna+SIL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dai_Banna_SIL")]
+pub fn Dai_Banna_SIL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Damion](https://fonts.google.com/specimen/Damion), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Damion")]
+pub fn Damion(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dancing Script](https://fonts.google.com/specimen/Dancing+Script), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dancing_Script")]
+pub fn Dancing_Script(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Danfo](https://fonts.google.com/specimen/Danfo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Danfo")]
+pub fn Danfo(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dangrek](https://fonts.google.com/specimen/Dangrek), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dangrek")]
+pub fn Dangrek(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Darker Grotesque](https://fonts.google.com/specimen/Darker+Grotesque), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Darker_Grotesque")]
+pub fn Darker_Grotesque(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Darumadrop One](https://fonts.google.com/specimen/Darumadrop+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Darumadrop_One")]
+pub fn Darumadrop_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Datatype](https://fonts.google.com/specimen/Datatype), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Datatype")]
+pub fn Datatype(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [David Libre](https://fonts.google.com/specimen/David+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#David_Libre")]
+pub fn David_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dawning of a New Day](https://fonts.google.com/specimen/Dawning+of+a+New+Day), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dawning_of_a_New_Day")]
+pub fn Dawning_of_a_New_Day(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Days One](https://fonts.google.com/specimen/Days+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Days_One")]
+pub fn Days_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dekko](https://fonts.google.com/specimen/Dekko), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dekko")]
+pub fn Dekko(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dela Gothic One](https://fonts.google.com/specimen/Dela+Gothic+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dela_Gothic_One")]
+pub fn Dela_Gothic_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Delicious Handrawn](https://fonts.google.com/specimen/Delicious+Handrawn), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Delicious_Handrawn")]
+pub fn Delicious_Handrawn(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Delius](https://fonts.google.com/specimen/Delius), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Delius")]
+pub fn Delius(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Delius Swash Caps](https://fonts.google.com/specimen/Delius+Swash+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Delius_Swash_Caps")]
+pub fn Delius_Swash_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Delius Unicase](https://fonts.google.com/specimen/Delius+Unicase), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Delius_Unicase")]
+pub fn Delius_Unicase(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Della Respira](https://fonts.google.com/specimen/Della+Respira), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Della_Respira")]
+pub fn Della_Respira(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Denk One](https://fonts.google.com/specimen/Denk+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Denk_One")]
+pub fn Denk_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Devonshire](https://fonts.google.com/specimen/Devonshire), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Devonshire")]
+pub fn Devonshire(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dhurjati](https://fonts.google.com/specimen/Dhurjati), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dhurjati")]
+pub fn Dhurjati(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Didact Gothic](https://fonts.google.com/specimen/Didact+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Didact_Gothic")]
+pub fn Didact_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Diphylleia](https://fonts.google.com/specimen/Diphylleia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Diphylleia")]
+pub fn Diphylleia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Diplomata](https://fonts.google.com/specimen/Diplomata), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Diplomata")]
+pub fn Diplomata(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Diplomata SC](https://fonts.google.com/specimen/Diplomata+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Diplomata_SC")]
+pub fn Diplomata_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Do Hyeon](https://fonts.google.com/specimen/Do+Hyeon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Do_Hyeon")]
+pub fn Do_Hyeon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dokdo](https://fonts.google.com/specimen/Dokdo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dokdo")]
+pub fn Dokdo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Domine](https://fonts.google.com/specimen/Domine), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Domine")]
+pub fn Domine(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Donegal One](https://fonts.google.com/specimen/Donegal+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Donegal_One")]
+pub fn Donegal_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dongle](https://fonts.google.com/specimen/Dongle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dongle")]
+pub fn Dongle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Doppio One](https://fonts.google.com/specimen/Doppio+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Doppio_One")]
+pub fn Doppio_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dorsa](https://fonts.google.com/specimen/Dorsa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dorsa")]
+pub fn Dorsa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dosis](https://fonts.google.com/specimen/Dosis), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dosis")]
+pub fn Dosis(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DotGothic16](https://fonts.google.com/specimen/DotGothic16), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DotGothic16")]
+pub fn DotGothic16(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Doto](https://fonts.google.com/specimen/Doto), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Doto")]
+pub fn Doto(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dr Sugiyama](https://fonts.google.com/specimen/Dr+Sugiyama), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dr_Sugiyama")]
+pub fn Dr_Sugiyama(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Duru Sans](https://fonts.google.com/specimen/Duru+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Duru_Sans")]
+pub fn Duru_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [DynaPuff](https://fonts.google.com/specimen/DynaPuff), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#DynaPuff")]
+pub fn DynaPuff(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Dynalight](https://fonts.google.com/specimen/Dynalight), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Dynalight")]
+pub fn Dynalight(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [EB Garamond](https://fonts.google.com/specimen/EB+Garamond), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#EB_Garamond")]
+pub fn EB_Garamond(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Eagle Lake](https://fonts.google.com/specimen/Eagle+Lake), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Eagle_Lake")]
+pub fn Eagle_Lake(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [East Sea Dokdo](https://fonts.google.com/specimen/East+Sea+Dokdo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#East_Sea_Dokdo")]
+pub fn East_Sea_Dokdo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Eater](https://fonts.google.com/specimen/Eater), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Eater")]
+pub fn Eater(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Economica](https://fonts.google.com/specimen/Economica), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Economica")]
+pub fn Economica(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Eczar](https://fonts.google.com/specimen/Eczar), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Eczar")]
+pub fn Eczar(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu AU VIC WA NT Arrows](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Arrows), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_AU_VIC_WA_NT_Arrows")]
+pub fn Edu_AU_VIC_WA_NT_Arrows(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu AU VIC WA NT Dots](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Dots), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_AU_VIC_WA_NT_Dots")]
+pub fn Edu_AU_VIC_WA_NT_Dots(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu AU VIC WA NT Guides](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Guides), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_AU_VIC_WA_NT_Guides")]
+pub fn Edu_AU_VIC_WA_NT_Guides(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu AU VIC WA NT Hand](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Hand), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_AU_VIC_WA_NT_Hand")]
+pub fn Edu_AU_VIC_WA_NT_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu AU VIC WA NT Pre](https://fonts.google.com/specimen/Edu+AU+VIC+WA+NT+Pre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_AU_VIC_WA_NT_Pre")]
+pub fn Edu_AU_VIC_WA_NT_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu NSW ACT Cursive](https://fonts.google.com/specimen/Edu+NSW+ACT+Cursive), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_NSW_ACT_Cursive")]
+pub fn Edu_NSW_ACT_Cursive(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu NSW ACT Foundation](https://fonts.google.com/specimen/Edu+NSW+ACT+Foundation), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_NSW_ACT_Foundation")]
+pub fn Edu_NSW_ACT_Foundation(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu NSW ACT Hand Pre](https://fonts.google.com/specimen/Edu+NSW+ACT+Hand+Pre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_NSW_ACT_Hand_Pre")]
+pub fn Edu_NSW_ACT_Hand_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu QLD Beginner](https://fonts.google.com/specimen/Edu+QLD+Beginner), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_QLD_Beginner")]
+pub fn Edu_QLD_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu QLD Hand](https://fonts.google.com/specimen/Edu+QLD+Hand), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_QLD_Hand")]
+pub fn Edu_QLD_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu SA Beginner](https://fonts.google.com/specimen/Edu+SA+Beginner), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_SA_Beginner")]
+pub fn Edu_SA_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu SA Hand](https://fonts.google.com/specimen/Edu+SA+Hand), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_SA_Hand")]
+pub fn Edu_SA_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu TAS Beginner](https://fonts.google.com/specimen/Edu+TAS+Beginner), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_TAS_Beginner")]
+pub fn Edu_TAS_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu VIC WA NT Beginner](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Beginner), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_VIC_WA_NT_Beginner")]
+pub fn Edu_VIC_WA_NT_Beginner(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu VIC WA NT Hand](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Hand), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_VIC_WA_NT_Hand")]
+pub fn Edu_VIC_WA_NT_Hand(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Edu VIC WA NT Hand Pre](https://fonts.google.com/specimen/Edu+VIC+WA+NT+Hand+Pre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Edu_VIC_WA_NT_Hand_Pre")]
+pub fn Edu_VIC_WA_NT_Hand_Pre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [El Messiri](https://fonts.google.com/specimen/El+Messiri), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#El_Messiri")]
+pub fn El_Messiri(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Electrolize](https://fonts.google.com/specimen/Electrolize), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Electrolize")]
+pub fn Electrolize(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Elms Sans](https://fonts.google.com/specimen/Elms+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Elms_Sans")]
+pub fn Elms_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Elsie](https://fonts.google.com/specimen/Elsie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Elsie")]
+pub fn Elsie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Elsie Swash Caps](https://fonts.google.com/specimen/Elsie+Swash+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Elsie_Swash_Caps")]
+pub fn Elsie_Swash_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Emblema One](https://fonts.google.com/specimen/Emblema+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Emblema_One")]
+pub fn Emblema_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Emilys Candy](https://fonts.google.com/specimen/Emilys+Candy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Emilys_Candy")]
+pub fn Emilys_Candy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans](https://fonts.google.com/specimen/Encode+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans")]
+pub fn Encode_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans Condensed](https://fonts.google.com/specimen/Encode+Sans+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans_Condensed")]
+pub fn Encode_Sans_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans Expanded](https://fonts.google.com/specimen/Encode+Sans+Expanded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans_Expanded")]
+pub fn Encode_Sans_Expanded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans SC](https://fonts.google.com/specimen/Encode+Sans+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans_SC")]
+pub fn Encode_Sans_SC(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans Semi Condensed](https://fonts.google.com/specimen/Encode+Sans+Semi+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans_Semi_Condensed")]
+pub fn Encode_Sans_Semi_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Encode Sans Semi Expanded](https://fonts.google.com/specimen/Encode+Sans+Semi+Expanded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Encode_Sans_Semi_Expanded")]
+pub fn Encode_Sans_Semi_Expanded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Engagement](https://fonts.google.com/specimen/Engagement), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Engagement")]
+pub fn Engagement(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Englebert](https://fonts.google.com/specimen/Englebert), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Englebert")]
+pub fn Englebert(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Enriqueta](https://fonts.google.com/specimen/Enriqueta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Enriqueta")]
+pub fn Enriqueta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ephesis](https://fonts.google.com/specimen/Ephesis), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ephesis")]
+pub fn Ephesis(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Epilogue](https://fonts.google.com/specimen/Epilogue), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Epilogue")]
+pub fn Epilogue(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Epunda Sans](https://fonts.google.com/specimen/Epunda+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Epunda_Sans")]
+pub fn Epunda_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Epunda Slab](https://fonts.google.com/specimen/Epunda+Slab), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Epunda_Slab")]
+pub fn Epunda_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Erica One](https://fonts.google.com/specimen/Erica+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Erica_One")]
+pub fn Erica_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Esteban](https://fonts.google.com/specimen/Esteban), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Esteban")]
+pub fn Esteban(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Estedad](https://fonts.google.com/specimen/Estedad), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Estedad")]
+pub fn Estedad(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Estonia](https://fonts.google.com/specimen/Estonia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Estonia")]
+pub fn Estonia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Euphoria Script](https://fonts.google.com/specimen/Euphoria+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Euphoria_Script")]
+pub fn Euphoria_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ewert](https://fonts.google.com/specimen/Ewert), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ewert")]
+pub fn Ewert(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Exile](https://fonts.google.com/specimen/Exile), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Exile")]
+pub fn Exile(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Exo](https://fonts.google.com/specimen/Exo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Exo")]
+pub fn Exo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Exo 2](https://fonts.google.com/specimen/Exo+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Exo_2")]
+pub fn Exo_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Expletus Sans](https://fonts.google.com/specimen/Expletus+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Expletus_Sans")]
+pub fn Expletus_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Explora](https://fonts.google.com/specimen/Explora), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Explora")]
+pub fn Explora(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Faculty Glyphic](https://fonts.google.com/specimen/Faculty+Glyphic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Faculty_Glyphic")]
+pub fn Faculty_Glyphic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fahkwang](https://fonts.google.com/specimen/Fahkwang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fahkwang")]
+pub fn Fahkwang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Familjen Grotesk](https://fonts.google.com/specimen/Familjen+Grotesk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Familjen_Grotesk")]
+pub fn Familjen_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fanwood Text](https://fonts.google.com/specimen/Fanwood+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fanwood_Text")]
+pub fn Fanwood_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Farro](https://fonts.google.com/specimen/Farro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Farro")]
+pub fn Farro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Farsan](https://fonts.google.com/specimen/Farsan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Farsan")]
+pub fn Farsan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fascinate](https://fonts.google.com/specimen/Fascinate), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fascinate")]
+pub fn Fascinate(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fascinate Inline](https://fonts.google.com/specimen/Fascinate+Inline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fascinate_Inline")]
+pub fn Fascinate_Inline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Faster One](https://fonts.google.com/specimen/Faster+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Faster_One")]
+pub fn Faster_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fasthand](https://fonts.google.com/specimen/Fasthand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fasthand")]
+pub fn Fasthand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fauna One](https://fonts.google.com/specimen/Fauna+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fauna_One")]
+pub fn Fauna_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Faustina](https://fonts.google.com/specimen/Faustina), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Faustina")]
+pub fn Faustina(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Federant](https://fonts.google.com/specimen/Federant), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Federant")]
+pub fn Federant(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Federo](https://fonts.google.com/specimen/Federo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Federo")]
+pub fn Federo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Felipa](https://fonts.google.com/specimen/Felipa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Felipa")]
+pub fn Felipa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fenix](https://fonts.google.com/specimen/Fenix), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fenix")]
+pub fn Fenix(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Festive](https://fonts.google.com/specimen/Festive), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Festive")]
+pub fn Festive(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Figtree](https://fonts.google.com/specimen/Figtree), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Figtree")]
+pub fn Figtree(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Finger Paint](https://fonts.google.com/specimen/Finger+Paint), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Finger_Paint")]
+pub fn Finger_Paint(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Finlandica Headline](https://fonts.google.com/specimen/Finlandica+Headline), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Finlandica_Headline")]
+pub fn Finlandica_Headline(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Finlandica Text](https://fonts.google.com/specimen/Finlandica+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Finlandica_Text")]
+pub fn Finlandica_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fira Code](https://fonts.google.com/specimen/Fira+Code), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fira_Code")]
+pub fn Fira_Code(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fira Mono](https://fonts.google.com/specimen/Fira+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fira_Mono")]
+pub fn Fira_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fira Sans](https://fonts.google.com/specimen/Fira+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fira_Sans")]
+pub fn Fira_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fira Sans Condensed](https://fonts.google.com/specimen/Fira+Sans+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fira_Sans_Condensed")]
+pub fn Fira_Sans_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fira Sans Extra Condensed](https://fonts.google.com/specimen/Fira+Sans+Extra+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fira_Sans_Extra_Condensed")]
+pub fn Fira_Sans_Extra_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fjalla One](https://fonts.google.com/specimen/Fjalla+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fjalla_One")]
+pub fn Fjalla_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fjord One](https://fonts.google.com/specimen/Fjord+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fjord_One")]
+pub fn Fjord_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Flamenco](https://fonts.google.com/specimen/Flamenco), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Flamenco")]
+pub fn Flamenco(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Flavors](https://fonts.google.com/specimen/Flavors), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Flavors")]
+pub fn Flavors(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fleur De Leah](https://fonts.google.com/specimen/Fleur+De+Leah), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fleur_De_Leah")]
+pub fn Fleur_De_Leah(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Flow Block](https://fonts.google.com/specimen/Flow+Block), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Flow_Block")]
+pub fn Flow_Block(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Flow Circular](https://fonts.google.com/specimen/Flow+Circular), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Flow_Circular")]
+pub fn Flow_Circular(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Flow Rounded](https://fonts.google.com/specimen/Flow+Rounded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Flow_Rounded")]
+pub fn Flow_Rounded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Foldit](https://fonts.google.com/specimen/Foldit), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Foldit")]
+pub fn Foldit(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fondamento](https://fonts.google.com/specimen/Fondamento), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fondamento")]
+pub fn Fondamento(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fontdiner Swanky](https://fonts.google.com/specimen/Fontdiner+Swanky), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fontdiner_Swanky")]
+pub fn Fontdiner_Swanky(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Forum](https://fonts.google.com/specimen/Forum), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Forum")]
+pub fn Forum(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fragment Mono](https://fonts.google.com/specimen/Fragment+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fragment_Mono")]
+pub fn Fragment_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Francois One](https://fonts.google.com/specimen/Francois+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Francois_One")]
+pub fn Francois_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Frank Ruhl Libre](https://fonts.google.com/specimen/Frank+Ruhl+Libre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Frank_Ruhl_Libre")]
+pub fn Frank_Ruhl_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fraunces](https://fonts.google.com/specimen/Fraunces), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fraunces")]
+pub fn Fraunces(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Freckle Face](https://fonts.google.com/specimen/Freckle+Face), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Freckle_Face")]
+pub fn Freckle_Face(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fredericka the Great](https://fonts.google.com/specimen/Fredericka+the+Great), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fredericka_the_Great")]
+pub fn Fredericka_the_Great(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fredoka](https://fonts.google.com/specimen/Fredoka), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fredoka")]
+pub fn Fredoka(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Freehand](https://fonts.google.com/specimen/Freehand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Freehand")]
+pub fn Freehand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Freeman](https://fonts.google.com/specimen/Freeman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Freeman")]
+pub fn Freeman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fresca](https://fonts.google.com/specimen/Fresca), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fresca")]
+pub fn Fresca(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Frijole](https://fonts.google.com/specimen/Frijole), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Frijole")]
+pub fn Frijole(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fruktur](https://fonts.google.com/specimen/Fruktur), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fruktur")]
+pub fn Fruktur(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fugaz One](https://fonts.google.com/specimen/Fugaz+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fugaz_One")]
+pub fn Fugaz_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fuggles](https://fonts.google.com/specimen/Fuggles), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fuggles")]
+pub fn Fuggles(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Funnel Display](https://fonts.google.com/specimen/Funnel+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Funnel_Display")]
+pub fn Funnel_Display(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Funnel Sans](https://fonts.google.com/specimen/Funnel+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Funnel_Sans")]
+pub fn Funnel_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fustat](https://fonts.google.com/specimen/Fustat), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fustat")]
+pub fn Fustat(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Fuzzy Bubbles](https://fonts.google.com/specimen/Fuzzy+Bubbles), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Fuzzy_Bubbles")]
+pub fn Fuzzy_Bubbles(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [GFS Didot](https://fonts.google.com/specimen/GFS+Didot), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#GFS_Didot")]
+pub fn GFS_Didot(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [GFS Neohellenic](https://fonts.google.com/specimen/GFS+Neohellenic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#GFS_Neohellenic")]
+pub fn GFS_Neohellenic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ga Maamli](https://fonts.google.com/specimen/Ga+Maamli), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ga_Maamli")]
+pub fn Ga_Maamli(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gabarito](https://fonts.google.com/specimen/Gabarito), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gabarito")]
+pub fn Gabarito(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gabriela](https://fonts.google.com/specimen/Gabriela), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gabriela")]
+pub fn Gabriela(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gaegu](https://fonts.google.com/specimen/Gaegu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gaegu")]
+pub fn Gaegu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gafata](https://fonts.google.com/specimen/Gafata), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gafata")]
+pub fn Gafata(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gajraj One](https://fonts.google.com/specimen/Gajraj+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gajraj_One")]
+pub fn Gajraj_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Galada](https://fonts.google.com/specimen/Galada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Galada")]
+pub fn Galada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Galdeano](https://fonts.google.com/specimen/Galdeano), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Galdeano")]
+pub fn Galdeano(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Galindo](https://fonts.google.com/specimen/Galindo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Galindo")]
+pub fn Galindo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gamja Flower](https://fonts.google.com/specimen/Gamja+Flower), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gamja_Flower")]
+pub fn Gamja_Flower(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gantari](https://fonts.google.com/specimen/Gantari), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gantari")]
+pub fn Gantari(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gasoek One](https://fonts.google.com/specimen/Gasoek+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gasoek_One")]
+pub fn Gasoek_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gayathri](https://fonts.google.com/specimen/Gayathri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gayathri")]
+pub fn Gayathri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geist](https://fonts.google.com/specimen/Geist), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geist")]
+pub fn Geist(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geist Mono](https://fonts.google.com/specimen/Geist+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geist_Mono")]
+pub fn Geist_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geist Pixel](https://fonts.google.com/specimen/Geist+Pixel), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geist_Pixel")]
+pub fn Geist_Pixel(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gelasio](https://fonts.google.com/specimen/Gelasio), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gelasio")]
+pub fn Gelasio(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gemunu Libre](https://fonts.google.com/specimen/Gemunu+Libre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gemunu_Libre")]
+pub fn Gemunu_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Genos](https://fonts.google.com/specimen/Genos), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Genos")]
+pub fn Genos(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gentium Book Plus](https://fonts.google.com/specimen/Gentium+Book+Plus), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gentium_Book_Plus")]
+pub fn Gentium_Book_Plus(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gentium Plus](https://fonts.google.com/specimen/Gentium+Plus), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gentium_Plus")]
+pub fn Gentium_Plus(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geo](https://fonts.google.com/specimen/Geo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geo")]
+pub fn Geo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geologica](https://fonts.google.com/specimen/Geologica), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geologica")]
+pub fn Geologica(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geom](https://fonts.google.com/specimen/Geom), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geom")]
+pub fn Geom(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geomini](https://fonts.google.com/specimen/Geomini), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geomini")]
+pub fn Geomini(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Georama](https://fonts.google.com/specimen/Georama), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Georama")]
+pub fn Georama(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geostar](https://fonts.google.com/specimen/Geostar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geostar")]
+pub fn Geostar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Geostar Fill](https://fonts.google.com/specimen/Geostar+Fill), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Geostar_Fill")]
+pub fn Geostar_Fill(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Germania One](https://fonts.google.com/specimen/Germania+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Germania_One")]
+pub fn Germania_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gideon Roman](https://fonts.google.com/specimen/Gideon+Roman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gideon_Roman")]
+pub fn Gideon_Roman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gidole](https://fonts.google.com/specimen/Gidole), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gidole")]
+pub fn Gidole(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gidugu](https://fonts.google.com/specimen/Gidugu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gidugu")]
+pub fn Gidugu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gilda Display](https://fonts.google.com/specimen/Gilda+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gilda_Display")]
+pub fn Gilda_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Girassol](https://fonts.google.com/specimen/Girassol), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Girassol")]
+pub fn Girassol(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Give You Glory](https://fonts.google.com/specimen/Give+You+Glory), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Give_You_Glory")]
+pub fn Give_You_Glory(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Glass Antiqua](https://fonts.google.com/specimen/Glass+Antiqua), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Glass_Antiqua")]
+pub fn Glass_Antiqua(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Glegoo](https://fonts.google.com/specimen/Glegoo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Glegoo")]
+pub fn Glegoo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gloock](https://fonts.google.com/specimen/Gloock), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gloock")]
+pub fn Gloock(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gloria Hallelujah](https://fonts.google.com/specimen/Gloria+Hallelujah), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gloria_Hallelujah")]
+pub fn Gloria_Hallelujah(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Glory](https://fonts.google.com/specimen/Glory), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Glory")]
+pub fn Glory(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gluten](https://fonts.google.com/specimen/Gluten), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gluten")]
+pub fn Gluten(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Goblin One](https://fonts.google.com/specimen/Goblin+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Goblin_One")]
+pub fn Goblin_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gochi Hand](https://fonts.google.com/specimen/Gochi+Hand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gochi_Hand")]
+pub fn Gochi_Hand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Goldman](https://fonts.google.com/specimen/Goldman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Goldman")]
+pub fn Goldman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Golos Text](https://fonts.google.com/specimen/Golos+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Golos_Text")]
+pub fn Golos_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Google Sans](https://fonts.google.com/specimen/Google+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Google_Sans")]
+pub fn Google_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Google Sans Code](https://fonts.google.com/specimen/Google+Sans+Code), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Google_Sans_Code")]
+pub fn Google_Sans_Code(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Google_Sans_Flex")]
+pub fn Google_Sans_Flex(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gorditas](https://fonts.google.com/specimen/Gorditas), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gorditas")]
+pub fn Gorditas(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gothic A1](https://fonts.google.com/specimen/Gothic+A1), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gothic_A1")]
+pub fn Gothic_A1(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gotu](https://fonts.google.com/specimen/Gotu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gotu")]
+pub fn Gotu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Goudy Bookletter 1911](https://fonts.google.com/specimen/Goudy+Bookletter+1911), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Goudy_Bookletter_1911")]
+pub fn Goudy_Bookletter_1911(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gowun Batang](https://fonts.google.com/specimen/Gowun+Batang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gowun_Batang")]
+pub fn Gowun_Batang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gowun_Dodum")]
+pub fn Gowun_Dodum(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Graduate](https://fonts.google.com/specimen/Graduate), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Graduate")]
+pub fn Graduate(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grand Hotel](https://fonts.google.com/specimen/Grand+Hotel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grand_Hotel")]
+pub fn Grand_Hotel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grandiflora One](https://fonts.google.com/specimen/Grandiflora+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grandiflora_One")]
+pub fn Grandiflora_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grandstander](https://fonts.google.com/specimen/Grandstander), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grandstander")]
+pub fn Grandstander(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grape Nuts](https://fonts.google.com/specimen/Grape+Nuts), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grape_Nuts")]
+pub fn Grape_Nuts(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gravitas One](https://fonts.google.com/specimen/Gravitas+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gravitas_One")]
+pub fn Gravitas_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Great Vibes](https://fonts.google.com/specimen/Great+Vibes), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Great_Vibes")]
+pub fn Great_Vibes(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grechen Fuemen](https://fonts.google.com/specimen/Grechen+Fuemen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grechen_Fuemen")]
+pub fn Grechen_Fuemen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grenze](https://fonts.google.com/specimen/Grenze), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grenze")]
+pub fn Grenze(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grenze Gotisch](https://fonts.google.com/specimen/Grenze+Gotisch), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grenze_Gotisch")]
+pub fn Grenze_Gotisch(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Grey Qo](https://fonts.google.com/specimen/Grey+Qo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Grey_Qo")]
+pub fn Grey_Qo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Griffy](https://fonts.google.com/specimen/Griffy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Griffy")]
+pub fn Griffy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gruppo](https://fonts.google.com/specimen/Gruppo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gruppo")]
+pub fn Gruppo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gudea](https://fonts.google.com/specimen/Gudea), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gudea")]
+pub fn Gudea(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gugi](https://fonts.google.com/specimen/Gugi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gugi")]
+pub fn Gugi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gulzar](https://fonts.google.com/specimen/Gulzar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gulzar")]
+pub fn Gulzar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gupter](https://fonts.google.com/specimen/Gupter), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gupter")]
+pub fn Gupter(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gurajada](https://fonts.google.com/specimen/Gurajada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gurajada")]
+pub fn Gurajada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gveret Levin](https://fonts.google.com/specimen/Gveret+Levin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gveret_Levin")]
+pub fn Gveret_Levin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Gwendolyn](https://fonts.google.com/specimen/Gwendolyn), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Gwendolyn")]
+pub fn Gwendolyn(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Habibi](https://fonts.google.com/specimen/Habibi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Habibi")]
+pub fn Habibi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hachi Maru Pop](https://fonts.google.com/specimen/Hachi+Maru+Pop), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hachi_Maru_Pop")]
+pub fn Hachi_Maru_Pop(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hahmlet](https://fonts.google.com/specimen/Hahmlet), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hahmlet")]
+pub fn Hahmlet(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Halant](https://fonts.google.com/specimen/Halant), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Halant")]
+pub fn Halant(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hammersmith One](https://fonts.google.com/specimen/Hammersmith+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hammersmith_One")]
+pub fn Hammersmith_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hanalei](https://fonts.google.com/specimen/Hanalei), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hanalei")]
+pub fn Hanalei(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hanalei Fill](https://fonts.google.com/specimen/Hanalei+Fill), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hanalei_Fill")]
+pub fn Hanalei_Fill(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Handjet](https://fonts.google.com/specimen/Handjet), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Handjet")]
+pub fn Handjet(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Handlee](https://fonts.google.com/specimen/Handlee), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Handlee")]
+pub fn Handlee(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hanken Grotesk](https://fonts.google.com/specimen/Hanken+Grotesk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hanken_Grotesk")]
+pub fn Hanken_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hanuman](https://fonts.google.com/specimen/Hanuman), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hanuman")]
+pub fn Hanuman(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Happy Monkey](https://fonts.google.com/specimen/Happy+Monkey), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Happy_Monkey")]
+pub fn Happy_Monkey(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Harmattan](https://fonts.google.com/specimen/Harmattan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Harmattan")]
+pub fn Harmattan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Headland One](https://fonts.google.com/specimen/Headland+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Headland_One")]
+pub fn Headland_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hedvig Letters Sans](https://fonts.google.com/specimen/Hedvig+Letters+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hedvig_Letters_Sans")]
+pub fn Hedvig_Letters_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hedvig Letters Serif](https://fonts.google.com/specimen/Hedvig+Letters+Serif), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hedvig_Letters_Serif")]
+pub fn Hedvig_Letters_Serif(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Heebo](https://fonts.google.com/specimen/Heebo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Heebo")]
+pub fn Heebo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Henny Penny](https://fonts.google.com/specimen/Henny+Penny), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Henny_Penny")]
+pub fn Henny_Penny(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hepta Slab](https://fonts.google.com/specimen/Hepta+Slab), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hepta_Slab")]
+pub fn Hepta_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Herr Von Muellerhoff](https://fonts.google.com/specimen/Herr+Von+Muellerhoff), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Herr_Von_Muellerhoff")]
+pub fn Herr_Von_Muellerhoff(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hi Melody](https://fonts.google.com/specimen/Hi+Melody), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hi_Melody")]
+pub fn Hi_Melody(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hibur Mono](https://fonts.google.com/specimen/Hibur+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hibur_Mono")]
+pub fn Hibur_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hina Mincho](https://fonts.google.com/specimen/Hina+Mincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hina_Mincho")]
+pub fn Hina_Mincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind](https://fonts.google.com/specimen/Hind), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind")]
+pub fn Hind(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind Guntur](https://fonts.google.com/specimen/Hind+Guntur), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind_Guntur")]
+pub fn Hind_Guntur(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind Madurai](https://fonts.google.com/specimen/Hind+Madurai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind_Madurai")]
+pub fn Hind_Madurai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind Mysuru](https://fonts.google.com/specimen/Hind+Mysuru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind_Mysuru")]
+pub fn Hind_Mysuru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind Siliguri](https://fonts.google.com/specimen/Hind+Siliguri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind_Siliguri")]
+pub fn Hind_Siliguri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hind Vadodara](https://fonts.google.com/specimen/Hind+Vadodara), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hind_Vadodara")]
+pub fn Hind_Vadodara(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Holtwood One SC](https://fonts.google.com/specimen/Holtwood+One+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Holtwood_One_SC")]
+pub fn Holtwood_One_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Homemade Apple](https://fonts.google.com/specimen/Homemade+Apple), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Homemade_Apple")]
+pub fn Homemade_Apple(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Homenaje](https://fonts.google.com/specimen/Homenaje), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Homenaje")]
+pub fn Homenaje(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Honk](https://fonts.google.com/specimen/Honk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Honk")]
+pub fn Honk(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Host Grotesk](https://fonts.google.com/specimen/Host+Grotesk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Host_Grotesk")]
+pub fn Host_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hubballi](https://fonts.google.com/specimen/Hubballi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hubballi")]
+pub fn Hubballi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hubot Sans](https://fonts.google.com/specimen/Hubot+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hubot_Sans")]
+pub fn Hubot_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Huninn](https://fonts.google.com/specimen/Huninn), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Huninn")]
+pub fn Huninn(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Hurricane](https://fonts.google.com/specimen/Hurricane), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Hurricane")]
+pub fn Hurricane(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Mono")]
+pub fn IBM_Plex_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans](https://fonts.google.com/specimen/IBM+Plex+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans")]
+pub fn IBM_Plex_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Arabic](https://fonts.google.com/specimen/IBM+Plex+Sans+Arabic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Arabic")]
+pub fn IBM_Plex_Sans_Arabic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Condensed](https://fonts.google.com/specimen/IBM+Plex+Sans+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Condensed")]
+pub fn IBM_Plex_Sans_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Devanagari](https://fonts.google.com/specimen/IBM+Plex+Sans+Devanagari), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Devanagari")]
+pub fn IBM_Plex_Sans_Devanagari(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Hebrew](https://fonts.google.com/specimen/IBM+Plex+Sans+Hebrew), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Hebrew")]
+pub fn IBM_Plex_Sans_Hebrew(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans JP](https://fonts.google.com/specimen/IBM+Plex+Sans+JP), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_JP")]
+pub fn IBM_Plex_Sans_JP(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans KR](https://fonts.google.com/specimen/IBM+Plex+Sans+KR), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_KR")]
+pub fn IBM_Plex_Sans_KR(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Thai](https://fonts.google.com/specimen/IBM+Plex+Sans+Thai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Thai")]
+pub fn IBM_Plex_Sans_Thai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Sans Thai Looped](https://fonts.google.com/specimen/IBM+Plex+Sans+Thai+Looped), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Sans_Thai_Looped")]
+pub fn IBM_Plex_Sans_Thai_Looped(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IBM Plex Serif](https://fonts.google.com/specimen/IBM+Plex+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IBM_Plex_Serif")]
+pub fn IBM_Plex_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell DW Pica](https://fonts.google.com/specimen/IM+Fell+DW+Pica), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_DW_Pica")]
+pub fn IM_Fell_DW_Pica(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell DW Pica SC](https://fonts.google.com/specimen/IM+Fell+DW+Pica+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_DW_Pica_SC")]
+pub fn IM_Fell_DW_Pica_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell Double Pica](https://fonts.google.com/specimen/IM+Fell+Double+Pica), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_Double_Pica")]
+pub fn IM_Fell_Double_Pica(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell Double Pica SC](https://fonts.google.com/specimen/IM+Fell+Double+Pica+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_Double_Pica_SC")]
+pub fn IM_Fell_Double_Pica_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell English](https://fonts.google.com/specimen/IM+Fell+English), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_English")]
+pub fn IM_Fell_English(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell English SC](https://fonts.google.com/specimen/IM+Fell+English+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_English_SC")]
+pub fn IM_Fell_English_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell French Canon](https://fonts.google.com/specimen/IM+Fell+French+Canon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_French_Canon")]
+pub fn IM_Fell_French_Canon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell French Canon SC](https://fonts.google.com/specimen/IM+Fell+French+Canon+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_French_Canon_SC")]
+pub fn IM_Fell_French_Canon_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell Great Primer](https://fonts.google.com/specimen/IM+Fell+Great+Primer), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_Great_Primer")]
+pub fn IM_Fell_Great_Primer(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [IM Fell Great Primer SC](https://fonts.google.com/specimen/IM+Fell+Great+Primer+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#IM_Fell_Great_Primer_SC")]
+pub fn IM_Fell_Great_Primer_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Iansui](https://fonts.google.com/specimen/Iansui), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Iansui")]
+pub fn Iansui(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ibarra Real Nova](https://fonts.google.com/specimen/Ibarra+Real+Nova), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ibarra_Real_Nova")]
+pub fn Ibarra_Real_Nova(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Iceberg](https://fonts.google.com/specimen/Iceberg), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Iceberg")]
+pub fn Iceberg(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Iceland](https://fonts.google.com/specimen/Iceland), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Iceland")]
+pub fn Iceland(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Idiqlat](https://fonts.google.com/specimen/Idiqlat), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Idiqlat")]
+pub fn Idiqlat(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Imbue](https://fonts.google.com/specimen/Imbue), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Imbue")]
+pub fn Imbue(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Imperial Script](https://fonts.google.com/specimen/Imperial+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Imperial_Script")]
+pub fn Imperial_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Imprima](https://fonts.google.com/specimen/Imprima), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Imprima")]
+pub fn Imprima(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inclusive_Sans")]
+pub fn Inclusive_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inconsolata](https://fonts.google.com/specimen/Inconsolata), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inconsolata")]
+pub fn Inconsolata(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inder](https://fonts.google.com/specimen/Inder), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inder")]
+pub fn Inder(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Indie Flower](https://fonts.google.com/specimen/Indie+Flower), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Indie_Flower")]
+pub fn Indie_Flower(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ingrid Darling](https://fonts.google.com/specimen/Ingrid+Darling), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ingrid_Darling")]
+pub fn Ingrid_Darling(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inika](https://fonts.google.com/specimen/Inika), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inika")]
+pub fn Inika(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inknut Antiqua](https://fonts.google.com/specimen/Inknut+Antiqua), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inknut_Antiqua")]
+pub fn Inknut_Antiqua(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inria Sans](https://fonts.google.com/specimen/Inria+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inria_Sans")]
+pub fn Inria_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inria Serif](https://fonts.google.com/specimen/Inria+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inria_Serif")]
+pub fn Inria_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inspiration](https://fonts.google.com/specimen/Inspiration), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inspiration")]
+pub fn Inspiration(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Instrument Sans](https://fonts.google.com/specimen/Instrument+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Instrument_Sans")]
+pub fn Instrument_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Instrument_Serif")]
+pub fn Instrument_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Intel One Mono](https://fonts.google.com/specimen/Intel+One+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Intel_One_Mono")]
+pub fn Intel_One_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inter](https://fonts.google.com/specimen/Inter), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inter")]
+pub fn Inter(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Inter Tight](https://fonts.google.com/specimen/Inter+Tight), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Inter_Tight")]
+pub fn Inter_Tight(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Iosevka Charon](https://fonts.google.com/specimen/Iosevka+Charon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Iosevka_Charon")]
+pub fn Iosevka_Charon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Iosevka Charon Mono](https://fonts.google.com/specimen/Iosevka+Charon+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Iosevka_Charon_Mono")]
+pub fn Iosevka_Charon_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Irish Grover](https://fonts.google.com/specimen/Irish+Grover), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Irish_Grover")]
+pub fn Irish_Grover(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Island Moments](https://fonts.google.com/specimen/Island+Moments), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Island_Moments")]
+pub fn Island_Moments(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Istok Web](https://fonts.google.com/specimen/Istok+Web), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Istok_Web")]
+pub fn Istok_Web(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Italiana](https://fonts.google.com/specimen/Italiana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Italiana")]
+pub fn Italiana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Italianno](https://fonts.google.com/specimen/Italianno), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Italianno")]
+pub fn Italianno(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Itim](https://fonts.google.com/specimen/Itim), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Itim")]
+pub fn Itim(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquard 12](https://fonts.google.com/specimen/Jacquard+12), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquard_12")]
+pub fn Jacquard_12(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquard 12 Charted](https://fonts.google.com/specimen/Jacquard+12+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquard_12_Charted")]
+pub fn Jacquard_12_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquard 24](https://fonts.google.com/specimen/Jacquard+24), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquard_24")]
+pub fn Jacquard_24(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquard 24 Charted](https://fonts.google.com/specimen/Jacquard+24+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquard_24_Charted")]
+pub fn Jacquard_24_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquarda Bastarda 9](https://fonts.google.com/specimen/Jacquarda+Bastarda+9), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquarda_Bastarda_9")]
+pub fn Jacquarda_Bastarda_9(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacquarda Bastarda 9 Charted](https://fonts.google.com/specimen/Jacquarda+Bastarda+9+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacquarda_Bastarda_9_Charted")]
+pub fn Jacquarda_Bastarda_9_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacques Francois](https://fonts.google.com/specimen/Jacques+Francois), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacques_Francois")]
+pub fn Jacques_Francois(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jacques Francois Shadow](https://fonts.google.com/specimen/Jacques+Francois+Shadow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jacques_Francois_Shadow")]
+pub fn Jacques_Francois_Shadow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jaini](https://fonts.google.com/specimen/Jaini), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jaini")]
+pub fn Jaini(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jaini Purva](https://fonts.google.com/specimen/Jaini+Purva), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jaini_Purva")]
+pub fn Jaini_Purva(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jaldi](https://fonts.google.com/specimen/Jaldi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jaldi")]
+pub fn Jaldi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jaro](https://fonts.google.com/specimen/Jaro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jaro")]
+pub fn Jaro(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 10](https://fonts.google.com/specimen/Jersey+10), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_10")]
+pub fn Jersey_10(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 10 Charted](https://fonts.google.com/specimen/Jersey+10+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_10_Charted")]
+pub fn Jersey_10_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 15](https://fonts.google.com/specimen/Jersey+15), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_15")]
+pub fn Jersey_15(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 15 Charted](https://fonts.google.com/specimen/Jersey+15+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_15_Charted")]
+pub fn Jersey_15_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 20](https://fonts.google.com/specimen/Jersey+20), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_20")]
+pub fn Jersey_20(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 20 Charted](https://fonts.google.com/specimen/Jersey+20+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_20_Charted")]
+pub fn Jersey_20_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 25](https://fonts.google.com/specimen/Jersey+25), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_25")]
+pub fn Jersey_25(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jersey 25 Charted](https://fonts.google.com/specimen/Jersey+25+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jersey_25_Charted")]
+pub fn Jersey_25_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#JetBrains_Mono")]
+pub fn JetBrains_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jim Nightshade](https://fonts.google.com/specimen/Jim+Nightshade), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jim_Nightshade")]
+pub fn Jim_Nightshade(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Joan](https://fonts.google.com/specimen/Joan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Joan")]
+pub fn Joan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jockey One](https://fonts.google.com/specimen/Jockey+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jockey_One")]
+pub fn Jockey_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jolly Lodger](https://fonts.google.com/specimen/Jolly+Lodger), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jolly_Lodger")]
+pub fn Jolly_Lodger(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jomhuria](https://fonts.google.com/specimen/Jomhuria), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jomhuria")]
+pub fn Jomhuria(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jomolhari](https://fonts.google.com/specimen/Jomolhari), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jomolhari")]
+pub fn Jomolhari(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Josefin Sans](https://fonts.google.com/specimen/Josefin+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Josefin_Sans")]
+pub fn Josefin_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Josefin Slab](https://fonts.google.com/specimen/Josefin+Slab), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Josefin_Slab")]
+pub fn Josefin_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jost](https://fonts.google.com/specimen/Jost), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jost")]
+pub fn Jost(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Joti One](https://fonts.google.com/specimen/Joti+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Joti_One")]
+pub fn Joti_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jua](https://fonts.google.com/specimen/Jua), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jua")]
+pub fn Jua(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Judson](https://fonts.google.com/specimen/Judson), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Judson")]
+pub fn Judson(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Julee](https://fonts.google.com/specimen/Julee), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Julee")]
+pub fn Julee(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Julius Sans One](https://fonts.google.com/specimen/Julius+Sans+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Julius_Sans_One")]
+pub fn Julius_Sans_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Junge](https://fonts.google.com/specimen/Junge), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Junge")]
+pub fn Junge(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Jura](https://fonts.google.com/specimen/Jura), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Jura")]
+pub fn Jura(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Just Another Hand](https://fonts.google.com/specimen/Just+Another+Hand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Just_Another_Hand")]
+pub fn Just_Another_Hand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Just Me Again Down Here](https://fonts.google.com/specimen/Just+Me+Again+Down+Here), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Just_Me_Again_Down_Here")]
+pub fn Just_Me_Again_Down_Here(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [K2D](https://fonts.google.com/specimen/K2D), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#K2D")]
+pub fn K2D(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kablammo](https://fonts.google.com/specimen/Kablammo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kablammo")]
+pub fn Kablammo(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kadwa](https://fonts.google.com/specimen/Kadwa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kadwa")]
+pub fn Kadwa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kaisei Decol](https://fonts.google.com/specimen/Kaisei+Decol), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kaisei_Decol")]
+pub fn Kaisei_Decol(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kaisei HarunoUmi](https://fonts.google.com/specimen/Kaisei+HarunoUmi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kaisei_HarunoUmi")]
+pub fn Kaisei_HarunoUmi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kaisei Opti](https://fonts.google.com/specimen/Kaisei+Opti), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kaisei_Opti")]
+pub fn Kaisei_Opti(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kaisei Tokumin](https://fonts.google.com/specimen/Kaisei+Tokumin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kaisei_Tokumin")]
+pub fn Kaisei_Tokumin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kalam](https://fonts.google.com/specimen/Kalam), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kalam")]
+pub fn Kalam(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kalnia](https://fonts.google.com/specimen/Kalnia), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kalnia")]
+pub fn Kalnia(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kalnia Glaze](https://fonts.google.com/specimen/Kalnia+Glaze), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kalnia_Glaze")]
+pub fn Kalnia_Glaze(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kameron](https://fonts.google.com/specimen/Kameron), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kameron")]
+pub fn Kameron(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kanchenjunga](https://fonts.google.com/specimen/Kanchenjunga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kanchenjunga")]
+pub fn Kanchenjunga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kanit](https://fonts.google.com/specimen/Kanit), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kanit")]
+pub fn Kanit(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kantumruy Pro](https://fonts.google.com/specimen/Kantumruy+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kantumruy_Pro")]
+pub fn Kantumruy_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kapakana](https://fonts.google.com/specimen/Kapakana), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kapakana")]
+pub fn Kapakana(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Karantina](https://fonts.google.com/specimen/Karantina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Karantina")]
+pub fn Karantina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Karla](https://fonts.google.com/specimen/Karla), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Karla")]
+pub fn Karla(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Karla Tamil Inclined](https://fonts.google.com/specimen/Karla+Tamil+Inclined), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Karla_Tamil_Inclined")]
+pub fn Karla_Tamil_Inclined(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Karla Tamil Upright](https://fonts.google.com/specimen/Karla+Tamil+Upright), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Karla_Tamil_Upright")]
+pub fn Karla_Tamil_Upright(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Karma](https://fonts.google.com/specimen/Karma), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Karma")]
+pub fn Karma(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Katibeh](https://fonts.google.com/specimen/Katibeh), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Katibeh")]
+pub fn Katibeh(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kaushan Script](https://fonts.google.com/specimen/Kaushan+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kaushan_Script")]
+pub fn Kaushan_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kavivanar](https://fonts.google.com/specimen/Kavivanar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kavivanar")]
+pub fn Kavivanar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kavoon](https://fonts.google.com/specimen/Kavoon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kavoon")]
+pub fn Kavoon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kay Pho Du](https://fonts.google.com/specimen/Kay+Pho+Du), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kay_Pho_Du")]
+pub fn Kay_Pho_Du(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kdam Thmor Pro](https://fonts.google.com/specimen/Kdam+Thmor+Pro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kdam_Thmor_Pro")]
+pub fn Kdam_Thmor_Pro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Keania One](https://fonts.google.com/specimen/Keania+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Keania_One")]
+pub fn Keania_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kedebideri](https://fonts.google.com/specimen/Kedebideri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kedebideri")]
+pub fn Kedebideri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kelly Slab](https://fonts.google.com/specimen/Kelly+Slab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kelly_Slab")]
+pub fn Kelly_Slab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kenia](https://fonts.google.com/specimen/Kenia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kenia")]
+pub fn Kenia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Khand](https://fonts.google.com/specimen/Khand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Khand")]
+pub fn Khand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Khmer](https://fonts.google.com/specimen/Khmer), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Khmer")]
+pub fn Khmer(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Khula](https://fonts.google.com/specimen/Khula), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Khula")]
+pub fn Khula(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kings](https://fonts.google.com/specimen/Kings), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kings")]
+pub fn Kings(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kirang Haerang](https://fonts.google.com/specimen/Kirang+Haerang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kirang_Haerang")]
+pub fn Kirang_Haerang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kite One](https://fonts.google.com/specimen/Kite+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kite_One")]
+pub fn Kite_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kiwi Maru](https://fonts.google.com/specimen/Kiwi+Maru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kiwi_Maru")]
+pub fn Kiwi_Maru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Klee One](https://fonts.google.com/specimen/Klee+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Klee_One")]
+pub fn Klee_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Knewave](https://fonts.google.com/specimen/Knewave), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Knewave")]
+pub fn Knewave(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [KoHo](https://fonts.google.com/specimen/KoHo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#KoHo")]
+pub fn KoHo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kodchasan](https://fonts.google.com/specimen/Kodchasan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kodchasan")]
+pub fn Kodchasan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kode Mono](https://fonts.google.com/specimen/Kode+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kode_Mono")]
+pub fn Kode_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Koh Santepheap](https://fonts.google.com/specimen/Koh+Santepheap), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Koh_Santepheap")]
+pub fn Koh_Santepheap(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kolker Brush](https://fonts.google.com/specimen/Kolker+Brush), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kolker_Brush")]
+pub fn Kolker_Brush(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Konkhmer Sleokchher](https://fonts.google.com/specimen/Konkhmer+Sleokchher), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Konkhmer_Sleokchher")]
+pub fn Konkhmer_Sleokchher(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kosugi](https://fonts.google.com/specimen/Kosugi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kosugi")]
+pub fn Kosugi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kosugi Maru](https://fonts.google.com/specimen/Kosugi+Maru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kosugi_Maru")]
+pub fn Kosugi_Maru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kotta One](https://fonts.google.com/specimen/Kotta+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kotta_One")]
+pub fn Kotta_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Koulen](https://fonts.google.com/specimen/Koulen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Koulen")]
+pub fn Koulen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kranky](https://fonts.google.com/specimen/Kranky), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kranky")]
+pub fn Kranky(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kreon](https://fonts.google.com/specimen/Kreon), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kreon")]
+pub fn Kreon(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kristi](https://fonts.google.com/specimen/Kristi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kristi")]
+pub fn Kristi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Krona One](https://fonts.google.com/specimen/Krona+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Krona_One")]
+pub fn Krona_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Krub](https://fonts.google.com/specimen/Krub), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Krub")]
+pub fn Krub(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kufam](https://fonts.google.com/specimen/Kufam), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kufam")]
+pub fn Kufam(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kulim Park](https://fonts.google.com/specimen/Kulim+Park), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kulim_Park")]
+pub fn Kulim_Park(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kumar One](https://fonts.google.com/specimen/Kumar+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kumar_One")]
+pub fn Kumar_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kumar One Outline](https://fonts.google.com/specimen/Kumar+One+Outline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kumar_One_Outline")]
+pub fn Kumar_One_Outline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kumbh Sans](https://fonts.google.com/specimen/Kumbh+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kumbh_Sans")]
+pub fn Kumbh_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Kurale](https://fonts.google.com/specimen/Kurale), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Kurale")]
+pub fn Kurale(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [LINE Seed JP](https://fonts.google.com/specimen/LINE+Seed+JP), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#LINE_Seed_JP")]
+pub fn LINE_Seed_JP(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [LXGW Marker Gothic](https://fonts.google.com/specimen/LXGW+Marker+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#LXGW_Marker_Gothic")]
+pub fn LXGW_Marker_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [LXGW WenKai Mono TC](https://fonts.google.com/specimen/LXGW+WenKai+Mono+TC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#LXGW_WenKai_Mono_TC")]
+pub fn LXGW_WenKai_Mono_TC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [LXGW WenKai TC](https://fonts.google.com/specimen/LXGW+WenKai+TC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#LXGW_WenKai_TC")]
+pub fn LXGW_WenKai_TC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [La Belle Aurore](https://fonts.google.com/specimen/La+Belle+Aurore), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#La_Belle_Aurore")]
+pub fn La_Belle_Aurore(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Labrada](https://fonts.google.com/specimen/Labrada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Labrada")]
+pub fn Labrada(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lacquer](https://fonts.google.com/specimen/Lacquer), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lacquer")]
+pub fn Lacquer(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Laila](https://fonts.google.com/specimen/Laila), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Laila")]
+pub fn Laila(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lakki Reddy](https://fonts.google.com/specimen/Lakki+Reddy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lakki_Reddy")]
+pub fn Lakki_Reddy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lalezar](https://fonts.google.com/specimen/Lalezar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lalezar")]
+pub fn Lalezar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lancelot](https://fonts.google.com/specimen/Lancelot), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lancelot")]
+pub fn Lancelot(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Langar](https://fonts.google.com/specimen/Langar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Langar")]
+pub fn Langar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lateef](https://fonts.google.com/specimen/Lateef), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lateef")]
+pub fn Lateef(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lato](https://fonts.google.com/specimen/Lato), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lato")]
+pub fn Lato(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lavishly Yours](https://fonts.google.com/specimen/Lavishly+Yours), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lavishly_Yours")]
+pub fn Lavishly_Yours(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [League Gothic](https://fonts.google.com/specimen/League+Gothic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#League_Gothic")]
+pub fn League_Gothic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [League Script](https://fonts.google.com/specimen/League+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#League_Script")]
+pub fn League_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [League Spartan](https://fonts.google.com/specimen/League+Spartan), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#League_Spartan")]
+pub fn League_Spartan(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Leckerli One](https://fonts.google.com/specimen/Leckerli+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Leckerli_One")]
+pub fn Leckerli_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ledger](https://fonts.google.com/specimen/Ledger), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ledger")]
+pub fn Ledger(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lekton](https://fonts.google.com/specimen/Lekton), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lekton")]
+pub fn Lekton(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lemon](https://fonts.google.com/specimen/Lemon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lemon")]
+pub fn Lemon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lemonada](https://fonts.google.com/specimen/Lemonada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lemonada")]
+pub fn Lemonada(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend](https://fonts.google.com/specimen/Lexend), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend")]
+pub fn Lexend(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Deca](https://fonts.google.com/specimen/Lexend+Deca), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Deca")]
+pub fn Lexend_Deca(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Exa](https://fonts.google.com/specimen/Lexend+Exa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Exa")]
+pub fn Lexend_Exa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Giga](https://fonts.google.com/specimen/Lexend+Giga), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Giga")]
+pub fn Lexend_Giga(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Mega](https://fonts.google.com/specimen/Lexend+Mega), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Mega")]
+pub fn Lexend_Mega(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Peta](https://fonts.google.com/specimen/Lexend+Peta), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Peta")]
+pub fn Lexend_Peta(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Tera](https://fonts.google.com/specimen/Lexend+Tera), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Tera")]
+pub fn Lexend_Tera(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lexend Zetta](https://fonts.google.com/specimen/Lexend+Zetta), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lexend_Zetta")]
+pub fn Lexend_Zetta(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Keyboard](https://fonts.google.com/specimen/Libertinus+Keyboard), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Keyboard")]
+pub fn Libertinus_Keyboard(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Math](https://fonts.google.com/specimen/Libertinus+Math), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Math")]
+pub fn Libertinus_Math(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Mono](https://fonts.google.com/specimen/Libertinus+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Mono")]
+pub fn Libertinus_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Sans](https://fonts.google.com/specimen/Libertinus+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Sans")]
+pub fn Libertinus_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Serif](https://fonts.google.com/specimen/Libertinus+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Serif")]
+pub fn Libertinus_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libertinus Serif Display](https://fonts.google.com/specimen/Libertinus+Serif+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libertinus_Serif_Display")]
+pub fn Libertinus_Serif_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 128](https://fonts.google.com/specimen/Libre+Barcode+128), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_128")]
+pub fn Libre_Barcode_128(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 128 Text](https://fonts.google.com/specimen/Libre+Barcode+128+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_128_Text")]
+pub fn Libre_Barcode_128_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 39](https://fonts.google.com/specimen/Libre+Barcode+39), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_39")]
+pub fn Libre_Barcode_39(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 39 Extended](https://fonts.google.com/specimen/Libre+Barcode+39+Extended), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_39_Extended")]
+pub fn Libre_Barcode_39_Extended(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 39 Extended Text](https://fonts.google.com/specimen/Libre+Barcode+39+Extended+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_39_Extended_Text")]
+pub fn Libre_Barcode_39_Extended_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode 39 Text](https://fonts.google.com/specimen/Libre+Barcode+39+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_39_Text")]
+pub fn Libre_Barcode_39_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Barcode EAN13 Text](https://fonts.google.com/specimen/Libre+Barcode+EAN13+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Barcode_EAN13_Text")]
+pub fn Libre_Barcode_EAN13_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Baskerville](https://fonts.google.com/specimen/Libre+Baskerville), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Baskerville")]
+pub fn Libre_Baskerville(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Bodoni](https://fonts.google.com/specimen/Libre+Bodoni), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Bodoni")]
+pub fn Libre_Bodoni(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Caslon Display](https://fonts.google.com/specimen/Libre+Caslon+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Caslon_Display")]
+pub fn Libre_Caslon_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Caslon Text](https://fonts.google.com/specimen/Libre+Caslon+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Caslon_Text")]
+pub fn Libre_Caslon_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Libre Franklin](https://fonts.google.com/specimen/Libre+Franklin), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Libre_Franklin")]
+pub fn Libre_Franklin(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Licorice](https://fonts.google.com/specimen/Licorice), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Licorice")]
+pub fn Licorice(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Life Savers](https://fonts.google.com/specimen/Life+Savers), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Life_Savers")]
+pub fn Life_Savers(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lilex](https://fonts.google.com/specimen/Lilex), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lilex")]
+pub fn Lilex(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lilita One](https://fonts.google.com/specimen/Lilita+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lilita_One")]
+pub fn Lilita_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lily Script One](https://fonts.google.com/specimen/Lily+Script+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lily_Script_One")]
+pub fn Lily_Script_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Limelight](https://fonts.google.com/specimen/Limelight), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Limelight")]
+pub fn Limelight(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Linden Hill](https://fonts.google.com/specimen/Linden+Hill), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Linden_Hill")]
+pub fn Linden_Hill(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Linefont](https://fonts.google.com/specimen/Linefont), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Linefont")]
+pub fn Linefont(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lisu Bosa](https://fonts.google.com/specimen/Lisu+Bosa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lisu_Bosa")]
+pub fn Lisu_Bosa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Liter](https://fonts.google.com/specimen/Liter), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Liter")]
+pub fn Liter(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Literata](https://fonts.google.com/specimen/Literata), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Literata")]
+pub fn Literata(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Liu Jian Mao Cao](https://fonts.google.com/specimen/Liu+Jian+Mao+Cao), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Liu_Jian_Mao_Cao")]
+pub fn Liu_Jian_Mao_Cao(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Livvic](https://fonts.google.com/specimen/Livvic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Livvic")]
+pub fn Livvic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lobster](https://fonts.google.com/specimen/Lobster), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lobster")]
+pub fn Lobster(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lobster Two](https://fonts.google.com/specimen/Lobster+Two), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lobster_Two")]
+pub fn Lobster_Two(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Londrina Outline](https://fonts.google.com/specimen/Londrina+Outline), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Londrina_Outline")]
+pub fn Londrina_Outline(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Londrina Shadow](https://fonts.google.com/specimen/Londrina+Shadow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Londrina_Shadow")]
+pub fn Londrina_Shadow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Londrina Sketch](https://fonts.google.com/specimen/Londrina+Sketch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Londrina_Sketch")]
+pub fn Londrina_Sketch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Londrina Solid](https://fonts.google.com/specimen/Londrina+Solid), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Londrina_Solid")]
+pub fn Londrina_Solid(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Long Cang](https://fonts.google.com/specimen/Long+Cang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Long_Cang")]
+pub fn Long_Cang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lora](https://fonts.google.com/specimen/Lora), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lora")]
+pub fn Lora(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Love Light](https://fonts.google.com/specimen/Love+Light), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Love_Light")]
+pub fn Love_Light(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Love Ya Like A Sister](https://fonts.google.com/specimen/Love+Ya+Like+A+Sister), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Love_Ya_Like_A_Sister")]
+pub fn Love_Ya_Like_A_Sister(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Loved by the King](https://fonts.google.com/specimen/Loved+by+the+King), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Loved_by_the_King")]
+pub fn Loved_by_the_King(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lovers Quarrel](https://fonts.google.com/specimen/Lovers+Quarrel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lovers_Quarrel")]
+pub fn Lovers_Quarrel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Luckiest Guy](https://fonts.google.com/specimen/Luckiest+Guy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Luckiest_Guy")]
+pub fn Luckiest_Guy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lugrasimo](https://fonts.google.com/specimen/Lugrasimo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lugrasimo")]
+pub fn Lugrasimo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lumanosimo](https://fonts.google.com/specimen/Lumanosimo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lumanosimo")]
+pub fn Lumanosimo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lunasima](https://fonts.google.com/specimen/Lunasima), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lunasima")]
+pub fn Lunasima(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lusitana](https://fonts.google.com/specimen/Lusitana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lusitana")]
+pub fn Lusitana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Lustria](https://fonts.google.com/specimen/Lustria), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Lustria")]
+pub fn Lustria(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Luxurious Roman](https://fonts.google.com/specimen/Luxurious+Roman), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Luxurious_Roman")]
+pub fn Luxurious_Roman(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Luxurious Script](https://fonts.google.com/specimen/Luxurious+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Luxurious_Script")]
+pub fn Luxurious_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS 1](https://fonts.google.com/specimen/M+PLUS+1), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_1")]
+pub fn M_PLUS_1(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS 1 Code](https://fonts.google.com/specimen/M+PLUS+1+Code), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_1_Code")]
+pub fn M_PLUS_1_Code(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS 1p](https://fonts.google.com/specimen/M+PLUS+1p), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_1p")]
+pub fn M_PLUS_1p(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS 2](https://fonts.google.com/specimen/M+PLUS+2), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_2")]
+pub fn M_PLUS_2(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS Code Latin](https://fonts.google.com/specimen/M+PLUS+Code+Latin), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_Code_Latin")]
+pub fn M_PLUS_Code_Latin(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS Rounded 1c](https://fonts.google.com/specimen/M+PLUS+Rounded+1c), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_Rounded_1c")]
+pub fn M_PLUS_Rounded_1c(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [M PLUS U](https://fonts.google.com/specimen/M+PLUS+U), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#M_PLUS_U")]
+pub fn M_PLUS_U(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ma Shan Zheng](https://fonts.google.com/specimen/Ma+Shan+Zheng), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ma_Shan_Zheng")]
+pub fn Ma_Shan_Zheng(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Macondo](https://fonts.google.com/specimen/Macondo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Macondo")]
+pub fn Macondo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Macondo Swash Caps](https://fonts.google.com/specimen/Macondo+Swash+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Macondo_Swash_Caps")]
+pub fn Macondo_Swash_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mada](https://fonts.google.com/specimen/Mada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mada")]
+pub fn Mada(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Madimi One](https://fonts.google.com/specimen/Madimi+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Madimi_One")]
+pub fn Madimi_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Magra](https://fonts.google.com/specimen/Magra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Magra")]
+pub fn Magra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Maiden Orange](https://fonts.google.com/specimen/Maiden+Orange), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Maiden_Orange")]
+pub fn Maiden_Orange(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Maitree](https://fonts.google.com/specimen/Maitree), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Maitree")]
+pub fn Maitree(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Major Mono Display](https://fonts.google.com/specimen/Major+Mono+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Major_Mono_Display")]
+pub fn Major_Mono_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mako](https://fonts.google.com/specimen/Mako), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mako")]
+pub fn Mako(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mali](https://fonts.google.com/specimen/Mali), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mali")]
+pub fn Mali(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mallanna](https://fonts.google.com/specimen/Mallanna), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mallanna")]
+pub fn Mallanna(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Maname](https://fonts.google.com/specimen/Maname), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Maname")]
+pub fn Maname(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mandali](https://fonts.google.com/specimen/Mandali), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mandali")]
+pub fn Mandali(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Manjari](https://fonts.google.com/specimen/Manjari), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Manjari")]
+pub fn Manjari(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Manrope](https://fonts.google.com/specimen/Manrope), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Manrope")]
+pub fn Manrope(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mansalva](https://fonts.google.com/specimen/Mansalva), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mansalva")]
+pub fn Mansalva(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Manuale](https://fonts.google.com/specimen/Manuale), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Manuale")]
+pub fn Manuale(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Manufacturing Consent](https://fonts.google.com/specimen/Manufacturing+Consent), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Manufacturing_Consent")]
+pub fn Manufacturing_Consent(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marcellus](https://fonts.google.com/specimen/Marcellus), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marcellus")]
+pub fn Marcellus(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marcellus SC](https://fonts.google.com/specimen/Marcellus+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marcellus_SC")]
+pub fn Marcellus_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marck Script](https://fonts.google.com/specimen/Marck+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marck_Script")]
+pub fn Marck_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Margarine](https://fonts.google.com/specimen/Margarine), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Margarine")]
+pub fn Margarine(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marhey](https://fonts.google.com/specimen/Marhey), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marhey")]
+pub fn Marhey(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Markazi Text](https://fonts.google.com/specimen/Markazi+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Markazi_Text")]
+pub fn Markazi_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marko One](https://fonts.google.com/specimen/Marko+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marko_One")]
+pub fn Marko_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marmelad](https://fonts.google.com/specimen/Marmelad), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marmelad")]
+pub fn Marmelad(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Martel](https://fonts.google.com/specimen/Martel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Martel")]
+pub fn Martel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Martel Sans](https://fonts.google.com/specimen/Martel+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Martel_Sans")]
+pub fn Martel_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Martian Mono](https://fonts.google.com/specimen/Martian+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Martian_Mono")]
+pub fn Martian_Mono(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Marvel](https://fonts.google.com/specimen/Marvel), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Marvel")]
+pub fn Marvel(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Matangi](https://fonts.google.com/specimen/Matangi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Matangi")]
+pub fn Matangi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mate](https://fonts.google.com/specimen/Mate), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mate")]
+pub fn Mate(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mate SC](https://fonts.google.com/specimen/Mate+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mate_SC")]
+pub fn Mate_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Matemasie](https://fonts.google.com/specimen/Matemasie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Matemasie")]
+pub fn Matemasie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Maven Pro](https://fonts.google.com/specimen/Maven+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Maven_Pro")]
+pub fn Maven_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [McLaren](https://fonts.google.com/specimen/McLaren), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#McLaren")]
+pub fn McLaren(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mea Culpa](https://fonts.google.com/specimen/Mea+Culpa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mea_Culpa")]
+pub fn Mea_Culpa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Meddon](https://fonts.google.com/specimen/Meddon), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Meddon")]
+pub fn Meddon(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [MedievalSharp](https://fonts.google.com/specimen/MedievalSharp), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#MedievalSharp")]
+pub fn MedievalSharp(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Medula One](https://fonts.google.com/specimen/Medula+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Medula_One")]
+pub fn Medula_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Meera Inimai](https://fonts.google.com/specimen/Meera+Inimai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Meera_Inimai")]
+pub fn Meera_Inimai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Megrim](https://fonts.google.com/specimen/Megrim), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Megrim")]
+pub fn Megrim(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Meie Script](https://fonts.google.com/specimen/Meie+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Meie_Script")]
+pub fn Meie_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Menbere](https://fonts.google.com/specimen/Menbere), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Menbere")]
+pub fn Menbere(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Meow Script](https://fonts.google.com/specimen/Meow+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Meow_Script")]
+pub fn Meow_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Merienda](https://fonts.google.com/specimen/Merienda), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Merienda")]
+pub fn Merienda(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Merriweather](https://fonts.google.com/specimen/Merriweather), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Merriweather")]
+pub fn Merriweather(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Merriweather Sans](https://fonts.google.com/specimen/Merriweather+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Merriweather_Sans")]
+pub fn Merriweather_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Metal](https://fonts.google.com/specimen/Metal), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Metal")]
+pub fn Metal(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Metal Mania](https://fonts.google.com/specimen/Metal+Mania), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Metal_Mania")]
+pub fn Metal_Mania(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Metamorphous](https://fonts.google.com/specimen/Metamorphous), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Metamorphous")]
+pub fn Metamorphous(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Metrophobic](https://fonts.google.com/specimen/Metrophobic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Metrophobic")]
+pub fn Metrophobic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Michroma](https://fonts.google.com/specimen/Michroma), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Michroma")]
+pub fn Michroma(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Micro 5](https://fonts.google.com/specimen/Micro+5), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Micro_5")]
+pub fn Micro_5(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Micro 5 Charted](https://fonts.google.com/specimen/Micro+5+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Micro_5_Charted")]
+pub fn Micro_5_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Milonga](https://fonts.google.com/specimen/Milonga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Milonga")]
+pub fn Milonga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miltonian](https://fonts.google.com/specimen/Miltonian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miltonian")]
+pub fn Miltonian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miltonian Tattoo](https://fonts.google.com/specimen/Miltonian+Tattoo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miltonian_Tattoo")]
+pub fn Miltonian_Tattoo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mina](https://fonts.google.com/specimen/Mina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mina")]
+pub fn Mina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mingzat](https://fonts.google.com/specimen/Mingzat), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mingzat")]
+pub fn Mingzat(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miniver](https://fonts.google.com/specimen/Miniver), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miniver")]
+pub fn Miniver(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miranda Sans](https://fonts.google.com/specimen/Miranda+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miranda_Sans")]
+pub fn Miranda_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miriam Libre](https://fonts.google.com/specimen/Miriam+Libre), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miriam_Libre")]
+pub fn Miriam_Libre(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mirza](https://fonts.google.com/specimen/Mirza), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mirza")]
+pub fn Mirza(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Miss Fajardose](https://fonts.google.com/specimen/Miss+Fajardose), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Miss_Fajardose")]
+pub fn Miss_Fajardose(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mitr](https://fonts.google.com/specimen/Mitr), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mitr")]
+pub fn Mitr(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mochiy Pop One](https://fonts.google.com/specimen/Mochiy+Pop+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mochiy_Pop_One")]
+pub fn Mochiy_Pop_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mochiy Pop P One](https://fonts.google.com/specimen/Mochiy+Pop+P+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mochiy_Pop_P_One")]
+pub fn Mochiy_Pop_P_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Modak](https://fonts.google.com/specimen/Modak), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Modak")]
+pub fn Modak(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Modern Antiqua](https://fonts.google.com/specimen/Modern+Antiqua), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Modern_Antiqua")]
+pub fn Modern_Antiqua(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moderustic](https://fonts.google.com/specimen/Moderustic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moderustic")]
+pub fn Moderustic(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mogra](https://fonts.google.com/specimen/Mogra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mogra")]
+pub fn Mogra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mohave](https://fonts.google.com/specimen/Mohave), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mohave")]
+pub fn Mohave(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moirai One](https://fonts.google.com/specimen/Moirai+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moirai_One")]
+pub fn Moirai_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Molengo](https://fonts.google.com/specimen/Molengo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Molengo")]
+pub fn Molengo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Molle](https://fonts.google.com/specimen/Molle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Molle")]
+pub fn Molle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Momo Signature](https://fonts.google.com/specimen/Momo+Signature), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Momo_Signature")]
+pub fn Momo_Signature(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Momo Trust Display](https://fonts.google.com/specimen/Momo+Trust+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Momo_Trust_Display")]
+pub fn Momo_Trust_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Momo Trust Sans](https://fonts.google.com/specimen/Momo+Trust+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Momo_Trust_Sans")]
+pub fn Momo_Trust_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mona Sans](https://fonts.google.com/specimen/Mona+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mona_Sans")]
+pub fn Mona_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monda](https://fonts.google.com/specimen/Monda), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monda")]
+pub fn Monda(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monofett](https://fonts.google.com/specimen/Monofett), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monofett")]
+pub fn Monofett(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monomakh](https://fonts.google.com/specimen/Monomakh), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monomakh")]
+pub fn Monomakh(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monomaniac One](https://fonts.google.com/specimen/Monomaniac+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monomaniac_One")]
+pub fn Monomaniac_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monoton](https://fonts.google.com/specimen/Monoton), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monoton")]
+pub fn Monoton(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Monsieur La Doulaise](https://fonts.google.com/specimen/Monsieur+La+Doulaise), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Monsieur_La_Doulaise")]
+pub fn Monsieur_La_Doulaise(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montaga](https://fonts.google.com/specimen/Montaga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montaga")]
+pub fn Montaga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montagu Slab](https://fonts.google.com/specimen/Montagu+Slab), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montagu_Slab")]
+pub fn Montagu_Slab(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [MonteCarlo](https://fonts.google.com/specimen/MonteCarlo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#MonteCarlo")]
+pub fn MonteCarlo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montenegrin Gothic One](https://fonts.google.com/specimen/Montenegrin+Gothic+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montenegrin_Gothic_One")]
+pub fn Montenegrin_Gothic_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montez](https://fonts.google.com/specimen/Montez), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montez")]
+pub fn Montez(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montserrat](https://fonts.google.com/specimen/Montserrat), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montserrat")]
+pub fn Montserrat(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montserrat Alternates](https://fonts.google.com/specimen/Montserrat+Alternates), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montserrat_Alternates")]
+pub fn Montserrat_Alternates(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Montserrat Underline](https://fonts.google.com/specimen/Montserrat+Underline), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Montserrat_Underline")]
+pub fn Montserrat_Underline(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moo Lah Lah](https://fonts.google.com/specimen/Moo+Lah+Lah), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moo_Lah_Lah")]
+pub fn Moo_Lah_Lah(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mooli](https://fonts.google.com/specimen/Mooli), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mooli")]
+pub fn Mooli(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moon Dance](https://fonts.google.com/specimen/Moon+Dance), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moon_Dance")]
+pub fn Moon_Dance(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moul](https://fonts.google.com/specimen/Moul), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moul")]
+pub fn Moul(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Moulpali](https://fonts.google.com/specimen/Moulpali), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Moulpali")]
+pub fn Moulpali(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mountains of Christmas](https://fonts.google.com/specimen/Mountains+of+Christmas), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mountains_of_Christmas")]
+pub fn Mountains_of_Christmas(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mouse Memoirs](https://fonts.google.com/specimen/Mouse+Memoirs), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mouse_Memoirs")]
+pub fn Mouse_Memoirs(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mozilla Headline](https://fonts.google.com/specimen/Mozilla+Headline), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mozilla_Headline")]
+pub fn Mozilla_Headline(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mozilla Text](https://fonts.google.com/specimen/Mozilla+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mozilla_Text")]
+pub fn Mozilla_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mr Bedfort](https://fonts.google.com/specimen/Mr+Bedfort), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mr_Bedfort")]
+pub fn Mr_Bedfort(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mr_Dafoe")]
+pub fn Mr_Dafoe(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mr De Haviland](https://fonts.google.com/specimen/Mr+De+Haviland), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mr_De_Haviland")]
+pub fn Mr_De_Haviland(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mrs Saint Delafield](https://fonts.google.com/specimen/Mrs+Saint+Delafield), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mrs_Saint_Delafield")]
+pub fn Mrs_Saint_Delafield(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mrs Sheppards](https://fonts.google.com/specimen/Mrs+Sheppards), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mrs_Sheppards")]
+pub fn Mrs_Sheppards(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ms Madi](https://fonts.google.com/specimen/Ms+Madi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ms_Madi")]
+pub fn Ms_Madi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mukta](https://fonts.google.com/specimen/Mukta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mukta")]
+pub fn Mukta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mukta Mahee](https://fonts.google.com/specimen/Mukta+Mahee), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mukta_Mahee")]
+pub fn Mukta_Mahee(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mukta Malar](https://fonts.google.com/specimen/Mukta+Malar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mukta_Malar")]
+pub fn Mukta_Malar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mukta Vaani](https://fonts.google.com/specimen/Mukta+Vaani), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mukta_Vaani")]
+pub fn Mukta_Vaani(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mulish](https://fonts.google.com/specimen/Mulish), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mulish")]
+pub fn Mulish(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Murecho](https://fonts.google.com/specimen/Murecho), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Murecho")]
+pub fn Murecho(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [MuseoModerno](https://fonts.google.com/specimen/MuseoModerno), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#MuseoModerno")]
+pub fn MuseoModerno(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [My Soul](https://fonts.google.com/specimen/My+Soul), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#My_Soul")]
+pub fn My_Soul(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mynerve](https://fonts.google.com/specimen/Mynerve), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mynerve")]
+pub fn Mynerve(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Mystery Quest](https://fonts.google.com/specimen/Mystery+Quest), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Mystery_Quest")]
+pub fn Mystery_Quest(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [NTR](https://fonts.google.com/specimen/NTR), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#NTR")]
+pub fn NTR(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nabla](https://fonts.google.com/specimen/Nabla), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nabla")]
+pub fn Nabla(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Namdhinggo](https://fonts.google.com/specimen/Namdhinggo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Namdhinggo")]
+pub fn Namdhinggo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nanum Brush Script](https://fonts.google.com/specimen/Nanum+Brush+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nanum_Brush_Script")]
+pub fn Nanum_Brush_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nanum Gothic](https://fonts.google.com/specimen/Nanum+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nanum_Gothic")]
+pub fn Nanum_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nanum Gothic Coding](https://fonts.google.com/specimen/Nanum+Gothic+Coding), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nanum_Gothic_Coding")]
+pub fn Nanum_Gothic_Coding(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nanum Myeongjo](https://fonts.google.com/specimen/Nanum+Myeongjo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nanum_Myeongjo")]
+pub fn Nanum_Myeongjo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nanum Pen Script](https://fonts.google.com/specimen/Nanum+Pen+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nanum_Pen_Script")]
+pub fn Nanum_Pen_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Narnoor](https://fonts.google.com/specimen/Narnoor), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Narnoor")]
+pub fn Narnoor(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nata Sans](https://fonts.google.com/specimen/Nata+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nata_Sans")]
+pub fn Nata_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [National Park](https://fonts.google.com/specimen/National+Park), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#National_Park")]
+pub fn National_Park(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Neonderthaw](https://fonts.google.com/specimen/Neonderthaw), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Neonderthaw")]
+pub fn Neonderthaw(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nerko One](https://fonts.google.com/specimen/Nerko+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nerko_One")]
+pub fn Nerko_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Neucha](https://fonts.google.com/specimen/Neucha), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Neucha")]
+pub fn Neucha(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Neuton](https://fonts.google.com/specimen/Neuton), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Neuton")]
+pub fn Neuton(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [New Amsterdam](https://fonts.google.com/specimen/New+Amsterdam), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#New_Amsterdam")]
+pub fn New_Amsterdam(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [New Rocker](https://fonts.google.com/specimen/New+Rocker), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#New_Rocker")]
+pub fn New_Rocker(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [New Tegomin](https://fonts.google.com/specimen/New+Tegomin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#New_Tegomin")]
+pub fn New_Tegomin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [News Cycle](https://fonts.google.com/specimen/News+Cycle), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#News_Cycle")]
+pub fn News_Cycle(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Newsreader](https://fonts.google.com/specimen/Newsreader), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Newsreader")]
+pub fn Newsreader(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Niconne](https://fonts.google.com/specimen/Niconne), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Niconne")]
+pub fn Niconne(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Niramit](https://fonts.google.com/specimen/Niramit), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Niramit")]
+pub fn Niramit(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nixie One](https://fonts.google.com/specimen/Nixie+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nixie_One")]
+pub fn Nixie_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nobile](https://fonts.google.com/specimen/Nobile), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nobile")]
+pub fn Nobile(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nokora](https://fonts.google.com/specimen/Nokora), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nokora")]
+pub fn Nokora(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Norican](https://fonts.google.com/specimen/Norican), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Norican")]
+pub fn Norican(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nosifer](https://fonts.google.com/specimen/Nosifer), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nosifer")]
+pub fn Nosifer(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Notable](https://fonts.google.com/specimen/Notable), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Notable")]
+pub fn Notable(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nothing You Could Do](https://fonts.google.com/specimen/Nothing+You+Could+Do), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nothing_You_Could_Do")]
+pub fn Nothing_You_Could_Do(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noticia Text](https://fonts.google.com/specimen/Noticia+Text), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noticia_Text")]
+pub fn Noticia_Text(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Color Emoji](https://fonts.google.com/specimen/Noto+Color+Emoji), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Color_Emoji")]
+pub fn Noto_Color_Emoji(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Emoji](https://fonts.google.com/specimen/Noto+Emoji), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Emoji")]
+pub fn Noto_Emoji(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Kufi Arabic](https://fonts.google.com/specimen/Noto+Kufi+Arabic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Kufi_Arabic")]
+pub fn Noto_Kufi_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Music](https://fonts.google.com/specimen/Noto+Music), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Music")]
+pub fn Noto_Music(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Naskh Arabic](https://fonts.google.com/specimen/Noto+Naskh+Arabic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Naskh_Arabic")]
+pub fn Noto_Naskh_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Nastaliq Urdu](https://fonts.google.com/specimen/Noto+Nastaliq+Urdu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Nastaliq_Urdu")]
+pub fn Noto_Nastaliq_Urdu(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Rashi Hebrew](https://fonts.google.com/specimen/Noto+Rashi+Hebrew), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Rashi_Hebrew")]
+pub fn Noto_Rashi_Hebrew(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans](https://fonts.google.com/specimen/Noto+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans")]
+pub fn Noto_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Adlam](https://fonts.google.com/specimen/Noto+Sans+Adlam), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Adlam")]
+pub fn Noto_Sans_Adlam(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Adlam Unjoined](https://fonts.google.com/specimen/Noto+Sans+Adlam+Unjoined), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Adlam_Unjoined")]
+pub fn Noto_Sans_Adlam_Unjoined(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Anatolian Hieroglyphs](https://fonts.google.com/specimen/Noto+Sans+Anatolian+Hieroglyphs), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Anatolian_Hieroglyphs")]
+pub fn Noto_Sans_Anatolian_Hieroglyphs(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Arabic](https://fonts.google.com/specimen/Noto+Sans+Arabic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Arabic")]
+pub fn Noto_Sans_Arabic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Armenian](https://fonts.google.com/specimen/Noto+Sans+Armenian), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Armenian")]
+pub fn Noto_Sans_Armenian(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Avestan](https://fonts.google.com/specimen/Noto+Sans+Avestan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Avestan")]
+pub fn Noto_Sans_Avestan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Balinese](https://fonts.google.com/specimen/Noto+Sans+Balinese), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Balinese")]
+pub fn Noto_Sans_Balinese(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Bamum](https://fonts.google.com/specimen/Noto+Sans+Bamum), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Bamum")]
+pub fn Noto_Sans_Bamum(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Bassa Vah](https://fonts.google.com/specimen/Noto+Sans+Bassa+Vah), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Bassa_Vah")]
+pub fn Noto_Sans_Bassa_Vah(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Batak](https://fonts.google.com/specimen/Noto+Sans+Batak), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Batak")]
+pub fn Noto_Sans_Batak(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Bengali](https://fonts.google.com/specimen/Noto+Sans+Bengali), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Bengali")]
+pub fn Noto_Sans_Bengali(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Bhaiksuki](https://fonts.google.com/specimen/Noto+Sans+Bhaiksuki), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Bhaiksuki")]
+pub fn Noto_Sans_Bhaiksuki(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Brahmi](https://fonts.google.com/specimen/Noto+Sans+Brahmi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Brahmi")]
+pub fn Noto_Sans_Brahmi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Buginese](https://fonts.google.com/specimen/Noto+Sans+Buginese), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Buginese")]
+pub fn Noto_Sans_Buginese(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Buhid](https://fonts.google.com/specimen/Noto+Sans+Buhid), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Buhid")]
+pub fn Noto_Sans_Buhid(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Canadian Aboriginal](https://fonts.google.com/specimen/Noto+Sans+Canadian+Aboriginal), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Canadian_Aboriginal")]
+pub fn Noto_Sans_Canadian_Aboriginal(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Carian](https://fonts.google.com/specimen/Noto+Sans+Carian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Carian")]
+pub fn Noto_Sans_Carian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Caucasian Albanian](https://fonts.google.com/specimen/Noto+Sans+Caucasian+Albanian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Caucasian_Albanian")]
+pub fn Noto_Sans_Caucasian_Albanian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Chakma](https://fonts.google.com/specimen/Noto+Sans+Chakma), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Chakma")]
+pub fn Noto_Sans_Chakma(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Cham](https://fonts.google.com/specimen/Noto+Sans+Cham), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Cham")]
+pub fn Noto_Sans_Cham(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Cherokee](https://fonts.google.com/specimen/Noto+Sans+Cherokee), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Cherokee")]
+pub fn Noto_Sans_Cherokee(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Chorasmian](https://fonts.google.com/specimen/Noto+Sans+Chorasmian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Chorasmian")]
+pub fn Noto_Sans_Chorasmian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Coptic](https://fonts.google.com/specimen/Noto+Sans+Coptic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Coptic")]
+pub fn Noto_Sans_Coptic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Cuneiform](https://fonts.google.com/specimen/Noto+Sans+Cuneiform), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Cuneiform")]
+pub fn Noto_Sans_Cuneiform(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Cypriot](https://fonts.google.com/specimen/Noto+Sans+Cypriot), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Cypriot")]
+pub fn Noto_Sans_Cypriot(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Cypro Minoan](https://fonts.google.com/specimen/Noto+Sans+Cypro+Minoan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Cypro_Minoan")]
+pub fn Noto_Sans_Cypro_Minoan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Deseret](https://fonts.google.com/specimen/Noto+Sans+Deseret), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Deseret")]
+pub fn Noto_Sans_Deseret(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Devanagari](https://fonts.google.com/specimen/Noto+Sans+Devanagari), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Devanagari")]
+pub fn Noto_Sans_Devanagari(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Display](https://fonts.google.com/specimen/Noto+Sans+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Display")]
+pub fn Noto_Sans_Display(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Duployan](https://fonts.google.com/specimen/Noto+Sans+Duployan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Duployan")]
+pub fn Noto_Sans_Duployan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Egyptian Hieroglyphs](https://fonts.google.com/specimen/Noto+Sans+Egyptian+Hieroglyphs), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Egyptian_Hieroglyphs")]
+pub fn Noto_Sans_Egyptian_Hieroglyphs(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Elbasan](https://fonts.google.com/specimen/Noto+Sans+Elbasan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Elbasan")]
+pub fn Noto_Sans_Elbasan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Elymaic](https://fonts.google.com/specimen/Noto+Sans+Elymaic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Elymaic")]
+pub fn Noto_Sans_Elymaic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Ethiopic](https://fonts.google.com/specimen/Noto+Sans+Ethiopic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Ethiopic")]
+pub fn Noto_Sans_Ethiopic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Georgian](https://fonts.google.com/specimen/Noto+Sans+Georgian), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Georgian")]
+pub fn Noto_Sans_Georgian(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Glagolitic](https://fonts.google.com/specimen/Noto+Sans+Glagolitic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Glagolitic")]
+pub fn Noto_Sans_Glagolitic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Gothic](https://fonts.google.com/specimen/Noto+Sans+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Gothic")]
+pub fn Noto_Sans_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Grantha](https://fonts.google.com/specimen/Noto+Sans+Grantha), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Grantha")]
+pub fn Noto_Sans_Grantha(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Gujarati](https://fonts.google.com/specimen/Noto+Sans+Gujarati), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Gujarati")]
+pub fn Noto_Sans_Gujarati(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Gunjala Gondi](https://fonts.google.com/specimen/Noto+Sans+Gunjala+Gondi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Gunjala_Gondi")]
+pub fn Noto_Sans_Gunjala_Gondi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Gurmukhi](https://fonts.google.com/specimen/Noto+Sans+Gurmukhi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Gurmukhi")]
+pub fn Noto_Sans_Gurmukhi(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans HK](https://fonts.google.com/specimen/Noto+Sans+HK), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_HK")]
+pub fn Noto_Sans_HK(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Hanifi Rohingya](https://fonts.google.com/specimen/Noto+Sans+Hanifi+Rohingya), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Hanifi_Rohingya")]
+pub fn Noto_Sans_Hanifi_Rohingya(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Hanunoo](https://fonts.google.com/specimen/Noto+Sans+Hanunoo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Hanunoo")]
+pub fn Noto_Sans_Hanunoo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Hatran](https://fonts.google.com/specimen/Noto+Sans+Hatran), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Hatran")]
+pub fn Noto_Sans_Hatran(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Hebrew](https://fonts.google.com/specimen/Noto+Sans+Hebrew), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Hebrew")]
+pub fn Noto_Sans_Hebrew(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Imperial Aramaic](https://fonts.google.com/specimen/Noto+Sans+Imperial+Aramaic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Imperial_Aramaic")]
+pub fn Noto_Sans_Imperial_Aramaic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Indic Siyaq Numbers](https://fonts.google.com/specimen/Noto+Sans+Indic+Siyaq+Numbers), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Indic_Siyaq_Numbers")]
+pub fn Noto_Sans_Indic_Siyaq_Numbers(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Inscriptional Pahlavi](https://fonts.google.com/specimen/Noto+Sans+Inscriptional+Pahlavi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Inscriptional_Pahlavi")]
+pub fn Noto_Sans_Inscriptional_Pahlavi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Inscriptional Parthian](https://fonts.google.com/specimen/Noto+Sans+Inscriptional+Parthian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Inscriptional_Parthian")]
+pub fn Noto_Sans_Inscriptional_Parthian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans JP](https://fonts.google.com/specimen/Noto+Sans+JP), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_JP")]
+pub fn Noto_Sans_JP(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Javanese](https://fonts.google.com/specimen/Noto+Sans+Javanese), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Javanese")]
+pub fn Noto_Sans_Javanese(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans KR](https://fonts.google.com/specimen/Noto+Sans+KR), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_KR")]
+pub fn Noto_Sans_KR(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Kaithi](https://fonts.google.com/specimen/Noto+Sans+Kaithi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Kaithi")]
+pub fn Noto_Sans_Kaithi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Kannada](https://fonts.google.com/specimen/Noto+Sans+Kannada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Kannada")]
+pub fn Noto_Sans_Kannada(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Kawi](https://fonts.google.com/specimen/Noto+Sans+Kawi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Kawi")]
+pub fn Noto_Sans_Kawi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Kayah Li](https://fonts.google.com/specimen/Noto+Sans+Kayah+Li), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Kayah_Li")]
+pub fn Noto_Sans_Kayah_Li(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Kharoshthi](https://fonts.google.com/specimen/Noto+Sans+Kharoshthi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Kharoshthi")]
+pub fn Noto_Sans_Kharoshthi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Khmer](https://fonts.google.com/specimen/Noto+Sans+Khmer), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Khmer")]
+pub fn Noto_Sans_Khmer(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Khojki](https://fonts.google.com/specimen/Noto+Sans+Khojki), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Khojki")]
+pub fn Noto_Sans_Khojki(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Khudawadi](https://fonts.google.com/specimen/Noto+Sans+Khudawadi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Khudawadi")]
+pub fn Noto_Sans_Khudawadi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lao](https://fonts.google.com/specimen/Noto+Sans+Lao), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lao")]
+pub fn Noto_Sans_Lao(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lao Looped](https://fonts.google.com/specimen/Noto+Sans+Lao+Looped), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lao_Looped")]
+pub fn Noto_Sans_Lao_Looped(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lepcha](https://fonts.google.com/specimen/Noto+Sans+Lepcha), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lepcha")]
+pub fn Noto_Sans_Lepcha(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Limbu](https://fonts.google.com/specimen/Noto+Sans+Limbu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Limbu")]
+pub fn Noto_Sans_Limbu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Linear A](https://fonts.google.com/specimen/Noto+Sans+Linear+A), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Linear_A")]
+pub fn Noto_Sans_Linear_A(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Linear B](https://fonts.google.com/specimen/Noto+Sans+Linear+B), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Linear_B")]
+pub fn Noto_Sans_Linear_B(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lisu](https://fonts.google.com/specimen/Noto+Sans+Lisu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lisu")]
+pub fn Noto_Sans_Lisu(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lycian](https://fonts.google.com/specimen/Noto+Sans+Lycian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lycian")]
+pub fn Noto_Sans_Lycian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Lydian](https://fonts.google.com/specimen/Noto+Sans+Lydian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Lydian")]
+pub fn Noto_Sans_Lydian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mahajani](https://fonts.google.com/specimen/Noto+Sans+Mahajani), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mahajani")]
+pub fn Noto_Sans_Mahajani(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Malayalam](https://fonts.google.com/specimen/Noto+Sans+Malayalam), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Malayalam")]
+pub fn Noto_Sans_Malayalam(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mandaic](https://fonts.google.com/specimen/Noto+Sans+Mandaic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mandaic")]
+pub fn Noto_Sans_Mandaic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Manichaean](https://fonts.google.com/specimen/Noto+Sans+Manichaean), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Manichaean")]
+pub fn Noto_Sans_Manichaean(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Marchen](https://fonts.google.com/specimen/Noto+Sans+Marchen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Marchen")]
+pub fn Noto_Sans_Marchen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Masaram Gondi](https://fonts.google.com/specimen/Noto+Sans+Masaram+Gondi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Masaram_Gondi")]
+pub fn Noto_Sans_Masaram_Gondi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Math](https://fonts.google.com/specimen/Noto+Sans+Math), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Math")]
+pub fn Noto_Sans_Math(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mayan Numerals](https://fonts.google.com/specimen/Noto+Sans+Mayan+Numerals), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mayan_Numerals")]
+pub fn Noto_Sans_Mayan_Numerals(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Medefaidrin](https://fonts.google.com/specimen/Noto+Sans+Medefaidrin), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Medefaidrin")]
+pub fn Noto_Sans_Medefaidrin(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Meetei Mayek](https://fonts.google.com/specimen/Noto+Sans+Meetei+Mayek), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Meetei_Mayek")]
+pub fn Noto_Sans_Meetei_Mayek(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mende Kikakui](https://fonts.google.com/specimen/Noto+Sans+Mende+Kikakui), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mende_Kikakui")]
+pub fn Noto_Sans_Mende_Kikakui(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Meroitic](https://fonts.google.com/specimen/Noto+Sans+Meroitic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Meroitic")]
+pub fn Noto_Sans_Meroitic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Miao](https://fonts.google.com/specimen/Noto+Sans+Miao), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Miao")]
+pub fn Noto_Sans_Miao(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Modi](https://fonts.google.com/specimen/Noto+Sans+Modi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Modi")]
+pub fn Noto_Sans_Modi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mongolian](https://fonts.google.com/specimen/Noto+Sans+Mongolian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mongolian")]
+pub fn Noto_Sans_Mongolian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mono](https://fonts.google.com/specimen/Noto+Sans+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mono")]
+pub fn Noto_Sans_Mono(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Mro](https://fonts.google.com/specimen/Noto+Sans+Mro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Mro")]
+pub fn Noto_Sans_Mro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Multani](https://fonts.google.com/specimen/Noto+Sans+Multani), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Multani")]
+pub fn Noto_Sans_Multani(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Myanmar](https://fonts.google.com/specimen/Noto+Sans+Myanmar), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Myanmar")]
+pub fn Noto_Sans_Myanmar(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans NKo](https://fonts.google.com/specimen/Noto+Sans+NKo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_NKo")]
+pub fn Noto_Sans_NKo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans NKo Unjoined](https://fonts.google.com/specimen/Noto+Sans+NKo+Unjoined), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_NKo_Unjoined")]
+pub fn Noto_Sans_NKo_Unjoined(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Nabataean](https://fonts.google.com/specimen/Noto+Sans+Nabataean), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Nabataean")]
+pub fn Noto_Sans_Nabataean(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Nag Mundari](https://fonts.google.com/specimen/Noto+Sans+Nag+Mundari), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Nag_Mundari")]
+pub fn Noto_Sans_Nag_Mundari(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Nandinagari](https://fonts.google.com/specimen/Noto+Sans+Nandinagari), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Nandinagari")]
+pub fn Noto_Sans_Nandinagari(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans New Tai Lue](https://fonts.google.com/specimen/Noto+Sans+New+Tai+Lue), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_New_Tai_Lue")]
+pub fn Noto_Sans_New_Tai_Lue(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Newa](https://fonts.google.com/specimen/Noto+Sans+Newa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Newa")]
+pub fn Noto_Sans_Newa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Nushu](https://fonts.google.com/specimen/Noto+Sans+Nushu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Nushu")]
+pub fn Noto_Sans_Nushu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Ogham](https://fonts.google.com/specimen/Noto+Sans+Ogham), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Ogham")]
+pub fn Noto_Sans_Ogham(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Ol Chiki](https://fonts.google.com/specimen/Noto+Sans+Ol+Chiki), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Ol_Chiki")]
+pub fn Noto_Sans_Ol_Chiki(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Hungarian](https://fonts.google.com/specimen/Noto+Sans+Old+Hungarian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Hungarian")]
+pub fn Noto_Sans_Old_Hungarian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Italic](https://fonts.google.com/specimen/Noto+Sans+Old+Italic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Italic")]
+pub fn Noto_Sans_Old_Italic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old North Arabian](https://fonts.google.com/specimen/Noto+Sans+Old+North+Arabian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_North_Arabian")]
+pub fn Noto_Sans_Old_North_Arabian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Permic](https://fonts.google.com/specimen/Noto+Sans+Old+Permic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Permic")]
+pub fn Noto_Sans_Old_Permic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Persian](https://fonts.google.com/specimen/Noto+Sans+Old+Persian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Persian")]
+pub fn Noto_Sans_Old_Persian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Sogdian](https://fonts.google.com/specimen/Noto+Sans+Old+Sogdian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Sogdian")]
+pub fn Noto_Sans_Old_Sogdian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old South Arabian](https://fonts.google.com/specimen/Noto+Sans+Old+South+Arabian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_South_Arabian")]
+pub fn Noto_Sans_Old_South_Arabian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Old Turkic](https://fonts.google.com/specimen/Noto+Sans+Old+Turkic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Old_Turkic")]
+pub fn Noto_Sans_Old_Turkic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Oriya](https://fonts.google.com/specimen/Noto+Sans+Oriya), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Oriya")]
+pub fn Noto_Sans_Oriya(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Osage](https://fonts.google.com/specimen/Noto+Sans+Osage), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Osage")]
+pub fn Noto_Sans_Osage(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Osmanya](https://fonts.google.com/specimen/Noto+Sans+Osmanya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Osmanya")]
+pub fn Noto_Sans_Osmanya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Pahawh Hmong](https://fonts.google.com/specimen/Noto+Sans+Pahawh+Hmong), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Pahawh_Hmong")]
+pub fn Noto_Sans_Pahawh_Hmong(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Palmyrene](https://fonts.google.com/specimen/Noto+Sans+Palmyrene), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Palmyrene")]
+pub fn Noto_Sans_Palmyrene(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Pau Cin Hau](https://fonts.google.com/specimen/Noto+Sans+Pau+Cin+Hau), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Pau_Cin_Hau")]
+pub fn Noto_Sans_Pau_Cin_Hau(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans PhagsPa](https://fonts.google.com/specimen/Noto+Sans+PhagsPa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_PhagsPa")]
+pub fn Noto_Sans_PhagsPa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Phoenician](https://fonts.google.com/specimen/Noto+Sans+Phoenician), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Phoenician")]
+pub fn Noto_Sans_Phoenician(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Psalter Pahlavi](https://fonts.google.com/specimen/Noto+Sans+Psalter+Pahlavi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Psalter_Pahlavi")]
+pub fn Noto_Sans_Psalter_Pahlavi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Rejang](https://fonts.google.com/specimen/Noto+Sans+Rejang), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Rejang")]
+pub fn Noto_Sans_Rejang(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Runic](https://fonts.google.com/specimen/Noto+Sans+Runic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Runic")]
+pub fn Noto_Sans_Runic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans SC](https://fonts.google.com/specimen/Noto+Sans+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_SC")]
+pub fn Noto_Sans_SC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Samaritan](https://fonts.google.com/specimen/Noto+Sans+Samaritan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Samaritan")]
+pub fn Noto_Sans_Samaritan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Saurashtra](https://fonts.google.com/specimen/Noto+Sans+Saurashtra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Saurashtra")]
+pub fn Noto_Sans_Saurashtra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sharada](https://fonts.google.com/specimen/Noto+Sans+Sharada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sharada")]
+pub fn Noto_Sans_Sharada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Shavian](https://fonts.google.com/specimen/Noto+Sans+Shavian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Shavian")]
+pub fn Noto_Sans_Shavian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Siddham](https://fonts.google.com/specimen/Noto+Sans+Siddham), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Siddham")]
+pub fn Noto_Sans_Siddham(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans SignWriting](https://fonts.google.com/specimen/Noto+Sans+SignWriting), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_SignWriting")]
+pub fn Noto_Sans_SignWriting(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sinhala](https://fonts.google.com/specimen/Noto+Sans+Sinhala), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sinhala")]
+pub fn Noto_Sans_Sinhala(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sogdian](https://fonts.google.com/specimen/Noto+Sans+Sogdian), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sogdian")]
+pub fn Noto_Sans_Sogdian(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sora Sompeng](https://fonts.google.com/specimen/Noto+Sans+Sora+Sompeng), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sora_Sompeng")]
+pub fn Noto_Sans_Sora_Sompeng(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Soyombo](https://fonts.google.com/specimen/Noto+Sans+Soyombo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Soyombo")]
+pub fn Noto_Sans_Soyombo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sundanese](https://fonts.google.com/specimen/Noto+Sans+Sundanese), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sundanese")]
+pub fn Noto_Sans_Sundanese(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Sunuwar](https://fonts.google.com/specimen/Noto+Sans+Sunuwar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Sunuwar")]
+pub fn Noto_Sans_Sunuwar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Syloti Nagri](https://fonts.google.com/specimen/Noto+Sans+Syloti+Nagri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Syloti_Nagri")]
+pub fn Noto_Sans_Syloti_Nagri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Symbols](https://fonts.google.com/specimen/Noto+Sans+Symbols), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Symbols")]
+pub fn Noto_Sans_Symbols(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Symbols 2](https://fonts.google.com/specimen/Noto+Sans+Symbols+2), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Symbols_2")]
+pub fn Noto_Sans_Symbols_2(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Syriac](https://fonts.google.com/specimen/Noto+Sans+Syriac), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Syriac")]
+pub fn Noto_Sans_Syriac(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Syriac Eastern](https://fonts.google.com/specimen/Noto+Sans+Syriac+Eastern), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Syriac_Eastern")]
+pub fn Noto_Sans_Syriac_Eastern(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Syriac Western](https://fonts.google.com/specimen/Noto+Sans+Syriac+Western), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Syriac_Western")]
+pub fn Noto_Sans_Syriac_Western(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans TC](https://fonts.google.com/specimen/Noto+Sans+TC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_TC")]
+pub fn Noto_Sans_TC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tagalog](https://fonts.google.com/specimen/Noto+Sans+Tagalog), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tagalog")]
+pub fn Noto_Sans_Tagalog(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tagbanwa](https://fonts.google.com/specimen/Noto+Sans+Tagbanwa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tagbanwa")]
+pub fn Noto_Sans_Tagbanwa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tai Le](https://fonts.google.com/specimen/Noto+Sans+Tai+Le), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tai_Le")]
+pub fn Noto_Sans_Tai_Le(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tai Tham](https://fonts.google.com/specimen/Noto+Sans+Tai+Tham), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tai_Tham")]
+pub fn Noto_Sans_Tai_Tham(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tai Viet](https://fonts.google.com/specimen/Noto+Sans+Tai+Viet), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tai_Viet")]
+pub fn Noto_Sans_Tai_Viet(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Takri](https://fonts.google.com/specimen/Noto+Sans+Takri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Takri")]
+pub fn Noto_Sans_Takri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tamil](https://fonts.google.com/specimen/Noto+Sans+Tamil), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tamil")]
+pub fn Noto_Sans_Tamil(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tamil Supplement](https://fonts.google.com/specimen/Noto+Sans+Tamil+Supplement), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tamil_Supplement")]
+pub fn Noto_Sans_Tamil_Supplement(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tangsa](https://fonts.google.com/specimen/Noto+Sans+Tangsa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tangsa")]
+pub fn Noto_Sans_Tangsa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Telugu](https://fonts.google.com/specimen/Noto+Sans+Telugu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Telugu")]
+pub fn Noto_Sans_Telugu(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Thaana](https://fonts.google.com/specimen/Noto+Sans+Thaana), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Thaana")]
+pub fn Noto_Sans_Thaana(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Thai](https://fonts.google.com/specimen/Noto+Sans+Thai), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Thai")]
+pub fn Noto_Sans_Thai(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Thai Looped](https://fonts.google.com/specimen/Noto+Sans+Thai+Looped), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Thai_Looped")]
+pub fn Noto_Sans_Thai_Looped(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tifinagh](https://fonts.google.com/specimen/Noto+Sans+Tifinagh), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tifinagh")]
+pub fn Noto_Sans_Tifinagh(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Tirhuta](https://fonts.google.com/specimen/Noto+Sans+Tirhuta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Tirhuta")]
+pub fn Noto_Sans_Tirhuta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Ugaritic](https://fonts.google.com/specimen/Noto+Sans+Ugaritic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Ugaritic")]
+pub fn Noto_Sans_Ugaritic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Vai](https://fonts.google.com/specimen/Noto+Sans+Vai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Vai")]
+pub fn Noto_Sans_Vai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Vithkuqi](https://fonts.google.com/specimen/Noto+Sans+Vithkuqi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Vithkuqi")]
+pub fn Noto_Sans_Vithkuqi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Wancho](https://fonts.google.com/specimen/Noto+Sans+Wancho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Wancho")]
+pub fn Noto_Sans_Wancho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Warang Citi](https://fonts.google.com/specimen/Noto+Sans+Warang+Citi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Warang_Citi")]
+pub fn Noto_Sans_Warang_Citi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Yi](https://fonts.google.com/specimen/Noto+Sans+Yi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Yi")]
+pub fn Noto_Sans_Yi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Sans Zanabazar Square](https://fonts.google.com/specimen/Noto+Sans+Zanabazar+Square), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Sans_Zanabazar_Square")]
+pub fn Noto_Sans_Zanabazar_Square(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif](https://fonts.google.com/specimen/Noto+Serif), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif")]
+pub fn Noto_Serif(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Ahom](https://fonts.google.com/specimen/Noto+Serif+Ahom), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Ahom")]
+pub fn Noto_Serif_Ahom(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Armenian](https://fonts.google.com/specimen/Noto+Serif+Armenian), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Armenian")]
+pub fn Noto_Serif_Armenian(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Balinese](https://fonts.google.com/specimen/Noto+Serif+Balinese), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Balinese")]
+pub fn Noto_Serif_Balinese(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Bengali](https://fonts.google.com/specimen/Noto+Serif+Bengali), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Bengali")]
+pub fn Noto_Serif_Bengali(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Devanagari](https://fonts.google.com/specimen/Noto+Serif+Devanagari), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Devanagari")]
+pub fn Noto_Serif_Devanagari(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Display](https://fonts.google.com/specimen/Noto+Serif+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Display")]
+pub fn Noto_Serif_Display(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Dives Akuru](https://fonts.google.com/specimen/Noto+Serif+Dives+Akuru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Dives_Akuru")]
+pub fn Noto_Serif_Dives_Akuru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Dogra](https://fonts.google.com/specimen/Noto+Serif+Dogra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Dogra")]
+pub fn Noto_Serif_Dogra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Ethiopic](https://fonts.google.com/specimen/Noto+Serif+Ethiopic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Ethiopic")]
+pub fn Noto_Serif_Ethiopic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Georgian](https://fonts.google.com/specimen/Noto+Serif+Georgian), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Georgian")]
+pub fn Noto_Serif_Georgian(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Grantha](https://fonts.google.com/specimen/Noto+Serif+Grantha), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Grantha")]
+pub fn Noto_Serif_Grantha(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Gujarati](https://fonts.google.com/specimen/Noto+Serif+Gujarati), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Gujarati")]
+pub fn Noto_Serif_Gujarati(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Gurmukhi](https://fonts.google.com/specimen/Noto+Serif+Gurmukhi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Gurmukhi")]
+pub fn Noto_Serif_Gurmukhi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif HK](https://fonts.google.com/specimen/Noto+Serif+HK), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_HK")]
+pub fn Noto_Serif_HK(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Hebrew](https://fonts.google.com/specimen/Noto+Serif+Hebrew), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Hebrew")]
+pub fn Noto_Serif_Hebrew(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Hentaigana](https://fonts.google.com/specimen/Noto+Serif+Hentaigana), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Hentaigana")]
+pub fn Noto_Serif_Hentaigana(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif JP](https://fonts.google.com/specimen/Noto+Serif+JP), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_JP")]
+pub fn Noto_Serif_JP(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif KR](https://fonts.google.com/specimen/Noto+Serif+KR), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_KR")]
+pub fn Noto_Serif_KR(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Kannada](https://fonts.google.com/specimen/Noto+Serif+Kannada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Kannada")]
+pub fn Noto_Serif_Kannada(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Khitan Small Script](https://fonts.google.com/specimen/Noto+Serif+Khitan+Small+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Khitan_Small_Script")]
+pub fn Noto_Serif_Khitan_Small_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Khmer](https://fonts.google.com/specimen/Noto+Serif+Khmer), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Khmer")]
+pub fn Noto_Serif_Khmer(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Khojki](https://fonts.google.com/specimen/Noto+Serif+Khojki), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Khojki")]
+pub fn Noto_Serif_Khojki(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Lao](https://fonts.google.com/specimen/Noto+Serif+Lao), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Lao")]
+pub fn Noto_Serif_Lao(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Makasar](https://fonts.google.com/specimen/Noto+Serif+Makasar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Makasar")]
+pub fn Noto_Serif_Makasar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Malayalam](https://fonts.google.com/specimen/Noto+Serif+Malayalam), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Malayalam")]
+pub fn Noto_Serif_Malayalam(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Myanmar](https://fonts.google.com/specimen/Noto+Serif+Myanmar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Myanmar")]
+pub fn Noto_Serif_Myanmar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif NP Hmong](https://fonts.google.com/specimen/Noto+Serif+NP+Hmong), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_NP_Hmong")]
+pub fn Noto_Serif_NP_Hmong(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Old Uyghur](https://fonts.google.com/specimen/Noto+Serif+Old+Uyghur), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Old_Uyghur")]
+pub fn Noto_Serif_Old_Uyghur(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Oriya](https://fonts.google.com/specimen/Noto+Serif+Oriya), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Oriya")]
+pub fn Noto_Serif_Oriya(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Ottoman Siyaq](https://fonts.google.com/specimen/Noto+Serif+Ottoman+Siyaq), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Ottoman_Siyaq")]
+pub fn Noto_Serif_Ottoman_Siyaq(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif SC](https://fonts.google.com/specimen/Noto+Serif+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_SC")]
+pub fn Noto_Serif_SC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Sinhala](https://fonts.google.com/specimen/Noto+Serif+Sinhala), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Sinhala")]
+pub fn Noto_Serif_Sinhala(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif TC](https://fonts.google.com/specimen/Noto+Serif+TC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_TC")]
+pub fn Noto_Serif_TC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Tamil](https://fonts.google.com/specimen/Noto+Serif+Tamil), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Tamil")]
+pub fn Noto_Serif_Tamil(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Tangut](https://fonts.google.com/specimen/Noto+Serif+Tangut), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Tangut")]
+pub fn Noto_Serif_Tangut(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Telugu](https://fonts.google.com/specimen/Noto+Serif+Telugu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Telugu")]
+pub fn Noto_Serif_Telugu(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Thai](https://fonts.google.com/specimen/Noto+Serif+Thai), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Thai")]
+pub fn Noto_Serif_Thai(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Tibetan](https://fonts.google.com/specimen/Noto+Serif+Tibetan), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Tibetan")]
+pub fn Noto_Serif_Tibetan(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Todhri](https://fonts.google.com/specimen/Noto+Serif+Todhri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Todhri")]
+pub fn Noto_Serif_Todhri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Toto](https://fonts.google.com/specimen/Noto+Serif+Toto), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Toto")]
+pub fn Noto_Serif_Toto(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Vithkuqi](https://fonts.google.com/specimen/Noto+Serif+Vithkuqi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Vithkuqi")]
+pub fn Noto_Serif_Vithkuqi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Serif Yezidi](https://fonts.google.com/specimen/Noto+Serif+Yezidi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Serif_Yezidi")]
+pub fn Noto_Serif_Yezidi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Traditional Nushu](https://fonts.google.com/specimen/Noto+Traditional+Nushu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Traditional_Nushu")]
+pub fn Noto_Traditional_Nushu(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Noto Znamenny Musical Notation](https://fonts.google.com/specimen/Noto+Znamenny+Musical+Notation), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Noto_Znamenny_Musical_Notation")]
+pub fn Noto_Znamenny_Musical_Notation(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Cut](https://fonts.google.com/specimen/Nova+Cut), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Cut")]
+pub fn Nova_Cut(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Flat](https://fonts.google.com/specimen/Nova+Flat), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Flat")]
+pub fn Nova_Flat(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Mono](https://fonts.google.com/specimen/Nova+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Mono")]
+pub fn Nova_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Oval](https://fonts.google.com/specimen/Nova+Oval), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Oval")]
+pub fn Nova_Oval(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Round](https://fonts.google.com/specimen/Nova+Round), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Round")]
+pub fn Nova_Round(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Script](https://fonts.google.com/specimen/Nova+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Script")]
+pub fn Nova_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Slim](https://fonts.google.com/specimen/Nova+Slim), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Slim")]
+pub fn Nova_Slim(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nova Square](https://fonts.google.com/specimen/Nova+Square), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nova_Square")]
+pub fn Nova_Square(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Numans](https://fonts.google.com/specimen/Numans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Numans")]
+pub fn Numans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nunito](https://fonts.google.com/specimen/Nunito), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nunito")]
+pub fn Nunito(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nunito Sans](https://fonts.google.com/specimen/Nunito+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nunito_Sans")]
+pub fn Nunito_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Nuosu SIL](https://fonts.google.com/specimen/Nuosu+SIL), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Nuosu_SIL")]
+pub fn Nuosu_SIL(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Odibee Sans](https://fonts.google.com/specimen/Odibee+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Odibee_Sans")]
+pub fn Odibee_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Odor Mean Chey](https://fonts.google.com/specimen/Odor+Mean+Chey), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Odor_Mean_Chey")]
+pub fn Odor_Mean_Chey(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Offside](https://fonts.google.com/specimen/Offside), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Offside")]
+pub fn Offside(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oi](https://fonts.google.com/specimen/Oi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oi")]
+pub fn Oi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ojuju](https://fonts.google.com/specimen/Ojuju), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ojuju")]
+pub fn Ojuju(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Old Standard TT](https://fonts.google.com/specimen/Old+Standard+TT), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Old_Standard_TT")]
+pub fn Old_Standard_TT(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oldenburg](https://fonts.google.com/specimen/Oldenburg), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oldenburg")]
+pub fn Oldenburg(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ole](https://fonts.google.com/specimen/Ole), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ole")]
+pub fn Ole(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oleo Script](https://fonts.google.com/specimen/Oleo+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oleo_Script")]
+pub fn Oleo_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oleo Script Swash Caps](https://fonts.google.com/specimen/Oleo+Script+Swash+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oleo_Script_Swash_Caps")]
+pub fn Oleo_Script_Swash_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Onest](https://fonts.google.com/specimen/Onest), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Onest")]
+pub fn Onest(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oooh Baby](https://fonts.google.com/specimen/Oooh+Baby), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oooh_Baby")]
+pub fn Oooh_Baby(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Open Sans](https://fonts.google.com/specimen/Open+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Open_Sans")]
+pub fn Open_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oranienbaum](https://fonts.google.com/specimen/Oranienbaum), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oranienbaum")]
+pub fn Oranienbaum(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Orbit](https://fonts.google.com/specimen/Orbit), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Orbit")]
+pub fn Orbit(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Orbitron](https://fonts.google.com/specimen/Orbitron), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Orbitron")]
+pub fn Orbitron(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oregano](https://fonts.google.com/specimen/Oregano), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oregano")]
+pub fn Oregano(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Orelega One](https://fonts.google.com/specimen/Orelega+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Orelega_One")]
+pub fn Orelega_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Orienta](https://fonts.google.com/specimen/Orienta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Orienta")]
+pub fn Orienta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Original Surfer](https://fonts.google.com/specimen/Original+Surfer), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Original_Surfer")]
+pub fn Original_Surfer(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oswald](https://fonts.google.com/specimen/Oswald), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oswald")]
+pub fn Oswald(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Outfit](https://fonts.google.com/specimen/Outfit), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Outfit")]
+pub fn Outfit(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Over the Rainbow](https://fonts.google.com/specimen/Over+the+Rainbow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Over_the_Rainbow")]
+pub fn Over_the_Rainbow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Overlock](https://fonts.google.com/specimen/Overlock), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Overlock")]
+pub fn Overlock(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Overlock SC](https://fonts.google.com/specimen/Overlock+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Overlock_SC")]
+pub fn Overlock_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Overpass](https://fonts.google.com/specimen/Overpass), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Overpass")]
+pub fn Overpass(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Overpass Mono](https://fonts.google.com/specimen/Overpass+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Overpass_Mono")]
+pub fn Overpass_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ovo](https://fonts.google.com/specimen/Ovo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ovo")]
+pub fn Ovo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oxanium](https://fonts.google.com/specimen/Oxanium), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oxanium")]
+pub fn Oxanium(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oxygen](https://fonts.google.com/specimen/Oxygen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oxygen")]
+pub fn Oxygen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Oxygen Mono](https://fonts.google.com/specimen/Oxygen+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Oxygen_Mono")]
+pub fn Oxygen_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Mono](https://fonts.google.com/specimen/PT+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Mono")]
+pub fn PT_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Sans](https://fonts.google.com/specimen/PT+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Sans")]
+pub fn PT_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Sans Caption](https://fonts.google.com/specimen/PT+Sans+Caption), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Sans_Caption")]
+pub fn PT_Sans_Caption(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Sans Narrow](https://fonts.google.com/specimen/PT+Sans+Narrow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Sans_Narrow")]
+pub fn PT_Sans_Narrow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Serif](https://fonts.google.com/specimen/PT+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Serif")]
+pub fn PT_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [PT Serif Caption](https://fonts.google.com/specimen/PT+Serif+Caption), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#PT_Serif_Caption")]
+pub fn PT_Serif_Caption(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pacifico](https://fonts.google.com/specimen/Pacifico), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pacifico")]
+pub fn Pacifico(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Padauk](https://fonts.google.com/specimen/Padauk), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Padauk")]
+pub fn Padauk(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Padyakke Expanded One](https://fonts.google.com/specimen/Padyakke+Expanded+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Padyakke_Expanded_One")]
+pub fn Padyakke_Expanded_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Palanquin](https://fonts.google.com/specimen/Palanquin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Palanquin")]
+pub fn Palanquin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Palanquin Dark](https://fonts.google.com/specimen/Palanquin+Dark), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Palanquin_Dark")]
+pub fn Palanquin_Dark(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Palette Mosaic](https://fonts.google.com/specimen/Palette+Mosaic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Palette_Mosaic")]
+pub fn Palette_Mosaic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pangolin](https://fonts.google.com/specimen/Pangolin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pangolin")]
+pub fn Pangolin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Paprika](https://fonts.google.com/specimen/Paprika), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Paprika")]
+pub fn Paprika(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Parastoo](https://fonts.google.com/specimen/Parastoo), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Parastoo")]
+pub fn Parastoo(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Parisienne](https://fonts.google.com/specimen/Parisienne), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Parisienne")]
+pub fn Parisienne(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Parkinsans](https://fonts.google.com/specimen/Parkinsans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Parkinsans")]
+pub fn Parkinsans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Passero One](https://fonts.google.com/specimen/Passero+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Passero_One")]
+pub fn Passero_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Passion One](https://fonts.google.com/specimen/Passion+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Passion_One")]
+pub fn Passion_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Passions Conflict](https://fonts.google.com/specimen/Passions+Conflict), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Passions_Conflict")]
+pub fn Passions_Conflict(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pathway Extreme](https://fonts.google.com/specimen/Pathway+Extreme), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pathway_Extreme")]
+pub fn Pathway_Extreme(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pathway Gothic One](https://fonts.google.com/specimen/Pathway+Gothic+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pathway_Gothic_One")]
+pub fn Pathway_Gothic_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Patrick Hand](https://fonts.google.com/specimen/Patrick+Hand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Patrick_Hand")]
+pub fn Patrick_Hand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Patrick Hand SC](https://fonts.google.com/specimen/Patrick+Hand+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Patrick_Hand_SC")]
+pub fn Patrick_Hand_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pattaya](https://fonts.google.com/specimen/Pattaya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pattaya")]
+pub fn Pattaya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Patua One](https://fonts.google.com/specimen/Patua+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Patua_One")]
+pub fn Patua_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pavanam](https://fonts.google.com/specimen/Pavanam), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pavanam")]
+pub fn Pavanam(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Paytone One](https://fonts.google.com/specimen/Paytone+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Paytone_One")]
+pub fn Paytone_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Peddana](https://fonts.google.com/specimen/Peddana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Peddana")]
+pub fn Peddana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Peralta](https://fonts.google.com/specimen/Peralta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Peralta")]
+pub fn Peralta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Permanent Marker](https://fonts.google.com/specimen/Permanent+Marker), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Permanent_Marker")]
+pub fn Permanent_Marker(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Petemoss](https://fonts.google.com/specimen/Petemoss), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Petemoss")]
+pub fn Petemoss(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Petit Formal Script](https://fonts.google.com/specimen/Petit+Formal+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Petit_Formal_Script")]
+pub fn Petit_Formal_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Petrona](https://fonts.google.com/specimen/Petrona), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Petrona")]
+pub fn Petrona(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Phetsarath](https://fonts.google.com/specimen/Phetsarath), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Phetsarath")]
+pub fn Phetsarath(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Philosopher](https://fonts.google.com/specimen/Philosopher), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Philosopher")]
+pub fn Philosopher(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Phudu](https://fonts.google.com/specimen/Phudu), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Phudu")]
+pub fn Phudu(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Piazzolla](https://fonts.google.com/specimen/Piazzolla), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Piazzolla")]
+pub fn Piazzolla(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Piedra](https://fonts.google.com/specimen/Piedra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Piedra")]
+pub fn Piedra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pinyon Script](https://fonts.google.com/specimen/Pinyon+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pinyon_Script")]
+pub fn Pinyon_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pirata One](https://fonts.google.com/specimen/Pirata+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pirata_One")]
+pub fn Pirata_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pixelify_Sans")]
+pub fn Pixelify_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Plaster](https://fonts.google.com/specimen/Plaster), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Plaster")]
+pub fn Plaster(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Platypi](https://fonts.google.com/specimen/Platypi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Platypi")]
+pub fn Platypi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Play](https://fonts.google.com/specimen/Play), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Play")]
+pub fn Play(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playball](https://fonts.google.com/specimen/Playball), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playball")]
+pub fn Playball(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playfair](https://fonts.google.com/specimen/Playfair), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playfair")]
+pub fn Playfair(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playfair Display](https://fonts.google.com/specimen/Playfair+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playfair_Display")]
+pub fn Playfair_Display(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playfair Display SC](https://fonts.google.com/specimen/Playfair+Display+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playfair_Display_SC")]
+pub fn Playfair_Display_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playpen Sans](https://fonts.google.com/specimen/Playpen+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playpen_Sans")]
+pub fn Playpen_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playpen Sans Arabic](https://fonts.google.com/specimen/Playpen+Sans+Arabic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playpen_Sans_Arabic")]
+pub fn Playpen_Sans_Arabic(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playpen Sans Deva](https://fonts.google.com/specimen/Playpen+Sans+Deva), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playpen_Sans_Deva")]
+pub fn Playpen_Sans_Deva(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playpen Sans Hebrew](https://fonts.google.com/specimen/Playpen+Sans+Hebrew), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playpen_Sans_Hebrew")]
+pub fn Playpen_Sans_Hebrew(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playpen Sans Thai](https://fonts.google.com/specimen/Playpen+Sans+Thai), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playpen_Sans_Thai")]
+pub fn Playpen_Sans_Thai(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AR](https://fonts.google.com/specimen/Playwrite+AR), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AR")]
+pub fn Playwrite_AR(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AR Guides](https://fonts.google.com/specimen/Playwrite+AR+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AR_Guides")]
+pub fn Playwrite_AR_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AT](https://fonts.google.com/specimen/Playwrite+AT), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AT")]
+pub fn Playwrite_AT(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AT Guides](https://fonts.google.com/specimen/Playwrite+AT+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AT_Guides")]
+pub fn Playwrite_AT_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU NSW](https://fonts.google.com/specimen/Playwrite+AU+NSW), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_NSW")]
+pub fn Playwrite_AU_NSW(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU NSW Guides](https://fonts.google.com/specimen/Playwrite+AU+NSW+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_NSW_Guides")]
+pub fn Playwrite_AU_NSW_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU QLD](https://fonts.google.com/specimen/Playwrite+AU+QLD), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_QLD")]
+pub fn Playwrite_AU_QLD(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU QLD Guides](https://fonts.google.com/specimen/Playwrite+AU+QLD+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_QLD_Guides")]
+pub fn Playwrite_AU_QLD_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU SA](https://fonts.google.com/specimen/Playwrite+AU+SA), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_SA")]
+pub fn Playwrite_AU_SA(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU SA Guides](https://fonts.google.com/specimen/Playwrite+AU+SA+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_SA_Guides")]
+pub fn Playwrite_AU_SA_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU TAS](https://fonts.google.com/specimen/Playwrite+AU+TAS), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_TAS")]
+pub fn Playwrite_AU_TAS(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU TAS Guides](https://fonts.google.com/specimen/Playwrite+AU+TAS+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_TAS_Guides")]
+pub fn Playwrite_AU_TAS_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU VIC](https://fonts.google.com/specimen/Playwrite+AU+VIC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_VIC")]
+pub fn Playwrite_AU_VIC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite AU VIC Guides](https://fonts.google.com/specimen/Playwrite+AU+VIC+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_AU_VIC_Guides")]
+pub fn Playwrite_AU_VIC_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BE VLG](https://fonts.google.com/specimen/Playwrite+BE+VLG), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BE_VLG")]
+pub fn Playwrite_BE_VLG(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BE VLG Guides](https://fonts.google.com/specimen/Playwrite+BE+VLG+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BE_VLG_Guides")]
+pub fn Playwrite_BE_VLG_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BE WAL](https://fonts.google.com/specimen/Playwrite+BE+WAL), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BE_WAL")]
+pub fn Playwrite_BE_WAL(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BE WAL Guides](https://fonts.google.com/specimen/Playwrite+BE+WAL+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BE_WAL_Guides")]
+pub fn Playwrite_BE_WAL_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BR](https://fonts.google.com/specimen/Playwrite+BR), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BR")]
+pub fn Playwrite_BR(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite BR Guides](https://fonts.google.com/specimen/Playwrite+BR+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_BR_Guides")]
+pub fn Playwrite_BR_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CA](https://fonts.google.com/specimen/Playwrite+CA), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CA")]
+pub fn Playwrite_CA(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CA Guides](https://fonts.google.com/specimen/Playwrite+CA+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CA_Guides")]
+pub fn Playwrite_CA_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CL](https://fonts.google.com/specimen/Playwrite+CL), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CL")]
+pub fn Playwrite_CL(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CL Guides](https://fonts.google.com/specimen/Playwrite+CL+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CL_Guides")]
+pub fn Playwrite_CL_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CO](https://fonts.google.com/specimen/Playwrite+CO), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CO")]
+pub fn Playwrite_CO(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CO Guides](https://fonts.google.com/specimen/Playwrite+CO+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CO_Guides")]
+pub fn Playwrite_CO_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CU](https://fonts.google.com/specimen/Playwrite+CU), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CU")]
+pub fn Playwrite_CU(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CU Guides](https://fonts.google.com/specimen/Playwrite+CU+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CU_Guides")]
+pub fn Playwrite_CU_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CZ](https://fonts.google.com/specimen/Playwrite+CZ), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CZ")]
+pub fn Playwrite_CZ(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite CZ Guides](https://fonts.google.com/specimen/Playwrite+CZ+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_CZ_Guides")]
+pub fn Playwrite_CZ_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE Grund](https://fonts.google.com/specimen/Playwrite+DE+Grund), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_Grund")]
+pub fn Playwrite_DE_Grund(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE Grund Guides](https://fonts.google.com/specimen/Playwrite+DE+Grund+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_Grund_Guides")]
+pub fn Playwrite_DE_Grund_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE LA](https://fonts.google.com/specimen/Playwrite+DE+LA), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_LA")]
+pub fn Playwrite_DE_LA(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE LA Guides](https://fonts.google.com/specimen/Playwrite+DE+LA+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_LA_Guides")]
+pub fn Playwrite_DE_LA_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE SAS](https://fonts.google.com/specimen/Playwrite+DE+SAS), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_SAS")]
+pub fn Playwrite_DE_SAS(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE SAS Guides](https://fonts.google.com/specimen/Playwrite+DE+SAS+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_SAS_Guides")]
+pub fn Playwrite_DE_SAS_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE VA](https://fonts.google.com/specimen/Playwrite+DE+VA), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_VA")]
+pub fn Playwrite_DE_VA(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DE VA Guides](https://fonts.google.com/specimen/Playwrite+DE+VA+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DE_VA_Guides")]
+pub fn Playwrite_DE_VA_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DK Loopet](https://fonts.google.com/specimen/Playwrite+DK+Loopet), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DK_Loopet")]
+pub fn Playwrite_DK_Loopet(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DK Loopet Guides](https://fonts.google.com/specimen/Playwrite+DK+Loopet+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DK_Loopet_Guides")]
+pub fn Playwrite_DK_Loopet_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DK Uloopet](https://fonts.google.com/specimen/Playwrite+DK+Uloopet), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DK_Uloopet")]
+pub fn Playwrite_DK_Uloopet(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite DK Uloopet Guides](https://fonts.google.com/specimen/Playwrite+DK+Uloopet+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_DK_Uloopet_Guides")]
+pub fn Playwrite_DK_Uloopet_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ES](https://fonts.google.com/specimen/Playwrite+ES), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ES")]
+pub fn Playwrite_ES(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ES Deco](https://fonts.google.com/specimen/Playwrite+ES+Deco), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ES_Deco")]
+pub fn Playwrite_ES_Deco(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ES Deco Guides](https://fonts.google.com/specimen/Playwrite+ES+Deco+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ES_Deco_Guides")]
+pub fn Playwrite_ES_Deco_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ES Guides](https://fonts.google.com/specimen/Playwrite+ES+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ES_Guides")]
+pub fn Playwrite_ES_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite FR Moderne](https://fonts.google.com/specimen/Playwrite+FR+Moderne), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_FR_Moderne")]
+pub fn Playwrite_FR_Moderne(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite FR Moderne Guides](https://fonts.google.com/specimen/Playwrite+FR+Moderne+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_FR_Moderne_Guides")]
+pub fn Playwrite_FR_Moderne_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite FR Trad](https://fonts.google.com/specimen/Playwrite+FR+Trad), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_FR_Trad")]
+pub fn Playwrite_FR_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite FR Trad Guides](https://fonts.google.com/specimen/Playwrite+FR+Trad+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_FR_Trad_Guides")]
+pub fn Playwrite_FR_Trad_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite GB J](https://fonts.google.com/specimen/Playwrite+GB+J), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_GB_J")]
+pub fn Playwrite_GB_J(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite GB J Guides](https://fonts.google.com/specimen/Playwrite+GB+J+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_GB_J_Guides")]
+pub fn Playwrite_GB_J_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite GB S](https://fonts.google.com/specimen/Playwrite+GB+S), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_GB_S")]
+pub fn Playwrite_GB_S(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite GB S Guides](https://fonts.google.com/specimen/Playwrite+GB+S+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_GB_S_Guides")]
+pub fn Playwrite_GB_S_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HR](https://fonts.google.com/specimen/Playwrite+HR), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HR")]
+pub fn Playwrite_HR(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HR Guides](https://fonts.google.com/specimen/Playwrite+HR+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HR_Guides")]
+pub fn Playwrite_HR_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HR Lijeva](https://fonts.google.com/specimen/Playwrite+HR+Lijeva), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HR_Lijeva")]
+pub fn Playwrite_HR_Lijeva(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HR Lijeva Guides](https://fonts.google.com/specimen/Playwrite+HR+Lijeva+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HR_Lijeva_Guides")]
+pub fn Playwrite_HR_Lijeva_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HU](https://fonts.google.com/specimen/Playwrite+HU), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HU")]
+pub fn Playwrite_HU(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite HU Guides](https://fonts.google.com/specimen/Playwrite+HU+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_HU_Guides")]
+pub fn Playwrite_HU_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ID](https://fonts.google.com/specimen/Playwrite+ID), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ID")]
+pub fn Playwrite_ID(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ID Guides](https://fonts.google.com/specimen/Playwrite+ID+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ID_Guides")]
+pub fn Playwrite_ID_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IE](https://fonts.google.com/specimen/Playwrite+IE), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IE")]
+pub fn Playwrite_IE(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IE Guides](https://fonts.google.com/specimen/Playwrite+IE+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IE_Guides")]
+pub fn Playwrite_IE_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IN](https://fonts.google.com/specimen/Playwrite+IN), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IN")]
+pub fn Playwrite_IN(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IN Guides](https://fonts.google.com/specimen/Playwrite+IN+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IN_Guides")]
+pub fn Playwrite_IN_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IS](https://fonts.google.com/specimen/Playwrite+IS), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IS")]
+pub fn Playwrite_IS(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IS Guides](https://fonts.google.com/specimen/Playwrite+IS+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IS_Guides")]
+pub fn Playwrite_IS_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IT Moderna](https://fonts.google.com/specimen/Playwrite+IT+Moderna), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IT_Moderna")]
+pub fn Playwrite_IT_Moderna(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IT Moderna Guides](https://fonts.google.com/specimen/Playwrite+IT+Moderna+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IT_Moderna_Guides")]
+pub fn Playwrite_IT_Moderna_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IT Trad](https://fonts.google.com/specimen/Playwrite+IT+Trad), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IT_Trad")]
+pub fn Playwrite_IT_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite IT Trad Guides](https://fonts.google.com/specimen/Playwrite+IT+Trad+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_IT_Trad_Guides")]
+pub fn Playwrite_IT_Trad_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite MX](https://fonts.google.com/specimen/Playwrite+MX), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_MX")]
+pub fn Playwrite_MX(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite MX Guides](https://fonts.google.com/specimen/Playwrite+MX+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_MX_Guides")]
+pub fn Playwrite_MX_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NG Modern](https://fonts.google.com/specimen/Playwrite+NG+Modern), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NG_Modern")]
+pub fn Playwrite_NG_Modern(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NG Modern Guides](https://fonts.google.com/specimen/Playwrite+NG+Modern+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NG_Modern_Guides")]
+pub fn Playwrite_NG_Modern_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NL](https://fonts.google.com/specimen/Playwrite+NL), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NL")]
+pub fn Playwrite_NL(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NL Guides](https://fonts.google.com/specimen/Playwrite+NL+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NL_Guides")]
+pub fn Playwrite_NL_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NO](https://fonts.google.com/specimen/Playwrite+NO), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NO")]
+pub fn Playwrite_NO(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NO Guides](https://fonts.google.com/specimen/Playwrite+NO+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NO_Guides")]
+pub fn Playwrite_NO_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NZ](https://fonts.google.com/specimen/Playwrite+NZ), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NZ")]
+pub fn Playwrite_NZ(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NZ Basic](https://fonts.google.com/specimen/Playwrite+NZ+Basic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NZ_Basic")]
+pub fn Playwrite_NZ_Basic(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NZ Basic Guides](https://fonts.google.com/specimen/Playwrite+NZ+Basic+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NZ_Basic_Guides")]
+pub fn Playwrite_NZ_Basic_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite NZ Guides](https://fonts.google.com/specimen/Playwrite+NZ+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_NZ_Guides")]
+pub fn Playwrite_NZ_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PE](https://fonts.google.com/specimen/Playwrite+PE), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PE")]
+pub fn Playwrite_PE(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PE Guides](https://fonts.google.com/specimen/Playwrite+PE+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PE_Guides")]
+pub fn Playwrite_PE_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PL](https://fonts.google.com/specimen/Playwrite+PL), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PL")]
+pub fn Playwrite_PL(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PL Guides](https://fonts.google.com/specimen/Playwrite+PL+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PL_Guides")]
+pub fn Playwrite_PL_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PT](https://fonts.google.com/specimen/Playwrite+PT), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PT")]
+pub fn Playwrite_PT(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite PT Guides](https://fonts.google.com/specimen/Playwrite+PT+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_PT_Guides")]
+pub fn Playwrite_PT_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite RO](https://fonts.google.com/specimen/Playwrite+RO), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_RO")]
+pub fn Playwrite_RO(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite RO Guides](https://fonts.google.com/specimen/Playwrite+RO+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_RO_Guides")]
+pub fn Playwrite_RO_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite SK](https://fonts.google.com/specimen/Playwrite+SK), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_SK")]
+pub fn Playwrite_SK(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite SK Guides](https://fonts.google.com/specimen/Playwrite+SK+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_SK_Guides")]
+pub fn Playwrite_SK_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite TZ](https://fonts.google.com/specimen/Playwrite+TZ), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_TZ")]
+pub fn Playwrite_TZ(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite TZ Guides](https://fonts.google.com/specimen/Playwrite+TZ+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_TZ_Guides")]
+pub fn Playwrite_TZ_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite US Modern](https://fonts.google.com/specimen/Playwrite+US+Modern), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_US_Modern")]
+pub fn Playwrite_US_Modern(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite US Modern Guides](https://fonts.google.com/specimen/Playwrite+US+Modern+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_US_Modern_Guides")]
+pub fn Playwrite_US_Modern_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite US Trad](https://fonts.google.com/specimen/Playwrite+US+Trad), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_US_Trad")]
+pub fn Playwrite_US_Trad(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite US Trad Guides](https://fonts.google.com/specimen/Playwrite+US+Trad+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_US_Trad_Guides")]
+pub fn Playwrite_US_Trad_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite VN](https://fonts.google.com/specimen/Playwrite+VN), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_VN")]
+pub fn Playwrite_VN(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite VN Guides](https://fonts.google.com/specimen/Playwrite+VN+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_VN_Guides")]
+pub fn Playwrite_VN_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ZA](https://fonts.google.com/specimen/Playwrite+ZA), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ZA")]
+pub fn Playwrite_ZA(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Playwrite ZA Guides](https://fonts.google.com/specimen/Playwrite+ZA+Guides), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Playwrite_ZA_Guides")]
+pub fn Playwrite_ZA_Guides(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pliant](https://fonts.google.com/specimen/Pliant), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pliant")]
+pub fn Pliant(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Plus_Jakarta_Sans")]
+pub fn Plus_Jakarta_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pochaevsk](https://fonts.google.com/specimen/Pochaevsk), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pochaevsk")]
+pub fn Pochaevsk(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Podkova](https://fonts.google.com/specimen/Podkova), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Podkova")]
+pub fn Podkova(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poetsen One](https://fonts.google.com/specimen/Poetsen+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poetsen_One")]
+pub fn Poetsen_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poiret One](https://fonts.google.com/specimen/Poiret+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poiret_One")]
+pub fn Poiret_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poller One](https://fonts.google.com/specimen/Poller+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poller_One")]
+pub fn Poller_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poltawski Nowy](https://fonts.google.com/specimen/Poltawski+Nowy), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poltawski_Nowy")]
+pub fn Poltawski_Nowy(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poly](https://fonts.google.com/specimen/Poly), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poly")]
+pub fn Poly(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pompiere](https://fonts.google.com/specimen/Pompiere), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pompiere")]
+pub fn Pompiere(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ponnala](https://fonts.google.com/specimen/Ponnala), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ponnala")]
+pub fn Ponnala(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ponomar](https://fonts.google.com/specimen/Ponomar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ponomar")]
+pub fn Ponomar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pontano Sans](https://fonts.google.com/specimen/Pontano+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pontano_Sans")]
+pub fn Pontano_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poor Story](https://fonts.google.com/specimen/Poor+Story), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poor_Story")]
+pub fn Poor_Story(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Poppins](https://fonts.google.com/specimen/Poppins), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Poppins")]
+pub fn Poppins(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Port Lligat Sans](https://fonts.google.com/specimen/Port+Lligat+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Port_Lligat_Sans")]
+pub fn Port_Lligat_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Port Lligat Slab](https://fonts.google.com/specimen/Port+Lligat+Slab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Port_Lligat_Slab")]
+pub fn Port_Lligat_Slab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Potta One](https://fonts.google.com/specimen/Potta+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Potta_One")]
+pub fn Potta_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pragati Narrow](https://fonts.google.com/specimen/Pragati+Narrow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pragati_Narrow")]
+pub fn Pragati_Narrow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Praise](https://fonts.google.com/specimen/Praise), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Praise")]
+pub fn Praise(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Prata](https://fonts.google.com/specimen/Prata), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Prata")]
+pub fn Prata(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Preahvihear](https://fonts.google.com/specimen/Preahvihear), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Preahvihear")]
+pub fn Preahvihear(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Press_Start_2P")]
+pub fn Press_Start_2P(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Pridi](https://fonts.google.com/specimen/Pridi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Pridi")]
+pub fn Pridi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Princess Sofia](https://fonts.google.com/specimen/Princess+Sofia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Princess_Sofia")]
+pub fn Princess_Sofia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Prociono](https://fonts.google.com/specimen/Prociono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Prociono")]
+pub fn Prociono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Prompt](https://fonts.google.com/specimen/Prompt), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Prompt")]
+pub fn Prompt(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Prosto One](https://fonts.google.com/specimen/Prosto+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Prosto_One")]
+pub fn Prosto_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Protest Guerrilla](https://fonts.google.com/specimen/Protest+Guerrilla), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Protest_Guerrilla")]
+pub fn Protest_Guerrilla(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Protest Revolution](https://fonts.google.com/specimen/Protest+Revolution), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Protest_Revolution")]
+pub fn Protest_Revolution(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Protest Riot](https://fonts.google.com/specimen/Protest+Riot), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Protest_Riot")]
+pub fn Protest_Riot(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Protest Strike](https://fonts.google.com/specimen/Protest+Strike), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Protest_Strike")]
+pub fn Protest_Strike(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Proza Libre](https://fonts.google.com/specimen/Proza+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Proza_Libre")]
+pub fn Proza_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Public Sans](https://fonts.google.com/specimen/Public+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Public_Sans")]
+pub fn Public_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Puppies Play](https://fonts.google.com/specimen/Puppies+Play), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Puppies_Play")]
+pub fn Puppies_Play(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Puritan](https://fonts.google.com/specimen/Puritan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Puritan")]
+pub fn Puritan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Purple Purse](https://fonts.google.com/specimen/Purple+Purse), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Purple_Purse")]
+pub fn Purple_Purse(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Qahiri](https://fonts.google.com/specimen/Qahiri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Qahiri")]
+pub fn Qahiri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quando](https://fonts.google.com/specimen/Quando), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quando")]
+pub fn Quando(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quantico](https://fonts.google.com/specimen/Quantico), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quantico")]
+pub fn Quantico(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quattrocento](https://fonts.google.com/specimen/Quattrocento), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quattrocento")]
+pub fn Quattrocento(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quattrocento Sans](https://fonts.google.com/specimen/Quattrocento+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quattrocento_Sans")]
+pub fn Quattrocento_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Questrial](https://fonts.google.com/specimen/Questrial), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Questrial")]
+pub fn Questrial(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quicksand](https://fonts.google.com/specimen/Quicksand), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quicksand")]
+pub fn Quicksand(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Quintessential](https://fonts.google.com/specimen/Quintessential), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Quintessential")]
+pub fn Quintessential(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Qwigley](https://fonts.google.com/specimen/Qwigley), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Qwigley")]
+pub fn Qwigley(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Qwitcher Grypen](https://fonts.google.com/specimen/Qwitcher+Grypen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Qwitcher_Grypen")]
+pub fn Qwitcher_Grypen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [REM](https://fonts.google.com/specimen/REM), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#REM")]
+pub fn REM(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Racing Sans One](https://fonts.google.com/specimen/Racing+Sans+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Racing_Sans_One")]
+pub fn Racing_Sans_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Radio Canada](https://fonts.google.com/specimen/Radio+Canada), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Radio_Canada")]
+pub fn Radio_Canada(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Radio Canada Big](https://fonts.google.com/specimen/Radio+Canada+Big), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Radio_Canada_Big")]
+pub fn Radio_Canada_Big(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Radley](https://fonts.google.com/specimen/Radley), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Radley")]
+pub fn Radley(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rajdhani](https://fonts.google.com/specimen/Rajdhani), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rajdhani")]
+pub fn Rajdhani(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rakkas](https://fonts.google.com/specimen/Rakkas), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rakkas")]
+pub fn Rakkas(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Raleway](https://fonts.google.com/specimen/Raleway), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Raleway")]
+pub fn Raleway(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Raleway Dots](https://fonts.google.com/specimen/Raleway+Dots), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Raleway_Dots")]
+pub fn Raleway_Dots(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ramabhadra](https://fonts.google.com/specimen/Ramabhadra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ramabhadra")]
+pub fn Ramabhadra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ramaraja](https://fonts.google.com/specimen/Ramaraja), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ramaraja")]
+pub fn Ramaraja(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rambla](https://fonts.google.com/specimen/Rambla), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rambla")]
+pub fn Rambla(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rammetto One](https://fonts.google.com/specimen/Rammetto+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rammetto_One")]
+pub fn Rammetto_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rampart One](https://fonts.google.com/specimen/Rampart+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rampart_One")]
+pub fn Rampart_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ramsina](https://fonts.google.com/specimen/Ramsina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ramsina")]
+pub fn Ramsina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ranchers](https://fonts.google.com/specimen/Ranchers), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ranchers")]
+pub fn Ranchers(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rancho](https://fonts.google.com/specimen/Rancho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rancho")]
+pub fn Rancho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ranga](https://fonts.google.com/specimen/Ranga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ranga")]
+pub fn Ranga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rasa](https://fonts.google.com/specimen/Rasa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rasa")]
+pub fn Rasa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rationale](https://fonts.google.com/specimen/Rationale), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rationale")]
+pub fn Rationale(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ravi Prakash](https://fonts.google.com/specimen/Ravi+Prakash), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ravi_Prakash")]
+pub fn Ravi_Prakash(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Readex Pro](https://fonts.google.com/specimen/Readex+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Readex_Pro")]
+pub fn Readex_Pro(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Recursive](https://fonts.google.com/specimen/Recursive), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Recursive")]
+pub fn Recursive(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Red Hat Display](https://fonts.google.com/specimen/Red+Hat+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Red_Hat_Display")]
+pub fn Red_Hat_Display(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Red Hat Mono](https://fonts.google.com/specimen/Red+Hat+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Red_Hat_Mono")]
+pub fn Red_Hat_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Red Hat Text](https://fonts.google.com/specimen/Red+Hat+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Red_Hat_Text")]
+pub fn Red_Hat_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Red Rose](https://fonts.google.com/specimen/Red+Rose), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Red_Rose")]
+pub fn Red_Rose(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Redacted](https://fonts.google.com/specimen/Redacted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Redacted")]
+pub fn Redacted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Redacted Script](https://fonts.google.com/specimen/Redacted+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Redacted_Script")]
+pub fn Redacted_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reddit Mono](https://fonts.google.com/specimen/Reddit+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reddit_Mono")]
+pub fn Reddit_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reddit Sans](https://fonts.google.com/specimen/Reddit+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reddit_Sans")]
+pub fn Reddit_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reddit Sans Condensed](https://fonts.google.com/specimen/Reddit+Sans+Condensed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reddit_Sans_Condensed")]
+pub fn Reddit_Sans_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Redressed](https://fonts.google.com/specimen/Redressed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Redressed")]
+pub fn Redressed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reem Kufi](https://fonts.google.com/specimen/Reem+Kufi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reem_Kufi")]
+pub fn Reem_Kufi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reem Kufi Fun](https://fonts.google.com/specimen/Reem+Kufi+Fun), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reem_Kufi_Fun")]
+pub fn Reem_Kufi_Fun(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reem Kufi Ink](https://fonts.google.com/specimen/Reem+Kufi+Ink), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reem_Kufi_Ink")]
+pub fn Reem_Kufi_Ink(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reenie Beanie](https://fonts.google.com/specimen/Reenie+Beanie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reenie_Beanie")]
+pub fn Reenie_Beanie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Reggae One](https://fonts.google.com/specimen/Reggae+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Reggae_One")]
+pub fn Reggae_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rethink Sans](https://fonts.google.com/specimen/Rethink+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rethink_Sans")]
+pub fn Rethink_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Revalia](https://fonts.google.com/specimen/Revalia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Revalia")]
+pub fn Revalia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rhodium Libre](https://fonts.google.com/specimen/Rhodium+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rhodium_Libre")]
+pub fn Rhodium_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ribeye](https://fonts.google.com/specimen/Ribeye), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ribeye")]
+pub fn Ribeye(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ribeye Marrow](https://fonts.google.com/specimen/Ribeye+Marrow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ribeye_Marrow")]
+pub fn Ribeye_Marrow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Righteous](https://fonts.google.com/specimen/Righteous), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Righteous")]
+pub fn Righteous(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Risque](https://fonts.google.com/specimen/Risque), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Risque")]
+pub fn Risque(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Road Rage](https://fonts.google.com/specimen/Road+Rage), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Road_Rage")]
+pub fn Road_Rage(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto](https://fonts.google.com/specimen/Roboto), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto")]
+pub fn Roboto(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto Condensed](https://fonts.google.com/specimen/Roboto+Condensed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto_Condensed")]
+pub fn Roboto_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto Flex](https://fonts.google.com/specimen/Roboto+Flex), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto_Flex")]
+pub fn Roboto_Flex(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto Mono](https://fonts.google.com/specimen/Roboto+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto_Mono")]
+pub fn Roboto_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto Serif](https://fonts.google.com/specimen/Roboto+Serif), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto_Serif")]
+pub fn Roboto_Serif(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Roboto Slab](https://fonts.google.com/specimen/Roboto+Slab), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Roboto_Slab")]
+pub fn Roboto_Slab(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rochester](https://fonts.google.com/specimen/Rochester), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rochester")]
+pub fn Rochester(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rock 3D](https://fonts.google.com/specimen/Rock+3D), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rock_3D")]
+pub fn Rock_3D(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rock Salt](https://fonts.google.com/specimen/Rock+Salt), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rock_Salt")]
+pub fn Rock_Salt(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [RocknRoll One](https://fonts.google.com/specimen/RocknRoll+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#RocknRoll_One")]
+pub fn RocknRoll_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rokkitt](https://fonts.google.com/specimen/Rokkitt), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rokkitt")]
+pub fn Rokkitt(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Romanesco](https://fonts.google.com/specimen/Romanesco), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Romanesco")]
+pub fn Romanesco(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ropa Sans](https://fonts.google.com/specimen/Ropa+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ropa_Sans")]
+pub fn Ropa_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rosario](https://fonts.google.com/specimen/Rosario), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rosario")]
+pub fn Rosario(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rosarivo](https://fonts.google.com/specimen/Rosarivo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rosarivo")]
+pub fn Rosarivo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rouge Script](https://fonts.google.com/specimen/Rouge+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rouge_Script")]
+pub fn Rouge_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rowdies](https://fonts.google.com/specimen/Rowdies), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rowdies")]
+pub fn Rowdies(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rozha One](https://fonts.google.com/specimen/Rozha+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rozha_One")]
+pub fn Rozha_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik](https://fonts.google.com/specimen/Rubik), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik")]
+pub fn Rubik(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik 80s Fade](https://fonts.google.com/specimen/Rubik+80s+Fade), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_80s_Fade")]
+pub fn Rubik_80s_Fade(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Beastly](https://fonts.google.com/specimen/Rubik+Beastly), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Beastly")]
+pub fn Rubik_Beastly(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Broken Fax](https://fonts.google.com/specimen/Rubik+Broken+Fax), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Broken_Fax")]
+pub fn Rubik_Broken_Fax(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Bubbles](https://fonts.google.com/specimen/Rubik+Bubbles), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Bubbles")]
+pub fn Rubik_Bubbles(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Burned](https://fonts.google.com/specimen/Rubik+Burned), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Burned")]
+pub fn Rubik_Burned(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Dirt](https://fonts.google.com/specimen/Rubik+Dirt), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Dirt")]
+pub fn Rubik_Dirt(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Distressed](https://fonts.google.com/specimen/Rubik+Distressed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Distressed")]
+pub fn Rubik_Distressed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Doodle Shadow](https://fonts.google.com/specimen/Rubik+Doodle+Shadow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Doodle_Shadow")]
+pub fn Rubik_Doodle_Shadow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Doodle Triangles](https://fonts.google.com/specimen/Rubik+Doodle+Triangles), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Doodle_Triangles")]
+pub fn Rubik_Doodle_Triangles(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Gemstones](https://fonts.google.com/specimen/Rubik+Gemstones), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Gemstones")]
+pub fn Rubik_Gemstones(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Glitch](https://fonts.google.com/specimen/Rubik+Glitch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Glitch")]
+pub fn Rubik_Glitch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Glitch Pop](https://fonts.google.com/specimen/Rubik+Glitch+Pop), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Glitch_Pop")]
+pub fn Rubik_Glitch_Pop(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Iso](https://fonts.google.com/specimen/Rubik+Iso), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Iso")]
+pub fn Rubik_Iso(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Lines](https://fonts.google.com/specimen/Rubik+Lines), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Lines")]
+pub fn Rubik_Lines(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Maps](https://fonts.google.com/specimen/Rubik+Maps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Maps")]
+pub fn Rubik_Maps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Marker Hatch](https://fonts.google.com/specimen/Rubik+Marker+Hatch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Marker_Hatch")]
+pub fn Rubik_Marker_Hatch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Maze](https://fonts.google.com/specimen/Rubik+Maze), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Maze")]
+pub fn Rubik_Maze(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Microbe](https://fonts.google.com/specimen/Rubik+Microbe), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Microbe")]
+pub fn Rubik_Microbe(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Mono One](https://fonts.google.com/specimen/Rubik+Mono+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Mono_One")]
+pub fn Rubik_Mono_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Moonrocks](https://fonts.google.com/specimen/Rubik+Moonrocks), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Moonrocks")]
+pub fn Rubik_Moonrocks(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Pixels](https://fonts.google.com/specimen/Rubik+Pixels), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Pixels")]
+pub fn Rubik_Pixels(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Puddles](https://fonts.google.com/specimen/Rubik+Puddles), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Puddles")]
+pub fn Rubik_Puddles(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Scribble](https://fonts.google.com/specimen/Rubik+Scribble), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Scribble")]
+pub fn Rubik_Scribble(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Spray Paint](https://fonts.google.com/specimen/Rubik+Spray+Paint), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Spray_Paint")]
+pub fn Rubik_Spray_Paint(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Storm](https://fonts.google.com/specimen/Rubik+Storm), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Storm")]
+pub fn Rubik_Storm(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Vinyl](https://fonts.google.com/specimen/Rubik+Vinyl), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Vinyl")]
+pub fn Rubik_Vinyl(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rubik Wet Paint](https://fonts.google.com/specimen/Rubik+Wet+Paint), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rubik_Wet_Paint")]
+pub fn Rubik_Wet_Paint(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruda](https://fonts.google.com/specimen/Ruda), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruda")]
+pub fn Ruda(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rufina](https://fonts.google.com/specimen/Rufina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rufina")]
+pub fn Rufina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruge Boogie](https://fonts.google.com/specimen/Ruge+Boogie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruge_Boogie")]
+pub fn Ruge_Boogie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruluko](https://fonts.google.com/specimen/Ruluko), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruluko")]
+pub fn Ruluko(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rum Raisin](https://fonts.google.com/specimen/Rum+Raisin), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rum_Raisin")]
+pub fn Rum_Raisin(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruslan Display](https://fonts.google.com/specimen/Ruslan+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruslan_Display")]
+pub fn Ruslan_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Russo One](https://fonts.google.com/specimen/Russo+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Russo_One")]
+pub fn Russo_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruthie](https://fonts.google.com/specimen/Ruthie), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruthie")]
+pub fn Ruthie(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ruwudu](https://fonts.google.com/specimen/Ruwudu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ruwudu")]
+pub fn Ruwudu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Rye](https://fonts.google.com/specimen/Rye), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Rye")]
+pub fn Rye(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [SN Pro](https://fonts.google.com/specimen/SN+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#SN_Pro")]
+pub fn SN_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [STIX Two Math](https://fonts.google.com/specimen/STIX+Two+Math), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#STIX_Two_Math")]
+pub fn STIX_Two_Math(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [STIX Two Text](https://fonts.google.com/specimen/STIX+Two+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#STIX_Two_Text")]
+pub fn STIX_Two_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [SUSE](https://fonts.google.com/specimen/SUSE), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#SUSE")]
+pub fn SUSE(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [SUSE Mono](https://fonts.google.com/specimen/SUSE+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#SUSE_Mono")]
+pub fn SUSE_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sacramento](https://fonts.google.com/specimen/Sacramento), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sacramento")]
+pub fn Sacramento(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sahitya](https://fonts.google.com/specimen/Sahitya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sahitya")]
+pub fn Sahitya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sail](https://fonts.google.com/specimen/Sail), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sail")]
+pub fn Sail(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Saira](https://fonts.google.com/specimen/Saira), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Saira")]
+pub fn Saira(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Saira Condensed](https://fonts.google.com/specimen/Saira+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Saira_Condensed")]
+pub fn Saira_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Saira Extra Condensed](https://fonts.google.com/specimen/Saira+Extra+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Saira_Extra_Condensed")]
+pub fn Saira_Extra_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Saira Semi Condensed](https://fonts.google.com/specimen/Saira+Semi+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Saira_Semi_Condensed")]
+pub fn Saira_Semi_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Saira Stencil](https://fonts.google.com/specimen/Saira+Stencil), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Saira_Stencil")]
+pub fn Saira_Stencil(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Salsa](https://fonts.google.com/specimen/Salsa), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Salsa")]
+pub fn Salsa(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sanchez](https://fonts.google.com/specimen/Sanchez), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sanchez")]
+pub fn Sanchez(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sancreek](https://fonts.google.com/specimen/Sancreek), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sancreek")]
+pub fn Sancreek(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sankofa Display](https://fonts.google.com/specimen/Sankofa+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sankofa_Display")]
+pub fn Sankofa_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sansation](https://fonts.google.com/specimen/Sansation), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sansation")]
+pub fn Sansation(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sansita](https://fonts.google.com/specimen/Sansita), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sansita")]
+pub fn Sansita(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sansita Swashed](https://fonts.google.com/specimen/Sansita+Swashed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sansita_Swashed")]
+pub fn Sansita_Swashed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sarabun](https://fonts.google.com/specimen/Sarabun), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sarabun")]
+pub fn Sarabun(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sarala](https://fonts.google.com/specimen/Sarala), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sarala")]
+pub fn Sarala(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sarina](https://fonts.google.com/specimen/Sarina), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sarina")]
+pub fn Sarina(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sarpanch](https://fonts.google.com/specimen/Sarpanch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sarpanch")]
+pub fn Sarpanch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sassy Frass](https://fonts.google.com/specimen/Sassy+Frass), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sassy_Frass")]
+pub fn Sassy_Frass(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Satisfy](https://fonts.google.com/specimen/Satisfy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Satisfy")]
+pub fn Satisfy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Savate](https://fonts.google.com/specimen/Savate), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Savate")]
+pub fn Savate(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sawarabi Gothic](https://fonts.google.com/specimen/Sawarabi+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sawarabi_Gothic")]
+pub fn Sawarabi_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sawarabi Mincho](https://fonts.google.com/specimen/Sawarabi+Mincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sawarabi_Mincho")]
+pub fn Sawarabi_Mincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Scada](https://fonts.google.com/specimen/Scada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Scada")]
+pub fn Scada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Scheherazade New](https://fonts.google.com/specimen/Scheherazade+New), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Scheherazade_New")]
+pub fn Scheherazade_New(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Schibsted Grotesk](https://fonts.google.com/specimen/Schibsted+Grotesk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Schibsted_Grotesk")]
+pub fn Schibsted_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Schoolbell](https://fonts.google.com/specimen/Schoolbell), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Schoolbell")]
+pub fn Schoolbell(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Science Gothic](https://fonts.google.com/specimen/Science+Gothic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Science_Gothic")]
+pub fn Science_Gothic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Scope One](https://fonts.google.com/specimen/Scope+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Scope_One")]
+pub fn Scope_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Seaweed Script](https://fonts.google.com/specimen/Seaweed+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Seaweed_Script")]
+pub fn Seaweed_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Secular One](https://fonts.google.com/specimen/Secular+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Secular_One")]
+pub fn Secular_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sedan](https://fonts.google.com/specimen/Sedan), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sedan")]
+pub fn Sedan(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sedan SC](https://fonts.google.com/specimen/Sedan+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sedan_SC")]
+pub fn Sedan_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sedgwick Ave](https://fonts.google.com/specimen/Sedgwick+Ave), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sedgwick_Ave")]
+pub fn Sedgwick_Ave(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sedgwick Ave Display](https://fonts.google.com/specimen/Sedgwick+Ave+Display), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sedgwick_Ave_Display")]
+pub fn Sedgwick_Ave_Display(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sekuya](https://fonts.google.com/specimen/Sekuya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sekuya")]
+pub fn Sekuya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sen](https://fonts.google.com/specimen/Sen), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sen")]
+pub fn Sen(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Send Flowers](https://fonts.google.com/specimen/Send+Flowers), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Send_Flowers")]
+pub fn Send_Flowers(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sevillana](https://fonts.google.com/specimen/Sevillana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sevillana")]
+pub fn Sevillana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Seymour One](https://fonts.google.com/specimen/Seymour+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Seymour_One")]
+pub fn Seymour_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shadows Into Light](https://fonts.google.com/specimen/Shadows+Into+Light), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shadows_Into_Light")]
+pub fn Shadows_Into_Light(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shadows Into Light Two](https://fonts.google.com/specimen/Shadows+Into+Light+Two), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shadows_Into_Light_Two")]
+pub fn Shadows_Into_Light_Two(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shafarik](https://fonts.google.com/specimen/Shafarik), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shafarik")]
+pub fn Shafarik(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shalimar](https://fonts.google.com/specimen/Shalimar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shalimar")]
+pub fn Shalimar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shantell_Sans")]
+pub fn Shantell_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shanti](https://fonts.google.com/specimen/Shanti), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shanti")]
+pub fn Shanti(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Share](https://fonts.google.com/specimen/Share), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Share")]
+pub fn Share(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Share Tech](https://fonts.google.com/specimen/Share+Tech), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Share_Tech")]
+pub fn Share_Tech(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Share_Tech_Mono")]
+pub fn Share_Tech_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shippori Antique](https://fonts.google.com/specimen/Shippori+Antique), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shippori_Antique")]
+pub fn Shippori_Antique(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shippori Antique B1](https://fonts.google.com/specimen/Shippori+Antique+B1), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shippori_Antique_B1")]
+pub fn Shippori_Antique_B1(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shippori Mincho](https://fonts.google.com/specimen/Shippori+Mincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shippori_Mincho")]
+pub fn Shippori_Mincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shippori Mincho B1](https://fonts.google.com/specimen/Shippori+Mincho+B1), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shippori_Mincho_B1")]
+pub fn Shippori_Mincho_B1(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shizuru](https://fonts.google.com/specimen/Shizuru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shizuru")]
+pub fn Shizuru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shojumaru](https://fonts.google.com/specimen/Shojumaru), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shojumaru")]
+pub fn Shojumaru(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Short Stack](https://fonts.google.com/specimen/Short+Stack), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Short_Stack")]
+pub fn Short_Stack(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Shrikhand](https://fonts.google.com/specimen/Shrikhand), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Shrikhand")]
+pub fn Shrikhand(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Siemreap](https://fonts.google.com/specimen/Siemreap), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Siemreap")]
+pub fn Siemreap(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sigmar](https://fonts.google.com/specimen/Sigmar), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sigmar")]
+pub fn Sigmar(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sigmar One](https://fonts.google.com/specimen/Sigmar+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sigmar_One")]
+pub fn Sigmar_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Signika](https://fonts.google.com/specimen/Signika), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Signika")]
+pub fn Signika(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Signika Negative](https://fonts.google.com/specimen/Signika+Negative), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Signika_Negative")]
+pub fn Signika_Negative(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Silkscreen](https://fonts.google.com/specimen/Silkscreen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Silkscreen")]
+pub fn Silkscreen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Simonetta](https://fonts.google.com/specimen/Simonetta), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Simonetta")]
+pub fn Simonetta(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Single Day](https://fonts.google.com/specimen/Single+Day), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Single_Day")]
+pub fn Single_Day(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sintony](https://fonts.google.com/specimen/Sintony), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sintony")]
+pub fn Sintony(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sirin Stencil](https://fonts.google.com/specimen/Sirin+Stencil), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sirin_Stencil")]
+pub fn Sirin_Stencil(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sirivennela](https://fonts.google.com/specimen/Sirivennela), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sirivennela")]
+pub fn Sirivennela(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Six Caps](https://fonts.google.com/specimen/Six+Caps), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Six_Caps")]
+pub fn Six_Caps(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sixtyfour](https://fonts.google.com/specimen/Sixtyfour), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sixtyfour")]
+pub fn Sixtyfour(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sixtyfour Convergence](https://fonts.google.com/specimen/Sixtyfour+Convergence), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sixtyfour_Convergence")]
+pub fn Sixtyfour_Convergence(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Skranji](https://fonts.google.com/specimen/Skranji), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Skranji")]
+pub fn Skranji(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Slabo 13px](https://fonts.google.com/specimen/Slabo+13px), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Slabo_13px")]
+pub fn Slabo_13px(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Slabo 27px](https://fonts.google.com/specimen/Slabo+27px), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Slabo_27px")]
+pub fn Slabo_27px(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Slackey](https://fonts.google.com/specimen/Slackey), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Slackey")]
+pub fn Slackey(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Slackside One](https://fonts.google.com/specimen/Slackside+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Slackside_One")]
+pub fn Slackside_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Smokum](https://fonts.google.com/specimen/Smokum), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Smokum")]
+pub fn Smokum(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Smooch](https://fonts.google.com/specimen/Smooch), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Smooch")]
+pub fn Smooch(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Smooch Sans](https://fonts.google.com/specimen/Smooch+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Smooch_Sans")]
+pub fn Smooch_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Smythe](https://fonts.google.com/specimen/Smythe), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Smythe")]
+pub fn Smythe(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sniglet](https://fonts.google.com/specimen/Sniglet), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sniglet")]
+pub fn Sniglet(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Snippet](https://fonts.google.com/specimen/Snippet), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Snippet")]
+pub fn Snippet(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Snowburst One](https://fonts.google.com/specimen/Snowburst+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Snowburst_One")]
+pub fn Snowburst_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofadi One](https://fonts.google.com/specimen/Sofadi+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofadi_One")]
+pub fn Sofadi_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofia](https://fonts.google.com/specimen/Sofia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofia")]
+pub fn Sofia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofia Sans](https://fonts.google.com/specimen/Sofia+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofia_Sans")]
+pub fn Sofia_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofia Sans Condensed](https://fonts.google.com/specimen/Sofia+Sans+Condensed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofia_Sans_Condensed")]
+pub fn Sofia_Sans_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofia Sans Extra Condensed](https://fonts.google.com/specimen/Sofia+Sans+Extra+Condensed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofia_Sans_Extra_Condensed")]
+pub fn Sofia_Sans_Extra_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sofia Sans Semi Condensed](https://fonts.google.com/specimen/Sofia+Sans+Semi+Condensed), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sofia_Sans_Semi_Condensed")]
+pub fn Sofia_Sans_Semi_Condensed(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Solitreo](https://fonts.google.com/specimen/Solitreo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Solitreo")]
+pub fn Solitreo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Solway](https://fonts.google.com/specimen/Solway), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Solway")]
+pub fn Solway(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sometype Mono](https://fonts.google.com/specimen/Sometype+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sometype_Mono")]
+pub fn Sometype_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Song Myung](https://fonts.google.com/specimen/Song+Myung), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Song_Myung")]
+pub fn Song_Myung(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sono](https://fonts.google.com/specimen/Sono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sono")]
+pub fn Sono(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sonsie One](https://fonts.google.com/specimen/Sonsie+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sonsie_One")]
+pub fn Sonsie_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sora](https://fonts.google.com/specimen/Sora), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sora")]
+pub fn Sora(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sorts Mill Goudy](https://fonts.google.com/specimen/Sorts+Mill+Goudy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sorts_Mill_Goudy")]
+pub fn Sorts_Mill_Goudy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sour Gummy](https://fonts.google.com/specimen/Sour+Gummy), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sour_Gummy")]
+pub fn Sour_Gummy(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Source Code Pro](https://fonts.google.com/specimen/Source+Code+Pro), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Source_Code_Pro")]
+pub fn Source_Code_Pro(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Source_Sans_3")]
+pub fn Source_Sans_3(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Source Serif 4](https://fonts.google.com/specimen/Source+Serif+4), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Source_Serif_4")]
+pub fn Source_Serif_4(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Space_Grotesk")]
+pub fn Space_Grotesk(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Space Mono](https://fonts.google.com/specimen/Space+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Space_Mono")]
+pub fn Space_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Special Elite](https://fonts.google.com/specimen/Special+Elite), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Special_Elite")]
+pub fn Special_Elite(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Special Gothic](https://fonts.google.com/specimen/Special+Gothic), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Special_Gothic")]
+pub fn Special_Gothic(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Special Gothic Condensed One](https://fonts.google.com/specimen/Special+Gothic+Condensed+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Special_Gothic_Condensed_One")]
+pub fn Special_Gothic_Condensed_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Special Gothic Expanded One](https://fonts.google.com/specimen/Special+Gothic+Expanded+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Special_Gothic_Expanded_One")]
+pub fn Special_Gothic_Expanded_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spectral](https://fonts.google.com/specimen/Spectral), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spectral")]
+pub fn Spectral(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spectral SC](https://fonts.google.com/specimen/Spectral+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spectral_SC")]
+pub fn Spectral_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spicy Rice](https://fonts.google.com/specimen/Spicy+Rice), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spicy_Rice")]
+pub fn Spicy_Rice(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spinnaker](https://fonts.google.com/specimen/Spinnaker), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spinnaker")]
+pub fn Spinnaker(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spirax](https://fonts.google.com/specimen/Spirax), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spirax")]
+pub fn Spirax(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Splash](https://fonts.google.com/specimen/Splash), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Splash")]
+pub fn Splash(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spline Sans](https://fonts.google.com/specimen/Spline+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spline_Sans")]
+pub fn Spline_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Spline Sans Mono](https://fonts.google.com/specimen/Spline+Sans+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Spline_Sans_Mono")]
+pub fn Spline_Sans_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Squada One](https://fonts.google.com/specimen/Squada+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Squada_One")]
+pub fn Squada_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Square Peg](https://fonts.google.com/specimen/Square+Peg), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Square_Peg")]
+pub fn Square_Peg(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sree Krushnadevaraya](https://fonts.google.com/specimen/Sree+Krushnadevaraya), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sree_Krushnadevaraya")]
+pub fn Sree_Krushnadevaraya(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sriracha](https://fonts.google.com/specimen/Sriracha), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sriracha")]
+pub fn Sriracha(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Srisakdi](https://fonts.google.com/specimen/Srisakdi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Srisakdi")]
+pub fn Srisakdi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Staatliches](https://fonts.google.com/specimen/Staatliches), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Staatliches")]
+pub fn Staatliches(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stack Sans Headline](https://fonts.google.com/specimen/Stack+Sans+Headline), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stack_Sans_Headline")]
+pub fn Stack_Sans_Headline(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stack Sans Notch](https://fonts.google.com/specimen/Stack+Sans+Notch), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stack_Sans_Notch")]
+pub fn Stack_Sans_Notch(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stack Sans Text](https://fonts.google.com/specimen/Stack+Sans+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stack_Sans_Text")]
+pub fn Stack_Sans_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stalemate](https://fonts.google.com/specimen/Stalemate), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stalemate")]
+pub fn Stalemate(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stalinist One](https://fonts.google.com/specimen/Stalinist+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stalinist_One")]
+pub fn Stalinist_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stardos Stencil](https://fonts.google.com/specimen/Stardos+Stencil), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stardos_Stencil")]
+pub fn Stardos_Stencil(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stick](https://fonts.google.com/specimen/Stick), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stick")]
+pub fn Stick(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stick No Bills](https://fonts.google.com/specimen/Stick+No+Bills), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stick_No_Bills")]
+pub fn Stick_No_Bills(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stint Ultra Condensed](https://fonts.google.com/specimen/Stint+Ultra+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stint_Ultra_Condensed")]
+pub fn Stint_Ultra_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stint Ultra Expanded](https://fonts.google.com/specimen/Stint+Ultra+Expanded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stint_Ultra_Expanded")]
+pub fn Stint_Ultra_Expanded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stoke](https://fonts.google.com/specimen/Stoke), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stoke")]
+pub fn Stoke(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Story Script](https://fonts.google.com/specimen/Story+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Story_Script")]
+pub fn Story_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Strait](https://fonts.google.com/specimen/Strait), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Strait")]
+pub fn Strait(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Strichpunkt Sans](https://fonts.google.com/specimen/Strichpunkt+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Strichpunkt_Sans")]
+pub fn Strichpunkt_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Style Script](https://fonts.google.com/specimen/Style+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Style_Script")]
+pub fn Style_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Stylish](https://fonts.google.com/specimen/Stylish), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Stylish")]
+pub fn Stylish(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sue Ellen Francisco](https://fonts.google.com/specimen/Sue+Ellen+Francisco), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sue_Ellen_Francisco")]
+pub fn Sue_Ellen_Francisco(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Suez One](https://fonts.google.com/specimen/Suez+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Suez_One")]
+pub fn Suez_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sulphur Point](https://fonts.google.com/specimen/Sulphur+Point), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sulphur_Point")]
+pub fn Sulphur_Point(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sumana](https://fonts.google.com/specimen/Sumana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sumana")]
+pub fn Sumana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sunflower](https://fonts.google.com/specimen/Sunflower), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sunflower")]
+pub fn Sunflower(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sunshiney](https://fonts.google.com/specimen/Sunshiney), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sunshiney")]
+pub fn Sunshiney(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Supermercado One](https://fonts.google.com/specimen/Supermercado+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Supermercado_One")]
+pub fn Supermercado_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Sura](https://fonts.google.com/specimen/Sura), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Sura")]
+pub fn Sura(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Suranna](https://fonts.google.com/specimen/Suranna), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Suranna")]
+pub fn Suranna(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Suravaram](https://fonts.google.com/specimen/Suravaram), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Suravaram")]
+pub fn Suravaram(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Suwannaphum](https://fonts.google.com/specimen/Suwannaphum), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Suwannaphum")]
+pub fn Suwannaphum(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Swanky and Moo Moo](https://fonts.google.com/specimen/Swanky+and+Moo+Moo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Swanky_and_Moo_Moo")]
+pub fn Swanky_and_Moo_Moo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Syncopate](https://fonts.google.com/specimen/Syncopate), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Syncopate")]
+pub fn Syncopate(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Syne](https://fonts.google.com/specimen/Syne), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Syne")]
+pub fn Syne(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Syne Mono](https://fonts.google.com/specimen/Syne+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Syne_Mono")]
+pub fn Syne_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Syne Tactile](https://fonts.google.com/specimen/Syne+Tactile), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Syne_Tactile")]
+pub fn Syne_Tactile(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [TASA Explorer](https://fonts.google.com/specimen/TASA+Explorer), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#TASA_Explorer")]
+pub fn TASA_Explorer(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [TASA Orbiter](https://fonts.google.com/specimen/TASA+Orbiter), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#TASA_Orbiter")]
+pub fn TASA_Orbiter(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tac One](https://fonts.google.com/specimen/Tac+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tac_One")]
+pub fn Tac_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tagesschrift](https://fonts.google.com/specimen/Tagesschrift), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tagesschrift")]
+pub fn Tagesschrift(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tai Heritage Pro](https://fonts.google.com/specimen/Tai+Heritage+Pro), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tai_Heritage_Pro")]
+pub fn Tai_Heritage_Pro(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tajawal](https://fonts.google.com/specimen/Tajawal), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tajawal")]
+pub fn Tajawal(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tangerine](https://fonts.google.com/specimen/Tangerine), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tangerine")]
+pub fn Tangerine(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tapestry](https://fonts.google.com/specimen/Tapestry), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tapestry")]
+pub fn Tapestry(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Taprom](https://fonts.google.com/specimen/Taprom), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Taprom")]
+pub fn Taprom(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tauri](https://fonts.google.com/specimen/Tauri), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tauri")]
+pub fn Tauri(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Taviraj](https://fonts.google.com/specimen/Taviraj), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Taviraj")]
+pub fn Taviraj(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Teachers](https://fonts.google.com/specimen/Teachers), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Teachers")]
+pub fn Teachers(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Teko](https://fonts.google.com/specimen/Teko), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Teko")]
+pub fn Teko(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tektur](https://fonts.google.com/specimen/Tektur), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tektur")]
+pub fn Tektur(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Telex](https://fonts.google.com/specimen/Telex), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Telex")]
+pub fn Telex(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tenali Ramakrishna](https://fonts.google.com/specimen/Tenali+Ramakrishna), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tenali_Ramakrishna")]
+pub fn Tenali_Ramakrishna(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tenor Sans](https://fonts.google.com/specimen/Tenor+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tenor_Sans")]
+pub fn Tenor_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Text Me One](https://fonts.google.com/specimen/Text+Me+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Text_Me_One")]
+pub fn Text_Me_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Texturina](https://fonts.google.com/specimen/Texturina), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Texturina")]
+pub fn Texturina(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Thasadith](https://fonts.google.com/specimen/Thasadith), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Thasadith")]
+pub fn Thasadith(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [The Girl Next Door](https://fonts.google.com/specimen/The+Girl+Next+Door), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#The_Girl_Next_Door")]
+pub fn The_Girl_Next_Door(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [The Nautigal](https://fonts.google.com/specimen/The+Nautigal), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#The_Nautigal")]
+pub fn The_Nautigal(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tienne](https://fonts.google.com/specimen/Tienne), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tienne")]
+pub fn Tienne(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [TikTok Sans](https://fonts.google.com/specimen/TikTok+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#TikTok_Sans")]
+pub fn TikTok_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tillana](https://fonts.google.com/specimen/Tillana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tillana")]
+pub fn Tillana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tilt Neon](https://fonts.google.com/specimen/Tilt+Neon), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tilt_Neon")]
+pub fn Tilt_Neon(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tilt Prism](https://fonts.google.com/specimen/Tilt+Prism), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tilt_Prism")]
+pub fn Tilt_Prism(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tilt Warp](https://fonts.google.com/specimen/Tilt+Warp), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tilt_Warp")]
+pub fn Tilt_Warp(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Timmana](https://fonts.google.com/specimen/Timmana), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Timmana")]
+pub fn Timmana(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tinos](https://fonts.google.com/specimen/Tinos), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tinos")]
+pub fn Tinos(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiny5](https://fonts.google.com/specimen/Tiny5), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiny5")]
+pub fn Tiny5(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Bangla](https://fonts.google.com/specimen/Tiro+Bangla), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Bangla")]
+pub fn Tiro_Bangla(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Devanagari Hindi](https://fonts.google.com/specimen/Tiro+Devanagari+Hindi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Devanagari_Hindi")]
+pub fn Tiro_Devanagari_Hindi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Devanagari Marathi](https://fonts.google.com/specimen/Tiro+Devanagari+Marathi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Devanagari_Marathi")]
+pub fn Tiro_Devanagari_Marathi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Devanagari Sanskrit](https://fonts.google.com/specimen/Tiro+Devanagari+Sanskrit), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Devanagari_Sanskrit")]
+pub fn Tiro_Devanagari_Sanskrit(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Gurmukhi](https://fonts.google.com/specimen/Tiro+Gurmukhi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Gurmukhi")]
+pub fn Tiro_Gurmukhi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Kannada](https://fonts.google.com/specimen/Tiro+Kannada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Kannada")]
+pub fn Tiro_Kannada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Tamil](https://fonts.google.com/specimen/Tiro+Tamil), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Tamil")]
+pub fn Tiro_Tamil(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tiro Telugu](https://fonts.google.com/specimen/Tiro+Telugu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tiro_Telugu")]
+pub fn Tiro_Telugu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tirra](https://fonts.google.com/specimen/Tirra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tirra")]
+pub fn Tirra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Titan One](https://fonts.google.com/specimen/Titan+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Titan_One")]
+pub fn Titan_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Titillium Web](https://fonts.google.com/specimen/Titillium+Web), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Titillium_Web")]
+pub fn Titillium_Web(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tomorrow](https://fonts.google.com/specimen/Tomorrow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tomorrow")]
+pub fn Tomorrow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tourney](https://fonts.google.com/specimen/Tourney), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tourney")]
+pub fn Tourney(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trade Winds](https://fonts.google.com/specimen/Trade+Winds), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trade_Winds")]
+pub fn Trade_Winds(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Train One](https://fonts.google.com/specimen/Train+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Train_One")]
+pub fn Train_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Triodion](https://fonts.google.com/specimen/Triodion), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Triodion")]
+pub fn Triodion(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trirong](https://fonts.google.com/specimen/Trirong), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trirong")]
+pub fn Trirong(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trispace](https://fonts.google.com/specimen/Trispace), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trispace")]
+pub fn Trispace(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trocchi](https://fonts.google.com/specimen/Trocchi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trocchi")]
+pub fn Trocchi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trochut](https://fonts.google.com/specimen/Trochut), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trochut")]
+pub fn Trochut(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Truculenta](https://fonts.google.com/specimen/Truculenta), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Truculenta")]
+pub fn Truculenta(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Trykker](https://fonts.google.com/specimen/Trykker), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Trykker")]
+pub fn Trykker(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tsukimi Rounded](https://fonts.google.com/specimen/Tsukimi+Rounded), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tsukimi_Rounded")]
+pub fn Tsukimi_Rounded(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tuffy](https://fonts.google.com/specimen/Tuffy), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tuffy")]
+pub fn Tuffy(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Tulpen One](https://fonts.google.com/specimen/Tulpen+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Tulpen_One")]
+pub fn Tulpen_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Turret Road](https://fonts.google.com/specimen/Turret+Road), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Turret_Road")]
+pub fn Turret_Road(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Twinkle Star](https://fonts.google.com/specimen/Twinkle+Star), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Twinkle_Star")]
+pub fn Twinkle_Star(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ubuntu](https://fonts.google.com/specimen/Ubuntu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ubuntu")]
+pub fn Ubuntu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ubuntu Condensed](https://fonts.google.com/specimen/Ubuntu+Condensed), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ubuntu_Condensed")]
+pub fn Ubuntu_Condensed(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ubuntu Mono](https://fonts.google.com/specimen/Ubuntu+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ubuntu_Mono")]
+pub fn Ubuntu_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ubuntu Sans](https://fonts.google.com/specimen/Ubuntu+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ubuntu_Sans")]
+pub fn Ubuntu_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ubuntu Sans Mono](https://fonts.google.com/specimen/Ubuntu+Sans+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ubuntu_Sans_Mono")]
+pub fn Ubuntu_Sans_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Uchen](https://fonts.google.com/specimen/Uchen), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Uchen")]
+pub fn Uchen(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ultra](https://fonts.google.com/specimen/Ultra), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ultra")]
+pub fn Ultra(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Unbounded](https://fonts.google.com/specimen/Unbounded), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Unbounded")]
+pub fn Unbounded(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Uncial Antiqua](https://fonts.google.com/specimen/Uncial+Antiqua), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Uncial_Antiqua")]
+pub fn Uncial_Antiqua(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Underdog](https://fonts.google.com/specimen/Underdog), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Underdog")]
+pub fn Underdog(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Unica One](https://fonts.google.com/specimen/Unica+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Unica_One")]
+pub fn Unica_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [UnifrakturCook](https://fonts.google.com/specimen/UnifrakturCook), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#UnifrakturCook")]
+pub fn UnifrakturCook(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [UnifrakturMaguntia](https://fonts.google.com/specimen/UnifrakturMaguntia), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#UnifrakturMaguntia")]
+pub fn UnifrakturMaguntia(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Unkempt](https://fonts.google.com/specimen/Unkempt), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Unkempt")]
+pub fn Unkempt(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Unlock](https://fonts.google.com/specimen/Unlock), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Unlock")]
+pub fn Unlock(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Unna](https://fonts.google.com/specimen/Unna), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Unna")]
+pub fn Unna(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [UoqMunThenKhung](https://fonts.google.com/specimen/UoqMunThenKhung), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#UoqMunThenKhung")]
+pub fn UoqMunThenKhung(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Updock](https://fonts.google.com/specimen/Updock), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Updock")]
+pub fn Updock(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Urbanist](https://fonts.google.com/specimen/Urbanist), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Urbanist")]
+pub fn Urbanist(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [VT323](https://fonts.google.com/specimen/VT323), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#VT323")]
+pub fn VT323(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vampiro One](https://fonts.google.com/specimen/Vampiro+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vampiro_One")]
+pub fn Vampiro_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Varela](https://fonts.google.com/specimen/Varela), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Varela")]
+pub fn Varela(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Varela Round](https://fonts.google.com/specimen/Varela+Round), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Varela_Round")]
+pub fn Varela_Round(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Varta](https://fonts.google.com/specimen/Varta), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Varta")]
+pub fn Varta(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vast Shadow](https://fonts.google.com/specimen/Vast+Shadow), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vast_Shadow")]
+pub fn Vast_Shadow(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vazirmatn](https://fonts.google.com/specimen/Vazirmatn), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vazirmatn")]
+pub fn Vazirmatn(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vend Sans](https://fonts.google.com/specimen/Vend+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vend_Sans")]
+pub fn Vend_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vesper Libre](https://fonts.google.com/specimen/Vesper+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vesper_Libre")]
+pub fn Vesper_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Viaoda Libre](https://fonts.google.com/specimen/Viaoda+Libre), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Viaoda_Libre")]
+pub fn Viaoda_Libre(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vibes](https://fonts.google.com/specimen/Vibes), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vibes")]
+pub fn Vibes(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vibur](https://fonts.google.com/specimen/Vibur), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vibur")]
+pub fn Vibur(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Victor Mono](https://fonts.google.com/specimen/Victor+Mono), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Victor_Mono")]
+pub fn Victor_Mono(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vidaloka](https://fonts.google.com/specimen/Vidaloka), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vidaloka")]
+pub fn Vidaloka(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Viga](https://fonts.google.com/specimen/Viga), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Viga")]
+pub fn Viga(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vina Sans](https://fonts.google.com/specimen/Vina+Sans), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vina_Sans")]
+pub fn Vina_Sans(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Voces](https://fonts.google.com/specimen/Voces), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Voces")]
+pub fn Voces(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Volkhov](https://fonts.google.com/specimen/Volkhov), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Volkhov")]
+pub fn Volkhov(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vollkorn](https://fonts.google.com/specimen/Vollkorn), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vollkorn")]
+pub fn Vollkorn(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vollkorn SC](https://fonts.google.com/specimen/Vollkorn+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vollkorn_SC")]
+pub fn Vollkorn_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Voltaire](https://fonts.google.com/specimen/Voltaire), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Voltaire")]
+pub fn Voltaire(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Vujahday Script](https://fonts.google.com/specimen/Vujahday+Script), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Vujahday_Script")]
+pub fn Vujahday_Script(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [WDXL Lubrifont JP N](https://fonts.google.com/specimen/WDXL+Lubrifont+JP+N), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#WDXL_Lubrifont_JP_N")]
+pub fn WDXL_Lubrifont_JP_N(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [WDXL Lubrifont SC](https://fonts.google.com/specimen/WDXL+Lubrifont+SC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#WDXL_Lubrifont_SC")]
+pub fn WDXL_Lubrifont_SC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [WDXL Lubrifont TC](https://fonts.google.com/specimen/WDXL+Lubrifont+TC), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#WDXL_Lubrifont_TC")]
+pub fn WDXL_Lubrifont_TC(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Waiting for the Sunrise](https://fonts.google.com/specimen/Waiting+for+the+Sunrise), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Waiting_for_the_Sunrise")]
+pub fn Waiting_for_the_Sunrise(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wallpoet](https://fonts.google.com/specimen/Wallpoet), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wallpoet")]
+pub fn Wallpoet(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Walter Turncoat](https://fonts.google.com/specimen/Walter+Turncoat), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Walter_Turncoat")]
+pub fn Walter_Turncoat(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Warnes](https://fonts.google.com/specimen/Warnes), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Warnes")]
+pub fn Warnes(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Water Brush](https://fonts.google.com/specimen/Water+Brush), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Water_Brush")]
+pub fn Water_Brush(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Waterfall](https://fonts.google.com/specimen/Waterfall), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Waterfall")]
+pub fn Waterfall(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wavefont](https://fonts.google.com/specimen/Wavefont), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wavefont")]
+pub fn Wavefont(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wellfleet](https://fonts.google.com/specimen/Wellfleet), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wellfleet")]
+pub fn Wellfleet(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wendy One](https://fonts.google.com/specimen/Wendy+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wendy_One")]
+pub fn Wendy_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Whisper](https://fonts.google.com/specimen/Whisper), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Whisper")]
+pub fn Whisper(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [WindSong](https://fonts.google.com/specimen/WindSong), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#WindSong")]
+pub fn WindSong(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Winky Rough](https://fonts.google.com/specimen/Winky+Rough), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Winky_Rough")]
+pub fn Winky_Rough(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Winky Sans](https://fonts.google.com/specimen/Winky+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Winky_Sans")]
+pub fn Winky_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wire One](https://fonts.google.com/specimen/Wire+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wire_One")]
+pub fn Wire_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wittgenstein](https://fonts.google.com/specimen/Wittgenstein), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wittgenstein")]
+pub fn Wittgenstein(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wix Madefor Display](https://fonts.google.com/specimen/Wix+Madefor+Display), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wix_Madefor_Display")]
+pub fn Wix_Madefor_Display(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Wix Madefor Text](https://fonts.google.com/specimen/Wix+Madefor+Text), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Wix_Madefor_Text")]
+pub fn Wix_Madefor_Text(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Work Sans](https://fonts.google.com/specimen/Work+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Work_Sans")]
+pub fn Work_Sans(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Workbench](https://fonts.google.com/specimen/Workbench), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Workbench")]
+pub fn Workbench(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Xanh Mono](https://fonts.google.com/specimen/Xanh+Mono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Xanh_Mono")]
+pub fn Xanh_Mono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yaldevi](https://fonts.google.com/specimen/Yaldevi), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yaldevi")]
+pub fn Yaldevi(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yanone Kaffeesatz](https://fonts.google.com/specimen/Yanone+Kaffeesatz), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yanone_Kaffeesatz")]
+pub fn Yanone_Kaffeesatz(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yantramanav](https://fonts.google.com/specimen/Yantramanav), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yantramanav")]
+pub fn Yantramanav(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yarndings 12](https://fonts.google.com/specimen/Yarndings+12), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yarndings_12")]
+pub fn Yarndings_12(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yarndings 12 Charted](https://fonts.google.com/specimen/Yarndings+12+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yarndings_12_Charted")]
+pub fn Yarndings_12_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yarndings 20](https://fonts.google.com/specimen/Yarndings+20), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yarndings_20")]
+pub fn Yarndings_20(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yarndings 20 Charted](https://fonts.google.com/specimen/Yarndings+20+Charted), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yarndings_20_Charted")]
+pub fn Yarndings_20_Charted(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yatra One](https://fonts.google.com/specimen/Yatra+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yatra_One")]
+pub fn Yatra_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yellowtail](https://fonts.google.com/specimen/Yellowtail), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yellowtail")]
+pub fn Yellowtail(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yeon Sung](https://fonts.google.com/specimen/Yeon+Sung), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yeon_Sung")]
+pub fn Yeon_Sung(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yeseva One](https://fonts.google.com/specimen/Yeseva+One), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yeseva_One")]
+pub fn Yeseva_One(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yesteryear](https://fonts.google.com/specimen/Yesteryear), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yesteryear")]
+pub fn Yesteryear(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yomogi](https://fonts.google.com/specimen/Yomogi), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yomogi")]
+pub fn Yomogi(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Young Serif](https://fonts.google.com/specimen/Young+Serif), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Young_Serif")]
+pub fn Young_Serif(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yrsa](https://fonts.google.com/specimen/Yrsa), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yrsa")]
+pub fn Yrsa(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ysabeau](https://fonts.google.com/specimen/Ysabeau), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ysabeau")]
+pub fn Ysabeau(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ysabeau Infant](https://fonts.google.com/specimen/Ysabeau+Infant), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ysabeau_Infant")]
+pub fn Ysabeau_Infant(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ysabeau Office](https://fonts.google.com/specimen/Ysabeau+Office), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ysabeau_Office")]
+pub fn Ysabeau_Office(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Ysabeau SC](https://fonts.google.com/specimen/Ysabeau+SC), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Ysabeau_SC")]
+pub fn Ysabeau_SC(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuji Boku](https://fonts.google.com/specimen/Yuji+Boku), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuji_Boku")]
+pub fn Yuji_Boku(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuji Hentaigana Akari](https://fonts.google.com/specimen/Yuji+Hentaigana+Akari), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuji_Hentaigana_Akari")]
+pub fn Yuji_Hentaigana_Akari(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuji Hentaigana Akebono](https://fonts.google.com/specimen/Yuji+Hentaigana+Akebono), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuji_Hentaigana_Akebono")]
+pub fn Yuji_Hentaigana_Akebono(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuji Mai](https://fonts.google.com/specimen/Yuji+Mai), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuji_Mai")]
+pub fn Yuji_Mai(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuji Syuku](https://fonts.google.com/specimen/Yuji+Syuku), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuji_Syuku")]
+pub fn Yuji_Syuku(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yusei Magic](https://fonts.google.com/specimen/Yusei+Magic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yusei_Magic")]
+pub fn Yusei_Magic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuyu](https://fonts.google.com/specimen/Yuyu), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuyu")]
+pub fn Yuyu(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Yuyu Short](https://fonts.google.com/specimen/Yuyu+Short), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Yuyu_Short")]
+pub fn Yuyu_Short(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [ZCOOL KuaiLe](https://fonts.google.com/specimen/ZCOOL+KuaiLe), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#ZCOOL_KuaiLe")]
+pub fn ZCOOL_KuaiLe(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [ZCOOL QingKe HuangYou](https://fonts.google.com/specimen/ZCOOL+QingKe+HuangYou), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#ZCOOL_QingKe_HuangYou")]
+pub fn ZCOOL_QingKe_HuangYou(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [ZCOOL XiaoWei](https://fonts.google.com/specimen/ZCOOL+XiaoWei), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#ZCOOL_XiaoWei")]
+pub fn ZCOOL_XiaoWei(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zain](https://fonts.google.com/specimen/Zain), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zain")]
+pub fn Zain(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zalando Sans](https://fonts.google.com/specimen/Zalando+Sans), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zalando_Sans")]
+pub fn Zalando_Sans(options: VariableFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zalando Sans Expanded](https://fonts.google.com/specimen/Zalando+Sans+Expanded), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zalando_Sans_Expanded")]
+pub fn Zalando_Sans_Expanded(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zalando Sans SemiExpanded](https://fonts.google.com/specimen/Zalando+Sans+SemiExpanded), a variable font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zalando_Sans_SemiExpanded")]
+pub fn Zalando_Sans_SemiExpanded(options: VariableFontWithoutAxes<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Antique](https://fonts.google.com/specimen/Zen+Antique), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Antique")]
+pub fn Zen_Antique(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Antique Soft](https://fonts.google.com/specimen/Zen+Antique+Soft), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Antique_Soft")]
+pub fn Zen_Antique_Soft(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Dots](https://fonts.google.com/specimen/Zen+Dots), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Dots")]
+pub fn Zen_Dots(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Kaku Gothic Antique](https://fonts.google.com/specimen/Zen+Kaku+Gothic+Antique), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Kaku_Gothic_Antique")]
+pub fn Zen_Kaku_Gothic_Antique(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Kaku Gothic New](https://fonts.google.com/specimen/Zen+Kaku+Gothic+New), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Kaku_Gothic_New")]
+pub fn Zen_Kaku_Gothic_New(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Kurenaido](https://fonts.google.com/specimen/Zen+Kurenaido), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Kurenaido")]
+pub fn Zen_Kurenaido(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Loop](https://fonts.google.com/specimen/Zen+Loop), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Loop")]
+pub fn Zen_Loop(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Maru_Gothic")]
+pub fn Zen_Maru_Gothic(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Old Mincho](https://fonts.google.com/specimen/Zen+Old+Mincho), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Old_Mincho")]
+pub fn Zen_Old_Mincho(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zen Tokyo Zoo](https://fonts.google.com/specimen/Zen+Tokyo+Zoo), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zen_Tokyo_Zoo")]
+pub fn Zen_Tokyo_Zoo(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zeyada](https://fonts.google.com/specimen/Zeyada), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zeyada")]
+pub fn Zeyada(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zhi Mang Xing](https://fonts.google.com/specimen/Zhi+Mang+Xing), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zhi_Mang_Xing")]
+pub fn Zhi_Mang_Xing(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zilla Slab](https://fonts.google.com/specimen/Zilla+Slab), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zilla_Slab")]
+pub fn Zilla_Slab(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
+}
+
+/// [Zilla Slab Highlight](https://fonts.google.com/specimen/Zilla+Slab+Highlight), a static font.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#Zilla_Slab_Highlight")]
+pub fn Zilla_Slab_Highlight(options: StaticFont<'_>) -> NextFont {
+    unreachable!()
 }

@@ -96,11 +96,16 @@ pub fn Badge(props: BadgeProps) -> JSX::Element {
     unreachable!()
 }
 
-unsafe extern "Rust" {
-    #[link_name = "encodeURIComponent"]
-    safe fn encode(text: &str) -> String;
-    #[link_name = "parseInt"]
-    safe fn parse_int(text: &str) -> f64;
+#[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]
+#[allow(unused_variables)]
+fn encode(text: &str) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+#[allow(unused_variables)]
+fn parse_int(text: &str) -> f64 {
+    unreachable!()
 }
 
 pub fn App() -> JSX::Element {
@@ -173,9 +178,7 @@ pub fn View() -> JSX::Element {
 test("JSX preserves evaluation order and maps tags and handler statements to their original lines", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
-unsafe extern "Rust" {
-    #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32;
-}
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
 pub fn App() -> JSX::Element {
     jsx! {
         <button
@@ -1061,7 +1064,7 @@ test("nested component JSX stays readable, contextually typed and mapped to the 
 const _: () = ();
 use react::{JSX, jsx};
 use std::rc::Rc;
-unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32); }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) { unreachable!() }
 pub struct Props { pub title: &'static str, pub content: JSX::Element, pub on_submit: Option<Rc<dyn Fn()>> }
 pub fn Card(p: Props) -> JSX::Element { jsx! { <section title={p.title}>{p.content}</section> } }
 pub fn App(active: bool) -> JSX::Element {
@@ -1161,9 +1164,10 @@ pub fn View() -> JSX::Element {
 test("JSX keeps children that read what never changes, and a filtered child, in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ReactNode, event, jsx, use_state};
-unsafe extern "Rust" {
-    #[link_name = "String"]
-    safe fn cn(a: &str) -> String;
+#[cfg_attr(rust_js, rust_js::link_name = "String")]
+#[allow(unused_variables)]
+fn cn(a: &str) -> String {
+    unreachable!()
 }
 pub struct ButtonProps<'a, C: ReactNode> {
     pub children: C,
@@ -1402,7 +1406,7 @@ pub fn View() -> JSX::Element {
 test("component props, keys and children evaluate in source order without capturing names", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
-unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub title: i32, pub children: i32 }
 pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
 pub fn App() -> JSX::Element {
@@ -1772,7 +1776,7 @@ pub fn App() -> JSX::Element {
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ForwardRefExoticComponent, ForwardedRef, RefObject, forward_ref, jsx, webapi};
-unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub label: i32 }
 pub fn Input(p: Props, reference: ForwardedRef<&'static webapi::Element>) -> JSX::Element {
     jsx! { <input ref={reference} tabIndex={p.label} /> }
@@ -3417,9 +3421,10 @@ test("JSX takes an async event handler as the async function it is", async () =>
 use js::Promise;
 use react::webapi::HTMLButtonElement;
 use react::{JSX, event, jsx, use_state};
-unsafe extern "Rust" {
-    #[link_name = "Promise.resolve"]
-    safe fn resolved() -> Promise<()>;
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
+#[allow(unused_variables)]
+fn resolved() -> Promise<()> {
+    unreachable!()
 }
 pub struct ButtonProps {
     pub on_click: Box<dyn Fn(&event::MouseEvent<HTMLButtonElement>)>,
@@ -3493,9 +3498,9 @@ pub struct ClearProps { pub on_clear: Box<dyn Fn()> }
 pub fn Clear(ClearProps { on_clear }: ClearProps) -> JSX::Element {
     jsx! { <button onClick={move |_| on_clear()}>{"Clear"}</button> }
 }
-unsafe extern "Rust" {
-    #[link_name = "alert"]
-    safe fn alert();
+#[cfg_attr(rust_js, rust_js::link_name = "alert")]
+fn alert() {
+    unreachable!()
 }
 pub fn Alert() -> JSX::Element {
     jsx! { <button onClick={move |_| alert()}>{"Alert"}</button> }
@@ -4405,11 +4410,16 @@ pub struct LabelProps<'a> {
 
 pub struct Labels(PhantomData<JsObject>);
 
-unsafe extern "Rust" {
-    #[link_name = "import"]
-    safe fn import_labels(specifier: &str) -> Promise<&'static Labels>;
-    #[link_name = "get Label"]
-    safe fn label_of(this: &Labels) -> fn(LabelProps) -> JSX::Element;
+#[cfg_attr(rust_js, rust_js::link_name = "import")]
+#[allow(unused_variables)]
+fn import_labels(specifier: &str) -> Promise<&'static Labels> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get Label")]
+#[allow(unused_variables)]
+fn label_of(this: &Labels) -> fn(LabelProps) -> JSX::Element {
+    unreachable!()
 }
 
 pub fn load() -> Promise<Module<LabelProps<'static>>> {
@@ -5539,9 +5549,10 @@ pub fn Buttons(recipes: bool, shown: bool, toggle: &'static dyn Fn()) -> JSX::El
 test("dyn values given to a JS module's function are the values", async () => {
   const { dir, args } = compile(`use std::any::Any;
 pub struct Highlight;
-unsafe extern "Rust" {
-    #[rust_js::link_name = "./style.js#HighlightStyle.define"]
-    safe fn define(specs: Vec<&dyn Any>) -> &'static Highlight;
+#[rust_js::link_name = "./style.js#HighlightStyle.define"]
+#[allow(unused_variables)]
+fn define(specs: Vec<&dyn Any>) -> &'static Highlight {
+    unreachable!()
 }
 struct ClassStyle {
     tag: &'static str,
@@ -5632,11 +5643,12 @@ use js::{Kind, Unknown, classify};
 use react::attributes::AnchorHTMLAttributes;
 use react::webapi::HTMLAnchorElement;
 use react::{JSX, ReactNode, RefObject, jsx, use_effect, use_ref};
-unsafe extern "Rust" {
-    #[link_name = "./cn.js#default"]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    #[cfg_attr(rust_js, rust_js::skips_falsy)]
-    pub safe fn cn(classes: &[Option<&str>]) -> String;
+#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[cfg_attr(rust_js, rust_js::skips_falsy)]
+#[allow(unused_variables)]
+pub fn cn(classes: &[Option<&str>]) -> String {
+    unreachable!()
 }
 #[derive(Default)]
 pub struct LinkProps<'a, C> {
@@ -5706,12 +5718,17 @@ pub struct SidebarLinkProps<'a> {
     pub is_pending: bool,
 }
 
-unsafe extern "Rust" {
-    // Chrome's and Safari's, not every browser's.
-    #[link_name = "get scrollIntoViewIfNeeded"]
-    safe fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> &'static Unknown;
-    #[link_name = "scrollIntoViewIfNeeded"]
-    safe fn scroll_into_view_if_needed(this: &HTMLAnchorElement);
+// Chrome's and Safari's, not every browser's.
+#[cfg_attr(rust_js, rust_js::link_name = "get scrollIntoViewIfNeeded")]
+#[allow(unused_variables)]
+fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> &'static Unknown {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "scrollIntoViewIfNeeded")]
+#[allow(unused_variables)]
+fn scroll_into_view_if_needed(this: &HTMLAnchorElement) {
+    unreachable!()
 }
 
 pub fn SidebarLink(
@@ -6299,9 +6316,10 @@ test("a variant's test function is a bool in a test", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children::{self, Child};
 use react::{JSX, ReactElement, ReactNode, jsx};
-unsafe extern "Rust" {
-    #[link_name = "get type"]
-    safe fn tag(this: &ReactElement) -> Option<&'static str>;
+#[cfg_attr(rust_js, rust_js::link_name = "get type")]
+#[allow(unused_variables)]
+fn tag(this: &ReactElement) -> Option<&'static str> {
+    unreachable!()
 }
 pub struct DiagramProps<C: ReactNode> {
     pub children: C,
@@ -6328,11 +6346,12 @@ pub fn Diagram<C: ReactNode>(DiagramProps { children }: DiagramProps<C>) -> JSX:
 test("classes held ahead of a branch past a static's fields are read in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
-unsafe extern "Rust" {
-    #[link_name = "./cn.js#default"]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    #[cfg_attr(rust_js, rust_js::skips_falsy)]
-    safe fn cn(classes: &[Option<&str>]) -> String;
+#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[cfg_attr(rust_js, rust_js::skips_falsy)]
+#[allow(unused_variables)]
+fn cn(classes: &[Option<&str>]) -> String {
+    unreachable!()
 }
 pub struct Variant {
     pub title: &'static str,
@@ -6380,9 +6399,10 @@ test("an element a let-else binds is read as the child it binds", async () => {
 use js::Unknown;
 use react::children::{self, Child};
 use react::{JSX, ReactNode, jsx};
-unsafe extern "Rust" {
-    #[link_name = "get mdxName"]
-    safe fn mdx_name(this: &Unknown) -> Option<&'static str>;
+#[cfg_attr(rust_js, rust_js::link_name = "get mdxName")]
+#[allow(unused_variables)]
+fn mdx_name(this: &Unknown) -> Option<&'static str> {
+    unreachable!()
 }
 pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
     let mut hints = 0;
@@ -6598,7 +6618,7 @@ pub fn Looped() -> JSX::Element {
 test("a key that does something is made before the children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
-unsafe extern "Rust" { #[link_name = "globalThis.recordKey"] safe fn record(n: i32) -> i32; }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.recordKey")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub title: i32, pub children: i32 }
 pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
 pub fn App() -> JSX::Element {

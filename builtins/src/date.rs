@@ -392,79 +392,111 @@ impl Date {
     }
 }
 
-unsafe extern "Rust" {
-    /// [`new Date()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): now.
-    #[link_name = "new Date"]
-    pub safe fn new() -> &'static Date;
+/// [`new Date()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): now.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new() -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(time)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of milliseconds since 1970 UTC.
-    #[link_name = "new Date"]
-    pub safe fn new_with_time(time: f64) -> &'static Date;
+/// [`new Date(time)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of milliseconds since 1970 UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_time(time: f64) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of text `Date.parse` reads, an invalid date of
-    /// other text.
-    #[link_name = "new Date"]
-    pub safe fn new_with_text(text: &str) -> &'static Date;
+/// [`new Date(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of text `Date.parse` reads, an invalid date of
+/// other text.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_text(text: &str) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ym(year: i32, month: i32) -> &'static Date;
+/// [`new Date(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ym(year: i32, month: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ymd(year: i32, month: i32, day: i32) -> &'static Date;
+/// [`new Date(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ymd(year: i32, month: i32, day: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ymdh(year: i32, month: i32, day: i32, hours: i32) -> &'static Date;
+/// [`new Date(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ymdh(year: i32, month: i32, day: i32, hours: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> &'static Date;
+/// [`new Date(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> &'static Date;
+/// [`new Date(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`new Date(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-    /// zone, the month 0 for January.
-    #[link_name = "new Date"]
-    pub safe fn new_with_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> &'static Date;
+/// [`new Date(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
+/// zone, the month 0 for January.
+#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
+pub fn new_with_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> &'static Date {
+    unreachable!()
+}
 
-    /// [`Date.now()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/now): milliseconds since 1970 UTC.
-    #[link_name = "Date.now"]
-    pub safe fn now() -> f64;
+/// [`Date.now()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/now): milliseconds since 1970 UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.now")]
+pub fn now() -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/parse): the time text says, `NaN` of text it can't read.
-    #[link_name = "Date.parse"]
-    pub safe fn parse(text: &str) -> f64;
+/// [`Date.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/parse): the time text says, `NaN` of text it can't read.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.parse")]
+pub fn parse(text: &str) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ym(year: i32, month: i32) -> f64;
+/// [`Date.UTC(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ym(year: i32, month: i32) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ymd(year: i32, month: i32, day: i32) -> f64;
+/// [`Date.UTC(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ymd(year: i32, month: i32, day: i32) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ymdh(year: i32, month: i32, day: i32, hours: i32) -> f64;
+/// [`Date.UTC(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ymdh(year: i32, month: i32, day: i32, hours: i32) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> f64;
+/// [`Date.UTC(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> f64;
+/// [`Date.UTC(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> f64 {
+    unreachable!()
+}
 
-    /// [`Date.UTC(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-    #[link_name = "Date.UTC"]
-    pub safe fn utc_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> f64;
+/// [`Date.UTC(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
+pub fn utc_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> f64 {
+    unreachable!()
 }

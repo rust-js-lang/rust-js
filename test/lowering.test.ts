@@ -58,10 +58,7 @@ pub fn handled() -> u32 {
 // the index too.
 test("a callback that only passes its arguments on is the function", async () => {
   const dir = fixture("eta");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "parseFloat"]
-    safe fn parse_float(text: &str) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] #[allow(unused_variables)] fn parse_float(text: &str) -> f64 { unreachable!() }
 
 fn double(x: &u32) -> u32 {
     x * 2
@@ -864,9 +861,10 @@ test("an ignored result of a call that throws is try and an empty catch", async 
   const dir = fixture("ignored-try");
   writeFileSync(join(dir, "lib.rs"), `use js::JsError;
 
-unsafe extern "Rust" {
-    #[link_name = "globalThis.risky"]
-    safe fn risky(n: f64) -> Result<f64, &'static JsError>;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.risky")]
+#[allow(unused_variables)]
+fn risky(n: f64) -> Result<f64, &'static JsError> {
+    unreachable!()
 }
 
 pub fn ignored(n: f64) {
@@ -1012,10 +1010,7 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
 // that bind one name are two variables at the module's top.
 test("on_load bodies that bind one name each keep their own", async () => {
   const dir = fixture("on-load-scopes");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.onLoadSeen"]
-    safe fn seen(n: u32);
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadSeen")] #[allow(unused_variables)] fn seen(n: u32) { unreachable!() }
 fn pair() -> (u32, u32) {
     (1, 0)
 }
@@ -2141,10 +2136,7 @@ pub fn cache(key: &str, n: u32) -> Option<u32> {
 // which `Array.from` makes an empty array.
 test("a generic iterator collected keeps an iterator with only a next", async () => {
   const dir = fixture("generic-next-only");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.counted"]
-    safe fn counted() -> Box<dyn Iterator<Item = u32>>;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")] fn counted() -> Box<dyn Iterator<Item = u32>> { unreachable!() }
 fn plus_one<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
     items.map(|x| x + 1).collect()
 }
@@ -2188,10 +2180,7 @@ pub fn first(o: &js::Unknown) -> Option<String> {
 // its module's top all the same, where JS has no `return`.
 test("an on_load body's loop ends at the module's top", async () => {
   const dir = fixture("on-load-loop");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.onLoadLooped"]
-    safe fn seen(n: u32);
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadLooped")] #[allow(unused_variables)] fn seen(n: u32) { unreachable!() }
 js::on_load! {
     let mut it = [1u32, 2, 3].iter();
     while let Some(&n) = it.next() {
@@ -2358,10 +2347,7 @@ pub fn most(x: u32) -> bool {
 // `el.offsetWidth` lays the page out again, which restarts an animation.
 test("an unread getter of a binding is still read", async () => {
   const dir = fixture("unread-getter");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "get offsetWidth"]
-    safe fn offset_width(this: &js::JsObject) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")] #[allow(unused_variables)] fn offset_width(this: &js::JsObject) -> f64 { unreachable!() }
 
 pub fn reflow(el: &js::JsObject) {
     let _width = offset_width(el);
@@ -2680,9 +2666,10 @@ pub fn formatted(f: impl Fn(Options) -> u32) -> String {
     format!("value {}", f(Options { value: None }))
 }
 
-unsafe extern "Rust" {
-    #[link_name = "keyed"]
-    safe fn keyed(this: &js::JsObject, options: Options) -> u32;
+#[cfg_attr(rust_js, rust_js::link_name = "keyed")]
+#[allow(unused_variables)]
+fn keyed(this: &js::JsObject, options: Options) -> u32 {
+    unreachable!()
 }
 
 pub fn optional(o: Option<&js::JsObject>) -> Option<u32> {
@@ -2706,9 +2693,10 @@ test("only a DOM element's handler returns its one call", async () => {
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 use react::{JSX, jsx};
 
-unsafe extern "Rust" {
-    #[link_name = "parseInt"]
-    safe fn parse_int(s: &str) -> f64;
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+#[allow(unused_variables)]
+fn parse_int(s: &str) -> f64 {
+    unreachable!()
 }
 
 pub struct CustomProps {
@@ -2747,14 +2735,23 @@ test("a component's callback returns a call that gives undefined", async () => {
 use std::rc::Rc;
 use react::{JSX, jsx};
 
-unsafe extern "Rust" {
-    #[link_name = "parseInt"]
-    safe fn parse_int(s: &str) -> f64;
-    #[link_name = "globalThis.record"]
-    safe fn record(n: i32);
-    #[link_name = "globalThis.record"]
-    #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    safe fn noted(n: i32);
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+#[allow(unused_variables)]
+fn parse_int(s: &str) -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+#[allow(unused_variables)]
+fn record(n: i32) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+#[cfg_attr(rust_js, rust_js::returns_undefined)]
+#[allow(unused_variables)]
+fn noted(n: i32) {
+    unreachable!()
 }
 
 pub struct CardProps {
@@ -3271,10 +3268,7 @@ pub fn both(h: Holder<bool>) -> (Holder<bool>, Holder<bool>) {
 test("a closure that only spawns an async block is an async arrow", async () => {
   const dir = fixture("spawning-closure");
   writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "./copy.js#copy"]
-    safe fn copy(text: &str) -> js::Promise<()>;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./copy.js#copy")] #[allow(unused_variables)] fn copy(text: &str) -> js::Promise<()> { unreachable!() }
 
 pub fn handler() -> Box<dyn Fn()> {
     Box::new(|| {
@@ -3404,11 +3398,16 @@ test("a binding is given each dyn Any's value", async () => {
   const dir = fixture("any-to-js");
   writeFileSync(join(dir, "lib.rs"), `use std::any::Any;
 
-unsafe extern "Rust" {
-    #[link_name = "JSON.stringify"]
-    safe fn stringify_all(values: Vec<&dyn Any>) -> String;
-    #[link_name = "JSON.stringify"]
-    safe fn stringify_slice(values: &[&dyn Any]) -> String;
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+#[allow(unused_variables)]
+fn stringify_all(values: Vec<&dyn Any>) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+#[allow(unused_variables)]
+fn stringify_slice(values: &[&dyn Any]) -> String {
+    unreachable!()
 }
 
 struct Spec {
@@ -3641,11 +3640,7 @@ test("a value moved before anything can leave needs no drop of its scope", async
 // that may be -1, or is set again after its test, is cast as `as` casts.
 test("an f64 known to be a whole number in range is cast as it is", async () => {
   const dir = fixture("whole-casts");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "indexOf"]
-    #[rust_js::position]
-    safe fn index_of(this: &str, search: &str) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "indexOf")] #[rust_js::position] #[allow(unused_variables)] fn index_of(this: &str, search: &str) -> f64 { unreachable!() }
 pub fn found(line: &str, word: &str) -> u32 {
     let index = index_of(line, word);
     if index == -1.0 {
@@ -5058,10 +5053,7 @@ pub fn copied(message: &Message) -> Diagnostic {
 // writes `linter.defineRules({..})`: no closure called in place.
 test("with of a one-statement closure is its statement", async () => {
   const dir = fixture("with-statement");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.seen.push"]
-    safe fn seen(s: &str);
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen.push")] #[allow(unused_variables)] fn seen(s: &str) { unreachable!() }
 pub struct Logger {
     pub prefix: &'static str,
 }
@@ -6440,9 +6432,9 @@ pub fn shadowing(P { label: text }: P) -> usize {
     label.len() + self::label(false).len()
 }
 
-unsafe extern "Rust" {
-    #[link_name = "./err.js#default"]
-    safe fn Error() -> u32;
+#[cfg_attr(rust_js, rust_js::link_name = "./err.js#default")]
+fn Error() -> u32 {
+    unreachable!()
 }
 
 pub fn made() -> u32 {
@@ -6466,9 +6458,9 @@ pub fn alone(n: u32) -> u32 {
 }
 
 // An import of the name of a function of the module's own stays apart.
-unsafe extern "Rust" {
-    #[link_name = "./err.js#tag"]
-    safe fn js_tag() -> u32;
+#[cfg_attr(rust_js, rust_js::link_name = "./err.js#tag")]
+fn js_tag() -> u32 {
+    unreachable!()
 }
 
 pub fn tag() -> u32 {
@@ -6495,10 +6487,7 @@ pub fn tag() -> u32 {
 test("an import named as a global a conversion reads stays apart", async () => {
   const dir = fixture("reclaimed-global-import");
   writeFileSync(join(dir, "names.js"), "export function String() { return 9; }\n");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "./names.js#String"]
-    safe fn js_string() -> u32;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./names.js#String")] fn js_string() -> u32 { unreachable!() }
 
 pub fn stringed(n: u32) -> String {
     js_string().to_string() + &n.to_string()
@@ -8809,10 +8798,7 @@ pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
 // new logs: `more.filter(..).map(..)`, not `$iter(more)`.
 test("a lazy chain from MIR spread once is an array", async () => {
   const dir = fixture("chain-spread-once");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "Math.random"]
-    safe fn random() -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.random")] fn random() -> f64 { unreachable!() }
 pub fn joined(prev: &[u32], more: &[u32]) -> Vec<u32> {
     let new_logs = more.iter().filter(|&&x| x > 1).map(|&x| x * 2);
     let messages: Vec<u32> = prev.iter().cloned().chain(new_logs).collect();
@@ -9008,11 +8994,15 @@ test("a truthy option's is_some given as a value is a boolean", async () => {
   const dir = fixture("is-some-value");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 use js::JsObject;
-unsafe extern "Rust" {
-    #[link_name = "get globalThis.maybeSupports"]
-    safe fn scriptSupports() -> Option<&'static JsObject>;
-    #[link_name = "globalThis.supportsIt"]
-    safe fn supports(what: &str) -> bool;
+#[cfg_attr(rust_js, rust_js::link_name = "get globalThis.maybeSupports")]
+fn scriptSupports() -> Option<&'static JsObject> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.supportsIt")]
+#[allow(unused_variables)]
+fn supports(what: &str) -> bool {
+    unreachable!()
 }
 thread_local! {
     static SUPPORTED: Cell<bool> = const { Cell::new(false) };
@@ -9829,10 +9819,7 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
 // react.dev's CodeBlock reads its regular expressions' matches.
 test("a held temporary is named `value`", async () => {
   const dir = fixture("temporary-name");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.find"]
-    safe fn find(text: &str) -> Option<(String, String)>;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.find")] #[allow(unused_variables)] fn find(text: &str) -> Option<(String, String)> { unreachable!() }
 pub fn lines(meta: &str) -> String {
     let Some((_, lines)) = find(meta) else {
         return String::new();
@@ -9874,9 +9861,10 @@ test("a call giving a bool is one in a test", async () => {
   writeFileSync(join(dir, "lib.rs"), `pub struct Item {
     pub kind: String,
 }
-unsafe extern "Rust" {
-    #[link_name = "globalThis.isItem"]
-    safe fn is_item(x: &Item) -> bool;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.isItem")]
+#[allow(unused_variables)]
+fn is_item(x: &Item) -> bool {
+    unreachable!()
 }
 pub fn images(items: Vec<&Item>) -> Vec<&Item> {
     items.into_iter().filter(|item| is_item(item) && item.kind == "img").collect()
@@ -9895,10 +9883,7 @@ pub fn images(items: Vec<&Item>) -> Vec<&Item> {
 // function's still takes the item alone.
 test("a crate function given as a callback is passed as itself", async () => {
   const dir = fixture("fn-item-callback");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "parseFloat"]
-    safe fn parse_float(text: &str) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] #[allow(unused_variables)] fn parse_float(text: &str) -> f64 { unreachable!() }
 pub struct E {
     pub rule: Option<String>,
 }
@@ -9991,9 +9976,10 @@ pub enum ContentBoxSize {
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Single(&'static BoxSize),
 }
-unsafe extern "Rust" {
-    #[link_name = "get contentBoxSize"]
-    safe fn contentBoxSize(this: &Unknown) -> Option<ContentBoxSize>;
+#[cfg_attr(rust_js, rust_js::link_name = "get contentBoxSize")]
+#[allow(unused_variables)]
+fn contentBoxSize(this: &Unknown) -> Option<ContentBoxSize> {
+    unreachable!()
 }
 pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
     for entry in entries {
@@ -10024,9 +10010,10 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
 test("arrays joined are one array of their items", async () => {
   const dir = fixture("concat-spread");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
-unsafe extern "Rust" {
-    #[link_name = "globalThis.made"]
-    safe fn made(name: &str) -> &'static Unknown;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.made")]
+#[allow(unused_variables)]
+fn made(name: &str) -> &'static Unknown {
+    unreachable!()
 }
 pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
     let children = [first, vec![made("a"), made("b")]].concat();
@@ -10345,10 +10332,7 @@ test("an adapter of a JS iterator is not made one again", async () => {
 // react.dev's Console filters what's logged.
 test("an array's iterator for an adapter alone is its values", async () => {
   const dir = fixture("values-adapter");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "globalThis.seen"]
-    safe fn seen(x: u32) -> u32;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen")] #[allow(unused_variables)] fn seen(x: u32) -> u32 { unreachable!() }
 pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
     let new_logs = log.iter().filter(|x| seen(**x) != 3).map(|x| seen(x * 2));
     prev.iter().cloned().chain(new_logs).collect()
@@ -10671,9 +10655,10 @@ test("a vec's specs from MIR stay in place past a branch's temporary", async () 
 pub struct Syntax { pub string: String } pub struct Theme { pub syntax: Syntax }
 pub struct Tag(PhantomData<JsObject>);
 pub struct HighlightStyle(PhantomData<JsObject>);
-unsafe extern "Rust" {
-    #[link_name = "@codemirror/language#HighlightStyle.define"]
-    safe fn define(specs: Vec<&dyn Any>) -> &'static HighlightStyle;
+#[cfg_attr(rust_js, rust_js::link_name = "@codemirror/language#HighlightStyle.define")]
+#[allow(unused_variables)]
+fn define(specs: Vec<&dyn Any>) -> &'static HighlightStyle {
+    unreachable!()
 }
 mod tags {
     use super::Tag;
@@ -10709,12 +10694,24 @@ mod tags {
         pub safe static comment: &'static Tag;
         #[link_name = "@lezer/highlight#tags.quote"]
         pub safe static quote: &'static Tag;
-        #[link_name = "@lezer/highlight#tags.standard"]
-        pub safe fn standard(tag: &Tag) -> &'static Tag;
-        #[link_name = "@lezer/highlight#tags.function"]
-        pub safe fn function(tag: &Tag) -> &'static Tag;
-        #[link_name = "@lezer/highlight#tags.definition"]
-        pub safe fn definition(tag: &Tag) -> &'static Tag;
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.standard")]
+    #[allow(unused_variables)]
+    pub fn standard(tag: &Tag) -> &'static Tag {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.function")]
+    #[allow(unused_variables)]
+    pub fn function(tag: &Tag) -> &'static Tag {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.definition")]
+    #[allow(unused_variables)]
+    pub fn definition(tag: &Tag) -> &'static Tag {
+        unreachable!()
     }
 }
 

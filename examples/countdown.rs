@@ -10,11 +10,16 @@ use webapi::events::Click;
 use webapi::tags::{Button, Div, Output};
 use webapi::{EventTargetExt, Element};
 
-unsafe extern "Rust" {
-    #[link_name = "setTimeout"]
-    safe fn set_timeout(callback: Box<dyn FnOnce()>, ms: u32);
-    #[link_name = "new Promise"]
-    safe fn new_promise(executor: Box<dyn FnOnce(Box<dyn FnOnce()>)>) -> Promise<()>;
+#[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
+#[allow(unused_variables)]
+fn set_timeout(callback: Box<dyn FnOnce()>, ms: u32) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new Promise")]
+#[allow(unused_variables)]
+fn new_promise(executor: Box<dyn FnOnce(Box<dyn FnOnce()>)>) -> Promise<()> {
+    unreachable!()
 }
 
 /// A promise that resolves after `ms` milliseconds.

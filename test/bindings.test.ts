@@ -972,9 +972,10 @@ test("node's events are typed by their emitters", () => {
 use node::events::{self, Emits, EventEmitter, EventEmitterExt};
 use node::process::{self, Signals};
 
-unsafe extern "Rust" {
-    #[link_name = "globalThis.log"]
-    safe fn log(what: &str);
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.log")]
+#[allow(unused_variables)]
+fn log(what: &str) {
+    unreachable!()
 }
 
 #[rust_js::name = "ping"]
@@ -1621,9 +1622,9 @@ pub fn counted(key: &str) -> f64 {
 // `document.create_element(..)`. Other constructors, `new Event`, it binds.
 test("the webapi crate binds no element constructor, which a page can't call", () => {
   const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
-  expect(lib.match(/#\[link_name = "new HTML\w*"\]/g) ?? []).toEqual([]);
-  expect(lib).toContain('#[link_name = "new Event"]');
-  expect(lib).toContain('#[link_name = "new TextEncoder"]');
+  expect(lib.match(/rust_js::link_name = "new HTML\w*"/g) ?? []).toEqual([]);
+  expect(lib).toContain('#[cfg_attr(rust_js, rust_js::link_name = "new Event")]');
+  expect(lib).toContain('#[cfg_attr(rust_js, rust_js::link_name = "new TextEncoder")]');
 });
 
 // A binding's last parameter, a slice, can be JS's rest arguments,
@@ -1631,11 +1632,7 @@ test("the webapi crate binds no element constructor, which a page can't call", (
 // react.dev calls `cn("a", className)`, and another one spread (ADR 0221).
 test("a variadic binding takes a slice as its rest arguments", async () => {
   const dir = fixture("variadic");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "Math.max"]
-    #[rust_js::variadic]
-    safe fn max(values: &[f64]) -> f64;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[rust_js::variadic] #[allow(unused_variables)] fn max(values: &[f64]) -> f64 { unreachable!() }
 pub fn largest(a: f64, b: f64) -> f64 {
     max(&[a, b, 1.0])
 }
@@ -1732,15 +1729,7 @@ pub fn asked() -> bool {
 test("a binding that skips what's falsy is given test && value", async () => {
   const dir = fixture("skips-falsy");
   writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "./cn.js#default"]
-    #[rust_js::variadic]
-    #[rust_js::skips_falsy]
-    safe fn cn(classes: &[Option<&str>]) -> String;
-    #[link_name = "./cn.js#default"]
-    #[rust_js::variadic]
-    safe fn plain(classes: &[Option<&str>]) -> String;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[rust_js::skips_falsy] #[allow(unused_variables)] fn cn(classes: &[Option<&str>]) -> String { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[allow(unused_variables)] fn plain(classes: &[Option<&str>]) -> String { unreachable!() }
 pub fn classes(expanded: bool, shown: bool) -> String {
     cn(&[Some("a"), expanded.then_some("wide"), (!expanded && shown).then_some("tall")])
 }
@@ -1815,13 +1804,7 @@ pub fn linked(href: Option<&str>) -> String {
 // does `unwrap_unchecked`, which can't panic. One unmarked keeps both.
 test("a binding that can't throw, read before a move, leaves nothing to drop", async () => {
   const dir = fixture("cannot-throw");
-  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
-    #[link_name = "get globalThis.calls"]
-    #[rust_js::cannot_throw]
-    safe fn calls() -> u32;
-    #[link_name = "get globalThis.calls"]
-    safe fn calls_unmarked() -> u32;
-}
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get globalThis.calls")] #[rust_js::cannot_throw] fn calls() -> u32 { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "get globalThis.calls")] fn calls_unmarked() -> u32 { unreachable!() }
 pub struct Counted<T>(pub u32, pub T);
 pub fn count<T>(value: T) -> Counted<T> {
     let n = calls();
@@ -1866,9 +1849,10 @@ test("js::import! loads a module when it's asked for", async () => {
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 mod lint;
 mod root;
-unsafe extern "Rust" {
-    #[link_name = "./math.js#twice"]
-    safe fn twice(n: f64) -> f64;
+#[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
+#[allow(unused_variables)]
+fn twice(n: f64) -> f64 {
+    unreachable!()
 }
 pub async fn linted(n: u32) -> u32 {
     let run = js::import!(lint::run).await;
@@ -1905,12 +1889,15 @@ test("a required binding is read through require", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("required");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_upper_case_globals)]
-unsafe extern "Rust" {
-    #[link_name = "get node:path#sep"]
-    #[rust_js::require]
-    safe fn sep() -> String;
-    #[link_name = "get node:path#delimiter"]
-    safe fn delimiter() -> String;
+#[cfg_attr(rust_js, rust_js::link_name = "get node:path#sep")]
+#[rust_js::require]
+fn sep() -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get node:path#delimiter")]
+fn delimiter() -> String {
+    unreachable!()
 }
 thread_local! {
     static separator: String = sep();

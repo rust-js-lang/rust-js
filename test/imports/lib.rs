@@ -1,35 +1,61 @@
 //! Imports from JS modules: `#[link_name = "module#path"]` (ADR 0028).
-#![feature(extern_types)]
 
 pub mod inner {
     pub mod leaf;
 }
 
+/// A URL, as JS has it: a JS type is a struct of a `JsObject` (ADR 0111).
+struct Url(core::marker::PhantomData<js::JsObject>);
+
 unsafe extern "Rust" {
-    type Url;
-
-    // Named imports, and a path inside one.
-    #[link_name = "node:path#join"]
-    safe fn path_join(a: &str, b: &str) -> String;
-    #[link_name = "node:path#posix.basename"]
-    safe fn basename(path: &str) -> String;
-
-    // A class from a module, next to the global of the same name.
-    #[link_name = "new node:url#URL"]
-    safe fn new_url(href: &str) -> &'static Url;
-    #[link_name = "new URL"]
-    safe fn new_global_url(href: &str) -> &'static Url;
-    #[link_name = "get href"]
-    safe fn href(this: &Url) -> String;
-
-    // A file of our own, beside the root's JS: its default export, and a
-    // path through the whole module.
-    #[link_name = "./greet.js#default"]
-    safe fn greet(name: &str) -> String;
-    #[link_name = "./greet.js#*.polite"]
-    safe fn polite(name: &str) -> String;
     #[link_name = "./greet.js#punctuation"]
     safe static punctuation: &'static str;
+}
+
+// Named imports, and a path inside one.
+#[cfg_attr(rust_js, rust_js::link_name = "node:path#join")]
+#[allow(unused_variables)]
+fn path_join(a: &str, b: &str) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "node:path#posix.basename")]
+#[allow(unused_variables)]
+fn basename(path: &str) -> String {
+    unreachable!()
+}
+
+// A class from a module, next to the global of the same name.
+#[cfg_attr(rust_js, rust_js::link_name = "new node:url#URL")]
+#[allow(unused_variables)]
+fn new_url(href: &str) -> &'static Url {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+#[allow(unused_variables)]
+fn new_global_url(href: &str) -> &'static Url {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get href")]
+#[allow(unused_variables)]
+fn href(this: &Url) -> String {
+    unreachable!()
+}
+
+// A file of our own, beside the root's JS: its default export, and a
+// path through the whole module.
+#[cfg_attr(rust_js, rust_js::link_name = "./greet.js#default")]
+#[allow(unused_variables)]
+fn greet(name: &str) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./greet.js#*.polite")]
+#[allow(unused_variables)]
+fn polite(name: &str) -> String {
+    unreachable!()
 }
 
 pub fn paths() -> String {

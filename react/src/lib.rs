@@ -30,7 +30,8 @@
 //! ```
 //!
 //! Every item here is a binding: rustc checks the types, and the bodies never
-//! run. Generic ones use `#[rust_js::link_name]` (ADR 0039).
+//! run. Each is an ordinary function with `#[rust_js::link_name]` (ADRs
+//! 0039, 0373).
 //!
 //! # React versions
 //!

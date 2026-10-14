@@ -37,13 +37,15 @@ pub struct EventEmitter(PhantomData<JsObject>);
 pub mod event_emitter {
     use super::{EventEmitter, EventEmitterOptions};
 
-    unsafe extern "Rust" {
-        /// [`new EventEmitter()`](https://nodejs.org/api/events.html#class-eventemitter).
-        #[link_name = "new events#EventEmitter"]
-        pub safe fn new() -> &'static EventEmitter;
+    /// [`new EventEmitter()`](https://nodejs.org/api/events.html#class-eventemitter).
+    #[cfg_attr(rust_js, rust_js::link_name = "new events#EventEmitter")]
+    pub fn new() -> &'static EventEmitter {
+        unreachable!()
+    }
 
-        #[link_name = "new events#EventEmitter"]
-        pub safe fn new_with_options(options: EventEmitterOptions) -> &'static EventEmitter;
+    #[cfg_attr(rust_js, rust_js::link_name = "new events#EventEmitter")]
+    pub fn new_with_options(options: EventEmitterOptions) -> &'static EventEmitter {
+        unreachable!()
     }
 }
 
@@ -284,22 +286,30 @@ unsafe extern "Rust" {
     #[link_name = "events#captureRejectionSymbol"]
     #[allow(non_upper_case_globals)]
     pub safe static capture_rejection_symbol: &'static Symbol;
+}
 
-    /// [`events.captureRejections`](https://nodejs.org/api/events.html#eventscapturerejections):
-    /// whether a new emitter's listener's rejected promise is its `"error"`.
-    #[link_name = "get events#EventEmitter.captureRejections"]
-    pub safe fn capture_rejections() -> bool;
+/// [`events.captureRejections`](https://nodejs.org/api/events.html#eventscapturerejections):
+/// whether a new emitter's listener's rejected promise is its `"error"`.
+#[cfg_attr(rust_js, rust_js::link_name = "get events#EventEmitter.captureRejections")]
+pub fn capture_rejections() -> bool {
+    unreachable!()
+}
 
-    #[link_name = "set events#EventEmitter.captureRejections"]
-    pub safe fn set_capture_rejections(value: bool);
+#[cfg_attr(rust_js, rust_js::link_name = "set events#EventEmitter.captureRejections")]
+pub fn set_capture_rejections(value: bool) {
+    unreachable!()
+}
 
-    /// [`events.defaultMaxListeners`](https://nodejs.org/api/events.html#eventsdefaultmaxlisteners):
-    /// a new emitter's most listeners of an event, 10, before it warns.
-    #[link_name = "get events#EventEmitter.defaultMaxListeners"]
-    pub safe fn default_max_listeners() -> f64;
+/// [`events.defaultMaxListeners`](https://nodejs.org/api/events.html#eventsdefaultmaxlisteners):
+/// a new emitter's most listeners of an event, 10, before it warns.
+#[cfg_attr(rust_js, rust_js::link_name = "get events#EventEmitter.defaultMaxListeners")]
+pub fn default_max_listeners() -> f64 {
+    unreachable!()
+}
 
-    #[link_name = "set events#EventEmitter.defaultMaxListeners"]
-    pub safe fn set_default_max_listeners(value: f64);
+#[cfg_attr(rust_js, rust_js::link_name = "set events#EventEmitter.defaultMaxListeners")]
+pub fn set_default_max_listeners(value: f64) {
+    unreachable!()
 }
 
 /// What [`event_emitter::new_with_options`] takes.

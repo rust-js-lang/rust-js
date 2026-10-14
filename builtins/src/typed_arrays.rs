@@ -68,14 +68,16 @@ impl ArrayBuffer {
 pub mod array_buffer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [`new ArrayBuffer(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/ArrayBuffer): `length` bytes, each 0.
-        #[link_name = "new ArrayBuffer"]
-        pub safe fn new(length: u32) -> &'static ArrayBuffer;
+    /// [`new ArrayBuffer(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/ArrayBuffer): `length` bytes, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ArrayBuffer")]
+    pub fn new(length: u32) -> &'static ArrayBuffer {
+        unreachable!()
+    }
 
-        /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value` is a typed array or a `DataView`.
-        #[link_name = "ArrayBuffer.isView"]
-        pub safe fn is_view(value: &JsObject) -> bool;
+    /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value` is a typed array or a `DataView`.
+    #[cfg_attr(rust_js, rust_js::link_name = "ArrayBuffer.isView")]
+    pub fn is_view(value: &JsObject) -> bool {
+        unreachable!()
     }
 }
 
@@ -117,10 +119,10 @@ impl SharedArrayBuffer {
 pub mod shared_array_buffer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [`new SharedArrayBuffer(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer/SharedArrayBuffer): `length` bytes, each 0.
-        #[link_name = "new SharedArrayBuffer"]
-        pub safe fn new(length: u32) -> &'static SharedArrayBuffer;
+    /// [`new SharedArrayBuffer(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer/SharedArrayBuffer): `length` bytes, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SharedArrayBuffer")]
+    pub fn new(length: u32) -> &'static SharedArrayBuffer {
+        unreachable!()
     }
 }
 
@@ -654,19 +656,23 @@ pub mod int8_array {
     /// [`Int8Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    unsafe extern "Rust" {
-        /// [`new Int8Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): `length` elements, each 0.
-        #[link_name = "new Int8Array"]
-        pub safe fn new(length: u32) -> &'static Int8Array;
+    /// [`new Int8Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Int8Array")]
+    pub fn new(length: u32) -> &'static Int8Array {
+        unreachable!()
+    }
 
-        /// [`Int8Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Int8Array.from"]
-        pub safe fn from(items: &[i8]) -> &'static Int8Array;
+    /// [`Int8Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int8Array.from")]
+    pub fn from(items: &[i8]) -> &'static Int8Array {
+        unreachable!()
+    }
 
-        /// [`Int8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Int8Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[i8]) -> &'static Int8Array;
+    /// [`Int8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int8Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[i8]) -> &'static Int8Array {
+        unreachable!()
     }
 
     /// [`new Int8Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): a view of all of `buffer`.
@@ -1039,19 +1045,23 @@ pub mod uint8_array {
     /// [`Uint8Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    unsafe extern "Rust" {
-        /// [`new Uint8Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): `length` elements, each 0.
-        #[link_name = "new Uint8Array"]
-        pub safe fn new(length: u32) -> &'static Uint8Array;
+    /// [`new Uint8Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Uint8Array")]
+    pub fn new(length: u32) -> &'static Uint8Array {
+        unreachable!()
+    }
 
-        /// [`Uint8Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Uint8Array.from"]
-        pub safe fn from(items: &[u8]) -> &'static Uint8Array;
+    /// [`Uint8Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint8Array.from")]
+    pub fn from(items: &[u8]) -> &'static Uint8Array {
+        unreachable!()
+    }
 
-        /// [`Uint8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Uint8Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[u8]) -> &'static Uint8Array;
+    /// [`Uint8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint8Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[u8]) -> &'static Uint8Array {
+        unreachable!()
     }
 
     /// [`new Uint8Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): a view of all of `buffer`.
@@ -1424,19 +1434,23 @@ pub mod uint8_clamped_array {
     /// [`Uint8ClampedArray.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    unsafe extern "Rust" {
-        /// [`new Uint8ClampedArray(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): `length` elements, each 0.
-        #[link_name = "new Uint8ClampedArray"]
-        pub safe fn new(length: u32) -> &'static Uint8ClampedArray;
+    /// [`new Uint8ClampedArray(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Uint8ClampedArray")]
+    pub fn new(length: u32) -> &'static Uint8ClampedArray {
+        unreachable!()
+    }
 
-        /// [`Uint8ClampedArray.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Uint8ClampedArray.from"]
-        pub safe fn from(items: &[u8]) -> &'static Uint8ClampedArray;
+    /// [`Uint8ClampedArray.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint8ClampedArray.from")]
+    pub fn from(items: &[u8]) -> &'static Uint8ClampedArray {
+        unreachable!()
+    }
 
-        /// [`Uint8ClampedArray.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Uint8ClampedArray.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[u8]) -> &'static Uint8ClampedArray;
+    /// [`Uint8ClampedArray.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint8ClampedArray.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[u8]) -> &'static Uint8ClampedArray {
+        unreachable!()
     }
 
     /// [`new Uint8ClampedArray(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): a view of all of `buffer`.
@@ -1809,19 +1823,23 @@ pub mod int16_array {
     /// [`Int16Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 2;
 
-    unsafe extern "Rust" {
-        /// [`new Int16Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): `length` elements, each 0.
-        #[link_name = "new Int16Array"]
-        pub safe fn new(length: u32) -> &'static Int16Array;
+    /// [`new Int16Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Int16Array")]
+    pub fn new(length: u32) -> &'static Int16Array {
+        unreachable!()
+    }
 
-        /// [`Int16Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Int16Array.from"]
-        pub safe fn from(items: &[i16]) -> &'static Int16Array;
+    /// [`Int16Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int16Array.from")]
+    pub fn from(items: &[i16]) -> &'static Int16Array {
+        unreachable!()
+    }
 
-        /// [`Int16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Int16Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[i16]) -> &'static Int16Array;
+    /// [`Int16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int16Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[i16]) -> &'static Int16Array {
+        unreachable!()
     }
 
     /// [`new Int16Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): a view of all of `buffer`.
@@ -2194,19 +2212,23 @@ pub mod uint16_array {
     /// [`Uint16Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 2;
 
-    unsafe extern "Rust" {
-        /// [`new Uint16Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): `length` elements, each 0.
-        #[link_name = "new Uint16Array"]
-        pub safe fn new(length: u32) -> &'static Uint16Array;
+    /// [`new Uint16Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Uint16Array")]
+    pub fn new(length: u32) -> &'static Uint16Array {
+        unreachable!()
+    }
 
-        /// [`Uint16Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Uint16Array.from"]
-        pub safe fn from(items: &[u16]) -> &'static Uint16Array;
+    /// [`Uint16Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint16Array.from")]
+    pub fn from(items: &[u16]) -> &'static Uint16Array {
+        unreachable!()
+    }
 
-        /// [`Uint16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Uint16Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[u16]) -> &'static Uint16Array;
+    /// [`Uint16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint16Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[u16]) -> &'static Uint16Array {
+        unreachable!()
     }
 
     /// [`new Uint16Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): a view of all of `buffer`.
@@ -2579,19 +2601,23 @@ pub mod int32_array {
     /// [`Int32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    unsafe extern "Rust" {
-        /// [`new Int32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): `length` elements, each 0.
-        #[link_name = "new Int32Array"]
-        pub safe fn new(length: u32) -> &'static Int32Array;
+    /// [`new Int32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Int32Array")]
+    pub fn new(length: u32) -> &'static Int32Array {
+        unreachable!()
+    }
 
-        /// [`Int32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Int32Array.from"]
-        pub safe fn from(items: &[i32]) -> &'static Int32Array;
+    /// [`Int32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int32Array.from")]
+    pub fn from(items: &[i32]) -> &'static Int32Array {
+        unreachable!()
+    }
 
-        /// [`Int32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Int32Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[i32]) -> &'static Int32Array;
+    /// [`Int32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Int32Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[i32]) -> &'static Int32Array {
+        unreachable!()
     }
 
     /// [`new Int32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): a view of all of `buffer`.
@@ -2964,19 +2990,23 @@ pub mod uint32_array {
     /// [`Uint32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    unsafe extern "Rust" {
-        /// [`new Uint32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): `length` elements, each 0.
-        #[link_name = "new Uint32Array"]
-        pub safe fn new(length: u32) -> &'static Uint32Array;
+    /// [`new Uint32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Uint32Array")]
+    pub fn new(length: u32) -> &'static Uint32Array {
+        unreachable!()
+    }
 
-        /// [`Uint32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Uint32Array.from"]
-        pub safe fn from(items: &[u32]) -> &'static Uint32Array;
+    /// [`Uint32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint32Array.from")]
+    pub fn from(items: &[u32]) -> &'static Uint32Array {
+        unreachable!()
+    }
 
-        /// [`Uint32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Uint32Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[u32]) -> &'static Uint32Array;
+    /// [`Uint32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Uint32Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[u32]) -> &'static Uint32Array {
+        unreachable!()
     }
 
     /// [`new Uint32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): a view of all of `buffer`.
@@ -3349,19 +3379,23 @@ pub mod float32_array {
     /// [`Float32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    unsafe extern "Rust" {
-        /// [`new Float32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): `length` elements, each 0.
-        #[link_name = "new Float32Array"]
-        pub safe fn new(length: u32) -> &'static Float32Array;
+    /// [`new Float32Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Float32Array")]
+    pub fn new(length: u32) -> &'static Float32Array {
+        unreachable!()
+    }
 
-        /// [`Float32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Float32Array.from"]
-        pub safe fn from(items: &[f32]) -> &'static Float32Array;
+    /// [`Float32Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Float32Array.from")]
+    pub fn from(items: &[f32]) -> &'static Float32Array {
+        unreachable!()
+    }
 
-        /// [`Float32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Float32Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[f32]) -> &'static Float32Array;
+    /// [`Float32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Float32Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[f32]) -> &'static Float32Array {
+        unreachable!()
     }
 
     /// [`new Float32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): a view of all of `buffer`.
@@ -3734,19 +3768,23 @@ pub mod float64_array {
     /// [`Float64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    unsafe extern "Rust" {
-        /// [`new Float64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): `length` elements, each 0.
-        #[link_name = "new Float64Array"]
-        pub safe fn new(length: u32) -> &'static Float64Array;
+    /// [`new Float64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Float64Array")]
+    pub fn new(length: u32) -> &'static Float64Array {
+        unreachable!()
+    }
 
-        /// [`Float64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "Float64Array.from"]
-        pub safe fn from(items: &[f64]) -> &'static Float64Array;
+    /// [`Float64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Float64Array.from")]
+    pub fn from(items: &[f64]) -> &'static Float64Array {
+        unreachable!()
+    }
 
-        /// [`Float64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "Float64Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[f64]) -> &'static Float64Array;
+    /// [`Float64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Float64Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[f64]) -> &'static Float64Array {
+        unreachable!()
     }
 
     /// [`new Float64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): a view of all of `buffer`.
@@ -4119,19 +4157,23 @@ pub mod big_int64_array {
     /// [`BigInt64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    unsafe extern "Rust" {
-        /// [`new BigInt64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): `length` elements, each 0.
-        #[link_name = "new BigInt64Array"]
-        pub safe fn new(length: u32) -> &'static BigInt64Array;
+    /// [`new BigInt64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new BigInt64Array")]
+    pub fn new(length: u32) -> &'static BigInt64Array {
+        unreachable!()
+    }
 
-        /// [`BigInt64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "BigInt64Array.from"]
-        pub safe fn from(items: &[i64]) -> &'static BigInt64Array;
+    /// [`BigInt64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "BigInt64Array.from")]
+    pub fn from(items: &[i64]) -> &'static BigInt64Array {
+        unreachable!()
+    }
 
-        /// [`BigInt64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "BigInt64Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[i64]) -> &'static BigInt64Array;
+    /// [`BigInt64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "BigInt64Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[i64]) -> &'static BigInt64Array {
+        unreachable!()
     }
 
     /// [`new BigInt64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): a view of all of `buffer`.
@@ -4504,19 +4546,23 @@ pub mod big_uint64_array {
     /// [`BigUint64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    unsafe extern "Rust" {
-        /// [`new BigUint64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): `length` elements, each 0.
-        #[link_name = "new BigUint64Array"]
-        pub safe fn new(length: u32) -> &'static BigUint64Array;
+    /// [`new BigUint64Array(length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): `length` elements, each 0.
+    #[cfg_attr(rust_js, rust_js::link_name = "new BigUint64Array")]
+    pub fn new(length: u32) -> &'static BigUint64Array {
+        unreachable!()
+    }
 
-        /// [`BigUint64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
-        #[link_name = "BigUint64Array.from"]
-        pub safe fn from(items: &[u64]) -> &'static BigUint64Array;
+    /// [`BigUint64Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/from): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "BigUint64Array.from")]
+    pub fn from(items: &[u64]) -> &'static BigUint64Array {
+        unreachable!()
+    }
 
-        /// [`BigUint64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
-        #[link_name = "BigUint64Array.of"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn of(items: &[u64]) -> &'static BigUint64Array;
+    /// [`BigUint64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
+    #[cfg_attr(rust_js, rust_js::link_name = "BigUint64Array.of")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn of(items: &[u64]) -> &'static BigUint64Array {
+        unreachable!()
     }
 
     /// [`new BigUint64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): a view of all of `buffer`.

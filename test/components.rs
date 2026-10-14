@@ -148,10 +148,11 @@ thread_local! {
     static LOOSE_BADGE: MemoExoticComponent<BadgeProps> = memo_with(Badge, |a, b| a.label.is_empty() == b.label.is_empty());
 }
 
-unsafe extern "Rust" {
-    /// Counts renders, for the test.
-    #[link_name = "globalThis.rendered"]
-    safe fn rendered(label: &str);
+/// Counts renders, for the test.
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.rendered")]
+#[allow(unused_variables)]
+fn rendered(label: &str) {
+    unreachable!()
 }
 
 pub struct BadgeProps {

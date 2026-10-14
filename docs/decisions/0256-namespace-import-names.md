@@ -44,3 +44,7 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 - **It's the JS a person writes**, named as the Rust names it.
 - **It's tested**: a compiler test calls two bindings of a namespace a
   module holds; a mutation names it by its file.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

@@ -10,14 +10,6 @@
 //! and `@webref/elements` 2.9.0: `events::Click`, whose value is `"click"`.
 //! Import `EventTargetExt` for `button.add_event_listener(Click, |e| ..)` (ADR 0282).
 
-// Many Rust functions call the same JS name: a form per optional argument
-// (`new`, `new_with_body`), and methods of the same name on different
-// interfaces. rustc warns because in native code they would be one symbol.
-#![allow(clashing_extern_declarations)]
-// And some are named as libc's functions are, `open`, `close` and `write`:
-// JS methods, which in native code rustc would take for those.
-#![allow(invalid_runtime_symbol_definitions)]
-
 use core::marker::PhantomData;
 use core::ops::Deref;
 use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, JsObject, Promise, SharedArrayBuffer, StructuredClone, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
@@ -46,10 +38,12 @@ pub struct EventTarget(PhantomData<JsObject>);
 pub mod event_target {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/EventTarget)
-        #[link_name = "new EventTarget"]
-        pub safe fn new() -> &'static EventTarget;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/EventTarget)
+    #[cfg_attr(rust_js, rust_js::link_name = "new EventTarget")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static EventTarget {
+        unreachable!()
     }
 }
 
@@ -83,14 +77,20 @@ pub mod event {
     /// `Event.BUBBLING_PHASE`
     pub const BUBBLING_PHASE: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
-        #[link_name = "new Event"]
-        pub safe fn new(type_: &str) -> &'static Event;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static Event {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
-        #[link_name = "new Event"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: EventInit) -> &'static Event;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: EventInit) -> &'static Event {
+        unreachable!()
     }
 }
 
@@ -343,10 +343,12 @@ pub mod node {
     /// `Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
     pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: u16 = 0x20;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Node` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Node;
+    /// Treats `this` as `Node` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Node {
+        unreachable!()
     }
 }
 
@@ -633,10 +635,12 @@ impl Deref for CharacterData {
 pub mod character_data {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CharacterData` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CharacterData;
+    /// Treats `this` as `CharacterData` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CharacterData {
+        unreachable!()
     }
 }
 
@@ -771,18 +775,28 @@ impl Deref for Text {
 pub mod text {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
-        #[link_name = "new Text"]
-        pub safe fn new() -> &'static Text;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Text")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Text {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
-        #[link_name = "new Text"]
-        pub safe fn new_with_data(data: &str) -> &'static Text;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Text")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_data(data: &str) -> &'static Text {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Text` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Text;
+    /// Treats `this` as `Text` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Text {
+        unreachable!()
     }
 }
 
@@ -893,18 +907,28 @@ impl Deref for Comment {
 pub mod comment {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
-        #[link_name = "new Comment"]
-        pub safe fn new() -> &'static Comment;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Comment")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Comment {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
-        #[link_name = "new Comment"]
-        pub safe fn new_with_data(data: &str) -> &'static Comment;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Comment")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_data(data: &str) -> &'static Comment {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Comment` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Comment;
+    /// Treats `this` as `Comment` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Comment {
+        unreachable!()
     }
 }
 
@@ -924,10 +948,12 @@ impl Deref for Element {
 pub mod element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Element` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Element;
+    /// Treats `this` as `Element` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Element {
+        unreachable!()
     }
 }
 
@@ -2712,30 +2738,52 @@ impl Deref for Document {
 pub mod document {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/Document)
-        #[link_name = "new Document"]
-        pub safe fn new() -> &'static Document;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/Document)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Document")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Document {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTMLUnsafe)
-        #[link_name = "Document.parseHTMLUnsafe"]
-        pub safe fn parse_html_unsafe(html: &str) -> &'static Document;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTMLUnsafe)
+    #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTMLUnsafe")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_html_unsafe(html: &str) -> &'static Document {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTMLUnsafe)
-        #[link_name = "Document.parseHTMLUnsafe"]
-        pub safe fn parse_html_unsafe_with_options(html: &str, options: ParseHTMLUnsafeOptions<'_>) -> &'static Document;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTMLUnsafe)
+    #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTMLUnsafe")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_html_unsafe_with_options(html: &str, options: ParseHTMLUnsafeOptions<'_>) -> &'static Document {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTML)
-        #[link_name = "Document.parseHTML"]
-        pub safe fn parse_html(html: &str) -> &'static Document;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTML)
+    #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTML")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_html(html: &str) -> &'static Document {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTML)
-        #[link_name = "Document.parseHTML"]
-        pub safe fn parse_html_with_options(html: &str, options: SetHTMLOptions<'_>) -> &'static Document;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTML)
+    #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTML")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_html_with_options(html: &str, options: SetHTMLOptions<'_>) -> &'static Document {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Document` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Document;
+    /// Treats `this` as `Document` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Document {
+        unreachable!()
     }
 }
 
@@ -5757,14 +5805,20 @@ impl Deref for DocumentFragment {
 pub mod document_fragment {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/DocumentFragment)
-        #[link_name = "new DocumentFragment"]
-        pub safe fn new() -> &'static DocumentFragment;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/DocumentFragment)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentFragment")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DocumentFragment {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DocumentFragment` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static DocumentFragment;
+    /// Treats `this` as `DocumentFragment` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DocumentFragment {
+        unreachable!()
     }
 }
 
@@ -5866,10 +5920,12 @@ pub struct DOMTokenList(PhantomData<JsObject>);
 pub mod dom_token_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &DOMTokenList) -> Box<dyn Iterator<Item = String>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &DOMTokenList) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
     }
 }
 
@@ -6078,10 +6134,12 @@ pub struct HTMLCollection(PhantomData<JsObject>);
 pub mod html_collection {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLCollection) -> Box<dyn Iterator<Item = &'static Element>> {
+        unreachable!()
     }
 }
 
@@ -6119,10 +6177,12 @@ pub struct AbortController(PhantomData<JsObject>);
 pub mod abort_controller {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/AbortController)
-        #[link_name = "new AbortController"]
-        pub safe fn new() -> &'static AbortController;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/AbortController)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AbortController")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static AbortController {
+        unreachable!()
     }
 }
 
@@ -6169,22 +6229,12 @@ impl Deref for AbortSignal {
 pub mod abort_signal {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/abort)
-        #[link_name = "AbortSignal.abort"]
-        pub safe fn abort() -> &'static AbortSignal;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/timeout)
-        #[link_name = "AbortSignal.timeout"]
-        pub safe fn timeout(milliseconds: f64) -> &'static AbortSignal;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/any)
-        #[link_name = "AbortSignal.any"]
-        pub safe fn any(signals: &[&AbortSignal]) -> &'static AbortSignal;
-
-        /// Treats `this` as `AbortSignal` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AbortSignal;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/abort)
+    #[cfg_attr(rust_js, rust_js::link_name = "AbortSignal.abort")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn abort() -> &'static AbortSignal {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/abort)
@@ -6192,6 +6242,30 @@ pub mod abort_signal {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort_with_reason<R>(reason: R) -> &'static AbortSignal {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/timeout)
+    #[cfg_attr(rust_js, rust_js::link_name = "AbortSignal.timeout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn timeout(milliseconds: f64) -> &'static AbortSignal {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/any)
+    #[cfg_attr(rust_js, rust_js::link_name = "AbortSignal.any")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn any(signals: &[&AbortSignal]) -> &'static AbortSignal {
+        unreachable!()
+    }
+
+    /// Treats `this` as `AbortSignal` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AbortSignal {
         unreachable!()
     }
 }
@@ -6256,10 +6330,12 @@ impl Deref for HTMLElement {
 pub mod html_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLElement;
+    /// Treats `this` as `HTMLElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLElement {
+        unreachable!()
     }
 }
 
@@ -8535,10 +8611,12 @@ impl Deref for HTMLAnchorElement {
 pub mod html_anchor_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLAnchorElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLAnchorElement;
+    /// Treats `this` as `HTMLAnchorElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLAnchorElement {
+        unreachable!()
     }
 }
 
@@ -8953,10 +9031,12 @@ impl Deref for HTMLButtonElement {
 pub mod html_button_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLButtonElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLButtonElement;
+    /// Treats `this` as `HTMLButtonElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLButtonElement {
+        unreachable!()
     }
 }
 
@@ -9251,10 +9331,12 @@ impl Deref for HTMLDivElement {
 pub mod html_div_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDivElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDivElement;
+    /// Treats `this` as `HTMLDivElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDivElement {
+        unreachable!()
     }
 }
 
@@ -9293,14 +9375,20 @@ impl Deref for HTMLFormElement {
 pub mod html_form_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLFormElement) -> Box<dyn Iterator<Item = &'static Element>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLFormElement) -> Box<dyn Iterator<Item = &'static Element>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HTMLFormElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFormElement;
+    /// Treats `this` as `HTMLFormElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLFormElement {
+        unreachable!()
     }
 }
 
@@ -9555,10 +9643,12 @@ impl Deref for HTMLHeadingElement {
 pub mod html_heading_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLHeadingElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHeadingElement;
+    /// Treats `this` as `HTMLHeadingElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLHeadingElement {
+        unreachable!()
     }
 }
 
@@ -9597,10 +9687,12 @@ impl Deref for HTMLImageElement {
 pub mod html_image_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLImageElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLImageElement;
+    /// Treats `this` as `HTMLImageElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLImageElement {
+        unreachable!()
     }
 }
 
@@ -10015,10 +10107,12 @@ impl Deref for HTMLInputElement {
 pub mod html_input_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLInputElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLInputElement;
+    /// Treats `this` as `HTMLInputElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLInputElement {
+        unreachable!()
     }
 }
 
@@ -10929,10 +11023,12 @@ impl Deref for HTMLLabelElement {
 pub mod html_label_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLLabelElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLabelElement;
+    /// Treats `this` as `HTMLLabelElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLLabelElement {
+        unreachable!()
     }
 }
 
@@ -10987,10 +11083,12 @@ impl Deref for HTMLLIElement {
 pub mod html_li_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLLIElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLIElement;
+    /// Treats `this` as `HTMLLIElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLLIElement {
+        unreachable!()
     }
 }
 
@@ -11045,10 +11143,12 @@ impl Deref for HTMLOListElement {
 pub mod html_o_list_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLOListElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLOListElement;
+    /// Treats `this` as `HTMLOListElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLOListElement {
+        unreachable!()
     }
 }
 
@@ -11135,10 +11235,12 @@ impl Deref for HTMLOptionElement {
 pub mod html_option_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLOptionElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLOptionElement;
+    /// Treats `this` as `HTMLOptionElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLOptionElement {
+        unreachable!()
     }
 }
 
@@ -11273,10 +11375,12 @@ impl Deref for HTMLOutputElement {
 pub mod html_output_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLOutputElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLOutputElement;
+    /// Treats `this` as `HTMLOutputElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLOutputElement {
+        unreachable!()
     }
 }
 
@@ -11427,10 +11531,12 @@ impl Deref for HTMLParagraphElement {
 pub mod html_paragraph_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLParagraphElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLParagraphElement;
+    /// Treats `this` as `HTMLParagraphElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLParagraphElement {
+        unreachable!()
     }
 }
 
@@ -11469,14 +11575,20 @@ impl Deref for HTMLSelectElement {
 pub mod html_select_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLSelectElement) -> Box<dyn Iterator<Item = &'static HTMLOptionElement>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLSelectElement) -> Box<dyn Iterator<Item = &'static HTMLOptionElement>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HTMLSelectElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectElement;
+    /// Treats `this` as `HTMLSelectElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectElement {
+        unreachable!()
     }
 }
 
@@ -11787,10 +11899,12 @@ impl Deref for HTMLSpanElement {
 pub mod html_span_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLSpanElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSpanElement;
+    /// Treats `this` as `HTMLSpanElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLSpanElement {
+        unreachable!()
     }
 }
 
@@ -11810,10 +11924,12 @@ impl Deref for HTMLTextAreaElement {
 pub mod html_text_area_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTextAreaElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTextAreaElement;
+    /// Treats `this` as `HTMLTextAreaElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTextAreaElement {
+        unreachable!()
     }
 }
 
@@ -12236,10 +12352,12 @@ impl Deref for HTMLUListElement {
 pub mod html_u_list_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLUListElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLUListElement;
+    /// Treats `this` as `HTMLUListElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLUListElement {
+        unreachable!()
     }
 }
 
@@ -12294,10 +12412,12 @@ impl Deref for HTMLTableElement {
 pub mod html_table_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableElement;
+    /// Treats `this` as `HTMLTableElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableElement {
+        unreachable!()
     }
 }
 
@@ -12608,10 +12728,12 @@ impl Deref for HTMLTableSectionElement {
 pub mod html_table_section_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableSectionElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableSectionElement;
+    /// Treats `this` as `HTMLTableSectionElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableSectionElement {
+        unreachable!()
     }
 }
 
@@ -12730,10 +12852,12 @@ impl Deref for HTMLTableRowElement {
 pub mod html_table_row_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableRowElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableRowElement;
+    /// Treats `this` as `HTMLTableRowElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableRowElement {
+        unreachable!()
     }
 }
 
@@ -12884,10 +13008,12 @@ impl Deref for HTMLTableCellElement {
 pub mod html_table_cell_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableCellElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableCellElement;
+    /// Treats `this` as `HTMLTableCellElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableCellElement {
+        unreachable!()
     }
 }
 
@@ -13142,10 +13268,12 @@ impl Deref for HTMLIFrameElement {
 pub mod html_i_frame_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLIFrameElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLIFrameElement;
+    /// Treats `this` as `HTMLIFrameElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLIFrameElement {
+        unreachable!()
     }
 }
 
@@ -13432,10 +13560,12 @@ impl Deref for HTMLCanvasElement {
 pub mod html_canvas_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLCanvasElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLCanvasElement;
+    /// Treats `this` as `HTMLCanvasElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLCanvasElement {
+        unreachable!()
     }
 }
 
@@ -13578,10 +13708,12 @@ impl Deref for HTMLDetailsElement {
 pub mod html_details_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDetailsElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDetailsElement;
+    /// Treats `this` as `HTMLDetailsElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDetailsElement {
+        unreachable!()
     }
 }
 
@@ -13636,10 +13768,12 @@ impl Deref for HTMLHtmlElement {
 pub mod html_html_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLHtmlElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHtmlElement;
+    /// Treats `this` as `HTMLHtmlElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLHtmlElement {
+        unreachable!()
     }
 }
 
@@ -13678,10 +13812,12 @@ impl Deref for HTMLHeadElement {
 pub mod html_head_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLHeadElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHeadElement;
+    /// Treats `this` as `HTMLHeadElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLHeadElement {
+        unreachable!()
     }
 }
 
@@ -13701,10 +13837,12 @@ impl Deref for HTMLTitleElement {
 pub mod html_title_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTitleElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTitleElement;
+    /// Treats `this` as `HTMLTitleElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTitleElement {
+        unreachable!()
     }
 }
 
@@ -13743,10 +13881,12 @@ impl Deref for HTMLBaseElement {
 pub mod html_base_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLBaseElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBaseElement;
+    /// Treats `this` as `HTMLBaseElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLBaseElement {
+        unreachable!()
     }
 }
 
@@ -13801,10 +13941,12 @@ impl Deref for HTMLLinkElement {
 pub mod html_link_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLLinkElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLinkElement;
+    /// Treats `this` as `HTMLLinkElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLLinkElement {
+        unreachable!()
     }
 }
 
@@ -14115,10 +14257,12 @@ impl Deref for HTMLMetaElement {
 pub mod html_meta_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMetaElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMetaElement;
+    /// Treats `this` as `HTMLMetaElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMetaElement {
+        unreachable!()
     }
 }
 
@@ -14221,10 +14365,12 @@ impl Deref for HTMLStyleElement {
 pub mod html_style_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLStyleElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLStyleElement;
+    /// Treats `this` as `HTMLStyleElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLStyleElement {
+        unreachable!()
     }
 }
 
@@ -14311,10 +14457,12 @@ impl Deref for HTMLBodyElement {
 pub mod html_body_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLBodyElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBodyElement;
+    /// Treats `this` as `HTMLBodyElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLBodyElement {
+        unreachable!()
     }
 }
 
@@ -14773,10 +14921,12 @@ impl Deref for HTMLHRElement {
 pub mod html_hr_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLHRElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHRElement;
+    /// Treats `this` as `HTMLHRElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLHRElement {
+        unreachable!()
     }
 }
 
@@ -14879,10 +15029,12 @@ impl Deref for HTMLPreElement {
 pub mod html_pre_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLPreElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLPreElement;
+    /// Treats `this` as `HTMLPreElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLPreElement {
+        unreachable!()
     }
 }
 
@@ -14921,10 +15073,12 @@ impl Deref for HTMLQuoteElement {
 pub mod html_quote_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLQuoteElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLQuoteElement;
+    /// Treats `this` as `HTMLQuoteElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLQuoteElement {
+        unreachable!()
     }
 }
 
@@ -14963,10 +15117,12 @@ impl Deref for HTMLMenuElement {
 pub mod html_menu_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMenuElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMenuElement;
+    /// Treats `this` as `HTMLMenuElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMenuElement {
+        unreachable!()
     }
 }
 
@@ -15005,10 +15161,12 @@ impl Deref for HTMLDListElement {
 pub mod html_d_list_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDListElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDListElement;
+    /// Treats `this` as `HTMLDListElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDListElement {
+        unreachable!()
     }
 }
 
@@ -15047,10 +15205,12 @@ impl Deref for HTMLDataElement {
 pub mod html_data_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDataElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDataElement;
+    /// Treats `this` as `HTMLDataElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDataElement {
+        unreachable!()
     }
 }
 
@@ -15089,10 +15249,12 @@ impl Deref for HTMLTimeElement {
 pub mod html_time_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTimeElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTimeElement;
+    /// Treats `this` as `HTMLTimeElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTimeElement {
+        unreachable!()
     }
 }
 
@@ -15131,10 +15293,12 @@ impl Deref for HTMLBRElement {
 pub mod html_br_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLBRElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBRElement;
+    /// Treats `this` as `HTMLBRElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLBRElement {
+        unreachable!()
     }
 }
 
@@ -15173,10 +15337,12 @@ impl Deref for HTMLModElement {
 pub mod html_mod_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLModElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLModElement;
+    /// Treats `this` as `HTMLModElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLModElement {
+        unreachable!()
     }
 }
 
@@ -15231,10 +15397,12 @@ impl Deref for HTMLPictureElement {
 pub mod html_picture_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLPictureElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLPictureElement;
+    /// Treats `this` as `HTMLPictureElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLPictureElement {
+        unreachable!()
     }
 }
 
@@ -15254,10 +15422,12 @@ impl Deref for HTMLSourceElement {
 pub mod html_source_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLSourceElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSourceElement;
+    /// Treats `this` as `HTMLSourceElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLSourceElement {
+        unreachable!()
     }
 }
 
@@ -15392,10 +15562,12 @@ impl Deref for HTMLEmbedElement {
 pub mod html_embed_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLEmbedElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLEmbedElement;
+    /// Treats `this` as `HTMLEmbedElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLEmbedElement {
+        unreachable!()
     }
 }
 
@@ -15522,10 +15694,12 @@ impl Deref for HTMLObjectElement {
 pub mod html_object_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLObjectElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLObjectElement;
+    /// Treats `this` as `HTMLObjectElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLObjectElement {
+        unreachable!()
     }
 }
 
@@ -15884,10 +16058,12 @@ impl Deref for HTMLVideoElement {
 pub mod html_video_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLVideoElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLVideoElement;
+    /// Treats `this` as `HTMLVideoElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLVideoElement {
+        unreachable!()
     }
 }
 
@@ -16072,10 +16248,12 @@ impl Deref for HTMLAudioElement {
 pub mod html_audio_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLAudioElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLAudioElement;
+    /// Treats `this` as `HTMLAudioElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLAudioElement {
+        unreachable!()
     }
 }
 
@@ -16107,10 +16285,12 @@ pub mod html_track_element {
     /// `HTMLTrackElement.ERROR`
     pub const ERROR: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTrackElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTrackElement;
+    /// Treats `this` as `HTMLTrackElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTrackElement {
+        unreachable!()
     }
 }
 
@@ -16256,10 +16436,12 @@ pub mod html_media_element {
     /// `HTMLMediaElement.HAVE_ENOUGH_DATA`
     pub const HAVE_ENOUGH_DATA: u16 = 4;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMediaElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMediaElement;
+    /// Treats `this` as `HTMLMediaElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMediaElement {
+        unreachable!()
     }
 }
 
@@ -16788,10 +16970,12 @@ impl Deref for HTMLMapElement {
 pub mod html_map_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMapElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMapElement;
+    /// Treats `this` as `HTMLMapElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMapElement {
+        unreachable!()
     }
 }
 
@@ -16838,10 +17022,12 @@ impl Deref for HTMLAreaElement {
 pub mod html_area_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLAreaElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLAreaElement;
+    /// Treats `this` as `HTMLAreaElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLAreaElement {
+        unreachable!()
     }
 }
 
@@ -17224,10 +17410,12 @@ impl Deref for HTMLTableCaptionElement {
 pub mod html_table_caption_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableCaptionElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableCaptionElement;
+    /// Treats `this` as `HTMLTableCaptionElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableCaptionElement {
+        unreachable!()
     }
 }
 
@@ -17266,10 +17454,12 @@ impl Deref for HTMLTableColElement {
 pub mod html_table_col_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTableColElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableColElement;
+    /// Treats `this` as `HTMLTableColElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTableColElement {
+        unreachable!()
     }
 }
 
@@ -17388,10 +17578,12 @@ impl Deref for HTMLDataListElement {
 pub mod html_data_list_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDataListElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDataListElement;
+    /// Treats `this` as `HTMLDataListElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDataListElement {
+        unreachable!()
     }
 }
 
@@ -17422,10 +17614,12 @@ impl Deref for HTMLOptGroupElement {
 pub mod html_opt_group_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLOptGroupElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLOptGroupElement;
+    /// Treats `this` as `HTMLOptGroupElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLOptGroupElement {
+        unreachable!()
     }
 }
 
@@ -17480,10 +17674,12 @@ impl Deref for HTMLProgressElement {
 pub mod html_progress_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLProgressElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLProgressElement;
+    /// Treats `this` as `HTMLProgressElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLProgressElement {
+        unreachable!()
     }
 }
 
@@ -17554,10 +17750,12 @@ impl Deref for HTMLMeterElement {
 pub mod html_meter_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMeterElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMeterElement;
+    /// Treats `this` as `HTMLMeterElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMeterElement {
+        unreachable!()
     }
 }
 
@@ -17684,10 +17882,12 @@ impl Deref for HTMLFieldSetElement {
 pub mod html_field_set_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLFieldSetElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFieldSetElement;
+    /// Treats `this` as `HTMLFieldSetElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLFieldSetElement {
+        unreachable!()
     }
 }
 
@@ -17814,10 +18014,12 @@ impl Deref for HTMLLegendElement {
 pub mod html_legend_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLLegendElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLegendElement;
+    /// Treats `this` as `HTMLLegendElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLLegendElement {
+        unreachable!()
     }
 }
 
@@ -17864,10 +18066,12 @@ impl Deref for HTMLSelectedContentElement {
 pub mod html_selected_content_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLSelectedContentElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectedContentElement;
+    /// Treats `this` as `HTMLSelectedContentElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectedContentElement {
+        unreachable!()
     }
 }
 
@@ -17887,10 +18091,12 @@ impl Deref for HTMLDialogElement {
 pub mod html_dialog_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDialogElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDialogElement;
+    /// Treats `this` as `HTMLDialogElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDialogElement {
+        unreachable!()
     }
 }
 
@@ -18009,14 +18215,20 @@ impl Deref for HTMLScriptElement {
 pub mod html_script_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/supports)
-        #[link_name = "HTMLScriptElement.supports"]
-        pub safe fn supports(type_: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/supports)
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLScriptElement.supports")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn supports(type_: &str) -> bool {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HTMLScriptElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLScriptElement;
+    /// Treats `this` as `HTMLScriptElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLScriptElement {
+        unreachable!()
     }
 }
 
@@ -18255,10 +18467,12 @@ impl Deref for HTMLTemplateElement {
 pub mod html_template_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLTemplateElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTemplateElement;
+    /// Treats `this` as `HTMLTemplateElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLTemplateElement {
+        unreachable!()
     }
 }
 
@@ -18401,10 +18615,12 @@ impl Deref for HTMLSlotElement {
 pub mod html_slot_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLSlotElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSlotElement;
+    /// Treats `this` as `HTMLSlotElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLSlotElement {
+        unreachable!()
     }
 }
 
@@ -18483,10 +18699,12 @@ impl Deref for Window {
 pub mod window {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Window` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Window;
+    /// Treats `this` as `Window` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Window {
+        unreachable!()
     }
 }
 
@@ -21942,10 +22160,12 @@ pub struct DataTransfer(PhantomData<JsObject>);
 pub mod data_transfer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/DataTransfer)
-        #[link_name = "new DataTransfer"]
-        pub safe fn new() -> &'static DataTransfer;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/DataTransfer)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DataTransfer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DataTransfer {
+        unreachable!()
     }
 }
 
@@ -22064,18 +22284,28 @@ impl Deref for DragEvent {
 pub mod drag_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
-        #[link_name = "new DragEvent"]
-        pub safe fn new(type_: &str) -> &'static DragEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static DragEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
-        #[link_name = "new DragEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DragEventInit<'_>) -> &'static DragEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DragEventInit<'_>) -> &'static DragEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DragEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static DragEvent;
+    /// Treats `this` as `DragEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static DragEvent {
+        unreachable!()
     }
 }
 
@@ -22106,18 +22336,28 @@ impl Deref for ToggleEvent {
 pub mod toggle_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
-        #[link_name = "new ToggleEvent"]
-        pub safe fn new(type_: &str) -> &'static ToggleEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static ToggleEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
-        #[link_name = "new ToggleEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ToggleEventInit<'_>) -> &'static ToggleEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ToggleEventInit<'_>) -> &'static ToggleEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ToggleEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static ToggleEvent;
+    /// Treats `this` as `ToggleEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static ToggleEvent {
+        unreachable!()
     }
 }
 
@@ -22164,18 +22404,28 @@ impl Deref for MessageEvent {
 pub mod message_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
-        #[link_name = "new MessageEvent"]
-        pub safe fn new(type_: &str) -> &'static MessageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MessageEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
-        #[link_name = "new MessageEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MessageEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MessageEvent;
+    /// Treats `this` as `MessageEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MessageEvent {
+        unreachable!()
     }
 }
 
@@ -22303,18 +22553,28 @@ impl Deref for SubmitEvent {
 pub mod submit_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
-        #[link_name = "new SubmitEvent"]
-        pub safe fn new(type_: &str) -> &'static SubmitEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static SubmitEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
-        #[link_name = "new SubmitEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SubmitEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SubmitEvent;
+    /// Treats `this` as `SubmitEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SubmitEvent {
+        unreachable!()
     }
 }
 
@@ -22345,10 +22605,12 @@ impl Deref for Performance {
 pub mod performance {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Performance` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Performance;
+    /// Treats `this` as `Performance` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Performance {
+        unreachable!()
     }
 }
 
@@ -22564,18 +22826,28 @@ impl Deref for UIEvent {
 pub mod ui_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
-        #[link_name = "new UIEvent"]
-        pub safe fn new(type_: &str) -> &'static UIEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static UIEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
-        #[link_name = "new UIEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: UIEventInit<'_>) -> &'static UIEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: UIEventInit<'_>) -> &'static UIEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `UIEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static UIEvent;
+    /// Treats `this` as `UIEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static UIEvent {
+        unreachable!()
     }
 }
 
@@ -22662,18 +22934,28 @@ impl Deref for FocusEvent {
 pub mod focus_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
-        #[link_name = "new FocusEvent"]
-        pub safe fn new(type_: &str) -> &'static FocusEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static FocusEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
-        #[link_name = "new FocusEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: FocusEventInit<'_>) -> &'static FocusEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: FocusEventInit<'_>) -> &'static FocusEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `FocusEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static FocusEvent;
+    /// Treats `this` as `FocusEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static FocusEvent {
+        unreachable!()
     }
 }
 
@@ -22704,18 +22986,28 @@ impl Deref for MouseEvent {
 pub mod mouse_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
-        #[link_name = "new MouseEvent"]
-        pub safe fn new(type_: &str) -> &'static MouseEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MouseEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
-        #[link_name = "new MouseEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MouseEventInit<'_>) -> &'static MouseEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MouseEventInit<'_>) -> &'static MouseEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MouseEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MouseEvent;
+    /// Treats `this` as `MouseEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MouseEvent {
+        unreachable!()
     }
 }
 
@@ -23046,18 +23338,28 @@ pub mod keyboard_event {
     /// `KeyboardEvent.DOM_KEY_LOCATION_NUMPAD`
     pub const DOM_KEY_LOCATION_NUMPAD: u32 = 0x03;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
-        #[link_name = "new KeyboardEvent"]
-        pub safe fn new(type_: &str) -> &'static KeyboardEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static KeyboardEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
-        #[link_name = "new KeyboardEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: KeyboardEventInit<'_>) -> &'static KeyboardEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: KeyboardEventInit<'_>) -> &'static KeyboardEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `KeyboardEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static KeyboardEvent;
+    /// Treats `this` as `KeyboardEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static KeyboardEvent {
+        unreachable!()
     }
 }
 
@@ -23256,18 +23558,28 @@ impl Deref for InputEvent {
 pub mod input_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
-        #[link_name = "new InputEvent"]
-        pub safe fn new(type_: &str) -> &'static InputEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static InputEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
-        #[link_name = "new InputEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: InputEventInit<'_>) -> &'static InputEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: InputEventInit<'_>) -> &'static InputEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `InputEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static InputEvent;
+    /// Treats `this` as `InputEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static InputEvent {
+        unreachable!()
     }
 }
 
@@ -23339,18 +23651,28 @@ pub mod wheel_event {
     /// `WheelEvent.DOM_DELTA_PAGE`
     pub const DOM_DELTA_PAGE: u32 = 0x02;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
-        #[link_name = "new WheelEvent"]
-        pub safe fn new(type_: &str) -> &'static WheelEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static WheelEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
-        #[link_name = "new WheelEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: WheelEventInit<'_>) -> &'static WheelEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: WheelEventInit<'_>) -> &'static WheelEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `WheelEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static WheelEvent;
+    /// Treats `this` as `WheelEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static WheelEvent {
+        unreachable!()
     }
 }
 
@@ -23413,18 +23735,28 @@ impl Deref for CompositionEvent {
 pub mod composition_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
-        #[link_name = "new CompositionEvent"]
-        pub safe fn new(type_: &str) -> &'static CompositionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static CompositionEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
-        #[link_name = "new CompositionEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CompositionEventInit<'_>) -> &'static CompositionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CompositionEventInit<'_>) -> &'static CompositionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CompositionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static CompositionEvent;
+    /// Treats `this` as `CompositionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static CompositionEvent {
+        unreachable!()
     }
 }
 
@@ -23495,18 +23827,28 @@ impl Deref for TouchEvent {
 pub mod touch_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
-        #[link_name = "new TouchEvent"]
-        pub safe fn new(type_: &str) -> &'static TouchEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static TouchEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
-        #[link_name = "new TouchEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: TouchEventInit<'_>) -> &'static TouchEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: TouchEventInit<'_>) -> &'static TouchEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TouchEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static TouchEvent;
+    /// Treats `this` as `TouchEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static TouchEvent {
+        unreachable!()
     }
 }
 
@@ -23593,18 +23935,28 @@ impl Deref for AnimationEvent {
 pub mod animation_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
-        #[link_name = "new AnimationEvent"]
-        pub safe fn new(type_: &str) -> &'static AnimationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static AnimationEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
-        #[link_name = "new AnimationEvent"]
-        pub safe fn new_with_animation_event_init_dict(type_: &str, animation_event_init_dict: AnimationEventInit<'_>) -> &'static AnimationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_animation_event_init_dict(type_: &str, animation_event_init_dict: AnimationEventInit<'_>) -> &'static AnimationEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AnimationEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static AnimationEvent;
+    /// Treats `this` as `AnimationEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static AnimationEvent {
+        unreachable!()
     }
 }
 
@@ -23651,18 +24003,28 @@ impl Deref for TransitionEvent {
 pub mod transition_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
-        #[link_name = "new TransitionEvent"]
-        pub safe fn new(type_: &str) -> &'static TransitionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static TransitionEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
-        #[link_name = "new TransitionEvent"]
-        pub safe fn new_with_transition_event_init_dict(type_: &str, transition_event_init_dict: TransitionEventInit<'_>) -> &'static TransitionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_transition_event_init_dict(type_: &str, transition_event_init_dict: TransitionEventInit<'_>) -> &'static TransitionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TransitionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static TransitionEvent;
+    /// Treats `this` as `TransitionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static TransitionEvent {
+        unreachable!()
     }
 }
 
@@ -23709,18 +24071,28 @@ impl Deref for ClipboardEvent {
 pub mod clipboard_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
-        #[link_name = "new ClipboardEvent"]
-        pub safe fn new(type_: &str) -> &'static ClipboardEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static ClipboardEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
-        #[link_name = "new ClipboardEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ClipboardEventInit<'_>) -> &'static ClipboardEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ClipboardEventInit<'_>) -> &'static ClipboardEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ClipboardEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static ClipboardEvent;
+    /// Treats `this` as `ClipboardEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static ClipboardEvent {
+        unreachable!()
     }
 }
 
@@ -23751,18 +24123,28 @@ impl Deref for PointerEvent {
 pub mod pointer_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
-        #[link_name = "new PointerEvent"]
-        pub safe fn new(type_: &str) -> &'static PointerEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PointerEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
-        #[link_name = "new PointerEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PointerEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PointerEvent;
+    /// Treats `this` as `PointerEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PointerEvent {
+        unreachable!()
     }
 }
 
@@ -23896,10 +24278,12 @@ pub struct CSSStyleDeclaration(PhantomData<JsObject>);
 pub mod css_style_declaration {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSStyleDeclaration) -> Box<dyn Iterator<Item = String>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSStyleDeclaration) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
     }
 }
 
@@ -24002,10 +24386,12 @@ impl Deref for CSSStyleProperties {
 pub mod css_style_properties {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSStyleProperties` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSStyleProperties;
+    /// Treats `this` as `CSSStyleProperties` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSStyleProperties {
+        unreachable!()
     }
 }
 
@@ -32595,34 +32981,60 @@ pub struct DOMRectReadOnly(PhantomData<JsObject>);
 pub mod dom_rect_read_only {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
-        #[link_name = "new DOMRectReadOnly"]
-        pub safe fn new() -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
-        #[link_name = "new DOMRectReadOnly"]
-        pub safe fn new_with_x(x: f64) -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x(x: f64) -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
-        #[link_name = "new DOMRectReadOnly"]
-        pub safe fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
-        #[link_name = "new DOMRectReadOnly"]
-        pub safe fn new_with_x_and_y_and_width(x: f64, y: f64, width: f64) -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_width(x: f64, y: f64, width: f64) -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
-        #[link_name = "new DOMRectReadOnly"]
-        pub safe fn new_with_x_and_y_and_width_and_height(x: f64, y: f64, width: f64, height: f64) -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_width_and_height(x: f64, y: f64, width: f64, height: f64) -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/fromRect)
-        #[link_name = "DOMRectReadOnly.fromRect"]
-        pub safe fn from_rect() -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMRectReadOnly.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect() -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/fromRect)
-        #[link_name = "DOMRectReadOnly.fromRect"]
-        pub safe fn from_rect_with_other(other: DOMRectInit) -> &'static DOMRectReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMRectReadOnly.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect_with_other(other: DOMRectInit) -> &'static DOMRectReadOnly {
+        unreachable!()
     }
 }
 
@@ -32717,38 +33129,68 @@ impl Deref for DOMRect {
 pub mod dom_rect {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
-        #[link_name = "new DOMRect"]
-        pub safe fn new() -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
-        #[link_name = "new DOMRect"]
-        pub safe fn new_with_x(x: f64) -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x(x: f64) -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
-        #[link_name = "new DOMRect"]
-        pub safe fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
-        #[link_name = "new DOMRect"]
-        pub safe fn new_with_x_and_y_and_width(x: f64, y: f64, width: f64) -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_width(x: f64, y: f64, width: f64) -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
-        #[link_name = "new DOMRect"]
-        pub safe fn new_with_x_and_y_and_width_and_height(x: f64, y: f64, width: f64, height: f64) -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_width_and_height(x: f64, y: f64, width: f64, height: f64) -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/fromRect)
-        #[link_name = "DOMRect.fromRect"]
-        pub safe fn from_rect() -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMRect.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect() -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/fromRect)
-        #[link_name = "DOMRect.fromRect"]
-        pub safe fn from_rect_with_other(other: DOMRectInit) -> &'static DOMRect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMRect.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect_with_other(other: DOMRectInit) -> &'static DOMRect {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DOMRect` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMRectReadOnly) -> &'static DOMRect;
+    /// Treats `this` as `DOMRect` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMRectReadOnly) -> &'static DOMRect {
+        unreachable!()
     }
 }
 
@@ -32835,10 +33277,12 @@ impl Deref for MediaQueryList {
 pub mod media_query_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MediaQueryList` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaQueryList;
+    /// Treats `this` as `MediaQueryList` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaQueryList {
+        unreachable!()
     }
 }
 
@@ -32910,18 +33354,28 @@ impl Deref for MediaQueryListEvent {
 pub mod media_query_list_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
-        #[link_name = "new MediaQueryListEvent"]
-        pub safe fn new(type_: &str) -> &'static MediaQueryListEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MediaQueryListEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
-        #[link_name = "new MediaQueryListEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MediaQueryListEventInit<'_>) -> &'static MediaQueryListEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MediaQueryListEventInit<'_>) -> &'static MediaQueryListEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaQueryListEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MediaQueryListEvent;
+    /// Treats `this` as `MediaQueryListEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MediaQueryListEvent {
+        unreachable!()
     }
 }
 
@@ -32951,14 +33405,20 @@ pub struct IntersectionObserver(PhantomData<JsObject>);
 pub mod intersection_observer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
-        #[link_name = "new IntersectionObserver"]
-        pub safe fn new(callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>) -> &'static IntersectionObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>) -> &'static IntersectionObserver {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
-        #[link_name = "new IntersectionObserver"]
-        pub safe fn new_with_options(callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>, options: IntersectionObserverInit<'_>) -> &'static IntersectionObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>, options: IntersectionObserverInit<'_>) -> &'static IntersectionObserver {
+        unreachable!()
     }
 }
 
@@ -33052,10 +33512,12 @@ pub struct IntersectionObserverEntry(PhantomData<JsObject>);
 pub mod intersection_observer_entry {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntry/IntersectionObserverEntry)
-        #[link_name = "new IntersectionObserverEntry"]
-        pub safe fn new(intersection_observer_entry_init: IntersectionObserverEntryInit<'_>) -> &'static IntersectionObserverEntry;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntry/IntersectionObserverEntry)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserverEntry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(intersection_observer_entry_init: IntersectionObserverEntryInit<'_>) -> &'static IntersectionObserverEntry {
+        unreachable!()
     }
 }
 
@@ -33133,18 +33595,28 @@ pub struct Headers(PhantomData<JsObject>);
 pub mod headers {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
-        #[link_name = "new Headers"]
-        pub safe fn new() -> &'static Headers;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Headers {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
-        #[link_name = "new Headers"]
-        pub safe fn new_with_init(init: &[&[&str]]) -> &'static Headers;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(init: &[&[&str]]) -> &'static Headers {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &Headers) -> Box<dyn Iterator<Item = (String, String)>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &Headers) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
     }
 }
 
@@ -33473,22 +33945,12 @@ pub struct Response(PhantomData<JsObject>);
 pub mod response {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
-        #[link_name = "new Response"]
-        pub safe fn new() -> &'static Response;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/error)
-        #[link_name = "Response.error"]
-        pub safe fn error() -> &'static Response;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/redirect)
-        #[link_name = "Response.redirect"]
-        pub safe fn redirect(url: &str) -> &'static Response;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/redirect)
-        #[link_name = "Response.redirect"]
-        pub safe fn redirect_with_status(url: &str, status: u16) -> &'static Response;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Response {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
@@ -33504,6 +33966,30 @@ pub mod response {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_body_and_init(body: impl IntoBodyInit, init: ResponseInit<'_>) -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "Response.error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error() -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/redirect)
+    #[cfg_attr(rust_js, rust_js::link_name = "Response.redirect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn redirect(url: &str) -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/redirect)
+    #[cfg_attr(rust_js, rust_js::link_name = "Response.redirect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn redirect_with_status(url: &str, status: u16) -> &'static Response {
         unreachable!()
     }
 
@@ -33670,22 +34156,36 @@ pub struct FormData(PhantomData<JsObject>);
 pub mod form_data {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
-        #[link_name = "new FormData"]
-        pub safe fn new() -> &'static FormData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static FormData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
-        #[link_name = "new FormData"]
-        pub safe fn new_with_form(form: &HTMLFormElement) -> &'static FormData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_form(form: &HTMLFormElement) -> &'static FormData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
-        #[link_name = "new FormData"]
-        pub safe fn new_with_form_and_submitter(form: &HTMLFormElement, submitter: &HTMLElement) -> &'static FormData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_form_and_submitter(form: &HTMLFormElement, submitter: &HTMLElement) -> &'static FormData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &FormData) -> Box<dyn Iterator<Item = (String, FormDataEntryValue<'static>)>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &FormData) -> Box<dyn Iterator<Item = (String, FormDataEntryValue<'static>)>> {
+        unreachable!()
     }
 }
 
@@ -33811,18 +34311,28 @@ pub struct ReadableStream(PhantomData<JsObject>);
 pub mod readable_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
-        #[link_name = "new ReadableStream"]
-        pub safe fn new() -> &'static ReadableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static ReadableStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
-        #[link_name = "new ReadableStream"]
-        pub safe fn new_with_underlying_source(underlying_source: &dyn core::any::Any) -> &'static ReadableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_underlying_source(underlying_source: &dyn core::any::Any) -> &'static ReadableStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
-        #[link_name = "new ReadableStream"]
-        pub safe fn new_with_underlying_source_and_strategy(underlying_source: &dyn core::any::Any, strategy: QueuingStrategy) -> &'static ReadableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_underlying_source_and_strategy(underlying_source: &dyn core::any::Any, strategy: QueuingStrategy) -> &'static ReadableStream {
+        unreachable!()
     }
 }
 
@@ -33916,10 +34426,12 @@ pub struct Touch(PhantomData<JsObject>);
 pub mod touch {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/Touch)
-        #[link_name = "new Touch"]
-        pub safe fn new(touch_init_dict: TouchInit<'_>) -> &'static Touch;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/Touch)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Touch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(touch_init_dict: TouchInit<'_>) -> &'static Touch {
+        unreachable!()
     }
 }
 
@@ -34053,10 +34565,12 @@ pub struct TouchList(PhantomData<JsObject>);
 pub mod touch_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &TouchList) -> Box<dyn Iterator<Item = &'static Touch>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &TouchList) -> Box<dyn Iterator<Item = &'static Touch>> {
+        unreachable!()
     }
 }
 
@@ -34086,10 +34600,12 @@ pub struct TextEncoder(PhantomData<JsObject>);
 pub mod text_encoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/TextEncoder)
-        #[link_name = "new TextEncoder"]
-        pub safe fn new() -> &'static TextEncoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/TextEncoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TextEncoder {
+        unreachable!()
     }
 }
 
@@ -34135,18 +34651,28 @@ pub struct TextDecoder(PhantomData<JsObject>);
 pub mod text_decoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
-        #[link_name = "new TextDecoder"]
-        pub safe fn new() -> &'static TextDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TextDecoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
-        #[link_name = "new TextDecoder"]
-        pub safe fn new_with_label(label: &str) -> &'static TextDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_label(label: &str) -> &'static TextDecoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
-        #[link_name = "new TextDecoder"]
-        pub safe fn new_with_label_and_options(label: &str, options: TextDecoderOptions) -> &'static TextDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_label_and_options(label: &str, options: TextDecoderOptions) -> &'static TextDecoder {
+        unreachable!()
     }
 }
 
@@ -34209,20 +34735,6 @@ pub struct WebAssemblyModule(PhantomData<JsObject>);
 pub mod web_assembly_module {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/exports)
-        #[link_name = "Module.exports"]
-        pub safe fn exports(module_object: &WebAssemblyModule) -> Vec<ModuleExportDescriptor>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/imports)
-        #[link_name = "Module.imports"]
-        pub safe fn imports(module_object: &WebAssemblyModule) -> Vec<ModuleImportDescriptor>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/customSections)
-        #[link_name = "Module.customSections"]
-        pub safe fn custom_sections(module_object: &WebAssemblyModule, section_name: &str) -> Vec<&'static ArrayBuffer>;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -34238,6 +34750,30 @@ pub mod web_assembly_module {
     pub fn new_with_options(bytes: impl IntoAllowSharedBufferSource, options: WebAssemblyCompileOptions<'_>) -> &'static WebAssemblyModule {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/exports)
+    #[cfg_attr(rust_js, rust_js::link_name = "Module.exports")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn exports(module_object: &WebAssemblyModule) -> Vec<ModuleExportDescriptor> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/imports)
+    #[cfg_attr(rust_js, rust_js::link_name = "Module.imports")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn imports(module_object: &WebAssemblyModule) -> Vec<ModuleImportDescriptor> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/customSections)
+    #[cfg_attr(rust_js, rust_js::link_name = "Module.customSections")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn custom_sections(module_object: &WebAssemblyModule, section_name: &str) -> Vec<&'static ArrayBuffer> {
+        unreachable!()
+    }
 }
 
 /// [`WebAssembly.Instance`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance)
@@ -34248,14 +34784,20 @@ pub struct WebAssemblyInstance(PhantomData<JsObject>);
 pub mod web_assembly_instance {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
-        #[link_name = "new WebAssembly.Instance"]
-        pub safe fn new(module: &WebAssemblyModule) -> &'static WebAssemblyInstance;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Instance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(module: &WebAssemblyModule) -> &'static WebAssemblyInstance {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
-        #[link_name = "new WebAssembly.Instance"]
-        pub safe fn new_with_import_object(module: &WebAssemblyModule, import_object: &dyn core::any::Any) -> &'static WebAssemblyInstance;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Instance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_import_object(module: &WebAssemblyModule, import_object: &dyn core::any::Any) -> &'static WebAssemblyInstance {
+        unreachable!()
     }
 }
 
@@ -34278,10 +34820,12 @@ pub struct WebAssemblyMemory(PhantomData<JsObject>);
 pub mod web_assembly_memory {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/Memory)
-        #[link_name = "new WebAssembly.Memory"]
-        pub safe fn new(descriptor: MemoryDescriptor<'_>) -> &'static WebAssemblyMemory;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/Memory)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Memory")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(descriptor: MemoryDescriptor<'_>) -> &'static WebAssemblyMemory {
+        unreachable!()
     }
 }
 
@@ -34327,18 +34871,28 @@ pub struct Blob(PhantomData<JsObject>);
 pub mod blob {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
-        #[link_name = "new Blob"]
-        pub safe fn new() -> &'static Blob;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Blob {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
-        #[link_name = "new Blob"]
-        pub safe fn new_with_blob_parts(blob_parts: &[BlobPart<'_>]) -> &'static Blob;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_blob_parts(blob_parts: &[BlobPart<'_>]) -> &'static Blob {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
-        #[link_name = "new Blob"]
-        pub safe fn new_with_blob_parts_and_options(blob_parts: &[BlobPart<'_>], options: BlobPropertyBag<'_>) -> &'static Blob;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_blob_parts_and_options(blob_parts: &[BlobPart<'_>], options: BlobPropertyBag<'_>) -> &'static Blob {
+        unreachable!()
     }
 }
 
@@ -34449,18 +35003,28 @@ impl Deref for File {
 pub mod file {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
-        #[link_name = "new File"]
-        pub safe fn new(file_bits: &[BlobPart<'_>], file_name: &str) -> &'static File;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
+    #[cfg_attr(rust_js, rust_js::link_name = "new File")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(file_bits: &[BlobPart<'_>], file_name: &str) -> &'static File {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
-        #[link_name = "new File"]
-        pub safe fn new_with_options(file_bits: &[BlobPart<'_>], file_name: &str, options: FilePropertyBag<'_>) -> &'static File;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
+    #[cfg_attr(rust_js, rust_js::link_name = "new File")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(file_bits: &[BlobPart<'_>], file_name: &str, options: FilePropertyBag<'_>) -> &'static File {
+        unreachable!()
+    }
 
-        /// Treats `this` as `File` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Blob) -> &'static File;
+    /// Treats `this` as `File` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Blob) -> &'static File {
+        unreachable!()
     }
 }
 
@@ -34498,41 +35062,67 @@ pub struct URL(PhantomData<JsObject>);
 pub mod url {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/revokeObjectURL)
-        #[link_name = "URL.revokeObjectURL"]
-        pub safe fn revoke_object_url(url: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
-        #[link_name = "new URL"]
-        pub safe fn new(url: &str) -> &'static URL;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
-        #[link_name = "new URL"]
-        pub safe fn new_with_base(url: &str, base: &str) -> &'static URL;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
-        #[link_name = "URL.parse"]
-        pub safe fn parse(url: &str) -> Option<&'static URL>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
-        #[link_name = "URL.parse"]
-        pub safe fn parse_with_base(url: &str, base: &str) -> Option<&'static URL>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/canParse)
-        #[link_name = "URL.canParse"]
-        pub safe fn can_parse(url: &str) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/canParse)
-        #[link_name = "URL.canParse"]
-        pub safe fn can_parse_with_base(url: &str, base: &str) -> bool;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/createObjectURL)
     #[cfg_attr(rust_js, rust_js::link_name = "URL.createObjectURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_object_url(obj: impl IntoBlobOrMediaSource) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/revokeObjectURL)
+    #[cfg_attr(rust_js, rust_js::link_name = "URL.revokeObjectURL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn revoke_object_url(url: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(url: &str) -> &'static URL {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_base(url: &str, base: &str) -> &'static URL {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
+    #[cfg_attr(rust_js, rust_js::link_name = "URL.parse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse(url: &str) -> Option<&'static URL> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
+    #[cfg_attr(rust_js, rust_js::link_name = "URL.parse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_with_base(url: &str, base: &str) -> Option<&'static URL> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/canParse)
+    #[cfg_attr(rust_js, rust_js::link_name = "URL.canParse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn can_parse(url: &str) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/canParse)
+    #[cfg_attr(rust_js, rust_js::link_name = "URL.canParse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn can_parse_with_base(url: &str, base: &str) -> bool {
         unreachable!()
     }
 }
@@ -35179,10 +35769,12 @@ impl Deref for Clipboard {
 pub mod clipboard {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Clipboard` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Clipboard;
+    /// Treats `this` as `Clipboard` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Clipboard {
+        unreachable!()
     }
 }
 
@@ -35235,10 +35827,12 @@ pub struct ClipboardItem(PhantomData<JsObject>);
 
 pub mod clipboard_item {
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/supports)
-        #[link_name = "ClipboardItem.supports"]
-        pub safe fn supports(type_: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/supports)
+    #[cfg_attr(rust_js, rust_js::link_name = "ClipboardItem.supports")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn supports(type_: &str) -> bool {
+        unreachable!()
     }
 }
 
@@ -35285,10 +35879,12 @@ impl Deref for SVGElement {
 pub mod svg_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGElement;
+    /// Treats `this` as `SVGElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGElement {
+        unreachable!()
     }
 }
 
@@ -37148,10 +37744,12 @@ impl Deref for SVGGraphicsElement {
 pub mod svg_graphics_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGGraphicsElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGGraphicsElement;
+    /// Treats `this` as `SVGGraphicsElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGGraphicsElement {
+        unreachable!()
     }
 }
 
@@ -37230,10 +37828,12 @@ impl Deref for SVGGeometryElement {
 pub mod svg_geometry_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGGeometryElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGGeometryElement;
+    /// Treats `this` as `SVGGeometryElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGGeometryElement {
+        unreachable!()
     }
 }
 
@@ -37312,10 +37912,12 @@ impl Deref for SVGSVGElement {
 pub mod svgsvg_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGSVGElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGSVGElement;
+    /// Treats `this` as `SVGSVGElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGSVGElement {
+        unreachable!()
     }
 }
 
@@ -37942,10 +38544,12 @@ impl Deref for SVGGElement {
 pub mod svgg_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGGElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGGElement;
+    /// Treats `this` as `SVGGElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGGElement {
+        unreachable!()
     }
 }
 
@@ -37965,10 +38569,12 @@ impl Deref for SVGDefsElement {
 pub mod svg_defs_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGDefsElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGDefsElement;
+    /// Treats `this` as `SVGDefsElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGDefsElement {
+        unreachable!()
     }
 }
 
@@ -37988,10 +38594,12 @@ impl Deref for SVGSymbolElement {
 pub mod svg_symbol_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGSymbolElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGSymbolElement;
+    /// Treats `this` as `SVGSymbolElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGSymbolElement {
+        unreachable!()
     }
 }
 
@@ -38030,10 +38638,12 @@ impl Deref for SVGUseElement {
 pub mod svg_use_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGUseElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGUseElement;
+    /// Treats `this` as `SVGUseElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGUseElement {
+        unreachable!()
     }
 }
 
@@ -38096,10 +38706,12 @@ impl Deref for SVGSwitchElement {
 pub mod svg_switch_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGSwitchElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGSwitchElement;
+    /// Treats `this` as `SVGSwitchElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGSwitchElement {
+        unreachable!()
     }
 }
 
@@ -38119,10 +38731,12 @@ impl Deref for SVGTitleElement {
 pub mod svg_title_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTitleElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTitleElement;
+    /// Treats `this` as `SVGTitleElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTitleElement {
+        unreachable!()
     }
 }
 
@@ -38142,10 +38756,12 @@ impl Deref for SVGDescElement {
 pub mod svg_desc_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGDescElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGDescElement;
+    /// Treats `this` as `SVGDescElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGDescElement {
+        unreachable!()
     }
 }
 
@@ -38165,10 +38781,12 @@ impl Deref for SVGMetadataElement {
 pub mod svg_metadata_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGMetadataElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGMetadataElement;
+    /// Treats `this` as `SVGMetadataElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGMetadataElement {
+        unreachable!()
     }
 }
 
@@ -38188,10 +38806,12 @@ impl Deref for SVGStyleElement {
 pub mod svg_style_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGStyleElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGStyleElement;
+    /// Treats `this` as `SVGStyleElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGStyleElement {
+        unreachable!()
     }
 }
 
@@ -38286,10 +38906,12 @@ impl Deref for SVGScriptElement {
 pub mod svg_script_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGScriptElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGScriptElement;
+    /// Treats `this` as `SVGScriptElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGScriptElement {
+        unreachable!()
     }
 }
 
@@ -38352,10 +38974,12 @@ impl Deref for SVGPathElement {
 pub mod svg_path_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGPathElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGPathElement;
+    /// Treats `this` as `SVGPathElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGPathElement {
+        unreachable!()
     }
 }
 
@@ -38402,10 +39026,12 @@ impl Deref for SVGRectElement {
 pub mod svg_rect_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGRectElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGRectElement;
+    /// Treats `this` as `SVGRectElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGRectElement {
+        unreachable!()
     }
 }
 
@@ -38476,10 +39102,12 @@ impl Deref for SVGCircleElement {
 pub mod svg_circle_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGCircleElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGCircleElement;
+    /// Treats `this` as `SVGCircleElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGCircleElement {
+        unreachable!()
     }
 }
 
@@ -38526,10 +39154,12 @@ impl Deref for SVGEllipseElement {
 pub mod svg_ellipse_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGEllipseElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGEllipseElement;
+    /// Treats `this` as `SVGEllipseElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGEllipseElement {
+        unreachable!()
     }
 }
 
@@ -38584,10 +39214,12 @@ impl Deref for SVGLineElement {
 pub mod svg_line_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGLineElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGLineElement;
+    /// Treats `this` as `SVGLineElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGLineElement {
+        unreachable!()
     }
 }
 
@@ -38642,10 +39274,12 @@ impl Deref for SVGPolylineElement {
 pub mod svg_polyline_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGPolylineElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGPolylineElement;
+    /// Treats `this` as `SVGPolylineElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGPolylineElement {
+        unreachable!()
     }
 }
 
@@ -38684,10 +39318,12 @@ impl Deref for SVGPolygonElement {
 pub mod svg_polygon_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGPolygonElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGPolygonElement;
+    /// Treats `this` as `SVGPolygonElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGPolygonElement {
+        unreachable!()
     }
 }
 
@@ -38735,10 +39371,12 @@ pub mod svg_text_content_element {
     /// `SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS`
     pub const LENGTHADJUST_SPACINGANDGLYPHS: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTextContentElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTextContentElement;
+    /// Treats `this` as `SVGTextContentElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTextContentElement {
+        unreachable!()
     }
 }
 
@@ -38857,10 +39495,12 @@ impl Deref for SVGTextPositioningElement {
 pub mod svg_text_positioning_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTextPositioningElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTextPositioningElement;
+    /// Treats `this` as `SVGTextPositioningElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTextPositioningElement {
+        unreachable!()
     }
 }
 
@@ -38923,10 +39563,12 @@ impl Deref for SVGTextElement {
 pub mod svg_text_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTextElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTextElement;
+    /// Treats `this` as `SVGTextElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTextElement {
+        unreachable!()
     }
 }
 
@@ -38946,10 +39588,12 @@ impl Deref for SVGTSpanElement {
 pub mod svgt_span_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTSpanElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTSpanElement;
+    /// Treats `this` as `SVGTSpanElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTSpanElement {
+        unreachable!()
     }
 }
 
@@ -38987,10 +39631,12 @@ pub mod svg_text_path_element {
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_EXACT`
     pub const TEXTPATH_SPACINGTYPE_EXACT: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGTextPathElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGTextPathElement;
+    /// Treats `this` as `SVGTextPathElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGTextPathElement {
+        unreachable!()
     }
 }
 
@@ -39045,10 +39691,12 @@ impl Deref for SVGImageElement {
 pub mod svg_image_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGImageElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGImageElement;
+    /// Treats `this` as `SVGImageElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGImageElement {
+        unreachable!()
     }
 }
 
@@ -39135,10 +39783,12 @@ impl Deref for SVGForeignObjectElement {
 pub mod svg_foreign_object_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGForeignObjectElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGForeignObjectElement;
+    /// Treats `this` as `SVGForeignObjectElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGForeignObjectElement {
+        unreachable!()
     }
 }
 
@@ -39214,10 +39864,12 @@ pub mod svg_marker_element {
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE`
     pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGMarkerElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGMarkerElement;
+    /// Treats `this` as `SVGMarkerElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGMarkerElement {
+        unreachable!()
     }
 }
 
@@ -39356,10 +40008,12 @@ pub mod svg_gradient_element {
     /// `SVGGradientElement.SVG_SPREADMETHOD_REPEAT`
     pub const SVG_SPREADMETHOD_REPEAT: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGGradientElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGGradientElement;
+    /// Treats `this` as `SVGGradientElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGGradientElement {
+        unreachable!()
     }
 }
 
@@ -39414,10 +40068,12 @@ impl Deref for SVGLinearGradientElement {
 pub mod svg_linear_gradient_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGLinearGradientElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGLinearGradientElement;
+    /// Treats `this` as `SVGLinearGradientElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGLinearGradientElement {
+        unreachable!()
     }
 }
 
@@ -39472,10 +40128,12 @@ impl Deref for SVGRadialGradientElement {
 pub mod svg_radial_gradient_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGRadialGradientElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGRadialGradientElement;
+    /// Treats `this` as `SVGRadialGradientElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGRadialGradientElement {
+        unreachable!()
     }
 }
 
@@ -39546,10 +40204,12 @@ impl Deref for SVGStopElement {
 pub mod svg_stop_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGStopElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGStopElement;
+    /// Treats `this` as `SVGStopElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGStopElement {
+        unreachable!()
     }
 }
 
@@ -39580,10 +40240,12 @@ impl Deref for SVGPatternElement {
 pub mod svg_pattern_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGPatternElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGPatternElement;
+    /// Treats `this` as `SVGPatternElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGPatternElement {
+        unreachable!()
     }
 }
 
@@ -39686,10 +40348,12 @@ impl Deref for SVGAElement {
 pub mod svga_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGAElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGAElement;
+    /// Treats `this` as `SVGAElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGAElement {
+        unreachable!()
     }
 }
 
@@ -39984,10 +40648,12 @@ impl Deref for SVGViewElement {
 pub mod svg_view_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGViewElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGViewElement;
+    /// Treats `this` as `SVGViewElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGViewElement {
+        unreachable!()
     }
 }
 
@@ -40026,10 +40692,12 @@ impl Deref for SVGAnimationElement {
 pub mod svg_animation_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGAnimationElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGAnimationElement;
+    /// Treats `this` as `SVGAnimationElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGAnimationElement {
+        unreachable!()
     }
 }
 
@@ -40183,10 +40851,12 @@ impl Deref for SVGAnimateElement {
 pub mod svg_animate_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGAnimateElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateElement;
+    /// Treats `this` as `SVGAnimateElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateElement {
+        unreachable!()
     }
 }
 
@@ -40206,10 +40876,12 @@ impl Deref for SVGSetElement {
 pub mod svg_set_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGSetElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGSetElement;
+    /// Treats `this` as `SVGSetElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGSetElement {
+        unreachable!()
     }
 }
 
@@ -40229,10 +40901,12 @@ impl Deref for SVGAnimateMotionElement {
 pub mod svg_animate_motion_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGAnimateMotionElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateMotionElement;
+    /// Treats `this` as `SVGAnimateMotionElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateMotionElement {
+        unreachable!()
     }
 }
 
@@ -40252,10 +40926,12 @@ impl Deref for SVGMPathElement {
 pub mod svgm_path_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGMPathElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGMPathElement;
+    /// Treats `this` as `SVGMPathElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGMPathElement {
+        unreachable!()
     }
 }
 
@@ -40286,10 +40962,12 @@ impl Deref for SVGAnimateTransformElement {
 pub mod svg_animate_transform_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGAnimateTransformElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateTransformElement;
+    /// Treats `this` as `SVGAnimateTransformElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGAnimateTransformElement {
+        unreachable!()
     }
 }
 
@@ -40309,10 +40987,12 @@ impl Deref for SVGFilterElement {
 pub mod svg_filter_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFilterElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFilterElement;
+    /// Treats `this` as `SVGFilterElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFilterElement {
+        unreachable!()
     }
 }
 
@@ -40434,10 +41114,12 @@ pub mod svgfe_blend_element {
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LUMINOSITY`
     pub const SVG_FEBLEND_MODE_LUMINOSITY: u16 = 16;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEBlendElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEBlendElement;
+    /// Treats `this` as `SVGFEBlendElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEBlendElement {
+        unreachable!()
     }
 }
 
@@ -40539,10 +41221,12 @@ pub mod svgfe_color_matrix_element {
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA`
     pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: u16 = 4;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEColorMatrixElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEColorMatrixElement;
+    /// Treats `this` as `SVGFEColorMatrixElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEColorMatrixElement {
+        unreachable!()
     }
 }
 
@@ -40629,10 +41313,12 @@ impl Deref for SVGFEComponentTransferElement {
 pub mod svgfe_component_transfer_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEComponentTransferElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEComponentTransferElement;
+    /// Treats `this` as `SVGFEComponentTransferElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEComponentTransferElement {
+        unreachable!()
     }
 }
 
@@ -40721,10 +41407,12 @@ pub mod svg_component_transfer_function_element {
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_GAMMA`
     pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: u16 = 5;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGComponentTransferFunctionElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGComponentTransferFunctionElement;
+    /// Treats `this` as `SVGComponentTransferFunctionElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGComponentTransferFunctionElement {
+        unreachable!()
     }
 }
 
@@ -40803,10 +41491,12 @@ impl Deref for SVGFEFuncRElement {
 pub mod svgfe_func_r_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEFuncRElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncRElement;
+    /// Treats `this` as `SVGFEFuncRElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncRElement {
+        unreachable!()
     }
 }
 
@@ -40826,10 +41516,12 @@ impl Deref for SVGFEFuncGElement {
 pub mod svgfe_func_g_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEFuncGElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncGElement;
+    /// Treats `this` as `SVGFEFuncGElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncGElement {
+        unreachable!()
     }
 }
 
@@ -40849,10 +41541,12 @@ impl Deref for SVGFEFuncBElement {
 pub mod svgfe_func_b_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEFuncBElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncBElement;
+    /// Treats `this` as `SVGFEFuncBElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncBElement {
+        unreachable!()
     }
 }
 
@@ -40872,10 +41566,12 @@ impl Deref for SVGFEFuncAElement {
 pub mod svgfe_func_a_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEFuncAElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncAElement;
+    /// Treats `this` as `SVGFEFuncAElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEFuncAElement {
+        unreachable!()
     }
 }
 
@@ -40916,10 +41612,12 @@ pub mod svgfe_composite_element {
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC`
     pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: u16 = 6;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFECompositeElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFECompositeElement;
+    /// Treats `this` as `SVGFECompositeElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFECompositeElement {
+        unreachable!()
     }
 }
 
@@ -41050,10 +41748,12 @@ pub mod svgfe_convolve_matrix_element {
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_NONE`
     pub const SVG_EDGEMODE_NONE: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEConvolveMatrixElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEConvolveMatrixElement;
+    /// Treats `this` as `SVGFEConvolveMatrixElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEConvolveMatrixElement {
+        unreachable!()
     }
 }
 
@@ -41212,10 +41912,12 @@ impl Deref for SVGFEDiffuseLightingElement {
 pub mod svgfe_diffuse_lighting_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEDiffuseLightingElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEDiffuseLightingElement;
+    /// Treats `this` as `SVGFEDiffuseLightingElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEDiffuseLightingElement {
+        unreachable!()
     }
 }
 
@@ -41333,10 +42035,12 @@ pub mod svgfe_displacement_map_element {
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_A`
     pub const SVG_CHANNEL_A: u16 = 4;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEDisplacementMapElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEDisplacementMapElement;
+    /// Treats `this` as `SVGFEDisplacementMapElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEDisplacementMapElement {
+        unreachable!()
     }
 }
 
@@ -41439,10 +42143,12 @@ impl Deref for SVGFEDropShadowElement {
 pub mod svgfe_drop_shadow_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEDropShadowElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEDropShadowElement;
+    /// Treats `this` as `SVGFEDropShadowElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEDropShadowElement {
+        unreachable!()
     }
 }
 
@@ -41553,10 +42259,12 @@ impl Deref for SVGFEFloodElement {
 pub mod svgfe_flood_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEFloodElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEFloodElement;
+    /// Treats `this` as `SVGFEFloodElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEFloodElement {
+        unreachable!()
     }
 }
 
@@ -41631,10 +42339,12 @@ pub mod svgfe_gaussian_blur_element {
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_NONE`
     pub const SVG_EDGEMODE_NONE: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEGaussianBlurElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEGaussianBlurElement;
+    /// Treats `this` as `SVGFEGaussianBlurElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEGaussianBlurElement {
+        unreachable!()
     }
 }
 
@@ -41737,10 +42447,12 @@ impl Deref for SVGFEImageElement {
 pub mod svgfe_image_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEImageElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEImageElement;
+    /// Treats `this` as `SVGFEImageElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEImageElement {
+        unreachable!()
     }
 }
 
@@ -41827,10 +42539,12 @@ impl Deref for SVGFEMergeElement {
 pub mod svgfe_merge_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEMergeElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEMergeElement;
+    /// Treats `this` as `SVGFEMergeElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEMergeElement {
+        unreachable!()
     }
 }
 
@@ -41893,10 +42607,12 @@ impl Deref for SVGFEMergeNodeElement {
 pub mod svgfe_merge_node_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEMergeNodeElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEMergeNodeElement;
+    /// Treats `this` as `SVGFEMergeNodeElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEMergeNodeElement {
+        unreachable!()
     }
 }
 
@@ -41936,10 +42652,12 @@ pub mod svgfe_morphology_element {
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE`
     pub const SVG_MORPHOLOGY_OPERATOR_DILATE: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEMorphologyElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEMorphologyElement;
+    /// Treats `this` as `SVGFEMorphologyElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEMorphologyElement {
+        unreachable!()
     }
 }
 
@@ -42034,10 +42752,12 @@ impl Deref for SVGFEOffsetElement {
 pub mod svgfe_offset_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEOffsetElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEOffsetElement;
+    /// Treats `this` as `SVGFEOffsetElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEOffsetElement {
+        unreachable!()
     }
 }
 
@@ -42124,10 +42844,12 @@ impl Deref for SVGFESpecularLightingElement {
 pub mod svgfe_specular_lighting_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFESpecularLightingElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFESpecularLightingElement;
+    /// Treats `this` as `SVGFESpecularLightingElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFESpecularLightingElement {
+        unreachable!()
     }
 }
 
@@ -42238,10 +42960,12 @@ impl Deref for SVGFETileElement {
 pub mod svgfe_tile_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFETileElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFETileElement;
+    /// Treats `this` as `SVGFETileElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFETileElement {
+        unreachable!()
     }
 }
 
@@ -42330,10 +43054,12 @@ pub mod svgfe_turbulence_element {
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH`
     pub const SVG_STITCHTYPE_NOSTITCH: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFETurbulenceElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFETurbulenceElement;
+    /// Treats `this` as `SVGFETurbulenceElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFETurbulenceElement {
+        unreachable!()
     }
 }
 
@@ -42444,10 +43170,12 @@ impl Deref for SVGFEDistantLightElement {
 pub mod svgfe_distant_light_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEDistantLightElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEDistantLightElement;
+    /// Treats `this` as `SVGFEDistantLightElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEDistantLightElement {
+        unreachable!()
     }
 }
 
@@ -42486,10 +43214,12 @@ impl Deref for SVGFEPointLightElement {
 pub mod svgfe_point_light_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFEPointLightElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFEPointLightElement;
+    /// Treats `this` as `SVGFEPointLightElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFEPointLightElement {
+        unreachable!()
     }
 }
 
@@ -42536,10 +43266,12 @@ impl Deref for SVGFESpotLightElement {
 pub mod svgfe_spot_light_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGFESpotLightElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGFESpotLightElement;
+    /// Treats `this` as `SVGFESpotLightElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGFESpotLightElement {
+        unreachable!()
     }
 }
 
@@ -42626,10 +43358,12 @@ impl Deref for SVGClipPathElement {
 pub mod svg_clip_path_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGClipPathElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGClipPathElement;
+    /// Treats `this` as `SVGClipPathElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGClipPathElement {
+        unreachable!()
     }
 }
 
@@ -42668,10 +43402,12 @@ impl Deref for SVGMaskElement {
 pub mod svg_mask_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SVGMaskElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGMaskElement;
+    /// Treats `this` as `SVGMaskElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SVGMaskElement {
+        unreachable!()
     }
 }
 
@@ -42789,18 +43525,28 @@ impl Deref for AnalyserNode {
 pub mod analyser_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
-        #[link_name = "new AnalyserNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static AnalyserNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnalyserNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static AnalyserNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
-        #[link_name = "new AnalyserNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: AnalyserOptions<'_>) -> &'static AnalyserNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnalyserNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: AnalyserOptions<'_>) -> &'static AnalyserNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AnalyserNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AnalyserNode;
+    /// Treats `this` as `AnalyserNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AnalyserNode {
+        unreachable!()
     }
 }
 
@@ -42927,22 +43673,36 @@ impl Deref for Animation {
 pub mod animation {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
-        #[link_name = "new Animation"]
-        pub safe fn new() -> &'static Animation;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Animation {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
-        #[link_name = "new Animation"]
-        pub safe fn new_with_effect(effect: &AnimationEffect) -> &'static Animation;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_effect(effect: &AnimationEffect) -> &'static Animation {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
-        #[link_name = "new Animation"]
-        pub safe fn new_with_effect_and_timeline(effect: &AnimationEffect, timeline: &AnimationTimeline) -> &'static Animation;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_effect_and_timeline(effect: &AnimationEffect, timeline: &AnimationTimeline) -> &'static Animation {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Animation` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Animation;
+    /// Treats `this` as `Animation` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Animation {
+        unreachable!()
     }
 }
 
@@ -43263,18 +44023,28 @@ impl Deref for AnimationPlaybackEvent {
 pub mod animation_playback_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
-        #[link_name = "new AnimationPlaybackEvent"]
-        pub safe fn new(type_: &str) -> &'static AnimationPlaybackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static AnimationPlaybackEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
-        #[link_name = "new AnimationPlaybackEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: AnimationPlaybackEventInit<'_>) -> &'static AnimationPlaybackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: AnimationPlaybackEventInit<'_>) -> &'static AnimationPlaybackEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AnimationPlaybackEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static AnimationPlaybackEvent;
+    /// Treats `this` as `AnimationPlaybackEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static AnimationPlaybackEvent {
+        unreachable!()
     }
 }
 
@@ -43336,10 +44106,12 @@ impl Deref for Attr {
 pub mod attr {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Attr` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Attr;
+    /// Treats `this` as `Attr` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Attr {
+        unreachable!()
     }
 }
 
@@ -43417,10 +44189,12 @@ pub struct AudioBuffer(PhantomData<JsObject>);
 pub mod audio_buffer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/AudioBuffer)
-        #[link_name = "new AudioBuffer"]
-        pub safe fn new(options: AudioBufferOptions) -> &'static AudioBuffer;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/AudioBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(options: AudioBufferOptions) -> &'static AudioBuffer {
+        unreachable!()
     }
 }
 
@@ -43515,18 +44289,28 @@ impl Deref for AudioBufferSourceNode {
 pub mod audio_buffer_source_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
-        #[link_name = "new AudioBufferSourceNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static AudioBufferSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioBufferSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static AudioBufferSourceNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
-        #[link_name = "new AudioBufferSourceNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: AudioBufferSourceOptions<'_>) -> &'static AudioBufferSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioBufferSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: AudioBufferSourceOptions<'_>) -> &'static AudioBufferSourceNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioBufferSourceNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioBufferSourceNode;
+    /// Treats `this` as `AudioBufferSourceNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioBufferSourceNode {
+        unreachable!()
     }
 }
 
@@ -43629,18 +44413,28 @@ impl Deref for AudioContext {
 pub mod audio_context {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
-        #[link_name = "new AudioContext"]
-        pub safe fn new() -> &'static AudioContext;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static AudioContext {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
-        #[link_name = "new AudioContext"]
-        pub safe fn new_with_context_options(context_options: AudioContextOptions<'_>) -> &'static AudioContext;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_context_options(context_options: AudioContextOptions<'_>) -> &'static AudioContext {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioContext` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioContext;
+    /// Treats `this` as `AudioContext` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioContext {
+        unreachable!()
     }
 }
 
@@ -43726,10 +44520,12 @@ pub struct AudioData(PhantomData<JsObject>);
 pub mod audio_data {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/AudioData)
-        #[link_name = "new AudioData"]
-        pub safe fn new(init: AudioDataInit<'_>) -> &'static AudioData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/AudioData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: AudioDataInit<'_>) -> &'static AudioData {
+        unreachable!()
     }
 }
 
@@ -43832,18 +44628,28 @@ impl Deref for AudioDecoder {
 pub mod audio_decoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
-        #[link_name = "new AudioDecoder"]
-        pub safe fn new(init: AudioDecoderInit<'_>) -> &'static AudioDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: AudioDecoderInit<'_>) -> &'static AudioDecoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/isConfigSupported)
-        #[link_name = "AudioDecoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: AudioDecoderConfig) -> Promise<AudioDecoderSupport>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/isConfigSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "AudioDecoder.isConfigSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_config_supported(config: AudioDecoderConfig) -> Promise<AudioDecoderSupport> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioDecoder` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioDecoder;
+    /// Treats `this` as `AudioDecoder` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioDecoder {
+        unreachable!()
     }
 }
 
@@ -43939,10 +44745,12 @@ impl Deref for AudioDestinationNode {
 pub mod audio_destination_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AudioDestinationNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioDestinationNode;
+    /// Treats `this` as `AudioDestinationNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioDestinationNode {
+        unreachable!()
     }
 }
 
@@ -43973,18 +44781,28 @@ impl Deref for AudioEncoder {
 pub mod audio_encoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
-        #[link_name = "new AudioEncoder"]
-        pub safe fn new(init: AudioEncoderInit<'_>) -> &'static AudioEncoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: AudioEncoderInit<'_>) -> &'static AudioEncoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/isConfigSupported)
-        #[link_name = "AudioEncoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: AudioEncoderConfig) -> Promise<AudioEncoderSupport>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/isConfigSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "AudioEncoder.isConfigSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_config_supported(config: AudioEncoderConfig) -> Promise<AudioEncoderSupport> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioEncoder` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioEncoder;
+    /// Treats `this` as `AudioEncoder` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioEncoder {
+        unreachable!()
     }
 }
 
@@ -44175,10 +44993,12 @@ impl Deref for AudioNode {
 pub mod audio_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AudioNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioNode;
+    /// Treats `this` as `AudioNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioNode {
+        unreachable!()
     }
 }
 
@@ -44551,14 +45371,20 @@ impl Deref for AudioProcessingEvent {
 pub mod audio_processing_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/AudioProcessingEvent)
-        #[link_name = "new AudioProcessingEvent"]
-        pub safe fn new(type_: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/AudioProcessingEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioProcessingEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioProcessingEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static AudioProcessingEvent;
+    /// Treats `this` as `AudioProcessingEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static AudioProcessingEvent {
+        unreachable!()
     }
 }
 
@@ -44605,10 +45431,12 @@ impl Deref for AudioScheduledSourceNode {
 pub mod audio_scheduled_source_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AudioScheduledSourceNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioScheduledSourceNode;
+    /// Treats `this` as `AudioScheduledSourceNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioScheduledSourceNode {
+        unreachable!()
     }
 }
 
@@ -44680,10 +45508,12 @@ impl Deref for AudioWorklet {
 pub mod audio_worklet {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AudioWorklet` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Worklet) -> &'static AudioWorklet;
+    /// Treats `this` as `AudioWorklet` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Worklet) -> &'static AudioWorklet {
+        unreachable!()
     }
 }
 
@@ -44703,18 +45533,28 @@ impl Deref for AudioWorkletNode {
 pub mod audio_worklet_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
-        #[link_name = "new AudioWorkletNode"]
-        pub safe fn new(context: &BaseAudioContext, name: &str) -> &'static AudioWorkletNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioWorkletNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext, name: &str) -> &'static AudioWorkletNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
-        #[link_name = "new AudioWorkletNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, name: &str, options: AudioWorkletNodeOptions<'_>) -> &'static AudioWorkletNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioWorkletNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, name: &str, options: AudioWorkletNodeOptions<'_>) -> &'static AudioWorkletNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `AudioWorkletNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioWorkletNode;
+    /// Treats `this` as `AudioWorkletNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static AudioWorkletNode {
+        unreachable!()
     }
 }
 
@@ -44770,10 +45610,12 @@ impl Deref for AuthenticatorAssertionResponse {
 pub mod authenticator_assertion_response {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AuthenticatorAssertionResponse` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AuthenticatorResponse) -> &'static AuthenticatorAssertionResponse;
+    /// Treats `this` as `AuthenticatorAssertionResponse` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AuthenticatorResponse) -> &'static AuthenticatorAssertionResponse {
+        unreachable!()
     }
 }
 
@@ -44820,10 +45662,12 @@ impl Deref for AuthenticatorAttestationResponse {
 pub mod authenticator_attestation_response {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `AuthenticatorAttestationResponse` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AuthenticatorResponse) -> &'static AuthenticatorAttestationResponse;
+    /// Treats `this` as `AuthenticatorAttestationResponse` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AuthenticatorResponse) -> &'static AuthenticatorAttestationResponse {
+        unreachable!()
     }
 }
 
@@ -44916,10 +45760,12 @@ impl Deref for BaseAudioContext {
 pub mod base_audio_context {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `BaseAudioContext` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static BaseAudioContext;
+    /// Treats `this` as `BaseAudioContext` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static BaseAudioContext {
+        unreachable!()
     }
 }
 
@@ -45231,10 +46077,12 @@ impl Deref for BeforeUnloadEvent {
 pub mod before_unload_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `BeforeUnloadEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static BeforeUnloadEvent;
+    /// Treats `this` as `BeforeUnloadEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static BeforeUnloadEvent {
+        unreachable!()
     }
 }
 
@@ -45273,18 +46121,28 @@ impl Deref for BiquadFilterNode {
 pub mod biquad_filter_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
-        #[link_name = "new BiquadFilterNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static BiquadFilterNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new BiquadFilterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static BiquadFilterNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
-        #[link_name = "new BiquadFilterNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: BiquadFilterOptions<'_>) -> &'static BiquadFilterNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new BiquadFilterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: BiquadFilterOptions<'_>) -> &'static BiquadFilterNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `BiquadFilterNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static BiquadFilterNode;
+    /// Treats `this` as `BiquadFilterNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static BiquadFilterNode {
+        unreachable!()
     }
 }
 
@@ -45363,14 +46221,20 @@ impl Deref for BlobEvent {
 pub mod blob_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/BlobEvent)
-        #[link_name = "new BlobEvent"]
-        pub safe fn new(type_: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/BlobEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new BlobEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `BlobEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static BlobEvent;
+    /// Treats `this` as `BlobEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static BlobEvent {
+        unreachable!()
     }
 }
 
@@ -45409,14 +46273,20 @@ impl Deref for BroadcastChannel {
 pub mod broadcast_channel {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/BroadcastChannel)
-        #[link_name = "new BroadcastChannel"]
-        pub safe fn new(name: &str) -> &'static BroadcastChannel;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/BroadcastChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "new BroadcastChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(name: &str) -> &'static BroadcastChannel {
+        unreachable!()
+    }
 
-        /// Treats `this` as `BroadcastChannel` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static BroadcastChannel;
+    /// Treats `this` as `BroadcastChannel` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static BroadcastChannel {
+        unreachable!()
     }
 }
 
@@ -45488,10 +46358,12 @@ pub struct ByteLengthQueuingStrategy(PhantomData<JsObject>);
 pub mod byte_length_queuing_strategy {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy/ByteLengthQueuingStrategy)
-        #[link_name = "new ByteLengthQueuingStrategy"]
-        pub safe fn new(init: QueuingStrategyInit) -> &'static ByteLengthQueuingStrategy;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy/ByteLengthQueuingStrategy)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ByteLengthQueuingStrategy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: QueuingStrategyInit) -> &'static ByteLengthQueuingStrategy {
+        unreachable!()
     }
 }
 
@@ -45530,10 +46402,12 @@ impl Deref for CDATASection {
 pub mod cdata_section {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CDATASection` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CDATASection;
+    /// Treats `this` as `CDATASection` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CDATASection {
+        unreachable!()
     }
 }
 
@@ -45553,10 +46427,12 @@ impl Deref for CSSAnimation {
 pub mod css_animation {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSAnimation` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CSSAnimation;
+    /// Treats `this` as `CSSAnimation` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CSSAnimation {
+        unreachable!()
     }
 }
 
@@ -45587,10 +46463,12 @@ impl Deref for CSSConditionRule {
 pub mod css_condition_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSConditionRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSConditionRule;
+    /// Treats `this` as `CSSConditionRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSConditionRule {
+        unreachable!()
     }
 }
 
@@ -45621,10 +46499,12 @@ impl Deref for CSSContainerRule {
 pub mod css_container_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSContainerRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSContainerRule;
+    /// Treats `this` as `CSSContainerRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSContainerRule {
+        unreachable!()
     }
 }
 
@@ -45671,10 +46551,12 @@ impl Deref for CSSCounterStyleRule {
 pub mod css_counter_style_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSCounterStyleRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSCounterStyleRule;
+    /// Treats `this` as `CSSCounterStyleRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSCounterStyleRule {
+        unreachable!()
     }
 }
 
@@ -45873,10 +46755,12 @@ impl Deref for CSSFontFaceDescriptors {
 pub mod css_font_face_descriptors {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSFontFaceDescriptors` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSFontFaceDescriptors;
+    /// Treats `this` as `CSSFontFaceDescriptors` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSFontFaceDescriptors {
+        unreachable!()
     }
 }
 
@@ -46043,10 +46927,12 @@ impl Deref for CSSFontFaceRule {
 pub mod css_font_face_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSFontFaceRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSFontFaceRule;
+    /// Treats `this` as `CSSFontFaceRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSFontFaceRule {
+        unreachable!()
     }
 }
 
@@ -46066,10 +46952,12 @@ impl Deref for CSSFontFeatureValuesRule {
 pub mod css_font_feature_values_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSFontFeatureValuesRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSFontFeatureValuesRule;
+    /// Treats `this` as `CSSFontFeatureValuesRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSFontFeatureValuesRule {
+        unreachable!()
     }
 }
 
@@ -46108,10 +46996,12 @@ impl Deref for CSSFontPaletteValuesRule {
 pub mod css_font_palette_values_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSFontPaletteValuesRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSFontPaletteValuesRule;
+    /// Treats `this` as `CSSFontPaletteValuesRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSFontPaletteValuesRule {
+        unreachable!()
     }
 }
 
@@ -46166,10 +47056,12 @@ impl Deref for CSSGroupingRule {
 pub mod css_grouping_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSGroupingRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSGroupingRule;
+    /// Treats `this` as `CSSGroupingRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSGroupingRule {
+        unreachable!()
     }
 }
 
@@ -46224,10 +47116,12 @@ impl Deref for CSSImageValue {
 pub mod css_image_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSImageValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSImageValue;
+    /// Treats `this` as `CSSImageValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSImageValue {
+        unreachable!()
     }
 }
 
@@ -46247,10 +47141,12 @@ impl Deref for CSSImportRule {
 pub mod css_import_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSImportRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSImportRule;
+    /// Treats `this` as `CSSImportRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSImportRule {
+        unreachable!()
     }
 }
 
@@ -46313,10 +47209,12 @@ impl Deref for CSSKeyframeRule {
 pub mod css_keyframe_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSKeyframeRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSKeyframeRule;
+    /// Treats `this` as `CSSKeyframeRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSKeyframeRule {
+        unreachable!()
     }
 }
 
@@ -46363,14 +47261,20 @@ impl Deref for CSSKeyframesRule {
 pub mod css_keyframes_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSKeyframesRule) -> Box<dyn Iterator<Item = &'static CSSKeyframeRule>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSKeyframesRule) -> Box<dyn Iterator<Item = &'static CSSKeyframeRule>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSKeyframesRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSKeyframesRule;
+    /// Treats `this` as `CSSKeyframesRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSKeyframesRule {
+        unreachable!()
     }
 }
 
@@ -46449,14 +47353,20 @@ impl Deref for CSSKeywordValue {
 pub mod css_keyword_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeywordValue/CSSKeywordValue)
-        #[link_name = "new CSSKeywordValue"]
-        pub safe fn new(value: &str) -> &'static CSSKeywordValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeywordValue/CSSKeywordValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSKeywordValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(value: &str) -> &'static CSSKeywordValue {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSKeywordValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSKeywordValue;
+    /// Treats `this` as `CSSKeywordValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSKeywordValue {
+        unreachable!()
     }
 }
 
@@ -46495,10 +47405,12 @@ impl Deref for CSSLayerBlockRule {
 pub mod css_layer_block_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSLayerBlockRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSLayerBlockRule;
+    /// Treats `this` as `CSSLayerBlockRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSLayerBlockRule {
+        unreachable!()
     }
 }
 
@@ -46529,10 +47441,12 @@ impl Deref for CSSLayerStatementRule {
 pub mod css_layer_statement_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSLayerStatementRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSLayerStatementRule;
+    /// Treats `this` as `CSSLayerStatementRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSLayerStatementRule {
+        unreachable!()
     }
 }
 
@@ -46563,17 +47477,19 @@ impl Deref for CSSMathClamp {
 pub mod css_math_clamp {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathClamp` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathClamp;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathClamp/CSSMathClamp)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathClamp")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(lower: impl IntoCSSNumberish, value: impl IntoCSSNumberish, upper: impl IntoCSSNumberish) -> &'static CSSMathClamp {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathClamp` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathClamp {
         unreachable!()
     }
 }
@@ -46621,17 +47537,19 @@ impl Deref for CSSMathInvert {
 pub mod css_math_invert {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathInvert` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathInvert;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathInvert/CSSMathInvert)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathInvert")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(arg: impl IntoCSSNumberish) -> &'static CSSMathInvert {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathInvert` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathInvert {
         unreachable!()
     }
 }
@@ -46663,17 +47581,19 @@ impl Deref for CSSMathMax {
 pub mod css_math_max {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathMax` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMax;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMax/CSSMathMax)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMax")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMax {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathMax` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMax {
         unreachable!()
     }
 }
@@ -46705,17 +47625,19 @@ impl Deref for CSSMathMin {
 pub mod css_math_min {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathMin` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMin;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMin/CSSMathMin)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMin")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMin {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathMin` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMin {
         unreachable!()
     }
 }
@@ -46747,17 +47669,19 @@ impl Deref for CSSMathNegate {
 pub mod css_math_negate {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathNegate` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathNegate;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathNegate/CSSMathNegate)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathNegate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(arg: impl IntoCSSNumberish) -> &'static CSSMathNegate {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathNegate` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathNegate {
         unreachable!()
     }
 }
@@ -46789,17 +47713,19 @@ impl Deref for CSSMathProduct {
 pub mod css_math_product {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathProduct` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathProduct;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathProduct/CSSMathProduct)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathProduct")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathProduct {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathProduct` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathProduct {
         unreachable!()
     }
 }
@@ -46831,17 +47757,19 @@ impl Deref for CSSMathSum {
 pub mod css_math_sum {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathSum` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathSum;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathSum/CSSMathSum)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathSum")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathSum {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSMathSum` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathSum {
         unreachable!()
     }
 }
@@ -46873,10 +47801,12 @@ impl Deref for CSSMathValue {
 pub mod css_math_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMathValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathValue;
+    /// Treats `this` as `CSSMathValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathValue {
+        unreachable!()
     }
 }
 
@@ -46907,18 +47837,28 @@ impl Deref for CSSMatrixComponent {
 pub mod css_matrix_component {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
-        #[link_name = "new CSSMatrixComponent"]
-        pub safe fn new(matrix: &DOMMatrixReadOnly) -> &'static CSSMatrixComponent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMatrixComponent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(matrix: &DOMMatrixReadOnly) -> &'static CSSMatrixComponent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
-        #[link_name = "new CSSMatrixComponent"]
-        pub safe fn new_with_options(matrix: &DOMMatrixReadOnly, options: CSSMatrixComponentOptions) -> &'static CSSMatrixComponent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMatrixComponent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(matrix: &DOMMatrixReadOnly, options: CSSMatrixComponentOptions) -> &'static CSSMatrixComponent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSMatrixComponent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSMatrixComponent;
+    /// Treats `this` as `CSSMatrixComponent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSMatrixComponent {
+        unreachable!()
     }
 }
 
@@ -46957,10 +47897,12 @@ impl Deref for CSSMediaRule {
 pub mod css_media_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSMediaRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSMediaRule;
+    /// Treats `this` as `CSSMediaRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSMediaRule {
+        unreachable!()
     }
 }
 
@@ -46980,10 +47922,12 @@ impl Deref for CSSNamespaceRule {
 pub mod css_namespace_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSNamespaceRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSNamespaceRule;
+    /// Treats `this` as `CSSNamespaceRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSNamespaceRule {
+        unreachable!()
     }
 }
 
@@ -47022,10 +47966,12 @@ impl Deref for CSSNestedDeclarations {
 pub mod css_nested_declarations {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSNestedDeclarations` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSNestedDeclarations;
+    /// Treats `this` as `CSSNestedDeclarations` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSNestedDeclarations {
+        unreachable!()
     }
 }
 
@@ -47036,10 +47982,12 @@ pub struct CSSNumericArray(PhantomData<JsObject>);
 pub mod css_numeric_array {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSNumericArray) -> Box<dyn Iterator<Item = &'static CSSNumericValue>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSNumericArray) -> Box<dyn Iterator<Item = &'static CSSNumericValue>> {
+        unreachable!()
     }
 }
 
@@ -47102,14 +48050,20 @@ impl Deref for CSSNumericValue {
 pub mod css_numeric_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/parse)
-        #[link_name = "CSSNumericValue.parse"]
-        pub safe fn parse(css_text: &str) -> &'static CSSNumericValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/parse)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSNumericValue.parse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse(css_text: &str) -> &'static CSSNumericValue {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSNumericValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSNumericValue;
+    /// Treats `this` as `CSSNumericValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSNumericValue {
+        unreachable!()
     }
 }
 
@@ -47212,10 +48166,12 @@ impl Deref for CSSPageDescriptors {
 pub mod css_page_descriptors {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPageDescriptors` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSPageDescriptors;
+    /// Treats `this` as `CSSPageDescriptors` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSPageDescriptors {
+        unreachable!()
     }
 }
 
@@ -47382,10 +48338,12 @@ impl Deref for CSSPageRule {
 pub mod css_page_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPageRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSPageRule;
+    /// Treats `this` as `CSSPageRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSPageRule {
+        unreachable!()
     }
 }
 
@@ -47432,17 +48390,19 @@ impl Deref for CSSPerspective {
 pub mod css_perspective {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPerspective` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSPerspective;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/CSSPerspective)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSPerspective")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new(length: impl IntoCSSPerspectiveValue) -> &'static CSSPerspective {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSPerspective` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSPerspective {
         unreachable!()
     }
 }
@@ -47482,10 +48442,12 @@ impl Deref for CSSPositionTryDescriptors {
 pub mod css_position_try_descriptors {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPositionTryDescriptors` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSPositionTryDescriptors;
+    /// Treats `this` as `CSSPositionTryDescriptors` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSPositionTryDescriptors {
+        unreachable!()
     }
 }
 
@@ -48132,10 +49094,12 @@ impl Deref for CSSPositionTryRule {
 pub mod css_position_try_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPositionTryRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSPositionTryRule;
+    /// Treats `this` as `CSSPositionTryRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSPositionTryRule {
+        unreachable!()
     }
 }
 
@@ -48166,10 +49130,12 @@ impl Deref for CSSPropertyRule {
 pub mod css_property_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSPropertyRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSPropertyRule;
+    /// Treats `this` as `CSSPropertyRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSPropertyRule {
+        unreachable!()
     }
 }
 
@@ -48224,14 +49190,20 @@ impl Deref for CSSRotate {
 pub mod css_rotate {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/CSSRotate)
-        #[link_name = "new CSSRotate"]
-        pub safe fn new(angle: &CSSNumericValue) -> &'static CSSRotate;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/CSSRotate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSRotate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(angle: &CSSNumericValue) -> &'static CSSRotate {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSRotate` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSRotate;
+    /// Treats `this` as `CSSRotate` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSRotate {
+        unreachable!()
     }
 }
 
@@ -48398,10 +49370,12 @@ pub struct CSSRuleList(PhantomData<JsObject>);
 pub mod css_rule_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSRuleList) -> Box<dyn Iterator<Item = &'static CSSRule>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSRuleList) -> Box<dyn Iterator<Item = &'static CSSRule>> {
+        unreachable!()
     }
 }
 
@@ -48440,12 +49414,6 @@ impl Deref for CSSScale {
 pub mod css_scale {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSScale` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSScale;
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -48459,6 +49427,14 @@ pub mod css_scale {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_z(x: impl IntoCSSNumberish, y: impl IntoCSSNumberish, z: impl IntoCSSNumberish) -> &'static CSSScale {
+        unreachable!()
+    }
+
+    /// Treats `this` as `CSSScale` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSScale {
         unreachable!()
     }
 }
@@ -48530,10 +49506,12 @@ impl Deref for CSSScopeRule {
 pub mod css_scope_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSScopeRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSScopeRule;
+    /// Treats `this` as `CSSScopeRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSScopeRule {
+        unreachable!()
     }
 }
 
@@ -48572,14 +49550,20 @@ impl Deref for CSSSkew {
 pub mod css_skew {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkew/CSSSkew)
-        #[link_name = "new CSSSkew"]
-        pub safe fn new(ax: &CSSNumericValue, ay: &CSSNumericValue) -> &'static CSSSkew;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkew/CSSSkew)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkew")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(ax: &CSSNumericValue, ay: &CSSNumericValue) -> &'static CSSSkew {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSSkew` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkew;
+    /// Treats `this` as `CSSSkew` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkew {
+        unreachable!()
     }
 }
 
@@ -48634,14 +49618,20 @@ impl Deref for CSSSkewX {
 pub mod css_skew_x {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewX/CSSSkewX)
-        #[link_name = "new CSSSkewX"]
-        pub safe fn new(ax: &CSSNumericValue) -> &'static CSSSkewX;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewX/CSSSkewX)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkewX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(ax: &CSSNumericValue) -> &'static CSSSkewX {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSSkewX` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkewX;
+    /// Treats `this` as `CSSSkewX` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkewX {
+        unreachable!()
     }
 }
 
@@ -48680,14 +49670,20 @@ impl Deref for CSSSkewY {
 pub mod css_skew_y {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewY/CSSSkewY)
-        #[link_name = "new CSSSkewY"]
-        pub safe fn new(ay: &CSSNumericValue) -> &'static CSSSkewY;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewY/CSSSkewY)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkewY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(ay: &CSSNumericValue) -> &'static CSSSkewY {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSSkewY` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkewY;
+    /// Treats `this` as `CSSSkewY` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSSkewY {
+        unreachable!()
     }
 }
 
@@ -48726,10 +49722,12 @@ impl Deref for CSSStartingStyleRule {
 pub mod css_starting_style_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSStartingStyleRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSStartingStyleRule;
+    /// Treats `this` as `CSSStartingStyleRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSStartingStyleRule {
+        unreachable!()
     }
 }
 
@@ -48749,10 +49747,12 @@ impl Deref for CSSStyleRule {
 pub mod css_style_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSStyleRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSStyleRule;
+    /// Treats `this` as `CSSStyleRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSStyleRule {
+        unreachable!()
     }
 }
 
@@ -48807,18 +49807,28 @@ impl Deref for CSSStyleSheet {
 pub mod css_style_sheet {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
-        #[link_name = "new CSSStyleSheet"]
-        pub safe fn new() -> &'static CSSStyleSheet;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSStyleSheet")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static CSSStyleSheet {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
-        #[link_name = "new CSSStyleSheet"]
-        pub safe fn new_with_options(options: CSSStyleSheetInit<'_>) -> &'static CSSStyleSheet;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSStyleSheet")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(options: CSSStyleSheetInit<'_>) -> &'static CSSStyleSheet {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSStyleSheet` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &StyleSheet) -> &'static CSSStyleSheet;
+    /// Treats `this` as `CSSStyleSheet` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &StyleSheet) -> &'static CSSStyleSheet {
+        unreachable!()
     }
 }
 
@@ -48944,14 +49954,20 @@ pub struct CSSStyleValue(PhantomData<JsObject>);
 pub mod css_style_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parse)
-        #[link_name = "CSSStyleValue.parse"]
-        pub safe fn parse(property: &str, css_text: &str) -> &'static CSSStyleValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parse)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSStyleValue.parse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse(property: &str, css_text: &str) -> &'static CSSStyleValue {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parseAll)
-        #[link_name = "CSSStyleValue.parseAll"]
-        pub safe fn parse_all(property: &str, css_text: &str) -> Vec<&'static CSSStyleValue>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parseAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSStyleValue.parseAll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_all(property: &str, css_text: &str) -> Vec<&'static CSSStyleValue> {
+        unreachable!()
     }
 }
 
@@ -48982,10 +49998,12 @@ impl Deref for CSSSupportsRule {
 pub mod css_supports_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSSupportsRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSSupportsRule;
+    /// Treats `this` as `CSSSupportsRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSSupportsRule {
+        unreachable!()
     }
 }
 
@@ -49044,18 +50062,28 @@ impl Deref for CSSTransformValue {
 pub mod css_transform_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
-        #[link_name = "new CSSTransformValue"]
-        pub safe fn new(transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSTransformValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSTransformValue) -> Box<dyn Iterator<Item = &'static CSSTransformComponent>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSTransformValue) -> Box<dyn Iterator<Item = &'static CSSTransformComponent>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSTransformValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSTransformValue;
+    /// Treats `this` as `CSSTransformValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSTransformValue {
+        unreachable!()
     }
 }
 
@@ -49134,10 +50162,12 @@ impl Deref for CSSTransition {
 pub mod css_transition {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSTransition` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CSSTransition;
+    /// Treats `this` as `CSSTransition` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CSSTransition {
+        unreachable!()
     }
 }
 
@@ -49168,18 +50198,28 @@ impl Deref for CSSTranslate {
 pub mod css_translate {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
-        #[link_name = "new CSSTranslate"]
-        pub safe fn new(x: &CSSNumericValue, y: &CSSNumericValue) -> &'static CSSTranslate;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSTranslate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(x: &CSSNumericValue, y: &CSSNumericValue) -> &'static CSSTranslate {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
-        #[link_name = "new CSSTranslate"]
-        pub safe fn new_with_z(x: &CSSNumericValue, y: &CSSNumericValue, z: &CSSNumericValue) -> &'static CSSTranslate;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSTranslate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_z(x: &CSSNumericValue, y: &CSSNumericValue, z: &CSSNumericValue) -> &'static CSSTranslate {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSTranslate` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSTranslate;
+    /// Treats `this` as `CSSTranslate` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSTranslate {
+        unreachable!()
     }
 }
 
@@ -49250,14 +50290,20 @@ impl Deref for CSSUnitValue {
 pub mod css_unit_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnitValue/CSSUnitValue)
-        #[link_name = "new CSSUnitValue"]
-        pub safe fn new(value: f64, unit: &str) -> &'static CSSUnitValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnitValue/CSSUnitValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnitValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(value: f64, unit: &str) -> &'static CSSUnitValue {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSUnitValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSUnitValue;
+    /// Treats `this` as `CSSUnitValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSUnitValue {
+        unreachable!()
     }
 }
 
@@ -49304,18 +50350,28 @@ impl Deref for CSSUnparsedValue {
 pub mod css_unparsed_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/CSSUnparsedValue)
-        #[link_name = "new CSSUnparsedValue"]
-        pub safe fn new(members: &[CSSUnparsedSegment<'_>]) -> &'static CSSUnparsedValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/CSSUnparsedValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnparsedValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(members: &[CSSUnparsedSegment<'_>]) -> &'static CSSUnparsedValue {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &CSSUnparsedValue) -> Box<dyn Iterator<Item = CSSUnparsedSegment<'static>>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &CSSUnparsedValue) -> Box<dyn Iterator<Item = CSSUnparsedSegment<'static>>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CSSUnparsedValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSUnparsedValue;
+    /// Treats `this` as `CSSUnparsedValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSStyleValue) -> &'static CSSUnparsedValue {
+        unreachable!()
     }
 }
 
@@ -49369,14 +50425,20 @@ pub struct CSSVariableReferenceValue(PhantomData<JsObject>);
 pub mod css_variable_reference_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
-        #[link_name = "new CSSVariableReferenceValue"]
-        pub safe fn new(variable: &str) -> &'static CSSVariableReferenceValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSVariableReferenceValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(variable: &str) -> &'static CSSVariableReferenceValue {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
-        #[link_name = "new CSSVariableReferenceValue"]
-        pub safe fn new_with_fallback(variable: &str, fallback: &CSSUnparsedValue) -> &'static CSSVariableReferenceValue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSVariableReferenceValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_fallback(variable: &str, fallback: &CSSUnparsedValue) -> &'static CSSVariableReferenceValue {
+        unreachable!()
     }
 }
 
@@ -49423,10 +50485,12 @@ impl Deref for CSSViewTransitionRule {
 pub mod css_view_transition_rule {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CSSViewTransitionRule` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSViewTransitionRule;
+    /// Treats `this` as `CSSViewTransitionRule` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &CSSRule) -> &'static CSSViewTransitionRule {
+        unreachable!()
     }
 }
 
@@ -49631,10 +50695,12 @@ impl Deref for CanvasCaptureMediaStreamTrack {
 pub mod canvas_capture_media_stream_track {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CanvasCaptureMediaStreamTrack` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CanvasCaptureMediaStreamTrack;
+    /// Treats `this` as `CanvasCaptureMediaStreamTrack` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CanvasCaptureMediaStreamTrack {
+        unreachable!()
     }
 }
 
@@ -50741,18 +51807,28 @@ impl Deref for ChannelMergerNode {
 pub mod channel_merger_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
-        #[link_name = "new ChannelMergerNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static ChannelMergerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelMergerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static ChannelMergerNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
-        #[link_name = "new ChannelMergerNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: ChannelMergerOptions<'_>) -> &'static ChannelMergerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelMergerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: ChannelMergerOptions<'_>) -> &'static ChannelMergerNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ChannelMergerNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ChannelMergerNode;
+    /// Treats `this` as `ChannelMergerNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ChannelMergerNode {
+        unreachable!()
     }
 }
 
@@ -50772,18 +51848,28 @@ impl Deref for ChannelSplitterNode {
 pub mod channel_splitter_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
-        #[link_name = "new ChannelSplitterNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static ChannelSplitterNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelSplitterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static ChannelSplitterNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
-        #[link_name = "new ChannelSplitterNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: ChannelSplitterOptions<'_>) -> &'static ChannelSplitterNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelSplitterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: ChannelSplitterOptions<'_>) -> &'static ChannelSplitterNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ChannelSplitterNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ChannelSplitterNode;
+    /// Treats `this` as `ChannelSplitterNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ChannelSplitterNode {
+        unreachable!()
     }
 }
 
@@ -50803,18 +51889,28 @@ impl Deref for CloseEvent {
 pub mod close_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
-        #[link_name = "new CloseEvent"]
-        pub safe fn new(type_: &str) -> &'static CloseEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static CloseEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
-        #[link_name = "new CloseEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CloseEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static CloseEvent;
+    /// Treats `this` as `CloseEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static CloseEvent {
+        unreachable!()
     }
 }
 
@@ -50861,18 +51957,28 @@ impl Deref for CloseWatcher {
 pub mod close_watcher {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
-        #[link_name = "new CloseWatcher"]
-        pub safe fn new() -> &'static CloseWatcher;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseWatcher")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static CloseWatcher {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
-        #[link_name = "new CloseWatcher"]
-        pub safe fn new_with_options(options: CloseWatcherOptions<'_>) -> &'static CloseWatcher;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseWatcher")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(options: CloseWatcherOptions<'_>) -> &'static CloseWatcher {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CloseWatcher` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CloseWatcher;
+    /// Treats `this` as `CloseWatcher` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CloseWatcher {
+        unreachable!()
     }
 }
 
@@ -50953,18 +52059,28 @@ impl Deref for CommandEvent {
 pub mod command_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
-        #[link_name = "new CommandEvent"]
-        pub safe fn new(type_: &str) -> &'static CommandEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static CommandEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
-        #[link_name = "new CommandEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CommandEventInit<'_>) -> &'static CommandEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CommandEventInit<'_>) -> &'static CommandEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CommandEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static CommandEvent;
+    /// Treats `this` as `CommandEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static CommandEvent {
+        unreachable!()
     }
 }
 
@@ -50994,10 +52110,12 @@ pub struct CompressionStream(PhantomData<JsObject>);
 pub mod compression_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompressionStream/CompressionStream)
-        #[link_name = "new CompressionStream"]
-        pub safe fn new(format: &str) -> &'static CompressionStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompressionStream/CompressionStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CompressionStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(format: &str) -> &'static CompressionStream {
+        unreachable!()
     }
 }
 
@@ -51036,18 +52154,28 @@ impl Deref for ConstantSourceNode {
 pub mod constant_source_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
-        #[link_name = "new ConstantSourceNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static ConstantSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConstantSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static ConstantSourceNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
-        #[link_name = "new ConstantSourceNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: ConstantSourceOptions) -> &'static ConstantSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConstantSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: ConstantSourceOptions) -> &'static ConstantSourceNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ConstantSourceNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ConstantSourceNode;
+    /// Treats `this` as `ConstantSourceNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ConstantSourceNode {
+        unreachable!()
     }
 }
 
@@ -51078,18 +52206,28 @@ impl Deref for ContentVisibilityAutoStateChangeEvent {
 pub mod content_visibility_auto_state_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
-        #[link_name = "new ContentVisibilityAutoStateChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static ContentVisibilityAutoStateChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static ContentVisibilityAutoStateChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
-        #[link_name = "new ContentVisibilityAutoStateChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ContentVisibilityAutoStateChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static ContentVisibilityAutoStateChangeEvent;
+    /// Treats `this` as `ContentVisibilityAutoStateChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static ContentVisibilityAutoStateChangeEvent {
+        unreachable!()
     }
 }
 
@@ -51120,18 +52258,28 @@ impl Deref for ConvolverNode {
 pub mod convolver_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
-        #[link_name = "new ConvolverNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static ConvolverNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConvolverNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static ConvolverNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
-        #[link_name = "new ConvolverNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: ConvolverOptions<'_>) -> &'static ConvolverNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConvolverNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: ConvolverOptions<'_>) -> &'static ConvolverNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ConvolverNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ConvolverNode;
+    /// Treats `this` as `ConvolverNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ConvolverNode {
+        unreachable!()
     }
 }
 
@@ -51186,18 +52334,28 @@ impl Deref for CookieChangeEvent {
 pub mod cookie_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
-        #[link_name = "new CookieChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static CookieChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static CookieChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
-        #[link_name = "new CookieChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CookieChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static CookieChangeEvent;
+    /// Treats `this` as `CookieChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static CookieChangeEvent {
+        unreachable!()
     }
 }
 
@@ -51236,10 +52394,12 @@ impl Deref for CookieStore {
 pub mod cookie_store {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `CookieStore` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static CookieStore;
+    /// Treats `this` as `CookieStore` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static CookieStore {
+        unreachable!()
     }
 }
 
@@ -51365,10 +52525,12 @@ pub struct CountQueuingStrategy(PhantomData<JsObject>);
 pub mod count_queuing_strategy {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy/CountQueuingStrategy)
-        #[link_name = "new CountQueuingStrategy"]
-        pub safe fn new(init: QueuingStrategyInit) -> &'static CountQueuingStrategy;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy/CountQueuingStrategy)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CountQueuingStrategy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: QueuingStrategyInit) -> &'static CountQueuingStrategy {
+        unreachable!()
     }
 }
 
@@ -51398,10 +52560,12 @@ pub struct Credential(PhantomData<JsObject>);
 pub mod credential {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Credential/isConditionalMediationAvailable)
-        #[link_name = "Credential.isConditionalMediationAvailable"]
-        pub safe fn is_conditional_mediation_available() -> Promise<bool>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Credential/isConditionalMediationAvailable)
+    #[cfg_attr(rust_js, rust_js::link_name = "Credential.isConditionalMediationAvailable")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_conditional_mediation_available() -> Promise<bool> {
+        unreachable!()
     }
 }
 
@@ -51548,10 +52712,12 @@ pub struct CustomElementRegistry(PhantomData<JsObject>);
 pub mod custom_element_registry {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/CustomElementRegistry)
-        #[link_name = "new CustomElementRegistry"]
-        pub safe fn new() -> &'static CustomElementRegistry;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/CustomElementRegistry)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CustomElementRegistry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static CustomElementRegistry {
+        unreachable!()
     }
 }
 
@@ -51630,18 +52796,28 @@ impl Deref for CustomEvent {
 pub mod custom_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
-        #[link_name = "new CustomEvent"]
-        pub safe fn new(type_: &str) -> &'static CustomEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static CustomEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
-        #[link_name = "new CustomEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CustomEventInit) -> &'static CustomEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CustomEventInit) -> &'static CustomEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `CustomEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static CustomEvent;
+    /// Treats `this` as `CustomEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static CustomEvent {
+        unreachable!()
     }
 }
 
@@ -51849,18 +53025,28 @@ pub mod dom_exception {
     /// `DOMException.DATA_CLONE_ERR`
     pub const DATA_CLONE_ERR: u16 = 25;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
-        #[link_name = "new DOMException"]
-        pub safe fn new() -> &'static DOMException;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMException {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
-        #[link_name = "new DOMException"]
-        pub safe fn new_with_message(message: &str) -> &'static DOMException;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message(message: &str) -> &'static DOMException {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
-        #[link_name = "new DOMException"]
-        pub safe fn new_with_message_and_name(message: &str, name: &str) -> &'static DOMException;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message_and_name(message: &str, name: &str) -> &'static DOMException {
+        unreachable!()
     }
 }
 
@@ -51962,30 +53148,12 @@ impl Deref for DOMMatrix {
 pub mod dom_matrix {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
-        #[link_name = "new DOMMatrix"]
-        pub safe fn new() -> &'static DOMMatrix;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromMatrix)
-        #[link_name = "DOMMatrix.fromMatrix"]
-        pub safe fn from_matrix() -> &'static DOMMatrix;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromMatrix)
-        #[link_name = "DOMMatrix.fromMatrix"]
-        pub safe fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrix;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat32Array)
-        #[link_name = "DOMMatrix.fromFloat32Array"]
-        pub safe fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrix;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat64Array)
-        #[link_name = "DOMMatrix.fromFloat64Array"]
-        pub safe fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrix;
-
-        /// Treats `this` as `DOMMatrix` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMMatrixReadOnly) -> &'static DOMMatrix;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMMatrix {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
@@ -51993,6 +53161,46 @@ pub mod dom_matrix {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_init(init: impl IntoStrOrList) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrix.fromMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_matrix() -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrix.fromMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat32Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrix.fromFloat32Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat64Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrix.fromFloat64Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// Treats `this` as `DOMMatrix` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMMatrixReadOnly) -> &'static DOMMatrix {
         unreachable!()
     }
 }
@@ -52663,26 +53871,12 @@ pub struct DOMMatrixReadOnly(PhantomData<JsObject>);
 pub mod dom_matrix_read_only {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
-        #[link_name = "new DOMMatrixReadOnly"]
-        pub safe fn new() -> &'static DOMMatrixReadOnly;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
-        #[link_name = "DOMMatrixReadOnly.fromMatrix"]
-        pub safe fn from_matrix() -> &'static DOMMatrixReadOnly;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
-        #[link_name = "DOMMatrixReadOnly.fromMatrix"]
-        pub safe fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrixReadOnly;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat32Array)
-        #[link_name = "DOMMatrixReadOnly.fromFloat32Array"]
-        pub safe fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrixReadOnly;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat64Array)
-        #[link_name = "DOMMatrixReadOnly.fromFloat64Array"]
-        pub safe fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrixReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrixReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMMatrixReadOnly {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
@@ -52690,6 +53884,38 @@ pub mod dom_matrix_read_only {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_init(init: impl IntoStrOrList) -> &'static DOMMatrixReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrixReadOnly.fromMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_matrix() -> &'static DOMMatrixReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrixReadOnly.fromMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrixReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat32Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrixReadOnly.fromFloat32Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrixReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat64Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrixReadOnly.fromFloat64Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrixReadOnly {
         unreachable!()
     }
 }
@@ -53264,10 +54490,12 @@ pub struct DOMParser(PhantomData<JsObject>);
 pub mod dom_parser {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMParser/DOMParser)
-        #[link_name = "new DOMParser"]
-        pub safe fn new() -> &'static DOMParser;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMParser/DOMParser)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMParser")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMParser {
+        unreachable!()
     }
 }
 
@@ -53298,38 +54526,68 @@ impl Deref for DOMPoint {
 pub mod dom_point {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
-        #[link_name = "new DOMPoint"]
-        pub safe fn new() -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
-        #[link_name = "new DOMPoint"]
-        pub safe fn new_with_x(x: f64) -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x(x: f64) -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
-        #[link_name = "new DOMPoint"]
-        pub safe fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
-        #[link_name = "new DOMPoint"]
-        pub safe fn new_with_x_and_y_and_z(x: f64, y: f64, z: f64) -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_z(x: f64, y: f64, z: f64) -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
-        #[link_name = "new DOMPoint"]
-        pub safe fn new_with_x_and_y_and_z_and_w(x: f64, y: f64, z: f64, w: f64) -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_z_and_w(x: f64, y: f64, z: f64, w: f64) -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/fromPoint)
-        #[link_name = "DOMPoint.fromPoint"]
-        pub safe fn from_point() -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/fromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMPoint.fromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_point() -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/fromPoint)
-        #[link_name = "DOMPoint.fromPoint"]
-        pub safe fn from_point_with_other(other: DOMPointInit) -> &'static DOMPoint;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/fromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMPoint.fromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_point_with_other(other: DOMPointInit) -> &'static DOMPoint {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DOMPoint` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMPointReadOnly) -> &'static DOMPoint;
+    /// Treats `this` as `DOMPoint` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMPointReadOnly) -> &'static DOMPoint {
+        unreachable!()
     }
 }
 
@@ -53407,34 +54665,60 @@ pub struct DOMPointReadOnly(PhantomData<JsObject>);
 pub mod dom_point_read_only {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
-        #[link_name = "new DOMPointReadOnly"]
-        pub safe fn new() -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
-        #[link_name = "new DOMPointReadOnly"]
-        pub safe fn new_with_x(x: f64) -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x(x: f64) -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
-        #[link_name = "new DOMPointReadOnly"]
-        pub safe fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y(x: f64, y: f64) -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
-        #[link_name = "new DOMPointReadOnly"]
-        pub safe fn new_with_x_and_y_and_z(x: f64, y: f64, z: f64) -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_z(x: f64, y: f64, z: f64) -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
-        #[link_name = "new DOMPointReadOnly"]
-        pub safe fn new_with_x_and_y_and_z_and_w(x: f64, y: f64, z: f64, w: f64) -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_x_and_y_and_z_and_w(x: f64, y: f64, z: f64, w: f64) -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/fromPoint)
-        #[link_name = "DOMPointReadOnly.fromPoint"]
-        pub safe fn from_point() -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/fromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMPointReadOnly.fromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_point() -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/fromPoint)
-        #[link_name = "DOMPointReadOnly.fromPoint"]
-        pub safe fn from_point_with_other(other: DOMPointInit) -> &'static DOMPointReadOnly;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/fromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMPointReadOnly.fromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_point_with_other(other: DOMPointInit) -> &'static DOMPointReadOnly {
+        unreachable!()
     }
 }
 
@@ -53504,42 +54788,76 @@ pub struct DOMQuad(PhantomData<JsObject>);
 pub mod dom_quad {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
-        #[link_name = "new DOMQuad"]
-        pub safe fn new() -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
-        #[link_name = "new DOMQuad"]
-        pub safe fn new_with_p1(p1: DOMPointInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_p1(p1: DOMPointInit) -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
-        #[link_name = "new DOMQuad"]
-        pub safe fn new_with_p1_and_p2(p1: DOMPointInit, p2: DOMPointInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_p1_and_p2(p1: DOMPointInit, p2: DOMPointInit) -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
-        #[link_name = "new DOMQuad"]
-        pub safe fn new_with_p1_and_p2_and_p3(p1: DOMPointInit, p2: DOMPointInit, p3: DOMPointInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_p1_and_p2_and_p3(p1: DOMPointInit, p2: DOMPointInit, p3: DOMPointInit) -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
-        #[link_name = "new DOMQuad"]
-        pub safe fn new_with_p1_and_p2_and_p3_and_p4(p1: DOMPointInit, p2: DOMPointInit, p3: DOMPointInit, p4: DOMPointInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_p1_and_p2_and_p3_and_p4(p1: DOMPointInit, p2: DOMPointInit, p3: DOMPointInit, p4: DOMPointInit) -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromRect)
-        #[link_name = "DOMQuad.fromRect"]
-        pub safe fn from_rect() -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect() -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromRect)
-        #[link_name = "DOMQuad.fromRect"]
-        pub safe fn from_rect_with_other(other: DOMRectInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_rect_with_other(other: DOMRectInit) -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromQuad)
-        #[link_name = "DOMQuad.fromQuad"]
-        pub safe fn from_quad() -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_quad() -> &'static DOMQuad {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromQuad)
-        #[link_name = "DOMQuad.fromQuad"]
-        pub safe fn from_quad_with_other(other: DOMQuadInit) -> &'static DOMQuad;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromQuad)
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from_quad_with_other(other: DOMQuadInit) -> &'static DOMQuad {
+        unreachable!()
     }
 }
 
@@ -53601,10 +54919,12 @@ pub struct DOMRectList(PhantomData<JsObject>);
 pub mod dom_rect_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &DOMRectList) -> Box<dyn Iterator<Item = &'static DOMRect>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &DOMRectList) -> Box<dyn Iterator<Item = &'static DOMRect>> {
+        unreachable!()
     }
 }
 
@@ -53634,10 +54954,12 @@ pub struct DOMStringList(PhantomData<JsObject>);
 pub mod dom_string_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &DOMStringList) -> Box<dyn Iterator<Item = String>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &DOMStringList) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
     }
 }
 
@@ -53726,10 +55048,12 @@ pub struct DataTransferItemList(PhantomData<JsObject>);
 pub mod data_transfer_item_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &DataTransferItemList) -> Box<dyn Iterator<Item = &'static DataTransferItem>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &DataTransferItemList) -> Box<dyn Iterator<Item = &'static DataTransferItem>> {
+        unreachable!()
     }
 }
 
@@ -53783,10 +55107,12 @@ pub struct DecompressionStream(PhantomData<JsObject>);
 pub mod decompression_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DecompressionStream/DecompressionStream)
-        #[link_name = "new DecompressionStream"]
-        pub safe fn new(format: &str) -> &'static DecompressionStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DecompressionStream/DecompressionStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DecompressionStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(format: &str) -> &'static DecompressionStream {
+        unreachable!()
     }
 }
 
@@ -53825,18 +55151,28 @@ impl Deref for DelayNode {
 pub mod delay_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
-        #[link_name = "new DelayNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static DelayNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DelayNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static DelayNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
-        #[link_name = "new DelayNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: DelayOptions<'_>) -> &'static DelayNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DelayNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: DelayOptions<'_>) -> &'static DelayNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DelayNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static DelayNode;
+    /// Treats `this` as `DelayNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DelayNode {
+        unreachable!()
     }
 }
 
@@ -53867,18 +55203,28 @@ impl Deref for DeviceMotionEvent {
 pub mod device_motion_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
-        #[link_name = "new DeviceMotionEvent"]
-        pub safe fn new(type_: &str) -> &'static DeviceMotionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static DeviceMotionEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
-        #[link_name = "new DeviceMotionEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DeviceMotionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static DeviceMotionEvent;
+    /// Treats `this` as `DeviceMotionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static DeviceMotionEvent {
+        unreachable!()
     }
 }
 
@@ -53909,18 +55255,28 @@ impl Deref for DeviceOrientationEvent {
 pub mod device_orientation_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
-        #[link_name = "new DeviceOrientationEvent"]
-        pub safe fn new(type_: &str) -> &'static DeviceOrientationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static DeviceOrientationEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
-        #[link_name = "new DeviceOrientationEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DeviceOrientationEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static DeviceOrientationEvent;
+    /// Treats `this` as `DeviceOrientationEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static DeviceOrientationEvent {
+        unreachable!()
     }
 }
 
@@ -53975,14 +55331,20 @@ impl Deref for DigitalCredential {
 pub mod digital_credential {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DigitalCredential/userAgentAllowsProtocol)
-        #[link_name = "DigitalCredential.userAgentAllowsProtocol"]
-        pub safe fn user_agent_allows_protocol(protocol: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DigitalCredential/userAgentAllowsProtocol)
+    #[cfg_attr(rust_js, rust_js::link_name = "DigitalCredential.userAgentAllowsProtocol")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn user_agent_allows_protocol(protocol: &str) -> bool {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DigitalCredential` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Credential) -> &'static DigitalCredential;
+    /// Treats `this` as `DigitalCredential` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Credential) -> &'static DigitalCredential {
+        unreachable!()
     }
 }
 
@@ -54021,10 +55383,12 @@ impl Deref for DocumentPictureInPicture {
 pub mod document_picture_in_picture {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `DocumentPictureInPicture` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static DocumentPictureInPicture;
+    /// Treats `this` as `DocumentPictureInPicture` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DocumentPictureInPicture {
+        unreachable!()
     }
 }
 
@@ -54088,14 +55452,20 @@ impl Deref for DocumentPictureInPictureEvent {
 pub mod document_picture_in_picture_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/DocumentPictureInPictureEvent)
-        #[link_name = "new DocumentPictureInPictureEvent"]
-        pub safe fn new(type_: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/DocumentPictureInPictureEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentPictureInPictureEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DocumentPictureInPictureEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static DocumentPictureInPictureEvent;
+    /// Treats `this` as `DocumentPictureInPictureEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static DocumentPictureInPictureEvent {
+        unreachable!()
     }
 }
 
@@ -54126,18 +55496,28 @@ impl Deref for DocumentTimeline {
 pub mod document_timeline {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
-        #[link_name = "new DocumentTimeline"]
-        pub safe fn new() -> &'static DocumentTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static DocumentTimeline {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
-        #[link_name = "new DocumentTimeline"]
-        pub safe fn new_with_options(options: DocumentTimelineOptions) -> &'static DocumentTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(options: DocumentTimelineOptions) -> &'static DocumentTimeline {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DocumentTimeline` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AnimationTimeline) -> &'static DocumentTimeline;
+    /// Treats `this` as `DocumentTimeline` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AnimationTimeline) -> &'static DocumentTimeline {
+        unreachable!()
     }
 }
 
@@ -54157,10 +55537,12 @@ impl Deref for DocumentType {
 pub mod document_type {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `DocumentType` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static DocumentType;
+    /// Treats `this` as `DocumentType` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DocumentType {
+        unreachable!()
     }
 }
 
@@ -54239,18 +55621,28 @@ impl Deref for DynamicsCompressorNode {
 pub mod dynamics_compressor_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
-        #[link_name = "new DynamicsCompressorNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static DynamicsCompressorNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DynamicsCompressorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static DynamicsCompressorNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
-        #[link_name = "new DynamicsCompressorNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: DynamicsCompressorOptions<'_>) -> &'static DynamicsCompressorNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new DynamicsCompressorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: DynamicsCompressorOptions<'_>) -> &'static DynamicsCompressorNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `DynamicsCompressorNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static DynamicsCompressorNode;
+    /// Treats `this` as `DynamicsCompressorNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DynamicsCompressorNode {
+        unreachable!()
     }
 }
 
@@ -55271,10 +56663,12 @@ pub struct EncodedAudioChunk(PhantomData<JsObject>);
 pub mod encoded_audio_chunk {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/EncodedAudioChunk)
-        #[link_name = "new EncodedAudioChunk"]
-        pub safe fn new(init: EncodedAudioChunkInit<'_>) -> &'static EncodedAudioChunk;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/EncodedAudioChunk)
+    #[cfg_attr(rust_js, rust_js::link_name = "new EncodedAudioChunk")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: EncodedAudioChunkInit<'_>) -> &'static EncodedAudioChunk {
+        unreachable!()
     }
 }
 
@@ -55328,10 +56722,12 @@ pub struct EncodedVideoChunk(PhantomData<JsObject>);
 pub mod encoded_video_chunk {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/EncodedVideoChunk)
-        #[link_name = "new EncodedVideoChunk"]
-        pub safe fn new(init: EncodedVideoChunkInit<'_>) -> &'static EncodedVideoChunk;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/EncodedVideoChunk)
+    #[cfg_attr(rust_js, rust_js::link_name = "new EncodedVideoChunk")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: EncodedVideoChunkInit<'_>) -> &'static EncodedVideoChunk {
+        unreachable!()
     }
 }
 
@@ -55394,18 +56790,28 @@ impl Deref for ErrorEvent {
 pub mod error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
-        #[link_name = "new ErrorEvent"]
-        pub safe fn new(type_: &str) -> &'static ErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static ErrorEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
-        #[link_name = "new ErrorEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ErrorEventInit<'_>) -> &'static ErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ErrorEventInit<'_>) -> &'static ErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static ErrorEvent;
+    /// Treats `this` as `ErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static ErrorEvent {
+        unreachable!()
     }
 }
 
@@ -55540,18 +56946,28 @@ pub mod event_source {
     /// `EventSource.CLOSED`
     pub const CLOSED: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
-        #[link_name = "new EventSource"]
-        pub safe fn new(url: &str) -> &'static EventSource;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
+    #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(url: &str) -> &'static EventSource {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
-        #[link_name = "new EventSource"]
-        pub safe fn new_with_event_source_init_dict(url: &str, event_source_init_dict: EventSourceInit) -> &'static EventSource;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
+    #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_source_init_dict(url: &str, event_source_init_dict: EventSourceInit) -> &'static EventSource {
+        unreachable!()
+    }
 
-        /// Treats `this` as `EventSource` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static EventSource;
+    /// Treats `this` as `EventSource` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static EventSource {
+        unreachable!()
     }
 }
 
@@ -55671,10 +57087,12 @@ pub struct FileList(PhantomData<JsObject>);
 pub mod file_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &FileList) -> Box<dyn Iterator<Item = &'static File>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &FileList) -> Box<dyn Iterator<Item = &'static File>> {
+        unreachable!()
     }
 }
 
@@ -55722,14 +57140,20 @@ pub mod file_reader {
     /// `FileReader.DONE`
     pub const DONE: u16 = 2;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
-        #[link_name = "new FileReader"]
-        pub safe fn new() -> &'static FileReader;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FileReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static FileReader {
+        unreachable!()
+    }
 
-        /// Treats `this` as `FileReader` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static FileReader;
+    /// Treats `this` as `FileReader` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static FileReader {
+        unreachable!()
     }
 }
 
@@ -55949,10 +57373,12 @@ impl Deref for FileSystemDirectoryEntry {
 pub mod file_system_directory_entry {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FileSystemDirectoryEntry` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &FileSystemEntry) -> &'static FileSystemDirectoryEntry;
+    /// Treats `this` as `FileSystemDirectoryEntry` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &FileSystemEntry) -> &'static FileSystemDirectoryEntry {
+        unreachable!()
     }
 }
 
@@ -56063,10 +57489,12 @@ impl Deref for FileSystemDirectoryHandle {
 pub mod file_system_directory_handle {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FileSystemDirectoryHandle` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &FileSystemHandle) -> &'static FileSystemDirectoryHandle;
+    /// Treats `this` as `FileSystemDirectoryHandle` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &FileSystemHandle) -> &'static FileSystemDirectoryHandle {
+        unreachable!()
     }
 }
 
@@ -56239,10 +57667,12 @@ impl Deref for FileSystemFileEntry {
 pub mod file_system_file_entry {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FileSystemFileEntry` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &FileSystemEntry) -> &'static FileSystemFileEntry;
+    /// Treats `this` as `FileSystemFileEntry` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &FileSystemEntry) -> &'static FileSystemFileEntry {
+        unreachable!()
     }
 }
 
@@ -56281,10 +57711,12 @@ impl Deref for FileSystemFileHandle {
 pub mod file_system_file_handle {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FileSystemFileHandle` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &FileSystemHandle) -> &'static FileSystemFileHandle;
+    /// Treats `this` as `FileSystemFileHandle` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &FileSystemHandle) -> &'static FileSystemFileHandle {
+        unreachable!()
     }
 }
 
@@ -56362,10 +57794,12 @@ impl Deref for FileSystemWritableFileStream {
 pub mod file_system_writable_file_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FileSystemWritableFileStream` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &WritableStream) -> &'static FileSystemWritableFileStream;
+    /// Treats `this` as `FileSystemWritableFileStream` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &WritableStream) -> &'static FileSystemWritableFileStream {
+        unreachable!()
     }
 }
 
@@ -56639,10 +58073,12 @@ impl Deref for FontFaceSet {
 pub mod font_face_set {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `FontFaceSet` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static FontFaceSet;
+    /// Treats `this` as `FontFaceSet` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static FontFaceSet {
+        unreachable!()
     }
 }
 
@@ -56836,18 +58272,28 @@ impl Deref for FontFaceSetLoadEvent {
 pub mod font_face_set_load_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
-        #[link_name = "new FontFaceSetLoadEvent"]
-        pub safe fn new(type_: &str) -> &'static FontFaceSetLoadEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static FontFaceSetLoadEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
-        #[link_name = "new FontFaceSetLoadEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `FontFaceSetLoadEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static FontFaceSetLoadEvent;
+    /// Treats `this` as `FontFaceSetLoadEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static FontFaceSetLoadEvent {
+        unreachable!()
     }
 }
 
@@ -56878,14 +58324,20 @@ impl Deref for FormDataEvent {
 pub mod form_data_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormDataEvent/FormDataEvent)
-        #[link_name = "new FormDataEvent"]
-        pub safe fn new(type_: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormDataEvent/FormDataEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormDataEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `FormDataEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static FormDataEvent;
+    /// Treats `this` as `FormDataEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static FormDataEvent {
+        unreachable!()
     }
 }
 
@@ -57691,10 +59143,12 @@ impl Deref for GPUDevice {
 pub mod gpu_device {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `GPUDevice` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static GPUDevice;
+    /// Treats `this` as `GPUDevice` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static GPUDevice {
+        unreachable!()
     }
 }
 
@@ -58011,14 +59465,20 @@ impl Deref for GPUInternalError {
 pub mod gpu_internal_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUInternalError/GPUInternalError)
-        #[link_name = "new GPUInternalError"]
-        pub safe fn new(message: &str) -> &'static GPUInternalError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUInternalError/GPUInternalError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUInternalError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(message: &str) -> &'static GPUInternalError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GPUInternalError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &GPUError) -> &'static GPUInternalError;
+    /// Treats `this` as `GPUInternalError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &GPUError) -> &'static GPUInternalError {
+        unreachable!()
     }
 }
 
@@ -58038,14 +59498,20 @@ impl Deref for GPUOutOfMemoryError {
 pub mod gpu_out_of_memory_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUOutOfMemoryError/GPUOutOfMemoryError)
-        #[link_name = "new GPUOutOfMemoryError"]
-        pub safe fn new(message: &str) -> &'static GPUOutOfMemoryError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUOutOfMemoryError/GPUOutOfMemoryError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUOutOfMemoryError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(message: &str) -> &'static GPUOutOfMemoryError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GPUOutOfMemoryError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &GPUError) -> &'static GPUOutOfMemoryError;
+    /// Treats `this` as `GPUOutOfMemoryError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &GPUError) -> &'static GPUOutOfMemoryError {
+        unreachable!()
     }
 }
 
@@ -58065,18 +59531,28 @@ impl Deref for GPUPipelineError {
 pub mod gpu_pipeline_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
-        #[link_name = "new GPUPipelineError"]
-        pub safe fn new() -> &'static GPUPipelineError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUPipelineError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static GPUPipelineError {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
-        #[link_name = "new GPUPipelineError"]
-        pub safe fn new_with_message(message: &str) -> &'static GPUPipelineError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUPipelineError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message(message: &str) -> &'static GPUPipelineError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GPUPipelineError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMException) -> &'static GPUPipelineError;
+    /// Treats `this` as `GPUPipelineError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMException) -> &'static GPUPipelineError {
+        unreachable!()
     }
 }
 
@@ -59350,14 +60826,20 @@ impl Deref for GPUUncapturedErrorEvent {
 pub mod gpu_uncaptured_error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/GPUUncapturedErrorEvent)
-        #[link_name = "new GPUUncapturedErrorEvent"]
-        pub safe fn new(type_: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/GPUUncapturedErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUUncapturedErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GPUUncapturedErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static GPUUncapturedErrorEvent;
+    /// Treats `this` as `GPUUncapturedErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static GPUUncapturedErrorEvent {
+        unreachable!()
     }
 }
 
@@ -59388,14 +60870,20 @@ impl Deref for GPUValidationError {
 pub mod gpu_validation_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUValidationError/GPUValidationError)
-        #[link_name = "new GPUValidationError"]
-        pub safe fn new(message: &str) -> &'static GPUValidationError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUValidationError/GPUValidationError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUValidationError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(message: &str) -> &'static GPUValidationError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GPUValidationError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &GPUError) -> &'static GPUValidationError;
+    /// Treats `this` as `GPUValidationError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &GPUError) -> &'static GPUValidationError {
+        unreachable!()
     }
 }
 
@@ -59415,18 +60903,28 @@ impl Deref for GainNode {
 pub mod gain_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
-        #[link_name = "new GainNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static GainNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GainNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static GainNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
-        #[link_name = "new GainNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: GainOptions<'_>) -> &'static GainNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GainNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: GainOptions<'_>) -> &'static GainNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GainNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static GainNode;
+    /// Treats `this` as `GainNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static GainNode {
+        unreachable!()
     }
 }
 
@@ -59559,18 +61057,28 @@ impl Deref for GamepadEvent {
 pub mod gamepad_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
-        #[link_name = "new GamepadEvent"]
-        pub safe fn new(type_: &str) -> &'static GamepadEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static GamepadEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
-        #[link_name = "new GamepadEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `GamepadEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static GamepadEvent;
+    /// Treats `this` as `GamepadEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static GamepadEvent {
+        unreachable!()
     }
 }
 
@@ -59823,10 +61331,12 @@ pub struct HTMLAllCollection(PhantomData<JsObject>);
 pub mod html_all_collection {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLAllCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLAllCollection) -> Box<dyn Iterator<Item = &'static Element>> {
+        unreachable!()
     }
 }
 
@@ -59881,10 +61391,12 @@ impl Deref for HTMLDirectoryElement {
 pub mod html_directory_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLDirectoryElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDirectoryElement;
+    /// Treats `this` as `HTMLDirectoryElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLDirectoryElement {
+        unreachable!()
     }
 }
 
@@ -59923,10 +61435,12 @@ impl Deref for HTMLFontElement {
 pub mod html_font_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLFontElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFontElement;
+    /// Treats `this` as `HTMLFontElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLFontElement {
+        unreachable!()
     }
 }
 
@@ -59997,14 +61511,20 @@ impl Deref for HTMLFormControlsCollection {
 pub mod html_form_controls_collection {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLFormControlsCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLFormControlsCollection) -> Box<dyn Iterator<Item = &'static Element>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HTMLFormControlsCollection` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &HTMLCollection) -> &'static HTMLFormControlsCollection;
+    /// Treats `this` as `HTMLFormControlsCollection` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &HTMLCollection) -> &'static HTMLFormControlsCollection {
+        unreachable!()
     }
 }
 
@@ -60035,10 +61555,12 @@ impl Deref for HTMLFrameElement {
 pub mod html_frame_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLFrameElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFrameElement;
+    /// Treats `this` as `HTMLFrameElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLFrameElement {
+        unreachable!()
     }
 }
 
@@ -60205,10 +61727,12 @@ impl Deref for HTMLFrameSetElement {
 pub mod html_frame_set_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLFrameSetElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFrameSetElement;
+    /// Treats `this` as `HTMLFrameSetElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLFrameSetElement {
+        unreachable!()
     }
 }
 
@@ -60603,10 +62127,12 @@ impl Deref for HTMLMarqueeElement {
 pub mod html_marquee_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLMarqueeElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMarqueeElement;
+    /// Treats `this` as `HTMLMarqueeElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLMarqueeElement {
+        unreachable!()
     }
 }
 
@@ -60821,14 +62347,20 @@ impl Deref for HTMLOptionsCollection {
 pub mod html_options_collection {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &HTMLOptionsCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &HTMLOptionsCollection) -> Box<dyn Iterator<Item = &'static Element>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HTMLOptionsCollection` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &HTMLCollection) -> &'static HTMLOptionsCollection;
+    /// Treats `this` as `HTMLOptionsCollection` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &HTMLCollection) -> &'static HTMLOptionsCollection {
+        unreachable!()
     }
 }
 
@@ -60907,10 +62439,12 @@ impl Deref for HTMLParamElement {
 pub mod html_param_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLParamElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLParamElement;
+    /// Treats `this` as `HTMLParamElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLParamElement {
+        unreachable!()
     }
 }
 
@@ -60997,10 +62531,12 @@ impl Deref for HTMLUnknownElement {
 pub mod html_unknown_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `HTMLUnknownElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLUnknownElement;
+    /// Treats `this` as `HTMLUnknownElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static HTMLUnknownElement {
+        unreachable!()
     }
 }
 
@@ -61020,18 +62556,28 @@ impl Deref for HashChangeEvent {
 pub mod hash_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
-        #[link_name = "new HashChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static HashChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static HashChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
-        #[link_name = "new HashChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: HashChangeEventInit<'_>) -> &'static HashChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: HashChangeEventInit<'_>) -> &'static HashChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `HashChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static HashChangeEvent;
+    /// Treats `this` as `HashChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static HashChangeEvent {
+        unreachable!()
     }
 }
 
@@ -61061,10 +62607,12 @@ pub struct Highlight(PhantomData<JsObject>);
 pub mod highlight {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/Highlight)
-        #[link_name = "new Highlight"]
-        pub safe fn new(initial_ranges: &AbstractRange) -> &'static Highlight;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/Highlight)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Highlight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(initial_ranges: &AbstractRange) -> &'static Highlight {
+        unreachable!()
     }
 }
 
@@ -61389,10 +62937,12 @@ impl Deref for IDBCursorWithValue {
 pub mod idb_cursor_with_value {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `IDBCursorWithValue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &IDBCursor) -> &'static IDBCursorWithValue;
+    /// Treats `this` as `IDBCursorWithValue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &IDBCursor) -> &'static IDBCursorWithValue {
+        unreachable!()
     }
 }
 
@@ -61423,10 +62973,12 @@ impl Deref for IDBDatabase {
 pub mod idb_database {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `IDBDatabase` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static IDBDatabase;
+    /// Treats `this` as `IDBDatabase` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static IDBDatabase {
+        unreachable!()
     }
 }
 
@@ -62205,10 +63757,12 @@ impl Deref for IDBOpenDBRequest {
 pub mod idb_open_db_request {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `IDBOpenDBRequest` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static IDBOpenDBRequest;
+    /// Treats `this` as `IDBOpenDBRequest` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static IDBOpenDBRequest {
+        unreachable!()
     }
 }
 
@@ -62265,10 +63819,12 @@ impl Deref for IDBRequest {
 pub mod idb_request {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `IDBRequest` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static IDBRequest;
+    /// Treats `this` as `IDBRequest` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static IDBRequest {
+        unreachable!()
     }
 }
 
@@ -62365,10 +63921,12 @@ impl Deref for IDBTransaction {
 pub mod idb_transaction {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `IDBTransaction` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static IDBTransaction;
+    /// Treats `this` as `IDBTransaction` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static IDBTransaction {
+        unreachable!()
     }
 }
 
@@ -62506,18 +64064,28 @@ impl Deref for IDBVersionChangeEvent {
 pub mod idb_version_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
-        #[link_name = "new IDBVersionChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static IDBVersionChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static IDBVersionChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
-        #[link_name = "new IDBVersionChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `IDBVersionChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static IDBVersionChangeEvent;
+    /// Treats `this` as `IDBVersionChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static IDBVersionChangeEvent {
+        unreachable!()
     }
 }
 
@@ -62556,14 +64124,20 @@ impl Deref for IIRFilterNode {
 pub mod iir_filter_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/IIRFilterNode)
-        #[link_name = "new IIRFilterNode"]
-        pub safe fn new(context: &BaseAudioContext, options: IIRFilterOptions<'_>) -> &'static IIRFilterNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/IIRFilterNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new IIRFilterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext, options: IIRFilterOptions<'_>) -> &'static IIRFilterNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `IIRFilterNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static IIRFilterNode;
+    /// Treats `this` as `IIRFilterNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static IIRFilterNode {
+        unreachable!()
     }
 }
 
@@ -62662,10 +64236,12 @@ pub struct ImageCapture(PhantomData<JsObject>);
 pub mod image_capture {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/ImageCapture)
-        #[link_name = "new ImageCapture"]
-        pub safe fn new(video_track: &MediaStreamTrack) -> &'static ImageCapture;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/ImageCapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageCapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(video_track: &MediaStreamTrack) -> &'static ImageCapture {
+        unreachable!()
     }
 }
 
@@ -62727,22 +64303,36 @@ pub struct ImageData(PhantomData<JsObject>);
 pub mod image_data {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
-        #[link_name = "new ImageData"]
-        pub safe fn new(sw: u32, sh: u32) -> &'static ImageData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(sw: u32, sh: u32) -> &'static ImageData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
-        #[link_name = "new ImageData"]
-        pub safe fn new_with_settings(sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_settings(sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
-        #[link_name = "new ImageData"]
-        pub safe fn new_with_sh(data: &Uint8ClampedArray, sw: u32, sh: u32) -> &'static ImageData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_sh(data: &Uint8ClampedArray, sw: u32, sh: u32) -> &'static ImageData {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
-        #[link_name = "new ImageData"]
-        pub safe fn new_with_sh_and_settings(data: &Uint8ClampedArray, sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_sh_and_settings(data: &Uint8ClampedArray, sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData {
+        unreachable!()
     }
 }
 
@@ -62788,14 +64378,20 @@ pub struct ImageDecoder(PhantomData<JsObject>);
 pub mod image_decoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/ImageDecoder)
-        #[link_name = "new ImageDecoder"]
-        pub safe fn new(init: ImageDecoderInit<'_>) -> &'static ImageDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/ImageDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: ImageDecoderInit<'_>) -> &'static ImageDecoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/isTypeSupported)
-        #[link_name = "ImageDecoder.isTypeSupported"]
-        pub safe fn is_type_supported(type_: &str) -> Promise<bool>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/isTypeSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "ImageDecoder.isTypeSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_type_supported(type_: &str) -> Promise<bool> {
+        unreachable!()
     }
 }
 
@@ -62968,10 +64564,12 @@ impl Deref for InputDeviceInfo {
 pub mod input_device_info {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `InputDeviceInfo` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &MediaDeviceInfo) -> &'static InputDeviceInfo;
+    /// Treats `this` as `InputDeviceInfo` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &MediaDeviceInfo) -> &'static InputDeviceInfo {
+        unreachable!()
     }
 }
 
@@ -63002,14 +64600,12 @@ impl Deref for KeyframeEffect {
 pub mod keyframe_effect {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
-        #[link_name = "new KeyframeEffect"]
-        pub safe fn new(target: &Element, keyframes: &dyn core::any::Any) -> &'static KeyframeEffect;
-
-        /// Treats `this` as `KeyframeEffect` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AnimationEffect) -> &'static KeyframeEffect;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyframeEffect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(target: &Element, keyframes: &dyn core::any::Any) -> &'static KeyframeEffect {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
@@ -63017,6 +64613,14 @@ pub mod keyframe_effect {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_options(target: &Element, keyframes: &dyn core::any::Any, options: impl IntoNumberOrKeyframeEffectOptions) -> &'static KeyframeEffect {
+        unreachable!()
+    }
+
+    /// Treats `this` as `KeyframeEffect` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AnimationEffect) -> &'static KeyframeEffect {
         unreachable!()
     }
 }
@@ -63120,10 +64724,12 @@ impl Deref for LargestContentfulPaint {
 pub mod largest_contentful_paint {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `LargestContentfulPaint` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static LargestContentfulPaint;
+    /// Treats `this` as `LargestContentfulPaint` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static LargestContentfulPaint {
+        unreachable!()
     }
 }
 
@@ -63264,10 +64870,12 @@ impl Deref for MIDIAccess {
 pub mod midi_access {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MIDIAccess` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MIDIAccess;
+    /// Treats `this` as `MIDIAccess` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MIDIAccess {
+        unreachable!()
     }
 }
 
@@ -63331,18 +64939,28 @@ impl Deref for MIDIConnectionEvent {
 pub mod midi_connection_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
-        #[link_name = "new MIDIConnectionEvent"]
-        pub safe fn new(type_: &str) -> &'static MIDIConnectionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MIDIConnectionEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
-        #[link_name = "new MIDIConnectionEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MIDIConnectionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MIDIConnectionEvent;
+    /// Treats `this` as `MIDIConnectionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MIDIConnectionEvent {
+        unreachable!()
     }
 }
 
@@ -63373,10 +64991,12 @@ impl Deref for MIDIInput {
 pub mod midi_input {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MIDIInput` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MIDIInput;
+    /// Treats `this` as `MIDIInput` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MIDIInput {
+        unreachable!()
     }
 }
 
@@ -63479,18 +65099,28 @@ impl Deref for MIDIMessageEvent {
 pub mod midi_message_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
-        #[link_name = "new MIDIMessageEvent"]
-        pub safe fn new(type_: &str) -> &'static MIDIMessageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MIDIMessageEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
-        #[link_name = "new MIDIMessageEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MIDIMessageEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MIDIMessageEvent;
+    /// Treats `this` as `MIDIMessageEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MIDIMessageEvent {
+        unreachable!()
     }
 }
 
@@ -63521,10 +65151,12 @@ impl Deref for MIDIOutput {
 pub mod midi_output {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MIDIOutput` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MIDIOutput;
+    /// Treats `this` as `MIDIOutput` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MIDIOutput {
+        unreachable!()
     }
 }
 
@@ -63626,10 +65258,12 @@ impl Deref for MIDIPort {
 pub mod midi_port {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MIDIPort` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MIDIPort;
+    /// Treats `this` as `MIDIPort` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MIDIPort {
+        unreachable!()
     }
 }
 
@@ -63741,10 +65375,12 @@ impl Deref for MathMLElement {
 pub mod math_ml_element {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MathMLElement` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MathMLElement;
+    /// Treats `this` as `MathMLElement` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MathMLElement {
+        unreachable!()
     }
 }
 
@@ -65650,10 +67286,12 @@ impl Deref for MediaDevices {
 pub mod media_devices {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MediaDevices` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaDevices;
+    /// Treats `this` as `MediaDevices` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaDevices {
+        unreachable!()
     }
 }
 
@@ -65741,14 +67379,20 @@ impl Deref for MediaElementAudioSourceNode {
 pub mod media_element_audio_source_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceNode/MediaElementAudioSourceNode)
-        #[link_name = "new MediaElementAudioSourceNode"]
-        pub safe fn new(context: &AudioContext, options: MediaElementAudioSourceOptions<'_>) -> &'static MediaElementAudioSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceNode/MediaElementAudioSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaElementAudioSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &AudioContext, options: MediaElementAudioSourceOptions<'_>) -> &'static MediaElementAudioSourceNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaElementAudioSourceNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaElementAudioSourceNode;
+    /// Treats `this` as `MediaElementAudioSourceNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaElementAudioSourceNode {
+        unreachable!()
     }
 }
 
@@ -65779,18 +67423,28 @@ impl Deref for MediaEncryptedEvent {
 pub mod media_encrypted_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
-        #[link_name = "new MediaEncryptedEvent"]
-        pub safe fn new(type_: &str) -> &'static MediaEncryptedEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static MediaEncryptedEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
-        #[link_name = "new MediaEncryptedEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaEncryptedEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MediaEncryptedEvent;
+    /// Treats `this` as `MediaEncryptedEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MediaEncryptedEvent {
+        unreachable!()
     }
 }
 
@@ -65867,14 +67521,20 @@ impl Deref for MediaKeyMessageEvent {
 pub mod media_key_message_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/MediaKeyMessageEvent)
-        #[link_name = "new MediaKeyMessageEvent"]
-        pub safe fn new(type_: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/MediaKeyMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaKeyMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaKeyMessageEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MediaKeyMessageEvent;
+    /// Treats `this` as `MediaKeyMessageEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MediaKeyMessageEvent {
+        unreachable!()
     }
 }
 
@@ -65913,10 +67573,12 @@ impl Deref for MediaKeySession {
 pub mod media_key_session {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MediaKeySession` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaKeySession;
+    /// Treats `this` as `MediaKeySession` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaKeySession {
+        unreachable!()
     }
 }
 
@@ -66153,10 +67815,12 @@ pub struct MediaList(PhantomData<JsObject>);
 pub mod media_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &MediaList) -> Box<dyn Iterator<Item = String>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &MediaList) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
     }
 }
 
@@ -66226,14 +67890,20 @@ pub struct MediaMetadata(PhantomData<JsObject>);
 pub mod media_metadata {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
-        #[link_name = "new MediaMetadata"]
-        pub safe fn new() -> &'static MediaMetadata;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaMetadata")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static MediaMetadata {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
-        #[link_name = "new MediaMetadata"]
-        pub safe fn new_with_init(init: MediaMetadataInit<'_>) -> &'static MediaMetadata;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaMetadata")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(init: MediaMetadataInit<'_>) -> &'static MediaMetadata {
+        unreachable!()
     }
 }
 
@@ -66320,22 +67990,36 @@ impl Deref for MediaRecorder {
 pub mod media_recorder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
-        #[link_name = "new MediaRecorder"]
-        pub safe fn new(stream: &MediaStream) -> &'static MediaRecorder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaRecorder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(stream: &MediaStream) -> &'static MediaRecorder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
-        #[link_name = "new MediaRecorder"]
-        pub safe fn new_with_options(stream: &MediaStream, options: MediaRecorderOptions<'_>) -> &'static MediaRecorder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaRecorder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(stream: &MediaStream, options: MediaRecorderOptions<'_>) -> &'static MediaRecorder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/isTypeSupported)
-        #[link_name = "MediaRecorder.isTypeSupported"]
-        pub safe fn is_type_supported(type_: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/isTypeSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaRecorder.isTypeSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_type_supported(type_: &str) -> bool {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaRecorder` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaRecorder;
+    /// Treats `this` as `MediaRecorder` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaRecorder {
+        unreachable!()
     }
 }
 
@@ -66627,22 +68311,36 @@ impl Deref for MediaSource {
 pub mod media_source {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/MediaSource)
-        #[link_name = "new MediaSource"]
-        pub safe fn new() -> &'static MediaSource;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/MediaSource)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaSource")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static MediaSource {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/canConstructInDedicatedWorker)
-        #[link_name = "get MediaSource.canConstructInDedicatedWorker"]
-        pub safe fn can_construct_in_dedicated_worker() -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/canConstructInDedicatedWorker)
+    #[cfg_attr(rust_js, rust_js::link_name = "get MediaSource.canConstructInDedicatedWorker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn can_construct_in_dedicated_worker() -> bool {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/isTypeSupported)
-        #[link_name = "MediaSource.isTypeSupported"]
-        pub safe fn is_type_supported(type_: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/isTypeSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaSource.isTypeSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_type_supported(type_: &str) -> bool {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaSource` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaSource;
+    /// Treats `this` as `MediaSource` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaSource {
+        unreachable!()
     }
 }
 
@@ -66808,14 +68506,20 @@ impl Deref for MediaStream {
 pub mod media_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/MediaStream)
-        #[link_name = "new MediaStream"]
-        pub safe fn new() -> &'static MediaStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/MediaStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static MediaStream {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaStream` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaStream;
+    /// Treats `this` as `MediaStream` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaStream {
+        unreachable!()
     }
 }
 
@@ -66944,18 +68648,28 @@ impl Deref for MediaStreamAudioDestinationNode {
 pub mod media_stream_audio_destination_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
-        #[link_name = "new MediaStreamAudioDestinationNode"]
-        pub safe fn new(context: &AudioContext) -> &'static MediaStreamAudioDestinationNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioDestinationNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &AudioContext) -> &'static MediaStreamAudioDestinationNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
-        #[link_name = "new MediaStreamAudioDestinationNode"]
-        pub safe fn new_with_options(context: &AudioContext, options: AudioNodeOptions<'_>) -> &'static MediaStreamAudioDestinationNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioDestinationNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &AudioContext, options: AudioNodeOptions<'_>) -> &'static MediaStreamAudioDestinationNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaStreamAudioDestinationNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaStreamAudioDestinationNode;
+    /// Treats `this` as `MediaStreamAudioDestinationNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaStreamAudioDestinationNode {
+        unreachable!()
     }
 }
 
@@ -66986,14 +68700,20 @@ impl Deref for MediaStreamAudioSourceNode {
 pub mod media_stream_audio_source_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceNode/MediaStreamAudioSourceNode)
-        #[link_name = "new MediaStreamAudioSourceNode"]
-        pub safe fn new(context: &AudioContext, options: MediaStreamAudioSourceOptions<'_>) -> &'static MediaStreamAudioSourceNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceNode/MediaStreamAudioSourceNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &AudioContext, options: MediaStreamAudioSourceOptions<'_>) -> &'static MediaStreamAudioSourceNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaStreamAudioSourceNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaStreamAudioSourceNode;
+    /// Treats `this` as `MediaStreamAudioSourceNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaStreamAudioSourceNode {
+        unreachable!()
     }
 }
 
@@ -67024,10 +68744,12 @@ impl Deref for MediaStreamTrack {
 pub mod media_stream_track {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MediaStreamTrack` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MediaStreamTrack;
+    /// Treats `this` as `MediaStreamTrack` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MediaStreamTrack {
+        unreachable!()
     }
 }
 
@@ -67229,14 +68951,20 @@ impl Deref for MediaStreamTrackEvent {
 pub mod media_stream_track_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/MediaStreamTrackEvent)
-        #[link_name = "new MediaStreamTrackEvent"]
-        pub safe fn new(type_: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/MediaStreamTrackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamTrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `MediaStreamTrackEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static MediaStreamTrackEvent;
+    /// Treats `this` as `MediaStreamTrackEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static MediaStreamTrackEvent {
+        unreachable!()
     }
 }
 
@@ -67258,10 +68986,12 @@ pub struct MessageChannel(PhantomData<JsObject>);
 pub mod message_channel {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageChannel/MessageChannel)
-        #[link_name = "new MessageChannel"]
-        pub safe fn new() -> &'static MessageChannel;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageChannel/MessageChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MessageChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static MessageChannel {
+        unreachable!()
     }
 }
 
@@ -67300,10 +69030,12 @@ impl Deref for MessagePort {
 pub mod message_port {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `MessagePort` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static MessagePort;
+    /// Treats `this` as `MessagePort` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static MessagePort {
+        unreachable!()
     }
 }
 
@@ -67431,10 +69163,12 @@ pub struct MimeTypeArray(PhantomData<JsObject>);
 pub mod mime_type_array {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &MimeTypeArray) -> Box<dyn Iterator<Item = &'static MimeType>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &MimeTypeArray) -> Box<dyn Iterator<Item = &'static MimeType>> {
+        unreachable!()
     }
 }
 
@@ -67472,10 +69206,12 @@ pub struct MutationObserver(PhantomData<JsObject>);
 pub mod mutation_observer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/MutationObserver)
-        #[link_name = "new MutationObserver"]
-        pub safe fn new(callback: Box<dyn FnMut(&[&MutationRecord], &MutationObserver)>) -> &'static MutationObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/MutationObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new MutationObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(callback: Box<dyn FnMut(&[&MutationRecord], &MutationObserver)>) -> &'static MutationObserver {
+        unreachable!()
     }
 }
 
@@ -67600,10 +69336,12 @@ pub struct NamedNodeMap(PhantomData<JsObject>);
 pub mod named_node_map {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &NamedNodeMap) -> Box<dyn Iterator<Item = &'static Attr>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &NamedNodeMap) -> Box<dyn Iterator<Item = &'static Attr>> {
+        unreachable!()
     }
 }
 
@@ -67690,14 +69428,20 @@ impl Deref for NavigateEvent {
 pub mod navigate_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/NavigateEvent)
-        #[link_name = "new NavigateEvent"]
-        pub safe fn new(type_: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/NavigateEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new NavigateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `NavigateEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static NavigateEvent;
+    /// Treats `this` as `NavigateEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static NavigateEvent {
+        unreachable!()
     }
 }
 
@@ -67832,10 +69576,12 @@ impl Deref for Navigation {
 pub mod navigation {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Navigation` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Navigation;
+    /// Treats `this` as `Navigation` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Navigation {
+        unreachable!()
     }
 }
 
@@ -68053,14 +69799,20 @@ impl Deref for NavigationCurrentEntryChangeEvent {
 pub mod navigation_current_entry_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/NavigationCurrentEntryChangeEvent)
-        #[link_name = "new NavigationCurrentEntryChangeEvent"]
-        pub safe fn new(type_: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/NavigationCurrentEntryChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new NavigationCurrentEntryChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `NavigationCurrentEntryChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static NavigationCurrentEntryChangeEvent;
+    /// Treats `this` as `NavigationCurrentEntryChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static NavigationCurrentEntryChangeEvent {
+        unreachable!()
     }
 }
 
@@ -68154,10 +69906,12 @@ impl Deref for NavigationHistoryEntry {
 pub mod navigation_history_entry {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `NavigationHistoryEntry` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static NavigationHistoryEntry;
+    /// Treats `this` as `NavigationHistoryEntry` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static NavigationHistoryEntry {
+        unreachable!()
     }
 }
 
@@ -68448,34 +70202,60 @@ impl Deref for Notification {
 pub mod notification {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
-        #[link_name = "new Notification"]
-        pub safe fn new(title: &str) -> &'static Notification;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Notification")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(title: &str) -> &'static Notification {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
-        #[link_name = "new Notification"]
-        pub safe fn new_with_options(title: &str, options: NotificationOptions<'_>) -> &'static Notification;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Notification")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(title: &str, options: NotificationOptions<'_>) -> &'static Notification {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/permission)
-        #[link_name = "get Notification.permission"]
-        pub safe fn permission() -> String;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/permission)
+    #[cfg_attr(rust_js, rust_js::link_name = "get Notification.permission")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn permission() -> String {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
-        #[link_name = "Notification.requestPermission"]
-        pub safe fn request_permission() -> Promise<String>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
+    #[cfg_attr(rust_js, rust_js::link_name = "Notification.requestPermission")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_permission() -> Promise<String> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
-        #[link_name = "Notification.requestPermission"]
-        pub safe fn request_permission_with_deprecated_callback(deprecated_callback: Box<dyn FnMut(&str)>) -> Promise<String>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
+    #[cfg_attr(rust_js, rust_js::link_name = "Notification.requestPermission")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_permission_with_deprecated_callback(deprecated_callback: Box<dyn FnMut(&str)>) -> Promise<String> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/maxActions)
-        #[link_name = "get Notification.maxActions"]
-        pub safe fn max_actions() -> u32;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/maxActions)
+    #[cfg_attr(rust_js, rust_js::link_name = "get Notification.maxActions")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn max_actions() -> u32 {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Notification` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Notification;
+    /// Treats `this` as `Notification` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Notification {
+        unreachable!()
     }
 }
 
@@ -68654,14 +70434,20 @@ impl Deref for OfflineAudioCompletionEvent {
 pub mod offline_audio_completion_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/OfflineAudioCompletionEvent)
-        #[link_name = "new OfflineAudioCompletionEvent"]
-        pub safe fn new(type_: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/OfflineAudioCompletionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OfflineAudioCompletionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `OfflineAudioCompletionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static OfflineAudioCompletionEvent;
+    /// Treats `this` as `OfflineAudioCompletionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static OfflineAudioCompletionEvent {
+        unreachable!()
     }
 }
 
@@ -68692,14 +70478,20 @@ impl Deref for OfflineAudioContext {
 pub mod offline_audio_context {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/OfflineAudioContext)
-        #[link_name = "new OfflineAudioContext"]
-        pub safe fn new(context_options: OfflineAudioContextOptions<'_>) -> &'static OfflineAudioContext;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/OfflineAudioContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OfflineAudioContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context_options: OfflineAudioContextOptions<'_>) -> &'static OfflineAudioContext {
+        unreachable!()
+    }
 
-        /// Treats `this` as `OfflineAudioContext` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static OfflineAudioContext;
+    /// Treats `this` as `OfflineAudioContext` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static OfflineAudioContext {
+        unreachable!()
     }
 }
 
@@ -68779,14 +70571,20 @@ impl Deref for OffscreenCanvas {
 pub mod offscreen_canvas {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/OffscreenCanvas)
-        #[link_name = "new OffscreenCanvas"]
-        pub safe fn new(width: f64, height: f64) -> &'static OffscreenCanvas;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/OffscreenCanvas)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OffscreenCanvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(width: f64, height: f64) -> &'static OffscreenCanvas {
+        unreachable!()
+    }
 
-        /// Treats `this` as `OffscreenCanvas` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static OffscreenCanvas;
+    /// Treats `this` as `OffscreenCanvas` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static OffscreenCanvas {
+        unreachable!()
     }
 }
 
@@ -69889,10 +71687,12 @@ pub struct Origin(PhantomData<JsObject>);
 pub mod origin {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Origin/Origin)
-        #[link_name = "new Origin"]
-        pub safe fn new() -> &'static Origin;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Origin/Origin)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Origin")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Origin {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Origin/from)
@@ -69947,18 +71747,28 @@ impl Deref for OscillatorNode {
 pub mod oscillator_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
-        #[link_name = "new OscillatorNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static OscillatorNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OscillatorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static OscillatorNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
-        #[link_name = "new OscillatorNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: OscillatorOptions<'_>) -> &'static OscillatorNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OscillatorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: OscillatorOptions<'_>) -> &'static OscillatorNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `OscillatorNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static OscillatorNode;
+    /// Treats `this` as `OscillatorNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static OscillatorNode {
+        unreachable!()
     }
 }
 
@@ -70021,18 +71831,28 @@ impl Deref for OverconstrainedError {
 pub mod overconstrained_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
-        #[link_name = "new OverconstrainedError"]
-        pub safe fn new(constraint: &str) -> &'static OverconstrainedError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OverconstrainedError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(constraint: &str) -> &'static OverconstrainedError {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
-        #[link_name = "new OverconstrainedError"]
-        pub safe fn new_with_message(constraint: &str, message: &str) -> &'static OverconstrainedError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new OverconstrainedError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message(constraint: &str, message: &str) -> &'static OverconstrainedError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `OverconstrainedError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMException) -> &'static OverconstrainedError;
+    /// Treats `this` as `OverconstrainedError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMException) -> &'static OverconstrainedError {
+        unreachable!()
     }
 }
 
@@ -70063,18 +71883,28 @@ impl Deref for PageRevealEvent {
 pub mod page_reveal_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
-        #[link_name = "new PageRevealEvent"]
-        pub safe fn new(type_: &str) -> &'static PageRevealEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PageRevealEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
-        #[link_name = "new PageRevealEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageRevealEventInit<'_>) -> &'static PageRevealEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageRevealEventInit<'_>) -> &'static PageRevealEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PageRevealEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PageRevealEvent;
+    /// Treats `this` as `PageRevealEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PageRevealEvent {
+        unreachable!()
     }
 }
 
@@ -70105,18 +71935,28 @@ impl Deref for PageSwapEvent {
 pub mod page_swap_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
-        #[link_name = "new PageSwapEvent"]
-        pub safe fn new(type_: &str) -> &'static PageSwapEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PageSwapEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
-        #[link_name = "new PageSwapEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageSwapEventInit<'_>) -> &'static PageSwapEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageSwapEventInit<'_>) -> &'static PageSwapEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PageSwapEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PageSwapEvent;
+    /// Treats `this` as `PageSwapEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PageSwapEvent {
+        unreachable!()
     }
 }
 
@@ -70155,18 +71995,28 @@ impl Deref for PageTransitionEvent {
 pub mod page_transition_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
-        #[link_name = "new PageTransitionEvent"]
-        pub safe fn new(type_: &str) -> &'static PageTransitionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PageTransitionEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
-        #[link_name = "new PageTransitionEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageTransitionEventInit) -> &'static PageTransitionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageTransitionEventInit) -> &'static PageTransitionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PageTransitionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PageTransitionEvent;
+    /// Treats `this` as `PageTransitionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PageTransitionEvent {
+        unreachable!()
     }
 }
 
@@ -70197,18 +72047,28 @@ impl Deref for PannerNode {
 pub mod panner_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
-        #[link_name = "new PannerNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static PannerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static PannerNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
-        #[link_name = "new PannerNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: PannerOptions<'_>) -> &'static PannerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: PannerOptions<'_>) -> &'static PannerNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PannerNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static PannerNode;
+    /// Treats `this` as `PannerNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static PannerNode {
+        unreachable!()
     }
 }
 
@@ -70414,10 +72274,12 @@ pub struct Path2D(PhantomData<JsObject>);
 pub mod path2_d {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
-        #[link_name = "new Path2D"]
-        pub safe fn new() -> &'static Path2D;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Path2D")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Path2D {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
@@ -70568,18 +72430,28 @@ impl Deref for PaymentMethodChangeEvent {
 pub mod payment_method_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
-        #[link_name = "new PaymentMethodChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static PaymentMethodChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PaymentMethodChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
-        #[link_name = "new PaymentMethodChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PaymentMethodChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PaymentMethodChangeEvent;
+    /// Treats `this` as `PaymentMethodChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PaymentMethodChangeEvent {
+        unreachable!()
     }
 }
 
@@ -70618,18 +72490,28 @@ impl Deref for PaymentRequest {
 pub mod payment_request {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
-        #[link_name = "new PaymentRequest"]
-        pub safe fn new(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>) -> &'static PaymentRequest;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>) -> &'static PaymentRequest {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
-        #[link_name = "new PaymentRequest"]
-        pub safe fn new_with_options(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: PaymentOptions<'_>) -> &'static PaymentRequest;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: PaymentOptions<'_>) -> &'static PaymentRequest {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PaymentRequest` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static PaymentRequest;
+    /// Treats `this` as `PaymentRequest` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static PaymentRequest {
+        unreachable!()
     }
 }
 
@@ -70759,18 +72641,28 @@ impl Deref for PaymentRequestUpdateEvent {
 pub mod payment_request_update_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
-        #[link_name = "new PaymentRequestUpdateEvent"]
-        pub safe fn new(type_: &str) -> &'static PaymentRequestUpdateEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PaymentRequestUpdateEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
-        #[link_name = "new PaymentRequestUpdateEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PaymentRequestUpdateEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PaymentRequestUpdateEvent;
+    /// Treats `this` as `PaymentRequestUpdateEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PaymentRequestUpdateEvent {
+        unreachable!()
     }
 }
 
@@ -70801,10 +72693,12 @@ impl Deref for PaymentResponse {
 pub mod payment_response {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PaymentResponse` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static PaymentResponse;
+    /// Treats `this` as `PaymentResponse` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static PaymentResponse {
+        unreachable!()
     }
 }
 
@@ -70987,10 +72881,12 @@ impl Deref for PerformanceEventTiming {
 pub mod performance_event_timing {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PerformanceEventTiming` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceEventTiming;
+    /// Treats `this` as `PerformanceEventTiming` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceEventTiming {
+        unreachable!()
     }
 }
 
@@ -71053,18 +72949,28 @@ impl Deref for PerformanceMark {
 pub mod performance_mark {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
-        #[link_name = "new PerformanceMark"]
-        pub safe fn new(mark_name: &str) -> &'static PerformanceMark;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(mark_name: &str) -> &'static PerformanceMark {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
-        #[link_name = "new PerformanceMark"]
-        pub safe fn new_with_mark_options(mark_name: &str, mark_options: PerformanceMarkOptions) -> &'static PerformanceMark;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_mark_options(mark_name: &str, mark_options: PerformanceMarkOptions) -> &'static PerformanceMark {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PerformanceMark` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceMark;
+    /// Treats `this` as `PerformanceMark` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceMark {
+        unreachable!()
     }
 }
 
@@ -71095,10 +73001,12 @@ impl Deref for PerformanceMeasure {
 pub mod performance_measure {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PerformanceMeasure` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceMeasure;
+    /// Treats `this` as `PerformanceMeasure` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceMeasure {
+        unreachable!()
     }
 }
 
@@ -71175,10 +73083,12 @@ impl Deref for PerformanceNavigationTiming {
 pub mod performance_navigation_timing {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PerformanceNavigationTiming` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceNavigationTiming;
+    /// Treats `this` as `PerformanceNavigationTiming` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceNavigationTiming {
+        unreachable!()
     }
 }
 
@@ -71272,14 +73182,20 @@ pub struct PerformanceObserver(PhantomData<JsObject>);
 pub mod performance_observer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
-        #[link_name = "new PerformanceObserver"]
-        pub safe fn new(callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/supportedEntryTypes)
-        #[link_name = "get PerformanceObserver.supportedEntryTypes"]
-        pub safe fn supported_entry_types() -> &'static [String];
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/supportedEntryTypes)
+    #[cfg_attr(rust_js, rust_js::link_name = "get PerformanceObserver.supportedEntryTypes")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn supported_entry_types() -> &'static [String] {
+        unreachable!()
     }
 }
 
@@ -71373,10 +73289,12 @@ impl Deref for PerformancePaintTiming {
 pub mod performance_paint_timing {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PerformancePaintTiming` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformancePaintTiming;
+    /// Treats `this` as `PerformancePaintTiming` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformancePaintTiming {
+        unreachable!()
     }
 }
 
@@ -71415,10 +73333,12 @@ impl Deref for PerformanceResourceTiming {
 pub mod performance_resource_timing {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PerformanceResourceTiming` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceResourceTiming;
+    /// Treats `this` as `PerformanceResourceTiming` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceResourceTiming {
+        unreachable!()
     }
 }
 
@@ -71838,14 +73758,20 @@ pub struct PeriodicWave(PhantomData<JsObject>);
 pub mod periodic_wave {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
-        #[link_name = "new PeriodicWave"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static PeriodicWave;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PeriodicWave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static PeriodicWave {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
-        #[link_name = "new PeriodicWave"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: PeriodicWaveOptions<'_>) -> &'static PeriodicWave;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PeriodicWave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: PeriodicWaveOptions<'_>) -> &'static PeriodicWave {
+        unreachable!()
     }
 }
 
@@ -71865,10 +73791,12 @@ impl Deref for PermissionStatus {
 pub mod permission_status {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PermissionStatus` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static PermissionStatus;
+    /// Treats `this` as `PermissionStatus` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static PermissionStatus {
+        unreachable!()
     }
 }
 
@@ -71939,14 +73867,20 @@ impl Deref for PictureInPictureEvent {
 pub mod picture_in_picture_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/PictureInPictureEvent)
-        #[link_name = "new PictureInPictureEvent"]
-        pub safe fn new(type_: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/PictureInPictureEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PictureInPictureEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PictureInPictureEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PictureInPictureEvent;
+    /// Treats `this` as `PictureInPictureEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PictureInPictureEvent {
+        unreachable!()
     }
 }
 
@@ -71977,10 +73911,12 @@ impl Deref for PictureInPictureWindow {
 pub mod picture_in_picture_window {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `PictureInPictureWindow` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static PictureInPictureWindow;
+    /// Treats `this` as `PictureInPictureWindow` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static PictureInPictureWindow {
+        unreachable!()
     }
 }
 
@@ -72027,10 +73963,12 @@ pub struct Plugin(PhantomData<JsObject>);
 pub mod plugin {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &Plugin) -> Box<dyn Iterator<Item = &'static MimeType>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &Plugin) -> Box<dyn Iterator<Item = &'static MimeType>> {
+        unreachable!()
     }
 }
 
@@ -72092,10 +74030,12 @@ pub struct PluginArray(PhantomData<JsObject>);
 pub mod plugin_array {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &PluginArray) -> Box<dyn Iterator<Item = &'static Plugin>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &PluginArray) -> Box<dyn Iterator<Item = &'static Plugin>> {
+        unreachable!()
     }
 }
 
@@ -72150,18 +74090,28 @@ impl Deref for PopStateEvent {
 pub mod pop_state_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
-        #[link_name = "new PopStateEvent"]
-        pub safe fn new(type_: &str) -> &'static PopStateEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static PopStateEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
-        #[link_name = "new PopStateEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PopStateEventInit) -> &'static PopStateEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PopStateEventInit) -> &'static PopStateEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PopStateEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PopStateEvent;
+    /// Treats `this` as `PopStateEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PopStateEvent {
+        unreachable!()
     }
 }
 
@@ -72200,18 +74150,28 @@ impl Deref for ProcessingInstruction {
 pub mod processing_instruction {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
-        #[link_name = "new ProcessingInstruction"]
-        pub safe fn new(target: &str) -> &'static ProcessingInstruction;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProcessingInstruction")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(target: &str) -> &'static ProcessingInstruction {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
-        #[link_name = "new ProcessingInstruction"]
-        pub safe fn new_with_data(target: &str, data: &str) -> &'static ProcessingInstruction;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProcessingInstruction")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_data(target: &str, data: &str) -> &'static ProcessingInstruction {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ProcessingInstruction` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ProcessingInstruction;
+    /// Treats `this` as `ProcessingInstruction` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ProcessingInstruction {
+        unreachable!()
     }
 }
 
@@ -72314,18 +74274,28 @@ impl Deref for ProgressEvent {
 pub mod progress_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
-        #[link_name = "new ProgressEvent"]
-        pub safe fn new(type_: &str) -> &'static ProgressEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static ProgressEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
-        #[link_name = "new ProgressEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ProgressEventInit) -> &'static ProgressEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ProgressEventInit) -> &'static ProgressEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ProgressEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static ProgressEvent;
+    /// Treats `this` as `ProgressEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static ProgressEvent {
+        unreachable!()
     }
 }
 
@@ -72372,14 +74342,20 @@ impl Deref for PromiseRejectionEvent {
 pub mod promise_rejection_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/PromiseRejectionEvent)
-        #[link_name = "new PromiseRejectionEvent"]
-        pub safe fn new(type_: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/PromiseRejectionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new PromiseRejectionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PromiseRejectionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static PromiseRejectionEvent;
+    /// Treats `this` as `PromiseRejectionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static PromiseRejectionEvent {
+        unreachable!()
     }
 }
 
@@ -72418,38 +74394,68 @@ impl Deref for PublicKeyCredential {
 pub mod public_key_credential {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable)
-        #[link_name = "PublicKeyCredential.isConditionalMediationAvailable"]
-        pub safe fn is_conditional_mediation_available() -> Promise<bool>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.isConditionalMediationAvailable")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_conditional_mediation_available() -> Promise<bool> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/isUserVerifyingPlatformAuthenticatorAvailable)
-        #[link_name = "PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable"]
-        pub safe fn is_user_verifying_platform_authenticator_available() -> Promise<bool>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/isUserVerifyingPlatformAuthenticatorAvailable)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_user_verifying_platform_authenticator_available() -> Promise<bool> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseCreationOptionsFromJSON)
-        #[link_name = "PublicKeyCredential.parseCreationOptionsFromJSON"]
-        pub safe fn parse_creation_options_from_json(options: PublicKeyCredentialCreationOptionsJSON<'_>) -> PublicKeyCredentialCreationOptions;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseCreationOptionsFromJSON)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.parseCreationOptionsFromJSON")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_creation_options_from_json(options: PublicKeyCredentialCreationOptionsJSON<'_>) -> PublicKeyCredentialCreationOptions {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseRequestOptionsFromJSON)
-        #[link_name = "PublicKeyCredential.parseRequestOptionsFromJSON"]
-        pub safe fn parse_request_options_from_json(options: PublicKeyCredentialRequestOptionsJSON<'_>) -> PublicKeyCredentialRequestOptions;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseRequestOptionsFromJSON)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.parseRequestOptionsFromJSON")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parse_request_options_from_json(options: PublicKeyCredentialRequestOptionsJSON<'_>) -> PublicKeyCredentialRequestOptions {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalUnknownCredential)
-        #[link_name = "PublicKeyCredential.signalUnknownCredential"]
-        pub safe fn signal_unknown_credential(options: UnknownCredentialOptions<'_>) -> Promise<()>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalUnknownCredential)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.signalUnknownCredential")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn signal_unknown_credential(options: UnknownCredentialOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalAllAcceptedCredentials)
-        #[link_name = "PublicKeyCredential.signalAllAcceptedCredentials"]
-        pub safe fn signal_all_accepted_credentials(options: AllAcceptedCredentialsOptions<'_>) -> Promise<()>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalAllAcceptedCredentials)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.signalAllAcceptedCredentials")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn signal_all_accepted_credentials(options: AllAcceptedCredentialsOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalCurrentUserDetails)
-        #[link_name = "PublicKeyCredential.signalCurrentUserDetails"]
-        pub safe fn signal_current_user_details(options: CurrentUserDetailsOptions<'_>) -> Promise<()>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalCurrentUserDetails)
+    #[cfg_attr(rust_js, rust_js::link_name = "PublicKeyCredential.signalCurrentUserDetails")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn signal_current_user_details(options: CurrentUserDetailsOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `PublicKeyCredential` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Credential) -> &'static PublicKeyCredential;
+    /// Treats `this` as `PublicKeyCredential` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Credential) -> &'static PublicKeyCredential {
+        unreachable!()
     }
 }
 
@@ -72502,10 +74508,12 @@ pub struct PushManager(PhantomData<JsObject>);
 
 pub mod push_manager {
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/supportedContentEncodings)
-        #[link_name = "get PushManager.supportedContentEncodings"]
-        pub safe fn supported_content_encodings() -> &'static [String];
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/supportedContentEncodings)
+    #[cfg_attr(rust_js, rust_js::link_name = "get PushManager.supportedContentEncodings")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn supported_content_encodings() -> &'static [String] {
+        unreachable!()
     }
 }
 
@@ -72669,10 +74677,12 @@ impl Deref for RTCDTMFSender {
 pub mod rtcdtmf_sender {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `RTCDTMFSender` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCDTMFSender;
+    /// Treats `this` as `RTCDTMFSender` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCDTMFSender {
+        unreachable!()
     }
 }
 
@@ -72752,18 +74762,28 @@ impl Deref for RTCDTMFToneChangeEvent {
 pub mod rtcdtmf_tone_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
-        #[link_name = "new RTCDTMFToneChangeEvent"]
-        pub safe fn new(type_: &str) -> &'static RTCDTMFToneChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static RTCDTMFToneChangeEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
-        #[link_name = "new RTCDTMFToneChangeEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCDTMFToneChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCDTMFToneChangeEvent;
+    /// Treats `this` as `RTCDTMFToneChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCDTMFToneChangeEvent {
+        unreachable!()
     }
 }
 
@@ -72794,10 +74814,12 @@ impl Deref for RTCDataChannel {
 pub mod rtc_data_channel {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `RTCDataChannel` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCDataChannel;
+    /// Treats `this` as `RTCDataChannel` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCDataChannel {
+        unreachable!()
     }
 }
 
@@ -73066,14 +75088,20 @@ impl Deref for RTCDataChannelEvent {
 pub mod rtc_data_channel_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/RTCDataChannelEvent)
-        #[link_name = "new RTCDataChannelEvent"]
-        pub safe fn new(type_: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/RTCDataChannelEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCDataChannelEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCDataChannelEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCDataChannelEvent;
+    /// Treats `this` as `RTCDataChannelEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCDataChannelEvent {
+        unreachable!()
     }
 }
 
@@ -73104,10 +75132,12 @@ impl Deref for RTCDtlsTransport {
 pub mod rtc_dtls_transport {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `RTCDtlsTransport` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCDtlsTransport;
+    /// Treats `this` as `RTCDtlsTransport` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCDtlsTransport {
+        unreachable!()
     }
 }
 
@@ -73179,14 +75209,20 @@ pub struct RTCEncodedAudioFrame(PhantomData<JsObject>);
 pub mod rtc_encoded_audio_frame {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
-        #[link_name = "new RTCEncodedAudioFrame"]
-        pub safe fn new(original_frame: &RTCEncodedAudioFrame) -> &'static RTCEncodedAudioFrame;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedAudioFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(original_frame: &RTCEncodedAudioFrame) -> &'static RTCEncodedAudioFrame {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
-        #[link_name = "new RTCEncodedAudioFrame"]
-        pub safe fn new_with_options(original_frame: &RTCEncodedAudioFrame, options: RTCEncodedAudioFrameOptions) -> &'static RTCEncodedAudioFrame;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedAudioFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(original_frame: &RTCEncodedAudioFrame, options: RTCEncodedAudioFrameOptions) -> &'static RTCEncodedAudioFrame {
+        unreachable!()
     }
 }
 
@@ -73224,14 +75260,20 @@ pub struct RTCEncodedVideoFrame(PhantomData<JsObject>);
 pub mod rtc_encoded_video_frame {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
-        #[link_name = "new RTCEncodedVideoFrame"]
-        pub safe fn new(original_frame: &RTCEncodedVideoFrame) -> &'static RTCEncodedVideoFrame;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedVideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(original_frame: &RTCEncodedVideoFrame) -> &'static RTCEncodedVideoFrame {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
-        #[link_name = "new RTCEncodedVideoFrame"]
-        pub safe fn new_with_options(original_frame: &RTCEncodedVideoFrame, options: RTCEncodedVideoFrameOptions) -> &'static RTCEncodedVideoFrame;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedVideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(original_frame: &RTCEncodedVideoFrame, options: RTCEncodedVideoFrameOptions) -> &'static RTCEncodedVideoFrame {
+        unreachable!()
     }
 }
 
@@ -73286,18 +75328,28 @@ impl Deref for RTCError {
 pub mod rtc_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
-        #[link_name = "new RTCError"]
-        pub safe fn new(init: RTCErrorInit<'_>) -> &'static RTCError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: RTCErrorInit<'_>) -> &'static RTCError {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
-        #[link_name = "new RTCError"]
-        pub safe fn new_with_message(init: RTCErrorInit<'_>, message: &str) -> &'static RTCError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message(init: RTCErrorInit<'_>, message: &str) -> &'static RTCError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMException) -> &'static RTCError;
+    /// Treats `this` as `RTCError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMException) -> &'static RTCError {
+        unreachable!()
     }
 }
 
@@ -73360,14 +75412,20 @@ impl Deref for RTCErrorEvent {
 pub mod rtc_error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/RTCErrorEvent)
-        #[link_name = "new RTCErrorEvent"]
-        pub safe fn new(type_: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/RTCErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCErrorEvent;
+    /// Treats `this` as `RTCErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCErrorEvent {
+        unreachable!()
     }
 }
 
@@ -73389,14 +75447,20 @@ pub struct RTCIceCandidate(PhantomData<JsObject>);
 pub mod rtc_ice_candidate {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
-        #[link_name = "new RTCIceCandidate"]
-        pub safe fn new() -> &'static RTCIceCandidate;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceCandidate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static RTCIceCandidate {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
-        #[link_name = "new RTCIceCandidate"]
-        pub safe fn new_with_candidate_init_dict(candidate_init_dict: RTCLocalIceCandidateInit<'_>) -> &'static RTCIceCandidate;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceCandidate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_candidate_init_dict(candidate_init_dict: RTCLocalIceCandidateInit<'_>) -> &'static RTCIceCandidate {
+        unreachable!()
     }
 }
 
@@ -73539,14 +75603,20 @@ impl Deref for RTCIceTransport {
 pub mod rtc_ice_transport {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/RTCIceTransport)
-        #[link_name = "new RTCIceTransport"]
-        pub safe fn new() -> &'static RTCIceTransport;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/RTCIceTransport)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceTransport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static RTCIceTransport {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCIceTransport` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCIceTransport;
+    /// Treats `this` as `RTCIceTransport` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCIceTransport {
+        unreachable!()
     }
 }
 
@@ -73644,22 +75714,36 @@ impl Deref for RTCPeerConnection {
 pub mod rtc_peer_connection {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
-        #[link_name = "new RTCPeerConnection"]
-        pub safe fn new() -> &'static RTCPeerConnection;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static RTCPeerConnection {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
-        #[link_name = "new RTCPeerConnection"]
-        pub safe fn new_with_configuration(configuration: RTCConfiguration) -> &'static RTCPeerConnection;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_configuration(configuration: RTCConfiguration) -> &'static RTCPeerConnection {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/generateCertificate)
-        #[link_name = "RTCPeerConnection.generateCertificate"]
-        pub safe fn generate_certificate(keygen_algorithm: &dyn core::any::Any) -> Promise<&'static RTCCertificate>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/generateCertificate)
+    #[cfg_attr(rust_js, rust_js::link_name = "RTCPeerConnection.generateCertificate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn generate_certificate(keygen_algorithm: &dyn core::any::Any) -> Promise<&'static RTCCertificate> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCPeerConnection` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCPeerConnection;
+    /// Treats `this` as `RTCPeerConnection` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCPeerConnection {
+        unreachable!()
     }
 }
 
@@ -74171,14 +76255,20 @@ impl Deref for RTCPeerConnectionIceErrorEvent {
 pub mod rtc_peer_connection_ice_error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/RTCPeerConnectionIceErrorEvent)
-        #[link_name = "new RTCPeerConnectionIceErrorEvent"]
-        pub safe fn new(type_: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/RTCPeerConnectionIceErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCPeerConnectionIceErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceErrorEvent;
+    /// Treats `this` as `RTCPeerConnectionIceErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceErrorEvent {
+        unreachable!()
     }
 }
 
@@ -74241,18 +76331,28 @@ impl Deref for RTCPeerConnectionIceEvent {
 pub mod rtc_peer_connection_ice_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
-        #[link_name = "new RTCPeerConnectionIceEvent"]
-        pub safe fn new(type_: &str) -> &'static RTCPeerConnectionIceEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static RTCPeerConnectionIceEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
-        #[link_name = "new RTCPeerConnectionIceEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCPeerConnectionIceEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceEvent;
+    /// Treats `this` as `RTCPeerConnectionIceEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceEvent {
+        unreachable!()
     }
 }
 
@@ -74274,10 +76374,12 @@ pub struct RTCRtpReceiver(PhantomData<JsObject>);
 pub mod rtc_rtp_receiver {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getCapabilities)
-        #[link_name = "RTCRtpReceiver.getCapabilities"]
-        pub safe fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getCapabilities)
+    #[cfg_attr(rust_js, rust_js::link_name = "RTCRtpReceiver.getCapabilities")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities> {
+        unreachable!()
     }
 }
 
@@ -74395,10 +76497,12 @@ pub struct RTCRtpSender(PhantomData<JsObject>);
 pub mod rtc_rtp_sender {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/getCapabilities)
-        #[link_name = "RTCRtpSender.getCapabilities"]
-        pub safe fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/getCapabilities)
+    #[cfg_attr(rust_js, rust_js::link_name = "RTCRtpSender.getCapabilities")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities> {
+        unreachable!()
     }
 }
 
@@ -74564,10 +76668,12 @@ impl Deref for RTCSctpTransport {
 pub mod rtc_sctp_transport {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `RTCSctpTransport` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCSctpTransport;
+    /// Treats `this` as `RTCSctpTransport` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RTCSctpTransport {
+        unreachable!()
     }
 }
 
@@ -74630,10 +76736,12 @@ pub struct RTCSessionDescription(PhantomData<JsObject>);
 pub mod rtc_session_description {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/RTCSessionDescription)
-        #[link_name = "new RTCSessionDescription"]
-        pub safe fn new(description_init_dict: RTCSessionDescriptionInit) -> &'static RTCSessionDescription;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/RTCSessionDescription)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCSessionDescription")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(description_init_dict: RTCSessionDescriptionInit) -> &'static RTCSessionDescription {
+        unreachable!()
     }
 }
 
@@ -74743,14 +76851,20 @@ impl Deref for RTCTrackEvent {
 pub mod rtc_track_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/RTCTrackEvent)
-        #[link_name = "new RTCTrackEvent"]
-        pub safe fn new(type_: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/RTCTrackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCTrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RTCTrackEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static RTCTrackEvent;
+    /// Treats `this` as `RTCTrackEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static RTCTrackEvent {
+        unreachable!()
     }
 }
 
@@ -74805,14 +76919,20 @@ impl Deref for RadioNodeList {
 pub mod radio_node_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RadioNodeList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &RadioNodeList) -> Box<dyn Iterator<Item = &'static Node>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RadioNodeList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &RadioNodeList) -> Box<dyn Iterator<Item = &'static Node>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `RadioNodeList` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &NodeList) -> &'static RadioNodeList;
+    /// Treats `this` as `RadioNodeList` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &NodeList) -> &'static RadioNodeList {
+        unreachable!()
     }
 }
 
@@ -74863,14 +76983,20 @@ pub mod range {
     /// `Range.END_TO_START`
     pub const END_TO_START: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
-        #[link_name = "new Range"]
-        pub safe fn new() -> &'static Range;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Range")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Range {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Range` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AbstractRange) -> &'static Range;
+    /// Treats `this` as `Range` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AbstractRange) -> &'static Range {
+        unreachable!()
     }
 }
 
@@ -75147,10 +77273,12 @@ pub struct ReadableStreamBYOBReader(PhantomData<JsObject>);
 pub mod readable_stream_byob_reader {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/ReadableStreamBYOBReader)
-        #[link_name = "new ReadableStreamBYOBReader"]
-        pub safe fn new(stream: &ReadableStream) -> &'static ReadableStreamBYOBReader;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/ReadableStreamBYOBReader)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStreamBYOBReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(stream: &ReadableStream) -> &'static ReadableStreamBYOBReader {
+        unreachable!()
     }
 }
 
@@ -75298,10 +77426,12 @@ pub struct ReadableStreamDefaultReader(PhantomData<JsObject>);
 pub mod readable_stream_default_reader {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/ReadableStreamDefaultReader)
-        #[link_name = "new ReadableStreamDefaultReader"]
-        pub safe fn new(stream: &ReadableStream) -> &'static ReadableStreamDefaultReader;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/ReadableStreamDefaultReader)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStreamDefaultReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(stream: &ReadableStream) -> &'static ReadableStreamDefaultReader {
+        unreachable!()
     }
 }
 
@@ -75364,10 +77494,12 @@ impl Deref for RemotePlayback {
 pub mod remote_playback {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `RemotePlayback` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static RemotePlayback;
+    /// Treats `this` as `RemotePlayback` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static RemotePlayback {
+        unreachable!()
     }
 }
 
@@ -75472,14 +77604,20 @@ pub struct ReportingObserver(PhantomData<JsObject>);
 pub mod reporting_observer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
-        #[link_name = "new ReportingObserver"]
-        pub safe fn new(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>) -> &'static ReportingObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>) -> &'static ReportingObserver {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
-        #[link_name = "new ReportingObserver"]
-        pub safe fn new_with_options(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: ReportingObserverOptions<'_>) -> &'static ReportingObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: ReportingObserverOptions<'_>) -> &'static ReportingObserver {
+        unreachable!()
     }
 }
 
@@ -75517,10 +77655,12 @@ pub struct ResizeObserver(PhantomData<JsObject>);
 pub mod resize_observer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
-        #[link_name = "new ResizeObserver"]
-        pub safe fn new(callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ResizeObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver {
+        unreachable!()
     }
 }
 
@@ -76156,10 +78296,12 @@ pub struct SVGLengthList(PhantomData<JsObject>);
 pub mod svg_length_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SVGLengthList) -> Box<dyn Iterator<Item = &'static SVGLength>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SVGLengthList) -> Box<dyn Iterator<Item = &'static SVGLength>> {
+        unreachable!()
     }
 }
 
@@ -76268,10 +78410,12 @@ pub struct SVGNumberList(PhantomData<JsObject>);
 pub mod svg_number_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SVGNumberList) -> Box<dyn Iterator<Item = &'static SVGNumber>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SVGNumberList) -> Box<dyn Iterator<Item = &'static SVGNumber>> {
+        unreachable!()
     }
 }
 
@@ -76357,10 +78501,12 @@ pub struct SVGPointList(PhantomData<JsObject>);
 pub mod svg_point_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SVGPointList) -> Box<dyn Iterator<Item = &'static DOMPoint>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SVGPointList) -> Box<dyn Iterator<Item = &'static DOMPoint>> {
+        unreachable!()
     }
 }
 
@@ -76530,10 +78676,12 @@ pub struct SVGStringList(PhantomData<JsObject>);
 pub mod svg_string_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SVGStringList) -> Box<dyn Iterator<Item = String>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SVGStringList) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
     }
 }
 
@@ -76730,10 +78878,12 @@ pub struct SVGTransformList(PhantomData<JsObject>);
 pub mod svg_transform_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SVGTransformList) -> Box<dyn Iterator<Item = &'static SVGTransform>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SVGTransformList) -> Box<dyn Iterator<Item = &'static SVGTransform>> {
+        unreachable!()
     }
 }
 
@@ -76859,10 +79009,12 @@ pub struct Sanitizer(PhantomData<JsObject>);
 pub mod sanitizer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
-        #[link_name = "new Sanitizer"]
-        pub safe fn new() -> &'static Sanitizer;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Sanitizer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static Sanitizer {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
@@ -77083,10 +79235,12 @@ impl Deref for ScreenOrientation {
 pub mod screen_orientation {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ScreenOrientation` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ScreenOrientation;
+    /// Treats `this` as `ScreenOrientation` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ScreenOrientation {
+        unreachable!()
     }
 }
 
@@ -77158,10 +79312,12 @@ impl Deref for ScriptProcessorNode {
 pub mod script_processor_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ScriptProcessorNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ScriptProcessorNode;
+    /// Treats `this` as `ScriptProcessorNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ScriptProcessorNode {
+        unreachable!()
     }
 }
 
@@ -77209,18 +79365,28 @@ impl Deref for ScrollTimeline {
 pub mod scroll_timeline {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
-        #[link_name = "new ScrollTimeline"]
-        pub safe fn new() -> &'static ScrollTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ScrollTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static ScrollTimeline {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
-        #[link_name = "new ScrollTimeline"]
-        pub safe fn new_with_options(options: ScrollTimelineOptions<'_>) -> &'static ScrollTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ScrollTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(options: ScrollTimelineOptions<'_>) -> &'static ScrollTimeline {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ScrollTimeline` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AnimationTimeline) -> &'static ScrollTimeline;
+    /// Treats `this` as `ScrollTimeline` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AnimationTimeline) -> &'static ScrollTimeline {
+        unreachable!()
     }
 }
 
@@ -77259,18 +79425,28 @@ impl Deref for SecurityPolicyViolationEvent {
 pub mod security_policy_violation_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
-        #[link_name = "new SecurityPolicyViolationEvent"]
-        pub safe fn new(type_: &str) -> &'static SecurityPolicyViolationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static SecurityPolicyViolationEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
-        #[link_name = "new SecurityPolicyViolationEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SecurityPolicyViolationEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SecurityPolicyViolationEvent;
+    /// Treats `this` as `SecurityPolicyViolationEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SecurityPolicyViolationEvent {
+        unreachable!()
     }
 }
 
@@ -77660,10 +79836,12 @@ impl Deref for Serial {
 pub mod serial {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `Serial` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Serial;
+    /// Treats `this` as `Serial` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Serial {
+        unreachable!()
     }
 }
 
@@ -77710,10 +79888,12 @@ impl Deref for SerialPort {
 pub mod serial_port {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SerialPort` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SerialPort;
+    /// Treats `this` as `SerialPort` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SerialPort {
+        unreachable!()
     }
 }
 
@@ -77850,10 +80030,12 @@ impl Deref for ServiceWorker {
 pub mod service_worker {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ServiceWorker` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ServiceWorker;
+    /// Treats `this` as `ServiceWorker` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ServiceWorker {
+        unreachable!()
     }
 }
 
@@ -77934,10 +80116,12 @@ impl Deref for ServiceWorkerContainer {
 pub mod service_worker_container {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ServiceWorkerContainer` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ServiceWorkerContainer;
+    /// Treats `this` as `ServiceWorkerContainer` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ServiceWorkerContainer {
+        unreachable!()
     }
 }
 
@@ -78075,10 +80259,12 @@ impl Deref for ServiceWorkerRegistration {
 pub mod service_worker_registration {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ServiceWorkerRegistration` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ServiceWorkerRegistration;
+    /// Treats `this` as `ServiceWorkerRegistration` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ServiceWorkerRegistration {
+        unreachable!()
     }
 }
 
@@ -78230,10 +80416,12 @@ impl Deref for ShadowRoot {
 pub mod shadow_root {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `ShadowRoot` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static ShadowRoot;
+    /// Treats `this` as `ShadowRoot` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static ShadowRoot {
+        unreachable!()
     }
 }
 
@@ -78449,14 +80637,12 @@ impl Deref for SharedWorker {
 pub mod shared_worker {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
-        #[link_name = "new SharedWorker"]
-        pub safe fn new(script_url: &str) -> &'static SharedWorker;
-
-        /// Treats `this` as `SharedWorker` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SharedWorker;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SharedWorker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(script_url: &str) -> &'static SharedWorker {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
@@ -78464,6 +80650,14 @@ pub mod shared_worker {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_options(script_url: &str, options: impl IntoStrOrSharedWorkerOptions) -> &'static SharedWorker {
+        unreachable!()
+    }
+
+    /// Treats `this` as `SharedWorker` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SharedWorker {
         unreachable!()
     }
 }
@@ -78512,10 +80706,12 @@ impl Deref for SourceBuffer {
 pub mod source_buffer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SourceBuffer` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SourceBuffer;
+    /// Treats `this` as `SourceBuffer` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SourceBuffer {
+        unreachable!()
     }
 }
 
@@ -78735,10 +80931,12 @@ impl Deref for SourceBufferList {
 pub mod source_buffer_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SourceBufferList` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SourceBufferList;
+    /// Treats `this` as `SourceBufferList` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SourceBufferList {
+        unreachable!()
     }
 }
 
@@ -78826,14 +81024,20 @@ impl Deref for SpeechRecognitionErrorEvent {
 pub mod speech_recognition_error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/SpeechRecognitionErrorEvent)
-        #[link_name = "new SpeechRecognitionErrorEvent"]
-        pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/SpeechRecognitionErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SpeechRecognitionErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SpeechRecognitionErrorEvent;
+    /// Treats `this` as `SpeechRecognitionErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SpeechRecognitionErrorEvent {
+        unreachable!()
     }
 }
 
@@ -78872,14 +81076,20 @@ impl Deref for SpeechRecognitionEvent {
 pub mod speech_recognition_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/SpeechRecognitionEvent)
-        #[link_name = "new SpeechRecognitionEvent"]
-        pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/SpeechRecognitionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SpeechRecognitionEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SpeechRecognitionEvent;
+    /// Treats `this` as `SpeechRecognitionEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SpeechRecognitionEvent {
+        unreachable!()
     }
 }
 
@@ -78909,10 +81119,12 @@ pub struct SpeechRecognitionResult(PhantomData<JsObject>);
 pub mod speech_recognition_result {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SpeechRecognitionResult) -> Box<dyn Iterator<Item = &'static SpeechRecognitionAlternative>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SpeechRecognitionResult) -> Box<dyn Iterator<Item = &'static SpeechRecognitionAlternative>> {
+        unreachable!()
     }
 }
 
@@ -78950,10 +81162,12 @@ pub struct SpeechRecognitionResultList(PhantomData<JsObject>);
 pub mod speech_recognition_result_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &SpeechRecognitionResultList) -> Box<dyn Iterator<Item = &'static SpeechRecognitionResult>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &SpeechRecognitionResultList) -> Box<dyn Iterator<Item = &'static SpeechRecognitionResult>> {
+        unreachable!()
     }
 }
 
@@ -78992,10 +81206,12 @@ impl Deref for SpeechSynthesis {
 pub mod speech_synthesis {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `SpeechSynthesis` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SpeechSynthesis;
+    /// Treats `this` as `SpeechSynthesis` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SpeechSynthesis {
+        unreachable!()
     }
 }
 
@@ -79099,14 +81315,20 @@ impl Deref for SpeechSynthesisErrorEvent {
 pub mod speech_synthesis_error_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/SpeechSynthesisErrorEvent)
-        #[link_name = "new SpeechSynthesisErrorEvent"]
-        pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/SpeechSynthesisErrorEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SpeechSynthesisErrorEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SpeechSynthesisErrorEvent;
+    /// Treats `this` as `SpeechSynthesisErrorEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SpeechSynthesisErrorEvent {
+        unreachable!()
     }
 }
 
@@ -79137,14 +81359,20 @@ impl Deref for SpeechSynthesisEvent {
 pub mod speech_synthesis_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/SpeechSynthesisEvent)
-        #[link_name = "new SpeechSynthesisEvent"]
-        pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/SpeechSynthesisEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SpeechSynthesisEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static SpeechSynthesisEvent;
+    /// Treats `this` as `SpeechSynthesisEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static SpeechSynthesisEvent {
+        unreachable!()
     }
 }
 
@@ -79207,18 +81435,28 @@ impl Deref for SpeechSynthesisUtterance {
 pub mod speech_synthesis_utterance {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
-        #[link_name = "new SpeechSynthesisUtterance"]
-        pub safe fn new() -> &'static SpeechSynthesisUtterance;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisUtterance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static SpeechSynthesisUtterance {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
-        #[link_name = "new SpeechSynthesisUtterance"]
-        pub safe fn new_with_text(text: &str) -> &'static SpeechSynthesisUtterance;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisUtterance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_text(text: &str) -> &'static SpeechSynthesisUtterance {
+        unreachable!()
+    }
 
-        /// Treats `this` as `SpeechSynthesisUtterance` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static SpeechSynthesisUtterance;
+    /// Treats `this` as `SpeechSynthesisUtterance` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static SpeechSynthesisUtterance {
+        unreachable!()
     }
 }
 
@@ -79503,14 +81741,20 @@ impl Deref for StaticRange {
 pub mod static_range {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StaticRange/StaticRange)
-        #[link_name = "new StaticRange"]
-        pub safe fn new(init: StaticRangeInit<'_>) -> &'static StaticRange;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StaticRange/StaticRange)
+    #[cfg_attr(rust_js, rust_js::link_name = "new StaticRange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: StaticRangeInit<'_>) -> &'static StaticRange {
+        unreachable!()
+    }
 
-        /// Treats `this` as `StaticRange` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AbstractRange) -> &'static StaticRange;
+    /// Treats `this` as `StaticRange` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AbstractRange) -> &'static StaticRange {
+        unreachable!()
     }
 }
 
@@ -79530,18 +81774,28 @@ impl Deref for StereoPannerNode {
 pub mod stereo_panner_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
-        #[link_name = "new StereoPannerNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static StereoPannerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new StereoPannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static StereoPannerNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
-        #[link_name = "new StereoPannerNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: StereoPannerOptions<'_>) -> &'static StereoPannerNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new StereoPannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: StereoPannerOptions<'_>) -> &'static StereoPannerNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `StereoPannerNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static StereoPannerNode;
+    /// Treats `this` as `StereoPannerNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static StereoPannerNode {
+        unreachable!()
     }
 }
 
@@ -79572,18 +81826,28 @@ impl Deref for StorageEvent {
 pub mod storage_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
-        #[link_name = "new StorageEvent"]
-        pub safe fn new(type_: &str) -> &'static StorageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static StorageEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
-        #[link_name = "new StorageEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: StorageEventInit<'_>) -> &'static StorageEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: StorageEventInit<'_>) -> &'static StorageEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `StorageEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static StorageEvent;
+    /// Treats `this` as `StorageEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static StorageEvent {
+        unreachable!()
     }
 }
 
@@ -79749,10 +82013,12 @@ impl Deref for StylePropertyMap {
 pub mod style_property_map {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `StylePropertyMap` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &StylePropertyMapReadOnly) -> &'static StylePropertyMap;
+    /// Treats `this` as `StylePropertyMap` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &StylePropertyMapReadOnly) -> &'static StylePropertyMap {
+        unreachable!()
     }
 }
 
@@ -79798,10 +82064,12 @@ pub struct StylePropertyMapReadOnly(PhantomData<JsObject>);
 pub mod style_property_map_read_only {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &StylePropertyMapReadOnly) -> Box<dyn Iterator<Item = (String, Vec<&'static CSSStyleValue>)>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &StylePropertyMapReadOnly) -> Box<dyn Iterator<Item = (String, Vec<&'static CSSStyleValue>)>> {
+        unreachable!()
     }
 }
 
@@ -79950,10 +82218,12 @@ pub struct StyleSheetList(PhantomData<JsObject>);
 pub mod style_sheet_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &StyleSheetList) -> Box<dyn Iterator<Item = &'static CSSStyleSheet>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &StyleSheetList) -> Box<dyn Iterator<Item = &'static CSSStyleSheet>> {
+        unreachable!()
     }
 }
 
@@ -80087,18 +82357,28 @@ impl Deref for TaskController {
 pub mod task_controller {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
-        #[link_name = "new TaskController"]
-        pub safe fn new() -> &'static TaskController;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TaskController")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TaskController {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
-        #[link_name = "new TaskController"]
-        pub safe fn new_with_init(init: TaskControllerInit<'_>) -> &'static TaskController;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TaskController")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(init: TaskControllerInit<'_>) -> &'static TaskController {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TaskController` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AbortController) -> &'static TaskController;
+    /// Treats `this` as `TaskController` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AbortController) -> &'static TaskController {
+        unreachable!()
     }
 }
 
@@ -80129,14 +82409,20 @@ impl Deref for TaskPriorityChangeEvent {
 pub mod task_priority_change_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/TaskPriorityChangeEvent)
-        #[link_name = "new TaskPriorityChangeEvent"]
-        pub safe fn new(type_: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/TaskPriorityChangeEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TaskPriorityChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TaskPriorityChangeEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static TaskPriorityChangeEvent;
+    /// Treats `this` as `TaskPriorityChangeEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static TaskPriorityChangeEvent {
+        unreachable!()
     }
 }
 
@@ -80167,18 +82453,28 @@ impl Deref for TaskSignal {
 pub mod task_signal {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/any)
-        #[link_name = "TaskSignal.any"]
-        pub safe fn any(signals: &[&AbortSignal]) -> &'static TaskSignal;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/any)
+    #[cfg_attr(rust_js, rust_js::link_name = "TaskSignal.any")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn any(signals: &[&AbortSignal]) -> &'static TaskSignal {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/any)
-        #[link_name = "TaskSignal.any"]
-        pub safe fn any_with_init(signals: &[&AbortSignal], init: TaskSignalAnyInit<'_>) -> &'static TaskSignal;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/any)
+    #[cfg_attr(rust_js, rust_js::link_name = "TaskSignal.any")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn any_with_init(signals: &[&AbortSignal], init: TaskSignalAnyInit<'_>) -> &'static TaskSignal {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TaskSignal` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static TaskSignal;
+    /// Treats `this` as `TaskSignal` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static TaskSignal {
+        unreachable!()
     }
 }
 
@@ -80217,18 +82513,28 @@ pub struct TextDecoderStream(PhantomData<JsObject>);
 pub mod text_decoder_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
-        #[link_name = "new TextDecoderStream"]
-        pub safe fn new() -> &'static TextDecoderStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TextDecoderStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
-        #[link_name = "new TextDecoderStream"]
-        pub safe fn new_with_label(label: &str) -> &'static TextDecoderStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_label(label: &str) -> &'static TextDecoderStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
-        #[link_name = "new TextDecoderStream"]
-        pub safe fn new_with_label_and_options(label: &str, options: TextDecoderOptions) -> &'static TextDecoderStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_label_and_options(label: &str, options: TextDecoderOptions) -> &'static TextDecoderStream {
+        unreachable!()
     }
 }
 
@@ -80282,10 +82588,12 @@ pub struct TextEncoderStream(PhantomData<JsObject>);
 pub mod text_encoder_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoderStream/TextEncoderStream)
-        #[link_name = "new TextEncoderStream"]
-        pub safe fn new() -> &'static TextEncoderStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoderStream/TextEncoderStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextEncoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TextEncoderStream {
+        unreachable!()
     }
 }
 
@@ -80332,10 +82640,12 @@ impl Deref for TextEvent {
 pub mod text_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `TextEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static TextEvent;
+    /// Treats `this` as `TextEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static TextEvent {
+        unreachable!()
     }
 }
 
@@ -80509,10 +82819,12 @@ impl Deref for TextTrack {
 pub mod text_track {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `TextTrack` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrack;
+    /// Treats `this` as `TextTrack` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static TextTrack {
+        unreachable!()
     }
 }
 
@@ -80640,10 +82952,12 @@ impl Deref for TextTrackCue {
 pub mod text_track_cue {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `TextTrackCue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrackCue;
+    /// Treats `this` as `TextTrackCue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static TextTrackCue {
+        unreachable!()
     }
 }
 
@@ -80763,10 +83077,12 @@ pub struct TextTrackCueList(PhantomData<JsObject>);
 pub mod text_track_cue_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &TextTrackCueList) -> Box<dyn Iterator<Item = &'static TextTrackCue>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &TextTrackCueList) -> Box<dyn Iterator<Item = &'static TextTrackCue>> {
+        unreachable!()
     }
 }
 
@@ -80805,14 +83121,20 @@ impl Deref for TextTrackList {
 pub mod text_track_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &TextTrackList) -> Box<dyn Iterator<Item = &'static TextTrack>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &TextTrackList) -> Box<dyn Iterator<Item = &'static TextTrack>> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TextTrackList` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrackList;
+    /// Treats `this` as `TextTrackList` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static TextTrackList {
+        unreachable!()
     }
 }
 
@@ -80933,18 +83255,28 @@ impl Deref for TrackEvent {
 pub mod track_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
-        #[link_name = "new TrackEvent"]
-        pub safe fn new(type_: &str) -> &'static TrackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static TrackEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
-        #[link_name = "new TrackEvent"]
-        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: TrackEventInit<'_>) -> &'static TrackEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init_dict(type_: &str, event_init_dict: TrackEventInit<'_>) -> &'static TrackEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `TrackEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static TrackEvent;
+    /// Treats `this` as `TrackEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static TrackEvent {
+        unreachable!()
     }
 }
 
@@ -80955,22 +83287,36 @@ pub struct TransformStream(PhantomData<JsObject>);
 pub mod transform_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
-        #[link_name = "new TransformStream"]
-        pub safe fn new() -> &'static TransformStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static TransformStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
-        #[link_name = "new TransformStream"]
-        pub safe fn new_with_transformer(transformer: &dyn core::any::Any) -> &'static TransformStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_transformer(transformer: &dyn core::any::Any) -> &'static TransformStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
-        #[link_name = "new TransformStream"]
-        pub safe fn new_with_transformer_and_writable_strategy(transformer: &dyn core::any::Any, writable_strategy: QueuingStrategy) -> &'static TransformStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_transformer_and_writable_strategy(transformer: &dyn core::any::Any, writable_strategy: QueuingStrategy) -> &'static TransformStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
-        #[link_name = "new TransformStream"]
-        pub safe fn new_with_transformer_and_writable_strategy_and_readable_strategy(transformer: &dyn core::any::Any, writable_strategy: QueuingStrategy, readable_strategy: QueuingStrategy) -> &'static TransformStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_transformer_and_writable_strategy_and_readable_strategy(transformer: &dyn core::any::Any, writable_strategy: QueuingStrategy, readable_strategy: QueuingStrategy) -> &'static TransformStream {
+        unreachable!()
     }
 }
 
@@ -81321,14 +83667,12 @@ pub struct URLSearchParams(PhantomData<JsObject>);
 pub mod url_search_params {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
-        #[link_name = "new URLSearchParams"]
-        pub safe fn new() -> &'static URLSearchParams;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &URLSearchParams) -> Box<dyn Iterator<Item = (String, String)>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static URLSearchParams {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
@@ -81336,6 +83680,14 @@ pub mod url_search_params {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_init(init: impl IntoListOrStr) -> &'static URLSearchParams {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter(items: &URLSearchParams) -> Box<dyn Iterator<Item = (String, String)>> {
         unreachable!()
     }
 }
@@ -81502,14 +83854,20 @@ impl Deref for VTTCue {
 pub mod vtt_cue {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/VTTCue)
-        #[link_name = "new VTTCue"]
-        pub safe fn new(start_time: f64, end_time: f64, text: &str) -> &'static VTTCue;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/VTTCue)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VTTCue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(start_time: f64, end_time: f64, text: &str) -> &'static VTTCue {
+        unreachable!()
+    }
 
-        /// Treats `this` as `VTTCue` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static VTTCue;
+    /// Treats `this` as `VTTCue` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static VTTCue {
+        unreachable!()
     }
 }
 
@@ -81691,10 +84049,12 @@ pub struct VTTRegion(PhantomData<JsObject>);
 pub mod vtt_region {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/VTTRegion)
-        #[link_name = "new VTTRegion"]
-        pub safe fn new() -> &'static VTTRegion;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/VTTRegion)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VTTRegion")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static VTTRegion {
+        unreachable!()
     }
 }
 
@@ -81931,14 +84291,20 @@ pub struct VideoColorSpace(PhantomData<JsObject>);
 pub mod video_color_space {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
-        #[link_name = "new VideoColorSpace"]
-        pub safe fn new() -> &'static VideoColorSpace;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoColorSpace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static VideoColorSpace {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
-        #[link_name = "new VideoColorSpace"]
-        pub safe fn new_with_init(init: VideoColorSpaceInit) -> &'static VideoColorSpace;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoColorSpace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(init: VideoColorSpaceInit) -> &'static VideoColorSpace {
+        unreachable!()
     }
 }
 
@@ -82001,18 +84367,28 @@ impl Deref for VideoDecoder {
 pub mod video_decoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
-        #[link_name = "new VideoDecoder"]
-        pub safe fn new(init: VideoDecoderInit<'_>) -> &'static VideoDecoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: VideoDecoderInit<'_>) -> &'static VideoDecoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/isConfigSupported)
-        #[link_name = "VideoDecoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: VideoDecoderConfig) -> Promise<VideoDecoderSupport>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/isConfigSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "VideoDecoder.isConfigSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_config_supported(config: VideoDecoderConfig) -> Promise<VideoDecoderSupport> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `VideoDecoder` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static VideoDecoder;
+    /// Treats `this` as `VideoDecoder` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static VideoDecoder {
+        unreachable!()
     }
 }
 
@@ -82108,18 +84484,28 @@ impl Deref for VideoEncoder {
 pub mod video_encoder {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
-        #[link_name = "new VideoEncoder"]
-        pub safe fn new(init: VideoEncoderInit<'_>) -> &'static VideoEncoder;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(init: VideoEncoderInit<'_>) -> &'static VideoEncoder {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/isConfigSupported)
-        #[link_name = "VideoEncoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: VideoEncoderConfig) -> Promise<VideoEncoderSupport>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/isConfigSupported)
+    #[cfg_attr(rust_js, rust_js::link_name = "VideoEncoder.isConfigSupported")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_config_supported(config: VideoEncoderConfig) -> Promise<VideoEncoderSupport> {
+        unreachable!()
+    }
 
-        /// Treats `this` as `VideoEncoder` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static VideoEncoder;
+    /// Treats `this` as `VideoEncoder` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static VideoEncoder {
+        unreachable!()
     }
 }
 
@@ -82417,18 +84803,28 @@ impl Deref for ViewTimeline {
 pub mod view_timeline {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
-        #[link_name = "new ViewTimeline"]
-        pub safe fn new() -> &'static ViewTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ViewTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static ViewTimeline {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
-        #[link_name = "new ViewTimeline"]
-        pub safe fn new_with_options(options: ViewTimelineOptions<'_>) -> &'static ViewTimeline;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ViewTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(options: ViewTimelineOptions<'_>) -> &'static ViewTimeline {
+        unreachable!()
+    }
 
-        /// Treats `this` as `ViewTimeline` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &AnimationTimeline) -> &'static ViewTimeline;
+    /// Treats `this` as `ViewTimeline` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &AnimationTimeline) -> &'static ViewTimeline {
+        unreachable!()
     }
 }
 
@@ -82601,10 +84997,12 @@ impl Deref for VisualViewport {
 pub mod visual_viewport {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `VisualViewport` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static VisualViewport;
+    /// Treats `this` as `VisualViewport` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static VisualViewport {
+        unreachable!()
     }
 }
 
@@ -82812,10 +85210,12 @@ impl Deref for WakeLockSentinel {
 pub mod wake_lock_sentinel {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `WakeLockSentinel` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static WakeLockSentinel;
+    /// Treats `this` as `WakeLockSentinel` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static WakeLockSentinel {
+        unreachable!()
     }
 }
 
@@ -82879,18 +85279,28 @@ impl Deref for WaveShaperNode {
 pub mod wave_shaper_node {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
-        #[link_name = "new WaveShaperNode"]
-        pub safe fn new(context: &BaseAudioContext) -> &'static WaveShaperNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WaveShaperNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(context: &BaseAudioContext) -> &'static WaveShaperNode {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
-        #[link_name = "new WaveShaperNode"]
-        pub safe fn new_with_options(context: &BaseAudioContext, options: WaveShaperOptions<'_>) -> &'static WaveShaperNode;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WaveShaperNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(context: &BaseAudioContext, options: WaveShaperOptions<'_>) -> &'static WaveShaperNode {
+        unreachable!()
+    }
 
-        /// Treats `this` as `WaveShaperNode` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static WaveShaperNode;
+    /// Treats `this` as `WaveShaperNode` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static WaveShaperNode {
+        unreachable!()
     }
 }
 
@@ -87161,18 +89571,28 @@ impl Deref for WebGLContextEvent {
 pub mod web_gl_context_event {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
-        #[link_name = "new WebGLContextEvent"]
-        pub safe fn new(type_: &str) -> &'static WebGLContextEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(type_: &str) -> &'static WebGLContextEvent {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
-        #[link_name = "new WebGLContextEvent"]
-        pub safe fn new_with_event_init(type_: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_event_init(type_: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent {
+        unreachable!()
+    }
 
-        /// Treats `this` as `WebGLContextEvent` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &Event) -> &'static WebGLContextEvent;
+    /// Treats `this` as `WebGLContextEvent` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &Event) -> &'static WebGLContextEvent {
+        unreachable!()
     }
 }
 
@@ -89359,14 +91779,12 @@ pub mod web_socket {
     /// `WebSocket.CLOSED`
     pub const CLOSED: u16 = 3;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
-        #[link_name = "new WebSocket"]
-        pub safe fn new(url: &str) -> &'static WebSocket;
-
-        /// Treats `this` as `WebSocket` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static WebSocket;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(url: &str) -> &'static WebSocket {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
@@ -89374,6 +91792,14 @@ pub mod web_socket {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_with_protocols(url: &str, protocols: impl IntoStrOrList) -> &'static WebSocket {
+        unreachable!()
+    }
+
+    /// Treats `this` as `WebSocket` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static WebSocket {
         unreachable!()
     }
 }
@@ -89544,14 +91970,20 @@ pub struct WebTransport(PhantomData<JsObject>);
 pub mod web_transport {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
-        #[link_name = "new WebTransport"]
-        pub safe fn new(url: &str) -> &'static WebTransport;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(url: &str) -> &'static WebTransport {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
-        #[link_name = "new WebTransport"]
-        pub safe fn new_with_options(url: &str, options: WebTransportOptions<'_>) -> &'static WebTransport;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(url: &str, options: WebTransportOptions<'_>) -> &'static WebTransport {
+        unreachable!()
     }
 }
 
@@ -89772,22 +92204,36 @@ impl Deref for WebTransportError {
 pub mod web_transport_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
-        #[link_name = "new WebTransportError"]
-        pub safe fn new() -> &'static WebTransportError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static WebTransportError {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
-        #[link_name = "new WebTransportError"]
-        pub safe fn new_with_message(message: &str) -> &'static WebTransportError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message(message: &str) -> &'static WebTransportError {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
-        #[link_name = "new WebTransportError"]
-        pub safe fn new_with_message_and_options(message: &str, options: WebTransportErrorOptions<'_>) -> &'static WebTransportError;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_message_and_options(message: &str, options: WebTransportErrorOptions<'_>) -> &'static WebTransportError {
+        unreachable!()
+    }
 
-        /// Treats `this` as `WebTransportError` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &DOMException) -> &'static WebTransportError;
+    /// Treats `this` as `WebTransportError` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &DOMException) -> &'static WebTransportError {
+        unreachable!()
     }
 }
 
@@ -89826,10 +92272,12 @@ impl Deref for WebTransportReceiveStream {
 pub mod web_transport_receive_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `WebTransportReceiveStream` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &ReadableStream) -> &'static WebTransportReceiveStream;
+    /// Treats `this` as `WebTransportReceiveStream` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &ReadableStream) -> &'static WebTransportReceiveStream {
+        unreachable!()
     }
 }
 
@@ -89860,10 +92308,12 @@ impl Deref for WebTransportSendStream {
 pub mod web_transport_send_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `WebTransportSendStream` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &WritableStream) -> &'static WebTransportSendStream;
+    /// Treats `this` as `WebTransportSendStream` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &WritableStream) -> &'static WebTransportSendStream {
+        unreachable!()
     }
 }
 
@@ -89910,18 +92360,28 @@ impl Deref for Worker {
 pub mod worker {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
-        #[link_name = "new Worker"]
-        pub safe fn new(script_url: &str) -> &'static Worker;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Worker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(script_url: &str) -> &'static Worker {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
-        #[link_name = "new Worker"]
-        pub safe fn new_with_options(script_url: &str, options: WorkerOptions<'_>) -> &'static Worker;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Worker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(script_url: &str, options: WorkerOptions<'_>) -> &'static Worker {
+        unreachable!()
+    }
 
-        /// Treats `this` as `Worker` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static Worker;
+    /// Treats `this` as `Worker` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static Worker {
+        unreachable!()
     }
 }
 
@@ -90025,18 +92485,28 @@ pub struct WritableStream(PhantomData<JsObject>);
 pub mod writable_stream {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
-        #[link_name = "new WritableStream"]
-        pub safe fn new() -> &'static WritableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static WritableStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
-        #[link_name = "new WritableStream"]
-        pub safe fn new_with_underlying_sink(underlying_sink: &dyn core::any::Any) -> &'static WritableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_underlying_sink(underlying_sink: &dyn core::any::Any) -> &'static WritableStream {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
-        #[link_name = "new WritableStream"]
-        pub safe fn new_with_underlying_sink_and_strategy(underlying_sink: &dyn core::any::Any, strategy: QueuingStrategy) -> &'static WritableStream;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_underlying_sink_and_strategy(underlying_sink: &dyn core::any::Any, strategy: QueuingStrategy) -> &'static WritableStream {
+        unreachable!()
     }
 }
 
@@ -90121,10 +92591,12 @@ pub struct WritableStreamDefaultWriter(PhantomData<JsObject>);
 pub mod writable_stream_default_writer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/WritableStreamDefaultWriter)
-        #[link_name = "new WritableStreamDefaultWriter"]
-        pub safe fn new(stream: &WritableStream) -> &'static WritableStreamDefaultWriter;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/WritableStreamDefaultWriter)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStreamDefaultWriter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(stream: &WritableStream) -> &'static WritableStreamDefaultWriter {
+        unreachable!()
     }
 }
 
@@ -90219,10 +92691,12 @@ impl Deref for XMLDocument {
 pub mod xml_document {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `XMLDocument` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static XMLDocument;
+    /// Treats `this` as `XMLDocument` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static XMLDocument {
+        unreachable!()
     }
 }
 
@@ -90257,14 +92731,20 @@ pub mod xml_http_request {
     /// `XMLHttpRequest.DONE`
     pub const DONE: u16 = 4;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
-        #[link_name = "new XMLHttpRequest"]
-        pub safe fn new() -> &'static XMLHttpRequest;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
+    #[cfg_attr(rust_js, rust_js::link_name = "new XMLHttpRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static XMLHttpRequest {
+        unreachable!()
+    }
 
-        /// Treats `this` as `XMLHttpRequest` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequest;
+    /// Treats `this` as `XMLHttpRequest` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequest {
+        unreachable!()
     }
 }
 
@@ -90504,10 +92984,12 @@ impl Deref for XMLHttpRequestEventTarget {
 pub mod xml_http_request_event_target {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `XMLHttpRequestEventTarget` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequestEventTarget;
+    /// Treats `this` as `XMLHttpRequestEventTarget` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequestEventTarget {
+        unreachable!()
     }
 }
 
@@ -90649,10 +93131,12 @@ impl Deref for XMLHttpRequestUpload {
 pub mod xml_http_request_upload {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// Treats `this` as `XMLHttpRequestUpload` without checking that it is one.
-        #[link_name = "this"]
-        pub safe fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequestUpload;
+    /// Treats `this` as `XMLHttpRequestUpload` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequestUpload {
+        unreachable!()
     }
 }
 
@@ -90663,10 +93147,12 @@ pub struct XMLSerializer(PhantomData<JsObject>);
 pub mod xml_serializer {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLSerializer/XMLSerializer)
-        #[link_name = "new XMLSerializer"]
-        pub safe fn new() -> &'static XMLSerializer;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLSerializer/XMLSerializer)
+    #[cfg_attr(rust_js, rust_js::link_name = "new XMLSerializer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static XMLSerializer {
+        unreachable!()
     }
 }
 
@@ -90688,10 +93174,12 @@ pub struct XPathEvaluator(PhantomData<JsObject>);
 pub mod x_path_evaluator {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathEvaluator/XPathEvaluator)
-        #[link_name = "new XPathEvaluator"]
-        pub safe fn new() -> &'static XPathEvaluator;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathEvaluator/XPathEvaluator)
+    #[cfg_attr(rust_js, rust_js::link_name = "new XPathEvaluator")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static XPathEvaluator {
+        unreachable!()
     }
 }
 
@@ -90872,10 +93360,12 @@ pub struct XSLTProcessor(PhantomData<JsObject>);
 pub mod xslt_processor {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/XSLTProcessor)
-        #[link_name = "new XSLTProcessor"]
-        pub safe fn new() -> &'static XSLTProcessor;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/XSLTProcessor)
+    #[cfg_attr(rust_js, rust_js::link_name = "new XSLTProcessor")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new() -> &'static XSLTProcessor {
+        unreachable!()
     }
 }
 
@@ -90951,34 +93441,44 @@ impl XSLTProcessor {
 pub mod web_assembly {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
-        #[link_name = "WebAssembly.compileStreaming"]
-        pub safe fn compile_streaming(source: Promise<&'static Response>) -> Promise<&'static WebAssemblyModule>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile_streaming(source: Promise<&'static Response>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
-        #[link_name = "WebAssembly.compileStreaming"]
-        pub safe fn compile_streaming_with_options(source: Promise<&'static Response>, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile_streaming_with_options(source: Promise<&'static Response>, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-        #[link_name = "WebAssembly.instantiateStreaming"]
-        pub safe fn instantiate_streaming(source: Promise<&'static Response>) -> Promise<WebAssemblyInstantiatedSource>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming(source: Promise<&'static Response>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-        #[link_name = "WebAssembly.instantiateStreaming"]
-        pub safe fn instantiate_streaming_with_import_object(source: Promise<&'static Response>, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming_with_import_object(source: Promise<&'static Response>, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-        #[link_name = "WebAssembly.instantiateStreaming"]
-        pub safe fn instantiate_streaming_with_import_object_and_options(source: Promise<&'static Response>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-        #[link_name = "WebAssembly.instantiate"]
-        pub safe fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule) -> Promise<&'static WebAssemblyInstance>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-        #[link_name = "WebAssembly.instantiate"]
-        pub safe fn instantiate_with_web_assembly_module_and_import_object(module_object: &WebAssemblyModule, import_object: &dyn core::any::Any) -> Promise<&'static WebAssemblyInstance>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming_with_import_object_and_options(source: Promise<&'static Response>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
@@ -91036,76 +93536,50 @@ pub mod web_assembly {
     pub fn instantiate_with_import_object_and_options(bytes: impl IntoAllowSharedBufferSource, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource> {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule) -> Promise<&'static WebAssemblyInstance> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_with_web_assembly_module_and_import_object(module_object: &WebAssemblyModule, import_object: &dyn core::any::Any) -> Promise<&'static WebAssemblyInstance> {
+        unreachable!()
+    }
 }
 
 /// The [`console`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console) namespace.
 
 pub mod console {
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
-        #[link_name = "console.assert"]
-        pub safe fn assert();
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn assert() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
-        #[link_name = "console.assert"]
-        pub safe fn assert_with_condition(condition: bool);
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn assert_with_condition(condition: bool) {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/clear)
-        #[link_name = "console.clear"]
-        pub safe fn clear();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/table)
-        #[link_name = "console.table"]
-        pub safe fn table();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dir)
-        #[link_name = "console.dir"]
-        pub safe fn dir();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
-        #[link_name = "console.count"]
-        pub safe fn count();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
-        #[link_name = "console.count"]
-        pub safe fn count_with_label(label: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
-        #[link_name = "console.countReset"]
-        pub safe fn count_reset();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
-        #[link_name = "console.countReset"]
-        pub safe fn count_reset_with_label(label: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupEnd)
-        #[link_name = "console.groupEnd"]
-        pub safe fn group_end();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
-        #[link_name = "console.time"]
-        pub safe fn time();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
-        #[link_name = "console.time"]
-        pub safe fn time_with_label(label: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
-        #[link_name = "console.timeLog"]
-        pub safe fn time_log();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
-        #[link_name = "console.timeLog"]
-        pub safe fn time_log_with_label(label: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
-        #[link_name = "console.timeEnd"]
-        pub safe fn time_end();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
-        #[link_name = "console.timeEnd"]
-        pub safe fn time_end_with_label(label: &str);
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/clear)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.clear")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn clear() {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/debug)
@@ -91137,6 +93611,14 @@ pub mod console {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn log<D>(data: D) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/table)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.table")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn table() {
         unreachable!()
     }
 
@@ -91176,6 +93658,14 @@ pub mod console {
     #[cfg_attr(rust_js, rust_js::link_name = "console.dir")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
+    pub fn dir() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dir)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.dir")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn dir_with_item<I>(item: I) {
         unreachable!()
     }
@@ -91196,6 +93686,38 @@ pub mod console {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.count")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn count() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.count")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn count_with_label(label: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.countReset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn count_reset() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.countReset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn count_reset_with_label(label: &str) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/group)
     #[cfg_attr(rust_js, rust_js::link_name = "console.group")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -91211,24 +93733,68 @@ pub mod console {
     pub fn group_collapsed<D>(data: D) {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupEnd)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.groupEnd")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn group_end() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.time")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.time")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_with_label(label: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.timeLog")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_log() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.timeLog")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_log_with_label(label: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.timeEnd")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_end() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
+    #[cfg_attr(rust_js, rust_js::link_name = "console.timeEnd")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_end_with_label(label: &str) {
+        unreachable!()
+    }
 }
 
 /// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.
 
 pub mod global {
     use super::*;
-
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/btoa)
-        pub safe fn btoa(data: &str) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/atob)
-        pub safe fn atob(data: &str) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/queueMicrotask)
-        #[link_name = "queueMicrotask"]
-        pub safe fn queue_microtask(callback: Box<dyn FnMut()>);
-    }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch)
     #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
@@ -91251,6 +93817,30 @@ pub mod global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn report_error<E>(e: E) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/btoa)
+    #[cfg_attr(rust_js, rust_js::link_name = "btoa")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn btoa(data: &str) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/atob)
+    #[cfg_attr(rust_js, rust_js::link_name = "atob")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn atob(data: &str) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/queueMicrotask)
+    #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn queue_microtask(callback: Box<dyn FnMut()>) {
         unreachable!()
     }
 
@@ -91300,156 +93890,156 @@ pub mod global {
 pub mod window_global {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
-        #[link_name = "getSelection"]
-        pub safe fn get_selection() -> Option<&'static Selection>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
+    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_selection() -> Option<&'static Selection> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
-        #[link_name = "getComputedStyle"]
-        pub safe fn get_computed_style(elt: &Element) -> &'static CSSStyleProperties;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_computed_style(elt: &Element) -> &'static CSSStyleProperties {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
-        #[link_name = "getComputedStyle"]
-        pub safe fn get_computed_style_with_pseudo_elt(elt: &Element, pseudo_elt: &str) -> &'static CSSStyleProperties;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_computed_style_with_pseudo_elt(elt: &Element, pseudo_elt: &str) -> &'static CSSStyleProperties {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
-        pub safe fn close();
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
+    #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn close() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/stop)
-        pub safe fn stop();
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/stop)
+    #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn stop() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/focus)
-        pub safe fn focus();
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/focus)
+    #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn focus() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/blur)
-        pub safe fn blur();
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/blur)
+    #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn blur() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
-        pub safe fn open() -> Option<&'static Window>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+    #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn open() -> Option<&'static Window> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
-        #[link_name = "open"]
-        pub safe fn open_with_url(url: &str) -> Option<&'static Window>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+    #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn open_with_url(url: &str) -> Option<&'static Window> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
-        #[link_name = "open"]
-        pub safe fn open_with_url_and_target(url: &str, target: &str) -> Option<&'static Window>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+    #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn open_with_url_and_target(url: &str, target: &str) -> Option<&'static Window> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
-        #[link_name = "open"]
-        pub safe fn open_with_url_and_target_and_features(url: &str, target: &str, features: &str) -> Option<&'static Window>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+    #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn open_with_url_and_target_and_features(url: &str, target: &str, features: &str) -> Option<&'static Window> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
-        pub safe fn alert();
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
+    #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alert() {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
-        #[link_name = "alert"]
-        pub safe fn alert_with_message(message: &str);
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
+    #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alert_with_message(message: &str) {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
-        pub safe fn confirm() -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
+    #[cfg_attr(rust_js, rust_js::link_name = "confirm")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn confirm() -> bool {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
-        #[link_name = "confirm"]
-        pub safe fn confirm_with_message(message: &str) -> bool;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
+    #[cfg_attr(rust_js, rust_js::link_name = "confirm")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn confirm_with_message(message: &str) -> bool {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
-        pub safe fn prompt() -> Option<String>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+    #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prompt() -> Option<String> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
-        #[link_name = "prompt"]
-        pub safe fn prompt_with_message(message: &str) -> Option<String>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+    #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prompt_with_message(message: &str) -> Option<String> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
-        #[link_name = "prompt"]
-        pub safe fn prompt_with_message_and_default(message: &str, default: &str) -> Option<String>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+    #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prompt_with_message_and_default(message: &str, default: &str) -> Option<String> {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/print)
-        pub safe fn print();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/captureEvents)
-        #[link_name = "captureEvents"]
-        pub safe fn capture_events();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/releaseEvents)
-        #[link_name = "releaseEvents"]
-        pub safe fn release_events();
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
-        #[link_name = "requestIdleCallback"]
-        pub safe fn request_idle_callback(callback: Box<dyn FnMut(&IdleDeadline)>) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
-        #[link_name = "requestIdleCallback"]
-        pub safe fn request_idle_callback_with_options(callback: Box<dyn FnMut(&IdleDeadline)>, options: IdleRequestOptions) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelIdleCallback)
-        #[link_name = "cancelIdleCallback"]
-        pub safe fn cancel_idle_callback(handle: u32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
-        #[link_name = "matchMedia"]
-        pub safe fn match_media(query: &str) -> &'static MediaQueryList;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
-        #[link_name = "moveTo"]
-        pub safe fn move_to(x: i32, y: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
-        #[link_name = "moveBy"]
-        pub safe fn move_by(x: i32, y: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
-        #[link_name = "resizeTo"]
-        pub safe fn resize_to(width: i32, height: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
-        #[link_name = "resizeBy"]
-        pub safe fn resize_by(x: i32, y: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-        pub safe fn scroll() -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-        #[link_name = "scroll"]
-        pub safe fn scroll_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-        #[link_name = "scroll"]
-        pub safe fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-        #[link_name = "scrollTo"]
-        pub safe fn scroll_to() -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-        #[link_name = "scrollTo"]
-        pub safe fn scroll_to_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-        #[link_name = "scrollTo"]
-        pub safe fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-        #[link_name = "scrollBy"]
-        pub safe fn scroll_by() -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-        #[link_name = "scrollBy"]
-        pub safe fn scroll_by_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-        #[link_name = "scrollBy"]
-        pub safe fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
-        #[link_name = "requestAnimationFrame"]
-        pub safe fn request_animation_frame(callback: Box<dyn FnMut(f64)>) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
-        #[link_name = "cancelAnimationFrame"]
-        pub safe fn cancel_animation_frame(handle: u32);
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/print)
+    #[cfg_attr(rust_js, rust_js::link_name = "print")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn print() {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
@@ -91473,6 +94063,174 @@ pub mod window_global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message_with_options<M: StructuredClone>(message: M, options: WindowPostMessageOptions<'_>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/captureEvents)
+    #[cfg_attr(rust_js, rust_js::link_name = "captureEvents")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn capture_events() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/releaseEvents)
+    #[cfg_attr(rust_js, rust_js::link_name = "releaseEvents")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn release_events() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_idle_callback(callback: Box<dyn FnMut(&IdleDeadline)>) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_idle_callback_with_options(callback: Box<dyn FnMut(&IdleDeadline)>, options: IdleRequestOptions) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelIdleCallback)
+    #[cfg_attr(rust_js, rust_js::link_name = "cancelIdleCallback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancel_idle_callback(handle: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
+    #[cfg_attr(rust_js, rust_js::link_name = "matchMedia")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_media(query: &str) -> &'static MediaQueryList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_to(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_by(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_to(width: i32, height: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_by(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_animation_frame(callback: Box<dyn FnMut(f64)>) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "cancelAnimationFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancel_animation_frame(handle: u32) {
         unreachable!()
     }
 }

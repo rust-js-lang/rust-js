@@ -6,71 +6,6 @@ use core::marker::PhantomData;
 use js::JsObject;
 
 unsafe extern "Rust" {
-    /// [`path.normalize(path)`](https://nodejs.org/api/path.html#pathnormalizepath):
-    /// `path`, its `..` and `.` and repeated separators resolved.
-    #[link_name = "path#normalize"]
-    pub safe fn normalize(path: &str) -> String;
-
-    /// [`path.join(...paths)`](https://nodejs.org/api/path.html#pathjoinpaths):
-    /// `paths`, joined by the separator, and normalized.
-    #[link_name = "path#join"]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    pub safe fn join(paths: &[&str]) -> String;
-
-    /// [`path.resolve(...paths)`](https://nodejs.org/api/path.html#pathresolvepaths):
-    /// the absolute path `paths` make, right to left, from the working
-    /// directory.
-    #[link_name = "path#resolve"]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    pub safe fn resolve(paths: &[&str]) -> String;
-
-    /// [`path.matchesGlob(path, pattern)`](https://nodejs.org/api/path.html#pathmatchesglobpath-pattern):
-    /// whether `path` matches the glob `pattern`.
-    #[link_name = "path#matchesGlob"]
-    pub safe fn matches_glob(path: &str, pattern: &str) -> bool;
-
-    /// [`path.isAbsolute(path)`](https://nodejs.org/api/path.html#pathisabsolutepath).
-    #[link_name = "path#isAbsolute"]
-    pub safe fn is_absolute(path: &str) -> bool;
-
-    /// [`path.relative(from, to)`](https://nodejs.org/api/path.html#pathrelativefrom-to):
-    /// the path from `from` to `to`.
-    #[link_name = "path#relative"]
-    pub safe fn relative(from: &str, to: &str) -> String;
-
-    /// [`path.dirname(path)`](https://nodejs.org/api/path.html#pathdirnamepath):
-    /// the directory `path` is in.
-    #[link_name = "path#dirname"]
-    pub safe fn dirname(path: &str) -> String;
-
-    /// [`path.basename(path)`](https://nodejs.org/api/path.html#pathbasenamepath-suffix):
-    /// `path`'s last part.
-    #[link_name = "path#basename"]
-    pub safe fn basename(path: &str) -> String;
-
-    /// `path.basename(path, suffix)`: `path`'s last part, without `suffix`.
-    #[link_name = "path#basename"]
-    pub safe fn basename_with_suffix(path: &str, suffix: &str) -> String;
-
-    /// [`path.extname(path)`](https://nodejs.org/api/path.html#pathextnamepath):
-    /// `path`'s extension, from its last `.`, `".md"`, or `""`.
-    #[link_name = "path#extname"]
-    pub safe fn extname(path: &str) -> String;
-
-    /// [`path.parse(path)`](https://nodejs.org/api/path.html#pathparsepath):
-    /// `path`'s parts.
-    #[link_name = "path#parse"]
-    pub safe fn parse(path: &str) -> ParsedPath;
-
-    /// [`path.format(pathObject)`](https://nodejs.org/api/path.html#pathformatpathobject):
-    /// the path of `path_object`'s parts.
-    #[link_name = "path#format"]
-    pub safe fn format(path_object: FormatInputPathObject<'_>) -> String;
-
-    /// [`path.toNamespacedPath(path)`](https://nodejs.org/api/path.html#pathtonamespacedpathpath):
-    /// on Windows, `path` as a namespace-prefixed path; elsewhere `path`.
-    #[link_name = "path#toNamespacedPath"]
-    pub safe fn to_namespaced_path(path: &str) -> String;
 
     /// [`path.sep`](https://nodejs.org/api/path.html#pathsep): the separator
     /// of a path's parts, `"/"` or `"\\"`.
@@ -95,6 +30,98 @@ unsafe extern "Rust" {
     #[link_name = "path#win32"]
     #[allow(non_upper_case_globals)]
     pub safe static win32: &'static PlatformPath;
+}
+
+/// [`path.normalize(path)`](https://nodejs.org/api/path.html#pathnormalizepath):
+/// `path`, its `..` and `.` and repeated separators resolved.
+#[cfg_attr(rust_js, rust_js::link_name = "path#normalize")]
+pub fn normalize(path: &str) -> String {
+    unreachable!()
+}
+
+/// [`path.join(...paths)`](https://nodejs.org/api/path.html#pathjoinpaths):
+/// `paths`, joined by the separator, and normalized.
+#[cfg_attr(rust_js, rust_js::link_name = "path#join")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+pub fn join(paths: &[&str]) -> String {
+    unreachable!()
+}
+
+/// [`path.resolve(...paths)`](https://nodejs.org/api/path.html#pathresolvepaths):
+/// the absolute path `paths` make, right to left, from the working
+/// directory.
+#[cfg_attr(rust_js, rust_js::link_name = "path#resolve")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+pub fn resolve(paths: &[&str]) -> String {
+    unreachable!()
+}
+
+/// [`path.matchesGlob(path, pattern)`](https://nodejs.org/api/path.html#pathmatchesglobpath-pattern):
+/// whether `path` matches the glob `pattern`.
+#[cfg_attr(rust_js, rust_js::link_name = "path#matchesGlob")]
+pub fn matches_glob(path: &str, pattern: &str) -> bool {
+    unreachable!()
+}
+
+/// [`path.isAbsolute(path)`](https://nodejs.org/api/path.html#pathisabsolutepath).
+#[cfg_attr(rust_js, rust_js::link_name = "path#isAbsolute")]
+pub fn is_absolute(path: &str) -> bool {
+    unreachable!()
+}
+
+/// [`path.relative(from, to)`](https://nodejs.org/api/path.html#pathrelativefrom-to):
+/// the path from `from` to `to`.
+#[cfg_attr(rust_js, rust_js::link_name = "path#relative")]
+pub fn relative(from: &str, to: &str) -> String {
+    unreachable!()
+}
+
+/// [`path.dirname(path)`](https://nodejs.org/api/path.html#pathdirnamepath):
+/// the directory `path` is in.
+#[cfg_attr(rust_js, rust_js::link_name = "path#dirname")]
+pub fn dirname(path: &str) -> String {
+    unreachable!()
+}
+
+/// [`path.basename(path)`](https://nodejs.org/api/path.html#pathbasenamepath-suffix):
+/// `path`'s last part.
+#[cfg_attr(rust_js, rust_js::link_name = "path#basename")]
+pub fn basename(path: &str) -> String {
+    unreachable!()
+}
+
+/// `path.basename(path, suffix)`: `path`'s last part, without `suffix`.
+#[cfg_attr(rust_js, rust_js::link_name = "path#basename")]
+pub fn basename_with_suffix(path: &str, suffix: &str) -> String {
+    unreachable!()
+}
+
+/// [`path.extname(path)`](https://nodejs.org/api/path.html#pathextnamepath):
+/// `path`'s extension, from its last `.`, `".md"`, or `""`.
+#[cfg_attr(rust_js, rust_js::link_name = "path#extname")]
+pub fn extname(path: &str) -> String {
+    unreachable!()
+}
+
+/// [`path.parse(path)`](https://nodejs.org/api/path.html#pathparsepath):
+/// `path`'s parts.
+#[cfg_attr(rust_js, rust_js::link_name = "path#parse")]
+pub fn parse(path: &str) -> ParsedPath {
+    unreachable!()
+}
+
+/// [`path.format(pathObject)`](https://nodejs.org/api/path.html#pathformatpathobject):
+/// the path of `path_object`'s parts.
+#[cfg_attr(rust_js, rust_js::link_name = "path#format")]
+pub fn format(path_object: FormatInputPathObject<'_>) -> String {
+    unreachable!()
+}
+
+/// [`path.toNamespacedPath(path)`](https://nodejs.org/api/path.html#pathtonamespacedpathpath):
+/// on Windows, `path` as a namespace-prefixed path; elsewhere `path`.
+#[cfg_attr(rust_js, rust_js::link_name = "path#toNamespacedPath")]
+pub fn to_namespaced_path(path: &str) -> String {
+    unreachable!()
 }
 
 /// What [`parse`] gives: a path's parts.

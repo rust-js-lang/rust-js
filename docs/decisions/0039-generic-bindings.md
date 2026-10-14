@@ -104,3 +104,7 @@ impl<T> SetState<T> {
 - rust-js needs a nightly rustc, which it already does (`rustc_private`),
   and so do libraries of generic bindings, as `web` already does.
 - A binding's body must still type-check, which is why it's `unreachable!()`.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

@@ -38,75 +38,177 @@ pub struct Wasi(PhantomData<JsObject>);
 // that native code would see one symbol. A directory's contents are a JS
 // `Map`, which a `HashMap` is.
 #[allow(clashing_extern_declarations)]
-unsafe extern "Rust" {
-    #[link_name = "new @bjorn3/browser_wasi_shim#File"]
-    safe fn new_file(data: &Uint8Array, options: &dyn std::any::Any) -> &'static WasiFile;
-    #[link_name = "get data"]
-    safe fn file_data(this: &WasiFile) -> &'static Uint8Array;
-    #[link_name = "json"]
-    safe fn names_json(this: &Response) -> Promise<Vec<String>>;
-    #[link_name = "json"]
-    safe fn examples_json(this: &Response) -> Promise<Vec<Example>>;
-    #[link_name = "json"]
-    safe fn packages_json(this: &Response) -> Promise<Packages>;
-    #[link_name = "JSON.parse"]
-    safe fn manifest_of(text: &str) -> Manifest;
-    /// An object's fields, as `(name, text)`: `packages.json`'s modules.
-    #[link_name = "Object.entries"]
-    safe fn text_fields(object: &JsObject) -> Vec<(String, String)>;
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
+#[allow(unused_variables)]
+fn new_file(data: &Uint8Array, options: &dyn std::any::Any) -> &'static WasiFile {
+    unreachable!()
+}
 
-    // The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
-    #[link_name = "new @bjorn3/browser_wasi_shim#File"]
-    safe fn new_empty_file(data: Vec<u8>) -> &'static WasiFile;
-    #[link_name = "new @bjorn3/browser_wasi_shim#File"]
-    safe fn new_plain_file(data: &Uint8Array) -> &'static WasiFile;
-    #[link_name = "new @bjorn3/browser_wasi_shim#Directory"]
-    safe fn new_directory(contents: &HashMap<String, &'static Inode>) -> &'static WasiDirectory;
-    #[link_name = "new @bjorn3/browser_wasi_shim#Directory"]
-    safe fn new_file_directory(contents: &HashMap<String, &'static WasiFile>) -> &'static WasiDirectory;
-    #[link_name = "get contents"]
-    safe fn contents(this: &WasiDirectory) -> &'static mut HashMap<String, &'static Inode>;
-    #[link_name = "this"]
-    safe fn file_inode(this: &WasiFile) -> &'static Inode;
-    #[link_name = "this"]
-    safe fn directory_inode(this: &WasiDirectory) -> &'static Inode;
-    #[link_name = "instanceof @bjorn3/browser_wasi_shim#Directory"]
-    safe fn is_directory(this: &Inode) -> bool;
-    #[link_name = "instanceof @bjorn3/browser_wasi_shim#File"]
-    safe fn is_file(this: &Inode) -> bool;
-    #[link_name = "this"]
-    safe fn as_directory(this: &Inode) -> &'static WasiDirectory;
-    #[link_name = "this"]
-    safe fn as_file(this: &Inode) -> &'static WasiFile;
+#[cfg_attr(rust_js, rust_js::link_name = "get data")]
+#[allow(unused_variables)]
+fn file_data(this: &WasiFile) -> &'static Uint8Array {
+    unreachable!()
+}
 
-    #[link_name = "new @bjorn3/browser_wasi_shim#OpenFile"]
-    safe fn new_open_file(file: &WasiFile) -> &'static Fd;
-    #[link_name = "@bjorn3/browser_wasi_shim#ConsoleStdout.lineBuffered"]
-    safe fn line_buffered(write: Box<dyn FnMut(String)>) -> &'static Fd;
-    #[link_name = "new @bjorn3/browser_wasi_shim#PreopenDirectory"]
-    safe fn new_preopen(name: &str, contents: &HashMap<String, &'static Inode>) -> &'static PreopenDirectory;
-    #[link_name = "this"]
-    safe fn preopen_fd(this: &PreopenDirectory) -> &'static Fd;
-    #[link_name = "get dir"]
-    safe fn preopen_dir(this: &PreopenDirectory) -> &'static WasiDirectory;
-    #[link_name = "new @bjorn3/browser_wasi_shim#WASI"]
-    safe fn new_wasi(
-        args: Vec<String>,
-        env: Vec<String>,
-        fds: Vec<&'static Fd>,
-        options: &dyn std::any::Any,
-    ) -> &'static Wasi;
-    #[link_name = "get wasiImport"]
-    safe fn wasi_import(this: &Wasi) -> &'static JsObject;
-    /// Runs the program. A failed compile ends in a trap: panics can't unwind
-    /// on wasm32-wasip1.
-    #[link_name = "start"]
-    safe fn run_wasi(this: &Wasi, instance: &WebAssemblyInstance) -> Result<i32, &'static JsError>;
-    #[link_name = "get memory"]
-    safe fn exported_memory(this: &JsObject) -> &'static WebAssemblyMemory;
-    /// The last compile, for automated checks.
-    #[link_name = "set lastResult"]
-    pub safe fn set_last_result(this: &webapi::Window, result: &Compiled);
+#[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[allow(unused_variables)]
+fn names_json(this: &Response) -> Promise<Vec<String>> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[allow(unused_variables)]
+fn examples_json(this: &Response) -> Promise<Vec<Example>> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[allow(unused_variables)]
+fn packages_json(this: &Response) -> Promise<Packages> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[allow(unused_variables)]
+fn manifest_of(text: &str) -> Manifest {
+    unreachable!()
+}
+
+/// An object's fields, as `(name, text)`: `packages.json`'s modules.
+#[cfg_attr(rust_js, rust_js::link_name = "Object.entries")]
+#[allow(unused_variables)]
+fn text_fields(object: &JsObject) -> Vec<(String, String)> {
+    unreachable!()
+}
+
+// The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
+#[allow(unused_variables)]
+fn new_empty_file(data: Vec<u8>) -> &'static WasiFile {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
+#[allow(unused_variables)]
+fn new_plain_file(data: &Uint8Array) -> &'static WasiFile {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#Directory")]
+#[allow(unused_variables)]
+fn new_directory(contents: &HashMap<String, &'static Inode>) -> &'static WasiDirectory {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#Directory")]
+#[allow(unused_variables)]
+fn new_file_directory(contents: &HashMap<String, &'static WasiFile>) -> &'static WasiDirectory {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get contents")]
+#[allow(unused_variables)]
+fn contents(this: &WasiDirectory) -> &'static mut HashMap<String, &'static Inode> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn file_inode(this: &WasiFile) -> &'static Inode {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn directory_inode(this: &WasiDirectory) -> &'static Inode {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "instanceof @bjorn3/browser_wasi_shim#Directory")]
+#[allow(unused_variables)]
+fn is_directory(this: &Inode) -> bool {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "instanceof @bjorn3/browser_wasi_shim#File")]
+#[allow(unused_variables)]
+fn is_file(this: &Inode) -> bool {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn as_directory(this: &Inode) -> &'static WasiDirectory {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn as_file(this: &Inode) -> &'static WasiFile {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#OpenFile")]
+#[allow(unused_variables)]
+fn new_open_file(file: &WasiFile) -> &'static Fd {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@bjorn3/browser_wasi_shim#ConsoleStdout.lineBuffered")]
+#[allow(unused_variables)]
+fn line_buffered(write: Box<dyn FnMut(String)>) -> &'static Fd {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#PreopenDirectory")]
+#[allow(unused_variables)]
+fn new_preopen(name: &str, contents: &HashMap<String, &'static Inode>) -> &'static PreopenDirectory {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+fn preopen_fd(this: &PreopenDirectory) -> &'static Fd {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get dir")]
+#[allow(unused_variables)]
+fn preopen_dir(this: &PreopenDirectory) -> &'static WasiDirectory {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#WASI")]
+#[allow(unused_variables)]
+fn new_wasi(args: Vec<String>, env: Vec<String>, fds: Vec<&'static Fd>, options: &dyn std::any::Any) -> &'static Wasi {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get wasiImport")]
+#[allow(unused_variables)]
+fn wasi_import(this: &Wasi) -> &'static JsObject {
+    unreachable!()
+}
+
+/// Runs the program. A failed compile ends in a trap: panics can't unwind
+/// on wasm32-wasip1.
+#[cfg_attr(rust_js, rust_js::link_name = "start")]
+#[allow(unused_variables)]
+fn run_wasi(this: &Wasi, instance: &WebAssemblyInstance) -> Result<i32, &'static JsError> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get memory")]
+#[allow(unused_variables)]
+fn exported_memory(this: &JsObject) -> &'static WebAssemblyMemory {
+    unreachable!()
+}
+
+/// The last compile, for automated checks.
+#[cfg_attr(rust_js, rust_js::link_name = "set lastResult")]
+#[allow(unused_variables)]
+pub fn set_last_result(this: &webapi::Window, result: &Compiled) {
+    unreachable!()
 }
 
 /// An example program: its files, under `examples/<name>/`.

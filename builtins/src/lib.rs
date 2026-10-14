@@ -574,42 +574,54 @@ pub fn promise<T>(this: impl core::future::Future<Output = T>) -> Promise<T> {
     unreachable!()
 }
 
-unsafe extern "Rust" {
-    /// Run a future without waiting for it, as from an event handler:
-    /// `spawn(Box::new(async move { .. }))`. A JS promise is already
-    /// running, so in JS this is the promise itself, left unawaited.
-    #[link_name = "this"]
-    pub safe fn spawn(this: Box<dyn core::future::Future<Output = ()>>);
+/// Run a future without waiting for it, as from an event handler:
+/// `spawn(Box::new(async move { .. }))`. A JS promise is already
+/// running, so in JS this is the promise itself, left unawaited.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+pub fn spawn(this: Box<dyn core::future::Future<Output = ()>>) {
+    unreachable!()
+}
 
-    /// [`encodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent):
-    /// `text` for a part of a URL, a query's value say.
-    #[link_name = "encodeURIComponent"]
-    pub safe fn encode_uri_component(text: &str) -> String;
+/// [`encodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent):
+/// `text` for a part of a URL, a query's value say.
+#[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]
+pub fn encode_uri_component(text: &str) -> String {
+    unreachable!()
+}
 
-    /// [`encodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURI):
-    /// `text` for a whole URL, its `/`, `?` and `#` kept.
-    #[link_name = "encodeURI"]
-    pub safe fn encode_uri(text: &str) -> String;
+/// [`encodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURI):
+/// `text` for a whole URL, its `/`, `?` and `#` kept.
+#[cfg_attr(rust_js, rust_js::link_name = "encodeURI")]
+pub fn encode_uri(text: &str) -> String {
+    unreachable!()
+}
 
-    /// [`decodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent):
-    /// what `encode_uri_component` made, or the `URIError` of what it can't have.
-    #[link_name = "decodeURIComponent"]
-    pub safe fn decode_uri_component(text: &str) -> Result<String, &'static JsError>;
+/// [`decodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent):
+/// what `encode_uri_component` made, or the `URIError` of what it can't have.
+#[cfg_attr(rust_js, rust_js::link_name = "decodeURIComponent")]
+pub fn decode_uri_component(text: &str) -> Result<String, &'static JsError> {
+    unreachable!()
+}
 
-    /// [`decodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/decodeURI):
-    /// what `encode_uri` made, or the `URIError` of what it can't have.
-    #[link_name = "decodeURI"]
-    pub safe fn decode_uri(text: &str) -> Result<String, &'static JsError>;
+/// [`decodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/decodeURI):
+/// what `encode_uri` made, or the `URIError` of what it can't have.
+#[cfg_attr(rust_js, rust_js::link_name = "decodeURI")]
+pub fn decode_uri(text: &str) -> Result<String, &'static JsError> {
+    unreachable!()
+}
 
-    /// [`isNaN(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isNaN):
-    /// whether `value` is NaN, as `f64::is_nan` says.
-    #[link_name = "isNaN"]
-    pub safe fn is_nan(value: f64) -> bool;
+/// [`isNaN(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isNaN):
+/// whether `value` is NaN, as `f64::is_nan` says.
+#[cfg_attr(rust_js, rust_js::link_name = "isNaN")]
+pub fn is_nan(value: f64) -> bool {
+    unreachable!()
+}
 
-    /// [`isFinite(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isFinite):
-    /// whether `value` is neither NaN nor infinite, as `f64::is_finite` says.
-    #[link_name = "isFinite"]
-    pub safe fn is_finite(value: f64) -> bool;
+/// [`isFinite(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isFinite):
+/// whether `value` is neither NaN nor infinite, as `f64::is_finite` says.
+#[cfg_attr(rust_js, rust_js::link_name = "isFinite")]
+pub fn is_finite(value: f64) -> bool {
+    unreachable!()
 }
 
 /// What `set_timeout` gives, to clear it with: a number in a browser, an
@@ -621,28 +633,34 @@ pub struct IntervalId(PhantomData<JsObject>);
 
 // Timers: not the language's own, but every JS runtime's, browsers', workers'
 // and Node's, as ReScript's standard library has them (ADR 0102).
-unsafe extern "Rust" {
-    /// [`setTimeout(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
-    /// `callback` once, after at least `ms` milliseconds.
-    #[link_name = "setTimeout"]
-    pub safe fn set_timeout(callback: Box<dyn FnOnce()>, ms: f64) -> &'static TimeoutId;
+/// [`setTimeout(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
+/// `callback` once, after at least `ms` milliseconds.
+#[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
+pub fn set_timeout(callback: Box<dyn FnOnce()>, ms: f64) -> &'static TimeoutId {
+    unreachable!()
+}
 
-    /// [`clearTimeout(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout):
-    /// the timeout's `callback` won't run, if it hasn't; of none, nothing,
-    /// as TypeScript types it, `number | undefined`.
-    #[link_name = "clearTimeout"]
-    pub safe fn clear_timeout(id: Option<&TimeoutId>);
+/// [`clearTimeout(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout):
+/// the timeout's `callback` won't run, if it hasn't; of none, nothing,
+/// as TypeScript types it, `number | undefined`.
+#[cfg_attr(rust_js, rust_js::link_name = "clearTimeout")]
+pub fn clear_timeout(id: Option<&TimeoutId>) {
+    unreachable!()
+}
 
-    /// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
-    /// `callback` every `ms` milliseconds, until it's cleared.
-    #[link_name = "setInterval"]
-    pub safe fn set_interval(callback: Box<dyn FnMut()>, ms: f64) -> &'static IntervalId;
+/// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
+/// `callback` every `ms` milliseconds, until it's cleared.
+#[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
+pub fn set_interval(callback: Box<dyn FnMut()>, ms: f64) -> &'static IntervalId {
+    unreachable!()
+}
 
-    /// [`clearInterval(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearInterval):
-    /// the interval's `callback` doesn't run again; of none, nothing, as
-    /// TypeScript types it, `number | undefined`.
-    #[link_name = "clearInterval"]
-    pub safe fn clear_interval(id: Option<&IntervalId>);
+/// [`clearInterval(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearInterval):
+/// the interval's `callback` doesn't run again; of none, nothing, as
+/// TypeScript types it, `number | undefined`.
+#[cfg_attr(rust_js, rust_js::link_name = "clearInterval")]
+pub fn clear_interval(id: Option<&IntervalId>) {
+    unreachable!()
 }
 
 /// A JS [`RegExp`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp),
@@ -783,17 +801,19 @@ impl RegExpMatch {
 pub mod reg_exp {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// `new RegExp(pattern, flags)`: flags like `"gm"`.
-        /// Of a pattern and flags written as they are, it's their literal,
-        /// `/%s/g`, as JS writes one.
-        #[link_name = "new RegExp"]
-        pub safe fn new(pattern: &str, flags: &str) -> &'static RegExp;
+    /// `new RegExp(pattern, flags)`: flags like `"gm"`.
+    /// Of a pattern and flags written as they are, it's their literal,
+    /// `/%s/g`, as JS writes one.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RegExp")]
+    pub fn new(pattern: &str, flags: &str) -> &'static RegExp {
+        unreachable!()
+    }
 
-        /// [`RegExp.escape(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/escape):
-        /// `text` as a pattern that matches it as it is, as ReScript's Stdlib has it (ES2025).
-        #[link_name = "RegExp.escape"]
-        pub safe fn escape(text: &str) -> String;
+    /// [`RegExp.escape(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/escape):
+    /// `text` as a pattern that matches it as it is, as ReScript's Stdlib has it (ES2025).
+    #[cfg_attr(rust_js, rust_js::link_name = "RegExp.escape")]
+    pub fn escape(text: &str) -> String {
+        unreachable!()
     }
 
     /// [`text.replace(pattern, with)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
@@ -844,108 +864,140 @@ pub mod reg_exp {
 /// has it: one past it is `+ 1`. A count and what a loop indexes by is a
 /// `u32`.
 pub mod string {
-    unsafe extern "Rust" {
-        /// [`text.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/length):
-        /// its UTF-16 code units.
-        #[link_name = "get length"]
-        pub safe fn length(this: &str) -> u32;
+    /// [`text.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/length):
+    /// its UTF-16 code units.
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    pub fn length(this: &str) -> u32 {
+        unreachable!()
+    }
 
-        /// [`text.charAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charAt):
-        /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its end.
-        #[link_name = "charAt"]
-        pub safe fn char_at(this: &str, index: u32) -> String;
+    /// [`text.charAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charAt):
+    /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its end.
+    #[cfg_attr(rust_js, rust_js::link_name = "charAt")]
+    pub fn char_at(this: &str, index: u32) -> String {
+        unreachable!()
+    }
 
-        /// [`text.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/slice):
-        /// from `start` to before `end`, each counted from the end if negative.
-        #[link_name = "slice"]
-        pub safe fn slice(this: &str, start: f64, end: f64) -> String;
+    /// [`text.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/slice):
+    /// from `start` to before `end`, each counted from the end if negative.
+    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
+    pub fn slice(this: &str, start: f64, end: f64) -> String {
+        unreachable!()
+    }
 
-        /// `text.slice(start)`: from `start` to the end.
-        #[link_name = "slice"]
-        pub safe fn slice_to_end(this: &str, start: f64) -> String;
+    /// `text.slice(start)`: from `start` to the end.
+    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
+    pub fn slice_to_end(this: &str, start: f64) -> String {
+        unreachable!()
+    }
 
-        /// [`text.substring(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/substring):
-        /// from `start` to before `end`, the two swapped if `start` is after it.
-        #[link_name = "substring"]
-        pub safe fn substring(this: &str, start: u32, end: u32) -> String;
+    /// [`text.substring(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/substring):
+    /// from `start` to before `end`, the two swapped if `start` is after it.
+    #[cfg_attr(rust_js, rust_js::link_name = "substring")]
+    pub fn substring(this: &str, start: u32, end: u32) -> String {
+        unreachable!()
+    }
 
-        /// `text.substring(start)`: from `start` to the end.
-        #[link_name = "substring"]
-        pub safe fn substring_to_end(this: &str, start: u32) -> String;
+    /// `text.substring(start)`: from `start` to the end.
+    #[cfg_attr(rust_js, rust_js::link_name = "substring")]
+    pub fn substring_to_end(this: &str, start: u32) -> String {
+        unreachable!()
+    }
 
-        /// [`text.indexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf):
-        /// where `search` first is, or `-1`.
-        #[link_name = "indexOf"]
-        #[cfg_attr(rust_js, rust_js::position)]
-        pub safe fn index_of(this: &str, search: &str) -> f64;
+    /// [`text.indexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf):
+    /// where `search` first is, or `-1`.
+    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
+    #[cfg_attr(rust_js, rust_js::position)]
+    pub fn index_of(this: &str, search: &str) -> f64 {
+        unreachable!()
+    }
 
-        /// `text.indexOf(search, from)`: where `search` first is from `from` on, or `-1`.
-        #[link_name = "indexOf"]
-        #[cfg_attr(rust_js, rust_js::position)]
-        pub safe fn index_of_from(this: &str, search: &str, from: f64) -> f64;
+    /// `text.indexOf(search, from)`: where `search` first is from `from` on, or `-1`.
+    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
+    #[cfg_attr(rust_js, rust_js::position)]
+    pub fn index_of_from(this: &str, search: &str, from: f64) -> f64 {
+        unreachable!()
+    }
 
-        /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
-        /// where `search` last is, or `-1`.
-        #[link_name = "lastIndexOf"]
-        #[cfg_attr(rust_js, rust_js::position)]
-        pub safe fn last_index_of(this: &str, search: &str) -> f64;
+    /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
+    /// where `search` last is, or `-1`.
+    #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
+    #[cfg_attr(rust_js, rust_js::position)]
+    pub fn last_index_of(this: &str, search: &str) -> f64 {
+        unreachable!()
+    }
 
-        /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
-        /// its first `pattern` replaced, where Rust's `str::replace` replaces each;
-        /// `$&` in `replacement` is the match.
-        #[link_name = "replace"]
-        pub safe fn replace(this: &str, pattern: &str, replacement: &str) -> String;
+    /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
+    /// its first `pattern` replaced, where Rust's `str::replace` replaces each;
+    /// `$&` in `replacement` is the match.
+    #[cfg_attr(rust_js, rust_js::link_name = "replace")]
+    pub fn replace(this: &str, pattern: &str, replacement: &str) -> String {
+        unreachable!()
+    }
 
-        /// [`text.split(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
-        /// the text between each `separator`, an empty one each UTF-16 code unit.
-        #[link_name = "split"]
-        pub safe fn split(this: &str, separator: &str) -> Vec<String>;
+    /// [`text.split(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
+    /// the text between each `separator`, an empty one each UTF-16 code unit.
+    #[cfg_attr(rust_js, rust_js::link_name = "split")]
+    pub fn split(this: &str, separator: &str) -> Vec<String> {
+        unreachable!()
+    }
 
-        /// [`text.split(pattern)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
-        /// the text between each match of `pattern`, one of no groups: a group's
-        /// match is put between, which a binding a program declares types.
-        #[link_name = "split"]
-        pub safe fn split_by_reg_exp(this: &str, pattern: &super::RegExp) -> Vec<String>;
+    /// [`text.split(pattern)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
+    /// the text between each match of `pattern`, one of no groups: a group's
+    /// match is put between, which a binding a program declares types.
+    #[cfg_attr(rust_js, rust_js::link_name = "split")]
+    pub fn split_by_reg_exp(this: &str, pattern: &super::RegExp) -> Vec<String> {
+        unreachable!()
+    }
 
-        /// [`text.trim()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/trim):
-        /// without JS's white space and line ends at either end, which aren't
-        /// Rust's `trim`'s quite: JS's has U+FEFF, Rust's U+0085.
-        #[link_name = "trim"]
-        pub safe fn trim(this: &str) -> String;
+    /// [`text.trim()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/trim):
+    /// without JS's white space and line ends at either end, which aren't
+    /// Rust's `trim`'s quite: JS's has U+FEFF, Rust's U+0085.
+    #[cfg_attr(rust_js, rust_js::link_name = "trim")]
+    pub fn trim(this: &str) -> String {
+        unreachable!()
+    }
 
-        /// `text.trimStart()`: without JS's white space at its start.
-        #[link_name = "trimStart"]
-        pub safe fn trim_start(this: &str) -> String;
+    /// `text.trimStart()`: without JS's white space at its start.
+    #[cfg_attr(rust_js, rust_js::link_name = "trimStart")]
+    pub fn trim_start(this: &str) -> String {
+        unreachable!()
+    }
 
-        /// `text.trimEnd()`: without JS's white space at its end.
-        #[link_name = "trimEnd"]
-        pub safe fn trim_end(this: &str) -> String;
+    /// `text.trimEnd()`: without JS's white space at its end.
+    #[cfg_attr(rust_js, rust_js::link_name = "trimEnd")]
+    pub fn trim_end(this: &str) -> String {
+        unreachable!()
+    }
 
-        /// `text.localeCompare(that)`: how `text` sorts beside `that` in the
-        /// default locale, as an Intl collator gives it, -1, 0 or 1.
-        #[link_name = "localeCompare"]
-        pub safe fn locale_compare(this: &str, that: &str) -> core::cmp::Ordering;
+    /// `text.localeCompare(that)`: how `text` sorts beside `that` in the
+    /// default locale, as an Intl collator gives it, -1, 0 or 1.
+    #[cfg_attr(rust_js, rust_js::link_name = "localeCompare")]
+    pub fn locale_compare(this: &str, that: &str) -> core::cmp::Ordering {
+        unreachable!()
     }
 }
 
 /// A JS number's methods, for where Rust's own `format!` isn't what's wanted.
 pub mod number {
-    unsafe extern "Rust" {
-        /// [`x.toFixed(digits)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed):
-        /// `x` with `digits` decimals, as JS rounds, a tie away from zero:
-        /// `2.5` is `"3"`, where `format!("{:.0}", 2.5)` is `"2"`, to even, as
-        /// Rust rounds it. Between ties they agree. `-0` is `"0"`, `1e21` and up
-        /// is `String(x)`, `"1e+21"`, and `Infinity` is `"Infinity"`, where
-        /// `format!`'s is `"inf"`. `digits` is 0 to 100: more throws a `RangeError`.
-        #[link_name = "toFixed"]
-        pub safe fn to_fixed(this: f64, digits: u32) -> String;
+    /// [`x.toFixed(digits)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed):
+    /// `x` with `digits` decimals, as JS rounds, a tie away from zero:
+    /// `2.5` is `"3"`, where `format!("{:.0}", 2.5)` is `"2"`, to even, as
+    /// Rust rounds it. Between ties they agree. `-0` is `"0"`, `1e21` and up
+    /// is `String(x)`, `"1e+21"`, and `Infinity` is `"Infinity"`, where
+    /// `format!`'s is `"inf"`. `digits` is 0 to 100: more throws a `RangeError`.
+    #[cfg_attr(rust_js, rust_js::link_name = "toFixed")]
+    pub fn to_fixed(this: f64, digits: u32) -> String {
+        unreachable!()
+    }
 
-        /// [`x.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toString):
-        /// `x` as JS writes it: `1e21` is `"1e+21"` and `Infinity` `"Infinity"`,
-        /// where `f64::to_string`'s are `"1000000000000000000000"` and `"inf"`
-        /// (ADR 0310).
-        #[link_name = "toString"]
-        pub safe fn to_string(this: f64) -> String;
+    /// [`x.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toString):
+    /// `x` as JS writes it: `1e21` is `"1e+21"` and `Infinity` `"Infinity"`,
+    /// where `f64::to_string`'s are `"1000000000000000000000"` and `"inf"`
+    /// (ADR 0310).
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    pub fn to_string(this: f64) -> String {
+        unreachable!()
     }
 }
 
@@ -954,37 +1006,45 @@ pub mod number {
 /// asks for it here. The rest, `x.sqrt()` say, are `Math`'s already
 /// (ADR 0283).
 pub mod math {
-    unsafe extern "Rust" {
-        /// [`Math.round(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/round):
-        /// the nearest integer, a half up, `-2.5` to `-2`, where `x.round()`
-        /// takes it away from zero, to `-3`.
-        #[link_name = "Math.round"]
-        pub safe fn round(x: f64) -> f64;
+    /// [`Math.round(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/round):
+    /// the nearest integer, a half up, `-2.5` to `-2`, where `x.round()`
+    /// takes it away from zero, to `-3`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.round")]
+    pub fn round(x: f64) -> f64 {
+        unreachable!()
+    }
 
-        /// [`Math.max(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/max):
-        /// the largest, `NaN` if any is, and `0` above `-0`, where `a.max(b)`
-        /// is the other number of a `NaN`. Of none, `-Infinity`.
-        #[link_name = "Math.max"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn max(values: &[f64]) -> f64;
+    /// [`Math.max(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/max):
+    /// the largest, `NaN` if any is, and `0` above `-0`, where `a.max(b)`
+    /// is the other number of a `NaN`. Of none, `-Infinity`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn max(values: &[f64]) -> f64 {
+        unreachable!()
+    }
 
-        /// [`Math.min(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/min):
-        /// the smallest, `NaN` if any is, and `-0` below `0`, where `a.min(b)`
-        /// is the other number of a `NaN`. Of none, `Infinity`.
-        #[link_name = "Math.min"]
-        #[cfg_attr(rust_js, rust_js::variadic)]
-        pub safe fn min(values: &[f64]) -> f64;
+    /// [`Math.min(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/min):
+    /// the smallest, `NaN` if any is, and `-0` below `0`, where `a.min(b)`
+    /// is the other number of a `NaN`. Of none, `Infinity`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.min")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn min(values: &[f64]) -> f64 {
+        unreachable!()
+    }
 
-        /// [`Math.sign(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/sign):
-        /// `1`, `-1`, or `x` itself of a zero or `NaN`, where `x.signum()` is
-        /// `1` of `0`.
-        #[link_name = "Math.sign"]
-        pub safe fn sign(x: f64) -> f64;
+    /// [`Math.sign(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/sign):
+    /// `1`, `-1`, or `x` itself of a zero or `NaN`, where `x.signum()` is
+    /// `1` of `0`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.sign")]
+    pub fn sign(x: f64) -> f64 {
+        unreachable!()
+    }
 
-        /// [`Math.random()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/random):
-        /// a number from `0` up to `1`, not one to make a secret of.
-        #[link_name = "Math.random"]
-        pub safe fn random() -> f64;
+    /// [`Math.random()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/random):
+    /// a number from `0` up to `1`, not one to make a secret of.
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.random")]
+    pub fn random() -> f64 {
+        unreachable!()
     }
 }
 
@@ -995,29 +1055,33 @@ pub mod math {
 pub mod json {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
-        /// the value `text` is, `None` of `null`, or what it threw for JSON
-        /// that isn't (ADR 0035).
-        #[link_name = "JSON.parse"]
-        pub safe fn parse(text: &str) -> Result<Option<&'static Unknown>, &'static JsError>;
+    /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
+    /// the value `text` is, `None` of `null`, or what it threw for JSON
+    /// that isn't (ADR 0035).
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+    pub fn parse(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        unreachable!()
+    }
 
-        /// [`JSON.parse(text, reviver)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse#the_reviver_parameter):
-        /// the value `text` is, each part of it given to `reviver` with its
-        /// key, innermost first, and made what that gives; a property it gives
-        /// `None` of is left out. Of JSON a program made itself: JSON that
-        /// isn't throws, a panic.
-        #[link_name = "JSON.parse"]
-        pub safe fn parse_with(
-            text: &str,
-            reviver: Box<dyn Fn(&str, Option<&'static Unknown>) -> Option<&'static Unknown>>,
-        ) -> Option<&'static Unknown>;
+    /// [`JSON.parse(text, reviver)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse#the_reviver_parameter):
+    /// the value `text` is, each part of it given to `reviver` with its
+    /// key, innermost first, and made what that gives; a property it gives
+    /// `None` of is left out. Of JSON a program made itself: JSON that
+    /// isn't throws, a panic.
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+    pub fn parse_with(
+        text: &str,
+        reviver: Box<dyn Fn(&str, Option<&'static Unknown>) -> Option<&'static Unknown>>,
+    ) -> Option<&'static Unknown> {
+        unreachable!()
+    }
 
-        /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
-        /// `text`'s JSON, in quotes, with its `"`, `\` and control characters
-        /// escaped, which is a JS string literal too.
-        #[link_name = "JSON.stringify"]
-        pub safe fn stringify(text: &str) -> String;
+    /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
+    /// `text`'s JSON, in quotes, with its `"`, `\` and control characters
+    /// escaped, which is a JS string literal too.
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+    pub fn stringify(text: &str) -> String {
+        unreachable!()
     }
 
     /// [`JSON.stringify(value, replacer, space)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
@@ -1108,15 +1172,17 @@ impl JsError {
 pub mod js_error {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// `String(e)`: an `Error`'s name and message, or any value as text.
-        #[link_name = "String"]
-        pub safe fn to_string(error: &JsError) -> String;
+    /// `String(e)`: an `Error`'s name and message, or any value as text.
+    #[cfg_attr(rust_js, rust_js::link_name = "String")]
+    pub fn to_string(error: &JsError) -> String {
+        unreachable!()
+    }
 
-        /// [`new Error(message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
-        /// an `Error` of `message`, to reject a promise with.
-        #[link_name = "new Error"]
-        pub safe fn new(message: &str) -> &'static JsError;
+    /// [`new Error(message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
+    /// an `Error` of `message`, to reject a promise with.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
+    pub fn new(message: &str) -> &'static JsError {
+        unreachable!()
     }
 }
 
@@ -1125,18 +1191,20 @@ pub mod js_error {
 pub mod object {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [`Object.keys(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/keys):
-        /// the names of an object's own properties, in order, each one
-        /// [`get`] reads.
-        #[link_name = "Object.keys"]
-        pub safe fn keys(value: &Unknown) -> Vec<String>;
+    /// [`Object.keys(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/keys):
+    /// the names of an object's own properties, in order, each one
+    /// [`get`] reads.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.keys")]
+    pub fn keys(value: &Unknown) -> Vec<String> {
+        unreachable!()
+    }
 
-        /// [`Object.prototype.toString.call(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/toString):
-        /// what JS names any value's kind, `"[object Array]"`; what it throws
-        /// of a value whose `Symbol.toStringTag` throws (ADR 0310).
-        #[link_name = "Object.prototype.toString.call"]
-        pub safe fn to_string(value: Option<&Unknown>) -> Result<String, &'static JsError>;
+    /// [`Object.prototype.toString.call(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/toString):
+    /// what JS names any value's kind, `"[object Array]"`; what it throws
+    /// of a value whose `Symbol.toStringTag` throws (ADR 0310).
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.prototype.toString.call")]
+    pub fn to_string(value: Option<&Unknown>) -> Result<String, &'static JsError> {
+        unreachable!()
     }
 
     /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):

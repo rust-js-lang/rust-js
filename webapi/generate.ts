@@ -1111,14 +1111,6 @@ line(`//! Each event's name and each tag is a type too (ADR 0223), from \`@webre
 line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`, whose value is \`"click"\`.`);
 line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| ..)\` (ADR 0282).`);
 line();
-line(`// Many Rust functions call the same JS name: a form per optional argument
-// (\`new\`, \`new_with_body\`), and methods of the same name on different
-// interfaces. rustc warns because in native code they would be one symbol.`);
-line(`#![allow(clashing_extern_declarations)]`);
-line(`// And some are named as libc's functions are, \`open\`, \`close\` and \`write\`:
-// JS methods, which in native code rustc would take for those.`);
-line(`#![allow(invalid_runtime_symbol_definitions)]`);
-line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
 line(`use js::{${[...BUILTINS, "Defined", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
@@ -1193,8 +1185,9 @@ function cssProperties(have: Fn[]): Fn[] {
 function module(name: string, all: Fn[], typed: string[] = [], constants: string[] = []) {
   if (all.length === 0 && constants.length === 0) return;
   count += all.length;
-  const fns = all.filter((f) => !f.typeParams && !f.params.some((p) => p.endsWith(`: ${ANY}`) || unionParam(p)));
-  typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
+  // Each a function with `#[rust_js::link_name]`, the one form of a
+  // binding of a function (ADR 0039): an `extern` block's are refused.
+  typed = [...all.map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
   // The crate's types, where its functions name one: `supports(type_: &str)`
@@ -1207,19 +1200,6 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
   for (const c of constants) {
     line();
     line(c);
-  }
-  if (fns.length > 0) {
-  line();
-  line(`    unsafe extern "Rust" {`);
-  fns.forEach((f, k) => {
-    if (k > 0) line();
-    for (const d of f.doc) line(`        /// ${d}`);
-    if (f.jsName !== f.name) line(`        #[link_name = ${JSON.stringify(f.jsName)}]`);
-    if (f.nullable) line(`        #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`);
-    const result = f.result === "()" ? "" : ` -> ${f.result}`;
-    line(`        pub safe fn ${f.name}(${f.params.join(", ")})${result};`);
-  });
-  line(`    }`);
   }
   for (const t of typed) {
     line();

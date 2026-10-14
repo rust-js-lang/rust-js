@@ -91,18 +91,31 @@ impl Filter {
 
 const KEY: &str = "todos-rust-js";
 
-unsafe extern "Rust" {
-    // Each may throw, and in a sandboxed frame, as the playground's is,
-    // `localStorage` itself does: an `Err` (ADR 0035), and the todos are
-    // the page's only.
-    #[link_name = "localStorage.getItem"]
-    safe fn stored(key: &str) -> Result<Option<String>, &'static JsError>;
-    #[link_name = "localStorage.setItem"]
-    safe fn store(key: &str, value: &str) -> Result<(), &'static JsError>;
-    #[link_name = "JSON.parse"]
-    safe fn parse(json: &str) -> Result<Vec<Todo>, &'static JsError>;
-    #[link_name = "JSON.stringify"]
-    safe fn stringify(todos: &Vec<Todo>) -> String;
+// Each may throw, and in a sandboxed frame, as the playground's is,
+// `localStorage` itself does: an `Err` (ADR 0035), and the todos are
+// the page's only.
+#[cfg_attr(rust_js, rust_js::link_name = "localStorage.getItem")]
+#[allow(unused_variables)]
+fn stored(key: &str) -> Result<Option<String>, &'static JsError> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "localStorage.setItem")]
+#[allow(unused_variables)]
+fn store(key: &str, value: &str) -> Result<(), &'static JsError> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[allow(unused_variables)]
+fn parse(json: &str) -> Result<Vec<Todo>, &'static JsError> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+#[allow(unused_variables)]
+fn stringify(todos: &Vec<Todo>) -> String {
+    unreachable!()
 }
 
 /// The todos kept from before, or none.

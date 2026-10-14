@@ -91,3 +91,7 @@ can't hide one: a local named `console` becomes `console$1`.
 - Rust forbids a `let` named like a static, so the reserved names matter for
   global functions and paths: a local `console` becomes `console$1`, next to
   `console.log(..)`.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

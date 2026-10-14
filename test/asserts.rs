@@ -1,6 +1,5 @@
 //! What `#[test]` and the assertion macros become (ADR 0026). Some of these
 //! tests fail on purpose: test/browser.test.ts checks each failure's message.
-#![feature(extern_types)]
 
 #[derive(PartialEq, Debug)]
 pub struct Point {
@@ -13,16 +12,21 @@ pub fn zero() -> i32 {
     0
 }
 
-unsafe extern "Rust" {
-    type Url;
+/// A URL, as JS has it: a JS type is a struct of a `JsObject` (ADR 0111).
+struct Url(core::marker::PhantomData<js::JsObject>);
 
-    // Throws a `TypeError` for a bad URL: JS going wrong, not a panic.
-    #[link_name = "new URL"]
-    safe fn new_url(href: &str) -> &'static Url;
+// Throws a `TypeError` for a bad URL: JS going wrong, not a panic.
+#[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+#[allow(unused_variables)]
+fn new_url(href: &str) -> &'static Url {
+    unreachable!()
+}
 
-    // Leaves a rejected promise no one handles: a failure that comes later.
-    #[link_name = "Promise.reject"]
-    safe fn reject_later(reason: &str);
+// Leaves a rejected promise no one handles: a failure that comes later.
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
+#[allow(unused_variables)]
+fn reject_later(reason: &str) {
+    unreachable!()
 }
 
 #[cfg(test)]

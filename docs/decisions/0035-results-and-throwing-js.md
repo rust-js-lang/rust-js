@@ -103,3 +103,7 @@ const match = $try(() => JSON.parse(json));   // { TAG: "Ok", _0: .. } or { TAG:
 A call whose throw is an `Err`, its result ignored, `let _ = f();`, is
 `try { f(); } catch {}`, as a person writes it: the call, and what it
 threw dropped. It was `$try(() => f());`, the helper's result unread.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

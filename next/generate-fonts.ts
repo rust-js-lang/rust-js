@@ -85,9 +85,11 @@ const enumOf = (name: string, doc: string, all: Set<string>, prefix = "") => {
 const font = ({ name, variable, axes }: Font) => {
   const options = variable ? (axes ? "VariableFont<'_>" : "VariableFontWithoutAxes<'_>") : "StaticFont<'_>";
   const kind = variable ? "a variable font" : "a static font";
-  return `    /// [${name.replaceAll("_", " ")}](https://fonts.google.com/specimen/${name.replaceAll("_", "+")}), ${kind}.
-    #[link_name = "next/font/google#${name}"]
-    pub safe fn ${name}(options: ${options}) -> NextFont;`;
+  return `/// [${name.replaceAll("_", " ")}](https://fonts.google.com/specimen/${name.replaceAll("_", "+")}), ${kind}.
+#[cfg_attr(rust_js, rust_js::link_name = "next/font/google#${name}")]
+pub fn ${name}(options: ${options}) -> NextFont {
+    unreachable!()
+}`;
 };
 
 const rust = `//! [\`next/font/google\`](https://nextjs.org/docs/app/api-reference/components/font#google-fonts):
@@ -156,9 +158,7 @@ pub struct VariableFontWithoutAxes<'a> {
     pub subsets: Option<&'a [Subset]>,
 }
 
-unsafe extern "Rust" {
 ${fonts.map(font).join("\n\n")}
-}
 `;
 
 if (process.argv.includes("--check")) {

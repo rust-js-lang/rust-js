@@ -23,18 +23,36 @@ unsafe extern "Rust" {
     /// The test's own JS: a promise, a store, and where things are logged.
     #[link_name = "globalThis.greeting"]
     safe static greeting: &'static Promise<String>;
-    #[link_name = "globalThis.store.subscribe"]
-    safe fn store_subscribe(notify: react::Notify) -> Box<dyn FnOnce()>;
-    #[link_name = "globalThis.store.get"]
-    safe fn store_get() -> i32;
-    #[link_name = "globalThis.log"]
-    safe fn log(what: &str);
     #[link_name = "globalThis.portalTarget"]
     safe static portal_target: &'static webapi::Element;
-    #[link_name = "globalThis.flushedText"]
-    safe fn flushed_text() -> String;
-    #[link_name = "globalThis.uploaded"]
-    safe fn uploaded() -> Promise<()>;
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.store.subscribe")]
+#[allow(unused_variables)]
+fn store_subscribe(notify: react::Notify) -> Box<dyn FnOnce()> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.store.get")]
+fn store_get() -> i32 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.log")]
+#[allow(unused_variables)]
+fn log(what: &str) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.flushedText")]
+fn flushed_text() -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.uploaded")]
+#[allow(unused_variables)]
+fn uploaded() -> Promise<()> {
+    unreachable!()
 }
 
 /// `use` a promise: Suspense shows the fallback until it resolves.

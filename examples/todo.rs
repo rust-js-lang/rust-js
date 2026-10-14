@@ -171,9 +171,10 @@ mod tests {
         key: String,
     }
 
-    unsafe extern "Rust" {
-        #[link_name = "new KeyboardEvent"]
-        safe fn keyboard_event(type_: &str, init: &KeyboardEventInit) -> &'static Event;
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    #[allow(unused_variables)]
+    fn keyboard_event(type_: &str, init: &KeyboardEventInit) -> &'static Event {
+        unreachable!()
     }
 
     /// An empty page with the `<div id="app">` that `main` looks for.

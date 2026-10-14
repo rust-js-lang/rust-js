@@ -7,10 +7,11 @@ use std::rc::Rc;
 use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
 use webapi::{AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
 
-unsafe extern "Rust" {
-    /// Resolves with `value` after `ms` milliseconds.
-    #[link_name = "node:timers/promises#setTimeout"]
-    safe fn later(ms: u32, value: u32) -> Promise<u32>;
+/// Resolves with `value` after `ms` milliseconds.
+#[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
+#[allow(unused_variables)]
+fn later(ms: u32, value: u32) -> Promise<u32> {
+    unreachable!()
 }
 
 async fn double(x: u32) -> u32 {
@@ -146,10 +147,11 @@ struct Env {
     double: Box<dyn Fn(i32) -> i32>,
 }
 
-unsafe extern "Rust" {
-    /// The module's export, called on its `exports` object.
-    #[link_name = "add"]
-    safe fn wasm_add(this: &JsObject, a: i32, b: i32) -> i32;
+/// The module's export, called on its `exports` object.
+#[cfg_attr(rust_js, rust_js::link_name = "add")]
+#[allow(unused_variables)]
+fn wasm_add(this: &JsObject, a: i32, b: i32) -> i32 {
+    unreachable!()
 }
 
 /// WebAssembly: compile a module, instantiate it with imports from Rust

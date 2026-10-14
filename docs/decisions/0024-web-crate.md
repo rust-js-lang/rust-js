@@ -232,3 +232,7 @@ which always passes `--extern webapi=..`.
 `get X.y` reads one: `process.exitCode = 1`, a statement; and an import's
 property, `set events#EventEmitter.defaultMaxListeners`. Not an import
 itself, `set fs#x`, which JS can't assign: that stays refused.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

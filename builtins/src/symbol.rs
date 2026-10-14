@@ -39,20 +39,6 @@ impl Symbol {
 }
 
 unsafe extern "Rust" {
-    /// [`Symbol(description)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/Symbol):
-    /// a new symbol, unlike every other.
-    #[link_name = "Symbol"]
-    pub safe fn new(description: &str) -> &'static Symbol;
-
-    /// [`Symbol.for(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for):
-    /// the registry's symbol of `key`, the same each time.
-    #[link_name = "Symbol.for"]
-    pub safe fn for_(key: &str) -> &'static Symbol;
-
-    /// [`Symbol.keyFor(symbol)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/keyFor):
-    /// the registry's key of `symbol`, `None` of one not the registry's.
-    #[link_name = "Symbol.keyFor"]
-    pub safe fn key_for(symbol: &Symbol) -> Option<String>;
 
     /// [`Symbol.asyncIterator`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator).
     #[link_name = "Symbol.asyncIterator"]
@@ -105,4 +91,25 @@ unsafe extern "Rust" {
     /// [`Symbol.unscopables`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables).
     #[link_name = "Symbol.unscopables"]
     pub safe static unscopables: &'static Symbol;
+}
+
+/// [`Symbol(description)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/Symbol):
+/// a new symbol, unlike every other.
+#[cfg_attr(rust_js, rust_js::link_name = "Symbol")]
+pub fn new(description: &str) -> &'static Symbol {
+    unreachable!()
+}
+
+/// [`Symbol.for(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for):
+/// the registry's symbol of `key`, the same each time.
+#[cfg_attr(rust_js, rust_js::link_name = "Symbol.for")]
+pub fn for_(key: &str) -> &'static Symbol {
+    unreachable!()
+}
+
+/// [`Symbol.keyFor(symbol)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/keyFor):
+/// the registry's key of `symbol`, `None` of one not the registry's.
+#[cfg_attr(rust_js, rust_js::link_name = "Symbol.keyFor")]
+pub fn key_for(symbol: &Symbol) -> Option<String> {
+    unreachable!()
 }

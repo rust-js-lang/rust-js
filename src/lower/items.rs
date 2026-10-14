@@ -85,6 +85,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameters, calling it as a call would, so JS gives it no more than
     /// Rust does. `[..].map(parseInt)` would give `parseInt` each index too.
     pub(super) fn binding_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+        if self.tcx.is_foreign_item(def_id) {
+            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
+            return Err(self.tcx.dcx().span_err(span, refused));
+        }
         let inputs = self
             .tcx
             .fn_sig(def_id)

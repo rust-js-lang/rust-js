@@ -146,7 +146,7 @@ beforeAll(async () => {
     util: await import(join(target, "modules", "util.js")),
   };
   // Imports (ADR 0028): `./greet.js` is relative to the root's JS, so it goes beside it.
-  run([compiler, "test/imports/lib.rs", "-o", join(target, "imports", "lib.js")]);
+  run([compiler, "test/imports/lib.rs", "-o", join(target, "imports", "lib.js"), ...withWeb]);
   copyFileSync(join(root, "test/imports/greet.js"), join(target, "imports", "greet.js"));
   copyFileSync(join(root, "test/imports/inner/wave.js"), join(target, "imports", "inner", "wave.js"));
   imports = {

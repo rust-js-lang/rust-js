@@ -11,69 +11,91 @@ pub use webapi::{
 /// What a [`URLSearchParams`]'s `keys`, `values` and `entries` give.
 pub type URLSearchParamsIterator<T> = Box<dyn Iterator<Item = T>>;
 
-unsafe extern "Rust" {
-    /// [`url.domainToASCII(domain)`](https://nodejs.org/api/url.html#urldomaintoasciidomain):
-    /// `domain`'s Punycode, `"xn--espaol-zwa.com"`, or `""` where it isn't one.
-    #[link_name = "url#domainToASCII"]
-    pub safe fn domain_to_ascii(domain: &str) -> String;
+/// [`url.domainToASCII(domain)`](https://nodejs.org/api/url.html#urldomaintoasciidomain):
+/// `domain`'s Punycode, `"xn--espaol-zwa.com"`, or `""` where it isn't one.
+#[cfg_attr(rust_js, rust_js::link_name = "url#domainToASCII")]
+pub fn domain_to_ascii(domain: &str) -> String {
+    unreachable!()
+}
 
-    /// [`url.domainToUnicode(domain)`](https://nodejs.org/api/url.html#urldomaintounicodedomain):
-    /// `domain`, from Punycode, `"español.com"`, or `""` where it isn't one.
-    #[link_name = "url#domainToUnicode"]
-    pub safe fn domain_to_unicode(domain: &str) -> String;
+/// [`url.domainToUnicode(domain)`](https://nodejs.org/api/url.html#urldomaintounicodedomain):
+/// `domain`, from Punycode, `"español.com"`, or `""` where it isn't one.
+#[cfg_attr(rust_js, rust_js::link_name = "url#domainToUnicode")]
+pub fn domain_to_unicode(domain: &str) -> String {
+    unreachable!()
+}
 
-    /// [`url.pathToFileURL(path)`](https://nodejs.org/api/url.html#urlpathtofileurlpath-options):
-    /// the `file:` URL of `path`, made absolute, its characters encoded.
-    #[link_name = "url#pathToFileURL"]
-    pub safe fn path_to_file_url(path: &str) -> &'static URL;
+/// [`url.pathToFileURL(path)`](https://nodejs.org/api/url.html#urlpathtofileurlpath-options):
+/// the `file:` URL of `path`, made absolute, its characters encoded.
+#[cfg_attr(rust_js, rust_js::link_name = "url#pathToFileURL")]
+pub fn path_to_file_url(path: &str) -> &'static URL {
+    unreachable!()
+}
 
-    #[link_name = "url#pathToFileURL"]
-    pub safe fn path_to_file_url_with_options(path: &str, options: PathToFileUrlOptions) -> &'static URL;
+#[cfg_attr(rust_js, rust_js::link_name = "url#pathToFileURL")]
+pub fn path_to_file_url_with_options(path: &str, options: PathToFileUrlOptions) -> &'static URL {
+    unreachable!()
+}
 
-    /// [`url.resolve(from, to)`](https://nodejs.org/api/url.html#urlresolvefrom-to):
-    /// `to`, resolved against `from`, as a browser resolves a link's. Legacy:
-    /// `URL`'s base does it.
-    #[link_name = "url#resolve"]
-    pub safe fn resolve(from: &str, to: &str) -> String;
+/// [`url.resolve(from, to)`](https://nodejs.org/api/url.html#urlresolvefrom-to):
+/// `to`, resolved against `from`, as a browser resolves a link's. Legacy:
+/// `URL`'s base does it.
+#[cfg_attr(rust_js, rust_js::link_name = "url#resolve")]
+pub fn resolve(from: &str, to: &str) -> String {
+    unreachable!()
+}
 
-    /// [`url.format(url)`](https://nodejs.org/api/url.html#urlformaturl-options):
-    /// `url`'s text.
-    #[link_name = "url#format"]
-    pub safe fn format(url: &URL) -> String;
+/// [`url.format(url)`](https://nodejs.org/api/url.html#urlformaturl-options):
+/// `url`'s text.
+#[cfg_attr(rust_js, rust_js::link_name = "url#format")]
+pub fn format(url: &URL) -> String {
+    unreachable!()
+}
 
-    /// `url.format(url, options)`: `url`'s text, without the parts
-    /// `options` leave out.
-    #[link_name = "url#format"]
-    pub safe fn format_with_options(url: &URL, options: URLFormatOptions) -> String;
+/// `url.format(url, options)`: `url`'s text, without the parts
+/// `options` leave out.
+#[cfg_attr(rust_js, rust_js::link_name = "url#format")]
+pub fn format_with_options(url: &URL, options: URLFormatOptions) -> String {
+    unreachable!()
+}
 
-    /// `url.format(urlObject)`: the text of a legacy URL's parts. Legacy:
-    /// a `URL` of them is the WHATWG one.
-    #[link_name = "url#format"]
-    pub safe fn format_with_url_object(url_object: UrlObject<'_>) -> String;
+/// `url.format(urlObject)`: the text of a legacy URL's parts. Legacy:
+/// a `URL` of them is the WHATWG one.
+#[cfg_attr(rust_js, rust_js::link_name = "url#format")]
+pub fn format_with_url_object(url_object: UrlObject<'_>) -> String {
+    unreachable!()
+}
 
-    /// `url.format(urlString)`: `urlString`, parsed and written again.
-    #[link_name = "url#format"]
-    pub safe fn format_with_str(url_string: &str) -> String;
+/// `url.format(urlString)`: `urlString`, parsed and written again.
+#[cfg_attr(rust_js, rust_js::link_name = "url#format")]
+pub fn format_with_str(url_string: &str) -> String {
+    unreachable!()
+}
 
-    /// [`url.parse(urlString)`](https://nodejs.org/api/url.html#urlparseurlstring-parsequerystring-slashesdenotehost):
-    /// a URL's parts, its query the text. Legacy: `URL` parses as the WHATWG
-    /// standard does, where this doesn't.
-    #[link_name = "url#parse"]
-    pub safe fn parse(url_string: &str) -> UrlWithStringQuery;
+/// [`url.parse(urlString)`](https://nodejs.org/api/url.html#urlparseurlstring-parsequerystring-slashesdenotehost):
+/// a URL's parts, its query the text. Legacy: `URL` parses as the WHATWG
+/// standard does, where this doesn't.
+#[cfg_attr(rust_js, rust_js::link_name = "url#parse")]
+pub fn parse(url_string: &str) -> UrlWithStringQuery {
+    unreachable!()
+}
 
-    /// `url.parse(urlString, parseQueryString)`: its query parsed, where
-    /// `parse_query_string`.
-    #[link_name = "url#parse"]
-    pub safe fn parse_with_parse_query_string(url_string: &str, parse_query_string: bool) -> Url;
+/// `url.parse(urlString, parseQueryString)`: its query parsed, where
+/// `parse_query_string`.
+#[cfg_attr(rust_js, rust_js::link_name = "url#parse")]
+pub fn parse_with_parse_query_string(url_string: &str, parse_query_string: bool) -> Url {
+    unreachable!()
+}
 
-    /// `url.parse(urlString, parseQueryString, slashesDenoteHost)`: `//`
-    /// before a host, where `slashes_denote_host`, `//example.com/p`'s.
-    #[link_name = "url#parse"]
-    pub safe fn parse_with_parse_query_string_and_slashes_denote_host(
-        url_string: &str,
-        parse_query_string: bool,
-        slashes_denote_host: bool,
-    ) -> Url;
+/// `url.parse(urlString, parseQueryString, slashesDenoteHost)`: `//`
+/// before a host, where `slashes_denote_host`, `//example.com/p`'s.
+#[cfg_attr(rust_js, rust_js::link_name = "url#parse")]
+pub fn parse_with_parse_query_string_and_slashes_denote_host(
+    url_string: &str,
+    parse_query_string: bool,
+    slashes_denote_host: bool,
+) -> Url {
+    unreachable!()
 }
 
 /// What [`parse`] gives: a legacy URL's parts, each `None` where it hasn't

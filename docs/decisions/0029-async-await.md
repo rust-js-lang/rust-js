@@ -138,3 +138,7 @@ still runs. `test/async.rs` and the countdown example pin this down.
 its promise. Rust writes it so where an `async` closure's future would
 borrow the closure. A compiler test runs one, spawned; a mutation keeps
 the call.
+
+## Amended by
+
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

@@ -388,12 +388,12 @@ for (const spec of ["html", "SVG2", "svg-animations", "filter-effects-1", "css-m
     if (!element.obsolete && /^[a-zA-Z][a-zA-Z0-9]*$/.test(element.name)) tags.add(element.name);
   }
 }
-lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` an `HTMLButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};", "", "    unsafe extern \"Rust\" {");
+lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` an `HTMLButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};");
 for (const tag of [...tags].sort()) {
   const element = tagElements.get(tag);
-  lines.push(`        /// \`<${tag}>\``, `        #[link_name = "<${tag}>"]`, `        pub safe fn ${snake(tag)}() -> Element${element ? `<webapi::${element}>` : ""};`);
+  lines.push("", `    /// \`<${tag}>\``, `    #[cfg_attr(rust_js, rust_js::link_name = "<${tag}>")]`, `    pub fn ${snake(tag)}() -> Element${element ? `<webapi::${element}>` : ""} {`, "        unreachable!()", "    }");
 }
-lines.push("    }", "}", "");
+lines.push("}", "");
 
 // CSSProperties: CSS's properties, as React names them, `backgroundColor`.
 const webrefCss = await import("@webref/css");

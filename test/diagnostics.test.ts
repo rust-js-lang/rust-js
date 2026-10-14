@@ -1,7 +1,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, target } from "./support";
+import { runSync } from "./child";
+import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -93,7 +94,7 @@ for (const [name, source, message, crate] of [
   // A generic associated type of lifetimes is an associated type (ADR 0146); one of a type with a bound isn't.
   ["a generic associated type of a type with a bound", "pub trait Wrap { type Of<T>: Clone; fn wrap<T: Clone>(t: T) -> Self::Of<T>; }", "generic associated types with bounds"],
   ["a std trait's associated type's value, where a type has a destructor", "pub struct Guard;\nimpl Drop for Guard { fn drop(&mut self) {} }\npub fn first<I: Iterator>(mut i: I) -> usize { let _x = i.next(); 0 }", "a value of an associated type, where a type may have a destructor"],
-  ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "an `extern` declaration of this crate's own `#[no_mangle]` function"],
+  ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "not in an `extern` block"],
   ["a generic constant", "#![feature(generic_const_items)]\n#![allow(incomplete_features)]\npub trait Sizes { const SIZE<T>: usize; }", "generic constants"],
   ["a type constant, refused not crashed", "#![feature(min_generic_const_args)]\n#![allow(incomplete_features)]\npub trait Foo { type const N: usize; }\npub struct Bar;\nimpl Foo for Bar { type const N: usize = 3; }", "type constants"],
   ["a generic impl's constant of its parameter's size", "pub trait Size { const SIZE: usize; }\npub struct W<T>(pub T);\nimpl<T> Size for W<T> { const SIZE: usize = std::mem::size_of::<T>(); }\nfn size<S: Size>() -> usize { S::SIZE }\npub fn f() -> usize { size::<W<u8>>() }", "`size_of` of a type parameter"],
@@ -118,7 +119,14 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variants of one kind, matched", '#[rust_js::untagged] pub enum E { A(&\'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
   ["an untagged enum's variants of one kind, cloned", '#[rust_js::untagged] #[derive(Clone)] pub enum E { A(String), B(&\'static str) }\npub fn f(s: String) -> E { E::A(s) }', "which JS can't tell apart"],
   // A variadic binding's rest arguments are its last parameter, a slice (ADR 0221).
-  ["a variadic binding of no slice", 'unsafe extern "Rust" {\n    #[link_name = "Math.max"]\n    #[rust_js::variadic]\n    safe fn max(a: f64, b: f64) -> f64;\n}\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't a slice"],
+  ["a variadic binding of no slice", '#[rust_js::link_name = "Math.max"]\n#[rust_js::variadic]\n#[allow(unused_variables)]\nfn max(a: f64, b: f64) -> f64 { unreachable!() }\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't a slice"],
+  // A JS function is bound one way, an ordinary function with
+  // `#[rust_js::link_name]` (ADR 0373): one in an `extern` block is
+  // refused, its error saying the one way.
+  // A JS type is one form, a struct of a `JsObject` (ADR 0373): an `extern`
+  // type, of a nightly feature, is refused, its error saying the one form.
+  ["an extern type", '#![feature(extern_types)]\nunsafe extern "Rust" {\n    type Url;\n}\npub fn f(_: &Url) {}', "not an `extern` type"],
+  ["a function in an extern block", 'unsafe extern "Rust" {\n    #[link_name = "Math.max"]\n    pub safe fn max(a: f64, b: f64) -> f64;\n}\npub fn f() -> f64 { 1.0 }', 'not in an `extern` block'],
   ["an untagged enum's otherwise variant before another", '#[rust_js::untagged] pub enum E { #[rust_js::otherwise] A(String), B(u32) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 0, E::B(n) => n } }', "is its last"],
   // One of no value is its name's string (ADR 0214); one of two isn't one.
   ["an untagged enum's variant of two values", '#[rust_js::untagged] pub enum E { A(u32), B(u32, u32) }\npub fn f(e: E) -> u32 { match e { E::A(n) => n, E::B(a, _) => a } }', "holds one value"],
@@ -211,4 +219,22 @@ test("a program can use no unstable feature rust-js's syntax once used", () => {
   // feature to write.
   const binding = verdicts('#[rust_js::link_name = "Date.now"]\npub fn now() -> f64 {\n    unreachable!()\n}\n');
   expect([binding.rustJs, binding.stderr]).toEqual([true, ""]);
+});
+
+// A binding crate rustc builds, as webapi's is: its function in an `extern`
+// block is refused where a program rust-js compiles calls it, its error
+// saying the one form (ADR 0373).
+test("another crate's function in an extern block is refused where it's called", () => {
+  const dir = fixture("extern-fn-dep");
+  writeFileSync(join(dir, "dep.rs"), 'unsafe extern "Rust" {\n    #[link_name = "Math.max"]\n    pub safe fn max(a: f64, b: f64) -> f64;\n}\n');
+  run([compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=dep", "--emit=metadata", "--target=wasm32-unknown-unknown",
+    join(dir, "dep.rs"), "-o", join(dir, "libdep.rmeta")]);
+  const compile = (rust: string) => {
+    writeFileSync(join(dir, "lib.rs"), rust);
+    const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir], dir, 60_000);
+    return [out.code, out.stderr.includes("not in an `extern` block")];
+  };
+  // Called, and given as a value.
+  expect(compile("pub fn f() -> f64 {\n    dep::max(1.0, 2.0)\n}\n")).toEqual([1, true]);
+  expect(compile("pub fn f() -> Vec<f64> {\n    [1.0, 2.0].map(|x| x * 2.0).into_iter().zip([3.0, 1.0]).map(|(a, b)| (dep::max as fn(f64, f64) -> f64)(a, b)).collect()\n}\n")).toEqual([1, true]);
 });

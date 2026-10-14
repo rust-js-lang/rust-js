@@ -9,9 +9,9 @@ use super::status_line::{Status, StatusLine};
 use crate::compiler::Example;
 use crate::styles::CONTROL;
 
-unsafe extern "Rust" {
-    #[link_name = "../compiler-client.js#cancelCompile"]
-    safe fn cancel_compile();
+#[cfg_attr(rust_js, rust_js::link_name = "../compiler-client.js#cancelCompile")]
+fn cancel_compile() {
+    unreachable!()
 }
 
 pub struct ToolbarProps {

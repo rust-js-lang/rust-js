@@ -4,15 +4,28 @@
 
 use js::{JsError, Promise, decode_uri_component, encode_uri_component, js_error, settle};
 
-unsafe extern "Rust" {
-    #[link_name = "JSON.parse"]
-    safe fn parse_numbers(json: &str) -> Result<Vec<u32>, &'static JsError>;
-    #[link_name = "Promise.reject"]
-    safe fn rejected(reason: &str) -> Promise<Result<u32, &'static JsError>>;
-    #[link_name = "Promise.resolve"]
-    safe fn resolved(value: u32) -> Promise<Result<u32, &'static JsError>>;
-    #[link_name = "Promise.reject"]
-    safe fn rejects(reason: &str) -> Promise<u32>;
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[allow(unused_variables)]
+fn parse_numbers(json: &str) -> Result<Vec<u32>, &'static JsError> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
+#[allow(unused_variables)]
+fn rejected(reason: &str) -> Promise<Result<u32, &'static JsError>> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
+#[allow(unused_variables)]
+fn resolved(value: u32) -> Promise<Result<u32, &'static JsError>> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
+#[allow(unused_variables)]
+fn rejects(reason: &str) -> Promise<u32> {
+    unreachable!()
 }
 
 /// The numbers' sum, or what `JSON.parse` threw.
@@ -71,7 +84,8 @@ pub async fn settle_either(fail: bool) -> String {
     }
 }
 
-unsafe extern "Rust" {
-    #[link_name = "Promise.resolve"]
-    safe fn later(value: u32) -> Promise<u32>;
+#[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
+#[allow(unused_variables)]
+fn later(value: u32) -> Promise<u32> {
+    unreachable!()
 }

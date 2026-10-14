@@ -7372,523 +7372,1036 @@ impl<T> Element<T> {
 pub mod html {
     use super::{Element, webapi};
 
-    unsafe extern "Rust" {
-        /// `<a>`
-        #[link_name = "<a>"]
-        pub safe fn a() -> Element<webapi::HTMLAnchorElement>;
-        /// `<abbr>`
-        #[link_name = "<abbr>"]
-        pub safe fn abbr() -> Element<webapi::HTMLElement>;
-        /// `<address>`
-        #[link_name = "<address>"]
-        pub safe fn address() -> Element<webapi::HTMLElement>;
-        /// `<animate>`
-        #[link_name = "<animate>"]
-        pub safe fn animate() -> Element<webapi::SVGAnimateElement>;
-        /// `<animateMotion>`
-        #[link_name = "<animateMotion>"]
-        pub safe fn animate_motion() -> Element<webapi::SVGAnimateMotionElement>;
-        /// `<animateTransform>`
-        #[link_name = "<animateTransform>"]
-        pub safe fn animate_transform() -> Element<webapi::SVGAnimateTransformElement>;
-        /// `<area>`
-        #[link_name = "<area>"]
-        pub safe fn area() -> Element<webapi::HTMLAreaElement>;
-        /// `<article>`
-        #[link_name = "<article>"]
-        pub safe fn article() -> Element<webapi::HTMLElement>;
-        /// `<aside>`
-        #[link_name = "<aside>"]
-        pub safe fn aside() -> Element<webapi::HTMLElement>;
-        /// `<audio>`
-        #[link_name = "<audio>"]
-        pub safe fn audio() -> Element<webapi::HTMLAudioElement>;
-        /// `<b>`
-        #[link_name = "<b>"]
-        pub safe fn b() -> Element<webapi::HTMLElement>;
-        /// `<base>`
-        #[link_name = "<base>"]
-        pub safe fn base() -> Element<webapi::HTMLBaseElement>;
-        /// `<bdi>`
-        #[link_name = "<bdi>"]
-        pub safe fn bdi() -> Element<webapi::HTMLElement>;
-        /// `<bdo>`
-        #[link_name = "<bdo>"]
-        pub safe fn bdo() -> Element<webapi::HTMLElement>;
-        /// `<blockquote>`
-        #[link_name = "<blockquote>"]
-        pub safe fn blockquote() -> Element<webapi::HTMLQuoteElement>;
-        /// `<body>`
-        #[link_name = "<body>"]
-        pub safe fn body() -> Element<webapi::HTMLBodyElement>;
-        /// `<br>`
-        #[link_name = "<br>"]
-        pub safe fn br() -> Element<webapi::HTMLBRElement>;
-        /// `<button>`
-        #[link_name = "<button>"]
-        pub safe fn button() -> Element<webapi::HTMLButtonElement>;
-        /// `<canvas>`
-        #[link_name = "<canvas>"]
-        pub safe fn canvas() -> Element<webapi::HTMLCanvasElement>;
-        /// `<caption>`
-        #[link_name = "<caption>"]
-        pub safe fn caption() -> Element<webapi::HTMLTableCaptionElement>;
-        /// `<circle>`
-        #[link_name = "<circle>"]
-        pub safe fn circle() -> Element<webapi::SVGCircleElement>;
-        /// `<cite>`
-        #[link_name = "<cite>"]
-        pub safe fn cite() -> Element<webapi::HTMLElement>;
-        /// `<clipPath>`
-        #[link_name = "<clipPath>"]
-        pub safe fn clip_path() -> Element<webapi::SVGClipPathElement>;
-        /// `<code>`
-        #[link_name = "<code>"]
-        pub safe fn code() -> Element<webapi::HTMLElement>;
-        /// `<col>`
-        #[link_name = "<col>"]
-        pub safe fn col() -> Element<webapi::HTMLTableColElement>;
-        /// `<colgroup>`
-        #[link_name = "<colgroup>"]
-        pub safe fn colgroup() -> Element<webapi::HTMLTableColElement>;
-        /// `<data>`
-        #[link_name = "<data>"]
-        pub safe fn data() -> Element<webapi::HTMLDataElement>;
-        /// `<datalist>`
-        #[link_name = "<datalist>"]
-        pub safe fn datalist() -> Element<webapi::HTMLDataListElement>;
-        /// `<dd>`
-        #[link_name = "<dd>"]
-        pub safe fn dd() -> Element<webapi::HTMLElement>;
-        /// `<defs>`
-        #[link_name = "<defs>"]
-        pub safe fn defs() -> Element<webapi::SVGDefsElement>;
-        /// `<del>`
-        #[link_name = "<del>"]
-        pub safe fn del() -> Element<webapi::HTMLModElement>;
-        /// `<desc>`
-        #[link_name = "<desc>"]
-        pub safe fn desc() -> Element<webapi::SVGDescElement>;
-        /// `<details>`
-        #[link_name = "<details>"]
-        pub safe fn details() -> Element<webapi::HTMLDetailsElement>;
-        /// `<dfn>`
-        #[link_name = "<dfn>"]
-        pub safe fn dfn() -> Element<webapi::HTMLElement>;
-        /// `<dialog>`
-        #[link_name = "<dialog>"]
-        pub safe fn dialog() -> Element<webapi::HTMLDialogElement>;
-        /// `<div>`
-        #[link_name = "<div>"]
-        pub safe fn div() -> Element<webapi::HTMLDivElement>;
-        /// `<dl>`
-        #[link_name = "<dl>"]
-        pub safe fn dl() -> Element<webapi::HTMLDListElement>;
-        /// `<dt>`
-        #[link_name = "<dt>"]
-        pub safe fn dt() -> Element<webapi::HTMLElement>;
-        /// `<ellipse>`
-        #[link_name = "<ellipse>"]
-        pub safe fn ellipse() -> Element<webapi::SVGEllipseElement>;
-        /// `<em>`
-        #[link_name = "<em>"]
-        pub safe fn em() -> Element<webapi::HTMLElement>;
-        /// `<embed>`
-        #[link_name = "<embed>"]
-        pub safe fn embed() -> Element<webapi::HTMLEmbedElement>;
-        /// `<feBlend>`
-        #[link_name = "<feBlend>"]
-        pub safe fn fe_blend() -> Element<webapi::SVGFEBlendElement>;
-        /// `<feColorMatrix>`
-        #[link_name = "<feColorMatrix>"]
-        pub safe fn fe_color_matrix() -> Element<webapi::SVGFEColorMatrixElement>;
-        /// `<feComponentTransfer>`
-        #[link_name = "<feComponentTransfer>"]
-        pub safe fn fe_component_transfer() -> Element<webapi::SVGFEComponentTransferElement>;
-        /// `<feComposite>`
-        #[link_name = "<feComposite>"]
-        pub safe fn fe_composite() -> Element<webapi::SVGFECompositeElement>;
-        /// `<feConvolveMatrix>`
-        #[link_name = "<feConvolveMatrix>"]
-        pub safe fn fe_convolve_matrix() -> Element<webapi::SVGFEConvolveMatrixElement>;
-        /// `<feDiffuseLighting>`
-        #[link_name = "<feDiffuseLighting>"]
-        pub safe fn fe_diffuse_lighting() -> Element<webapi::SVGFEDiffuseLightingElement>;
-        /// `<feDisplacementMap>`
-        #[link_name = "<feDisplacementMap>"]
-        pub safe fn fe_displacement_map() -> Element<webapi::SVGFEDisplacementMapElement>;
-        /// `<feDistantLight>`
-        #[link_name = "<feDistantLight>"]
-        pub safe fn fe_distant_light() -> Element<webapi::SVGFEDistantLightElement>;
-        /// `<feDropShadow>`
-        #[link_name = "<feDropShadow>"]
-        pub safe fn fe_drop_shadow() -> Element<webapi::SVGFEDropShadowElement>;
-        /// `<feFlood>`
-        #[link_name = "<feFlood>"]
-        pub safe fn fe_flood() -> Element<webapi::SVGFEFloodElement>;
-        /// `<feFuncA>`
-        #[link_name = "<feFuncA>"]
-        pub safe fn fe_func_a() -> Element<webapi::SVGFEFuncAElement>;
-        /// `<feFuncB>`
-        #[link_name = "<feFuncB>"]
-        pub safe fn fe_func_b() -> Element<webapi::SVGFEFuncBElement>;
-        /// `<feFuncG>`
-        #[link_name = "<feFuncG>"]
-        pub safe fn fe_func_g() -> Element<webapi::SVGFEFuncGElement>;
-        /// `<feFuncR>`
-        #[link_name = "<feFuncR>"]
-        pub safe fn fe_func_r() -> Element<webapi::SVGFEFuncRElement>;
-        /// `<feGaussianBlur>`
-        #[link_name = "<feGaussianBlur>"]
-        pub safe fn fe_gaussian_blur() -> Element<webapi::SVGFEGaussianBlurElement>;
-        /// `<feImage>`
-        #[link_name = "<feImage>"]
-        pub safe fn fe_image() -> Element<webapi::SVGFEImageElement>;
-        /// `<feMerge>`
-        #[link_name = "<feMerge>"]
-        pub safe fn fe_merge() -> Element<webapi::SVGFEMergeElement>;
-        /// `<feMergeNode>`
-        #[link_name = "<feMergeNode>"]
-        pub safe fn fe_merge_node() -> Element<webapi::SVGFEMergeNodeElement>;
-        /// `<feMorphology>`
-        #[link_name = "<feMorphology>"]
-        pub safe fn fe_morphology() -> Element<webapi::SVGFEMorphologyElement>;
-        /// `<feOffset>`
-        #[link_name = "<feOffset>"]
-        pub safe fn fe_offset() -> Element<webapi::SVGFEOffsetElement>;
-        /// `<fePointLight>`
-        #[link_name = "<fePointLight>"]
-        pub safe fn fe_point_light() -> Element<webapi::SVGFEPointLightElement>;
-        /// `<feSpecularLighting>`
-        #[link_name = "<feSpecularLighting>"]
-        pub safe fn fe_specular_lighting() -> Element<webapi::SVGFESpecularLightingElement>;
-        /// `<feSpotLight>`
-        #[link_name = "<feSpotLight>"]
-        pub safe fn fe_spot_light() -> Element<webapi::SVGFESpotLightElement>;
-        /// `<feTile>`
-        #[link_name = "<feTile>"]
-        pub safe fn fe_tile() -> Element<webapi::SVGFETileElement>;
-        /// `<feTurbulence>`
-        #[link_name = "<feTurbulence>"]
-        pub safe fn fe_turbulence() -> Element<webapi::SVGFETurbulenceElement>;
-        /// `<fieldset>`
-        #[link_name = "<fieldset>"]
-        pub safe fn fieldset() -> Element<webapi::HTMLFieldSetElement>;
-        /// `<figcaption>`
-        #[link_name = "<figcaption>"]
-        pub safe fn figcaption() -> Element<webapi::HTMLElement>;
-        /// `<figure>`
-        #[link_name = "<figure>"]
-        pub safe fn figure() -> Element<webapi::HTMLElement>;
-        /// `<filter>`
-        #[link_name = "<filter>"]
-        pub safe fn filter() -> Element<webapi::SVGFilterElement>;
-        /// `<footer>`
-        #[link_name = "<footer>"]
-        pub safe fn footer() -> Element<webapi::HTMLElement>;
-        /// `<foreignObject>`
-        #[link_name = "<foreignObject>"]
-        pub safe fn foreign_object() -> Element<webapi::SVGForeignObjectElement>;
-        /// `<form>`
-        #[link_name = "<form>"]
-        pub safe fn form() -> Element<webapi::HTMLFormElement>;
-        /// `<g>`
-        #[link_name = "<g>"]
-        pub safe fn g() -> Element<webapi::SVGGElement>;
-        /// `<h1>`
-        #[link_name = "<h1>"]
-        pub safe fn h1() -> Element<webapi::HTMLHeadingElement>;
-        /// `<h2>`
-        #[link_name = "<h2>"]
-        pub safe fn h2() -> Element<webapi::HTMLHeadingElement>;
-        /// `<h3>`
-        #[link_name = "<h3>"]
-        pub safe fn h3() -> Element<webapi::HTMLHeadingElement>;
-        /// `<h4>`
-        #[link_name = "<h4>"]
-        pub safe fn h4() -> Element<webapi::HTMLHeadingElement>;
-        /// `<h5>`
-        #[link_name = "<h5>"]
-        pub safe fn h5() -> Element<webapi::HTMLHeadingElement>;
-        /// `<h6>`
-        #[link_name = "<h6>"]
-        pub safe fn h6() -> Element<webapi::HTMLHeadingElement>;
-        /// `<head>`
-        #[link_name = "<head>"]
-        pub safe fn head() -> Element<webapi::HTMLHeadElement>;
-        /// `<header>`
-        #[link_name = "<header>"]
-        pub safe fn header() -> Element<webapi::HTMLElement>;
-        /// `<hgroup>`
-        #[link_name = "<hgroup>"]
-        pub safe fn hgroup() -> Element<webapi::HTMLElement>;
-        /// `<hr>`
-        #[link_name = "<hr>"]
-        pub safe fn hr() -> Element<webapi::HTMLHRElement>;
-        /// `<html>`
-        #[link_name = "<html>"]
-        pub safe fn html() -> Element<webapi::HTMLHtmlElement>;
-        /// `<i>`
-        #[link_name = "<i>"]
-        pub safe fn i() -> Element<webapi::HTMLElement>;
-        /// `<iframe>`
-        #[link_name = "<iframe>"]
-        pub safe fn iframe() -> Element<webapi::HTMLIFrameElement>;
-        /// `<image>`
-        #[link_name = "<image>"]
-        pub safe fn image() -> Element<webapi::SVGImageElement>;
-        /// `<img>`
-        #[link_name = "<img>"]
-        pub safe fn img() -> Element<webapi::HTMLImageElement>;
-        /// `<input>`
-        #[link_name = "<input>"]
-        pub safe fn input() -> Element<webapi::HTMLInputElement>;
-        /// `<ins>`
-        #[link_name = "<ins>"]
-        pub safe fn ins() -> Element<webapi::HTMLModElement>;
-        /// `<kbd>`
-        #[link_name = "<kbd>"]
-        pub safe fn kbd() -> Element<webapi::HTMLElement>;
-        /// `<label>`
-        #[link_name = "<label>"]
-        pub safe fn label() -> Element<webapi::HTMLLabelElement>;
-        /// `<legend>`
-        #[link_name = "<legend>"]
-        pub safe fn legend() -> Element<webapi::HTMLLegendElement>;
-        /// `<li>`
-        #[link_name = "<li>"]
-        pub safe fn li() -> Element<webapi::HTMLLIElement>;
-        /// `<line>`
-        #[link_name = "<line>"]
-        pub safe fn line() -> Element<webapi::SVGLineElement>;
-        /// `<linearGradient>`
-        #[link_name = "<linearGradient>"]
-        pub safe fn linear_gradient() -> Element<webapi::SVGLinearGradientElement>;
-        /// `<link>`
-        #[link_name = "<link>"]
-        pub safe fn link() -> Element<webapi::HTMLLinkElement>;
-        /// `<main>`
-        #[link_name = "<main>"]
-        pub safe fn main() -> Element<webapi::HTMLElement>;
-        /// `<map>`
-        #[link_name = "<map>"]
-        pub safe fn map() -> Element<webapi::HTMLMapElement>;
-        /// `<mark>`
-        #[link_name = "<mark>"]
-        pub safe fn mark() -> Element<webapi::HTMLElement>;
-        /// `<marker>`
-        #[link_name = "<marker>"]
-        pub safe fn marker() -> Element<webapi::SVGMarkerElement>;
-        /// `<mask>`
-        #[link_name = "<mask>"]
-        pub safe fn mask() -> Element<webapi::SVGMaskElement>;
-        /// `<menu>`
-        #[link_name = "<menu>"]
-        pub safe fn menu() -> Element<webapi::HTMLMenuElement>;
-        /// `<meta>`
-        #[link_name = "<meta>"]
-        pub safe fn meta() -> Element<webapi::HTMLMetaElement>;
-        /// `<metadata>`
-        #[link_name = "<metadata>"]
-        pub safe fn metadata() -> Element<webapi::SVGMetadataElement>;
-        /// `<meter>`
-        #[link_name = "<meter>"]
-        pub safe fn meter() -> Element<webapi::HTMLMeterElement>;
-        /// `<mpath>`
-        #[link_name = "<mpath>"]
-        pub safe fn mpath() -> Element<webapi::SVGMPathElement>;
-        /// `<nav>`
-        #[link_name = "<nav>"]
-        pub safe fn nav() -> Element<webapi::HTMLElement>;
-        /// `<noscript>`
-        #[link_name = "<noscript>"]
-        pub safe fn noscript() -> Element<webapi::HTMLElement>;
-        /// `<object>`
-        #[link_name = "<object>"]
-        pub safe fn object() -> Element<webapi::HTMLObjectElement>;
-        /// `<ol>`
-        #[link_name = "<ol>"]
-        pub safe fn ol() -> Element<webapi::HTMLOListElement>;
-        /// `<optgroup>`
-        #[link_name = "<optgroup>"]
-        pub safe fn optgroup() -> Element<webapi::HTMLOptGroupElement>;
-        /// `<option>`
-        #[link_name = "<option>"]
-        pub safe fn option() -> Element<webapi::HTMLOptionElement>;
-        /// `<output>`
-        #[link_name = "<output>"]
-        pub safe fn output() -> Element<webapi::HTMLOutputElement>;
-        /// `<p>`
-        #[link_name = "<p>"]
-        pub safe fn p() -> Element<webapi::HTMLParagraphElement>;
-        /// `<path>`
-        #[link_name = "<path>"]
-        pub safe fn path() -> Element<webapi::SVGPathElement>;
-        /// `<pattern>`
-        #[link_name = "<pattern>"]
-        pub safe fn pattern() -> Element<webapi::SVGPatternElement>;
-        /// `<picture>`
-        #[link_name = "<picture>"]
-        pub safe fn picture() -> Element<webapi::HTMLPictureElement>;
-        /// `<polygon>`
-        #[link_name = "<polygon>"]
-        pub safe fn polygon() -> Element<webapi::SVGPolygonElement>;
-        /// `<polyline>`
-        #[link_name = "<polyline>"]
-        pub safe fn polyline() -> Element<webapi::SVGPolylineElement>;
-        /// `<pre>`
-        #[link_name = "<pre>"]
-        pub safe fn pre() -> Element<webapi::HTMLPreElement>;
-        /// `<progress>`
-        #[link_name = "<progress>"]
-        pub safe fn progress() -> Element<webapi::HTMLProgressElement>;
-        /// `<q>`
-        #[link_name = "<q>"]
-        pub safe fn q() -> Element<webapi::HTMLQuoteElement>;
-        /// `<radialGradient>`
-        #[link_name = "<radialGradient>"]
-        pub safe fn radial_gradient() -> Element<webapi::SVGRadialGradientElement>;
-        /// `<rect>`
-        #[link_name = "<rect>"]
-        pub safe fn rect() -> Element<webapi::SVGRectElement>;
-        /// `<rp>`
-        #[link_name = "<rp>"]
-        pub safe fn rp() -> Element<webapi::HTMLElement>;
-        /// `<rt>`
-        #[link_name = "<rt>"]
-        pub safe fn rt() -> Element<webapi::HTMLElement>;
-        /// `<ruby>`
-        #[link_name = "<ruby>"]
-        pub safe fn ruby() -> Element<webapi::HTMLElement>;
-        /// `<s>`
-        #[link_name = "<s>"]
-        pub safe fn s() -> Element<webapi::HTMLElement>;
-        /// `<samp>`
-        #[link_name = "<samp>"]
-        pub safe fn samp() -> Element<webapi::HTMLElement>;
-        /// `<script>`
-        #[link_name = "<script>"]
-        pub safe fn script() -> Element<webapi::HTMLScriptElement>;
-        /// `<search>`
-        #[link_name = "<search>"]
-        pub safe fn search() -> Element<webapi::HTMLElement>;
-        /// `<section>`
-        #[link_name = "<section>"]
-        pub safe fn section() -> Element<webapi::HTMLElement>;
-        /// `<select>`
-        #[link_name = "<select>"]
-        pub safe fn select() -> Element<webapi::HTMLSelectElement>;
-        /// `<selectedcontent>`
-        #[link_name = "<selectedcontent>"]
-        pub safe fn selectedcontent() -> Element<webapi::HTMLSelectedContentElement>;
-        /// `<set>`
-        #[link_name = "<set>"]
-        pub safe fn set() -> Element<webapi::SVGSetElement>;
-        /// `<slot>`
-        #[link_name = "<slot>"]
-        pub safe fn slot() -> Element<webapi::HTMLSlotElement>;
-        /// `<small>`
-        #[link_name = "<small>"]
-        pub safe fn small() -> Element<webapi::HTMLElement>;
-        /// `<source>`
-        #[link_name = "<source>"]
-        pub safe fn source() -> Element<webapi::HTMLSourceElement>;
-        /// `<span>`
-        #[link_name = "<span>"]
-        pub safe fn span() -> Element<webapi::HTMLSpanElement>;
-        /// `<stop>`
-        #[link_name = "<stop>"]
-        pub safe fn stop() -> Element<webapi::SVGStopElement>;
-        /// `<strong>`
-        #[link_name = "<strong>"]
-        pub safe fn strong() -> Element<webapi::HTMLElement>;
-        /// `<style>`
-        #[link_name = "<style>"]
-        pub safe fn style() -> Element<webapi::HTMLStyleElement>;
-        /// `<sub>`
-        #[link_name = "<sub>"]
-        pub safe fn sub() -> Element<webapi::HTMLElement>;
-        /// `<summary>`
-        #[link_name = "<summary>"]
-        pub safe fn summary() -> Element<webapi::HTMLElement>;
-        /// `<sup>`
-        #[link_name = "<sup>"]
-        pub safe fn sup() -> Element<webapi::HTMLElement>;
-        /// `<svg>`
-        #[link_name = "<svg>"]
-        pub safe fn svg() -> Element<webapi::SVGSVGElement>;
-        /// `<switch>`
-        #[link_name = "<switch>"]
-        pub safe fn switch() -> Element<webapi::SVGSwitchElement>;
-        /// `<symbol>`
-        #[link_name = "<symbol>"]
-        pub safe fn symbol() -> Element<webapi::SVGSymbolElement>;
-        /// `<table>`
-        #[link_name = "<table>"]
-        pub safe fn table() -> Element<webapi::HTMLTableElement>;
-        /// `<tbody>`
-        #[link_name = "<tbody>"]
-        pub safe fn tbody() -> Element<webapi::HTMLTableSectionElement>;
-        /// `<td>`
-        #[link_name = "<td>"]
-        pub safe fn td() -> Element<webapi::HTMLTableCellElement>;
-        /// `<template>`
-        #[link_name = "<template>"]
-        pub safe fn template() -> Element<webapi::HTMLTemplateElement>;
-        /// `<text>`
-        #[link_name = "<text>"]
-        pub safe fn text() -> Element<webapi::SVGTextElement>;
-        /// `<textPath>`
-        #[link_name = "<textPath>"]
-        pub safe fn text_path() -> Element<webapi::SVGTextPathElement>;
-        /// `<textarea>`
-        #[link_name = "<textarea>"]
-        pub safe fn textarea() -> Element<webapi::HTMLTextAreaElement>;
-        /// `<tfoot>`
-        #[link_name = "<tfoot>"]
-        pub safe fn tfoot() -> Element<webapi::HTMLTableSectionElement>;
-        /// `<th>`
-        #[link_name = "<th>"]
-        pub safe fn th() -> Element<webapi::HTMLTableCellElement>;
-        /// `<thead>`
-        #[link_name = "<thead>"]
-        pub safe fn thead() -> Element<webapi::HTMLTableSectionElement>;
-        /// `<time>`
-        #[link_name = "<time>"]
-        pub safe fn time() -> Element<webapi::HTMLTimeElement>;
-        /// `<title>`
-        #[link_name = "<title>"]
-        pub safe fn title() -> Element<webapi::HTMLTitleElement>;
-        /// `<tr>`
-        #[link_name = "<tr>"]
-        pub safe fn tr() -> Element<webapi::HTMLTableRowElement>;
-        /// `<track>`
-        #[link_name = "<track>"]
-        pub safe fn track() -> Element<webapi::HTMLTrackElement>;
-        /// `<tspan>`
-        #[link_name = "<tspan>"]
-        pub safe fn tspan() -> Element<webapi::SVGTSpanElement>;
-        /// `<u>`
-        #[link_name = "<u>"]
-        pub safe fn u() -> Element<webapi::HTMLElement>;
-        /// `<ul>`
-        #[link_name = "<ul>"]
-        pub safe fn ul() -> Element<webapi::HTMLUListElement>;
-        /// `<use>`
-        #[link_name = "<use>"]
-        pub safe fn r#use() -> Element<webapi::SVGUseElement>;
-        /// `<var>`
-        #[link_name = "<var>"]
-        pub safe fn var() -> Element<webapi::HTMLElement>;
-        /// `<video>`
-        #[link_name = "<video>"]
-        pub safe fn video() -> Element<webapi::HTMLVideoElement>;
-        /// `<view>`
-        #[link_name = "<view>"]
-        pub safe fn view() -> Element<webapi::SVGViewElement>;
-        /// `<wbr>`
-        #[link_name = "<wbr>"]
-        pub safe fn wbr() -> Element<webapi::HTMLElement>;
+    /// `<a>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<a>")]
+    pub fn a() -> Element<webapi::HTMLAnchorElement> {
+        unreachable!()
+    }
+
+    /// `<abbr>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<abbr>")]
+    pub fn abbr() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<address>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<address>")]
+    pub fn address() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<animate>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<animate>")]
+    pub fn animate() -> Element<webapi::SVGAnimateElement> {
+        unreachable!()
+    }
+
+    /// `<animateMotion>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<animateMotion>")]
+    pub fn animate_motion() -> Element<webapi::SVGAnimateMotionElement> {
+        unreachable!()
+    }
+
+    /// `<animateTransform>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<animateTransform>")]
+    pub fn animate_transform() -> Element<webapi::SVGAnimateTransformElement> {
+        unreachable!()
+    }
+
+    /// `<area>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<area>")]
+    pub fn area() -> Element<webapi::HTMLAreaElement> {
+        unreachable!()
+    }
+
+    /// `<article>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<article>")]
+    pub fn article() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<aside>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<aside>")]
+    pub fn aside() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<audio>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<audio>")]
+    pub fn audio() -> Element<webapi::HTMLAudioElement> {
+        unreachable!()
+    }
+
+    /// `<b>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<b>")]
+    pub fn b() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<base>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<base>")]
+    pub fn base() -> Element<webapi::HTMLBaseElement> {
+        unreachable!()
+    }
+
+    /// `<bdi>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<bdi>")]
+    pub fn bdi() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<bdo>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<bdo>")]
+    pub fn bdo() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<blockquote>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<blockquote>")]
+    pub fn blockquote() -> Element<webapi::HTMLQuoteElement> {
+        unreachable!()
+    }
+
+    /// `<body>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<body>")]
+    pub fn body() -> Element<webapi::HTMLBodyElement> {
+        unreachable!()
+    }
+
+    /// `<br>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<br>")]
+    pub fn br() -> Element<webapi::HTMLBRElement> {
+        unreachable!()
+    }
+
+    /// `<button>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<button>")]
+    pub fn button() -> Element<webapi::HTMLButtonElement> {
+        unreachable!()
+    }
+
+    /// `<canvas>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<canvas>")]
+    pub fn canvas() -> Element<webapi::HTMLCanvasElement> {
+        unreachable!()
+    }
+
+    /// `<caption>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<caption>")]
+    pub fn caption() -> Element<webapi::HTMLTableCaptionElement> {
+        unreachable!()
+    }
+
+    /// `<circle>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<circle>")]
+    pub fn circle() -> Element<webapi::SVGCircleElement> {
+        unreachable!()
+    }
+
+    /// `<cite>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<cite>")]
+    pub fn cite() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<clipPath>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<clipPath>")]
+    pub fn clip_path() -> Element<webapi::SVGClipPathElement> {
+        unreachable!()
+    }
+
+    /// `<code>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<code>")]
+    pub fn code() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<col>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<col>")]
+    pub fn col() -> Element<webapi::HTMLTableColElement> {
+        unreachable!()
+    }
+
+    /// `<colgroup>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<colgroup>")]
+    pub fn colgroup() -> Element<webapi::HTMLTableColElement> {
+        unreachable!()
+    }
+
+    /// `<data>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<data>")]
+    pub fn data() -> Element<webapi::HTMLDataElement> {
+        unreachable!()
+    }
+
+    /// `<datalist>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<datalist>")]
+    pub fn datalist() -> Element<webapi::HTMLDataListElement> {
+        unreachable!()
+    }
+
+    /// `<dd>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<dd>")]
+    pub fn dd() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<defs>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<defs>")]
+    pub fn defs() -> Element<webapi::SVGDefsElement> {
+        unreachable!()
+    }
+
+    /// `<del>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<del>")]
+    pub fn del() -> Element<webapi::HTMLModElement> {
+        unreachable!()
+    }
+
+    /// `<desc>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<desc>")]
+    pub fn desc() -> Element<webapi::SVGDescElement> {
+        unreachable!()
+    }
+
+    /// `<details>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<details>")]
+    pub fn details() -> Element<webapi::HTMLDetailsElement> {
+        unreachable!()
+    }
+
+    /// `<dfn>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<dfn>")]
+    pub fn dfn() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<dialog>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<dialog>")]
+    pub fn dialog() -> Element<webapi::HTMLDialogElement> {
+        unreachable!()
+    }
+
+    /// `<div>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<div>")]
+    pub fn div() -> Element<webapi::HTMLDivElement> {
+        unreachable!()
+    }
+
+    /// `<dl>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<dl>")]
+    pub fn dl() -> Element<webapi::HTMLDListElement> {
+        unreachable!()
+    }
+
+    /// `<dt>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<dt>")]
+    pub fn dt() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<ellipse>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<ellipse>")]
+    pub fn ellipse() -> Element<webapi::SVGEllipseElement> {
+        unreachable!()
+    }
+
+    /// `<em>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<em>")]
+    pub fn em() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<embed>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<embed>")]
+    pub fn embed() -> Element<webapi::HTMLEmbedElement> {
+        unreachable!()
+    }
+
+    /// `<feBlend>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feBlend>")]
+    pub fn fe_blend() -> Element<webapi::SVGFEBlendElement> {
+        unreachable!()
+    }
+
+    /// `<feColorMatrix>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feColorMatrix>")]
+    pub fn fe_color_matrix() -> Element<webapi::SVGFEColorMatrixElement> {
+        unreachable!()
+    }
+
+    /// `<feComponentTransfer>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feComponentTransfer>")]
+    pub fn fe_component_transfer() -> Element<webapi::SVGFEComponentTransferElement> {
+        unreachable!()
+    }
+
+    /// `<feComposite>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feComposite>")]
+    pub fn fe_composite() -> Element<webapi::SVGFECompositeElement> {
+        unreachable!()
+    }
+
+    /// `<feConvolveMatrix>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feConvolveMatrix>")]
+    pub fn fe_convolve_matrix() -> Element<webapi::SVGFEConvolveMatrixElement> {
+        unreachable!()
+    }
+
+    /// `<feDiffuseLighting>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feDiffuseLighting>")]
+    pub fn fe_diffuse_lighting() -> Element<webapi::SVGFEDiffuseLightingElement> {
+        unreachable!()
+    }
+
+    /// `<feDisplacementMap>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feDisplacementMap>")]
+    pub fn fe_displacement_map() -> Element<webapi::SVGFEDisplacementMapElement> {
+        unreachable!()
+    }
+
+    /// `<feDistantLight>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feDistantLight>")]
+    pub fn fe_distant_light() -> Element<webapi::SVGFEDistantLightElement> {
+        unreachable!()
+    }
+
+    /// `<feDropShadow>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feDropShadow>")]
+    pub fn fe_drop_shadow() -> Element<webapi::SVGFEDropShadowElement> {
+        unreachable!()
+    }
+
+    /// `<feFlood>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feFlood>")]
+    pub fn fe_flood() -> Element<webapi::SVGFEFloodElement> {
+        unreachable!()
+    }
+
+    /// `<feFuncA>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feFuncA>")]
+    pub fn fe_func_a() -> Element<webapi::SVGFEFuncAElement> {
+        unreachable!()
+    }
+
+    /// `<feFuncB>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feFuncB>")]
+    pub fn fe_func_b() -> Element<webapi::SVGFEFuncBElement> {
+        unreachable!()
+    }
+
+    /// `<feFuncG>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feFuncG>")]
+    pub fn fe_func_g() -> Element<webapi::SVGFEFuncGElement> {
+        unreachable!()
+    }
+
+    /// `<feFuncR>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feFuncR>")]
+    pub fn fe_func_r() -> Element<webapi::SVGFEFuncRElement> {
+        unreachable!()
+    }
+
+    /// `<feGaussianBlur>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feGaussianBlur>")]
+    pub fn fe_gaussian_blur() -> Element<webapi::SVGFEGaussianBlurElement> {
+        unreachable!()
+    }
+
+    /// `<feImage>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feImage>")]
+    pub fn fe_image() -> Element<webapi::SVGFEImageElement> {
+        unreachable!()
+    }
+
+    /// `<feMerge>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feMerge>")]
+    pub fn fe_merge() -> Element<webapi::SVGFEMergeElement> {
+        unreachable!()
+    }
+
+    /// `<feMergeNode>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feMergeNode>")]
+    pub fn fe_merge_node() -> Element<webapi::SVGFEMergeNodeElement> {
+        unreachable!()
+    }
+
+    /// `<feMorphology>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feMorphology>")]
+    pub fn fe_morphology() -> Element<webapi::SVGFEMorphologyElement> {
+        unreachable!()
+    }
+
+    /// `<feOffset>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feOffset>")]
+    pub fn fe_offset() -> Element<webapi::SVGFEOffsetElement> {
+        unreachable!()
+    }
+
+    /// `<fePointLight>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<fePointLight>")]
+    pub fn fe_point_light() -> Element<webapi::SVGFEPointLightElement> {
+        unreachable!()
+    }
+
+    /// `<feSpecularLighting>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feSpecularLighting>")]
+    pub fn fe_specular_lighting() -> Element<webapi::SVGFESpecularLightingElement> {
+        unreachable!()
+    }
+
+    /// `<feSpotLight>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feSpotLight>")]
+    pub fn fe_spot_light() -> Element<webapi::SVGFESpotLightElement> {
+        unreachable!()
+    }
+
+    /// `<feTile>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feTile>")]
+    pub fn fe_tile() -> Element<webapi::SVGFETileElement> {
+        unreachable!()
+    }
+
+    /// `<feTurbulence>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<feTurbulence>")]
+    pub fn fe_turbulence() -> Element<webapi::SVGFETurbulenceElement> {
+        unreachable!()
+    }
+
+    /// `<fieldset>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<fieldset>")]
+    pub fn fieldset() -> Element<webapi::HTMLFieldSetElement> {
+        unreachable!()
+    }
+
+    /// `<figcaption>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<figcaption>")]
+    pub fn figcaption() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<figure>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<figure>")]
+    pub fn figure() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<filter>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<filter>")]
+    pub fn filter() -> Element<webapi::SVGFilterElement> {
+        unreachable!()
+    }
+
+    /// `<footer>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<footer>")]
+    pub fn footer() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<foreignObject>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<foreignObject>")]
+    pub fn foreign_object() -> Element<webapi::SVGForeignObjectElement> {
+        unreachable!()
+    }
+
+    /// `<form>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<form>")]
+    pub fn form() -> Element<webapi::HTMLFormElement> {
+        unreachable!()
+    }
+
+    /// `<g>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<g>")]
+    pub fn g() -> Element<webapi::SVGGElement> {
+        unreachable!()
+    }
+
+    /// `<h1>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h1>")]
+    pub fn h1() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<h2>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h2>")]
+    pub fn h2() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<h3>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h3>")]
+    pub fn h3() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<h4>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h4>")]
+    pub fn h4() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<h5>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h5>")]
+    pub fn h5() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<h6>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<h6>")]
+    pub fn h6() -> Element<webapi::HTMLHeadingElement> {
+        unreachable!()
+    }
+
+    /// `<head>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<head>")]
+    pub fn head() -> Element<webapi::HTMLHeadElement> {
+        unreachable!()
+    }
+
+    /// `<header>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<header>")]
+    pub fn header() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<hgroup>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<hgroup>")]
+    pub fn hgroup() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<hr>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<hr>")]
+    pub fn hr() -> Element<webapi::HTMLHRElement> {
+        unreachable!()
+    }
+
+    /// `<html>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<html>")]
+    pub fn html() -> Element<webapi::HTMLHtmlElement> {
+        unreachable!()
+    }
+
+    /// `<i>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<i>")]
+    pub fn i() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<iframe>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<iframe>")]
+    pub fn iframe() -> Element<webapi::HTMLIFrameElement> {
+        unreachable!()
+    }
+
+    /// `<image>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<image>")]
+    pub fn image() -> Element<webapi::SVGImageElement> {
+        unreachable!()
+    }
+
+    /// `<img>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<img>")]
+    pub fn img() -> Element<webapi::HTMLImageElement> {
+        unreachable!()
+    }
+
+    /// `<input>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<input>")]
+    pub fn input() -> Element<webapi::HTMLInputElement> {
+        unreachable!()
+    }
+
+    /// `<ins>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<ins>")]
+    pub fn ins() -> Element<webapi::HTMLModElement> {
+        unreachable!()
+    }
+
+    /// `<kbd>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<kbd>")]
+    pub fn kbd() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<label>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<label>")]
+    pub fn label() -> Element<webapi::HTMLLabelElement> {
+        unreachable!()
+    }
+
+    /// `<legend>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<legend>")]
+    pub fn legend() -> Element<webapi::HTMLLegendElement> {
+        unreachable!()
+    }
+
+    /// `<li>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<li>")]
+    pub fn li() -> Element<webapi::HTMLLIElement> {
+        unreachable!()
+    }
+
+    /// `<line>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<line>")]
+    pub fn line() -> Element<webapi::SVGLineElement> {
+        unreachable!()
+    }
+
+    /// `<linearGradient>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<linearGradient>")]
+    pub fn linear_gradient() -> Element<webapi::SVGLinearGradientElement> {
+        unreachable!()
+    }
+
+    /// `<link>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<link>")]
+    pub fn link() -> Element<webapi::HTMLLinkElement> {
+        unreachable!()
+    }
+
+    /// `<main>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<main>")]
+    pub fn main() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<map>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<map>")]
+    pub fn map() -> Element<webapi::HTMLMapElement> {
+        unreachable!()
+    }
+
+    /// `<mark>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<mark>")]
+    pub fn mark() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<marker>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<marker>")]
+    pub fn marker() -> Element<webapi::SVGMarkerElement> {
+        unreachable!()
+    }
+
+    /// `<mask>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<mask>")]
+    pub fn mask() -> Element<webapi::SVGMaskElement> {
+        unreachable!()
+    }
+
+    /// `<menu>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<menu>")]
+    pub fn menu() -> Element<webapi::HTMLMenuElement> {
+        unreachable!()
+    }
+
+    /// `<meta>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<meta>")]
+    pub fn meta() -> Element<webapi::HTMLMetaElement> {
+        unreachable!()
+    }
+
+    /// `<metadata>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<metadata>")]
+    pub fn metadata() -> Element<webapi::SVGMetadataElement> {
+        unreachable!()
+    }
+
+    /// `<meter>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<meter>")]
+    pub fn meter() -> Element<webapi::HTMLMeterElement> {
+        unreachable!()
+    }
+
+    /// `<mpath>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<mpath>")]
+    pub fn mpath() -> Element<webapi::SVGMPathElement> {
+        unreachable!()
+    }
+
+    /// `<nav>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<nav>")]
+    pub fn nav() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<noscript>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<noscript>")]
+    pub fn noscript() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<object>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<object>")]
+    pub fn object() -> Element<webapi::HTMLObjectElement> {
+        unreachable!()
+    }
+
+    /// `<ol>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<ol>")]
+    pub fn ol() -> Element<webapi::HTMLOListElement> {
+        unreachable!()
+    }
+
+    /// `<optgroup>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<optgroup>")]
+    pub fn optgroup() -> Element<webapi::HTMLOptGroupElement> {
+        unreachable!()
+    }
+
+    /// `<option>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<option>")]
+    pub fn option() -> Element<webapi::HTMLOptionElement> {
+        unreachable!()
+    }
+
+    /// `<output>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<output>")]
+    pub fn output() -> Element<webapi::HTMLOutputElement> {
+        unreachable!()
+    }
+
+    /// `<p>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<p>")]
+    pub fn p() -> Element<webapi::HTMLParagraphElement> {
+        unreachable!()
+    }
+
+    /// `<path>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<path>")]
+    pub fn path() -> Element<webapi::SVGPathElement> {
+        unreachable!()
+    }
+
+    /// `<pattern>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<pattern>")]
+    pub fn pattern() -> Element<webapi::SVGPatternElement> {
+        unreachable!()
+    }
+
+    /// `<picture>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<picture>")]
+    pub fn picture() -> Element<webapi::HTMLPictureElement> {
+        unreachable!()
+    }
+
+    /// `<polygon>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<polygon>")]
+    pub fn polygon() -> Element<webapi::SVGPolygonElement> {
+        unreachable!()
+    }
+
+    /// `<polyline>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<polyline>")]
+    pub fn polyline() -> Element<webapi::SVGPolylineElement> {
+        unreachable!()
+    }
+
+    /// `<pre>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<pre>")]
+    pub fn pre() -> Element<webapi::HTMLPreElement> {
+        unreachable!()
+    }
+
+    /// `<progress>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<progress>")]
+    pub fn progress() -> Element<webapi::HTMLProgressElement> {
+        unreachable!()
+    }
+
+    /// `<q>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<q>")]
+    pub fn q() -> Element<webapi::HTMLQuoteElement> {
+        unreachable!()
+    }
+
+    /// `<radialGradient>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<radialGradient>")]
+    pub fn radial_gradient() -> Element<webapi::SVGRadialGradientElement> {
+        unreachable!()
+    }
+
+    /// `<rect>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<rect>")]
+    pub fn rect() -> Element<webapi::SVGRectElement> {
+        unreachable!()
+    }
+
+    /// `<rp>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<rp>")]
+    pub fn rp() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<rt>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<rt>")]
+    pub fn rt() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<ruby>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<ruby>")]
+    pub fn ruby() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<s>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<s>")]
+    pub fn s() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<samp>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<samp>")]
+    pub fn samp() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<script>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<script>")]
+    pub fn script() -> Element<webapi::HTMLScriptElement> {
+        unreachable!()
+    }
+
+    /// `<search>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<search>")]
+    pub fn search() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<section>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<section>")]
+    pub fn section() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<select>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<select>")]
+    pub fn select() -> Element<webapi::HTMLSelectElement> {
+        unreachable!()
+    }
+
+    /// `<selectedcontent>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<selectedcontent>")]
+    pub fn selectedcontent() -> Element<webapi::HTMLSelectedContentElement> {
+        unreachable!()
+    }
+
+    /// `<set>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<set>")]
+    pub fn set() -> Element<webapi::SVGSetElement> {
+        unreachable!()
+    }
+
+    /// `<slot>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<slot>")]
+    pub fn slot() -> Element<webapi::HTMLSlotElement> {
+        unreachable!()
+    }
+
+    /// `<small>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<small>")]
+    pub fn small() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<source>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<source>")]
+    pub fn source() -> Element<webapi::HTMLSourceElement> {
+        unreachable!()
+    }
+
+    /// `<span>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<span>")]
+    pub fn span() -> Element<webapi::HTMLSpanElement> {
+        unreachable!()
+    }
+
+    /// `<stop>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<stop>")]
+    pub fn stop() -> Element<webapi::SVGStopElement> {
+        unreachable!()
+    }
+
+    /// `<strong>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<strong>")]
+    pub fn strong() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<style>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<style>")]
+    pub fn style() -> Element<webapi::HTMLStyleElement> {
+        unreachable!()
+    }
+
+    /// `<sub>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<sub>")]
+    pub fn sub() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<summary>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<summary>")]
+    pub fn summary() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<sup>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<sup>")]
+    pub fn sup() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<svg>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<svg>")]
+    pub fn svg() -> Element<webapi::SVGSVGElement> {
+        unreachable!()
+    }
+
+    /// `<switch>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<switch>")]
+    pub fn switch() -> Element<webapi::SVGSwitchElement> {
+        unreachable!()
+    }
+
+    /// `<symbol>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<symbol>")]
+    pub fn symbol() -> Element<webapi::SVGSymbolElement> {
+        unreachable!()
+    }
+
+    /// `<table>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<table>")]
+    pub fn table() -> Element<webapi::HTMLTableElement> {
+        unreachable!()
+    }
+
+    /// `<tbody>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<tbody>")]
+    pub fn tbody() -> Element<webapi::HTMLTableSectionElement> {
+        unreachable!()
+    }
+
+    /// `<td>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<td>")]
+    pub fn td() -> Element<webapi::HTMLTableCellElement> {
+        unreachable!()
+    }
+
+    /// `<template>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<template>")]
+    pub fn template() -> Element<webapi::HTMLTemplateElement> {
+        unreachable!()
+    }
+
+    /// `<text>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<text>")]
+    pub fn text() -> Element<webapi::SVGTextElement> {
+        unreachable!()
+    }
+
+    /// `<textPath>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<textPath>")]
+    pub fn text_path() -> Element<webapi::SVGTextPathElement> {
+        unreachable!()
+    }
+
+    /// `<textarea>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<textarea>")]
+    pub fn textarea() -> Element<webapi::HTMLTextAreaElement> {
+        unreachable!()
+    }
+
+    /// `<tfoot>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<tfoot>")]
+    pub fn tfoot() -> Element<webapi::HTMLTableSectionElement> {
+        unreachable!()
+    }
+
+    /// `<th>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<th>")]
+    pub fn th() -> Element<webapi::HTMLTableCellElement> {
+        unreachable!()
+    }
+
+    /// `<thead>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<thead>")]
+    pub fn thead() -> Element<webapi::HTMLTableSectionElement> {
+        unreachable!()
+    }
+
+    /// `<time>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<time>")]
+    pub fn time() -> Element<webapi::HTMLTimeElement> {
+        unreachable!()
+    }
+
+    /// `<title>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<title>")]
+    pub fn title() -> Element<webapi::HTMLTitleElement> {
+        unreachable!()
+    }
+
+    /// `<tr>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<tr>")]
+    pub fn tr() -> Element<webapi::HTMLTableRowElement> {
+        unreachable!()
+    }
+
+    /// `<track>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<track>")]
+    pub fn track() -> Element<webapi::HTMLTrackElement> {
+        unreachable!()
+    }
+
+    /// `<tspan>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<tspan>")]
+    pub fn tspan() -> Element<webapi::SVGTSpanElement> {
+        unreachable!()
+    }
+
+    /// `<u>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<u>")]
+    pub fn u() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<ul>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<ul>")]
+    pub fn ul() -> Element<webapi::HTMLUListElement> {
+        unreachable!()
+    }
+
+    /// `<use>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<use>")]
+    pub fn r#use() -> Element<webapi::SVGUseElement> {
+        unreachable!()
+    }
+
+    /// `<var>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<var>")]
+    pub fn var() -> Element<webapi::HTMLElement> {
+        unreachable!()
+    }
+
+    /// `<video>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<video>")]
+    pub fn video() -> Element<webapi::HTMLVideoElement> {
+        unreachable!()
+    }
+
+    /// `<view>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<view>")]
+    pub fn view() -> Element<webapi::SVGViewElement> {
+        unreachable!()
+    }
+
+    /// `<wbr>`
+    #[cfg_attr(rust_js, rust_js::link_name = "<wbr>")]
+    pub fn wbr() -> Element<webapi::HTMLElement> {
+        unreachable!()
     }
 }
 

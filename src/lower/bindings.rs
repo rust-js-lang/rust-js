@@ -156,6 +156,18 @@ pub(super) fn js_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     }
 }
 
+/// A function in an `extern` block, refused wherever it's declared or used:
+/// a JS function's binding is one form, an ordinary function with
+/// `#[rust_js::link_name]` (ADR 0039), which can be generic as an `extern`
+/// one can't. An `extern` block is for a `static`, which has no body.
+pub(super) fn extern_fn_refused(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    format!(
+        "rust-js binds a JS function as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = {:?})] fn {}(..) {{ unreachable!() }}`, not in an `extern` block (ADR 0373)",
+        js_name(tcx, def_id),
+        tcx.item_name(def_id),
+    )
+}
+
 /// A binding written as an ordinary function, which can be generic, as an
 /// `extern` one can't (ADR 0039): `#[rust_js::link_name = "react#useState"]`.
 /// Its body is never compiled.

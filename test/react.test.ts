@@ -55,9 +55,10 @@ test("JSX preparation preserves evaluation order, conditional execution and text
   const input = join(dir, "lib.rs");
   await Bun.write(input, `#![allow(non_snake_case)]
 use react::{JSX, jsx};
-unsafe extern "Rust" {
-    #[link_name = "globalThis.record"]
-    safe fn record(n: i32) -> i32;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+#[allow(unused_variables)]
+fn record(n: i32) -> i32 {
+    unreachable!()
 }
 pub fn Order() -> JSX::Element {
     jsx! {
@@ -107,9 +108,9 @@ pub fn Siblings(flag: bool, inner: bool) -> JSX::Element {
     }
 }
 pub struct Attrs { pub title: String }
-unsafe extern "Rust" {
-    #[link_name = "globalThis.attributes"]
-    safe fn attributes() -> Attrs;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.attributes")]
+fn attributes() -> Attrs {
+    unreachable!()
 }
 pub fn SpreadOrder() -> JSX::Element {
     let attrs = attributes();

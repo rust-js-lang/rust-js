@@ -148,3 +148,4 @@ EditorState.create(config);
 
 - [0202](0202-imports-named-around-importers.md): An import is named in each file that imports it
 - [0305](0305-require.md): A binding marked `require` is read through `require(module)`
+- [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

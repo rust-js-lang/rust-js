@@ -42,7 +42,7 @@ test("event methods keep target types and retained callback lifetimes", () => {
   ]) {
     writeFileSync(source, `use webapi::{EventTargetExt, HTMLButtonElement, listener, PointerEvent, KeyboardEvent};
 use webapi::events::{Click, Keydown, Message};
-unsafe extern "Rust" { safe fn record(n: i32); }
+#[cfg_attr(rust_js, rust_js::link_name = "record")] #[allow(unused_variables)] fn record(n: i32) { unreachable!() }
 pub fn wire(button: &HTMLButtonElement) { ${body} }
 `);
     const p = Bun.spawnSync([compiler, source, "-o", join(dir, "lib.js"), ...flags], { cwd: root, stderr: "pipe", timeout: 60_000 });
