@@ -34,14 +34,18 @@ if (!directory || extra.length) fail("usage: bun create @rust-js@latest <directo
 
 // A distribution is for one host, and one compiler: this one's.
 const dist = local && resolve(local);
+// What it has: each tarball, by the package an app installs it as.
+let artifacts = [];
 if (dist) {
   const manifest = join(dist, "distribution.json");
   if (!existsSync(manifest)) fail(`${dist} has no distribution.json: give --local the directory \`bun run pack:distribution\` makes`);
-  const { platform, arch, compiler } = JSON.parse(readFileSync(manifest, "utf8"));
+  const distribution = JSON.parse(readFileSync(manifest, "utf8"));
+  const { platform, arch, compiler } = distribution;
   if (platform !== process.platform || arch !== process.arch) {
     fail(`${dist} is for ${platform}-${arch}, and this is ${process.platform}-${process.arch}`);
   }
   if (compiler?.version !== self.version) fail(`${dist} is rust-js ${compiler?.version}, and this is ${self.version}'s`);
+  artifacts = distribution.artifacts ?? [];
 }
 
 // Never over what's there.
@@ -57,7 +61,12 @@ renameSync(join(app, "_gitignore"), join(app, ".gitignore"));
 const path = join(app, "package.json");
 const manifest = JSON.parse(readFileSync(path, "utf8"));
 manifest.name = basename(app);
-const archive = (name) => `file:${join(dist, `${name.replace("@rust-js/", "")}.tgz`)}`;
+// Each by its tarball, as the distribution's `distribution.json` names it.
+const archive = (name) => {
+  const artifact = artifacts.find((a) => a.package === name);
+  if (!artifact) fail(`${dist} has no ${name}: give --local the directory \`bun run pack:distribution\` makes`);
+  return `file:${join(dist, artifact.file)}`;
+};
 for (const field of ["dependencies", "devDependencies"]) {
   for (const [name, spec] of Object.entries(manifest[field] ?? {})) {
     if (spec.startsWith("workspace:")) manifest[field][name] = dist ? archive(name) : self.version;

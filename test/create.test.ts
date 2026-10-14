@@ -177,7 +177,9 @@ test("@rust-js/create's README says to install the Rust it prints", () => {
 test("--local makes the app install a distribution's packages", () => {
   const index = packed();
   const dist = fixture("create-dist");
-  writeFileSync(join(dist, "distribution.json"), JSON.stringify({ version: 1, platform: process.platform, arch: process.arch, compiler: { version } }));
+  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/vite-plugin", "vite-plugin.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/native", "native.tgz"]]
+    .map(([name, file]) => ({ file, package: name }));
+  writeFileSync(join(dist, "distribution.json"), JSON.stringify({ version: 1, platform: process.platform, arch: process.arch, compiler: { version }, artifacts }));
   const cwd = fixture("create-local");
   const made = runSync([process.execPath, index, "app", "--local", dist], cwd, 60_000);
   expect(made.code).toBe(0);

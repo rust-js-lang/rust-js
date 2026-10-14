@@ -17,8 +17,13 @@ const run = (args: string[], cwd = root) => {
   return result.stdout.toString();
 };
 const identity = parseCompilerIdentity(run([compiler, "--version-json"]));
-for (const directory of ["tooling", "vite-plugin", "next-plugin", "runtime"]) {
-  const pkg = JSON.parse(readFileSync(join(root, directory, "package.json"), "utf8"));
+// Each package of the hosts', by the directory it's packed from and the
+// tarball it's packed as: with the compiler's and the crates', what
+// `distribution.json` names, the one list of a distribution's files.
+const hosts = [["tooling", "build.tgz"], ["vite-plugin", "vite-plugin.tgz"], ["next-plugin", "next-plugin.tgz"], ["runtime", "runtime.tgz"]];
+const named = (directory: string) => JSON.parse(readFileSync(join(root, directory, "package.json"), "utf8"));
+for (const [directory] of hosts) {
+  const pkg = named(directory);
   if (pkg.version !== identity.version) throw new Error(`${pkg.name} ${pkg.version} does not match compiler ${identity.version}`);
 }
 // The commit it's made from, and whether the checkout had changes of its
@@ -29,15 +34,20 @@ mkdirSync(dirname(output), { recursive: true });
 const staging = mkdtempSync(join(dirname(output), ".rust-js-distribution-"));
 try {
   // @rust-js/runtime, what the JS the compiler writes imports (ADR 0103).
-  for (const [directory, file] of [["tooling", "build.tgz"], ["vite-plugin", "vite-plugin.tgz"], ["next-plugin", "next-plugin.tgz"], ["runtime", "runtime.tgz"]]) {
+  for (const [directory, file] of hosts) {
     run([process.execPath, "pm", "pack", "--ignore-scripts", "--filename", join(staging, file)], join(root, directory));
   }
   run([process.execPath, "scripts/package-compiler.ts", compiler, join(staging, "native.tgz")]);
   // The crates an app's Cargo builds with, as npm has them (ADR 0118).
   run([process.execPath, "scripts/package-npm-crates.ts", staging]);
-  const files = ["build.tgz", "vite-plugin.tgz", "next-plugin.tgz", "runtime.tgz", "native.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)];
   const sha256 = (file: string) => createHash("sha256").update(readFileSync(join(staging, file))).digest("hex");
-  const artifacts = files.map(file => ({ file, sha256: sha256(file) }));
+  // Each by its package, which an app installs it as.
+  const artifacts = [
+    ...hosts.map(([directory, file]) => ({ file, package: named(directory).name as string })),
+    { file: "native.tgz", package: "@rust-js/native" },
+    ...crates.map(({ dir, npm }) => ({ file: `${dir}.tgz`, package: npm })),
+  ].map((artifact) => ({ ...artifact, sha256: sha256(artifact.file) }));
+  const files = artifacts.map(({ file }) => file);
   writeFileSync(join(staging, "distribution.json"), JSON.stringify({
     version: 1, compiler: identity, source, platform: process.platform, arch: process.arch, artifacts,
   }, null, 2) + "\n");

@@ -68,16 +68,25 @@ export function checksums(dir: string): string[] {
 
 const text = (cmd: string[], cwd = root) => runSync(cmd, cwd, 60_000).stdout.trim();
 
-// The distribution's packages, by the tarball each is installed from: the
-// tooling, the compiler, the runtime, and React's crate and those it uses,
-// which an app's Cargo builds with (ADR 0118).
-const packages: [string, string][] = [
-  ["@rust-js/build", "build.tgz"],
-  ["@rust-js/vite-plugin", "vite-plugin.tgz"],
-  ["@rust-js/native", "native.tgz"],
-  ["@rust-js/runtime", "runtime.tgz"],
-  ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm, dir }): [string, string] => [npm, `${dir}.tgz`]),
+// The packages a Vite app installs of a distribution: the tooling, the
+// compiler, the runtime, and React's crate and those it uses, which an
+// app's Cargo builds with (ADR 0118).
+const vitePackages = [
+  "@rust-js/build",
+  "@rust-js/vite-plugin",
+  "@rust-js/native",
+  "@rust-js/runtime",
+  ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm }) => npm),
 ];
+
+/** The tarball of package `name` in distribution `dist`, as its
+ * `distribution.json` names it: the one place a file's name is said. */
+function tarball(dist: string, name: string): string {
+  const { artifacts } = JSON.parse(readFileSync(join(dist, "distribution.json"), "utf8"));
+  const artifact = artifacts.find((a: { package?: string }) => a.package === name);
+  if (!artifact) throw new Error(`the distribution has no ${name}`);
+  return join(dist, artifact.file);
+}
 
 /** Every file under `dir`, by its path from there. */
 function files(dir: string): string[] {
@@ -100,9 +109,9 @@ export function viteApp(dist: string, logs: string): Suite {
   const log: string[] = [];
   try {
     const locked = (name: string) => JSON.parse(readFileSync(join(root, "node_modules", name, "package.json"), "utf8")).version as string;
-    const dependencies: Record<string, string> = Object.fromEntries(packages.map(([name, file]) => [name, join(dist, file)]));
+    const dependencies: Record<string, string> = Object.fromEntries(vitePackages.map((name) => [name, tarball(dist, name)]));
     for (const name of ["vite", "@vitejs/plugin-react", "react", "react-dom"]) dependencies[name] = locked(name);
-    writeFileSync(join(app, "package.json"), JSON.stringify({ private: true, type: "module", dependencies, overrides: { "@rust-js/build": join(dist, "build.tgz") } }));
+    writeFileSync(join(app, "package.json"), JSON.stringify({ private: true, type: "module", dependencies, overrides: { "@rust-js/build": tarball(dist, "@rust-js/build") } }));
     writeFileSync(
       join(app, "vite.config.js"),
       'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport rustJs from "@rust-js/vite-plugin";\n\nexport default defineConfig({ plugins: [rustJs({ cargo: { package: "app", offline: true } }), react()] });\n',
@@ -120,10 +129,11 @@ export function viteApp(dist: string, logs: string): Suite {
     if (install.code !== 0) problems.push(`the app didn't install: ${stopped(install, installTimeout) ?? install.stderr.trim().split("\n").at(-1)}`);
     else {
       // Each rust-js package the app has is its tarball, file for file.
-      for (const [name, file] of packages) {
+      for (const name of vitePackages) {
+        const file = tarball(dist, name);
         const unpacked = mkdtempSync(join(tmpdir(), "rust-js-qualify-package-"));
         try {
-          runSync(["tar", "-xzf", join(dist, file), "-C", unpacked], app, 60_000);
+          runSync(["tar", "-xzf", file, "-C", unpacked], app, 60_000);
           const expected = join(unpacked, "package"), installed = join(app, "node_modules", name);
           const want = files(expected);
           const differ = want.filter((path) => !existsSync(join(installed, path)) || hash(join(installed, path)) !== hash(join(expected, path)));
@@ -214,19 +224,19 @@ async function main() {
   const project = mkdtempSync(join(tmpdir(), "rust-js-qualify-"));
   const suites: Suite[] = [];
   try {
-    const dependency = (file: string) => join(dist, file);
+    const dependency = (name: string) => tarball(dist, name);
     writeFileSync(
       join(project, "package.json"),
       JSON.stringify({
         private: true,
         type: "module",
         dependencies: {
-          "@rust-js/build": dependency("build.tgz"),
-          "@rust-js/vite-plugin": dependency("vite-plugin.tgz"),
-          "@rust-js/native": dependency("native.tgz"),
-          "@rust-js/runtime": dependency("runtime.tgz"),
+          "@rust-js/build": dependency("@rust-js/build"),
+          "@rust-js/vite-plugin": dependency("@rust-js/vite-plugin"),
+          "@rust-js/native": dependency("@rust-js/native"),
+          "@rust-js/runtime": dependency("@rust-js/runtime"),
         },
-        overrides: { "@rust-js/build": dependency("build.tgz") },
+        overrides: { "@rust-js/build": dependency("@rust-js/build") },
       }),
     );
     // With an empty cache, as a new machine has, so nothing but the
