@@ -11,6 +11,8 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Changed
 
+- **A file's leading comments are its JS's**, a license's, after rust-js's
+  own line ([ADR 0383](docs/decisions/0383-a-files-leading-comments-are-its-jss.md)).
 - **The app's Prettier lays out what rust-js writes**, its JS and its
   `.d.ts`, where it finds a config, as the app's `prettier --check` reads it,
   so the app's format check passes on them; a change to the config builds
