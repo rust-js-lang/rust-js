@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { basename, join } from "node:path";
-import { buildCompiler, buildReact, buildSerde, buildWebapi, compiler, expectSnapshot, root, run, target } from "./support";
+import { buildCompiler, buildReact, buildSerde, compiler, expectSnapshot, root, run, target } from "./support";
 
 type Crate = "web" | "react" | "serde";
 
@@ -62,7 +62,7 @@ const cases: [string, string, Crate[]][] = [
 
 beforeAll(() => {
   buildCompiler();
-  buildWebapi();
+  buildReact();
   buildReact();
 }, 600_000);
 

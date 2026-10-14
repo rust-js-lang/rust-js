@@ -222,10 +222,6 @@ function alive(pid: number): boolean {
     return false;
   }
 }
-/** The webapi crate's metadata, which React's build makes too. */
-export function buildWebapi() {
-  buildReact();
-}
 /** A Cargo package, `app`, its own workspace, in `dir`: `rust` at `lib`,
  * and React's crate by path where it uses it, as a host builds an app's
  * Rust (ADR 0101). `toml` is more of its `Cargo.toml`. What `checkCargo`

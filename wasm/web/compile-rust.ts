@@ -14,17 +14,14 @@ import { join } from "node:path";
 
 import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory, WASI } from "@bjorn3/browser_wasi_shim";
 
-import { buildReactCrate, sysrootDir, sysrootFiles, wasmPath } from "./site.ts";
+import { buildReactCrate, cratesDir, sysrootDir, sysrootFiles, wasmPath } from "./site.ts";
 import { publishArtifacts } from "@rust-js/build/publish";
 import { mapManifestPaths, parseManifest } from "@rust-js/build/manifest";
 import { reactLibs } from "../../tooling/crates.js";
 
 const rustDir = join(import.meta.dir, "rust");
-const cratesDir = join(import.meta.dir, "../../target/playground-crates");
 const web = "/wasm/web";
 const virtual = `${web}/rust`;
-
-let cratesBuilt = false;
 
 /** The crate's `.rs` files under `dir`, its components/ too, as the shim's directories. */
 function sourcesIn(dir: string): Map<string, Inode> {
@@ -51,10 +48,7 @@ function filesIn(dir: Directory, prefix = "", found = new Map<string, Uint8Array
  * rustc's errors.
  */
 export async function compileRust(job: { manifest?: string } = {}) {
-  if (!cratesBuilt) {
-    buildReactCrate(cratesDir);
-    cratesBuilt = true;
-  }
+  buildReactCrate();
   const crate = (name: string) => new File(readFileSync(join(cratesDir, name)), { readonly: true });
   const sources = sourcesIn(rustDir);
   const sysroot = new Map<string, Inode>(

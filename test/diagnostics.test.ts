@@ -2,7 +2,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, run, target } from "./support";
+import { buildCompiler, buildSerde, buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -148,7 +148,7 @@ for (const [name, source, message, crate] of [
     const dir = fixture("diagnostic");
     const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
     writeFileSync(input, source);
-    const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
+    const crates = crate === "js" ? (buildReact(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
     const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
     rmSync(output, { force: true });
     rmSync(output + ".map", { force: true });

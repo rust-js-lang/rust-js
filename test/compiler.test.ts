@@ -9,7 +9,7 @@ import { join } from "node:path";
 
 import { decode, expected, same, type Outcome } from "./oracle";
 import { callInNode, type Call } from "./programs";
-import { root, target, run, buildCompiler, buildReact, buildSerde, buildWebapi, compiler, fixture } from "./support";
+import { root, target, run, buildCompiler, buildReact, buildSerde, compiler, fixture } from "./support";
 
 // Values are JSON: numbers, and objects and arrays for structs and tuples.
 type Case = { fn: string; args: unknown[]; value?: unknown; panic?: string };
@@ -119,7 +119,7 @@ beforeAll(async () => {
   iterators = await import(join(target, "iterators.js"));
   run([compiler, "examples/thread_locals.rs", "-o", join(target, "thread_locals.js")]);
   // The webapi crate is used from its metadata (ADR 0024).
-  buildWebapi();
+  buildReact();
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   run([compiler, "examples/counter.rs", "-o", join(target, "counter.js"), ...withWeb]);
   run([compiler, "test/web_forms.rs", "-o", join(target, "web_forms.js"), ...withWeb]);

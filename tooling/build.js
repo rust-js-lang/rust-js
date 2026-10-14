@@ -26,7 +26,13 @@ export function withoutCompiler(rustJs, committed) {
     : `no rust-js at ${rustJs}: install rust-js or build it with cargo build to compile the Rust`;
 }
 
+/**
+ * The compiler a host runs for an app at `root`, the one answer every host
+ * and command asks: `RUST_JS_COMPILER` where it names one, a test's or a
+ * script's; else the app's `@rust-js/native`; else this checkout's build.
+ */
 export function findCompiler(root) {
+  if (process.env.RUST_JS_COMPILER) return resolve(root, process.env.RUST_JS_COMPILER);
   const require = createRequire(join(root, "package.json"));
   try { return join(dirname(require.resolve("@rust-js/native/package.json")), "bin/rust-js"); }
   catch (error) {
@@ -144,6 +150,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
     /** The check an editor runs (ADR 0222), as `checkCargo`'s, its
      * messages printed as they come; no JS in source, and no runtime needed. */
     async editorCheck(options) {
+      if (!existsSync(rustJs)) throw new Error(`rust-js-check: ${withoutCompiler(rustJs)}`);
       return editorCheck({ ...options, toolchain: await toolchain(), compiler: rustJs, react: installedReact(root) ?? undefined });
     },
     /** The workspace of a Cargo manifest, and its target directory. */
@@ -168,7 +175,9 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
       // What Cargo writes is out of what a host's bundler watches: Vite's
       // Tailwind, which takes a file of `target/` for a new one to scan, and
       // reloads the page, and Turbopack, which takes each for a change.
-      const options = { ...given, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
+      // A host's JS is beside each module's Rust, to be committed (ADR 0041),
+      // unless it's asked not to be.
+      const options = { ...given, inSource: given.inSource ?? true, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
       let workspace, targetDir, manifests = [];
       return {
         /** @param {{ save?: boolean, warn?: (message: string) => void }} [run] */

@@ -23,16 +23,16 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   const compiler = resolve(app, rustJs ?? findCompiler(app));
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");
-  const { root: workspace, packages } = await builder.cargoWorkspace({ manifestPath });
-  const [packageName, ...others] = packages.keys();
-  if (others.length) throw new Error(`rust-js: ${manifestPath} has several packages; the app's Rust is one`);
+  // The app's Rust is the package its `Cargo.toml` is of.
+  const { root: workspace, own: packageName } = await builder.cargoWorkspace({ manifestPath });
+  if (!packageName) throw new Error(`rust-js: ${manifestPath} is of no package; the app's Rust is one`);
 
   // One `cargo check` of the whole crate, which writes each module's JS
   // beside its Rust (ADR 0041), or an error, rustc's. Its manifests say
   // what it read, a source outside the workspace too. A Pages Router
   // route's directory gets no declarations, which Turbopack would take as
   // routes (ADR 0276).
-  const session = builder.cargoSession({ manifestPath, packageName, inSource: true, routes: [join(app, "pages"), join(app, "src/pages")] });
+  const session = builder.cargoSession({ manifestPath, packageName, routes: [join(app, "pages"), join(app, "src/pages")] });
   async function compile() {
     try {
       // The dev server's builds are a save's, whose checks are those not

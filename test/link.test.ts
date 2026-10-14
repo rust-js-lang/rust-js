@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildWebapi, compiler, fixture, run, target } from "./support";
+import { buildCompiler, buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -117,7 +117,7 @@ test("a string that spells a helper's name doesn't import it", () => {
 // Module-load bodies are linked with functions and constants, including the
 // names they bind at module scope (ADRs 0069, 0267).
 test("module-load statements resolve imports around their local bindings", async () => {
-  buildWebapi();
+  buildReact();
   const dir = fixture("link-on-load");
   writeFileSync(join(dir, "lib.rs"), `
     mod util { pub fn value(n: u32) -> u32 { n + 1 } }

@@ -54,10 +54,22 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
   const committed = new Set();
   const manifestPath = crate => join(cacheDir ?? cacheDirOf(root), "vite", createHash("sha256").update(resolve(root, crate)).digest("hex") + ".json");
 
+  /** Every file the builds wrote, as one sorted list's text. */
+  const artifactFiles = () => JSON.stringify([...manifests.values()].flatMap(m => m.artifacts.map(a => a.file)).sort());
+  /** A module-set change, a suffix's or another build of a crate's, of
+   * other features say, invalidates old Vite module IDs: a reload. Ordinary
+   * edits retain their IDs and use plugin-react's state-preserving refresh. */
+  function reloadIfChanged(old) {
+    if (server && old !== "[]" && old !== artifactFiles()) {
+      server.moduleGraph.invalidateAll();
+      server.ws.send({ type: "full-reload" });
+    }
+  }
+
   // Every crate Cargo built, or found done: each is a manifest here, and
   // every edit is one `cargo check`, which rebuilds what it changed.
   async function compileCargo() {
-    const old = JSON.stringify([...manifests.values()].flatMap(m => m.artifacts.map(a => a.file)).sort());
+    const old = artifactFiles();
     // A member's manifest is of the workspace its siblings are of too.
     // The Vite server's is a save's, whose checks are those not only for a
     // build; what rust-js warns of, a check's, is Vite's (ADR 0117).
@@ -80,11 +92,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
       maps.add(`${file}.map`);
     }
     // Another build of a crate, of other features say, is another module ID.
-    const now = JSON.stringify([...manifests.values()].flatMap(m => m.artifacts.map(a => a.file)).sort());
-    if (server && old !== "[]" && old !== now) {
-      server.moduleGraph.invalidateAll();
-      server.ws.send({ type: "full-reload" });
-    }
+    reloadIfChanged(old);
   }
 
   async function compile(crate) {
@@ -94,7 +102,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
     const output = crate.replace(/\.rs$/, ".js");
     await custom({ crate: resolve(root, crate), output: resolve(root, output), manifest });
     const result = parseManifest(await readFile(manifest, "utf8"));
-    const old = manifests.get(crate);
+    const old = artifactFiles();
     manifests.set(crate, result);
     failures.delete(crate);
     server?.watcher.add(result.sources);
@@ -109,12 +117,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
         aliases.set(stem + ".jsx", file);
       }
     }
-    // A suffix or module-set change invalidates old Vite module IDs. Ordinary
-    // edits retain their IDs and use plugin-react's state-preserving refresh.
-    if (server && old && JSON.stringify(old.artifacts.map(a => a.file)) !== JSON.stringify(result.artifacts.map(a => a.file))) {
-      server.moduleGraph.invalidateAll();
-      server.ws.send({ type: "full-reload" });
-    }
+    reloadIfChanged(old);
   }
 
   async function drain() {
@@ -180,7 +183,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
         session = builder.cargoSession({
           manifestPath: workspaceManifest, packageName: cargo.package,
           features: cargo.features, noDefaultFeatures: cargo.noDefaultFeatures, offline: cargo.offline,
-          inSource: cargo.inSource ?? true,
+          inSource: cargo.inSource,
         });
       }
     },

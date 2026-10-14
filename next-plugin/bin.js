@@ -10,7 +10,7 @@ if (!["dev", "build", "compile"].includes(command)) {
   process.exit(2);
 }
 try {
-  process.exit(await run({ app: process.cwd(), command, args, rustJs: process.env.RUST_JS_COMPILER }));
+  process.exit(await run({ app: process.cwd(), command, args }));
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : error}\n`);
   process.exit(1);

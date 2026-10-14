@@ -3,7 +3,7 @@
 // adapter does not infer dependencies from source files or run build scripts.
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
@@ -29,12 +29,9 @@ function cargoEnv(compiler, react, app) {
 }
 
 /** The app a check builds: the package it's asked for, or else its
- * manifest's own, a workspace's root without one having none. */
-function appOf(manifest, packageName) {
-  if (packageName) return packageName;
-  const text = readFileSync(manifest, "utf8");
-  const section = /^\[package\]\s*$([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(text)?.[1];
-  return section && /^name\s*=\s*"([^"]+)"/m.exec(section)?.[1];
+ * manifest's own, as Cargo says, a workspace's root without one having none. */
+async function appOf(manifest, packageName, toolchain) {
+  return packageName ?? (await cargoWorkspace({ manifestPath: manifest, toolchain })).own;
 }
 
 /**
@@ -46,11 +43,11 @@ function appOf(manifest, packageName) {
  * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string }} options
  * @returns {Promise<number>} Cargo's exit code
  */
-export function editorCheck({ manifestPath, toolchain, compiler, react, targetDir }) {
+export async function editorCheck({ manifestPath, toolchain, compiler, react, targetDir }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
-  const env = { ...cargoEnv(compiler, react, appOf(manifest)), CARGO_TARGET_DIR: targetDir };
+  const env = { ...cargoEnv(compiler, react, await appOf(manifest, undefined, toolchain)), CARGO_TARGET_DIR: targetDir };
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
       .on("error", failed)
@@ -156,7 +153,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = { ...cargoEnv(compiler, react, appOf(manifest, packageName)), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  const env = { ...cargoEnv(compiler, react, await appOf(manifest, packageName, toolchain)), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");
@@ -341,9 +338,11 @@ function relinked(bytes, links, to, moved) {
 /**
  * The workspace a Cargo manifest is of, a member's or the root's, and where
  * Cargo builds it: what Cargo reads, and what it writes (ADR 0101), where each of its
- * packages is, and each one's library's root, `src/lib.rs` or its `[lib] path`.
+ * packages is, each one's library's root, `src/lib.rs` or its `[lib] path`,
+ * and `own`, the package the manifest is of, none of a workspace's root
+ * without one.
  * @param {{ manifestPath: string, toolchain?: string, offline?: boolean, targetDir?: string }} options
- * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string> }>}
+ * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string>, own?: string }>}
  */
 export async function cargoWorkspace({ manifestPath, toolchain, offline = false, targetDir }) {
   const manifest = resolve(manifestPath);
@@ -359,7 +358,8 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false,
     const lib = pkg.targets.find((target) => target.kind.includes("lib"));
     return lib ? [[pkg.name, lib.src_path]] : [];
   }));
-  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs };
+  const own = metadata.packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
+  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, own };
 }
 
 /** The package's name in a Cargo package ID: `path+file:///dir#name@1.0`, or `path+file:///dir/name#1.0`. */

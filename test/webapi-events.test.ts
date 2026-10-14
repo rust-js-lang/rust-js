@@ -2,9 +2,9 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
-import { buildWebapi, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
-beforeAll(buildWebapi, 300_000);
+beforeAll(buildReact, 300_000);
 const flags = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
 function compileEvents(): string {

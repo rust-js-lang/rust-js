@@ -35,24 +35,19 @@ export function sysrootFiles(): string[] {
   return files;
 }
 
-/**
- * Build the webapi crate's metadata for the playground's target (ADR 0024), and
- * the js crate's beside it (ADR 0102), with the pinned rustc: every program is
- * compiled with `--extern webapi=` this file.
- */
-export function buildWebapiCrate(out: string) {
-  mkdirSync(dirname(out), { recursive: true });
-  const script = join(import.meta.dir, "../../webapi/build.sh");
-  const p = Bun.spawnSync([script, "-o", out, "--target", "wasm32-unknown-unknown"], { stderr: "pipe" });
-  if (p.exitCode !== 0) throw new Error(`webapi/build.sh failed:\n${p.stderr.toString()}`);
-}
+/** Where the crates the page's Rust is compiled with are built. */
+export const cratesDir = join(import.meta.dir, "../../target/crates");
+const built = new Set<string>();
 
 /**
  * Build the react crate's metadata for the page's own Rust (ADR 0044), for
  * the React the page has installed, with the webapi and js crates' beside it:
  * `<dir>/libreact.rmeta`, `<dir>/libwebapi.rmeta` and `<dir>/libjs.rmeta`.
  */
-export function buildReactCrate(dir: string) {
+export function buildReactCrate(dir = cratesDir) {
+  // Once a process: the site's server and the page's own build ask alike.
+  if (built.has(dir)) return;
+  built.add(dir);
   mkdirSync(dir, { recursive: true });
   const react = JSON.parse(readFileSync(createRequire(import.meta.path).resolve("react/package.json"), "utf8")).version;
   const script = join(import.meta.dir, "../../react/build.sh");
@@ -143,7 +138,6 @@ export async function reactModules(): Promise<Record<string, string>> {
  * by name.
  */
 export function playgroundFiles(): Plugin {
-  const cratesDir = join(import.meta.dir, "../../target/crates");
   const crateFiles = reactLibs.map((lib) => `/crates/lib${lib}.rmeta`);
   let packages: { modules: Record<string, string>; styles: Record<string, string> } = { modules: {}, styles: {} };
   // The file at a path the page asks for, or the JSON to send.
@@ -174,7 +168,7 @@ export function playgroundFiles(): Plugin {
   return {
     name: "playground-files",
     async buildStart() {
-      buildReactCrate(cratesDir);
+      buildReactCrate();
       packages = await framePackages();
     },
     configureServer(server) {

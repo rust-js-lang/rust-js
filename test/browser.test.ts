@@ -1,11 +1,11 @@
 import { beforeAll, expect, test } from "bun:test";
 import { join } from "node:path";
 import { stripVTControlCharacters } from "node:util";
-import { root, target, run, buildCompiler, buildWebapi, compiler } from "./support";
+import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
 
 beforeAll(() => {
   buildCompiler();
-  buildWebapi();
+  buildReact();
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   // Test mode (ADR 0026): the same programs with their `#[test]`s, and some failing on purpose.
   const tests = (rs: string, name: string, flags: string[] = []) =>

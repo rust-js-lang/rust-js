@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, buildWebapi, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -305,7 +305,7 @@ thread_local! {
 test("js::import! imports a module where it's written, and writes nothing of its own", () => {
   const dir = fixture("js-import");
   writeFileSync(join(dir, "lib.rs"), 'js::import!("./app.css");\npub mod panel {\n    js::import!("./panel.css");\n    pub fn f() -> u32 {\n        1\n    }\n}\n#[rust_js::import = "./direct.css"]\nconst _: () = ();\n');
-  buildWebapi();
+  buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const top = readFileSync(join(dir, "lib.js"), "utf8"), panel = readFileSync(join(dir, "panel.js"), "utf8");
   expect([top.includes('import "./app.css";'), top.includes('import "./direct.css";'), panel.includes('import "./panel.css";')]).toEqual([true, true, true]);
@@ -320,7 +320,7 @@ test("js::import! imports a module where it's written, and writes nothing of its
 test("js::directive! and js::export_default! make a module a Next.js route", async () => {
   const dir = fixture("js-route");
   writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\npub mod generic {\n    pub fn first<T>(items: Vec<T>) -> Option<T> {\n        items.into_iter().next()\n    }\n    js::export_default!(first);\n}\n');
-  buildWebapi();
+  buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const top = readFileSync(join(dir, "lib.js"), "utf8"), about = readFileSync(join(dir, "about.js"), "utf8");
   const statements = (js: string) => js.split("\n").filter((line) => line && !line.startsWith("//"));
@@ -372,7 +372,7 @@ pub fn spawned() -> impl Fn() {
     }
 }
 `);
-  buildWebapi();
+  buildReact();
   const extern = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   writeFileSync(join(dir, "block.rs"), `pub async fn later() -> u32 {
     async {
@@ -642,7 +642,7 @@ pub fn all(items: &[u32], i: usize) -> u32 {
     zeta() + local() + alpha() + helper::h(items, i) + items[i]
 }
 `);
-  buildWebapi();
+  buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const top = readFileSync(join(dir, "lib.js"), "utf8");
   const imports = top.split("\n").filter((line) => line.startsWith("import") || line === "").slice(1, 8).join("\n");
