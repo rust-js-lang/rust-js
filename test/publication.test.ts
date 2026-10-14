@@ -10,7 +10,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { commit, fingerprint, publishArtifacts } from "../tooling/publish.js";
+import { commit, fingerprint, publishArtifacts, removable } from "../tooling/publish.js";
 import { runSync } from "./child";
 import { buildCompiler, compiler, fixture, run } from "./support";
 
@@ -108,6 +108,24 @@ for (const c of cases) {
 // watching it, Next.js's Turbopack, would take it for deleted, and what
 // imports it for broken (ADR 0192). Another process looks for it while it's
 // replaced, again and again.
+// What a build removes of an older one's is one rule, of its output and of
+// its copy in source alike (the second architecture review: the copy in
+// source had its own, which kept no file by another name): still there,
+// as written, and nothing it keeps, through a link too.
+test("an older build's file is removed only as it was written, and none this one keeps", () => {
+  const dir = fixture("removable");
+  const as = (name: string, text: string) => {
+    writeFileSync(join(dir, name), text);
+    return { file: join(dir, name), hash: fingerprint(Buffer.from(text)) };
+  };
+  const old = as("old.js", "old");
+  const edited = { ...as("edited.js", "edited"), hash: fingerprint(Buffer.from("as written")) };
+  const kept = as("kept.js", "kept");
+  symlinkSync(join(dir, "kept.js"), join(dir, "alias.js"));
+  const missing = { file: join(dir, "gone.js"), hash: "0" };
+  expect(removable([old, edited, kept, missing], [join(dir, "alias.js")])).toEqual([old.file]);
+});
+
 test("a file commit replaces is never missing while it's replaced", async () => {
   const dir = fixture("commit-atomic");
   const file = join(dir, "page.jsx"), stop = join(dir, "stop");

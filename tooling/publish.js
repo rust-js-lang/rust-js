@@ -21,12 +21,24 @@ function real(path) {
 
 // What an older build wrote that this one may remove is the compiler's to
 // say, its manifest's `stale` (ADR 0375). Of each, what only the disk shows,
-// which a WASI compiler can't see: that it's still as written, and not a
-// file this build reads or writes by another name, a link to one.
+// which a WASI compiler can't see.
 function staleArtifacts(manifest, writes) {
-  const kept = new Set([manifest.input, ...manifest.sources, ...writes.keys()].map(real));
-  return (manifest.stale ?? []).filter(({ file, hash }) => existsSync(file)
-    && !kept.has(real(file))
+  return removable(manifest.stale ?? [], [manifest.input, ...manifest.sources, ...writes.keys()]);
+}
+
+/**
+ * Of `candidates`, files an older build wrote, each as its `hash` says,
+ * those this one removes: still there and as written, so no person's edit,
+ * and none of `kept`, what this build reads or writes, by any name, a link
+ * to one. The one rule, of a build's own output and of its copy in source.
+ * @param {{ file: string, hash: string }[]} candidates
+ * @param {Iterable<string>} kept
+ * @returns {string[]}
+ */
+export function removable(candidates, kept) {
+  const keeps = new Set([...kept].map(real));
+  return candidates.filter(({ file, hash }) => existsSync(file)
+    && !keeps.has(real(file))
     && fingerprint(readFileSync(real(file))) === hash)
     .map(({ file }) => real(file));
 }

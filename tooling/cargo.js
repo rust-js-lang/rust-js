@@ -9,7 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
 import { parseManifest } from "./manifest.js";
-import { commit, fingerprint } from "./publish.js";
+import { commit, fingerprint, removable } from "./publish.js";
 
 /** rust-js's target (ADR 0090), which Cargo checks its crates for: the compiler's `TARGET`. */
 export const target = "wasm32-unknown-unknown";
@@ -299,9 +299,8 @@ export function writeInSource(manifests, ledger, routes = []) {
   // What this build wrote before beside each of its crates' Rust, by the
   // ledger, that it doesn't now: gone, if no one has changed it since.
   const recorded = existsSync(ledger) ? JSON.parse(readFileSync(ledger, "utf8")) : { version: 1, crates: {} };
-  const stale = crates.flatMap(({ root }) => (recorded.crates[root] ?? [])
-    .filter(({ file, hash }) => !writes.has(file) && existsSync(file) && fingerprint(readFileSync(file)) === hash)
-    .map(({ file }) => file));
+  const reads = manifests.flatMap((manifest) => [manifest.input, ...(manifest.sources ?? [])].filter(Boolean));
+  const stale = removable(crates.flatMap(({ root }) => recorded.crates[root] ?? []), [...writes.keys(), ...reads]);
   for (const { root, files } of crates) {
     recorded.crates[root] = files.map((file) => ({ file, hash: fingerprint(writes.get(file)) }));
   }
