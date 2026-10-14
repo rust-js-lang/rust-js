@@ -52,7 +52,7 @@ struct Format<'a> {
 
 impl Format<'_> {
     fn mac(&mut self, mac: &ast::MacCall) {
-        if mac.path.segments.len() == 1 && mac.path.segments[0].ident.as_str() == "jsx" {
+        if super::is_jsx(&mac.path) {
             let indent = self.layout.indent(mac.span());
             let _ = parser::formatted(
                 self.sess,
@@ -203,9 +203,7 @@ impl Layout {
             {
                 let group = i + if name.as_str() == "macro_rules" { 3 } else { 2 };
                 if let Some(TokenTree::Delimited(span, _, _, inner)) = tokens.get(group) {
-                    if name.as_str() == "jsx"
-                        && !matches!(i.checked_sub(1).and_then(|at| tokens.get(at)), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::PathSep)
-                    {
+                    if super::is_jsx_call(&tokens, i) {
                         parser::formatted(sess, inner.clone(), t.span.to(span.close), at + 4, self)?;
                         self.mark(span.close, at);
                     }

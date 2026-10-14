@@ -124,4 +124,12 @@ export const mutations: Mutation[] = [
     replace: "            && false",
     tests: ["test/jsx.test.ts", "-t", "vec!'s items"],
   },
+  {
+    name: "format-foreign-jsx-parsed",
+    breaks: "another crate's `foreign::jsx!` is read as rust-js's JSX, and the formatter refuses a file whose macro isn't its grammar",
+    file: "src/jsx_syntax.rs",
+    find: "        && !matches!(i.checked_sub(1).and_then(|at| trees.get(at)), Some(TokenTree::Token(sep, _)) if sep.kind == TokenKind::PathSep)\n",
+    replace: "",
+    tests: ["test/format.test.ts", "-t", "JSX formatter preserves literal contents, comments, other macros and skipped items"],
+  },
 ];

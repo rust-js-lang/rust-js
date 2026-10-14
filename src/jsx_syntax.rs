@@ -45,10 +45,7 @@ fn rust_expression(sess: &Session, tokens: TokenStream, tags: &TagNames) -> Resu
     }
     impl Calls<'_> {
         fn mac(&mut self, mac: &ast::MacCall, needs_semicolon: bool) {
-            if mac.path.segments.len() == 1
-                && mac.path.segments[0].ident.as_str() == "jsx"
-                && !expanded_already(&mac.args.tokens)
-            {
+            if is_jsx(&mac.path) && !expanded_already(&mac.args.tokens) {
                 match parser::jsx(self.sess, mac.args.tokens.clone(), mac.span(), &self.tags) {
                     Ok(rust) => {
                         // The call itself, `jsx! { @rust_js .. }` (ADR 0113).
@@ -462,12 +459,11 @@ impl Expand<'_> {
         while i < trees.len() {
             if let [
                 TokenTree::Token(name, _),
-                TokenTree::Token(bang, _),
+                TokenTree::Token(_, _),
                 TokenTree::Delimited(dspan, spacing, delim, inner),
                 ..,
             ] = &trees[i..]
-                && matches!(name.kind, TokenKind::Ident(symbol, IdentIsRaw::No) if symbol.as_str() == "jsx")
-                && bang.kind == TokenKind::Bang
+                && is_jsx_call(&trees, i)
                 && !expanded_already(inner)
                 && let span = name.span.to(dspan.entire())
                 && let Ok(rust) = parser::jsx(self.sess, inner.clone(), span, &self.tags)
@@ -491,8 +487,7 @@ impl Expand<'_> {
     fn statement(&mut self, stmt: &mut ast::Stmt) {
         let span = stmt.span;
         if let ast::StmtKind::MacCall(mac) = &mut stmt.kind
-            && mac.mac.path.segments.len() == 1
-            && mac.mac.path.segments[0].ident.as_str() == "jsx"
+            && is_jsx(&mac.mac.path)
             && !expanded_already(&mac.mac.args.tokens)
             && let Ok(rust) = parser::jsx(self.sess, mac.mac.args.tokens.clone(), span, &self.tags)
         {
@@ -527,8 +522,7 @@ impl MutVisitor for Expand<'_> {
     fn visit_expr(&mut self, expr: &mut ast::Expr) {
         let span = expr.span;
         if let ExprKind::MacCall(mac) = &mut expr.kind
-            && mac.path.segments.len() == 1
-            && mac.path.segments[0].ident.as_str() == "jsx"
+            && is_jsx(&mac.path)
             && !expanded_already(&mac.args.tokens)
             && let Ok(rust) = parser::jsx(self.sess, mac.args.tokens.clone(), span, &self.tags)
         {
@@ -599,6 +593,21 @@ fn arm(rust: TokenStream, span: Span) -> TokenStream {
         TokenTree::token_alone(TokenKind::Ident(Symbol::intern("rust_js"), IdentIsRaw::No), span),
     ];
     TokenStream::new(marker.into_iter().chain(rust.iter().cloned()).collect())
+}
+
+/// Is it the `jsx!` rust-js expands: the macro by the name it's imported
+/// as, `jsx! { .. }`, never a path to it, `react::jsx!`. The one answer, of
+/// the AST's calls and, `is_jsx_call`, a macro's tokens alike.
+fn is_jsx(path: &ast::Path) -> bool {
+    path.segments.len() == 1 && path.segments[0].ident.as_str() == "jsx"
+}
+
+/// `is_jsx`, of the call `trees[i..]` start, if they start one: `jsx` `!`,
+/// not after `::`.
+fn is_jsx_call(trees: &[&TokenTree], i: usize) -> bool {
+    matches!(trees.get(i), Some(TokenTree::Token(name, _)) if matches!(name.kind, TokenKind::Ident(symbol, _) if symbol.as_str() == "jsx"))
+        && matches!(trees.get(i + 1), Some(TokenTree::Token(bang, _)) if bang.kind == TokenKind::Bang)
+        && !matches!(i.checked_sub(1).and_then(|at| trees.get(at)), Some(TokenTree::Token(sep, _)) if sep.kind == TokenKind::PathSep)
 }
 
 /// Is it a `jsx!` rust-js has expanded, `jsx! { @rust_js .. }`?

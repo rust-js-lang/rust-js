@@ -42,7 +42,10 @@ impl Uses<'_> {
         {
             return;
         }
-        if is_element_builder(self.tcx, def) {
+        if super::bindings::is_unexpanded_jsx(self.tcx, def) {
+            self.tcx.dcx().span_err(span, "rust-js: `jsx!` is called by the name it's imported as, `use react::jsx;` and `jsx! { .. }`, not by a path to it");
+            self.valid = false;
+        } else if is_element_builder(self.tcx, def) {
             self.tcx.dcx().span_err(span, "rust-js: element builders are compiler-only; construct elements and set their props inside `jsx! { <Tag ... /> }`");
             self.valid = false;
         }

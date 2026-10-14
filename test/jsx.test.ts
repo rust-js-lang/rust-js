@@ -1738,6 +1738,25 @@ fn unused() -> JSX::Element { ${body} }
   });
 }
 
+// A `jsx!` is found by the name it's imported as, one rule wherever it's
+// written: a path to it, `react::jsx!`, is refused alike as an expression
+// and among a macro's tokens, where it was expanded (the second
+// architecture review), not left to a plain rustc's `__jsx`.
+for (const [name, body] of [
+  ["as an expression", "react::jsx! { <p>{\"b\"}</p> }"],
+  ["in a macro's tokens", "{ let items: Vec<JSX::Element> = vec![react::jsx! { <li /> }]; jsx! { <ul>{items}</ul> } }"],
+] as const) {
+  test(`a jsx! by a path to it is refused ${name}`, () => {
+    const { args } = compile(`#![allow(non_snake_case, dead_code)]
+use react::{JSX, jsx};
+pub fn App() -> JSX::Element { ${body} }
+`);
+    const result = Bun.spawnSync(args);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain("`jsx!` is called by the name it's imported as");
+  });
+}
+
 test("JSX context providers and refs work on React 18 while newer APIs stay gated", () => {
   const { dir, args } = compile(`#![deny(warnings)]
 #![allow(non_snake_case)]

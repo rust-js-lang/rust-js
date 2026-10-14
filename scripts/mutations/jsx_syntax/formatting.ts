@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/format.test.ts", "-t", "JSX formatter preserves literal contents, comments, other macros and skipped items"],
   },
   {
-    name: "format-foreign-jsx-parsed",
-    breaks: "another crate's `foreign::jsx!` is read as rust-js's JSX, and the formatter refuses a file whose macro isn't its grammar",
-    file: "src/jsx_syntax/formatting.rs",
-    find: "                    if name.as_str() == \"jsx\"\n                        && !matches!(i.checked_sub(1).and_then(|at| tokens.get(at)), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::PathSep)\n                    {",
-    replace: "                    if name.as_str() == \"jsx\" {",
-    tests: ["test/format.test.ts", "-t", "JSX formatter preserves literal contents, comments, other macros and skipped items"],
-  },
-  {
     name: "format-errors-printed",
     breaks: "a file the formatter can't read, as JSX whose tags don't match, is printed as if laid out, which a caller writing stdout over the file keeps",
     file: "src/jsx_syntax/formatting.rs",
