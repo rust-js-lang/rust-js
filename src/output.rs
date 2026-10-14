@@ -265,6 +265,36 @@ impl OutputPlan {
         })
     }
 
+    /// Where a module's JS goes in source, beside its Rust (ADRs 0041,
+    /// 0273): the file of the module whose file its source is, `src/api.rs`'s
+    /// `src/api.js` and `src/api/mod.rs`'s `src/api/mod.js`, or a `#[path]`
+    /// module's beside its file; an inline module's, `mod inner { .. }`,
+    /// where its file would be, `src/inner.js`.
+    fn in_source(&self, module: &crate::program::LoweredModule) -> Result<PathBuf, String> {
+        let extension = if self.jsx.contains(&module.path) { "jsx" } else { "js" };
+        let input = absolute(&self.input)?;
+        let root = parent_dir(&input);
+        if let Some(source) = module.file.as_deref().map(absolute).transpose()? {
+            // The module whose file `source` is, by where it is.
+            let mut own: Vec<String> = match source == input {
+                true => Vec::new(),
+                false => relative_resolved(root, &source.with_extension(""))
+                    .split(std::path::MAIN_SEPARATOR)
+                    .map(str::to_owned)
+                    .collect(),
+            };
+            if own.last().is_some_and(|name| name == "mod") {
+                own.pop();
+            }
+            if own == module.path || module.located {
+                return Ok(source.with_extension(extension));
+            }
+        }
+        let mut path = root.join(module.path.iter().collect::<PathBuf>());
+        path.set_extension(extension);
+        Ok(path)
+    }
+
     /// Where a module's JS goes: the root to the output file, `a::b` to
     /// `a/b.js` beside it, mirroring how Rust lays out `src/`. A module
     /// with JSX is a `.jsx` file, as JSX tools expect (ADR 0040).
@@ -431,7 +461,7 @@ impl OutputPlan {
                 map,
                 types,
                 source: module.file.as_deref().map(absolute).transpose()?,
-                located: module.located,
+                in_source: Some(self.in_source(module)?),
                 imports,
                 exports: exports(module),
                 links: Vec::new(),

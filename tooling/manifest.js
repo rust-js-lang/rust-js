@@ -52,6 +52,7 @@ export function parseManifest(text) {
         && strings(module.module) && path(module.file) && path(module.map)
         && (module.types === undefined || path(module.types))
         && (module.source === null || path(module.source)) && paths(module.imports)
+        && (module.in_source === undefined || module.in_source === null || path(module.in_source))
         && (module.exports === undefined || strings(module.exports))
         && links(module.links) && links(module.type_links))
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
@@ -82,6 +83,7 @@ export function mapManifestPaths(manifest, map) {
       ...module, file: map(module.file), map: map(module.map),
       ...(module.types === undefined ? {} : { types: map(module.types) }),
       source: module.source === null ? null : map(module.source), imports: module.imports.map(map),
+      ...(module.in_source == null ? {} : { in_source: map(module.in_source) }),
       ...(module.links === undefined ? {} : { links: module.links.map(link => ({ ...link, file: map(link.file) })) }),
       ...(module.type_links === undefined ? {} : { type_links: module.type_links.map(link => ({ ...link, file: map(link.file) })) }),
     })),

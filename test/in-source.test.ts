@@ -38,7 +38,8 @@ function crate(dir: string, name: string, modules: Record<string, string>, impor
         const start = Buffer.byteLength(text.slice(0, text.indexOf(`"${specifier}"`) + 1));
         return { start, end: start + Buffer.byteLength(specifier), file: resolve(dirname(file), specifier) };
       });
-      return { file, source, module: module === "" ? [] : [module], links };
+      // Where the compiler says its JS goes in source: beside its Rust.
+      return { file, source, module: module === "" ? [] : [module], in_source: source.replace(/\.rs$/, ".js"), links };
     }),
   };
 }
@@ -114,13 +115,16 @@ test("the builder asks a replaced compiler what it is", async () => {
 });
 
 // A manifest of an older compiler's says nothing of where its JS names
-// another's: copying it would keep the build's names, so it's an error that
-// says to build it again (ADR 0101).
+// another's, nor where it goes in source: copying it would keep the build's
+// names, or guess its place, so it's an error that says to build it again
+// (ADR 0101).
 test("in source, a build of an older compiler's is built again, not copied", () => {
   const dir = fixture("in-source-older");
   const ledger = join(dir, "build", "in-source.json");
   const app = crate(dir, "app", { "": "export const a = 1;\n" });
-  const older = { ...app, modules: app.modules.map(({ links: _, ...module }) => module) };
-  expect(() => writeInSource([older], ledger)).toThrow("built by an older rust-js");
+  for (const missing of ["links", "in_source"] as const) {
+    const older = { ...app, modules: app.modules.map(({ [missing]: _, ...module }) => module) };
+    expect(() => writeInSource([older as typeof app], ledger)).toThrow("built by an older rust-js");
+  }
   expect(existsSync(join(dir, "app", "src", "lib.js"))).toBe(false);
 });

@@ -131,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/shared-code.test.ts"],
   },
   {
-    name: "path-module-unlocated-in-manifest",
-    breaks: "a Cargo build in source writes a `#[path]` module outside the root's directory where its module path says",
-    file: "src/output.rs",
-    find: "                located: module.located,\n",
-    replace: "                located: false,\n",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build builds"],
-  },
-  {
     name: "module-file-is-root",
     breaks: "a module in a file of its own is taken to live in the crate root's file, so its source map names `lib.rs` for code in `stats.rs`",
     file: "src/output.rs",
@@ -209,5 +201,21 @@ export const mutations: Mutation[] = [
     find: "                tests,\n            };",
     replace: "                tests: None,\n            };",
     tests: ["test/manifest.test.ts", "-t", "what each module exports"],
+  },
+  {
+    name: "in-source-mod-file-moved",
+    breaks: "a module whose file is `nested/mod.rs` has its JS in source at `nested.js`, not beside it",
+    file: "src/output.rs",
+    find: "            if own.last().is_some_and(|name| name == \"mod\") {\n                own.pop();\n            }\n",
+    replace: "",
+    tests: ["test/cargo-in-source.test.ts", "-t", "follows the modules"],
+  },
+  {
+    name: "in-source-path-module-moved",
+    breaks: "a `#[path]` module's JS in source is where its module path says, not beside its file, a Next.js page's",
+    file: "src/output.rs",
+    find: "            if own == module.path || module.located {\n",
+    replace: "            if own == module.path {\n",
+    tests: ["test/next.test.ts", "-t", "rust-js-next build builds"],
   },
 ];

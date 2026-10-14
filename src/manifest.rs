@@ -60,10 +60,11 @@ pub struct Module {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub types: Option<PathBuf>,
     pub source: Option<PathBuf>,
-    /// Whether its `source` is where a `#[path]` says (ADR 0273), where its
-    /// JS goes in source too.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub located: bool,
+    /// Where its JS goes in source, beside its Rust, as a project commits it
+    /// (ADRs 0041, 0273): what a host that writes it there writes. Absent of
+    /// an older compiler's.
+    #[serde(default)]
+    pub in_source: Option<PathBuf>,
     pub imports: Vec<PathBuf>,
     /// What it exports, by name, `default` its default export's: what a
     /// host may call of it, a program's `main`, without reading its JS.

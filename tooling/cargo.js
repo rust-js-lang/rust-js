@@ -216,11 +216,10 @@ export function readsCargo(file, { workspace, target, manifests }) {
 
 /**
  * Each module's JS, and its map, beside its Rust, as ReScript writes it in
- * source and a project commits it (ADRs 0041, 0273): `src/api.rs`'s is
- * `src/api.js`, or `.jsx`. A module that isn't a file of its own, an
- * inline `mod inner { .. }`, is where its file would be: `src/inner.js`
- * of `src/lib.rs`'s, `src/api/inner.js` of `src/api.rs`'s, and it's an
- * error if that's another module's, before anything's written. An import of another crate's module is of its
+ * source and a project commits it (ADRs 0041, 0273), where the compiler
+ * says, its manifest's `in_source`: `src/api.rs`'s is `src/api.js`, or
+ * `.jsx`, and an inline `mod inner { .. }`'s is where its file would be.
+ * It's an error if that's another module's, before anything's written. An import of another crate's module is of its
  * copy, where it is; any other stays as written. A file is written only if
  * it changed. What's written is published as a build's output is (ADR
  * 0091): every byte prepared first, then all of it or none. `ledger` records
@@ -228,7 +227,7 @@ export function readsCargo(file, { workspace, target, manifests }) {
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
+ * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], in_source?: string, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -249,16 +248,14 @@ export function writeInSource(manifests, ledger, routes = []) {
     return `crate \`${crate}\`'s ${module.length === 0 ? "root" : own}`;
   };
   for (const { crate, library, modules } of manifests) {
-    const crateRoot = modules.find((m) => m.module.length === 0).source;
-    for (const { file, source, module, located } of modules) {
-      const extension = file.endsWith(".jsx") ? ".jsx" : ".js";
-      // The module whose file `source` is, by where it is: `src/api.rs`
-      // and `src/api/mod.rs` are `api`'s.
-      const own = source === crateRoot ? [] : relative(dirname(crateRoot), source).replace(/\.rs$/, "").split(sep);
-      if (own.at(-1) === "mod") own.pop();
-      // Or a `#[path]` module's file, wherever it is (ADR 0273).
-      const written = (own.length === module.length && own.every((name, i) => name === module[i])) || located;
-      moved.set(file, written ? source.replace(/\.rs$/, extension) : join(dirname(crateRoot), ...module) + extension);
+    for (const { file, in_source, links } of modules) {
+      // A manifest of an older compiler's says neither where its JS goes nor
+      // where it names another's, and Cargo has its build as done.
+      if (in_source == null || links === undefined) {
+        throw new Error(`${file} was built by an older rust-js, whose manifest doesn't say where its JS goes in source: `
+          + "`cargo clean --target wasm32-unknown-unknown` to build it again");
+      }
+      moved.set(file, in_source);
     }
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {
       const to = moved.get(file);
@@ -275,12 +272,6 @@ export function writeInSource(manifests, ledger, routes = []) {
     const files = [];
     for (const { file, map, types, links, type_links } of modules) {
       const to = moved.get(file);
-      // A manifest of an older compiler's says nothing of where its JS names
-      // another's, and Cargo has its build as done.
-      if (links === undefined) {
-        throw new Error(`${file} was built by an older rust-js, whose manifest doesn't say what it imports: `
-          + "`cargo clean --target wasm32-unknown-unknown` to build it again");
-      }
       const js = relinked(readFileSync(file), links, to, moved).toString("utf8")
         .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
       writes.set(to, Buffer.from(js));

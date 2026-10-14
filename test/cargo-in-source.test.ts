@@ -87,14 +87,18 @@ test("a Cargo build's JS in source is beside each module's Rust, and follows the
   writeFileSync(join(dir, "shared", "src", "lib.rs"), "pub fn seven() -> u32 {\n    7\n}\n");
   writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\nshared = { path = "../shared" }\n');
   const app = join(dir, "app", "src");
-  writeFileSync(join(app, "lib.rs"), "mod extra;\n\npub fn value() -> u32 {\n    extra::more(shared::seven())\n}\n");
+  writeFileSync(join(app, "lib.rs"), "mod extra;\nmod nested;\n\npub fn value() -> u32 {\n    extra::more(shared::seven()) * nested::one()\n}\n");
   writeFileSync(join(app, "extra.rs"), "pub fn more(n: u32) -> u32 {\n    n + 1\n}\n");
+  mkdirSync(join(app, "nested"));
+  writeFileSync(join(app, "nested", "mod.rs"), "pub fn one() -> u32 {\n    1\n}\n");
   const manifest = join(dir, "Cargo.toml");
   const inSource = () => checkCargo({ manifestPath: manifest, toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
   const { js } = await inSource();
   expect(js).toBe(join(app, "lib.js"));
   expect(readFileSync(js, "utf8")).toContain('from "../../shared/src/lib.js"');
   expect(existsSync(join(app, "extra.js"))).toBe(true);
+  // A module whose file is its directory's `mod.rs`: beside it.
+  expect(existsSync(join(app, "nested", "mod.js"))).toBe(true);
   expect(run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(js)})).value());`]).trim()).toBe("8");
   // The module gone, its JS goes; and the root, with JSX now, is `lib.jsx`.
   rmSync(join(app, "extra.rs"));

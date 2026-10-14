@@ -48,7 +48,11 @@ as the compiler placed it.
   output**, `../shared/model.rs` of `client/lib.rs`'s crate: its JS stays in
   the output's directory, where a direct compile writes, not beside a file
   outside it. A Cargo build in source writes it beside its file still, as
-  the manifest says it's a `#[path]` module's, `located`.
+  the manifest says it's a `#[path]` module's, `located`. (Amended by the
+  second architecture review: the manifest says where each module's JS
+  goes in source, `in_source`, by the compiler's rule, `OutputPlan::in_source`;
+  the host re-derived it from `located` and the source's path, `mod.rs`
+  and all.)
 - **So is a module in a `#[path]` directory** (2026-10-10):
   `sandpack-rsc/RscFileBridge.rs` of react.dev's `#[path = "sandpack-rsc"]
   mod sandpack_rsc { mod RscFileBridge; }` had its JS at
