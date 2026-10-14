@@ -241,7 +241,7 @@ test("each runtime helper is asked for, or needed by another", () => {
 // not as a variable of its name, `Expr::var("$cmp")`, which checks nothing.
 test("a helper is written as the runtime's", () => {
   for (const file of ["src/lower.rs", ...files("src/lower")]) {
-    expect(read(file), file).not.toContain('Expr::var("$');
+    expect(read(file), file).not.toMatch(/Expr::var\((?:if [^{\n]*\{ )?"\$/);
   }
 });
 
@@ -578,8 +578,8 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir.rs", "    fn mir_function(", 409],
   ["src/lower/recognition.rs", "    fn classify_inherent(", 840],
   ["src/lower/recognition.rs", "    fn classify_trait_method(", 422],
-  ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 691],
-  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 502],
+  ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 688],
+  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 496],
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

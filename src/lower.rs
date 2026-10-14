@@ -580,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(f));
         }
         if let Some(Std::MaxOf(max)) = known {
-            return Ok(Some(Expr::var(if max { "$f64Max" } else { "$f64Min" })));
+            return Ok(Some(Expr::helper(if max { "$f64Max" } else { "$f64Min" })));
         }
         if is_binding(self.tcx, def_id) {
             return self.binding_value(def_id, args, span).map(Some);

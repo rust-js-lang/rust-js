@@ -303,9 +303,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(item) {
                     list.push(Expr::bool(true));
                 }
-                Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), list)
+                Expr::call(Expr::helper(if max { "$maxBy" } else { "$minBy" }), list)
             }
-            _ => Expr::call(Expr::var(if max { "$max" } else { "$min" }), vec![items]),
+            _ => Expr::call(Expr::helper(if max { "$max" } else { "$min" }), vec![items]),
         })
     }
 

@@ -1304,10 +1304,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::MaxOf(max) => {
                 let num = Num::of(tys[0].peel_refs());
                 let callee = if num.is_some_and(Num::float) {
-                    Expr::var(if max { "$f64Max" } else { "$f64Min" })
+                    Expr::helper(if max { "$f64Max" } else { "$f64Min" })
                 } else if num.is_some_and(Num::big) {
                     // `Math.max` takes numbers only.
-                    Expr::var(if max { "$bigMax" } else { "$bigMin" })
+                    Expr::helper(if max { "$bigMax" } else { "$bigMin" })
                 } else {
                     Expr::member(Expr::var("Math"), if max { "max" } else { "min" })
                 };

@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                         vec![line],
                     ),
-                    Err(text) => Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text]),
+                    Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
                 }
             }
             _ => Expr::undefined(),
@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Let(text.clone(), Some(Expr::str(""))).at(js_span));
             out.push(StmtKind::TryCatch(body, Some(caught), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span));
             return Expr::call(
-                Expr::var(if error { "$eprint" } else { "$print" }),
+                Expr::helper(if error { "$eprint" } else { "$print" }),
                 vec![Expr::var(&text)],
             );
         }
@@ -237,7 +237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                     vec![line],
                 ),
-                Err(text) => Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text]),
+                Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
             },
             Std::FmtStr => arg(),
             Std::FmtDisplay => {

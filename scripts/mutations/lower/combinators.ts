@@ -366,4 +366,12 @@ export const mutations: Mutation[] = [
       "arrays of arrays flattened"
     ]
   },
+  {
+    name: "binary-search-own-order",
+    breaks: "`binary_search` asks its own way what `<` orders, and refuses a slice of `&i32`s and one of `Ordering`s",
+    file: "src/lower/combinators.rs",
+    find: "                if !self.is_primitive_ord(item) {\n",
+    replace: "                if !(Num::of(item).is_some_and(|n| !n.float()) || item.is_bool()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
+  },
 ];

@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if mutable {
                     given.push(Expr::bool(true));
                 }
-                Expr::call(Expr::var(if lock { "$tryLock" } else { "$tryBorrow" }), given)
+                Expr::call(Expr::helper(if lock { "$tryLock" } else { "$tryBorrow" }), given)
             }
             Std::GuardValue { mutable } => {
                 let ty::Adt(_, guard) = generic_args.type_at(0).kind() else {

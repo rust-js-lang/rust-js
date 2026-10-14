@@ -313,6 +313,7 @@ const PURE: &[&str] = &[
     "$byteLen",
     "$f64Max",
     "$f64Min",
+    "$binarySearch",
     "$jsonInt",
     "$jsonFloat",
     "$jsonNumberOfF64",

@@ -791,10 +791,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self
                     .slice_item(subject_ty)
                     .ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
-                // What `<` orders as `Ord` does: integers, `char`s, strings. Not
-                // a `&mut` to one, a cell (ADR 0099).
-                let ordered =
-                    !self.has_cell_layer(item) && (Num::of(item).is_some_and(|n| !n.float())) || item.is_bool();
                 // Strings and `char`s by code point, `$cmp` (ADR 0183).
                 if self.is_text_ord(item) {
                     let x = if x.reads_same() { x } else { self.spill("item", x, out) };
@@ -805,7 +801,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Ok(helper("$binarySearchBy", vec![subject, f]));
                 }
-                if !ordered {
+                // What `<` orders as `Ord` does, `is_primitive_ord`'s.
+                if !self.is_primitive_ord(item) {
                     return Err(self.unsupported(span, &format!("`binary_search` of `{item}`s")));
                 }
                 helper("$binarySearch", vec![subject, x])
@@ -1133,7 +1130,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::arrow(vec!["a".into(), "b".into()], body)
                     }
                 };
-                Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), vec![items, compare])
+                Expr::call(
+                    Expr::helper(if max { "$maxBy" } else { "$minBy" }),
+                    vec![items, compare],
+                )
             }
             IterComb::Product => {
                 let ty = generic_args
