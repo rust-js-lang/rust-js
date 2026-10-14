@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-array-parts-kept",
-    breaks: "`const [, b] = [x, 6];` stays, not `const b = 6;`",
+    breaks: "`let (root, files) = (chosen.root.clone(), ..)` isn't split here, and `root` is read as `const root = chosen.root;`, not taken from `chosen` as `const { root } = chosen;`",
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "            stmts.splice(i..first + count, each);\n            continue;\n",
     replace: "            let _ = each;\n            i += 1;\n            continue;\n",
-    tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
   },
   {
     name: "mir-tidy-params-not-destructured",
