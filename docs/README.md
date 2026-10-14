@@ -37,47 +37,20 @@ an error", and the page says what's current.
                                  mir/tidy.rs: written as a person writes it
                                        │
                                        ▼
-                                 prepare.rs: readability preparation
-                                       |
-                                       v
+                                 link.rs, prepare.rs: linked, then readable
+                                       │
+                                       ▼
                                  to_oxc.rs: JS AST ──► oxc AST           (0018)
                                        │
                                        ▼
-                                 oxc_codegen ──► one .js + .js.map per module  (0018, 0019)
+                                 format.rs: laid out ──► one .js + .js.map per module  (0018, 0019)
 ```
 
 ## Code map
 
-[architecture.md](architecture.md) says what's inside `src/lower/`, the
-boundaries between the parts, and where a change goes.
-
-| File | Job |
-|---|---|
-| `src/main.rs` | CLI, rustc callbacks, analysis and the diagnostic gate |
-| `src/jsx_syntax.rs`, `src/jsx_syntax/` | Load configured modules and expand JSX tokens into typed Rust before resolution; shared by native and WASM |
-| `src/lower/analysis.rs` | Collect named items, imports, trait and mutation facts |
-| `src/lower/pipeline.rs` | Orchestrate emission, reachability and owned symbolic module assembly |
-| `src/reachability.rs` | Traverse dependencies from caller-selected roots without frontend knowledge |
-| `src/link.rs`, `src/names.rs` | Resolve module imports, collision-free aliases and runtime dependencies after lowering |
-| `src/lower.rs`, `src/lower/` | Crate facts, function lowering, bindings, representations and JSX semantics |
-| `src/lower/serde.rs`, `src/lower/serde/`, `serde/` | `#[serde(..)]` attributes, and JSON written and read as serde_json does; the serde crates, built with the pinned toolchain |
-| `src/runtime/from_json.js` | serde_json's reader, ported to JS |
-| `src/runtime.rs`, `src/runtime/` | Runtime helpers, each a file of its own, the `@rust-js/runtime` package's (`runtime/`) |
-| `src/prepare.rs` | JSX readability preparation after lowering |
-| `src/program.rs`, `src/lower/sources.rs` | Owned linked modules and multi-file source origins |
-| `src/output.rs`, `src/manifest.rs` | Validated artifact plans and the versioned build result |
-| `src/publish.rs` | Native publication, ownership and rollback |
-| `tooling/` | Native build adapter, manifest consumers and WASI host publication |
-| `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js` | Browser compiler lifecycle and recovery |
-| `src/js.rs` | Our small JS AST; every node carries a Rust span |
-| `src/to_oxc.rs` | Converts to oxc's AST, prints, builds the source map |
-| `src/format.rs` | Formats the printed JS as oxfmt does, with a crate's options, and moves the source map to match, or to a transform's text of the same program |
-| `src/settings.rs`, `src/hooks.rs` | A crate's settings in its `Cargo.toml`, and the transforms and checks it runs on the JS, what they say moved to the Rust (0117) |
-| `test/native.rs`, `test/compiler.test.ts` | Differential test: native Rust vs. generated JS |
-| `test/emission.test.ts`, `test/diagnostics.test.ts` | Source maps, manifests, output ownership and compiler rejections |
-| `test/react.test.ts`, `test/browser.test.ts`, `test/vite.test.ts` | React behavior, browser runners, and real Vite/Fast Refresh |
-| `next/`, `next-plugin/`, `test/next.test.ts` | Next.js's bindings, `rust-js-next`, and real Next.js builds and Fast Refresh (0192) |
-| `test/sourcemap.ts` | A tiny source map decoder for the tests |
+What each part of the code is, and where, is
+[architecture.md's "Where the code is"](architecture.md#where-the-code-is):
+the one map, beside the boundaries it keeps and where a change goes.
 
 ## Decisions
 
