@@ -168,23 +168,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// `Instance::try_resolve` of `def_id` with `args`, normalized first, as
-    /// it requires, or `None` where they can't be here: an associated type
-    /// only a caller knows isn't one to resolve with (ADR 0106).
+    /// `resolve_instance_in` this body's typing environment.
     pub(super) fn resolve_instance(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
-        // rustc's instance resolution panics on arguments it can't normalize:
-        // normalized first, or not resolved (ADR 0106).
-        let Ok(args) = self
-            .tcx
-            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(args))
-        else {
-            return Ok(None);
-        };
-        ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args)
+        resolve_instance_in(self.tcx, self.typing_env, def_id, args)
     }
 
     /// `Into::<U>::into` of a `T` as `<U as From<T>>::from`, and
@@ -314,4 +304,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
     }
+}
+
+/// `Instance::try_resolve` of `def_id` with `args`, normalized first, as it
+/// requires, or `None` where they can't be in `typing_env`: an associated
+/// type only a caller knows isn't one to resolve with (ADR 0106). rustc's
+/// resolution panics on arguments it can't normalize. The one way the
+/// front end finds what a call or a constant is, in whichever environment
+/// its asker is.
+pub(super) fn resolve_instance_in<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
+    let Ok(args) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args)) else {
+        return Ok(None);
+    };
+    ty::Instance::try_resolve(tcx, typing_env, def_id, args)
 }

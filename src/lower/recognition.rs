@@ -3180,7 +3180,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// that's held answers (ADR 0328): a function of the crate's, a
     /// closure, a `dyn`'s method, a guard's own, or a thread-local cell's.
     pub(super) fn may_ask_borrows(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        let Ok(Some(instance)) = ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) else {
+        let Ok(Some(instance)) = super::items::resolve_instance_in(self.tcx, self.typing_env, def_id, args) else {
             return true;
         };
         let ty::InstanceKind::Item(id) = instance.def else {
@@ -3898,7 +3898,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             let method_args = tcx
                 .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(method_args))
                 .ok()?;
-            let instance = ty::Instance::try_resolve(tcx, self.typing_env, method, method_args).ok()??;
+            let instance = super::items::resolve_instance_in(tcx, self.typing_env, method, method_args).ok()??;
             Some((method, method_args, instance.def_id()))
         })
     }
@@ -3927,7 +3927,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(args))
             .ok()?;
-        let instance = ty::Instance::try_resolve(self.tcx, self.typing_env, method, args).ok()??;
+        let instance = super::items::resolve_instance_in(self.tcx, self.typing_env, method, args).ok()??;
         Some((method, args, instance.def_id()))
     }
 }

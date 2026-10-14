@@ -759,14 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
     ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
         let typing_env = self.given.self_env.unwrap_or(self.typing_env);
-        // Normalized first, or not resolved, as `resolve_instance`'s are.
-        let Ok(args) = self
-            .tcx
-            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args))
-        else {
-            return Ok(None);
-        };
-        ty::Instance::try_resolve(self.tcx, typing_env, def_id, args)
+        super::items::resolve_instance_in(self.tcx, typing_env, def_id, args)
     }
 
     /// Is this a trait's default body copied into an impl (ADR 0049), whose

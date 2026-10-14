@@ -516,7 +516,26 @@ pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
     is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()
 }
 
-/// Turn raw constant bits into a JS number literal.
+/// What rustc computes for constant `def_id` of `args`, or its `promoted`
+/// part, as a value tree (ADR 0031): the one evaluation, of an item's
+/// constant and a MIR body's alike. The query itself, not
+/// `const_eval_global_id_for_typeck`, which reports a constant too large
+/// for a value tree as rustc's own error where rust-js reports it as
+/// unsupported.
+pub(super) fn valtree<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    promoted: Option<rustc_middle::mir::Promoted>,
+    span: Span,
+) -> Option<ty::ValTree<'tcx>> {
+    let instance = super::items::resolve_instance_in(tcx, typing_env, def_id, args).ok()??;
+    let cid = GlobalId { instance, promoted };
+    let inputs = tcx.erase_and_anonymize_regions(typing_env.with_post_analysis_normalized(tcx).as_query_input(cid));
+    tcx.at(span).eval_to_valtree(inputs).ok()
+}
+
 /// What rustc computed for a `const`, as a value tree (ADR 0031).
 pub(super) fn eval_const<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -528,16 +547,7 @@ pub(super) fn eval_const<'tcx>(
     let args = tcx
         .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args))
         .ok()?;
-    let instance = ty::Instance::try_resolve(tcx, typing_env, def_id, args).ok()??;
-    // The query itself, not `const_eval_global_id_for_typeck`, which
-    // reports a constant too large for a value tree as rustc's own error
-    // where rust-js reports it as unsupported.
-    let cid = GlobalId {
-        instance,
-        promoted: None,
-    };
-    let inputs = tcx.erase_and_anonymize_regions(typing_env.with_post_analysis_normalized(tcx).as_query_input(cid));
-    let valtree = tcx.at(span).eval_to_valtree(inputs).ok()?;
+    let valtree = valtree(tcx, typing_env, def_id, args, None, span)?;
     let ty = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
     Some(ty::Value {
         ty: tcx.normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty)),

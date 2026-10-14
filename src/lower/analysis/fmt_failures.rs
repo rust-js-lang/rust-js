@@ -116,7 +116,7 @@ fn resolve<'tcx>(
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<Callee> {
-    match ty::Instance::try_resolve(tcx, typing_env, def_id, args) {
+    match crate::lower::items::resolve_instance_in(tcx, typing_env, def_id, args) {
         Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => Some(Callee::Unknown),
         Ok(Some(instance)) => Some(Callee::Known(instance.def_id())),
         Ok(None) if args.has_param() => Some(Callee::Unknown),

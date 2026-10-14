@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.krate.any_failing {
             return false;
         }
-        match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {
+        match self.resolve_instance(def_id, args) {
             Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => true,
             Ok(Some(instance)) => {
                 self.krate.failing.contains(&instance.def_id()) || self.krate.foreign.fails(instance.def_id())

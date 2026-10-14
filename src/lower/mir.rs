@@ -28,7 +28,6 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;
-use rustc_middle::mir::interpret::GlobalId;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
@@ -3472,17 +3471,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match c {
             Const::Ty(_, ct) => ct.try_to_value(),
             Const::Unevaluated(uv, _) => {
-                let instance = ty::Instance::try_resolve(self.tcx, self.typing_env, uv.def, uv.args).ok()??;
-                let cid = GlobalId {
-                    instance,
-                    promoted: uv.promoted,
-                };
-                let inputs = self.tcx.erase_and_anonymize_regions(
-                    self.typing_env
-                        .with_post_analysis_normalized(self.tcx)
-                        .as_query_input(cid),
-                );
-                let valtree = self.tcx.at(span).eval_to_valtree(inputs).ok()?;
+                let valtree =
+                    super::representation::valtree(self.tcx, self.typing_env, uv.def, uv.args, uv.promoted, span)?;
                 Some(ty::Value { ty, valtree })
             }
             Const::Val(value, _) => {
