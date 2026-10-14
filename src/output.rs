@@ -218,9 +218,9 @@ impl OutputPlan {
                 .unwrap_or_else(|| crate_name.clone())
                 .replace('-', "_");
             let alias = crate::names::fresh_in(&mut taken, &base);
-            code.push_str(&format!(
-                "import * as {alias} from {:?};\n",
-                self.specifier(&[], module)
+            code.push_str(&to_oxc::import_line(
+                &format!("* as {alias}"),
+                &self.specifier(&[], module),
             ));
             aliases.push(alias);
         }
@@ -233,10 +233,9 @@ impl OutputPlan {
         .filter_map(|(helper, used)| used.then_some(helper))
         .collect();
         if !helpers.is_empty() {
-            code.push_str(&format!(
-                "import {{ {} }} from {:?};\n",
-                helpers.join(", "),
-                crate::runtime::PACKAGE
+            code.push_str(&to_oxc::import_line(
+                &format!("{{ {} }}", helpers.join(", ")),
+                crate::runtime::PACKAGE,
             ));
         }
         code.push('\n');

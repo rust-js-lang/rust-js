@@ -244,6 +244,29 @@ test("a helper is written as the runtime's", () => {
   }
 });
 
+// A `$` name the compiler writes is one the runtime declares: a helper it
+// asks for, compares against, `callee.helper_name() == Some("$iter")`, or
+// spells, so a misspelled one is found here and not by a comparison that
+// never matches (the second architecture review). Each other `$` name is
+// listed with what it is, spelled once.
+test("each `$` name the compiler writes is the runtime's", () => {
+  const runtime = files("src/runtime").filter(file => file.endsWith(".js")).map(read).join("\n");
+  const declared = new Set([...runtime.matchAll(/^(?:export )?(?:async function\*? |function\*? |class |const |let )(\$\w+)/gm)].map(m => m[1]));
+  const others = new Map([
+    ["$someNone", "src/lower/std_types/option.rs"], // a `Some` of `None`'s box's field (ADR 0051)
+    ["$drop", "src/js.rs"], // a `dyn`'s dictionary's destructor
+    ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
+    ["$circleShape", "src/names.rs"], // a dictionary's cache, in a unit test
+  ]);
+  const unknown: string[] = [];
+  for (const file of sources.filter(file => file !== "src/runtime.rs")) {
+    for (const [, name] of read(file).matchAll(/"(\$[a-zA-Z]\w*)"/g)) {
+      if (!declared.has(name) && others.get(name) !== file) unknown.push(`${file}: ${name}`);
+    }
+  }
+  expect(unknown).toEqual([]);
+});
+
 // Printing lays out what it's given: what a helper means, the same place
 // `$index(v, i)` names, or a statement's readable form, `s += t`, is
 // decided before it (the third architecture audit: the printer decided

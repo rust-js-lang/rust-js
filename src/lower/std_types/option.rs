@@ -437,13 +437,18 @@ pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
     }
 }
 
+/// The field of the box of a `Some` that looks like `None` (ADR 0051),
+/// `{ $someNone: 0 }`, how deep a `None` it holds, as the runtime's `$some`
+/// makes it.
+const SOME_NONE: &str = "$someNone";
+
 /// `Some` of a constant, as `$some` makes it (ADR 0051): itself, or a box
 /// where it looks like `None`, `{ $someNone: 0 }`, one deeper for a box.
 pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
     let depth = match &inner.kind {
         js::ExprKind::Undefined | js::ExprKind::Null => 0,
         js::ExprKind::Object(props) => match props.as_slice() {
-            [Prop::Field(name, depth)] if name == "$someNone" => match depth.as_int() {
+            [Prop::Field(name, depth)] if name == SOME_NONE => match depth.as_int() {
                 Some(n) => n + 1,
                 None => return inner,
             },
@@ -451,13 +456,13 @@ pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
         },
         _ => return inner,
     };
-    Expr::object(vec![Prop::Field("$someNone".into(), Expr::int(depth))])
+    Expr::object(vec![Prop::Field(SOME_NONE.into(), Expr::int(depth))])
 }
 
 /// Is `value` the box of a `Some` that looks like `None` (ADR 0051), not
 /// what's in one: `value.$someNone !== undefined`.
 pub(in crate::lower) fn is_some_box(value: Expr) -> Expr {
-    Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
+    Expr::bin(Op::Ne, Expr::member(value, SOME_NONE), Expr::undefined())
 }
 
 /// `m ? m : d`, of an option `e` in a `const m` read only there, is

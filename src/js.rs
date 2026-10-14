@@ -35,6 +35,10 @@ pub const HELD: &str = "value";
 /// 0049), beside its `value`.
 pub const DICTIONARY: &str = "impl";
 
+/// The function of a `dyn`'s dictionary that drops what it holds, `$drop`,
+/// if that has a destructor.
+pub const DICTIONARY_DROP: &str = "$drop";
+
 pub struct Module {
     pub header: String,
     /// `"use client"`, before its imports (ADR 0192).

@@ -463,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
             ty::Dynamic(..) => {
-                let drop = Expr::member(Expr::member(value.clone(), js::DICTIONARY), "$drop");
+                let drop = Expr::member(Expr::member(value.clone(), js::DICTIONARY), js::DICTIONARY_DROP);
                 out.push(
                     StmtKind::Expr(Expr {
                         reads: false,

@@ -142,6 +142,12 @@ pub fn emit(
     Output { code, map }
 }
 
+/// `import clause from "from";`, an import's line, the one way it's written:
+/// a module's, and the `#[test]` runner's (`output.rs`).
+pub fn import_line(clause: &str, from: &str) -> String {
+    format!("import {clause} from {from:?};\n")
+}
+
 /// What's above a module's code: its header, directives, imports, one block
 /// as a person orders it (ADR 0295), re-exports and caches. Layout, as
 /// `format::spaced`'s blank lines are, of what the module says.
@@ -176,11 +182,11 @@ fn header(module: &Module) -> String {
         let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
         let relative = package.from.starts_with('.');
         if !clause.is_empty() {
-            let line = format!("import {} from {:?};\n", clause.join(", "), package.from);
+            let line = import_line(&clause.join(", "), &package.from);
             named.push((relative, &package.from, line));
         }
         if let Some(namespace) = &package.namespace {
-            let line = format!("import * as {namespace} from {:?};\n", package.from);
+            let line = import_line(&format!("* as {namespace}"), &package.from);
             named.push((relative, &package.from, line));
         }
         if clause.is_empty() && package.namespace.is_none() {
@@ -197,17 +203,12 @@ fn header(module: &Module) -> String {
             (Some(default), false) => format!("{default}, {{ {} }}", names.join(", ")),
             (None, _) => format!("{{ {} }}", names.join(", ")),
         };
-        let line = format!("import {clause} from {:?};\n", import.from);
+        let line = import_line(&clause, &import.from);
         named.push((import.from.starts_with('.'), &import.from, line));
     }
     named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
-    let runtime = (!helpers.is_empty()).then(|| {
-        format!(
-            "import {{ {} }} from {:?};\n",
-            helpers.join(", "),
-            crate::runtime::PACKAGE
-        )
-    });
+    let runtime =
+        (!helpers.is_empty()).then(|| import_line(&format!("{{ {} }}", helpers.join(", ")), crate::runtime::PACKAGE));
     let lines: Vec<String> = named
         .into_iter()
         .map(|(_, _, line)| line)

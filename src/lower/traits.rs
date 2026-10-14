@@ -960,7 +960,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.drops(tr.self_ty()) == Drops::Runs
                 && let Some(drop) = self.drop_function(tr.self_ty(), span)?
             {
-                props.push(Prop::Field("$drop".into(), drop));
+                props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));
             }
             return Ok(Expr::object(props));
         }
@@ -2280,7 +2280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(tr.self_ty()) == Drops::Runs
             && let Some(drop) = self.drop_function(tr.self_ty(), span)?
         {
-            props.push(Prop::Field("$drop".into(), drop));
+            props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));
         }
         props.extend(self.item_drops(tr, span)?);
         let object = Expr::object(props);
