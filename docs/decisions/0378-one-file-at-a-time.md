@@ -16,9 +16,10 @@ moves one file, sees it work, and moves the next, for months.
 
 Today that first file costs a day. Nothing documents adding rust-js to an
 existing app, and only a new one can be made, with packages npm doesn't
-have. Then the app is one crate whose root lists every file; `dev` and
-`build` become `rust-js-next`; a `Cargo.toml`, a patch step and editor
-settings are written by hand. A Rust file that imports a TS one hand-writes
+have. Then `dev` and `build` become `rust-js-next`, which can't wrap a
+`dev` script of the app's own, react.dev's `next-remote-watch`; a patch
+step and a second copy of the app's Prettier config are written by hand,
+and the `.d.ts` fails the app's format check. A Rust file that imports a TS one hand-writes
 its binding, unchecked, from the crate root's directory. A TS file that
 imports a Rust one sees `.d.ts` only if a flag says so, and snake_case
 names unless another does.
@@ -26,45 +27,62 @@ names unless another does.
 ## Decision
 
 **A file's language is invisible to everything that imports it.** Moving a
-file to Rust is writing `X.rs` and deleting `X.tsx`. Nothing else changes:
-not its importers, TS or Rust, not the scripts, not the deploy.
+file to Rust is writing `X.rs`, naming it in the crate's root, and deleting
+`X.tsx`. Nothing else changes: not its importers, TS or Rust, not the
+scripts, not the deploy.
 
-### 1. Adding rust-js is one package and one line
-
-```sh
-npm install rust-js
-```
+### 1. Adding rust-js is one dependency and one line
 
 ```js
 // next.config.js
-const { withRustJs } = require('rust-js/next');
+const {withRustJs} = require('@rust-js/next-plugin');
 module.exports = withRustJs(nextConfig);
 ```
 
-That is all. `next dev` and `next build` stay the commands; CI, Vercel and
-teammates change nothing. The one package holds the compiler for the
-machine (macOS, Linux and Windows), the runtime, and the bindings of React,
-Next.js, the web platform and JavaScript. Nobody installs Rust by hand: the
-first compile fetches the pinned toolchain into rust-js's cache.
+`withRustJs` takes no options and changes nothing of the config it's
+given: the webpack function, the aliases and `pageExtensions` are the
+app's, and the JS it serves is the JS on disk. It acts by the phase Next.js
+loads the config in, so whatever starts Next.js starts it, `next dev`,
+`next build`, a custom server, react.dev's `next-remote-watch`, and the
+`dev` and `build` scripts stay as they are:
 
-The app's `Cargo.toml` is written the first time rust-js sees a `.rs` file,
-its name the app's, and is the app's from then on, the place for a crate
-from crates.io:
+- **Developing**: it compiles the crate once, then on each save of a `.rs`
+  file, one watcher however many times the config is loaded.
+- **Building**: it checks the committed JS is what the Rust compiles to
+  (rule 4), and compiles nothing.
+- **Anything else**, `next start`, `next lint`: nothing.
+
+For now the packages are linked from a rust-js checkout, not installed
+from npm, the compiler is Apple silicon's, and Rust is rustup's pinned
+toolchain: the app's `package.json` names `@rust-js/next-plugin` and
+`@rust-js/runtime` by `link:` path, and its `Cargo.toml` the binding
+crates by `path`.
+
+### 2. The app's Rust is one crate, and its root lists every file
 
 ```toml
 [package]
 name = "react-dev"
 edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+js = {package = "rust-js-builtins", path = "../rust-js/builtins"}
+react = {package = "rust-js-react", path = "../rust-js/react"}
+next = {package = "rust-js-next", path = "../rust-js/next"}
 ```
 
-### 2. Every `.rs` file is a module, as every `.ts` file is
+```rust
+// src/lib.rs: the app's Rust, each module a file of it.
+#[path = "components/ExternalLink.rs"]
+pub mod external_link;
+```
 
-No crate root to pick and no `mod` list to keep. The crate is the app's
-source directory, `src/` where the app has one, as Next.js reads it, and
-each file a module of it by its path: `src/components/ExternalLink.rs` is
-`crate::components::external_link`. A `mod x;` naming a file is an error
-that says so. A route file whose name isn't a Rust name, `[slug].rs`, is a
-module only Next.js imports.
+The root is the one list of the app's modules that Rust sees: rustc,
+rust-analyzer and rust-js read it as they read any crate's. It writes no
+JS of its own. A file moved to Rust is a line in it.
 
 One file in, one file out: `ExternalLink.rs` compiles to
 `ExternalLink.js` and `ExternalLink.d.ts` beside it, at the path the `.tsx`
@@ -72,15 +90,22 @@ had, its `mod x { .. }` blocks inside it.
 
 ### 3. Importers don't change
 
-**A TS file importing a Rust one** reads its `.d.ts`, always written, and
+**A TS file importing a Rust one** reads its `.d.ts`, always written, with
+no key to turn it on, and
 the names JS gives: `pub fn format_date` is `formatDate`, as ADR 0376's one
 naming rule reads a JS name back. `import {ExternalLink} from
 'components/ExternalLink'` resolves, type-checks and renders as before.
 
-**A Rust file importing a TS one** writes what it would for a Rust one:
+**A Rust file importing a TS one** writes what it would for a Rust one,
+the TS module named in the root as a Rust one is, by its file:
 
 ```rust
-use crate::components::external_link::ExternalLink;
+#[path = "components/Button.tsx"]
+pub mod button;
+```
+
+```rust
+use crate::button::Button;
 ```
 
 rust-js binds each TS module a Rust file imports from TypeScript's own
@@ -88,7 +113,7 @@ types of it, the reverse of what `.d.ts` writes, and nobody writes a
 binding of the app's code. A type Rust can't hold as TypeScript types it is
 an error at the import, never a guess narrower or looser. When the TS
 changes, rustc checks the Rust against it; when its file moves to Rust, its
-Rust importers don't notice.
+Rust importers don't notice: the root's line says `Button.rs`.
 
 **A package** is imported by its name, `use react::use_state;`, bound by
 rust-js's own crate where it has one, React's and Next.js's, and from the
@@ -106,7 +131,11 @@ The JS and `.d.ts` are committed beside the Rust, so `next build` builds
 what's there and never compiles Rust: a teammate, CI and Vercel need no
 toolchain. Each JS file says what it was written from, so a `next build`
 whose Rust changed since stops, naming the file and the one command that
-writes it fresh, `npx rust-js`.
+writes it fresh.
+
+The JS reads as the app's own: it and its `.d.ts` are formatted by the
+app's Prettier config, `.prettierrc` read where it is, so the app's format
+check, react.dev's `prettier --list-different`, passes on them as written.
 
 ### 5. A file is Rust or TypeScript, never both
 
@@ -125,9 +154,10 @@ export function ExternalLink({href, target, children, ...props}: DetailedHTMLPro
 }
 ```
 
-After `npm install rust-js` and the one line in `next.config.js`, the
-author writes `src/components/ExternalLink.rs`, deletes the `.tsx`, and
-saves:
+With rust-js linked, `Cargo.toml` and `src/lib.rs` written and the one
+line in `next.config.js`, the author writes
+`src/components/ExternalLink.rs`, names it in `src/lib.rs`, deletes the
+`.tsx`, and saves:
 
 ```rust
 use react::attributes::AnchorHTMLAttributes;
@@ -147,16 +177,20 @@ pub fn ExternalLink<C: ReactNode>(ExternalLinkProps { children, props }: Externa
 
 The page reloads with the link the Rust renders. The five importers, the
 scripts and the deploy are as they were. The commit is the `.rs`, its
-`.js` and `.d.ts`, the deleted `.tsx`, `Cargo.toml` and the line in
+`.js` and `.d.ts`, the deleted `.tsx`, and the root's line; the first one
+also `Cargo.toml`, `src/lib.rs`, the two links and the line in
 `next.config.js`.
 
 ## Consequences
 
 - **What goes**, each a second way once this is delivered: `rust-js-next`
-  and its scripts; the crate root and its `mod` list; the `declarations`
-  key; `js::camel_case!()`; a hand-written binding of the app's own
-  modules, and its root-relative path; the `rust-js-patch` step; the
-  separate `@rust-js/*` packages an app installs.
+  and its scripts; the `declarations` key; `js::camel_case!()`; a
+  hand-written binding of the app's own modules, and its root-relative
+  path; `[package.metadata.rust-js.format]`, a second copy of the app's
+  Prettier config.
+- **Later, not now**: one `rust-js` package on npm in place of the links;
+  the compiler for Linux, Intel Macs and Windows; the toolchain fetched by
+  rust-js, not installed by hand.
 - **What stays**: the committed JS beside the Rust (ADR 0041),
   `js::directive!("use client")`, `js::export_default!`, and the binding
   crates' own form for the bindings rust-js ships (ADR 0373).
