@@ -22,6 +22,7 @@
   },
   "files": [
     "build.js",
+    "crates.js",
     "resources.js",
     "manifest.js",
     "publish.js",

@@ -11,6 +11,7 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { crates } from "../tooling/crates.js";
 
 const root = resolve(import.meta.dir, "..");
 const args = Bun.argv.slice(2);
@@ -18,7 +19,7 @@ if (args.length !== 1 || args[0].startsWith("-")) throw new Error("Usage: bun sc
 const out = resolve(args[0]);
 
 /** Each crate released on npm, by its directory, and its package's name. */
-const packages: Record<string, string> = { builtins: "@rust-js/builtins", webapi: "@rust-js/webapi", react: "@rust-js/react", next: "@rust-js/next", node: "@rust-js/node" };
+const packages: Record<string, string> = Object.fromEntries(crates.map((crate) => [crate.dir, crate.npm]));
 
 type Manifest = {
   package: {

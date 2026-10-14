@@ -10,12 +10,13 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { crates as catalog } from "../tooling/crates.js";
 
 const root = resolve(import.meta.dir, "..");
 const args = Bun.argv.slice(2);
 const publish = args.length === 1 && args[0] === "--publish";
 if (!publish && (args.length !== 1 || args[0].startsWith("-"))) throw new Error("Usage: bun scripts/package-crates.ts <out-dir> | --publish");
-const crates = ["builtins", "webapi", "react", "next", "node"];
+const crates = catalog.map((crate) => crate.dir);
 const { channel } = (Bun.TOML.parse(readFileSync(join(root, "rust-toolchain.toml"), "utf8")) as { toolchain: { channel: string } }).toolchain;
 const { RUSTC_BOOTSTRAP: _, ...env } = process.env;
 

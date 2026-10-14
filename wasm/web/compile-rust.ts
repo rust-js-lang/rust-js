@@ -17,6 +17,7 @@ import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory,
 import { buildReactCrate, sysrootDir, sysrootFiles, wasmPath } from "./site.ts";
 import { publishArtifacts } from "@rust-js/build/publish";
 import { mapManifestPaths, parseManifest } from "@rust-js/build/manifest";
+import { reactLibs } from "../../tooling/crates.js";
 
 const rustDir = join(import.meta.dir, "rust");
 const cratesDir = join(import.meta.dir, "../../target/playground-crates");
@@ -69,13 +70,13 @@ export async function compileRust(job: { manifest?: string } = {}) {
     ConsoleStdout.lineBuffered((line) => stderr.push(line)), // stderr
     crateDir,
     new PreopenDirectory("/sysroot", new Map([["lib", dir({ rustlib: dir({ "wasm32-unknown-unknown": dir({ lib: new Directory(sysroot) }) }) })]])),
-    new PreopenDirectory("/crates", new Map(["libreact.rmeta", "libwebapi.rmeta", "libjs.rmeta"].map((name) => [name, crate(name)]))),
+    new PreopenDirectory("/crates", new Map(reactLibs.map((lib) => [`lib${lib}.rmeta`, crate(`lib${lib}.rmeta`)]))),
     out,
   ];
   const args = [
     "rust-js", `${virtual}/lib.rs`, "-o", `${virtual}/lib.js`, "--manifest", "/out/manifest.json",
     "--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot",
-    "--extern", "webapi=/crates/libwebapi.rmeta", "--extern", "js=/crates/libjs.rmeta", "--extern", "react=/crates/libreact.rmeta", "-L", "/crates",
+    ...reactLibs.flatMap((lib) => ["--extern", `${lib}=/crates/lib${lib}.rmeta`]), "-L", "/crates",
   ];
   // RUSTC_ICE=0: don't name a crash-report file after the process id (WASI has none).
   // Without options, the shim logs every call it handles.

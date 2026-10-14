@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
 import { resourceInputs } from "./resources.js";
 import { parseCompilerIdentity } from "./manifest.js";
+import { reactLibs } from "./crates.js";
 
 /**
  * Drop what `parent` caches under other keys than `keep`, `depth` folders
@@ -158,7 +159,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
     if (bindings.includes("react")) {
       const metadata = join(cacheDir, "react", react ?? "latest", key);
       const stamp = join(metadata, "complete");
-      if (!existsSync(stamp) || ["libreact.rmeta", "libwebapi.rmeta", "libjs.rmeta"].some(file => !existsSync(join(metadata, file)))) {
+      if (!existsSync(stamp) || reactLibs.some(lib => !existsSync(join(metadata, `lib${lib}.rmeta`)))) {
         await mkdir(metadata, { recursive: true });
         // The binding crates are this compiler's to compile (ADR 0112).
         await run(join(repo, "react/build.sh"), ["-o", join(metadata, "libreact.rmeta"), ...(react ? ["--react", react] : [])], repo, { RUST_JS_COMPILER: compilerPath });
@@ -167,7 +168,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       markUsed(metadata);
       pruneUnused(join(cacheDir, "react"), metadata, 2);
       // React's crates, each a program's to name (ADR 0102): `use js::spawn`.
-      for (const name of ["react", "webapi", "js"]) flags.push("--extern", `${name}=${join(metadata, `lib${name}.rmeta`)}`);
+      for (const lib of reactLibs) flags.push("--extern", `${lib}=${join(metadata, `lib${lib}.rmeta`)}`);
       flags.push("-L", metadata);
     }
     if (bindings.includes("serde")) {

@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 
 import type { Plugin } from "vite";
+import { reactLibs } from "../../tooling/crates.js";
 
 export const wasmPath = join(import.meta.dir, "../target/wasm32-wasip1/release/rust-js.wasm");
 export const sysrootDir = join(import.meta.dir, "../sysroot/lib/rustlib/wasm32-unknown-unknown/lib");
@@ -142,7 +143,8 @@ export async function reactModules(): Promise<Record<string, string>> {
  * by name.
  */
 export function playgroundFiles(): Plugin {
-  const webapiCrate = join(import.meta.dir, "../../target/crates/libwebapi.rmeta");
+  const cratesDir = join(import.meta.dir, "../../target/crates");
+  const crateFiles = reactLibs.map((lib) => `/crates/lib${lib}.rmeta`);
   let packages: { modules: Record<string, string>; styles: Record<string, string> } = { modules: {}, styles: {} };
   // The file at a path the page asks for, or the JSON to send.
   function served(path: string): { file: string } | { json: unknown } | undefined {
@@ -151,9 +153,7 @@ export function playgroundFiles(): Plugin {
     if (path === "/sysroot.json") return { json: sysroot };
     const name = path.match(/^\/sysroot\/([^/]+)$/)?.[1];
     if (name && sysroot.includes(name)) return { file: join(sysrootDir, name) };
-    if (path === "/crates/libwebapi.rmeta") return { file: webapiCrate };
-    if (path === "/crates/libreact.rmeta") return { file: join(dirname(webapiCrate), "libreact.rmeta") };
-    if (path === "/crates/libjs.rmeta") return { file: join(dirname(webapiCrate), "libjs.rmeta") };
+    if (crateFiles.includes(path)) return { file: join(cratesDir, path.slice("/crates/".length)) };
     // What the programs it compiles import (ADR 0103).
     if (path === "/runtime.js") return { file: join(import.meta.dir, "../../runtime/index.js") };
     if (path === "/packages.json") return { json: packages };
@@ -166,7 +166,7 @@ export function playgroundFiles(): Plugin {
   }
   // Every path the build needs, for `generateBundle`.
   function all(): string[] {
-    const paths = ["/rust-js.wasm", "/sysroot.json", "/crates/libwebapi.rmeta", "/crates/libjs.rmeta", "/crates/libreact.rmeta", "/runtime.js", "/packages.json", "/examples.json"];
+    const paths = ["/rust-js.wasm", "/sysroot.json", ...crateFiles, "/runtime.js", "/packages.json", "/examples.json"];
     paths.push(...sysrootFiles().map((name) => `/sysroot/${name}`));
     for (const example of examples()) paths.push(...example.files.map((file) => `/examples/${example.name}/${file}`));
     return paths;
@@ -174,7 +174,7 @@ export function playgroundFiles(): Plugin {
   return {
     name: "playground-files",
     async buildStart() {
-      buildReactCrate(dirname(webapiCrate));
+      buildReactCrate(cratesDir);
       packages = await framePackages();
     },
     configureServer(server) {

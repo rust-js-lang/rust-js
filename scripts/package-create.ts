@@ -5,6 +5,7 @@
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
+import { crates as catalog } from "../tooling/crates.js";
 
 const root = resolve(import.meta.dir, "..");
 const [destination, ...extra] = Bun.argv.slice(2);
@@ -28,11 +29,29 @@ try {
   // in its Cargo.toml by version: its `postinstall`, rust-js-patch, tells
   // Cargo where they are. Each crate a crate it names uses is a package too.
   const templates = [
-    { name: "vite", example: "examples/vite-react", crates: ["builtins", "webapi", "react"] },
-    { name: "next", example: "examples/next", crates: ["builtins", "webapi", "react", "next", "node"] },
+    { name: "vite", example: "examples/vite-react" },
+    { name: "next", example: "examples/next" },
   ];
-  const crateVersion = (dir: string) => (Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
-  for (const { name, example, crates } of templates) {
+  const cargo = (dir: string) =>
+    Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { version: string }; dependencies?: Record<string, { package?: string }> };
+  const crateVersion = (dir: string) => cargo(dir).package.version;
+  /** The crates `dir` uses, and each crate those use, in the catalog's order. */
+  const used = (dir: string) => {
+    const found = new Set<string>();
+    const visit = (dir: string) => {
+      for (const dep of Object.values(cargo(dir).dependencies ?? {})) {
+        const crate = catalog.find((crate) => crate.cargo === dep.package);
+        if (crate && !found.has(crate.dir)) {
+          found.add(crate.dir);
+          visit(crate.dir);
+        }
+      }
+    };
+    visit(dir);
+    return catalog.filter((crate) => found.has(crate.dir));
+  };
+  for (const { name, example } of templates) {
+    const crates = used(example);
     const overridden = join(root, "create", name);
     const overrides = new Set(existsSync(overridden)
       ? readdirSync(overridden, { recursive: true, withFileTypes: true })
@@ -48,13 +67,13 @@ try {
       copyFileSync(overrides.has(path) ? join(overridden, path) : join(root, file), target);
     }
     const cargoPath = join(template, "Cargo.toml");
-    let cargo = readFileSync(cargoPath, "utf8");
-    for (const dir of crates) cargo = cargo.replace(`path = "../../${dir}"`, `version = "~${crateVersion(dir)}"`);
-    if (cargo.includes('path = "../')) throw new Error(`${example}'s Cargo.toml has a crate by path that isn't a package`);
-    writeFileSync(cargoPath, cargo);
+    let text = readFileSync(cargoPath, "utf8");
+    for (const { dir } of crates) text = text.replace(`path = "../../${dir}"`, `version = "~${crateVersion(dir)}"`);
+    if (text.includes('path = "../')) throw new Error(`${example}'s Cargo.toml has a crate by path that isn't a package`);
+    writeFileSync(cargoPath, text);
     const templatePath = join(template, "package.json");
     const manifest = JSON.parse(readFileSync(templatePath, "utf8"));
-    for (const dir of crates) manifest.dependencies[`@rust-js/${dir}`] = crateVersion(dir);
+    for (const { dir, npm } of crates) manifest.dependencies[npm] = crateVersion(dir);
     manifest.devDependencies["@rust-js/build"] = "workspace:*";
     manifest.scripts = { ...manifest.scripts, postinstall: "rust-js-patch" };
     writeFileSync(templatePath, JSON.stringify(manifest, null, 2) + "\n");
