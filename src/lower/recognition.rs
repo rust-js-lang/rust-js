@@ -766,11 +766,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 };
                 return Some(Some(Std::Lazy(op)));
             }
+            // A `Box`'s, and a shared reference's, the value it is (ADR
+            // 0023), which generic code's `deref` calls (ADR 0394).
+            let boxed =
+                diagnostic("deref_method") && (ty.is_box() || matches!(ty.kind(), ty::Ref(_, _, Mutability::Not)));
             let same = self.is_string_like(ty)
                 || self.is_path_like(ty)
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
-                || self.is_vec_like(ty);
+                || self.is_vec_like(ty)
+                || boxed;
             // A `PeekMut`'s heap's top (ADR 0333).
             if self.peek_mut_of(ty).is_some() {
                 return Some(Some(Std::Heap(HeapOp::PeekTop {
@@ -3633,6 +3638,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // io::Write`: its dictionary's `write`, `write_all`, `write_fmt` and
         // `flush` (ADR 0392).
         || is_std_def(tcx, id, StdItem::IoWrite)
+        // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394).
+        || tcx.is_lang_item(id, LangItem::Deref)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as

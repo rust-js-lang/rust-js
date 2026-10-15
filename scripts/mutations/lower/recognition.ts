@@ -1385,4 +1385,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
+  {
+    name: "deref-not-operational",
+    breaks: "a `P: Deref` in generic code is given no dictionary, and refused",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_lang_item(id, LangItem::Deref)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
+  {
+    name: "box-deref-not-same",
+    breaks: "a `Box`'s `deref`, given to generic code, isn't the value it is",
+    file: "src/lower/recognition.rs",
+    find: "                || boxed;\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
 ];

@@ -302,4 +302,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
   },
+  {
+    name: "deref-dictionary-kept-unread",
+    breaks: "a crate's `Deref` impl's dictionary is written where nothing reads it",
+    file: "src/lower/pipeline.rs",
+    find: "            tcx.is_lang_item(trait_id, rustc_hir::attrs::lang_items::LangItem::Deref)\n",
+    replace: "            false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(user_deref|as_deref).rs$"],
+    snapshots: true,
+  },
 ];

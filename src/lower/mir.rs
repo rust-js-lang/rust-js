@@ -2188,6 +2188,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (**holder).clone()
             }
             Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
+            // Of a `()`, which has no place: nothing, as writing one is.
+            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,
             Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
         })
     }

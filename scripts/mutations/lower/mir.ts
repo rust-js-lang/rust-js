@@ -2310,4 +2310,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a value"],
   },
+  {
+    name: "unit-mut-ref-refused",
+    breaks: "a `&mut ()` kept is refused, not nothing",
+    file: "src/lower/mir.rs",
+    find: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
 ];

@@ -1084,6 +1084,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // std's `Deref` of a `P: Deref` in generic code: what std's `deref`
+        // of the type is, as a function, `(x) => x` of a reference, a `Box`
+        // or text, which are their values (ADR 0394). The crate's own is its
+        // impl's.
+        if self.tcx.is_lang_item(tr.def_id, LangItem::Deref) && !self.has_user_impl(tr.def_id, ty) {
+            let deref = super::recognition::trait_method(self.tcx, tr.def_id, "deref");
+            let function = Ty::new_fn_def(self.tcx, deref, ty::Binder::dummy(tr.args));
+            if let Some(known) = self.recognition().classify(deref, tr.args)
+                && let Some(f) = self.std_fn_value(known, function, span)?
+            {
+                return Ok(Expr::object(vec![Prop::Field("deref".into(), f)]));
+            }
+        }
         // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
         // standard stream, written to it (ADR 0392).
         if is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
@@ -1638,8 +1651,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a string's `+=`, written in place (ADRs 0148, 0166): a dictionary is
         // for generic code (ADR 0180).
         // So is an `io::Write`'s: a stream's `print!`, a `Vec<u8>`'s bytes
-        // added (ADR 0392).
-        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite) || is_std_def(self.tcx, trait_id, StdItem::IoWrite))
+        // added (ADR 0392); and std's `Deref` of a known type, a guard's
+        // value or a `Cow`'s text, recognized as it was (ADR 0394).
+        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite)
+            || is_std_def(self.tcx, trait_id, StdItem::IoWrite)
+            || self.tcx.is_lang_item(trait_id, LangItem::Deref))
             && !tr.args.has_non_region_param()
         {
             return Ok(None);

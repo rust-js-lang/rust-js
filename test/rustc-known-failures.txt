@@ -10,7 +10,6 @@ associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<
 associated-type-bounds/union-bounds.rs	error: rust-js does not support values of type `_Un7<'_, '_, T>` yet
 associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
 associated-types/associated-item-long-paths.rs	error: rust-js does not support `size_of` of a type parameter yet
-associated-types/associated-types-conditional-dispatch.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 associated-types/associated-types-doubleendediterator-object.rs	error: rust-js does not support values of type `dyn std::iter::DoubleEndedIterator<Item = isize>` yet
 associated-types/associated-types-iterator-binding.rs	error: rust-js does not support calling `std::iter::DoubleEndedIterator::next_back` yet
 async-await/async-fn-size-moved-locals.rs	error: rust-js does not support user implementations of `std::future::Future` yet
@@ -131,7 +130,6 @@ lint/issue-20343.rs	error: rust-js does not support calling `std::intrinsics::tr
 liveness/var-defined-after-early-return.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support values of type `*const i32` yet
-methods/inherent-method-resolution-on-deref-type-53843.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support `&mut` to a `&mut [u8]` yet
 methods/method-two-traits-distinguished-via-where-clause.rs	error: rust-js does not support values of type `*const [isize]` yet
 mir/mir_assign_eval_order.rs	error: rust-js does not support values of type `&mut &mut i32` yet

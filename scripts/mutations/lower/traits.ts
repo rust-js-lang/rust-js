@@ -611,8 +611,8 @@ export const mutations: Mutation[] = [
     name: "known-writer-through-dictionary",
     breaks: "`write!` of a writer whose type is known goes through its dictionary, given the writer unboxed, and JS throws",
     file: "src/lower/traits.rs",
-    find: "        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite) || is_std_def(self.tcx, trait_id, StdItem::IoWrite))\n",
-    replace: "        if false && (is_std_def(self.tcx, trait_id, StdItem::FmtWrite) || is_std_def(self.tcx, trait_id, StdItem::IoWrite))\n",
+    find: "        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite)\n",
+    replace: "        if false && (is_std_def(self.tcx, trait_id, StdItem::FmtWrite)\n",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
   },
   {
@@ -833,5 +833,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copy_param_no_drop.rs$"],
     snapshots: true,
+  },
+  {
+    name: "std-deref-dictionary-missing",
+    breaks: "std's `Deref` of a `String` or a `Box` given to generic code has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "        if self.tcx.is_lang_item(tr.def_id, LangItem::Deref) && !self.has_user_impl(tr.def_id, ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
+  {
+    name: "known-deref-through-dictionary",
+    breaks: "a known std type's `deref()`, a `RefCell` guard's or a `Cow`'s, is a dictionary's call, not recognized in place",
+    file: "src/lower/traits.rs",
+    find: "            || self.tcx.is_lang_item(trait_id, LangItem::Deref))\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrows|cows).rs$"],
   },
 ];
