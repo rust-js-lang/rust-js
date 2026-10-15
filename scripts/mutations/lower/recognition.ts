@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "marker_traits|fused_iterator"],
   },
   {
-    name: "user-deref-impl",
-    breaks: "a user `Deref` is rejected",
-    file: "src/lower/recognition.rs",
-    find: "        LangItem::Deref,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_deref"],
-  },
-  {
     name: "library-trait-no-dictionary",
     breaks: "a library's trait isn't one whose impls are dictionaries, so a call of its generic function passes none",
     file: "src/lower/recognition.rs",
@@ -73,14 +65,6 @@ export const mutations: Mutation[] = [
     find: "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_)) || self.is_js_object_itself(t)))\n",
     replace: "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_))))\n",
     tests: ["test/snapshots.test.ts","-t","counter"],
-  },
-  {
-    name: "bitwise-operator-impls",
-    breaks: "a type's own `impl BitOrAssign`, as a set of flags has, is refused, where `impl AddAssign` isn't",
-    file: "src/lower/recognition.rs",
-    find: "        LangItem::BitOrAssign,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "bitwise_operators"],
   },
   {
     name: "generic-bitwise-operators",
@@ -1421,8 +1405,16 @@ export const mutations: Mutation[] = [
     name: "assign-operator-not-operational",
     breaks: "a `T: AddAssign` in generic code is given no dictionary, and refused",
     file: "src/lower/recognition.rs",
-    find: "        || assign_operator(tcx, id).is_some()\n",
+    find: "        // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).\n        || assign_operator(tcx, id).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
+  },
+  {
+    name: "index-impl-refused",
+    breaks: "the crate's own `impl Index` is refused, not an operator it may implement",
+    file: "src/lower/recognition.rs",
+    find: "        || [LangItem::Index, LangItem::IndexMut, LangItem::DerefMut]\n",
+    replace: "        || [LangItem::IndexMut, LangItem::DerefMut]\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
   },
 ];

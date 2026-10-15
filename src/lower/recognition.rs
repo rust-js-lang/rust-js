@@ -3934,37 +3934,15 @@ pub(super) fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<BinOp> {
     .find_map(|(item, op)| tcx.is_lang_item(id, item).then_some(op))
 }
 
+/// An operator's trait, which the crate may implement: a value's, `a + b`,
+/// an assignment's, `a += b`, each in its one list, indexing, and `*p = x`'s
+/// `DerefMut` (`Deref` is `operational`, ADR 0394).
 pub(super) fn is_operator(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    [
-        LangItem::Add,
-        LangItem::Sub,
-        LangItem::Mul,
-        LangItem::Div,
-        LangItem::Rem,
-        LangItem::Neg,
-        LangItem::Not,
-        LangItem::BitAnd,
-        LangItem::BitOr,
-        LangItem::BitXor,
-        LangItem::Shl,
-        LangItem::Shr,
-        LangItem::AddAssign,
-        LangItem::SubAssign,
-        LangItem::MulAssign,
-        LangItem::DivAssign,
-        LangItem::RemAssign,
-        LangItem::BitAndAssign,
-        LangItem::BitOrAssign,
-        LangItem::BitXorAssign,
-        LangItem::ShlAssign,
-        LangItem::ShrAssign,
-        LangItem::Index,
-        LangItem::IndexMut,
-        LangItem::Deref,
-        LangItem::DerefMut,
-    ]
-    .into_iter()
-    .any(|item| tcx.is_lang_item(id, item))
+    value_operator(tcx, id).is_some()
+        || assign_operator(tcx, id).is_some()
+        || [LangItem::Index, LangItem::IndexMut, LangItem::DerefMut]
+            .into_iter()
+            .any(|item| tcx.is_lang_item(id, item))
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
