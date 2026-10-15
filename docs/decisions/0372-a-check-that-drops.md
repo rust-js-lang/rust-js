@@ -1,7 +1,8 @@
 # 0372. A check whose panic drops is written where it's made
 
 Status: Accepted. Amends [0364](0364-mir-lowering.md),
-[0098](0098-destructors.md).
+[0098](0098-destructors.md). Amended: what its constants say of a check is
+`constant_truth`'s alone (below).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a panic drops as
 it unwinds is printed by the program, so it's Rust's, paid for in an `if`.
@@ -25,9 +26,16 @@ one left the other counting reads of a check no longer made.
 ## Decision
 
 - **One answer to how an `Assert` is written**, `assert_check`: left out
-  where it passes, THIR's facts know so or its index and length are
-  constants, or where the helper that runs next checks it; made at the
-  element's read, `$index`; or an `if` that throws. Both readers ask it.
+  where it passes, THIR's facts know so or its constants do, or where the
+  helper that runs next checks it; made at the element's read, `$index`;
+  or an `if` that throws. Both readers ask it.
+- **What its constants say is `constant_truth`'s**, of the `Assert`'s own
+  condition in MIR: an index below a length, `2 < 3`, a divisor against
+  0, `2 == 0`, each of a local assigned a constant once, `!` of one, or
+  `&` of two, as a signed division's overflow, `2 == -1 & n == MIN`, false
+  of one. (Amended: a constant index was asked of again where it's read,
+  `within`, and the `if`'s test of again as JS, `truth()`, which alone saw
+  a constant divisor; neither is now, as neither was reached for an index.)
 - **A helper checks only what drops nothing.** Where the check's unwinding
   drops something (`drops::cleans_up`), it's the `if`, whose panic drops
   it first:

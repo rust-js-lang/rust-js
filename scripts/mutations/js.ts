@@ -322,15 +322,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "truth-of-numbers-unknown",
-    breaks: "an array's constant index checked against its constant length, `if (!(1 < 4)) { throw .. }`, stays",
-    file: "src/js.rs",
-    find: "                    Op::Lt => Some(a < b),\n",
-    replace: "                    Op::Lt => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "array_repeat"],
-    snapshots: true,
-  },
-  {
     name: "declared-functions-unprepared",
     breaks: "a function declared in a body is passed over by each pass over a module's lists, `s = s + t` left so",
     file: "src/js.rs",

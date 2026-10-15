@@ -69,7 +69,23 @@ function divided(n, by) {
   return (((pair(value$1, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
 }
 
+function signed(a, b) {
+  try {
+    console.log(`signed ${a[0]} ${b}`);
+  } catch (error) {
+    noisyDrop_drop(a);
+    throw error;
+  }
+  noisyDrop_drop(a);
+  return b;
+}
+
+function quartered(n) {
+  return (signed(["by four"], (n / 4) | 0) + signed(["by minus two"], (n % -2) | 0)) | 0;
+}
+
 function main() {
+  console.log(`${quartered(-9)}`);
   const value = halves(4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = halves(3);

@@ -1759,14 +1759,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => cond,
                 };
                 let js_span = self.js_span(span);
-                // The panic drops what's there as it unwinds, then is thrown;
-                // none where it can't fail, a constant's operation rustc
-                // evaluates, or an array's constant index in its bounds.
-                if failed.truth() != Some(false) {
-                    let mut panic = self.mir_unwind(state, *unwind)?;
-                    panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
-                    out.push(StmtKind::If(failed, panic, None).at(js_span));
-                }
+                // The panic drops what's there as it unwinds, then is thrown.
+                let mut panic = self.mir_unwind(state, *unwind)?;
+                panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
+                out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);
             }
             TerminatorKind::Drop {
@@ -2121,12 +2117,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         terminator: &mir::Terminator<'tcx>,
     ) -> Option<Check> {
         let TerminatorKind::Assert {
-            msg, target, unwind, ..
+            cond,
+            expected,
+            msg,
+            target,
+            unwind,
         } = &terminator.kind
         else {
             return None;
         };
-        if self.known_in_bounds(msg, terminator.source_info.span) || self.constant_in_bounds(body, msg) {
+        if self.known_in_bounds(msg, terminator.source_info.span) || constant_truth(body, cond) == Some(*expected) {
             return Some(Check::Unchecked);
         }
         if drops::cleans_up(body, drops, *unwind).is_some() {
@@ -2136,38 +2136,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some(Check::Unchecked);
         }
         deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))
-    }
-
-    /// Whether a bounds check `msg` passes as it's written: a constant index,
-    /// below an array's constant length, `items[2]` of three.
-    fn constant_in_bounds(&self, body: &mir::Body<'tcx>, msg: &mir::AssertMessage<'tcx>) -> bool {
-        let mir::AssertKind::BoundsCheck { len, index } = msg else {
-            return false;
-        };
-        let constant = |operand: &Operand<'tcx>| {
-            let constant = match operand {
-                Operand::Constant(constant) => constant,
-                // A local assigned once, a constant.
-                Operand::Copy(place) | Operand::Move(place) => {
-                    let local = place.as_local()?;
-                    let mut assigned = body
-                        .basic_blocks
-                        .iter()
-                        .flat_map(|data| &data.statements)
-                        .filter_map(|s| match &s.kind {
-                            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
-                            _ => None,
-                        });
-                    match (assigned.next(), assigned.next()) {
-                        (Some(Rvalue::Use(Operand::Constant(constant), _)), None) => constant,
-                        _ => return None,
-                    }
-                }
-                _ => return None,
-            };
-            constant.const_.try_to_scalar_int().map(|n| n.to_target_usize(self.tcx))
-        };
-        matches!((constant(index), constant(len)), (Some(index), Some(len)) if index < len)
     }
 
     /// Whether an `Assert` at `span` checks an index THIR's facts know is in
@@ -2948,16 +2916,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("items", value, out),
                 };
                 let index = self.read_local(state, local, out)?;
-                // A constant index of an array as long as that: nothing to
-                // check, `items[0]`.
-                let within = match (&index.kind, ty.ty.kind()) {
-                    (js::ExprKind::Num(k), ty::Array(_, len)) => len
-                        .try_to_target_usize(self.tcx)
-                        .is_some_and(|n| *k >= 0.0 && k.fract() == 0.0 && (*k as u64) < n),
-                    _ => false,
-                };
+                // A constant index of an array as long as that has no check
+                // to defer: `assert_check` knows it in bounds.
                 value = match write && at + 1 == last {
-                    _ if within => Expr::index(items, index),
                     true => Expr::index(items.clone(), Expr::call(Expr::helper("$at"), vec![items, index])),
                     false => Expr::call(Expr::helper("$index"), vec![items, index]),
                 };
@@ -5675,6 +5636,69 @@ enum Check {
     Unchecked,
     /// Made where the element, at this index, is read or, `true`, written.
     Deferred(Local, bool),
+}
+
+/// What a test is wherever it runs, where its constants say: a `bool`, or
+/// a comparison of two numbers, as an array's constant index below its
+/// constant length, `2 < 3`, or a constant divisor against 0, `2 == 0`, of
+/// a local assigned it once; `!` of one; or `&` of two, as a signed
+/// division's overflow, `2 == -1 & n == MIN`, is false of one.
+fn constant_truth<'tcx>(body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<bool> {
+    let assigned = |operand: &Operand<'tcx>| -> Option<&Rvalue<'tcx>> {
+        let local = operand.place()?.as_local()?;
+        let mut assigned = (body.basic_blocks.iter())
+            .flat_map(|data| &data.statements)
+            .filter_map(|s| match &s.kind {
+                StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+                _ => None,
+            });
+        match (assigned.next(), assigned.next()) {
+            (Some(rvalue), None) => Some(rvalue),
+            _ => None,
+        }
+    };
+    // A number, as its type reads its bits.
+    let number = |operand: &Operand<'tcx>| -> Option<i128> {
+        let constant = match operand {
+            Operand::Constant(constant) => constant,
+            _ => match assigned(operand)? {
+                Rvalue::Use(Operand::Constant(constant), _) => constant,
+                _ => return None,
+            },
+        };
+        let scalar = constant.const_.try_to_scalar_int()?;
+        match constant.ty().is_signed() {
+            true => Some(scalar.to_int(scalar.size())),
+            false => i128::try_from(scalar.to_uint(scalar.size())).ok(),
+        }
+    };
+    if let Operand::Constant(constant) = operand {
+        return constant.const_.try_to_bool();
+    }
+    match assigned(operand)? {
+        Rvalue::Use(operand, _) => constant_truth(body, operand),
+        Rvalue::UnaryOp(mir::UnOp::Not, operand) => constant_truth(body, operand).map(|t| !t),
+        Rvalue::BinaryOp(BinOp::BitAnd, operands) => {
+            match (constant_truth(body, &operands.0), constant_truth(body, &operands.1)) {
+                (Some(false), _) | (_, Some(false)) => Some(false),
+                (Some(true), Some(true)) => Some(true),
+                _ => None,
+            }
+        }
+        Rvalue::BinaryOp(op, operands) => {
+            let (a, b) = (number(&operands.0)?, number(&operands.1)?);
+            match op {
+                BinOp::Lt => Some(a < b),
+                BinOp::Le => Some(a <= b),
+                BinOp::Gt => Some(a > b),
+                BinOp::Ge => Some(a >= b),
+                BinOp::Eq => Some(a == b),
+                BinOp::Ne => Some(a != b),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
 }
 
 fn checked_by_division(msg: &mir::AssertMessage<'_>) -> bool {
