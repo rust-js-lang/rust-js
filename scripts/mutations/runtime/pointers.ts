@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
+  {
+    name: "offset-from-backwards",
+    breaks: "`p.offset_from(q)` is how far `q` is past `p`",
+    file: "src/runtime/pointers.js",
+    find: "  return p.at - q.at;\n",
+    replace: "  return q.at - p.at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
+  },
 ];

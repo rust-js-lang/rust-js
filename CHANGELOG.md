@@ -76,6 +76,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **`p.offset_from(q)`** of two pointers into one array (ADR 0407), and
+  **`next_power_of_two()`** and its checked one (ADR 0064): hashbrown's.
 - **An iterator of the crate's with a destructor, consumed**, `collect()`,
   dropped after, as Rust's method drops it (ADR 0098); and
   `ptr::drop_in_place` of a slice drops each item (ADR 0407).

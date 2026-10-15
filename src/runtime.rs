@@ -67,6 +67,7 @@ helpers! {
     RemEuclid,
     DivEuclid,
     TrailingZeros,
+    NextPowerOfTwo,
     CountOnes,
     BinarySearch,
     RemoveOpt,
@@ -734,6 +735,7 @@ impl Helper {
             Helper::RemEuclid => include_str!("runtime/rem_euclid.js"),
             Helper::DivEuclid => include_str!("runtime/div_euclid.js"),
             Helper::TrailingZeros => include_str!("runtime/trailing_zeros.js"),
+            Helper::NextPowerOfTwo => include_str!("runtime/next_power_of_two.js"),
             Helper::CountOnes => include_str!("runtime/count_ones.js"),
             // `v.binary_search(&x)`: Rust's search, step for step, so that
             // among equal items it finds the one Rust does.

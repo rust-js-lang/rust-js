@@ -1,6 +1,10 @@
 # 0064. Numbers' methods are `Math`'s, where JS agrees; operators call their impl
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md), [0031](0031-consts.md) and [0052](0052-std-trait-impls.md).
+Amended: an unsigned number's `next_power_of_two()` and
+`checked_next_power_of_two()` are `$nextPowerOfTwo(n, bits)`: past its
+width, `0`, as release Rust wraps, and `None`
+(`test/corpus/next_power_of_two.rs`).
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

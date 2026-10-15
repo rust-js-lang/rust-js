@@ -39,6 +39,8 @@ pub(in crate::lower) enum PointerOp {
     /// `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array.
     Add,
     Sub,
+    /// `p.offset_from(q)`: how many items `p` is past `q` along one array.
+    OffsetFrom,
     /// `p.as_ref()`, `p.as_mut()`: `None` of `null`.
     AsRef,
     AsMut,
@@ -149,6 +151,8 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("wrapping_offset", PointerOp::Add),
     ("sub", PointerOp::Sub),
     ("wrapping_sub", PointerOp::Sub),
+    ("offset_from", PointerOp::OffsetFrom),
+    ("offset_from_unsigned", PointerOp::OffsetFrom),
     ("as_ref", PointerOp::AsRef),
     ("as_mut", PointerOp::AsMut),
     ("cast", PointerOp::Cast),
@@ -176,6 +180,8 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("add", PointerOp::Add),
     ("offset", PointerOp::Add),
     ("sub", PointerOp::Sub),
+    ("offset_from", PointerOp::OffsetFrom),
+    ("offset_from_unsigned", PointerOp::OffsetFrom),
     ("cast", PointerOp::Cast),
     ("copy_to", PointerOp::Copy { dst_first: false }),
     ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
@@ -630,6 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointer = arg();
                 helper("$ptrAdd", vec![pointer, Expr::unary(js::UnaryOp::Neg, arg())])
             }
+            PointerOp::OffsetFrom => helper("$ptrOffsetFrom", vec![arg(), arg()]),
             // `None` of `null`, else `Some` of what it points to, boxed where
             // that looks like `None` (ADR 0051): a `&mut`'s of what isn't an
             // object, a cell, the handle itself.

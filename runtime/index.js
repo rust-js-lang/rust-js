@@ -736,6 +736,20 @@ export function $trailingZeros(x, bits) {
   return x === 0 ? bits : 31 - Math.clz32(x & -x);
 }
 
+// `n.next_power_of_two()` of a `bits`-bit unsigned number, a JS number or a
+// `bigint`: the least power of two at least `n`, or `undefined` past `bits`,
+// `checked_next_power_of_two()`'s `None`, where the other wraps to `0`.
+export function $nextPowerOfTwo(n, bits) {
+  if (typeof n === "bigint") {
+    let p = 1n;
+    while (p < n) p <<= 1n;
+    return p >> BigInt(bits) === 0n ? p : undefined;
+  }
+  let p = 1;
+  while (p < n) p *= 2;
+  return p < 2 ** bits ? p : undefined;
+}
+
 export function $countOnes(x) {
   let ones = 0;
   x >>>= 0;
@@ -1769,6 +1783,16 @@ export function $ptrAdd(pointer, count) {
     throw new Error("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
   return $ptr(pointer.of, pointer.at + count);
+}
+
+// `p.offset_from(q)`: how many items `p` is past `q`, along one array. Of
+// two, which Rust leaves undefined, rust-js's error.
+export function $ptrOffsetFrom(p, q) {
+  if (p === q) return 0;
+  if (p.of !== q.of || !Array.isArray(p.of)) {
+    throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
+  }
+  return p.at - q.at;
 }
 
 // `ptr::replace(p, v)`: what it pointed to, and `v` there now.

@@ -244,4 +244,12 @@ export const mutations: Mutation[] = [
     replace: "Expr::bool(!of.needs_drop(self.tcx, self.typing_env))",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
   },
+  {
+    name: "next-power-unchecked-none",
+    breaks: "`next_power_of_two()` past its width is `undefined`, not `0`, as release Rust wraps",
+    file: "src/lower/std_types/number.rs",
+    find: "                    false => Expr::bin(Op::Coalesce, next, Expr::int(0)),\n",
+    replace: "                    false => next,\n",
+    tests: ["test/corpus.test.ts", "-t", "^next_power_of_two.rs$"],
+  },
 ];

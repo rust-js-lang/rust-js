@@ -348,4 +348,12 @@ export const mutations: Mutation[] = [
     replace: "        match false {\n            true => pointer,\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
+  {
+    name: "offset-from-refused",
+    breaks: "`p.offset_from(q)` of two pointers into one array is refused",
+    file: "src/lower/pointers.rs",
+    find: "    (\"offset_from\", PointerOp::OffsetFrom),\n    (\"offset_from_unsigned\", PointerOp::OffsetFrom),\n    (\"as_ref\", PointerOp::AsRef),\n",
+    replace: "    (\"as_ref\", PointerOp::AsRef),\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
+  },
 ];

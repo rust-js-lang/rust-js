@@ -21,7 +21,7 @@ newest release its requirement allows.
 | strum 0.27 (`derive`) | runs | |
 | either 1.19 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
-| indexmap 2.11 | blocked | hashbrown: a pointer tested for null |
+| indexmap 2.11 | blocked | hashbrown: a `transmute` of a `usize` as a pointer, a dangling one; its table's control bytes and items in one allocation |
 | bitflags 2.13 | runs | |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
 | arrayvec 0.7 | runs | |

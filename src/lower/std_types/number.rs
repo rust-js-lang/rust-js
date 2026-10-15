@@ -98,6 +98,11 @@ pub(in crate::lower) enum NumOp {
     TrailingZeros,
     CountOnes,
     IsPowerOfTwo,
+    /// `next_power_of_two()`, wrapping to `0` past its width as release
+    /// Rust's does, and `checked_next_power_of_two()`, `None` there.
+    NextPowerOfTwo {
+        checked: bool,
+    },
     AbsDiff,
     /// A byte's ASCII test, `is_ascii_digit()`: the inclusive ranges it holds.
     AsciiIs(&'static [(u8, u8)]),
@@ -547,6 +552,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let x = bits(arg());
                 helper("$countOnes", vec![x])
             }
+            NumOp::NextPowerOfTwo { checked } => {
+                let next = helper("$nextPowerOfTwo", vec![arg(), Expr::int(num.bits().into())]);
+                match checked {
+                    true => next,
+                    false => Expr::bin(Op::Coalesce, next, Expr::int(0)),
+                }
+            }
             NumOp::IsPowerOfTwo => {
                 let x = arg();
                 let x = if x.reads_same() { x } else { self.spill("n", x, out) };
@@ -661,6 +673,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::LeadingZeros => helper("$bigLeadingZeros", width(vec![arg()])),
             NumOp::TrailingZeros => helper("$bigTrailingZeros", width(vec![arg()])),
             NumOp::CountOnes => helper("$bigCountOnes", width(vec![arg()])),
+            NumOp::NextPowerOfTwo { checked } => {
+                let next = helper("$nextPowerOfTwo", vec![arg(), Expr::int(num.bits().into())]);
+                match checked {
+                    true => next,
+                    false => Expr::bin(Op::Coalesce, next, Expr::bigint(0)),
+                }
+            }
             NumOp::IsPowerOfTwo => {
                 let x = arg();
                 let x = if x.reads_same() { x } else { self.spill("n", x, out) };

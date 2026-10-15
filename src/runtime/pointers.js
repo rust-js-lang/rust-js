@@ -52,6 +52,16 @@ function $ptrAdd(pointer, count) {
   return $ptr(pointer.of, pointer.at + count);
 }
 
+// `p.offset_from(q)`: how many items `p` is past `q`, along one array. Of
+// two, which Rust leaves undefined, rust-js's error.
+function $ptrOffsetFrom(p, q) {
+  if (p === q) return 0;
+  if (p.of !== q.of || !Array.isArray(p.of)) {
+    throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
+  }
+  return p.at - q.at;
+}
+
 // `ptr::replace(p, v)`: what it pointed to, and `v` there now.
 function $ptrReplace(pointer, value) {
   const old = pointer.value;

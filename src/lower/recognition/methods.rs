@@ -166,6 +166,8 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "trailing_zeros" if !float => NumOp::TrailingZeros,
         "count_ones" if !float => NumOp::CountOnes,
         "is_power_of_two" if !float && !signed => NumOp::IsPowerOfTwo,
+        "next_power_of_two" if !float && !signed => NumOp::NextPowerOfTwo { checked: false },
+        "checked_next_power_of_two" if !float && !signed => NumOp::NextPowerOfTwo { checked: true },
         "is_ascii_digit" if num == Num::U8 => NumOp::AsciiIs(&[(b'0', b'9')]),
         "is_ascii_hexdigit" if num == Num::U8 => NumOp::AsciiIs(&[(b'0', b'9'), (b'A', b'F'), (b'a', b'f')]),
         "is_ascii_alphabetic" if num == Num::U8 => NumOp::AsciiIs(&[(b'A', b'Z'), (b'a', b'z')]),

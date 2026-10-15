@@ -47,7 +47,9 @@ const node = { value: 1, next: $ptrTo(second) };
 - **std's functions**:
   - `null`, `is_null`, `read`, `write`, `replace`, `swap`;
   - `add`, `offset` and `sub`, stepping an array's item to another's,
-    `$ptrAdd`, else rust-js's error;
+    `$ptrAdd`, else rust-js's error; `offset_from`, how many items one is
+    past another along one array, `$ptrOffsetFrom`, of two places rust-js's
+    error, as Rust leaves it undefined (`test/corpus/pointer_offset_from.rs`);
   - `as_ref`, `as_mut`, and `cast` to the same type or `()`;
   - a slice's or a `Vec`'s `as_ptr`, `Box::into_raw` and `from_raw`.
 - **A pointer nothing reads** is made of nothing; one to an immutable
