@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.2'
+          bun-version-file: package.json
       # npm 11.5 or later publishes by trusted publishing: Node 24's.
       - uses: actions/setup-node@v7
         with:

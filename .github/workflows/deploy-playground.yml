@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.2'
+          bun-version-file: package.json
 
       - name: Use a prebuilt rust-js.wasm, if one matches these sources
         id: prebuilt

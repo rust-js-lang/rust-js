@@ -719,3 +719,20 @@ test("only refusal.rs words a refusal", () => {
   const wording = sources.filter(file => file !== "src/lower/refusal.rs" && read(file).includes("rust-js does not support"));
   expect(wording).toEqual([]);
 });
+
+// Bun's version is written once, `package.json`'s `packageManager`: each
+// workflow's setup reads it there, `@types/bun` is the same, and the suite
+// runs on it. It was written in eleven places, ten workflow steps and the
+// types.
+test("Bun's version is package.json's packageManager alone", () => {
+  const pkg = JSON.parse(read("package.json"));
+  const version = /^bun@(\d+\.\d+\.\d+)$/.exec(pkg.packageManager)?.[1];
+  expect(version).toBeDefined();
+  expect(pkg.devDependencies["@types/bun"]).toBe(version);
+  expect(Bun.version).toBe(version!);
+  const workflows = [...files(".github/workflows"), ...files(".github/actions")].filter(file => /\.ya?ml$/.test(file));
+  const steps = workflows.flatMap(file => [...read(file).matchAll(/uses: oven-sh\/setup-bun@\S+\n(\s+)with:\n((?:\1  .*\n)*)/g)].map(m => ({ file, with: m[2] })));
+  expect(steps.length).toBeGreaterThan(9);
+  expect(steps.filter(step => !step.with.includes("bun-version-file: package.json") || step.with.includes("bun-version:"))).toEqual([]);
+  expect(workflows.filter(file => read(file).includes("oven-sh/setup-bun")).length).toBe(new Set(steps.map(step => step.file)).size);
+});

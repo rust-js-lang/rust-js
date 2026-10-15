@@ -124,9 +124,10 @@ what an agent runs. Turn it off in the same place.
 
 To set the Mac up once: rustup, with the toolchain and components
 [rust-toolchain.toml](rust-toolchain.toml) pins, and the `wasm32-wasip1`
-and `wasm32-unknown-unknown` targets; the Bun version the workflows set
-up; Node 24; then `bun install` and `bunx --bun playwright install
-chromium`; and the apps above under Developer Tools.
+and `wasm32-unknown-unknown` targets; the Bun `package.json`'s
+`packageManager` names, the one place its version is; Node 24; then
+`bun install` and `bunx --bun playwright install chromium`; and the apps
+above under Developer Tools.
 
 ## What a step of the loop costs
 

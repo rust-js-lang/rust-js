@@ -48,6 +48,10 @@ const maxBuffer = 16 * 1024 * 1024;
 // started, outside its group, holds it open.
 const grace = 1000;
 
+/** A stopped process's signal, by its name: Bun's types since 1.4.3 allow
+ * its number too, which is said as it is. */
+const signalName = (signal: string | number | null | undefined) => (signal == null ? null : String(signal));
+
 /** Stop `pid` and what it started: each process runs as the leader of a
  * group of its own, and the group is what's killed, by `signal`. */
 export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
@@ -76,7 +80,7 @@ export function runSync(cmd: string[], cwd: string, timeout: number, env: Record
   stopGroup(p.pid);
   return {
     code: p.exitCode,
-    signal: p.signalCode ?? null,
+    signal: signalName(p.signalCode),
     // `spawnSync` returns only once its output closes, which what it
     // started may hold open past the deadline after it ended by itself.
     // Stopped at the deadline, it has a signal; without one, it had ended.
@@ -128,7 +132,7 @@ export async function run(cmd: string[], cwd: string, timeout: number, env: Reco
   clearTimeout(cut);
   return {
     code: p.exitCode,
-    signal: p.signalCode ?? null,
+    signal: signalName(p.signalCode),
     timedOut,
     overflowed,
     stdout: stdout.toString(),
