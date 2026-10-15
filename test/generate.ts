@@ -34,7 +34,7 @@ const inside = (ty: Ty, outer: "Vec" | "Option"): IntTy | undefined => {
 };
 // What's `Copy` can be read as it is; a `Vec`, a `String` or a map is read
 // through `clone()`, so it's never moved from the variable that holds it.
-const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && ty !== "String" && ty !== "Map" && ty !== "D";
+const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && ty !== "String" && ty !== "Map" && ty !== "D" && ty !== "Shapes";
 
 // The struct every program has, whose fields are of three widths.
 export const struct = { name: "S", fields: [["a", "i32"], ["b", "u8"], ["c", "i64"]] as [string, IntTy][] };
@@ -107,6 +107,14 @@ export type Expr =
   // A call of a function `main` declares, its arguments in order: one of
   // an `Option`, its value; one of a `Result`, `unwrap_or(d)` or `is_ok()`.
   | { kind: "fcall"; ty: Ty; name: string; a: Expr; b: Expr; ending?: { op: "unwrap_or"; value: Expr } | { op: "is_ok" } }
+  // The trait `Shape`, by `dyn` and by a generic: `vec![Box::new(Sq(a)),
+  // Box::new(Rect(a, b))]` of `Box<dyn Shape>`, its areas summed by each
+  // one's own `area`, `describe(&*v[i])` of its `name`, a default one's or
+  // `Rect`'s own, and `total(&[Sq(a), Sq(b)])`, generic, made for `Sq`.
+  | { kind: "shapes"; ty: Ty; items: { sq: boolean; a: Expr; b: Expr }[] }
+  | { kind: "areas"; ty: Ty; name: string }
+  | { kind: "describe"; ty: Ty; name: string; at: number }
+  | { kind: "total"; ty: Ty; a: Expr; b: Expr }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 // A closure's parameters keep the names they were made with, so a chain in
@@ -155,6 +163,10 @@ export type Stmt =
   // labeled, left or gone round again from the inner, `break 'l3` and
   // `continue 'l3`.
   | { kind: "while"; counter: string; n: number; c: Expr; body: Stmt[] }
+  // A `Shape` pushed, and each grown through `&mut dyn Shape`, `for s in
+  // v.iter_mut() { s.grow(by) }`, `by` made each time round.
+  | { kind: "shape-push"; name: string; sq: boolean; a: Expr; b: Expr }
+  | { kind: "shape-grow"; name: string; by: Expr }
   // A function of two integers, declared in `main`, that gives an `Option`
   // or a `Result`: steps `let x = a.checked_add(b)?;`, each of which may
   // give up, and `if c { return .. }`, then its value. What it notes says
@@ -192,6 +204,11 @@ function literal(r: Random, ty: Ty): Expr {
 const assignable = (scope: Scope) => scope.filter((v) => v.mutable && isCopy(v.ty) && !v.ty.startsWith("fn("));
 
 function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
+  // Shapes are made, never read whole: a `Box<dyn Shape>` isn't `Clone`.
+  if (ty === "Shapes") {
+    const items = Array.from({ length: 1 + r.int(3) }, () => ({ sq: r.chance(0.5), a: expr(r, "i64", scope, Math.min(1, depth)), b: expr(r, "i64", scope, Math.min(1, depth)) }));
+    return { kind: "shapes", ty, items };
+  }
   const vars = scope.filter((v) => v.ty === ty);
   const sub = (t: Ty) => expr(r, t, scope, depth - 1);
   const holding = (outer: "Vec" | "Option", elem: IntTy) => scope.filter((v) => v.ty === `${outer}<${elem}>`);
@@ -214,6 +231,12 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     const chained = chain(r, ty, scope, depth);
     if (chained) return chained;
   }
+  const shapes = scope.filter((v) => v.ty === "Shapes");
+  if (ty === "i64" && r.chance(0.12)) {
+    if (shapes.length > 0 && r.chance(0.6)) return { kind: "areas", ty, name: r.pick(shapes).name };
+    return { kind: "total", ty, a: expr(r, "i64", scope, depth - 1), b: expr(r, "i64", scope, depth - 1) };
+  }
+  if (ty === "String" && shapes.length > 0 && r.chance(0.25)) return { kind: "describe", ty, name: r.pick(shapes).name, at: r.chance(0.85) ? 0 : r.int(4) };
   const optionFns = scope.filter((v) => v.ty === `opt-fn<${inside(ty, "Option")}>`);
   if (optionFns.length > 0 && r.chance(0.4)) {
     const elem = inside(ty, "Option")!;
@@ -529,7 +552,7 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
     const maps = writable.filter((v) => v.ty === "Map");
     const choice = r.int(24);
     if (choice < 3 || writable.length === 0) {
-      const ty = valueType(r);
+      const ty = r.chance(0.08) ? "Shapes" : valueType(r);
       const name = `v${counter.n++}`;
       stmts.push({ kind: "let", name, ty, value: expr(r, ty, inner, 3) });
       inner.push({ name, ty, mutable: true });
@@ -638,6 +661,15 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
         op: r.pick(["=", "+=", "-=", "^="]),
         twice: r.chance(0.3),
       });
+    } else if (choice === 13 && writable.some((v) => v.ty === "Shapes")) {
+      const name = r.pick(writable.filter((v) => v.ty === "Shapes")).name;
+      // What's grown by reads no shapes, which the loop borrows.
+      const reading = inner.filter((v) => v.ty !== "Shapes");
+      if (r.chance(0.5)) {
+        stmts.push({ kind: "shape-push", name, sq: r.chance(0.5), a: expr(r, "i64", reading, 2), b: expr(r, "i64", reading, 2) });
+      } else {
+        stmts.push({ kind: "shape-grow", name, by: expr(r, "i64", reading, 2) });
+      }
     } else if (choice === 22 && depth > 0) {
       const name = `w${counter.n++}`;
       const counted = [...inner, { name, ty: "u32", mutable: false }];
@@ -762,6 +794,14 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "shapes":
+      return `vec![${e.items.map((i): string => (i.sq ? `Box::new(Sq(${show(i.a)})) as Box<dyn Shape>` : `Box::new(Rect(${show(i.a)}, ${show(i.b)})) as Box<dyn Shape>`)).join(", ")}]`;
+    case "areas":
+      return `${e.name}.iter().map(|s| s.area()).fold(id(0i64), |a, b| a.wrapping_add(b))`;
+    case "describe":
+      return `describe(&*${e.name}[id(${e.at}usize)])`;
+    case "total":
+      return `total(&[Sq(${show(e.a)}), Sq(${show(e.b)})])`;
     case "fcall": {
       const call = `${e.name}(${show(e.a)}, ${show(e.b)})`;
       if (!e.ending) return call;
@@ -984,6 +1024,10 @@ function lines(stmts: Stmt[], indent: string): string[] {
         const result = s.result === "Option" ? `Option<${s.ty}>` : `Result<${s.ty}, String>`;
         return [`${indent}fn ${s.name}(${p}: ${s.ty}, ${q}: ${s.ty}) -> ${result} {`, ...body, `${indent}    ${out(show(s.tail))}`, `${indent}}`];
       }
+      case "shape-push":
+        return [`${indent}${s.name}.push(Box::new(${s.sq ? `Sq(${show(s.a)})` : `Rect(${show(s.a)}, ${show(s.b)})`}));`];
+      case "shape-grow":
+        return [`${indent}for s in ${s.name}.iter_mut() {`, `${indent}    s.grow(${show(s.by)});`, `${indent}}`];
       case "while":
         return [
           `${indent}let mut ${s.counter}: u32 = 0;`,
@@ -1051,6 +1095,55 @@ export function print(program: Program, seed?: number): string {
     "        S { a: self.a.wrapping_mul(k), b: self.b, c: self.c }",
     "    }",
     "}",
+    "",
+    "trait Shape {",
+    "    fn area(&self) -> i64;",
+    "",
+    "    fn name(&self) -> String {",
+    '        String::from("shape")',
+    "    }",
+    "",
+    "    fn grow(&mut self, by: i64);",
+    "}",
+    "",
+    "struct Sq(i64);",
+    "",
+    "struct Rect(i64, i64);",
+    "",
+    "impl Shape for Sq {",
+    "    fn area(&self) -> i64 {",
+    "        self.0.wrapping_mul(self.0)",
+    "    }",
+    "",
+    "    fn grow(&mut self, by: i64) {",
+    "        self.0 = self.0.wrapping_add(by);",
+    "    }",
+    "}",
+    "",
+    "impl Shape for Rect {",
+    "    fn area(&self) -> i64 {",
+    "        self.0.wrapping_mul(self.1)",
+    "    }",
+    "",
+    "    fn name(&self) -> String {",
+    '        format!("rect {}x{}", self.0, self.1)',
+    "    }",
+    "",
+    "    fn grow(&mut self, by: i64) {",
+    "        self.0 = self.0.wrapping_add(by);",
+    "        self.1 = self.1.wrapping_sub(by);",
+    "    }",
+    "}",
+    "",
+    "fn total<T: Shape>(items: &[T]) -> i64 {",
+    "    items.iter().map(|s| s.area()).fold(0, |a, b| a.wrapping_add(b))",
+    "}",
+    "",
+    "fn describe(s: &dyn Shape) -> String {",
+    '    format!("{} {}", s.name(), s.area())',
+    "}",
+    "",
+    "type Shapes = Vec<Box<dyn Shape>>;",
     "",
     "struct D(u32);",
     "",

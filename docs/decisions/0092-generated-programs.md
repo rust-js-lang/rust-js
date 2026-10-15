@@ -91,6 +91,12 @@ time, valid and deterministic by construction:
   then their value; called with arguments in order, an `Option`'s value
   as it is, a `Result`'s `unwrap_or(d)` or `is_ok()`. What they note says
   which steps ran before one gave up (2026-10-15).
+- A trait, `Shape`, of an `area`, a `name` by default that `Rect` has its
+  own of, and a `grow(&mut self)`, which `Sq` and `Rect` have: shapes as
+  `Vec<Box<dyn Shape>>`, made, pushed to and each grown through `&mut dyn
+  Shape`, their areas summed by each one's own `area`, one `describe`d by
+  `&dyn Shape`; and `total(&[Sq(a), Sq(b)])`, a generic function made for
+  `Sq` (2026-10-15).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.
