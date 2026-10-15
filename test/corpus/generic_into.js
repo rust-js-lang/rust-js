@@ -35,9 +35,7 @@ function main() {
   console.log(
     `${greet("ada", { into: (s) => s })} | ${greet("grace", { into: (s) => s })} | ${greet("x", { into: (c) => c })}`,
   );
-  console.log(
-    `${named("lin", { into: nameFromStr_from })} ${named(["kept"], { into: (value) => value })}`,
-  );
+  console.log(`${named("lin", { into: nameFromStr_from })} ${named(["kept"], { into: (x) => x })}`);
   console.log(
     `${widened([1, 2, 3], {
       into: (n) => BigInt(n),

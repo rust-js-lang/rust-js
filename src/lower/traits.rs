@@ -1163,8 +1163,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]),
             )]));
         }
-        // `x.into()` of a `T: Into<U>` (ADR 0108): std's conversion, the
-        // crate's `From`, or of a `T` to itself, the value.
+        // `x.into()` of a `T: Into<U>` (ADR 0108): std's conversion, of a `T`
+        // to itself too (ADR 0387), or the crate's `From`.
         if is_std_def(self.tcx, tr.def_id, StdItem::Into) {
             let into = self.tcx.associated_item_def_ids(tr.def_id)[0];
             let target = tr.args.type_at(1);
@@ -1190,11 +1190,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
                     ),
                 }
-            } else if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(target) {
-                Expr::arrow(
-                    vec!["value".into()],
-                    vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
-                )
             } else {
                 return Err(self.no_evidence(span, tr));
             };

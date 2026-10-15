@@ -1079,6 +1079,56 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if is_extend(tcx, trait_) && self.is_map(ty.peel_refs()) && !self.is_json_map(ty.peel_refs()) {
             return Some(Std::Map(MapOp::Extend));
         }
+        // `String::from_iter(items)` is `items.collect()` into a `String`.
+        if tcx.is_diagnostic_item(sym::FromIterator, trait_) && self.is_lang_adt(ty, LangItem::String) {
+            return Some(Std::CollectString);
+        }
+        // A `From` or an `Into`: std's own conversions.
+        if let Some(conversion) = self.classify_conversion(ty, trait_, args) {
+            return Some(conversion);
+        }
+        // Between integers, which may not fit.
+        let into = tcx.is_diagnostic_item(sym::TryInto, trait_);
+        let (from_ty, to_ty) = if into {
+            (Some(ty), args.types().nth(1))
+        } else if tcx.is_diagnostic_item(sym::TryFrom, trait_) {
+            (args.types().nth(1), Some(ty))
+        } else {
+            (None, None)
+        };
+        if let (Some(from), Some(to)) = (from_ty.and_then(|t| Num::of(t.peel_refs())), to_ty.and_then(Num::of))
+            && !from.float()
+            && !to.float()
+        {
+            return Some(Std::TryFromInt { into });
+        }
+        // A slice into an array of its length, shared or copied (ADR 0189).
+        if let (Some(from), Some(to)) = (from_ty, to_ty)
+            && matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice())
+            && match to.kind() {
+                ty::Ref(_, array, Mutability::Not) => array.is_array(),
+                _ => to.is_array(),
+            }
+        {
+            return Some(Std::SliceToArray { into });
+        }
+        let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
+        let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
+        (from_str || to_owned).then_some(Std::Same)
+    }
+
+    /// A `From`'s or an `Into`'s conversion, of std's, that `ty` is given
+    /// to or makes, if rust-js knows it.
+    fn classify_conversion(&self, ty: Ty<'tcx>, trait_: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        let tcx = self.tcx;
+        // `From<T> for T`, std's for every type, and the `Into` it gives:
+        // the value itself, of an `impl Into<T>` that is a `T` too (ADR 0387).
+        if (tcx.is_diagnostic_item(sym::From, trait_) || tcx.is_diagnostic_item(sym::Into, trait_))
+            && let Some(other) = args.types().nth(1)
+            && tcx.erase_and_anonymize_regions(self.reveal(ty)) == tcx.erase_and_anonymize_regions(self.reveal(other))
+        {
+            return Some(Std::Same);
+        }
         // `VecDeque::from(v)` is a copy of `v`, which may be a clone that
         // was never made (ADR 0052); `BinaryHeap::from(v)` puts one in heap order.
         if tcx.is_diagnostic_item(sym::From, trait_)
@@ -1088,10 +1138,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_type(ty, StdItem::BinaryHeap) {
             return Some(Std::Heap(HeapOp::From));
-        }
-        // `String::from_iter(items)` is `items.collect()` into a `String`.
-        if tcx.is_diagnostic_item(sym::FromIterator, trait_) && self.is_lang_adt(ty, LangItem::String) {
-            return Some(Std::CollectString);
         }
         // `HashMap::from([(k, v)])`: `new Map([[k, v]])`.
         if tcx.is_diagnostic_item(sym::From, trait_) && self.is_map(ty) {
@@ -1158,34 +1204,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(if to.big() && !from.big() { Std::ToBig } else { Std::Same });
             }
         }
-        // Between integers, which may not fit.
-        let into = tcx.is_diagnostic_item(sym::TryInto, trait_);
-        let (from_ty, to_ty) = if into {
-            (Some(ty), args.types().nth(1))
-        } else if tcx.is_diagnostic_item(sym::TryFrom, trait_) {
-            (args.types().nth(1), Some(ty))
-        } else {
-            (None, None)
-        };
-        if let (Some(from), Some(to)) = (from_ty.and_then(|t| Num::of(t.peel_refs())), to_ty.and_then(Num::of))
-            && !from.float()
-            && !to.float()
-        {
-            return Some(Std::TryFromInt { into });
-        }
-        // A slice into an array of its length, shared or copied (ADR 0189).
-        if let (Some(from), Some(to)) = (from_ty, to_ty)
-            && matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice())
-            && match to.kind() {
-                ty::Ref(_, array, Mutability::Not) => array.is_array(),
-                _ => to.is_array(),
-            }
-        {
-            return Some(Std::SliceToArray { into });
-        }
-        let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
-        let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
-        (from_str || to_owned).then_some(Std::Same)
+        None
     }
 
     /// A method of a std type's own, by its type and its name.

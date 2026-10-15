@@ -1281,4 +1281,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_(asked|queries).rs$"],
   },
+  {
+    name: "conversion-to-itself-unknown",
+    breaks: "`From::from(e)` of an error to its own type, and `.into()` of an `impl Into<T>` that is a `T`, are refused",
+    file: "src/lower/recognition.rs",
+    find: "            && tcx.erase_and_anonymize_regions(self.reveal(ty)) == tcx.erase_and_anonymize_regions(self.reveal(other))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(into_itself|generic_into).rs$"],
+  },
 ];

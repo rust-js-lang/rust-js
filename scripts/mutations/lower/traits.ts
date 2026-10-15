@@ -243,14 +243,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","generic_into"],
   },
   {
-    name: "into-itself-refused",
-    breaks: "`Into<Name>` of a `Name`, which is the value, is refused",
-    file: "src/lower/traits.rs",
-    find: "            } else if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(target) {\n",
-    replace: "            } else if false {\n",
-    tests: ["test/corpus.test.ts","-t","generic_into"],
-  },
-  {
     name: "dictionary-big-shift-amount",
     breaks: "a dictionary's `Shl<u64>` of a `u32` shifts a JS number by a BigInt, which JS throws at",
     file: "src/lower/traits.rs",
