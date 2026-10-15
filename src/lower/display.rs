@@ -857,6 +857,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_type_id(ty) {
             return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
         }
+        // A `Discriminant` shows its number, as std's does (ADR 0393).
+        if self.recognition().is_discriminant(ty) {
+            return Ok(join(vec![Expr::str("Discriminant("), value, Expr::str(")")]));
+        }
         // A heap's `PeekMut` shows its top, `PeekMut(8)` (ADR 0333).
         if let Some(item) = self.recognition().peek_mut_of(ty) {
             let top = Expr::index(Expr::member(value, "heap"), Expr::int(0));

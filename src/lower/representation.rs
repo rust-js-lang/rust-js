@@ -7,7 +7,7 @@ use super::bindings::{self, field_key, unit_name};
 use super::recognition::{StdItem, cell_value_field, is_std_def};
 use super::{FnCx, R, Shape};
 use crate::js;
-use crate::js::{Expr, Op, Prop};
+use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -70,6 +70,87 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 name,
             ),
         }
+    }
+
+    /// Which variant `subject` is, of its enum `ty`, as rustc numbers it, its
+    /// discriminant (ADR 0393): by its variant's name where its value says
+    /// it once (`named_discriminant`), else each variant's test in turn, the
+    /// last one's the rest. Of a type that's no enum, `0`, as Rust's is.
+    pub(in crate::lower) fn discriminant_value(&mut self, subject: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+        let ty::Adt(adt, _) = ty.kind() else {
+            if subject.has_effects() {
+                out.push(StmtKind::Expr(subject).at(js::Span::NONE));
+            }
+            return Expr::int(0);
+        };
+        let adt = *adt;
+        if !adt.is_enum() {
+            return Expr::int(0);
+        }
+        let subject = match self.named_discriminant(subject, adt, false) {
+            Ok(named) => return named,
+            Err(subject) => subject,
+        };
+        let mut variants: Vec<(VariantIdx, i128)> = (adt.variants().indices())
+            .zip(super::discriminants(self.tcx, adt))
+            .map(|(variant, (_, n))| (variant, n))
+            .collect();
+        let Some((_, last)) = variants.pop() else {
+            return Expr::int(0);
+        };
+        let subject = match subject.reads_same() || variants.is_empty() {
+            true => subject,
+            false => self.spill("value", subject, out),
+        };
+        variants.into_iter().rev().fold(Expr::int(last), |rest, (variant, n)| {
+            Expr::cond(self.variant_test(subject.clone(), ty, adt, variant), Expr::int(n), rest)
+        })
+    }
+
+    /// An enum's discriminant, of `subject`, where its value says its
+    /// variant's name once (ADR 0013): a string enum's is the name, a tagged
+    /// one's its tag (ADR 0284). `["Red", "Green"].indexOf(color)` when they
+    /// count up from 0, else looked up by name; each a BigInt where `big`.
+    /// `Err` of `subject` where it isn't so.
+    pub(in crate::lower) fn named_discriminant(
+        &self,
+        subject: Expr,
+        adt: ty::AdtDef<'tcx>,
+        big: bool,
+    ) -> Result<Expr, Expr> {
+        let tcx = self.tcx;
+        let name = if is_string_enum(tcx, adt) {
+            subject
+        } else if is_fieldless_enum(adt)
+            && !bindings::is_untagged(tcx, adt.did())
+            && let Some(key) = bindings::declared_tag(tcx, adt.did())
+            && !adt
+                .variants()
+                .iter()
+                .any(|v| bindings::is_tagged_otherwise(tcx, adt.did(), v))
+        {
+            Expr::member(subject, &key)
+        } else {
+            return Err(subject);
+        };
+        let discriminants = super::discriminants(tcx, adt);
+        let counting = discriminants.iter().enumerate().all(|(i, &(_, d))| d == i as i128);
+        if counting {
+            let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());
+            let index = Expr::call(Expr::member(names, "indexOf"), vec![name]);
+            return Ok(if big {
+                super::std_types::number::to_bigint(index)
+            } else {
+                index
+            });
+        }
+        let table = Expr::object(
+            discriminants
+                .into_iter()
+                .map(|(n, d)| Prop::Field(n, if big { Expr::bigint(d) } else { Expr::int(d) }))
+                .collect(),
+        );
+        Ok(Expr::index(table, name))
     }
 
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
@@ -699,6 +780,17 @@ pub(super) fn marks_js_object<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, ar
 /// A constant value as a JS literal, in the shapes of ADRs 0011, 0013, 0020
 /// and 0030: numbers, strings, `{ x: 0, y: 0 }`, `[a, b]`, `"High"`,
 /// `undefined` for `None`.
+/// What a value tree holds inside std's structs of one field each: a
+/// `NonZero`'s number, a `Discriminant`'s, a `Duration`'s nanoseconds.
+fn innermost(mut value: ty::Value<'_>) -> Option<ty::Value<'_>> {
+    while let ty::ValTreeKind::Branch(items) = &**value.valtree
+        && let [item] = &items[..]
+    {
+        value = item.try_to_value()?;
+    }
+    Some(value)
+}
+
 pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Option<Expr> {
     let ty = value.ty;
     if ty.is_bool() {
@@ -711,27 +803,20 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         };
         let [secs, nanos] = &items[..] else { return None };
         let secs = secs.try_to_value()?.try_to_leaf()?.to_bits_unchecked();
-        let mut nanos = nanos.try_to_value()?;
-        while let ty::ValTreeKind::Branch(items) = &**nanos.valtree
-            && let [item] = &items[..]
-        {
-            nanos = item.try_to_value()?;
-        }
-        let nanos = nanos.try_to_leaf()?.to_bits_unchecked();
+        let nanos = innermost(nanos.try_to_value()?)?.try_to_leaf()?.to_bits_unchecked();
         return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));
     }
     if let Some(num) = Num::of(ty) {
         // A `NonZero`'s is its number, inside std's `NonZeroU8Inner` (ADR 0177).
-        let mut value = value;
-        while let ty::ValTreeKind::Branch(items) = &**value.valtree
-            && let [item] = &items[..]
-        {
-            value = item.try_to_value()?;
-        }
-        return Some(num_literal(value.try_to_leaf()?.to_bits_unchecked(), num));
+        return Some(num_literal(innermost(value)?.try_to_leaf()?.to_bits_unchecked(), num));
     }
     if let Some(c) = char_value(value) {
         return Some(Expr::str(c.to_string()));
+    }
+    // A `Discriminant`'s is its number, inside std's struct (ADR 0393).
+    if super::recognition::is_discriminant_type(tcx, ty) {
+        let leaf = innermost(value)?.try_to_leaf()?;
+        return Some(Expr::int(leaf.to_int(leaf.size())));
     }
     // An enum's value tree starts with its variant's index, then its fields.
     let children = || -> Option<Vec<ty::Value<'tcx>>> {

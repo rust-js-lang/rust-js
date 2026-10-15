@@ -412,4 +412,12 @@ export const mutations: Mutation[] = [
     replace: "                \"NotPresent\",\n",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
+  {
+    name: "discriminant-debug-bare",
+    breaks: "a `Discriminant`'s `{:?}` is its number alone, not `Discriminant(1)`",
+    file: "src/lower/display.rs",
+    find: "            return Ok(join(vec![Expr::str(\"Discriminant(\"), value, Expr::str(\")\")]));\n",
+    replace: "            return Ok(value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
+  },
 ];

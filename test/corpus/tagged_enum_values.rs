@@ -39,5 +39,9 @@ fn main() {
     seen.insert(Light::On, 2);
     println!("{} {:?}", seen.len(), seen.get(&Light::On));
     println!("{}", Light::Off as i32);
+    // Cast where it runs: by its tag, not its object (ADR 0393).
+    let code = |light: Light| light as i32;
+    println!("{} {}", code(Light::On), code(Light::Off));
+    println!("{:?}", std::mem::discriminant(&Light::Off));
     println!("{} {:?}", Light::On < Light::Off, Light::Off.cmp(&Light::On));
 }

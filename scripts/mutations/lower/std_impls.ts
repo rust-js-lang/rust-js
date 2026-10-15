@@ -309,4 +309,12 @@ export const mutations: Mutation[] = [
     replace: "        primitive.then(|| match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^nan_contains.rs$"],
   },
+  {
+    name: "discriminant-not-primitive",
+    breaks: "a `Discriminant` isn't compared as the number it is",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.recognition().is_discriminant(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
+  },
 ];

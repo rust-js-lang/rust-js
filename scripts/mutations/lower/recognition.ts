@@ -1377,4 +1377,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
   },
+  {
+    name: "discriminant-unknown",
+    breaks: "`mem::discriminant(&e)` is refused, not `e`'s variant's discriminant",
+    file: "src/lower/recognition.rs",
+    find: "        if std_path(tcx, def_id) == \"std::mem::discriminant\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
+  },
 ];

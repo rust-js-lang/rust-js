@@ -460,6 +460,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0390 Addressable memory is refused, and says so](decisions/0390-addressable-memory-is-refused-as-such.md)
 - [0391 What works in Node only is one list, and panics in a browser](decisions/0391-what-works-in-node-only.md)
 - [0392 A writer of bytes, `io::Write`, generic and `dyn`](decisions/0392-a-writer-of-bytes.md)
+- [0393 An enum's discriminant, `mem::discriminant` and a cast, one way](decisions/0393-an-enums-discriminant.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

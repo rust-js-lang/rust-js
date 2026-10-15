@@ -2302,4 +2302,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_operand_leaves.rs$"],
     snapshots: true,
   },
+  {
+    name: "raw-pointer-unsaid",
+    breaks: "a raw pointer to a value is refused as \"this value\", not as addressable memory",
+    file: "src/lower/mir.rs",
+    find: "            Rvalue::RawPtr(..) => return Err(refuse(tcx, span, Refused::Memory(\"a raw pointer to a value\"))),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a value"],
+  },
 ];

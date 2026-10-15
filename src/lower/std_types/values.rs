@@ -258,6 +258,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Rc` is the JS reference itself: the garbage collector does
             // its counting, so a clone is the same object.
             Std::Same | Std::Format => arg(),
+            // Its variant's discriminant, of the enum it's a reference to.
+            Std::Discriminant => {
+                let of = generic_args.types().next().expect("`discriminant`'s type argument");
+                self.discriminant_value(arg(), of, out)
+            }
             Std::Leak => self.leaked(arg(), output),
             Std::Pointee => self.through_refs(arg(), tys[0]).0,
             Std::Last

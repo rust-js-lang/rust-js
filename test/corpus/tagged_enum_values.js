@@ -37,6 +37,9 @@ function main() {
     `${seen.size} ${((value) => (value == null ? "None" : `Some(${value})`))(seen.get({ kind: "On" }))}`,
   );
   console.log("1");
+  const code = (light) => ["On", "Off"].indexOf(light.kind);
+  console.log(`${code({ kind: "On" })} ${code({ kind: "Off" })}`);
+  console.log(`Discriminant(${["On", "Off"].indexOf("Off")})`);
   const left = { kind: "On" };
   const right = { kind: "Off" };
   const left$1 = { kind: "Off" };

@@ -165,6 +165,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, _) if self.is_lang_adt(ty, LangItem::String) => return None,
             // A `TypeId` is its type's key (ADR 0331).
             ty::Adt(..) if self.recognition().is_type_id(ty) => return None,
+            // A `Discriminant` is its number (ADR 0393).
+            ty::Adt(..) if self.recognition().is_discriminant(ty) => return None,
             // An `Option` is its value or `undefined` (ADR 0030), or a box where
             // the value looks like `None` (ADR 0051).
             ty::Adt(..) if let Some(inner) = self.option_of(ty) => return self.unsupported_in(inner, seen),

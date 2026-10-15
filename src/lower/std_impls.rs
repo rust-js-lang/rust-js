@@ -609,6 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let primitive = self.is_string_like(ty)
             || self.is_parse_error(ty)
             || self.recognition().is_type_id(ty)
+            || self.recognition().is_discriminant(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()

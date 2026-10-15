@@ -225,6 +225,8 @@ pub(super) enum Std {
     /// `mem::needs_drop::<T>()`: rustc's answer, `true` or `false`, or a
     /// type parameter's, given (ADR 0145).
     NeedsDrop,
+    /// `mem::discriminant(&e)`: `e`'s variant's discriminant (ADR 0393).
+    Discriminant,
     SizeOfVal,
     /// `mem::drop(x)`: `x`'s destructor, and `mem::forget(x)`: none (ADR 0098).
     Drop,
@@ -535,6 +537,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if type_fact(tcx, def_id) == Some(TypeFact::NeedsDrop) {
             return Some(Some(Std::NeedsDrop));
+        }
+        // An enum's variant's discriminant (ADR 0393).
+        if std_path(tcx, def_id) == "std::mem::discriminant" {
+            return Some(Some(Std::Discriminant));
         }
         if diagnostic("mem_size_of_val") {
             return Some(Some(Std::SizeOfVal));
@@ -3138,6 +3144,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_lang_adt(ty, LangItem::TypeId)
     }
 
+    /// `mem::Discriminant<T>`, what `mem::discriminant` gives: its variant's
+    /// discriminant, a number (ADR 0393).
+    pub(super) fn is_discriminant(&self, ty: Ty<'tcx>) -> bool {
+        is_discriminant_type(self.tcx, ty)
+    }
+
     /// A `dyn Any`, `+ Send` or not (ADR 0331).
     pub(super) fn is_dyn_any(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Dynamic(traits, ..)
@@ -3774,6 +3786,11 @@ const NODE_ONLY: &[(&str, ProcessOp)] = &[
 pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {
     let path = std_path(tcx, id);
     NODE_ONLY.iter().find(|(of, _)| *of == path).map(|&(_, op)| op)
+}
+
+/// `mem::Discriminant<T>`, its variant's discriminant, a number (ADR 0393).
+pub(crate) fn is_discriminant_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::mem::Discriminant")
 }
 
 /// std's functions of addressable memory, which JavaScript has none of

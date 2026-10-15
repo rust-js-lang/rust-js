@@ -60,7 +60,6 @@ const-generics/type-dependent/issue-70507.rs	error: rust-js does not support val
 const-generics/type-dependent/issue-71805.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 const-ptr/pointer-address-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 consts/const_constructor/const-construct-call.rs	error: rust-js does not support constants of type `std::panic::AssertUnwindSafe<(std::option::Option<i32>, std::result::Result<i32, bool>)>` yet
-consts/const_discriminant.rs	error: rust-js does not support constants of type `std::mem::Discriminant<Test>` yet
 consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: constants of type `std::ptr::NonNull<[i32]>`
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support addressable memory yet: constants of type `&'static &'static WrapEmbedded`
 consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
@@ -107,7 +106,6 @@ dst/dst-field-align.rs	error: rust-js does not support a `Baz<dyn Bar>`, whose l
 dst/dst-raw.rs	error: rust-js does not support values of type `*const dyn Trait` yet
 dst/dst-trait.rs	error: rust-js does not support a `Fat<dyn ToBar>`, whose last field is a `dyn` yet
 dst/match-dst-struct.rs	error: rust-js does not support a `Foo<dyn Get>`, whose last field is a `dyn` yet
-enum-discriminant/discriminant_value-wrapper.rs	error: rust-js does not support calling `std::mem::discriminant` yet
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 enum/enum-clike-ffi-as-int.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 enum/enum-univariant-repr.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet

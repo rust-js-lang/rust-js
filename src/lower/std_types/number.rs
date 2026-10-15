@@ -5,7 +5,7 @@
 //! a helper gives Rust's.
 
 use crate::js::StmtKind;
-use crate::js::{self, Expr, Op, Prop, Stmt, UnaryOp};
+use crate::js::{self, Expr, Op, Stmt, UnaryOp};
 use crate::lower::calls::Call;
 use crate::lower::discriminants;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
@@ -1026,11 +1026,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if let ty::Adt(adt, _) = from.kind()
             && is_fieldless_enum(*adt)
         {
-            // A fieldless enum is its variant's name (ADR 0013): its
-            // discriminant, `["Red", "Green"].indexOf(color)` when they count
-            // up from 0, and looked up by name otherwise.
+            // A fieldless enum's discriminant, by its variant's name (ADR 0013).
             let discriminants = discriminants(self.tcx, *adt);
-            let counting = discriminants.iter().enumerate().all(|(i, &(_, d))| d == i as i128);
             // Each one fits the target type, so there's nothing to wrap.
             let (lo, hi) = target.range();
             let fits = target.float()
@@ -1043,19 +1040,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // fits it, else the enum's own type, cast to it after. A 64-bit
             // one is a BigInt from the start, exact past 2^53.
             let read = if fits { target } else { repr };
-            let value = if counting {
-                let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());
-                let index = Expr::call(Expr::member(names, "indexOf"), vec![v]);
-                if read.big() { to_bigint(index) } else { index }
-            } else {
-                let table = Expr::object(
-                    discriminants
-                        .into_iter()
-                        .map(|(n, d)| Prop::Field(n, if read.big() { Expr::bigint(d) } else { Expr::int(d) }))
-                        .collect(),
-                );
-                Expr::index(table, v)
-            };
+            let value = self
+                .named_discriminant(v, *adt, read.big())
+                .map_err(|_| self.unsupported(span, "casting an enum whose value doesn't name its variant"))?;
             if fits {
                 return Ok(value);
             }
