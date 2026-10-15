@@ -363,4 +363,12 @@ export const mutations: Mutation[] = [
     replace: "fold(Expr::int(0),",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
+  {
+    name: "static-ref-to-static-refused",
+    breaks: "a static referring to another static's number, `&A.count`, is refused",
+    file: "src/lower/representation.rs",
+    find: "            if primitive\n                && !tcx.is_mutable_static(d)\n",
+    replace: "            if false\n                && !tcx.is_mutable_static(d)\n",
+    tests: ["test/corpus.test.ts", "-t", "^static_refs_to_statics.rs$"],
+  },
 ];

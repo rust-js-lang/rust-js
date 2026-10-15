@@ -656,14 +656,29 @@ fn unchanging<'tcx>(tcx: TyCtxt<'tcx>, memory: ConstAllocation<'tcx>) -> AllocId
 }
 
 /// Where a pointer in a static's memory points, readable. A `&` in one is
-/// to memory of its own, a nested static; one to another static is `None`.
-fn pointee(tcx: TyCtxt<'_>, pointer: Scalar) -> Option<Pointer> {
+/// to memory of its own, a nested static; one to another static, of a
+/// `primitive` it reads, a number, `&A.count`, where that static can't
+/// change, is that static's: its value is the reference's, as a reference
+/// is its value (ADR 0023), and no program tells a number's copy from it.
+/// Any other is `None`.
+fn pointee(tcx: TyCtxt<'_>, pointer: Scalar, primitive: bool) -> Option<Pointer> {
     let pointer = pointer.to_pointer(&tcx).discard_err()?.into_pointer_or_addr().ok()?;
     let (prov, offset) = pointer.prov_and_relative_offset();
     let memory = match tcx.try_get_global_alloc(prov.alloc_id())? {
         GlobalAlloc::Memory(memory) if memory.inner().mutability == Mutability::Not => return Some(pointer),
         GlobalAlloc::Memory(memory) => memory,
         GlobalAlloc::Static(d) if matches!(tcx.def_kind(d), DefKind::Static { nested: true, .. }) => {
+            tcx.eval_static_initializer(d).ok()?
+        }
+        GlobalAlloc::Static(d)
+            if primitive
+                && !tcx.is_mutable_static(d)
+                && tcx
+                    .type_of(d)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .is_freeze(tcx, ty::TypingEnv::fully_monomorphized()) =>
+        {
             tcx.eval_static_initializer(d).ok()?
         }
         _ => return None,
@@ -719,7 +734,7 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
             match *inner.kind() {
                 ty::Str if len == 0 => Some(ty::ValTree::from_raw_bytes(tcx, &[])),
                 ty::Str => {
-                    let (prov, offset) = pointee(tcx, data)?.prov_and_relative_offset();
+                    let (prov, offset) = pointee(tcx, data, false)?.prov_and_relative_offset();
                     let memory = tcx.global_alloc(prov.alloc_id()).unwrap_memory();
                     let start = usize::try_from(offset.bytes()).ok()?;
                     let bytes = memory
@@ -728,7 +743,7 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
                     Some(ty::ValTree::from_raw_bytes(tcx, bytes))
                 }
                 ty::Slice(_) if len == 0 => Some(ty::ValTree::zst(tcx)),
-                ty::Slice(item) => valtree_at(tcx, pointee(tcx, data)?, Ty::new_array(tcx, item, len)),
+                ty::Slice(item) => valtree_at(tcx, pointee(tcx, data, false)?, Ty::new_array(tcx, item, len)),
                 _ => None,
             }
         }
@@ -737,7 +752,11 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
                 ConstValue::Scalar(scalar) => scalar,
                 _ => read(0, word, true)?,
             };
-            valtree_at(tcx, pointee(tcx, pointer)?, *inner)
+            let primitive = matches!(
+                inner.kind(),
+                ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_)
+            );
+            valtree_at(tcx, pointee(tcx, pointer, primitive)?, *inner)
         }
         ty::Adt(adt, _) if adt.is_union() => None,
         // A JS value, react's `ElementType` say, is nothing in Rust's memory:

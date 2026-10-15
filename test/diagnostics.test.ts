@@ -27,7 +27,9 @@ for (const [name, source, message, crate] of [
   ["an otherwise variant not last", '#[rust_js::tag = "kind"]\npub enum E { #[rust_js::otherwise] O(&\'static js::JsObject), A { n: u32 } }\npub fn f() -> E { E::A { n: 1 } }', "`otherwise` variant is its last", "js"],
   ["a derive of an open union", '#[rust_js::tag = "kind"]\n#[derive(Clone)]\npub enum E { A { n: u32 }, #[rust_js::otherwise] O(&\'static js::JsObject) }\npub fn f(e: &E) -> E { e.clone() }', "deriving `Clone` of a discriminated union with an `otherwise` variant yet: it would take the object it holds", "js"],
   ["#[thread_local] static", "#![feature(thread_local)]\n#[thread_local] static N: std::cell::Cell<u32> = std::cell::Cell::new(0);\npub fn f() -> u32 { N.get() }", "does not support `#[thread_local]` statics"],
-  ["static holding a reference to another", "static A: u32 = 1;\nstatic B: &u32 = &A;\npub fn f() -> u32 { *B }", "does not support statics of type `&'static u32`"],
+  // One to another's number is that number (ADR 0096); to another's object,
+  // whose copy `ptr::eq` would tell apart, isn't yet.
+  ["static holding a reference to another's object", "pub struct P { pub x: u32 }\nstatic A: P = P { x: 1 };\nstatic B: &P = &A;\npub fn f() -> u32 { B.x }", "does not support statics of type `&'static P`"],
   // A `dyn Error`'s dictionary has its `source`, and none of what else std provides (ADR 0141).
   ["a deprecated method of a dyn Error", '#![allow(deprecated)]\npub fn f(e: &dyn std::error::Error) -> String { e.description().to_string() }', "`description` of a"],
   // A placeholder's options are given to what shows the value (ADR 0058), but a

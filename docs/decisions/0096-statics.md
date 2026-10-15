@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0031](0031-consts.md) and [0037](0037-thread-locals.md).
 Amended: a `static mut` whose value rustc can't say is its initializer's,
-in its `{ value }` (below).
+in its `{ value }`, and a static that refers to another's number is that
+number (below).
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -159,8 +160,15 @@ a function pointer, or a `dyn`.
   rustc's `statics/static-function-pointer.rs`, `consts/const-fn-val.rs`
   and `consts/const-vec-of-fns.rs`, pass.
 - Left for later: a `&mut` to a `static mut`, a static holding a
-  reference to another, and `Mutex` or `OnceLock` in a static, which none of
-  the tests use.
+  reference to another's object, and `Mutex` or `OnceLock` in a static,
+  which none of the tests use.
+- **A static that refers to another's number**, `&A.count` or
+  `&LIMITS[0]` (amended, 2026-10-15), is that number, read out of the other
+  static's memory: a reference is its value (ADR 0023), and an immutable
+  static with no cell in it can't change, so no program tells the copy
+  from it. One to another's object, which `ptr::eq` would tell apart, is
+  still an error. The corpus's `static_refs_to_statics.rs`, and rustc's
+  `consts/issue-17718-borrow-interior.rs`, pass.
 - **rustc makes value trees only of constants,** so a static's is read out
   of the memory rustc computed for it, a field at a time with rustc's own
   destructuring of a constant, following each `&` in it. That gives a

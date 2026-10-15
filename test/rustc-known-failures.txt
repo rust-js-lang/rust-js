@@ -75,7 +75,6 @@ consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable 
 consts/const-size_of_val-align_of_val.rs	error: rust-js does not support addressable memory yet: constants of type `Ugh`
 consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support addressable memory yet: constants of type `*const u8`
-consts/issue-17718-borrow-interior.rs	error: rust-js does not support statics of type `&'static usize` yet
 consts/issue-21721.rs	error: rust-js does not support values of type `*const u8` yet
 consts/issue-33537.rs	error: rust-js does not support values of type `*const i8` yet
 consts/issue-58435-ice-with-assoc-const.rs	error: rust-js does not support this constant yet
