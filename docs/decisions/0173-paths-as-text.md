@@ -39,7 +39,9 @@ stopped thiserror, and with it most crates' error types.
   and a path as a map's key stay errors, as do the path methods not here,
   `join` and `parent` among them. (Amended by
   [0401](0401-a-path-compares-by-its-components.md): `==`, ordering and a
-  map's key are its components'.)
+  map's key are its components'; and by
+  [0405](0405-a-paths-methods.md): `join`, `parent` and the rest are
+  too.)
 - **Text in, text out:** a path is made only from text here, so it's
   always valid UTF-8, and `to_str()` is always `Some`.
 

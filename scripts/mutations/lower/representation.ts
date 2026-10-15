@@ -371,4 +371,12 @@ export const mutations: Mutation[] = [
     replace: "            if false\n                && !tcx.is_mutable_static(d)\n",
     tests: ["test/corpus.test.ts", "-t", "^static_refs_to_statics.rs$"],
   },
+  {
+    name: "path-shape-object",
+    breaks: "a `PathBuf` is taken for an object of its fields, so `buf.push(..)` can't change its place",
+    file: "src/lower/representation.rs",
+    find: "        if self.is_std_wrapper(ty) || self.is_js_object(ty) || self.recognition().is_path_like(ty) {\n",
+    replace: "        if self.is_std_wrapper(ty) || self.is_js_object(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

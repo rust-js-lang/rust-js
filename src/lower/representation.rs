@@ -356,7 +356,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How a struct or tuple type looks in JS.
     pub(super) fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
-        if self.is_std_wrapper(ty) || self.is_js_object(ty) {
+        // A path is its text, a string (ADR 0173), whatever its fields.
+        if self.is_std_wrapper(ty) || self.is_js_object(ty) || self.recognition().is_path_like(ty) {
             return Shape::Other;
         }
         match ty.kind() {

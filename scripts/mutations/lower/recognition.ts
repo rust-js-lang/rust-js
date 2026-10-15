@@ -1425,4 +1425,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
   },
+  {
+    name: "path-parent-unknown",
+    breaks: "a path's `parent()` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::path::Path::parent\" => return Some(Some(Std::Path(PathOp::Parent))),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

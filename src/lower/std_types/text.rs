@@ -37,6 +37,12 @@ pub(in crate::lower) enum StringEdit {
     AsciiCase {
         upper: bool,
     },
+    /// A `PathBuf`'s text changed (ADR 0405): `push(p)` and
+    /// `set_file_name(n)`; `pop()` and `set_extension(e)`, whether it did.
+    PathPush,
+    PathPop,
+    SetExtension,
+    SetFileName,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -229,6 +235,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StringEdit::ReplaceRange => (helper("$replaceRange", given), None),
             StringEdit::ExtendFromWithin => (helper("$strExtendWithin", given), None),
             StringEdit::AsciiCase { upper } => (helper("$asciiCase", vec![Expr::bool(upper)]), None),
+            StringEdit::PathPush => (helper("$pathJoin", given), None),
+            StringEdit::SetFileName => (helper("$pathSetFileName", given), None),
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(
@@ -239,11 +247,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 (Expr::call(Expr::member(kept, "join"), vec![Expr::str("")]), None)
             }
-            StringEdit::Pop | StringEdit::Remove | StringEdit::SplitOff | StringEdit::Drain => {
+            StringEdit::Pop
+            | StringEdit::Remove
+            | StringEdit::SplitOff
+            | StringEdit::Drain
+            | StringEdit::PathPop
+            | StringEdit::SetExtension => {
                 let (name, label) = match edit {
                     StringEdit::Pop => ("$strPop", "popped"),
                     StringEdit::SplitOff => ("$strSplitOff", "split"),
                     StringEdit::Drain => ("$strDrain", "drained"),
+                    StringEdit::PathPop => ("$pathPop", "popped"),
+                    StringEdit::SetExtension => ("$pathSetExtension", "set"),
                     _ => ("$strRemove", "removed"),
                 };
                 let pair = helper(name, given);

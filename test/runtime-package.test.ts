@@ -128,6 +128,29 @@ pub fn rw_read() -> u32 {
   expect(call("rw_read")).toBe(error);
 });
 
+// A path's extension with a separator in it panics, as std's
+// `set_extension` and `with_extension` do (ADR 0405).
+test("a path's extension with a separator panics, as std's does", () => {
+  const dir = fixture("path-extension-separator");
+  writeFileSync(join(dir, "lib.rs"), `use std::path::{Path, PathBuf};
+
+pub fn set() -> bool {
+    PathBuf::from("a.txt").set_extension("b/c")
+}
+
+pub fn copied() -> String {
+    Path::new("a.txt").with_extension("b/c").display().to_string()
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { (await import(${JSON.stringify(out)})).${name}(); } catch (e) { console.log(e.message); }`]);
+  const error = 'extension cannot contain path separators: "b/c"\n';
+  expect(call("set")).toBe(error);
+  expect(call("copied")).toBe(error);
+});
+
 // A `None` given to JS is `undefined` given, never left out: a JS function
 // may count its arguments, as `Math.max` does (ADR 0330).
 test("an undefined given to JS is an argument, never left out", () => {

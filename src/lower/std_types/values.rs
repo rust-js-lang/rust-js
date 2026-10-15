@@ -234,6 +234,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.process_call(known, &mut values) {
             return Ok(js);
         }
+        if let Some(js) = self.path_call(known, &mut values) {
+            return Ok(js);
+        }
         if let Some(js) = self.uninit_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -374,6 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
+            Std::Path(_) => unreachable!("lowered by path_call"),
             Std::Uninit(_) => unreachable!("lowered by uninit_call"),
             Std::Cow(_) => unreachable!("lowered by mir_std_call"),
             Std::Rc(_) => unreachable!("lowered by mir_std_call"),

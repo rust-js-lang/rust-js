@@ -15,6 +15,7 @@ use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::option::OptionPlaceOp;
+use super::std_types::path::PathOp;
 use super::std_types::pin::PinOp;
 use super::std_types::process::ProcessOp;
 use super::std_types::range::{RangeKind, RangeOp};
@@ -148,6 +149,8 @@ pub(super) enum Std {
     Any(AnyOp),
     /// The process a program runs in, Node's (ADR 0391): `env::args()`.
     Process(ProcessOp),
+    /// A path's own method (ADR 0405).
+    Path(PathOp),
     /// `MaybeUninit`'s, and a `Box`'s made before its value (ADR 0332).
     Uninit(UninitOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
@@ -594,6 +597,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::ffi::OsStr::to_str"
             | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
             "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
+            // Its methods, over its components (ADR 0405).
+            "std::path::Path::join" => return Some(Some(Std::Path(PathOp::Join))),
+            "std::path::Path::parent" => return Some(Some(Std::Path(PathOp::Parent))),
+            "std::path::Path::file_name" => return Some(Some(Std::Path(PathOp::FileName))),
+            "std::path::Path::file_stem" => return Some(Some(Std::Path(PathOp::FileStem))),
+            "std::path::Path::extension" => return Some(Some(Std::Path(PathOp::Extension))),
+            "std::path::Path::with_extension" => return Some(Some(Std::Path(PathOp::WithExtension))),
+            "std::path::Path::with_file_name" => return Some(Some(Std::Path(PathOp::WithFileName))),
+            "std::path::Path::starts_with" => return Some(Some(Std::Path(PathOp::StartsWith))),
+            "std::path::Path::ends_with" => return Some(Some(Std::Path(PathOp::EndsWith))),
+            "std::path::Path::is_absolute" | "std::path::Path::has_root" => {
+                return Some(Some(Std::Path(PathOp::IsAbsolute)));
+            }
+            "std::path::Path::is_relative" => return Some(Some(Std::Path(PathOp::IsRelative))),
+            "std::path::Path::to_path_buf" => return Some(Some(Std::Same)),
+            "std::path::PathBuf::push" => return Some(Some(Std::StringEdit(StringEdit::PathPush))),
+            "std::path::PathBuf::pop" => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
+            "std::path::PathBuf::set_extension" => return Some(Some(Std::StringEdit(StringEdit::SetExtension))),
+            "std::path::PathBuf::set_file_name" => return Some(Some(Std::StringEdit(StringEdit::SetFileName))),
             // A `NonZero` is its number (ADR 0177).
             "std::num::NonZero::<T>::get" | "std::num::NonZero::<T>::new_unchecked" => return Some(Some(Std::Same)),
             "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),
