@@ -43,7 +43,7 @@ const inside = (ty: Ty, outer: "Vec" | "Option"): IntTy | undefined => {
 };
 // What's `Copy` can be read as it is; a `Vec`, a `String` or a map is read
 // through `clone()`, so it's never moved from the variable that holds it.
-const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && ty !== "String" && ty !== "Map" && ty !== "D" && ty !== "Shapes";
+const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && !["String", "Map", "D", "Shapes", "Shared"].includes(ty);
 
 // The struct every program has, whose fields are of three widths.
 export const struct = { name: "S", fields: [["a", "i32"], ["b", "u8"], ["c", "i64"]] as [string, IntTy][] };
@@ -127,6 +127,11 @@ export type Expr =
   | { kind: "areas"; ty: Ty; name: string }
   | { kind: "describe"; ty: Ty; name: string; at: number }
   | { kind: "total"; ty: Ty; a: Expr; b: Expr }
+  // `Rc<RefCell<i64>>`, `Shared`: made, or shared, `Rc::clone(&r)`, so a
+  // write through one is read through the other; read, `*r.borrow()`; and
+  // counted, `Rc::strong_count(&r)`.
+  | { kind: "shared"; ty: Ty; value?: Expr; of?: string }
+  | { kind: "shared-read"; ty: Ty; name: string; count: boolean }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 // A closure's parameters keep the names they were made with, so a chain in
@@ -179,6 +184,14 @@ export type Stmt =
   // v.iter_mut() { s.grow(by) }`, `by` made each time round.
   | { kind: "shape-push"; name: string; sq: boolean; a: Expr; b: Expr }
   | { kind: "shape-grow"; name: string; by: Expr }
+  // A write through a `Shared`, `*r.borrow_mut() += e`, `e` made before
+  // the borrow, which may read it too, its own borrow over by then.
+  | { kind: "shared-write"; name: string; op: string; value: Expr }
+  // A `Vec` sorted where ties show, each stable as JS's `sort` is: by a key,
+  // `sort_by_key(|x| *x % k)`, which keeps equal ones in order, by a
+  // comparator of two, filtered by a closure that may note, `retain`, and
+  // `dedup_by_key`.
+  | { kind: "vec-sort"; name: string; elem: IntTy; how: "key" | "by" | "retain" | "dedup"; k: number; keep?: Expr; x?: string }
   // A function of two integers, declared in `main`, that gives an `Option`
   // or a `Result`: steps `let x = a.checked_add(b)?;`, each of which may
   // give up, and `if c { return .. }`, then its value. What it notes says
@@ -217,6 +230,12 @@ function literal(r: Random, ty: Ty): Expr {
 const assignable = (scope: Scope) => scope.filter((v) => v.mutable && isCopy(v.ty) && !v.ty.startsWith("fn("));
 
 function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
+  if (ty === "Shared") {
+    const others = scope.filter((v) => v.ty === "Shared");
+    return others.length > 0 && r.chance(0.5)
+      ? { kind: "shared", ty, of: r.pick(others).name }
+      : { kind: "shared", ty, value: expr(r, "i64", scope, Math.min(1, depth)) };
+  }
   // Shapes are made, never read whole: a `Box<dyn Shape>` isn't `Clone`.
   if (ty === "Shapes") {
     const items = Array.from({ length: 1 + r.int(3) }, () => ({ sq: r.chance(0.5), a: expr(r, "i64", scope, Math.min(1, depth)), b: expr(r, "i64", scope, Math.min(1, depth)) }));
@@ -244,6 +263,8 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     const chained = chain(r, ty, scope, depth);
     if (chained) return chained;
   }
+  const shared = scope.filter((v) => v.ty === "Shared");
+  if (ty === "i64" && shared.length > 0 && r.chance(0.2)) return { kind: "shared-read", ty, name: r.pick(shared).name, count: r.chance(0.3) };
   const shapes = scope.filter((v) => v.ty === "Shapes");
   if (ty === "i64" && r.chance(0.12)) {
     if (shapes.length > 0 && r.chance(0.6)) return { kind: "areas", ty, name: r.pick(shapes).name };
@@ -595,9 +616,9 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(24);
+    const choice = r.int(26);
     if (choice < 3 || writable.length === 0) {
-      const ty = r.chance(0.08) ? "Shapes" : valueType(r);
+      const ty = r.chance(0.08) ? "Shapes" : r.chance(0.09) ? "Shared" : valueType(r);
       const name = `v${counter.n++}`;
       stmts.push({ kind: "let", name, ty, value: expr(r, ty, inner, 3) });
       inner.push({ name, ty, mutable: true });
@@ -619,6 +640,17 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
               ? r.pick(["{}", "{:?}", "{:>3}|"])
               : "{:?}";
       stmts.push({ kind: "print", format, value: expr(r, ty, inner, 3) });
+    } else if (choice === 24 && writable.some((v) => v.ty === "Shared")) {
+      const name = r.pick(writable.filter((v) => v.ty === "Shared")).name;
+      stmts.push({ kind: "shared-write", name, op: r.pick(["=", "+=", "-=", "^="]), value: expr(r, "i64", inner, 2) });
+    } else if (choice === 25 && vecs.length > 0) {
+      const v = r.pick(vecs);
+      const elem = inside(v.ty, "Vec")!;
+      const how = r.pick(["key", "by", "retain", "dedup"] as const);
+      const x = `x${counter.n++}`;
+      // What `retain` keeps reads its item, and what's `Copy` but the `Vec`.
+      const reading = [...inner.filter((u) => u.name !== v.name && (isInt(u.ty) || u.ty === "bool")).map((u) => ({ ...u, mutable: false })), { name: x, ty: elem, mutable: false }];
+      stmts.push({ kind: "vec-sort", name: v.name, elem, how, k: 2 + r.int(3), x, keep: how === "retain" ? expr(r, "bool", reading, 2) : undefined });
     } else if (choice === 8 && vecs.length > 0) {
       const v = r.pick(vecs);
       const elem = inside(v.ty, "Vec")!;
@@ -846,6 +878,12 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "shared":
+      return e.of ? `Rc::clone(&${e.of})` : `Rc::new(RefCell::new(${show(e.value!)}))`;
+    case "shared-read":
+      // The borrow ends where it's read: a `Ref` kept to the statement's end
+      // would conflict with what assigns the `Rc` in it.
+      return e.count ? `(Rc::strong_count(&${e.name}) as i64)` : `({ let b = *${e.name}.borrow(); b })`;
     case "shapes":
       return `vec![${e.items.map((i): string => (i.sq ? `Box::new(Sq(${show(i.a)})) as Box<dyn Shape>` : `Box::new(Rect(${show(i.a)}, ${show(i.b)})) as Box<dyn Shape>`)).join(", ")}]`;
     case "areas":
@@ -1076,6 +1114,15 @@ function lines(stmts: Stmt[], indent: string): string[] {
         const result = s.result === "Option" ? `Option<${s.ty}>` : `Result<${s.ty}, String>`;
         return [`${indent}fn ${s.name}(${p}: ${s.ty}, ${q}: ${s.ty}) -> ${result} {`, ...body, `${indent}    ${out(show(s.tail))}`, `${indent}}`];
       }
+      case "shared-write":
+        return [`${indent}*${s.name}.borrow_mut() ${s.op} ${show(s.value)};`];
+      case "vec-sort": {
+        const k = `id(${s.k}${s.elem})`;
+        if (s.how === "key") return [`${indent}${s.name}.sort_by_key(|x| *x % ${k});`];
+        if (s.how === "by") return [`${indent}${s.name}.sort_by(|a, b| (*a % ${k}).cmp(&(*b % ${k})).then(b.cmp(a)));`];
+        if (s.how === "dedup") return [`${indent}${s.name}.dedup_by_key(|x| *x % ${k});`];
+        return [`${indent}${s.name}.retain(|&${s.x}| ${show(s.keep!)});`];
+      }
       case "shape-push":
         return [`${indent}${s.name}.push(Box::new(${s.sq ? `Sq(${show(s.a)})` : `Rect(${show(s.a)}, ${show(s.b)})`}));`];
       case "shape-grow":
@@ -1196,6 +1243,11 @@ export function print(program: Program, seed?: number): string {
     "}",
     "",
     "type Shapes = Vec<Box<dyn Shape>>;",
+    "",
+    "use std::cell::RefCell;",
+    "use std::rc::Rc;",
+    "",
+    "type Shared = Rc<RefCell<i64>>;",
     "",
     "struct D(u32);",
     "",

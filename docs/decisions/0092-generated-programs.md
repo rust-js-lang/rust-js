@@ -107,6 +107,13 @@ time, valid and deterministic by construction:
   `{:.0}`, which rounds a half to even, `{:e}`, `{:10.3}` and `{:+}`. Not
   `exp`, `sin` and the like, which JS's `Math` needn't round as Rust does
   (2026-10-15).
+- Shared state, `Rc<RefCell<i64>>`: made, or shared, `Rc::clone(&r)`,
+  so a write through one, `*r.borrow_mut() += e`, is read through the
+  other, `*r.borrow()`, its borrow over where it's read; and counted,
+  `Rc::strong_count`. And a `Vec` sorted where ties show, each stable, as
+  JS's `sort` is: `sort_by_key(|x| *x % k)`, `sort_by` of a key then its
+  reverse, `dedup_by_key`, and `retain` by a closure that may note. Not
+  `sort_unstable` of ties, whose order Rust doesn't say (2026-10-15).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.
