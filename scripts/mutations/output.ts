@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "                .zip(crate::typescript::print(&self.settings, &models)?)",
     replace: "                .zip(crate::typescript::print(&self.settings, &models).unwrap_or_default())",
-    tests: ["test/declarations.test.ts", "-t", "declarations where @rust-js/typescript isn't say to add it"],
+    tests: ["test/declarations.test.ts", "-t", "declarations where @rust-js/typescript isn't say to install"],
   },
   {
     name: "map-sources-absolute",
