@@ -43,4 +43,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
     snapshots: true,
   },
+  {
+    name: "unreachable-hint-falls-through",
+    breaks: "`hint::unreachable_unchecked()` throws nothing: what follows runs",
+    file: "src/lower/format_args.rs",
+    find: "            Std::Unreachable => {\n                out.push(self.unreachable_code(span));\n",
+    replace: "            Std::Unreachable => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
+    snapshots: true,
+  },
 ];

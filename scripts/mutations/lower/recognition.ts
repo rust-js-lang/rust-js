@@ -1417,4 +1417,12 @@ export const mutations: Mutation[] = [
     replace: "        || [LangItem::IndexMut, LangItem::DerefMut]\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
   },
+  {
+    name: "unreachable-hint-unknown",
+    breaks: "`hint::unreachable_unchecked()` is refused, where it's unreachable code's throw",
+    file: "src/lower/recognition.rs",
+    find: "        if krate == sym::core && std_path(tcx, def_id) == \"std::hint::unreachable_unchecked\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
+  },
 ];

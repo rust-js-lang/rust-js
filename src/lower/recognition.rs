@@ -218,6 +218,8 @@ pub(super) enum Std {
     /// `panic!(x)` before edition 2021, `std::rt::begin_panic(x)`: the
     /// same, with `x` as it is, if it's text.
     BeginPanic,
+    /// `hint::unreachable_unchecked()`: MIR's unreachable code's throw.
+    Unreachable,
     /// `size_of::<T>()`, `align_of::<T>()` and `size_of_val(&x)` of a
     /// sized `x`: the wasm32 target's, as their constants are (ADR 0090).
     SizeOf,
@@ -746,6 +748,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if tcx.is_lang_item(def_id, LangItem::PanicFmt) {
             return Some(Some(Std::PanicFmt));
+        }
+        // `hint::unreachable_unchecked()`, which a program that's right never
+        // reaches: what MIR's unreachable code is.
+        if krate == sym::core && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {
+            return Some(Some(Std::Unreachable));
         }
         if tcx.crate_name(def_id.krate) == sym::core && tcx.item_name(def_id).as_str() == "assert_failed" {
             return Some(Some(Std::AssertFailed));

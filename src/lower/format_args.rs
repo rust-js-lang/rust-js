@@ -227,6 +227,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![arg()])).at(js_span));
                 Expr::undefined()
             }
+            Std::Unreachable => {
+                out.push(self.unreachable_code(span));
+                Expr::undefined()
+            }
             // A `&str` or a `String` is the panic's message, as Rust's hook
             // shows it; another payload, `panic!(5)`, has none.
             Std::BeginPanic => {

@@ -1601,6 +1601,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(out)
     }
 
+    /// What code a program that's right never reaches does, MIR's
+    /// unreachable code's or `hint::unreachable_unchecked()`'s: Rust's is
+    /// undefined, so JS's, a throw, which says where it went wrong.
+    pub(in crate::lower) fn unreachable_code(&self, span: Span) -> Stmt {
+        StmtKind::Throw(Expr::new_(
+            Expr::var("Error"),
+            vec![Expr::str("internal error: entered unreachable code")],
+        ))
+        .at(self.js_span(span))
+    }
+
     /// Where a block goes.
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
@@ -1629,13 +1640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TerminatorKind::Unreachable => {
                 self.flush(state, &mut out)?;
-                out.push(
-                    StmtKind::Throw(Expr::new_(
-                        Expr::var("Error"),
-                        vec![Expr::str("internal error: entered unreachable code")],
-                    ))
-                    .at(self.js_span(span)),
-                );
+                out.push(self.unreachable_code(span));
             }
             TerminatorKind::SwitchInt { discr, targets } => {
                 let mut subject = self.mir_operand(state, discr, &mut out)?;

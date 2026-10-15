@@ -411,6 +411,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::PanicFmt
             | Std::PanicDisplay
             | Std::BeginPanic
+            | Std::Unreachable
             | Std::Print { .. }
             | Std::FmtStr
             | Std::FmtDisplay

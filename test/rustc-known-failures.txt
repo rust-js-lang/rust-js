@@ -105,7 +105,6 @@ enum/enum-clike-ffi-as-int.rs	error: rust-js does not support calling `std::intr
 enum/enum-univariant-repr.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A` yet
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
-for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
