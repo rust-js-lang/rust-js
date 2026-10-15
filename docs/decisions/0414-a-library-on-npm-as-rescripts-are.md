@@ -1,6 +1,8 @@
 # 0414. A library is shared on npm, as ReScript's are
 
-Status: Accepted. Amends [0101](0101-cargo-workspace-wrapper.md), the
+Status: Accepted, amended by [0415](0415-a-crate-of-crates-io-in-an-app.md):
+a registry's or git's crate is compiled too, where it can be, its JS the
+app's. Amends [0101](0101-cargo-workspace-wrapper.md), the
 crates rust-js compiles, and [0118](0118-bindings-on-npm-only.md), npm for
 a library with code as for a binding, and [0119](0119-community-bindings.md),
 a binding crate saying it's one; delivers [0100](0100-separate-crates.md)'s

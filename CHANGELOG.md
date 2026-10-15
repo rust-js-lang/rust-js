@@ -60,6 +60,12 @@ released any more: `rust-js build` is the one way to build an app.
   one block, laid out by the app's Prettier, a file's leading comments, a
   license's, kept (ADRs 0291, 0278, 0313, 0381, 0383).
 
+- **A crate of crates.io's is compiled into the app**, where rust-js can
+  compile it: its JS committed in `rust-js/crates/<name>-<version>/`,
+  imported from there, and checked by `rust-js build --check`. One it
+  can't is its types alone, as before, and a call into it says why
+  ([ADR 0415](docs/decisions/0415-a-crate-of-crates-io-in-an-app.md)).
+
 ### Changed
 
 - **`@rust-js/vite-plugin`, its `rust-js:<package>` imports, `rust-js-patch`

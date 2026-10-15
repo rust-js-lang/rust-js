@@ -160,7 +160,10 @@ build --package frontend` asks for:
 It runs `RUSTC_WRAPPER=<compiler> cargo check --target
 wasm32-unknown-unknown`, with the app's own crates, Cargo's packages of a
 path, in `RUST_JS_CRATES`
-([ADR 0414](../docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
+([ADR 0414](../docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)),
+and its crates of crates.io's or git's, which rust-js compiles where it can,
+in `RUST_JS_DEPENDENCIES`, their JS the app's, in `rust-js/crates/`
+([ADR 0415](../docs/decisions/0415-a-crate-of-crates-io-in-an-app.md)).
 Each of those that `frontend` uses, the crate of an npm package too, and
 `frontend` itself, is JS in Cargo's target directory, beside the metadata
 of that build of it, importing the others, then written beside its Rust. A

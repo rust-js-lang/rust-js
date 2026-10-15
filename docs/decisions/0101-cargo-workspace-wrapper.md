@@ -4,7 +4,9 @@ Status: Accepted, amended by [0412](0412-rust-js-build-is-its-own-process.md):
 its one host is `rust-js build`; and by [0414](0414-a-library-on-npm-as-rescripts-are.md):
 rust-js is Cargo's `RUSTC_WRAPPER`, compiling the app's own crates, each of
 Cargo's packages of a path, a crate an npm package has too, as
-`RUST_JS_CRATES` names them; a registry's crate is still rustc's. Extends [0100](0100-separate-crates.md), and replaces
+`RUST_JS_CRATES` names them; and by [0415](0415-a-crate-of-crates-io-in-an-app.md):
+a registry's or git's crate is rust-js's to compile where it can, rustc's,
+its types alone, where it can't. Extends [0100](0100-separate-crates.md), and replaces
 [0085](0085-scalar-library-linkage.md)'s planning of a Cargo graph for
 building one.
 

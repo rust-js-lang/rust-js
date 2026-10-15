@@ -20,6 +20,10 @@ pub enum Invocation {
     RustJs(Vec<String>),
     /// rustc was run as Cargo asked, and ended so.
     Rustc(ExitCode),
+    /// A crate of crates.io's rust-js refused, which rustc checked, its types
+    /// alone, ended so: why, to be written where `library::refusal` says
+    /// (ADR 0415).
+    Refused(ExitCode, PathBuf, String),
 }
 
 /// The package the tooling builds as the app, a program no crate uses
@@ -30,6 +34,18 @@ pub const APP: &str = "RUST_JS_APP";
 /// tooling says: each of Cargo's packages of a path, its workspace's, a path
 /// dependency, or a crate an npm package has, but a binding crate (ADR 0414).
 pub const CRATES: &str = "RUST_JS_CRATES";
+
+/// The crates of crates.io's or git's, by their directories, as the tooling
+/// says, which rust-js compiles where it can, rustc where it can't, their
+/// types alone (ADR 0415).
+pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
+
+/// Set in the process that tries a dependency, which compiles it as its own.
+const TRYING: &str = "RUST_JS_TRYING";
+
+/// The crates of crates.io's rust-js reads as rustc builds them, never
+/// compiled by it: serde's (ADR 0077).
+const READ_AS_RUSTC_BUILDS_THEM: [&str; 3] = ["serde", "serde_core", "serde_json"];
 
 pub fn translate(args: Vec<String>) -> Invocation {
     let Some(rustc) = args
@@ -62,9 +78,11 @@ pub fn translate(args: Vec<String>) -> Invocation {
     if probe || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
-    match is_own() {
-        Ok(true) => {}
-        Ok(false) => return rustc_itself(&rustc, given),
+    match whose() {
+        Ok(Whose::Own) => {}
+        Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),
+        Ok(Whose::Dependency) => {}
+        Ok(Whose::Rustc) => return rustc_itself(&rustc, given),
         Err(error) => {
             eprintln!("rust-js: {error}");
             return Invocation::Rustc(ExitCode::FAILURE);
@@ -79,19 +97,87 @@ pub fn translate(args: Vec<String>) -> Invocation {
     }
 }
 
-/// Whether the crate Cargo builds is one of the app's own, which
-/// `RUST_JS_CRATES` names, by where Cargo has it.
-fn is_own() -> Result<bool, String> {
-    let crates = std::env::var(CRATES).map_err(|_| {
-        format!(
-            "Cargo ran rust-js without `{CRATES}`, the crates it compiles, which `rust-js build` gives it: run that"
-        )
-    })?;
-    let crates: Vec<PathBuf> =
-        serde_json::from_str(&crates).map_err(|e| format!("`{CRATES}` isn't a list of directories: {e}"))?;
+/// Who compiles a crate Cargo builds.
+enum Whose {
+    /// rust-js: one of the app's own, which `RUST_JS_CRATES` names.
+    Own,
+    /// rust-js where it can, rustc where it can't: a crate of crates.io's or
+    /// git's, which `RUST_JS_DEPENDENCIES` names (ADR 0415).
+    Dependency,
+    /// rustc: a binding crate, or one rust-js reads as rustc builds it.
+    Rustc,
+}
+
+/// Who compiles the crate Cargo builds, by where Cargo has it.
+fn whose() -> Result<Whose, String> {
+    let listed = |var: &str| -> Result<Vec<PathBuf>, String> {
+        let list = std::env::var(var).map_err(|_| {
+            format!(
+                "Cargo ran rust-js without `{var}`, the crates it compiles, which `rust-js build` gives it: run that"
+            )
+        })?;
+        serde_json::from_str(&list).map_err(|e| format!("`{var}` isn't a list of directories: {e}"))
+    };
     let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
     let dir = std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))?;
-    Ok(crates.contains(&dir))
+    if listed(CRATES)?.contains(&dir) {
+        return Ok(Whose::Own);
+    }
+    let known = std::env::var("CARGO_PKG_NAME").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str()));
+    Ok(match listed(DEPENDENCIES)?.contains(&dir) && !known {
+        true => Whose::Dependency,
+        false => Whose::Rustc,
+    })
+}
+
+/// A dependency (ADR 0415), tried in a process of its own, what it says held:
+/// compiled, it's said, as an own crate's is. Refused, rustc checks it, its
+/// types alone, as it would without rust-js, and why it isn't compiled is
+/// written beside its metadata, for a call into it to say.
+fn try_dependency(rustc: &str, given: &[String], flags: &[String]) -> Invocation {
+    let tried = std::env::current_exe().and_then(|exe| {
+        std::process::Command::new(exe)
+            .arg(rustc)
+            .args(given)
+            .env(TRYING, "1")
+            .output()
+    });
+    let tried = match tried {
+        Ok(tried) => tried,
+        Err(error) => {
+            eprintln!("rust-js: cannot try the crate: {error}");
+            return Invocation::Rustc(ExitCode::FAILURE);
+        }
+    };
+    if tried.status.success() {
+        let _ = std::io::stdout().write_all(&tried.stdout);
+        let _ = std::io::stderr().write_all(&tried.stderr);
+        return Invocation::Rustc(ExitCode::SUCCESS);
+    }
+    let why = refused_for(&tried.stderr);
+    match (rustc_itself(rustc, given), metadata_path(flags)) {
+        (Invocation::Rustc(exit), Some(metadata)) => Invocation::Refused(exit, crate::library::refusal(&metadata), why),
+        (checked, _) => checked,
+    }
+}
+
+/// Why rust-js refused a crate: its first error, of rustc's JSON messages.
+fn refused_for(stderr: &[u8]) -> String {
+    (String::from_utf8_lossy(stderr).lines())
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .find(|message| message["level"] == "error")
+        .and_then(|message| message["message"].as_str().map(str::to_string))
+        .unwrap_or_else(|| "rust-js refused it".to_string())
+}
+
+/// Where Cargo expects the metadata of the crate its `flags` build.
+fn metadata_path(flags: &[String]) -> Option<PathBuf> {
+    let name = flag_values(flags, "--crate-name").next()?;
+    let out_dir = PathBuf::from(flag_values(flags, "--out-dir").next()?);
+    let extra = flag_values(flags, "-C")
+        .find_map(|option| option.strip_prefix("extra-filename=").map(str::to_string))
+        .unwrap_or_default();
+    Some(out_dir.join(format!("lib{name}{extra}.rmeta")))
 }
 
 /// rust-js's arguments for a library Cargo checks for its target.

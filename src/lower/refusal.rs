@@ -26,11 +26,29 @@ pub(crate) enum Refused<'a, 'tcx> {
 /// The error that `refused` isn't supported, in its `words`: of
 /// addressable memory, with why.
 pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> ErrorGuaranteed {
-    let error = tcx.dcx().struct_span_err(span, words(tcx, refused));
-    match of_memory(tcx, refused) {
-        true => error.with_note(MEMORY).emit(),
-        false => error.emit(),
+    let mut error = tcx.dcx().struct_span_err(span, words(tcx, refused));
+    if of_memory(tcx, refused) {
+        error = error.with_note(MEMORY);
     }
+    if let Refused::Call(id) = refused
+        && let Some(why) = uncompiled(tcx, id)
+    {
+        error = error.with_note(format!(
+            "its crate is its types alone: rust-js couldn't compile it (ADR 0415): {why}"
+        ));
+    }
+    error.emit()
+}
+
+/// Why rust-js didn't compile the crate of `id`, a crate of crates.io's it
+/// refused, which rustc checked, its types alone (ADR 0415), as written
+/// beside its metadata.
+fn uncompiled(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
+    if id.is_local() {
+        return None;
+    }
+    let metadata = tcx.used_crate_source(id.krate).rmeta.clone()?;
+    std::fs::read_to_string(crate::library::refusal(&metadata)).ok()
 }
 
 /// Why addressable memory is refused.

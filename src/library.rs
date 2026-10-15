@@ -154,3 +154,10 @@ impl Dependencies {
         Ok(result)
     }
 }
+
+/// Where a crate of crates.io's rust-js refused says why, beside the
+/// metadata rustc wrote of it, its types alone (ADR 0415), for a call into
+/// it to say.
+pub fn refusal(metadata: &std::path::Path) -> std::path::PathBuf {
+    metadata.with_extension("rust-js-refused")
+}

@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a derive of an open union"],
   },
+  {
+    name: "refusal-uncompiled-unsaid",
+    breaks: "a call into a crate of crates.io's rust-js couldn't compile doesn't say why it isn't compiled",
+    file: "src/lower/refusal.rs",
+    find: "        error = error.with_note(format!(\n            \"its crate is its types alone",
+    replace: "        let _ = (format!(\n            \"its crate is its types alone",
+    tests: ["test/registry-crates.test.ts", "-t", "types alone"],
+  },
 ];

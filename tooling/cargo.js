@@ -2,7 +2,7 @@
 // adapter does not infer dependencies from source files or run build scripts.
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -24,14 +24,15 @@ const execute = promisify(execFile);
  * module's `.d.ts` (ADRs 0207, 0412).
  * @param {string} compiler
  * @param {string | undefined} react
- * @param {{ app?: string, crates: string[] }} build
+ * @param {{ app?: string, crates: string[], dependencies?: { dir: string }[] }} build
  * @returns {NodeJS.ProcessEnv} */
-export function cargoEnv(compiler, react, { app, crates }) {
+export function cargoEnv(compiler, react, { app, crates, dependencies = [] }) {
   const env = {
     ...process.env,
     RUSTC_WRAPPER: resolve(compiler),
     RUSTC: rustcShim(resolve(compiler)),
     RUST_JS_CRATES: JSON.stringify(crates),
+    RUST_JS_DEPENDENCIES: JSON.stringify(dependencies.map(({ dir }) => dir)),
     RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
   };
   if (react) env.RUST_JS_REACT = react;
@@ -48,9 +49,12 @@ export function cargoEnv(compiler, react, { app, crates }) {
  * a path dependency, and a crate an npm package has, which the patch names
  * (ADR 0414), by its directory. A binding crate, one whose
  * `[package.metadata.rust-js]` says `bindings = true`, is rustc's: what it
- * binds is JS's own, and rust-js reads its metadata (ADR 0024).
+ * binds is JS's own, and rust-js reads its metadata (ADR 0024). And the
+ * crates of crates.io's or git's, `dependencies`, each by its directory,
+ * name and version, which rust-js compiles where it can, its types alone
+ * where it can't (ADR 0415).
  * @param {{ manifestPath: string, packageName?: string, toolchain?: string, offline?: boolean }} options
- * @returns {Promise<{ app?: string, crates: string[] }>} */
+ * @returns {Promise<{ app?: string, crates: string[], dependencies: { dir: string, name: string, version: string }[] }>} */
 export async function cargoBuild({ manifestPath, packageName, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
@@ -59,11 +63,16 @@ export async function cargoBuild({ manifestPath, packageName, toolchain, offline
   });
   const { packages } = JSON.parse(stdout);
   const app = packageName ?? packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
-  const crates = packages
-    .filter((pkg) => pkg.source === null && pkg.metadata?.["rust-js"]?.bindings !== true)
+  const compiled = packages.filter((pkg) => pkg.metadata?.["rust-js"]?.bindings !== true);
+  const crates = compiled
+    .filter((pkg) => pkg.source === null)
     .map((pkg) => realpathSync(dirname(pkg.manifest_path)))
     .sort();
-  return { app, crates };
+  const dependencies = compiled
+    .filter((pkg) => pkg.source !== null)
+    .map((pkg) => ({ dir: realpathSync(dirname(pkg.manifest_path)), name: pkg.name, version: pkg.version }))
+    .sort((a, b) => a.dir.localeCompare(b.dir));
+  return { app, crates, dependencies };
 }
 
 /**
@@ -136,7 +145,8 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline })), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  const build = await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline });
+  const env = { ...cargoEnv(compiler, react, build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     // A package's crate is quiet: what it warns of is its author's, which
@@ -186,7 +196,9 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // Each crate's modules' JS, where it's served from.
   const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
   if (!inSource) return { js, crates, manifests: validated, files: served((file) => file) };
-  const moved = writeInSource(manifests, ledger, routes, { check, packages });
+  // A crate of crates.io's JS is the app's, where its Cargo.toml is (ADR 0415).
+  const vendored = build.dependencies.map((dependency) => ({ ...dependency, to: join(dirname(manifest), "rust-js", "crates", `${dependency.name}-${dependency.version}`) }));
+  const moved = writeInSource(manifests, ledger, routes, { check, packages, vendored });
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
   return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)) };
 }
@@ -209,14 +221,16 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
  * Turbopack would take as a route of its own (ADR 0276).
- * @param {{ check?: boolean, packages?: { name: string, dir: string }[] }} [options] `packages`,
+ * @param {{ check?: boolean, packages?: { name: string, dir: string }[], vendored?: { dir: string, to: string }[] }} [options] `packages`,
  * the npm packages whose crates the build compiles, as the patch has them:
  * what's in one is the package's (ADR 0414), imported by its name, replaced
  * and never written through, as a store may share it, and not the app's to
- * check.
+ * check. `vendored`, the crates of crates.io's or git's it compiles: each
+ * one's JS is where `to` says, in the app, its Rust being Cargo's, not the
+ * app's to write beside (ADR 0415).
  * @returns {Map<string, string>}
  */
-export function writeInSource(manifests, ledger, routes = [], { check = false, packages = [] } = {}) {
+export function writeInSource(manifests, ledger, routes = [], { check = false, packages = [], vendored = [] } = {}) {
   const routed = (file) => routes.some((dir) => !relative(resolve(dir), file).startsWith(".."));
   const moved = new Map();
   // `mod root { .. }` of a `[lib] path = "src/root.rs"` is where the root
@@ -237,7 +251,8 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
         throw new Error(`${file} was built by an older rust-js, whose manifest doesn't say where its JS goes in source: `
           + `\`cargo clean --target ${target}\` to build it again`);
       }
-      moved.set(file, in_source);
+      const crate = vendored.find(({ dir }) => in_source.startsWith(dir + sep));
+      moved.set(file, crate ? join(crate.to, relative(crate.dir, in_source)) : in_source);
     }
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {
       const to = moved.get(file);
@@ -250,9 +265,26 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
   // Every file's bytes, each crate's, before any is written: a read or a
   // map that fails, fails here.
   const writes = new Map();
+  // A crate of crates.io's module is written where the app imports it, from
+  // its own or such a module the app imports: one no module of the app's
+  // reaches, serde_json's crates', which rustc builds, isn't (ADR 0415).
+  const all = manifests.flatMap(({ modules }) => modules);
+  const vendoredFile = (file) => vendored.some(({ to }) => moved.get(file)?.startsWith(to + sep));
+  const reached = new Set();
+  const pending = all.filter(({ file }) => !vendoredFile(file));
+  while (pending.length) {
+    const { links = [], type_links = [] } = /** @type {typeof all[number]} */ (pending.pop());
+    for (const { file } of [...links, ...type_links]) {
+      if (!vendoredFile(file) || reached.has(file)) continue;
+      reached.add(file);
+      const module = all.find((m) => m.file === file);
+      if (module) pending.push(module);
+    }
+  }
   const crates = manifests.map(({ input, modules }) => {
     const files = [];
     for (const { file, map, types, links, type_links } of modules) {
+      if (vendoredFile(file) && !reached.has(file)) continue;
       const to = moved.get(file);
       const js = relinked(readFileSync(file), links, to, moved, packages).toString("utf8")
         .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
@@ -273,14 +305,19 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
         files.push(`${to}.map`);
       }
     }
-    return { root: dirname(input), files };
+    // The app's crates of crates.io's are one, `rust-js/crates/`: one no
+    // longer built, another version's, is what goes (ADR 0415).
+    const crate = vendored.find(({ dir }) => input.startsWith(dir + sep));
+    return { root: crate ? dirname(crate.to) : dirname(input), files };
   });
   // What this build wrote before beside each of its crates' Rust, by the
   // ledger, that it doesn't now: gone, if no one has changed it since.
   const recorded = existsSync(ledger) ? JSON.parse(readFileSync(ledger, "utf8")) : { version: 1, crates: {} };
   const reads = manifests.flatMap((manifest) => [manifest.input, ...(manifest.sources ?? [])].filter(Boolean));
-  const stale = removable(crates.flatMap(({ root }) => recorded.crates[root] ?? []), [...writes.keys(), ...reads]);
-  for (const { root, files } of crates) {
+  const roots = [...new Set(crates.map(({ root }) => root))];
+  const stale = removable(roots.flatMap((root) => recorded.crates[root] ?? []), [...writes.keys(), ...reads]);
+  for (const root of roots) {
+    const files = crates.filter((crate) => crate.root === root).flatMap((crate) => crate.files);
     recorded.crates[root] = files.map((file) => ({ file, hash: fingerprint(writes.get(file)) }));
   }
   // Checked, not written: each committed file that isn't what it compiles
@@ -297,6 +334,14 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
   }
   writes.set(ledger, Buffer.from(JSON.stringify(recorded, null, 2) + "\n"));
   commit(writes, stale, ledger, (file) => !packageOf(packages, file));
+  // A crate of crates.io's another version's, or gone, leaves no directory
+  // behind, as its JS was all rust-js's (ADR 0415).
+  for (const file of stale) {
+    const root = vendored.map(({ to }) => dirname(to)).find((dir) => file.startsWith(dir + sep));
+    for (let dir = dirname(file); root && dir.startsWith(root + sep) && existsSync(dir) && readdirSync(dir).length === 0; dir = dirname(dir)) {
+      rmdirSync(dir);
+    }
+  }
   return moved;
 }
 

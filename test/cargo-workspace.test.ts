@@ -50,6 +50,11 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   await check(manifest, { packageName: "models" });
   const { js, crates } = await check(manifest);
   expect([...crates.keys()].sort()).toEqual(["frontend", "models", "validation"]);
+  // serde's crates, which rust-js reads as rustc builds them (ADR 0077),
+  // aren't tried, as another crate of crates.io's is (ADR 0415): none says
+  // why it isn't compiled.
+  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
+  expect(readdirSync(deps).filter((file) => file.startsWith("libserde") && file.endsWith(".rust-js-refused"))).toEqual([]);
   const before = printed(js);
   expect(before).toBe(native());
   const validation = join(dir, "validation", "src", "lib.rs");

@@ -482,6 +482,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0412 `rust-js build` is its own process](decisions/0412-rust-js-build-is-its-own-process.md)
 - [0413 A declaration means the same under every tsconfig](decisions/0413-a-declaration-means-the-same-under-every-tsconfig.md)
 - [0414 A library is shared on npm, as ReScript's are](decisions/0414-a-library-on-npm-as-rescripts-are.md)
+- [0415 A crate of crates.io's is compiled into the app, where it can be](decisions/0415-a-crate-of-crates-io-in-an-app.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

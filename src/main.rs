@@ -241,6 +241,13 @@ fn main() -> ExitCode {
     let args = match cargo::translate(args) {
         cargo::Invocation::RustJs(args) => args,
         cargo::Invocation::Rustc(exit) => return exit,
+        // Why rust-js refused a crate of crates.io's, beside its metadata.
+        cargo::Invocation::Refused(exit, note, why) => {
+            if let Err(error) = std::fs::write(&note, why) {
+                eprintln!("rust-js: cannot write {}: {error}", note.display());
+            }
+            return exit;
+        }
     };
     let build = match command::parse(args) {
         Ok(command::Command::Build(build)) => build,
