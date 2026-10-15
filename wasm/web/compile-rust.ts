@@ -15,8 +15,8 @@ import { join } from "node:path";
 import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory, WASI } from "@bjorn3/browser_wasi_shim";
 
 import { buildReactCrate, cratesDir, sysrootDir, sysrootFiles, wasmPath } from "./site.ts";
-import { publishArtifacts } from "@rust-js/build/publish";
-import { mapManifestPaths, parseManifest } from "@rust-js/build/manifest";
+import { publishArtifacts } from "../../tooling/publish.js";
+import { mapManifestPaths, parseManifest } from "../../tooling/manifest.js";
 import { reactLibs } from "../../tooling/crates.js";
 import { target } from "../../tooling/cargo.js";
 

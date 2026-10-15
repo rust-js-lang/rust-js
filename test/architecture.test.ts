@@ -669,7 +669,14 @@ test("only recognition spells std's names", () => {
 test("an app's Rust is compiled one way, rust-js build", () => {
   const workspaces: string[] = JSON.parse(read("package.json")).workspaces;
   expect(workspaces.filter((dir) => /plugin/.test(dir))).toEqual([]);
-  expect(Object.keys(JSON.parse(read("tooling/package.json")).bin).sort()).toEqual(["rust-js", "rust-js-check"]);
+  const build = JSON.parse(read("tooling/package.json"));
+  expect(Object.keys(build.bin).sort()).toEqual(["rust-js", "rust-js-check"]);
+  // No API to build with but the command: nothing exported, nothing imported.
+  expect(build.exports).toBeUndefined();
+  const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().trim().split("\n");
+  const importers = tracked.filter((file) => /\.(ts|js|mjs|tsx|jsx)$/.test(file) && file !== "test/architecture.test.ts")
+    .filter((file) => read(file).includes("@rust-js/build/"));
+  expect(importers).toEqual([]);
   expect(read("scripts/package-compiler.ts")).not.toContain("bin:");
   const cli = read("tooling/cli.js");
   expect(cli).toContain('if (command !== "build")');

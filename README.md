@@ -176,9 +176,13 @@ The repository pins the required Rust release and components.
 ```bash
 bun run setup
 bun run build
-./target/debug/rust-js examples/fib.rs  # writes fib.js and fib.js.map beside fib.rs
 bun run react-example                 # React + Vite at localhost:5173
+cd examples/vite-react && bunx rust-js build   # in another terminal, after you edit src/App.rs
 ```
+
+An app's Rust is compiled one way: `rust-js build`, run in the app beside
+its own dev server, `next dev` or `vite`, which writes each module's JS and
+`.d.ts` beside its Rust ([ADR 0412](docs/decisions/0412-rust-js-build-is-its-own-process.md)).
 
 ## Testing
 

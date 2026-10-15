@@ -25,9 +25,9 @@ is used to develop, test, and create packages in this repository; users do not
 need it to run installed packages. The native launcher uses the host's current
 JavaScript runtime.
 
-`@rust-js/build`'s modules are `rust-js build`'s own; it exports only
-`/manifest` and `/publish`, the playground's, which compiles its own Rust with
-rust-js.wasm (ADR 0045). An app runs the command.
+`@rust-js/build` exports nothing but its command: its modules are `rust-js
+build`'s own, and the playground's, in this repository, which compiles its
+own Rust with rust-js.wasm (ADR 0045). An app runs the command.
 
 `/patch` tells an app's Cargo where
 the crates its npm packages have are: each package with `"rust-js": { "crate" }`,

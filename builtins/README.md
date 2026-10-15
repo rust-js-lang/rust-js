@@ -52,7 +52,6 @@ spawn(Box::new(async move {                            // runs, unawaited
 - `number::to_fixed(x, digits)` is `x.toFixed(digits)`, JS's rounding: a tie
   away from zero, `2.5` to `"3"`, where `format!("{:.0}", 2.5)` is `"2"`.
 
-```bash
-builtins/build.sh -o "$PWD/target/libjs.rmeta"
-./target/debug/rust-js app.rs -- --extern js=target/libjs.rmeta
-```
+An app names it in its `Cargo.toml`, `js = { package = "rust-js-builtins",
+.. }`, and `rust-js build` builds it. This repository's tests build its
+metadata with `builtins/build.sh -o "$PWD/target/libjs.rmeta"`.

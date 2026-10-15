@@ -120,7 +120,6 @@
       "devDependencies": {
         "@babel/core": "7.29.7",
         "@rolldown/plugin-babel": "0.2.4",
-        "@rust-js/build": "workspace:*",
         "@tailwindcss/vite": "4.3.3",
         "@vitejs/plugin-react": "6.1.1",
         "babel-plugin-react-compiler": "1.0.0",

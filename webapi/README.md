@@ -55,10 +55,9 @@ app.append(b);                            // app.append(b)
 
 ## Use it
 
-```bash
-bun run build                                                    # its metadata, for the host
-./target/debug/rust-js app.rs -- --extern webapi=target/libwebapi.rmeta --extern js=target/libjs.rmeta -L target
-```
+An app names it in its `Cargo.toml`, `webapi = { package =
+"rust-js-webapi", .. }`, and `rust-js build` builds it. `bun run build`
+builds its metadata for this repository's tests.
 
 The playground compiles every program with the `webapi` crate available.
 

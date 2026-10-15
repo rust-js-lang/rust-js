@@ -163,9 +163,9 @@ which gate.
 ```bash
 react/build.sh -o target/libreact.rmeta                         # the latest React; also writes libwebapi.rmeta and libjs.rmeta
 react/build.sh -o target/react-18/libreact.rmeta --react 18.2.0 # for React 18.2
-rust-js App.rs -- --extern react=target/libreact.rmeta -L target
 ```
 
-`bun run build` does the first step. In an app, `rust-js build` does both,
-each time it's run, for the React the app has installed. See
+`bun run build` does this for this repository's tests. An app names the
+crate in its `Cargo.toml`, `react = { package = "rust-js-react", .. }`, and
+`rust-js build` builds it, for the React the app has installed. See
 [examples/vite-react](../examples/vite-react/README.md).
