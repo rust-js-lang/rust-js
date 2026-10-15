@@ -35,19 +35,19 @@ export const mutations: Mutation[] = [
     tests: ["test/settings.test.ts", "-t", "check that fails"],
   },
   {
-    name: "settings-check-built-only",
-    breaks: "a check that doesn't say when it runs isn't run for a save in the Vite server",
-    file: "src/settings.rs",
-    find: "    #[default]\n    Always,\n    /// A build, not a save.\n    Build,",
-    replace: "    Always,\n    /// A build, not a save.\n    #[default]\n    Build,",
-    tests: ["test/settings.test.ts", "-t", "only in a build"],
-  },
-  {
     name: "settings-farthest-manifest",
     breaks: "a crate's settings are read from the outermost Cargo.toml above it, a workspace's, not its own",
     file: "src/settings.rs",
     find: "                .find(|dir| dir.join(\"Cargo.toml\").is_file())\n",
     replace: "                .filter(|dir| dir.join(\"Cargo.toml\").is_file())\n                .last()\n",
     tests: ["test/settings.test.ts", "-t", "check that fails"],
+  },
+  {
+    name: "settings-declarations-key-kept",
+    breaks: "a crate's `declarations = true`, a key that's gone, is taken quietly, as if it said something",
+    file: "src/settings.rs",
+    find: "        if settings.declarations.is_some() {\n",
+    replace: "        if false && settings.declarations.is_some() {\n",
+    tests: ["test/settings.test.ts", "-t", "no key"],
   },
 ];

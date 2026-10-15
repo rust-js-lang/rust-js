@@ -447,7 +447,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0377 A format string's arguments are evaluated first, and held where read twice](decisions/0377-a-formatted-value-is-held.md)
 - [0378 A Next.js app moves to Rust one file at a time](decisions/0378-one-file-at-a-time.md)
 - [0379 A compiler that ran is no change to it](decisions/0379-a-compiler-that-ran-is-no-change.md)
-- [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](decisions/0380-with-rust-js.md)
+- [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](decisions/0380-with-rust-js.md) *(superseded by 0412)*
 - [0381 The app's Prettier lays out what rust-js writes](decisions/0381-the-apps-prettier-lays-it-out.md)
 - [0382 A module has a file for what it has, the root too](decisions/0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](decisions/0383-a-files-leading-comments-are-its-jss.md)
@@ -479,6 +479,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0409 A struct of a `dyn` last field is the struct, with its `impl`](decisions/0409-a-struct-of-a-dyn-last-field.md)
 - [0410 An impl's constant of a function is lowered as code](decisions/0410-an-impls-function-constant-is-code.md)
 - [0411 An iterator given as it is is stepped by its dictionary](decisions/0411-an-iterator-given-as-it-is-has-its-dictionary.md)
+- [0412 `rust-js build` is its own process](decisions/0412-rust-js-build-is-its-own-process.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

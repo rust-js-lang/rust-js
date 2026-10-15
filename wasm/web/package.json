@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite --configLoader native",
-    "build": "bunx --bun vite build --configLoader native"
+    "build": "bun compile-rust.ts && bunx --bun vite build --configLoader native"
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "0.4.2",
@@ -29,7 +29,6 @@
     "babel-plugin-react-compiler": "1.0.0",
     "@rust-js/build": "workspace:*",
     "tailwindcss": "4.3.3",
-    "vite": "8.3.0",
-    "@rust-js/vite-plugin": "workspace:*"
+    "vite": "8.3.0"
   }
 }

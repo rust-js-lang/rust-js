@@ -1,44 +1,15 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck, readsCargo } from "./cargo.js";
+import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** This checkout, where a compiler built from it is. */
 const checkout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const defaultCompiler = join(checkout, "target/debug/rust-js");
-
-/**
- * A rebuild of what a save touched, however many files it was: each change
- * asks for `items`, and one run at a time, after 30 ms more of a save's
- * events, gives `run` all asked for since, again while more are asked;
- * `after`, once none are. Asking returns the run, to wait for it. The one
- * way a host coalesces its rebuilds, Vite's and Next.js's alike.
- * @template T
- * @param {(batch: T[]) => Promise<void>} run
- * @param {{ after?: () => void, stopped?: () => boolean }} [options]
- * @returns {(...items: T[]) => Promise<void>}
- */
-export function coalesced(run, { after = () => {}, stopped = () => false } = {}) {
-  const pending = new Set();
-  let active;
-  const drain = async () => {
-    while (pending.size && !stopped()) {
-      await new Promise((done) => setTimeout(done, 30));
-      const batch = [...pending];
-      pending.clear();
-      await run(batch);
-    }
-    after();
-  };
-  return (...items) => {
-    for (const item of items) pending.add(item);
-    return (active ??= drain().finally(() => { active = undefined; }));
-  };
-}
 
 /** Where rust-js keeps what it makes for an app, outside what it commits:
  * its Cargo builds, and each host's own. */
@@ -46,13 +17,11 @@ export function cacheDirOf(root) {
   return join(root, "node_modules/.cache/rust-js");
 }
 
-/** What a host says without a compiler at `rustJs` (ADR 0041): that it
- * builds from `committed`, the JS committed beside the Rust, or, with none,
- * that it can't. */
-export function withoutCompiler(rustJs, committed) {
-  return committed
-    ? `no rust-js at ${rustJs}: using the committed ${committed}. Install rust-js or build it with cargo build to compile the Rust.`
-    : `no rust-js at ${rustJs}: install rust-js or build it with cargo build to compile the Rust`;
+/** What `rust-js build` says without a compiler at `rustJs`: the JS
+ * committed beside the Rust is what an app builds from without one (ADR
+ * 0041), but nothing compiles the Rust. */
+export function withoutCompiler(rustJs) {
+  return `no rust-js at ${rustJs}: install rust-js or build it with cargo build to compile the Rust`;
 }
 
 /**
@@ -132,45 +101,21 @@ function run(command, args, cwd, env = {}, warn) {
  */
 export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
   const compilerPath = existsSync(rustJs) ? realpathSync(rustJs) : rustJs;
-  const compilerInputs = [...new Set([rustJs, compilerPath])];
   const nativePackage = join(dirname(compilerPath), "../package.json");
   const packaged = existsSync(nativePackage) && JSON.parse(readFileSync(nativePackage, "utf8")).name === "@rust-js/native";
-  if (packaged) {
-    compilerInputs.push(nativePackage, join(dirname(compilerPath), "compiler"));
-  }
   const compilerCommand = packaged ? process.execPath : rustJs;
   const compilerArgs = packaged ? [compilerPath] : [];
-  // What the compiler says it is, `--version-json`: asked again when it's
-  // replaced, as it may be while a dev server runs, which then checks the
-  // runtime and picks the toolchain by the new one's answer.
+  // What the compiler says it is, `--version-json`, asked once: which
+  // runtime it needs, and which toolchain Cargo runs.
   let identity;
-  // Its files' sizes, times and inodes: what tells a compiler replaced from
-  // one that ran, which macOS's `fs.watch` reports alike.
-  const compilerKey = () => compilerInputs.map((path) => {
-    const stat = statSync(path, { throwIfNoEntry: false });
-    return stat ? `${stat.size}:${stat.mtimeMs}:${stat.ino}` : "missing";
-  }).join(" ");
-  const compilerIdentity = async () => {
-    const key = compilerKey();
-    if (identity?.key !== key) {
-      identity = { key, value: parseCompilerIdentity(await run(compilerCommand, [...compilerArgs, "--version-json"], root)) };
-    }
-    return identity.value;
-  };
+  const compilerIdentity = async () => (identity ??= parseCompilerIdentity(await run(compilerCommand, [...compilerArgs, "--version-json"], root)));
   // The Rust a Cargo build runs: the compiler's, as it says it was built
-  // with; without a compiler, Cargo's own, which says where a workspace is
-  // for the committed JS's fallback.
+  // with; without a compiler, Cargo's own.
   const toolchain = async () => (existsSync(rustJs) ? (await compilerIdentity()).toolchain : undefined);
-  // What a change to makes a host build again: the compiler.
-  const watchFiles = compilerInputs;
-  /** Whether `file` is the compiler, replaced since it last said what it
-   * is: an event on it a host builds again for, where one that only ran
-   * it is none. */
-  const compilerChanged = (file) => watchFiles.includes(file) && compilerKey() !== identity?.key;
-  /** A crate's checks of its JS as `files` are, a save's or a build's (ADR
-   * 0117): what they say goes to `warn`; one that fails the build throws. */
-  const checks = async ({ input, files, save, warn }) => {
-    await run(compilerCommand, [...compilerArgs, "--checks", input, "--hooks", save ? "save" : "build", ...files], root, {}, warn);
+  /** A crate's checks of its JS as `files` are, a build's (ADR 0117): what
+   * they say goes to `warn`; one that fails the build throws. */
+  const checks = async ({ input, files, warn }) => {
+    await run(compilerCommand, [...compilerArgs, "--checks", input, ...files], root, {}, warn);
   };
 
   const builder = {
@@ -200,52 +145,65 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
       return cargoWorkspace({ ...options, toolchain: await toolchain() });
     },
     /**
-     * A Cargo build a host runs again as what it reads changes (ADR 0101),
-     * Vite's plugin's and Next.js's: `build({ save, warn })` is `checkCargo`
-     * of `options`, of the workspace its manifest is of, then each of the
-     * workspace's crates' checks of its JS, a save's or a build's (ADR 0117),
-     * what they say given to `warn`; and it keeps what it read.
-     * `reads(file)` is whether a change to `file` is one to build again for,
-     * the compiler, the workspace's Rust and manifests but not what Cargo
-     * writes, or a source the last build read wherever it is; `sources()`
-     * is each of those, to watch; and `committed()` is the JS of the
-     * package's root module committed beside its Rust (ADR 0041), what a
-     * host uses without a compiler, if there's one.
-     * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react">} options
+     * `rust-js build`'s Cargo build (ADR 0412): `checkCargo` of `options`,
+     * each module's JS written beside its Rust, to be committed (ADR 0041),
+     * or with `check`, compared with it; then each of the workspace's
+     * crates' checks of its JS, a build's (ADR 0117), what they say given
+     * to `warn`. What Cargo writes is out of what a bundler watches:
+     * Vite's Tailwind takes a file of `target/` for a new one to scan, and
+     * Turbopack each for a change.
+     * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react" | "inSource" | "targetDir"> & { warn?: (message: string) => void }} options
      */
-    cargoSession(given) {
-      // What Cargo writes is out of what a host's bundler watches: Vite's
-      // Tailwind, which takes a file of `target/` for a new one to scan, and
-      // reloads the page, and Turbopack, which takes each for a change.
-      // A host's JS is beside each module's Rust, to be committed (ADR 0041),
-      // unless it's asked not to be.
-      const options = { ...given, inSource: given.inSource ?? true, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
-      let workspace, targetDir, manifests = [];
-      return {
-        /** @param {{ save?: boolean, warn?: (message: string) => void }} [run] */
-        async build({ save = false, warn } = {}) {
-          ({ root: workspace, target: targetDir } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir }));
-          const built = await builder.checkCargo(options);
-          manifests = [...built.manifests.values()];
-          for (const [crate, manifest] of built.manifests) {
-            if (manifest.input.startsWith(workspace + sep)) {
-              await checks({ input: manifest.input, files: built.files.get(crate) ?? [], save, warn });
-            }
-          }
-          return { ...built, workspace };
-        },
-        reads: (file) => compilerChanged(file)
-          || (workspace !== undefined && readsCargo(file, { workspace, target: targetDir, manifests })),
-        sources: () => manifests.flatMap((manifest) => manifest.sources),
-        async committed() {
-          const { libs } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline });
-          const lib = libs.get(options.packageName);
-          return lib && [".jsx", ".js"].map((extension) => lib.replace(/\.rs$/, extension)).find(existsSync);
-        },
-      };
+    async build({ warn, ...given }) {
+      const options = { ...given, inSource: true, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
+      const { root: workspace } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
+      const built = await builder.checkCargo(options);
+      for (const [crate, manifest] of built.manifests) {
+        if (manifest.input.startsWith(workspace + sep)) {
+          await checks({ input: manifest.input, files: built.files.get(crate) ?? [], warn });
+        }
+      }
+      return { ...built, workspace };
     },
-    watchFiles,
-    compilerChanged,
   };
   return builder;
+}
+
+/**
+ * `rust-js build`, an app's Rust compiled once, by its own process beside
+ * the app's dev server or build, whatever runs that (ADR 0412): `cargo
+ * check` of the package `app`'s `Cargo.toml` is of, or of a workspace's,
+ * `packageName`, a full-stack app's client say, each module's JS and
+ * `.d.ts` written beside its Rust, to be committed (ADR 0041), and the
+ * crate's checks of a build (ADR 0117), what they say given to `log`. With
+ * `check`, nothing is written: a file that isn't what the Rust compiles to
+ * is an error. A Next.js app's Pages Router routes get no declarations,
+ * which it would take as routes (ADR 0276).
+ * @param {{ app: string, packageName?: string, check?: boolean, log?: (line: string) => void }} options
+ * @returns {Promise<void>}
+ */
+export async function buildApp({ app, packageName: named, check = false, log = (line) => process.stderr.write(`${line}\n`) }) {
+  const { writePatch } = await import("./patch.js");
+  // The app's Cargo, and its editor, find the crates its npm packages have
+  // by a patch, which an install's `postinstall` writes, and again here:
+  // an app of no `package.json` has none.
+  if (existsSync(join(app, "package.json"))) writePatch(app);
+  const compiler = findCompiler(app);
+  if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+  const builder = createNativeBuilder({ root: app, rustJs: compiler });
+  const manifestPath = join(app, "Cargo.toml");
+  if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js build\` where the app's is`);
+  const { own } = await builder.cargoWorkspace({ manifestPath });
+  const packageName = named ?? own;
+  if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the app's package, \`rust-js build --package <name>\``);
+  await builder.build({ manifestPath, packageName, check, routes: nextRoutes(app), warn: (message) => log(message.trimEnd()) });
+}
+
+/** A Next.js app's Pages Router directories, where a file is a route, of
+ * an app that depends on Next.js; none of another's. */
+function nextRoutes(app) {
+  const manifest = join(app, "package.json");
+  if (!existsSync(manifest)) return [];
+  const { dependencies = {}, devDependencies = {} } = JSON.parse(readFileSync(manifest, "utf8"));
+  return "next" in dependencies || "next" in devDependencies ? [join(app, "pages"), join(app, "src/pages")] : [];
 }

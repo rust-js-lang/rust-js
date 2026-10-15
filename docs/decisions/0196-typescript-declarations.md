@@ -1,6 +1,7 @@
 # 0196. A crate may have a `.d.ts` beside each module's JS
 
-Status: Accepted. Extends [0019](0019-one-js-file-per-module.md) and [0117](0117-output-hooks.md);
+Status: Accepted. Amended by [0412](0412-rust-js-build-is-its-own-process.md):
+every `rust-js build` writes them; the `declarations` key is gone. Extends [0019](0019-one-js-file-per-module.md) and [0117](0117-output-hooks.md);
 its `.d.ts` is printed by TypeScript since [0207](0207-declarations-printed-by-typescript.md),
 and imports another module's types since [0210](0210-declarations-import-module-types.md).
 

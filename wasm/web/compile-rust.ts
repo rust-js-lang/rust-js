@@ -1,7 +1,7 @@
 // Compile the playground's own Rust (./rust/lib.rs, and its components/) to JS, beside it, with
 // rust-js.wasm: the compiler the page runs, here under the same WASI shim.
-// vite.config.ts hands this to @rust-js/vite-plugin, which calls it when Vite
-// starts and on every save (ADR 0045).
+// `bun compile-rust.ts` runs it, its own process beside Vite, as `rust-js
+// build` is an app's (ADRs 0045, 0412); the playground's `build` runs it first.
 //
 //   /wasm/web/rust/...   the crate, and where lib.jsx and its maps go
 //   /sysroot/...         the std metadata rustc type-checks against

@@ -4,6 +4,7 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
@@ -17,10 +18,17 @@ export const target = "wasm32-unknown-unknown";
 const execute = promisify(execFile);
 
 /** Cargo's environment of a check through rust-js: the workspace's
- * wrapper, rustc's shim, the React the react crate is built for, and the
- * app, `RUST_JS_APP`, a program no crate of the build uses (ADR 0360). */
+ * wrapper, rustc's shim, the React the react crate is built for, the app,
+ * `RUST_JS_APP`, a program no crate of the build uses (ADR 0360), and
+ * where `@rust-js/typescript` is, `@rust-js/build`'s own, which prints each
+ * module's `.d.ts` (ADRs 0207, 0412). */
 function cargoEnv(compiler, react, app) {
-  const env = { ...process.env, RUSTC_WORKSPACE_WRAPPER: resolve(compiler), RUSTC: rustcShim(resolve(compiler)) };
+  const env = {
+    ...process.env,
+    RUSTC_WORKSPACE_WRAPPER: resolve(compiler),
+    RUSTC: rustcShim(resolve(compiler)),
+    RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
+  };
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
   if (app) env.RUST_JS_APP = app;
@@ -138,14 +146,16 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
  * With `inSource`, each module's JS is written beside its Rust too, as a
  * project commits it (`writeInSource`), and `js` and `crates` are those;
  * `routes` are directories where a file is a route, which get no
- * declarations.
+ * declarations. With `check` too, nothing is written: a JS or `.d.ts`
+ * file beside the Rust that isn't what it compiles to is an error, which
+ * names each (ADR 0412).
  * `files` is each crate's modules' JS, by its name, where it's served from.
  * `targetDir` is where Cargo builds, its own `target/` without one.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, routes?: string[], targetDir?: string }} options
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
  * `manifests` is each crate's, validated, as the compiler wrote it.
  * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]> }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [], targetDir }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], targetDir }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
@@ -200,26 +210,9 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // Each crate's modules' JS, where it's served from.
   const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
   if (!inSource) return { js, crates, manifests: validated, files: served((file) => file) };
-  const moved = writeInSource(manifests, ledger, routes);
+  const moved = writeInSource(manifests, ledger, routes, { check });
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
   return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)) };
-}
-
-/**
- * Whether `file` is an input of a Cargo build (ADR 0101): what Cargo reads
- * of its `workspace`, its Rust and its manifests, not what it writes in its
- * `target` directory; or a source rust-js read, wherever it is, of the
- * build's `manifests`: a module by `#[path]` outside the workspace, or a
- * file an `include_str!` reads. A host rebuilds when one changes.
- * @param {string} file
- * @param {{ workspace: string, target?: string, manifests: Iterable<{ sources: string[] }> }} build
- * @returns {boolean}
- */
-export function readsCargo(file, { workspace, target, manifests }) {
-  const read = /\.rs$|(^|[\\/])Cargo\.(toml|lock)$/.test(file)
-    && file.startsWith(workspace + sep)
-    && !(target && file.startsWith(target + sep));
-  return read || [...manifests].some((manifest) => manifest.sources.includes(file));
 }
 
 /**
@@ -242,7 +235,7 @@ export function readsCargo(file, { workspace, target, manifests }) {
  * Turbopack would take as a route of its own (ADR 0276).
  * @returns {Map<string, string>}
  */
-export function writeInSource(manifests, ledger, routes = []) {
+export function writeInSource(manifests, ledger, routes = [], { check = false } = {}) {
   const routed = (file) => routes.some((dir) => !relative(resolve(dir), file).startsWith(".."));
   const moved = new Map();
   // `mod root { .. }` of a `[lib] path = "src/root.rs"` is where the root
@@ -308,6 +301,17 @@ export function writeInSource(manifests, ledger, routes = []) {
   const stale = removable(crates.flatMap(({ root }) => recorded.crates[root] ?? []), [...writes.keys(), ...reads]);
   for (const { root, files } of crates) {
     recorded.crates[root] = files.map((file) => ({ file, hash: fingerprint(writes.get(file)) }));
+  }
+  // Checked, not written: each committed file that isn't what it compiles
+  // to, or that's missing. A map, which a project doesn't commit, isn't.
+  if (check) {
+    const outdated = [...writes].filter(([file, bytes]) => !file.endsWith(".map")
+      && !(existsSync(file) && readFileSync(file).equals(Buffer.from(bytes))));
+    if (outdated.length) {
+      const files = outdated.map(([file]) => `  ${relative(process.cwd(), file)}`).join("\n");
+      throw new Error(`rust-js: the JS beside the Rust isn't what it compiles to; run \`rust-js build\`:\n${files}`);
+    }
+    return moved;
   }
   writes.set(ledger, Buffer.from(JSON.stringify(recorded, null, 2) + "\n"));
   commit(writes, stale, ledger);

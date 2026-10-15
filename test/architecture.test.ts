@@ -662,30 +662,20 @@ test("only recognition spells std's names", () => {
   expect(strays).toEqual([]);
 });
 
-test("Vite delegates build preparation and validates build results", () => {
-  const plugin = read("vite-plugin/index.js");
-  expect(plugin).not.toMatch(/react\/build\.sh|libreact\.rmeta|rust-toolchain\.toml|child_process/);
-  expect(plugin).toContain("createNativeBuilder");
-  expect(plugin).toContain("parseManifest");
-});
-
-// Each host of a Cargo build, Vite's and Next.js's, runs it as the
-// builder's session, which says what a build read and is given its
-// manifests validated: neither tells a Cargo input by a pattern of its own,
-// nor reads a manifest's JSON (the third architecture audit: Next.js's told
-// them its own way, and missed some; the second review: each kept the
-// workspace, its target and the manifests to ask `readsCargo` itself).
-test("each Cargo host asks the builder what a build read", () => {
-  for (const file of ["vite-plugin/index.js", "next-plugin/index.js"]) {
-    const plugin = read(file);
-    expect(plugin, file).toContain("createNativeBuilder");
-    expect(plugin, file).toContain("cargoSession(");
-    expect(plugin, file).not.toContain("readsCargo(");
-    // Whether an event on the compiler is a change is the builder's
-    // `compilerChanged`: one that only ran it is none (ADR 0379).
-    expect(plugin, file).not.toContain("watchFiles.includes(");
-    expect(plugin, file).not.toMatch(/Cargo\\\.\(toml\|lock\)|react\/build\.sh|libreact\.rmeta|rust-toolchain\.toml/);
-  }
+// An app's Rust is compiled one way, `rust-js build`, its own process
+// beside the app's own dev server or build (ADR 0412): no host's plugin,
+// no config that compiles, no second command, and the compiler is what
+// `rust-js build` runs, not the app's command.
+test("an app's Rust is compiled one way, rust-js build", () => {
+  const workspaces: string[] = JSON.parse(read("package.json")).workspaces;
+  expect(workspaces.filter((dir) => /plugin/.test(dir))).toEqual([]);
+  expect(Object.keys(JSON.parse(read("tooling/package.json")).bin).sort()).toEqual(["rust-js", "rust-js-check"]);
+  expect(read("scripts/package-compiler.ts")).not.toContain("bin:");
+  const cli = read("tooling/cli.js");
+  expect(cli).toContain('if (command !== "build")');
+  expect(cli).not.toContain("spawn");
+  // The build's one entry, which the CLI is a parse of.
+  expect(cli).toContain("buildApp(");
   expect(read("tooling/cargo.js")).toContain("parseManifest(readFileSync(manifest");
 });
 

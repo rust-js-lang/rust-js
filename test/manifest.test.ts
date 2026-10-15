@@ -160,7 +160,7 @@ test("the builder's Cargo builds run the compiler's Rust", async () => {
 test("a manifest's links are each relative specifier a module's files print", async () => {
   buildCompiler();
   const dir = fixture("manifest-links");
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), `pub struct Value {
     pub n: u32,
 }
@@ -184,7 +184,7 @@ pub mod deep {
 }
 `);
   const manifestPath = join(dir, "manifest.json");
-  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", manifestPath], { stderr: "pipe" });
+  const p = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", manifestPath], { stderr: "pipe" });
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   const manifest = parseManifest(readFileSync(manifestPath, "utf8"));
   const named = (file: string, links: { start: number; end: number; file: string }[]) =>

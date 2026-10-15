@@ -1,7 +1,7 @@
 # Changelog
 
 Each release of rust-js's compiler and the packages released with it, at its
-version: `@rust-js/native`, `@rust-js/build`, `@rust-js/vite-plugin`,
+version: `@rust-js/native`, `@rust-js/build`, `@rust-js/typescript`,
 `@rust-js/runtime`, `@rust-js/resources`, `@rust-js/create` and
 `@rust-js/react` ([ADR 0120](docs/decisions/0120-first-npm-release.md)).
 `@rust-js/builtins` and `@rust-js/webapi` are released on their own, each
@@ -11,6 +11,15 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Changed
 
+- **An app's Rust is compiled one way: `rust-js build`**, its own process
+  beside `next dev` or `vite`, run once each time, which writes each
+  module's JS and `.d.ts` beside its Rust; `rust-js build --check` fails
+  where what's committed is stale, and an app's `build` script runs it
+  first; `--package <name>` names a workspace's app. `withRustJs`,
+  `rust-js-next`, `@rust-js/vite-plugin` and its `rust-js:<package>`
+  imports, `rust-js-patch` and its `postinstall`, the compiler's own
+  command, the `declarations` key and a check's `when` are gone
+  ([ADR 0412](docs/decisions/0412-rust-js-build-is-its-own-process.md)).
 - **`react::Ref<T>` is @types/react's `Ref<T>`**, a ref a prop holds, an
   object or a callback, and `react::DetailedHTMLProps<E, T>` and
   `react::SVGProps<T>` an element's props, its `ref` too, which a component's props flatten. The trait of

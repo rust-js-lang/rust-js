@@ -1,7 +1,8 @@
 //! A crate's settings for the JS rust-js writes (ADR 0117), in its
-//! `Cargo.toml`'s `[package.metadata.rust-js]`: the hooks it runs, and
-//! whether it has declarations. How the JS is laid out isn't one: the
-//! app's Prettier config says (ADR 0381).
+//! `Cargo.toml`'s `[package.metadata.rust-js]`: the hooks it runs. How the
+//! JS is laid out isn't one: the app's Prettier config says (ADR 0381); nor
+//! whether it has declarations: `rust-js build` always writes them (ADR
+//! 0412).
 
 use std::path::PathBuf;
 
@@ -14,8 +15,9 @@ pub use cargo_toml::read;
 #[derive(Default)]
 pub struct Settings {
     pub hooks: Hooks,
-    /// `declarations = true`: a `.d.ts` beside each module's JS, for
-    /// TypeScript that imports it (ADR 0196).
+    /// A `.d.ts` beside each module's JS, for TypeScript that imports it
+    /// (ADR 0196): the build's `--declarations`, which `rust-js build`'s,
+    /// through Cargo, always says (ADR 0412).
     pub declarations: bool,
     /// Where its `Cargo.toml` is, which its hooks are run in, and what's
     /// said of a file is said from.
@@ -41,8 +43,6 @@ pub struct Check {
     pub run: Vec<String>,
     #[serde(default)]
     pub fail: Fail,
-    #[serde(default)]
-    pub when: When,
 }
 
 /// What a check's failure, an exit otherwise than 0, is.
@@ -54,17 +54,6 @@ pub enum Fail {
     Build,
     /// Its output, as warnings.
     Never,
-}
-
-/// Which builds run a check.
-#[derive(Default, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum When {
-    /// Each one, a save in the Vite server too.
-    #[default]
-    Always,
-    /// A build, not a save.
-    Build,
 }
 
 /// Reading them from a `Cargo.toml`, natively: the playground has none.
@@ -84,8 +73,8 @@ mod cargo_toml {
         format: Option<toml::Value>,
         #[serde(default)]
         hooks: Hooks,
-        #[serde(default)]
-        declarations: bool,
+        /// Gone, whether it has declarations: `rust-js build` always writes them.
+        declarations: Option<toml::Value>,
     }
 
     /// Whether `command`'s program is Prettier's, by its file's name.
@@ -145,6 +134,12 @@ mod cargo_toml {
                 path.display()
             ));
         }
+        if settings.declarations.is_some() {
+            return Err(format!(
+                "`{}`: `declarations` is gone: `rust-js build` writes each module's `.d.ts` always: remove it",
+                path.display()
+            ));
+        }
         if let Some(prettier) = settings.hooks.transform.iter().find(|command| runs_prettier(command)) {
             return Err(format!(
                 "`{}`: the transform `{}` runs Prettier, which rust-js runs itself, by the app's config, `.prettierrc`, where Prettier finds one: remove it",
@@ -154,7 +149,7 @@ mod cargo_toml {
         }
         Ok(Settings {
             hooks: settings.hooks,
-            declarations: settings.declarations,
+            declarations: false,
             dir,
         })
     }

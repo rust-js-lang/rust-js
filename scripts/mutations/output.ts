@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "declarations-setting-ignored",
-    breaks: "a crate's `declarations = true` writes no `.d.ts`, and TypeScript types its modules from their JS",
+    breaks: "a build's `--declarations` writes no `.d.ts`, and TypeScript types its modules from their JS",
     file: "src/output.rs",
     find: "            if self.settings.declarations\n                && let Some(mut declarations) = module.declarations",
     replace: "            if false\n                && let Some(mut declarations) = module.declarations",

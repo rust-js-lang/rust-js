@@ -230,14 +230,14 @@ pilot. No delivery dates are assigned yet.
   arm64, built on that host with `bun run build:release` and qualified there
   ([ADR 0120](docs/decisions/0120-first-npm-release.md)). The binding crates
   are npm packages, `@rust-js/builtins`, `@rust-js/webapi` and
-  `@rust-js/react`, which an app's Cargo finds through a patch its install
-  writes ([ADR 0118](docs/decisions/0118-bindings-on-npm-only.md),
+  `@rust-js/react`, which an app's Cargo finds through a patch `rust-js
+  build` writes ([ADR 0118](docs/decisions/0118-bindings-on-npm-only.md),
   [patch tests](test/patch.test.ts), [package tests](test/npm-crates.test.ts)).
   Clean-machine installation, other hosts, and signing remain open.
 - [x] **M4.2 — Decouple Vite from the source checkout.** Ship the plugin and
-  binding assets with explicit versions and configuration. The
-  [private plugin](vite-plugin/package.json) now declares its versioned
-  [build-host dependency](tooling/package.json); the
+  binding assets with explicit versions and configuration. An app's
+  `rust-js build`, [`@rust-js/build`](tooling/package.json)'s, is its one
+  way to compile its Rust (ADR 0412); the
   [package test](test/packages.test.ts) verifies offline Bun installation and
   frozen-lockfile reuse of local tarballs, then compiles an independent app with
   automatically discovered compiler and resource packages from the app's

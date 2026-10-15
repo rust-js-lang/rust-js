@@ -7,17 +7,21 @@ that with Fast Refresh. Otherwise it's create-vite's React template (Vite 8,
 
 ```bash
 bun install      # or npm install
-bun run dev      # or npm run dev: http://localhost:5173; edit src/App.rs and save
-bun run build    # or npm run build: dist/
+bun run dev          # or npm run dev: http://localhost:5173
+bunx rust-js build   # or npx rust-js build, in another terminal: after you edit src/App.rs
+bun run build        # or npm run build: dist/, once rust-js build --check says the JS is current
 ```
 
 ```
-save App.rs ─► @rust-js/vite-plugin: rust-js ─► App.jsx ─► React Compiler ─► Vite HMR ─► Fast Refresh keeps state
-            └─► Tailwind reads App.rs's classes ─► index.css updates in place
+edit App.rs ─► rust-js build ─► App.jsx ─► React Compiler ─► Vite HMR ─► Fast Refresh keeps state
+                                       └─► Tailwind reads App.jsx's classes ─► index.css updates in place
 ```
 
-A compile error shows in Vite's overlay, and the page keeps running the last
-version that compiled. The browser's source map points at `App.rs`.
+`vite` and `rust-js build` are two processes, each its own: Vite serves
+the app as it always does, and `rust-js build` compiles the Rust once each
+time you run it. A compile error is rustc's, in its terminal, and the page
+keeps running the last version that compiled. The browser's source map
+points at `App.rs`.
 
 - **rust-js runs with the Rust release it's built with**, rustup's: it needs
   rustc's own library, and checks the app for `wasm32-unknown-unknown`. If
@@ -33,16 +37,16 @@ version that compiled. The browser's source map points at `App.rs`.
 - **React Compiler** memoizes the component rust-js writes, as it would one
   written by hand: `babel({ presets: [reactCompilerPreset()] })` in
   `vite.config.js`.
-- **Tailwind CSS** reads `.rs` files for class names, so `App.rs` uses its
-  classes directly. Write each class name whole: `if even { "text-emerald-500" }
-  else { "text-sky-500" }`, not a string built from pieces.
-- `rustJs()` comes first in `vite.config.js`, before `tailwindcss()`, so that
-  a save refreshes the page instead of reloading it.
-- **The app is a Cargo package**, `Cargo.toml`, which the Vite plugin builds
+- **Tailwind CSS** reads `App.jsx` for class names, so `App.rs` uses its
+  classes directly, and not the `.rs` files, so an edit of one before it's
+  built doesn't reload the page. Write each class name whole: `if even {
+  "text-emerald-500" } else { "text-sky-500" }`, not a string built from
+  pieces.
+- **The app is a Cargo package**, `Cargo.toml`, which `rust-js build` builds
   with Cargo, and your editor's rust-analyzer checks. Its crates, `react`,
   `webapi` and `js`, are npm packages, `@rust-js/react` and the others, named
-  in `Cargo.toml` by version: `rust-js-patch`, the app's `postinstall`, tells
-  Cargo they're in `node_modules`, in `.cargo/config.toml`. A binding of another
+  in `Cargo.toml` by version: `rust-js build` tells Cargo they're in
+  `node_modules`, a patch in `.cargo/config.toml` it writes each time it runs. A binding of another
   library, `@rust-js-bindings/canvas-confetti`, is added the same way: its npm
   package, and a line in `Cargo.toml`. rust-analyzer checks it through
   rust-js, `rust-js-check` in `.vscode/settings.json`, which reads inside

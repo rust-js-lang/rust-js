@@ -416,4 +416,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "union"],
   },
+  {
+    name: "declared-param-rust-name",
+    breaks: "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
+    file: "src/lower/declarations.rs",
+    find: "                    Some(ident) => crate::names::js_ident(&super::camel_case(ident.name.as_str())),\n",
+    replace: "                    Some(ident) => super::camel_case(ident.name.as_str()),\n",
+    tests: ["test/declarations.test.ts", "-t", "as its JS does"],
+  },
 ];

@@ -8,6 +8,7 @@ import { join, relative } from "node:path";
 import { runSync } from "./child";
 import { fixture, root, run } from "./support";
 import { channel } from "../scripts/toolchain.ts";
+import { writePatch } from "../tooling/patch.js";
 
 const pkg = JSON.parse(readFileSync(join(root, "create", "package.json"), "utf8"));
 const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
@@ -60,7 +61,7 @@ test("a packed @rust-js/create makes the vite-react example's app, named for its
   expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain('"rust-analyzer.check.overrideCommand": ["./node_modules/.bin/rust-js-check"]');
   expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
   expect(manifest.dependencies["@rust-js/runtime"]).toBe(version);
-  expect(manifest.devDependencies["@rust-js/vite-plugin"]).toBe(version);
+  expect(manifest.scripts.build).toBe("rust-js build --check && vite build");
   // The compiler, which a release of @rust-js/build doesn't bring: the app's own.
   expect(manifest.devDependencies["@rust-js/native"]).toBe(version);
   expect(JSON.stringify(manifest)).not.toContain("workspace:");
@@ -86,9 +87,8 @@ test("--template next makes the Next.js example's app, named for its directory",
   const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
   const crate = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect(manifest.name).toBe("my-site");
-  expect(manifest.scripts).toMatchObject({ dev: "next dev", build: "next build", postinstall: "rust-js-patch" });
+  expect(manifest.scripts).toEqual({ dev: "next dev", build: "rust-js build --check && next build", start: "next start", lint: "eslint" });
   expect(manifest.dependencies).toMatchObject({ "@rust-js/next": crate("next"), "@rust-js/react": crate("react"), "@rust-js/webapi": crate("webapi"), "@rust-js/builtins": crate("builtins") });
-  expect(manifest.devDependencies["@rust-js/next-plugin"]).toBe(version);
   expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain("rust-js-check");
   expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
   expect(JSON.stringify(manifest)).not.toContain("workspace:");
@@ -101,8 +101,8 @@ test("--template next makes the Next.js example's app, named for its directory",
 
 // An app is a Cargo package, which Vite builds in Cargo's way (ADR 0101),
 // and an editor checks: its crates, `js`, `webapi` and `react`, are npm
-// packages, named in its Cargo.toml by version, which `rust-js-patch`, as
-// the app's `postinstall`, tells Cargo are in node_modules.
+// packages, named in its Cargo.toml by version, which the patch `rust-js
+// build` writes, and the editor's check, tells Cargo are in node_modules.
 test("a created app has its crates from npm, which its patch tells Cargo where they are", () => {
   const index = packed();
   const cwd = fixture("create-cargo");
@@ -112,7 +112,7 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   const crate = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect(manifest.dependencies).toMatchObject({ "@rust-js/builtins": crate("builtins"), "@rust-js/webapi": crate("webapi"), "@rust-js/react": crate("react") });
   expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
-  expect(manifest.scripts.postinstall).toBe("rust-js-patch");
+  expect(manifest.scripts.postinstall).toBeUndefined();
   const cargoToml = readFileSync(join(app, "Cargo.toml"), "utf8");
   expect(cargoToml).not.toContain('path = "../');
   expect(cargoToml).toContain(`react = { package = "rust-js-react", version = "~${crate("react")}" }`);
@@ -124,7 +124,7 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
     mkdirSync(at, { recursive: true });
     run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);
   }
-  expect(runSync([process.execPath, join(root, "tooling", "patch.js"), app], app, 60_000).code).toBe(0);
+  writePatch(app);
   const check = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(app, "Cargo.toml")], app, 300_000, { RUSTC_BOOTSTRAP: undefined });
   // No error, and no warning of the crates it uses: the app's are of what's
   // used only in JSX, which react's placeholder `jsx!` doesn't look inside.
@@ -141,7 +141,7 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
     mkdirSync(at, { recursive: true });
     run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);
   }
-  expect(runSync([process.execPath, join(root, "tooling", "patch.js"), site], site, 60_000).code).toBe(0);
+  writePatch(site);
   const next = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(site, "Cargo.toml")], site, 300_000, { RUSTC_BOOTSTRAP: undefined });
   // What's used only in JSX, `Image`, which react's placeholder `jsx!` doesn't look inside.
   const nextWarnings = next.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
@@ -161,11 +161,13 @@ test("@rust-js/create says the commands of the package manager that ran it", () 
     expect(made.code).toBe(0);
     return made.stdout.slice(made.stdout.indexOf("cd app")).trimEnd();
   };
-  expect(next("npm/10.9.2 node/v22.12.0 darwin arm64 workspaces/false")).toBe("cd app\n  npm install\n  npm run dev");
-  expect(next("bun/1.4.2 npm/? node/v24.3.0 darwin arm64")).toBe("cd app\n  bun install\n  bun run dev");
-  expect(next("pnpm/10.12.1 npm/? node/v22.12.0 linux x64")).toBe("cd app\n  pnpm install\n  pnpm run dev");
+  // And, in another terminal, the app's Rust compiled (ADR 0412).
+  const then = (manager: string, runner: string) => `cd app\n  ${manager} install\n  ${manager} run dev\n\nAnd in another terminal, after you change its Rust:\n\n  ${runner} rust-js build`;
+  expect(next("npm/10.9.2 node/v22.12.0 darwin arm64 workspaces/false")).toBe(then("npm", "npx"));
+  expect(next("bun/1.4.2 npm/? node/v24.3.0 darwin arm64")).toBe(then("bun", "bunx"));
+  expect(next("pnpm/10.12.1 npm/? node/v22.12.0 linux x64")).toBe(then("pnpm", "npx"));
   // Run by Node itself, `node index.js app`: npm's.
-  expect(next(undefined, "node")).toBe("cd app\n  npm install\n  npm run dev");
+  expect(next(undefined, "node")).toBe(then("npm", "npx"));
 });
 
 // What its README says to install is what it prints, at this channel.
@@ -177,7 +179,7 @@ test("@rust-js/create's README says to install the Rust it prints", () => {
 test("--local makes the app install a distribution's packages", () => {
   const index = packed();
   const dist = fixture("create-dist");
-  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/vite-plugin", "vite-plugin.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/native", "native.tgz"]]
+  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/typescript", "typescript.tgz"], ["@rust-js/native", "native.tgz"]]
     .map(([name, file]) => ({ file, package: name }));
   writeFileSync(join(dist, "distribution.json"), JSON.stringify({ version: 1, platform: process.platform, arch: process.arch, compiler: { version }, artifacts }));
   const cwd = fixture("create-local");
@@ -187,11 +189,10 @@ test("--local makes the app install a distribution's packages", () => {
   const file = (name: string) => `file:${join(dist, name)}`;
   expect(manifest.dependencies["@rust-js/runtime"]).toBe(file("runtime.tgz"));
   expect(manifest.devDependencies).toMatchObject({
-    "@rust-js/vite-plugin": file("vite-plugin.tgz"),
     "@rust-js/build": file("build.tgz"),
     "@rust-js/native": file("native.tgz"),
   });
-  expect(manifest.overrides).toEqual({ "@rust-js/build": file("build.tgz") });
+  expect(manifest.overrides).toEqual({ "@rust-js/build": file("build.tgz"), "@rust-js/typescript": file("typescript.tgz") });
 });
 
 test("--local refuses a directory that isn't a distribution", () => {

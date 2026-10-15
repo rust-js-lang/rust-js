@@ -108,6 +108,8 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
         "--manifest".into(),
         dir.join("lib.manifest.json").display().to_string(),
         "--cargo".into(),
+        // Each module's declarations, `rust-js build`'s always (ADR 0412).
+        "--declarations".into(),
     ];
     // Each is a library, but the app, the package `RUST_JS_APP` names, which
     // the tooling builds and no crate of its build uses (ADR 0360). What

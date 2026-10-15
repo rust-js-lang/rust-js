@@ -95,16 +95,20 @@ test("a check that fails fails the build, if it says so", () => {
   expect(check("").code).not.toBe(0);
 });
 
-test("a check run only in a build isn't run for a save", () => {
-  const hooks = `check = [{ run = ["sh", "-c", "touch ran"], when = "build" }]`;
-  const saved = compile(hooks, ["--hooks", "save"]);
-  expect(saved.code).toBe(0);
-  expect(existsSync(join(saved.dir, "ran"))).toBe(false);
-  const built = compile(hooks);
-  expect(existsSync(join(built.dir, "ran"))).toBe(true);
-  // Unless it says otherwise, a check runs for a save too.
-  const always = compile(`check = [{ run = ["sh", "-c", "touch ran"] }]`, ["--hooks", "save"]);
-  expect(existsSync(join(always.dir, "ran"))).toBe(true);
+// Declarations are `rust-js build`'s always (ADR 0412): a crate that still
+// says so is told it's gone.
+test("`declarations` is no key: rust-js build always writes them", () => {
+  const out = build("[package.metadata.rust-js]\ndeclarations = true");
+  expect([out.code === 0, out.stderr.includes("`declarations` is gone: `rust-js build` writes each module's `.d.ts` always")]).toEqual([false, true]);
+});
+
+// Each check runs on each build, `rust-js build`'s, its one way (ADR 0412):
+// there's no save to run fewer for, and no `when` to say so.
+test("each check runs on each build, and `when` is no key of one", () => {
+  const built = compile(`check = [{ run = ["sh", "-c", "touch ran"] }]`);
+  expect([built.code, existsSync(join(built.dir, "ran"))]).toEqual([0, true]);
+  const when = compile(`check = [{ run = ["sh", "-c", "touch ran"], when = "build" }]`);
+  expect([when.code, when.stderr.includes("unknown field `when`"), existsSync(join(when.dir, "ran"))]).toEqual([1, true, false]);
 });
 
 const long = `pub fn total(first_amount: f64, second_amount: f64, third_amount: f64, fourth_amount: f64, fifth_amount: f64, sixth_amount: f64) -> f64 {
@@ -184,7 +188,7 @@ test("Prettier's config is the app's `.editorconfig`'s too", () => {
 test("a crate's declarations are laid out by Prettier too", () => {
   const source = "pub struct Point {\n    pub x: f64,\n}\n\npub fn origin() -> Point {\n    Point { x: 0.0 }\n}\n";
   const typed = (prettier?: object) => {
-    const out = build("[package.metadata.rust-js]\ndeclarations = true", [], source, prettier);
+    const out = build("", ["--declarations"], source, prettier);
     expect(out.stderr).toBe("");
     return readFileSync(join(out.dir, "out", "lib.d.ts"), "utf8");
   };

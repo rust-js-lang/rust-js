@@ -4,7 +4,6 @@
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { createNativeBuilder } from "../tooling/build.js";
 import { checkCargo } from "../tooling/cargo.js";
 import { node } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
@@ -121,7 +120,7 @@ test("a Cargo build's declarations in source are beside each module's JS", async
   const dir = fixture("cargo-in-source-declarations");
   const src = join(dir, "src");
   mkdirSync(src, { recursive: true });
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n');
   writeFileSync(join(src, "App.rs"), "mod util;\n\npub fn answer(n: u32) -> u32 {\n    util::twice(n)\n}\n");
   writeFileSync(join(src, "util.rs"), "pub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
   await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
@@ -137,7 +136,7 @@ test("a Cargo build's JS in source names each module's copy, wherever it names i
   const dir = fixture("cargo-in-source-links");
   const src = join(dir, "src");
   mkdirSync(src, { recursive: true });
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n');
   writeFileSync(join(src, "App.rs"), "pub mod child;\npub mod plain;\n\npub struct Value {\n    pub n: u32,\n}\n\npub fn base() -> u32 {\n    1\n}\n");
   writeFileSync(join(src, "child.rs"), '#[cfg_attr(rust_js, rust_js::directive = "use client")]\nconst _: () = ();\n\npub fn twice() -> u32 {\n    crate::base() * 2\n}\n');
   writeFileSync(join(src, "plain.rs"), "pub use crate::base;\n\npub fn make() -> crate::Value {\n    crate::Value { n: 3 }\n}\n");
@@ -154,22 +153,6 @@ const plain = await import(${JSON.stringify(join(src, "plain.js"))});
 console.log(child.twice(), plain.base(), plain.make().n);`;
   expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("2 1 3");
 }, 600_000);
-
-// Without a compiler, a host uses the committed JS of the package's root
-// module, beside its Rust wherever its `[lib] path` says, Next.js's
-// `app/page.rs`: Vite's looked in `src/` alone, and Next.js's had none (the
-// second architecture review).
-test("a Cargo build's committed JS is beside its root module's Rust, wherever that is", async () => {
-  const dir = fixture("cargo-committed");
-  mkdirSync(join(dir, "app"), { recursive: true });
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "app/page.rs"\n');
-  writeFileSync(join(dir, "app", "page.rs"), "pub fn one() -> u32 {\n    1\n}\n");
-  const session = createNativeBuilder({ root: dir, rustJs: join(dir, "no-compiler") })
-    .cargoSession({ manifestPath: join(dir, "Cargo.toml"), packageName: "app", offline: true });
-  expect(await session.committed()).toBeUndefined();
-  writeFileSync(join(dir, "app", "page.jsx"), "export function one() {\n  return 1;\n}\n");
-  expect(await session.committed()).toBe(join(dir, "app", "page.jsx"));
-});
 
 // An app's root is its list of files, `#[path = ..] pub mod external_link;`,
 // and writes no JS of its own (ADR 0382): its modules' JS is written beside

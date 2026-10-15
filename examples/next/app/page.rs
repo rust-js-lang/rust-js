@@ -1,6 +1,6 @@
 // create-next-app's App Router template, `app/page.js`, written in Rust.
-// rust-js compiles it to `app/page.jsx` beside it (`next dev` does, through
-// `withRustJs`, on every save), and Next.js serves that as the route, as it
+// rust-js compiles it to `app/page.jsx` beside it (`rust-js build`, its own
+// command beside `next dev`), and Next.js serves that as the route, as it
 // would the original. Its other files are JS, as create-next-app writes
 // them.
 

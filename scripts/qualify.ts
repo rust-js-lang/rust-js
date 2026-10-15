@@ -74,7 +74,7 @@ const text = (cmd: string[], cwd = root) => runSync(cmd, cwd, 60_000).stdout.tri
 // app's Cargo builds with (ADR 0118).
 const vitePackages = [
   "@rust-js/build",
-  "@rust-js/vite-plugin",
+  "@rust-js/typescript",
   "@rust-js/native",
   "@rust-js/runtime",
   ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm }) => npm),
@@ -99,8 +99,8 @@ function files(dir: string): string[] {
 
 const hash = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
-/** A Vite app, outside the checkout, built with the distribution's plugin,
- * tooling, crates and compiler, from its tarballs alone, each installed
+/** A Vite app, outside the checkout, built with the distribution's `rust-js
+ * build`, crates and compiler, from its tarballs alone, each installed
  * file the tarball's, and Vite and React from the registry, at the versions
  * this checkout locks. */
 export function viteApp(dist: string, logs: string): Suite {
@@ -112,13 +112,13 @@ export function viteApp(dist: string, logs: string): Suite {
     const locked = (name: string) => JSON.parse(readFileSync(join(root, "node_modules", name, "package.json"), "utf8")).version as string;
     const dependencies: Record<string, string> = Object.fromEntries(vitePackages.map((name) => [name, tarball(dist, name)]));
     for (const name of ["vite", "@vitejs/plugin-react", "react", "react-dom"]) dependencies[name] = locked(name);
-    writeFileSync(join(app, "package.json"), JSON.stringify({ private: true, type: "module", dependencies, overrides: { "@rust-js/build": tarball(dist, "@rust-js/build") } }));
+    writeFileSync(join(app, "package.json"), JSON.stringify({ private: true, type: "module", dependencies, overrides: { "@rust-js/build": tarball(dist, "@rust-js/build"), "@rust-js/typescript": tarball(dist, "@rust-js/typescript") } }));
     writeFileSync(
       join(app, "vite.config.js"),
-      'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport rustJs from "@rust-js/vite-plugin";\n\nexport default defineConfig({ plugins: [rustJs({ cargo: { package: "app", offline: true } }), react()] });\n',
+      'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\n\nexport default defineConfig({ plugins: [react()] });\n',
     );
     // Its Rust, a Cargo package (ADR 0101), React's crate named by version:
-    // the plugin's patch tells Cargo it's in node_modules.
+    // `rust-js build`'s patch tells Cargo it's in node_modules.
     const reactVersion = (Bun.TOML.parse(readFileSync(join(root, "react", "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
     writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[dependencies]\nreact = { package = "rust-js-react", version = "~${reactVersion}" }\n\n[workspace]\n`);
     writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
@@ -143,6 +143,10 @@ export function viteApp(dist: string, logs: string): Suite {
           rmSync(unpacked, { recursive: true, force: true });
         }
       }
+      // Its Rust compiled, `rust-js build`, then Vite's build (ADR 0412).
+      const compiled = runSync(["node", join(app, "node_modules", ".bin", "rust-js"), "build"], app, suiteTimeout, { ...cleared, CARGO_NET_OFFLINE: "true" });
+      log.push(compiled.stdout, compiled.stderr);
+      if (compiled.code !== 0) problems.push(`the app's Rust didn't compile: ${stopped(compiled, suiteTimeout) ?? compiled.stderr.trim().split("\n").at(-1)}`);
       const build = runSync(["node", join(app, "node_modules", "vite", "bin", "vite.js"), "build"], app, suiteTimeout);
       log.push(build.stdout, build.stderr);
       const why = () => build.stderr.split("\n").find((line) => /error/i.test(line))?.trim() ?? build.stderr.trim().split("\n").at(-1);
@@ -159,8 +163,8 @@ export function viteApp(dist: string, logs: string): Suite {
   writeFileSync(path, [...log, ...problems].join("\n"));
   return {
     name: "vite-app",
-    command: ["vite", "build"],
-    compiler: "node_modules/.bin/rust-js",
+    command: ["rust-js", "build", "&&", "vite", "build"],
+    compiler: "node_modules/@rust-js/native/bin/rust-js",
     passed: problems.length === 0,
     pass: problems.length === 0 ? 1 : 0,
     fail: problems.length === 0 ? 0 : 1,
@@ -232,19 +236,19 @@ async function main() {
         type: "module",
         dependencies: {
           "@rust-js/build": dependency("@rust-js/build"),
-          "@rust-js/vite-plugin": dependency("@rust-js/vite-plugin"),
           "@rust-js/native": dependency("@rust-js/native"),
           "@rust-js/runtime": dependency("@rust-js/runtime"),
         },
-        overrides: { "@rust-js/build": dependency("@rust-js/build") },
+        overrides: { "@rust-js/build": dependency("@rust-js/build"), "@rust-js/typescript": dependency("@rust-js/typescript") },
       }),
     );
     // With an empty cache, as a new machine has, so nothing but the
-    // packages can be what it installs.
-    const install = runSync([process.execPath, "install", "--offline", "--ignore-scripts", "--omit", "peer", "--backend", "copyfile"], project, installTimeout, {
+    // packages, and TypeScript, @rust-js/typescript's, can be what it installs.
+    const install = runSync([process.execPath, "install", "--ignore-scripts", "--omit", "peer", "--backend", "copyfile"], project, installTimeout, {
       BUN_INSTALL_CACHE_DIR: join(project, "bun-cache"),
     });
-    const launcher = join(project, "node_modules", ".bin", "rust-js");
+    // The native package's launcher, which `rust-js build` runs.
+    const launcher = join(project, "node_modules", "@rust-js/native", "bin", "rust-js");
     const binary = join(project, "node_modules", "@rust-js/native", "bin", "compiler");
     if (install.code !== 0 || !existsSync(launcher)) {
       problems.push(`the packages didn't install: ${stopped(install, installTimeout) ?? install.stderr.trim().split("\n").at(-1)}`);

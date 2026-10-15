@@ -110,16 +110,13 @@ inputs. The browser host supplies equivalent inputs for its supported scope;
 arbitrary Cargo build scripts and procedural macros are not implicitly promised
 in a browser.
 
-Vite owns rebuild scheduling and development feedback. It does not know where
-binding source files live or how to build React or Serde metadata. Installed
+An app's Rust is compiled one way, `rust-js build`, its own process beside
+the app's dev server, `next dev` or `vite`, which knows nothing of rust-js
+(ADR 0412): it compiles the app's Rust once, each time it's run, to JS, JSX
+and declarations beside it, as a Cargo build's copies are (ADR 0101), so
+the dev server and its Fast Refresh see them as the app's own. The builder,
+`checkCargo`, validates each manifest the compiler wrote. Installed
 compiler and binding packages can be used without a source checkout.
-`next-plugin` is the same for Next.js: it compiles the app's Rust to JS
-and JSX beside it, as a Cargo build's copies are (ADR 0101), so Next.js
-and its Fast Refresh see them as the app's own, and then runs `next`
-(ADR 0192). Each host of a Cargo build is given its manifests validated by
-the builder, `checkCargo`, and asks it what the build read, `readsCargo`:
-Cargo's inputs in the workspace, and each source rust-js read, outside it
-too; neither tells them its own way.
 
 ## The pipeline
 
@@ -473,7 +470,7 @@ instead of inferring compiler output.
 | Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
 | Libraries, settings and hooks | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
-| Build adapter and native hosts | `tooling/build.js`, `tooling/manifest.js`, `tooling/cargo.js`, `vite-plugin/index.js`, `next-plugin/index.js` |
+| Build adapter and native hosts | `tooling/build.js`, `tooling/manifest.js`, `tooling/cargo.js`, `tooling/cli.js` |
 | Browser host | `wasm/web/compile-rust.ts`, `tooling/publish.js`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/rust/compiler.rs` |
 | Bindings: JS's builtins, the web's APIs, React, Node, Next.js, serde | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `serde/`; the crates shipped, each once, `tooling/crates.js`, which hosts and packaging read |
 | Tests: what each kind checks | `test/corpus/` and `test/corpus.test.ts` (each program run natively and as JS, its JS a snapshot); `test/snapshots/` (examples' JS); `test/lowering.test.ts`, `test/jsx.test.ts` (a construct's JS); `test/compiler.test.ts` (native Rust beside the JS); `test/architecture.test.ts` (these boundaries); `test/sourcemap.ts` (a source map decoder) |

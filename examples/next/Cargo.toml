@@ -1,7 +1,7 @@
-# The app's crate, app/page.rs, which withRustJs builds with Cargo, and an
+# The app's crate, app/page.rs, which rust-js build builds with Cargo, and an
 # editor's rust-analyzer checks (ADR 0114). Its crates are npm packages,
-# named by version, which rust-js-patch, the app's `postinstall`, tells
-# Cargo are in node_modules; rust-js's own example has them by path.
+# named by version, which `rust-js build`'s patch tells Cargo are in
+# node_modules; rust-js's own example has them by path.
 [package]
 name = "app"
 version = "0.0.0"

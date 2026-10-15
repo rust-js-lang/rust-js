@@ -20,7 +20,7 @@ const identity = parseCompilerIdentity(run([compiler, "--version-json"]));
 // Each package of the hosts', by the directory it's packed from and the
 // tarball it's packed as: with the compiler's and the crates', what
 // `distribution.json` names, the one list of a distribution's files.
-const hosts = [["tooling", "build.tgz"], ["vite-plugin", "vite-plugin.tgz"], ["next-plugin", "next-plugin.tgz"], ["runtime", "runtime.tgz"]];
+const hosts = [["tooling", "build.tgz"], ["runtime", "runtime.tgz"], ["typescript", "typescript.tgz"]];
 const named = (directory: string) => JSON.parse(readFileSync(join(root, directory, "package.json"), "utf8"));
 for (const [directory] of hosts) {
   const pkg = named(directory);

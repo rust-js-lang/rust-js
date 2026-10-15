@@ -1,6 +1,8 @@
 # 0117. A crate's settings for the JS rust-js writes: its formatter's options, and hooks
 
-Status: Accepted. (Amended: the
+Status: Accepted. Amended by [0412](0412-rust-js-build-is-its-own-process.md):
+each check runs on each `rust-js build`; a save's fewer, `when`, and
+`--hooks` are gone. (Amended: the
 same program is the same nodes, each meaning what it did.) Amended by
 [0381](0381-the-apps-prettier-lays-it-out.md): the formatter's options are
 gone, the app's Prettier lays the JS out. Extends

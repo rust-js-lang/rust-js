@@ -16,7 +16,7 @@ pub(crate) enum Command {
     Rustc(Vec<String>),
     /// `--format-jsx [input.rs]`: the crate's `rsx!`, formatted, on stdout.
     FormatJsx(String),
-    /// `--checks <input.rs> [--hooks save|build] <file.js>..`: the crate's
+    /// `--checks <input.rs> <file.js>..`: the crate's
     /// checks of its JS as a host has it, which Cargo's build runs none of
     /// (ADR 0117).
     Checks(Checks),
@@ -24,12 +24,11 @@ pub(crate) enum Command {
     Build(Build),
 }
 
-/// A crate's checks: its root, whose `Cargo.toml` names them, the JS they
-/// read, and whether it's a save's.
+/// A crate's checks: its root, whose `Cargo.toml` names them, and the JS
+/// they read.
 pub(crate) struct Checks {
     pub input: PathBuf,
     pub files: Vec<PathBuf>,
-    pub save: bool,
 }
 
 /// A crate's build: its input and output, and what's asked of it.
@@ -44,8 +43,9 @@ pub(crate) struct Build {
     pub library: bool,
     /// `--dependency <manifest.json>`, each a library the crate uses.
     pub dependencies: Vec<PathBuf>,
-    /// `--hooks save`: a save's checks, not a build's (ADR 0117).
-    pub save: bool,
+    /// `--declarations`: a `.d.ts` beside each module's JS, which Cargo's
+    /// build, `rust-js build`'s, always asks for (ADR 0412).
+    pub declarations: bool,
     /// `--manifest <file.json>` (ADR 0042).
     pub manifest: Option<PathBuf>,
     /// `--std-coverage <file>` (ADR 0314).
@@ -54,7 +54,7 @@ pub(crate) struct Build {
     pub rustc: Vec<String>,
 }
 
-const USAGE: &str = "usage: rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>] [--library] [--dependency <manifest.json>] [--hooks save|build] [-- <rustc flags>]";
+const USAGE: &str = "usage: rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>] [--library] [--dependency <manifest.json>] [--declarations] [-- <rustc flags>]";
 
 /// The command `args` asks for, or what's wrong with them.
 pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
@@ -64,15 +64,12 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
         Some("--checks") => {
-            let mut rest = args[1..].to_vec();
-            let save = hooks(&mut rest)?;
-            let [input, files @ ..] = rest.as_slice() else {
-                return Err("usage: rust-js --checks <input.rs> [--hooks save|build] <file.js>..".into());
+            let [input, files @ ..] = &args[1..] else {
+                return Err("usage: rust-js --checks <input.rs> <file.js>..".into());
             };
             return Ok(Command::Checks(Checks {
                 input: PathBuf::from(input),
                 files: files.iter().map(PathBuf::from).collect(),
-                save,
             }));
         }
         Some("--format-jsx") => {
@@ -91,11 +88,11 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let mut ours = ours.to_vec();
     let cargo = flag(&mut ours, "--cargo");
     let library = flag(&mut ours, "--library");
+    let declarations = flag(&mut ours, "--declarations");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
     }
-    let save = hooks(&mut ours)?;
     let manifest = valued(&mut ours, "--manifest", "a path")?.map(PathBuf::from);
     let std_coverage = valued(&mut ours, "--std-coverage", "a path")?.map(PathBuf::from);
     let test = ours.first().is_some_and(|a| a == "--test");
@@ -114,7 +111,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         cargo,
         library,
         dependencies,
-        save,
+        declarations,
         manifest,
         std_coverage,
         rustc: rustc.to_vec(),
@@ -141,16 +138,6 @@ fn valued(args: &mut Vec<String>, name: &str, what: &str) -> Result<Option<Strin
     let value = args.remove(i + 1);
     args.remove(i);
     Ok(Some(value))
-}
-
-/// `--hooks save|build`, taken from `args`: whether the crate's checks are
-/// a save's, not a build's (ADR 0117).
-fn hooks(args: &mut Vec<String>) -> Result<bool, String> {
-    match valued(args, "--hooks", "`save` or `build`")?.as_deref() {
-        None | Some("build") => Ok(false),
-        Some("save") => Ok(true),
-        Some(_) => Err("--hooks requires `save` or `build`".into()),
-    }
 }
 
 /// The target rustc checks programs for (ADR 0090): WebAssembly's, whose
@@ -303,23 +290,18 @@ mod tests {
     }
 
     #[test]
-    fn checks_are_a_crate_its_files_and_a_save_or_a_build() {
+    fn checks_are_a_crate_and_its_files() {
         let checks = |args: &[&str]| match parse(args.iter().map(|arg| arg.to_string()).collect()) {
-            Ok(Command::Checks(checks)) => Ok((checks.input, checks.files, checks.save)),
+            Ok(Command::Checks(checks)) => Ok((checks.input, checks.files)),
             Ok(_) => Err("not checks".to_string()),
             Err(error) => Err(error),
         };
         assert_eq!(
-            checks(&["--checks", "src/lib.rs", "--hooks", "save", "src/lib.js", "src/api.js"]),
+            checks(&["--checks", "src/lib.rs", "src/lib.js", "src/api.js"]),
             Ok((
                 PathBuf::from("src/lib.rs"),
-                vec![PathBuf::from("src/lib.js"), PathBuf::from("src/api.js")],
-                true
+                vec![PathBuf::from("src/lib.js"), PathBuf::from("src/api.js")]
             ))
-        );
-        assert_eq!(
-            checks(&["--checks", "src/lib.rs", "src/lib.js"]),
-            Ok((PathBuf::from("src/lib.rs"), vec![PathBuf::from("src/lib.js")], false))
         );
         assert!(checks(&["--checks"]).is_err());
     }
@@ -338,14 +320,12 @@ mod tests {
             "a.json",
             "--dependency",
             "b.json",
-            "--hooks",
-            "save",
             "--",
             "--cfg",
             "browser",
         ])
         .unwrap();
-        assert!(b.test && b.library && b.save && !b.cargo);
+        assert!(b.test && b.library && !b.cargo);
         assert_eq!((b.input, b.output), ("lib.rs".into(), "out/lib.js".into()));
         assert_eq!(b.manifest, Some("m.json".into()));
         assert_eq!(b.dependencies, [PathBuf::from("a.json"), "b.json".into()]);
@@ -358,10 +338,6 @@ mod tests {
         assert_eq!(
             build(&["lib.rs", "--library"]).err().unwrap(),
             "--library requires --manifest"
-        );
-        assert_eq!(
-            build(&["lib.rs", "--hooks", "test"]).err().unwrap(),
-            "--hooks requires `save` or `build`"
         );
         assert_eq!(
             build(&["lib.rs", "--dependency"]).err().unwrap(),

@@ -5,9 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite web",
-    "build": "vite build web",
-    "preview": "vite preview web",
-    "postinstall": "rust-js-patch"
+    "build": "rust-js build --package frontend --check && vite build web",
+    "preview": "vite preview web"
   },
   "dependencies": {
     "@rust-js/builtins": "0.0.1",
@@ -21,7 +20,6 @@
   "devDependencies": {
     "@rust-js/build": "0.0.3",
     "@rust-js/native": "0.0.3",
-    "@rust-js/vite-plugin": "0.0.3",
     "@vitejs/plugin-react": "^6.1.1",
     "vite": "^8.3.0"
   }

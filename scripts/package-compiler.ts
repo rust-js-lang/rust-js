@@ -36,7 +36,7 @@ try {
     name: "@rust-js/native", version, type: "module", license: "MIT",
     repository: { type: "git", url: "git+https://github.com/rust-js-lang/rust-js.git" },
     os: [process.platform], cpu: [process.arch],
-    bin: { "rust-js": "bin/rust-js" }, files: ["bin"], rustJs: identity,
+    files: ["bin"], rustJs: identity,
   }, null, 2) + "\n");
   mkdirSync(dirname(output), { recursive: true });
   run([process.execPath, "pm", "pack", "--ignore-scripts", "--filename", output], staging);

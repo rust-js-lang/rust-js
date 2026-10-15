@@ -1,6 +1,7 @@
 # 0118. Bindings on npm only, as ReScript's are
 
-Status: Accepted, in place of [0115](0115-binding-crates-on-crates-io.md)'s
+Status: Accepted, amended by [0412](0412-rust-js-build-is-its-own-process.md):
+the patch is written by `rust-js build`, not an install's `postinstall`. In place of [0115](0115-binding-crates-on-crates-io.md)'s
 crates.io for [0116](0116-binding-versions.md)'s bindings: the community's too
 ([0119](0119-community-bindings.md)). Proven by `@rust-js/builtins`,
 `@rust-js/webapi` and `@rust-js/react`, and

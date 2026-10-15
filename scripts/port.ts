@@ -12,7 +12,7 @@ import { join, resolve } from "node:path";
 import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
-const port = resolve(process.env.RUST_JS_PORT ?? join(root, "..", "rust-js-react.dev"));
+const port = resolve(process.env.RUST_JS_PORT ?? join(root, "..", "react.dev-in-rust"));
 const reference = `${port}.reference`;
 const [command, ...flags] = process.argv.slice(2);
 const generated = [":(glob)src/**/*.js", ":(glob)src/**/*.jsx", ":(glob)src/**/*.d.ts"];
@@ -32,7 +32,7 @@ function restore() {
 
 /** MIR's compile of it, or what stopped it. */
 function compile() {
-  const { code, out } = run(["node", join(root, "next-plugin", "bin.js"), "compile"]);
+  const { code, out } = run(["node", join(root, "tooling", "cli.js"), "build"]);
   const errors = out.split("\n").filter((line) => line.startsWith("error"));
   if (code !== 0 || errors.length > 0) {
     restore();

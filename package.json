@@ -8,12 +8,10 @@
     "webapi",
     "react",
     "wasm/web",
-    "vite-plugin",
     "tooling",
     "typescript",
     "runtime",
     "examples/vite-react",
-    "next-plugin",
     "examples/next"
   ],
   "scripts": {

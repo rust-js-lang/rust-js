@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "rust-js build --check && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -16,7 +16,6 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@rust-js/next-plugin": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",

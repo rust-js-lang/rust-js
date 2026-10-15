@@ -1,6 +1,7 @@
 # 0101. Cargo builds a workspace with rust-js as its workspace wrapper
 
-Status: Accepted. Extends [0100](0100-separate-crates.md), and replaces
+Status: Accepted, amended by [0412](0412-rust-js-build-is-its-own-process.md):
+its one host is `rust-js build`. Extends [0100](0100-separate-crates.md), and replaces
 [0085](0085-scalar-library-linkage.md)'s planning of a Cargo graph for
 building one.
 

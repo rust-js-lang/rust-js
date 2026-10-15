@@ -1,6 +1,8 @@
 # 0380. The app's config compiles its Rust: `withRustJs(nextConfig)`
 
-Status: Accepted. Amends [0192](0192-next.md); delivers rule 1 of
+Status: Superseded by [0412](0412-rust-js-build-is-its-own-process.md):
+an app's Rust is compiled by `rust-js build`, its own process beside
+Next.js. Amended [0192](0192-next.md); delivered rule 1 of
 [0378](0378-one-file-at-a-time.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): how a host starts

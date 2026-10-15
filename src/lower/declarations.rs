@@ -394,8 +394,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let decl = (def_id.as_local()).and_then(|local| self.tcx.hir_node_by_def_id(local).fn_decl());
         let params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
+                // As its JS spells it, a word JS keeps given apart, `new$`.
                 let name = match idents.get(i).copied().flatten() {
-                    Some(ident) => super::camel_case(ident.name.as_str()),
+                    Some(ident) => crate::names::js_ident(&super::camel_case(ident.name.as_str())),
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };

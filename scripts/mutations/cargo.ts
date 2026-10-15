@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "    for file in std::iter::once(&exe).chain(read.iter().take(0)) {",
     tests: ["test/cargo-workspace.test.ts", "-t", "Prettier config changes"],
   },
+  {
+    name: "cargo-build-without-declarations",
+    breaks: "Cargo's build, `rust-js build`'s, writes no `.d.ts`",
+    file: "src/cargo.rs",
+    find: "        \"--declarations\".into(),\n",
+    replace: "",
+    tests: ["test/cargo-in-source.test.ts", "-t", "declarations"],
+  },
 ];

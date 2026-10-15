@@ -1,7 +1,10 @@
 # 0378. A Next.js app moves to Rust one file at a time
 
 Status: Proposed. The design we want; what it takes to deliver it is
-measured against it, not the other way round. Would change
+measured against it, not the other way round. Rule 1 is replaced by
+[0412](0412-rust-js-build-is-its-own-process.md): the app's Rust is
+compiled by `rust-js build`, its own process, not its config; 0412
+delivers rule 4. Would change
 [0192](0192-next.md), [0196](0196-typescript-declarations.md),
 [0046](0046-camel-case-crates.md) and [0028](0028-js-module-imports.md).
 

@@ -1,33 +1,55 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, writeFileSync, readFileSync, unlinkSync, chmodSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { createLogger, createServer, build } from "vite";
+import { createServer, build } from "vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { chromium } from "@playwright/test";
-import rustJs from "../vite-plugin/index.js";
 import { buildCompiler, cargoApp, compiler, fixture, root } from "./support";
+
+// A Vite app is Vite's alone, its plugins React's and Tailwind's, and its
+// Rust is compiled by `rust-js build`, its own process (ADR 0412): Vite
+// sees the JS it writes beside the Rust as any edit.
 
 // Each server's optimized dependencies are its own, in its root: a fixture
 // has no package.json, so Vite's default is this checkout's node_modules/.vite,
 // which servers side by side rewrite under each other, and a page never loads.
 const cacheDir = ".vite";
+const cli = join(root, "tooling/cli.js");
 
 /** A Vite app in `dir` whose Rust is a Cargo package, `app`, of
- * `src/App.rs` (ADR 0101): its JS is `src/App.jsx`, beside it, and its
- * page renders `App`, which `main.jsx` imports as `rust-js:app`. */
+ * `src/App.rs` (ADR 0101): its JS is `src/App.jsx`, beside it, which
+ * `main.jsx` imports, as `./App`, whichever file it is. */
 function viteApp(dir: string, rust: string, toml = "") {
   cargoApp(dir, rust, { lib: "src/App.rs", react: true, toml });
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "rust-js:app"; createRoot(document.getElementById("root")).render(<App/>);');
+  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App"; createRoot(document.getElementById("root")).render(<App/>);');
 }
-/** The plugin, building `app` with Cargo, offline, as each test has it. */
-const plugin = (rustJsAt = compiler) => rustJs({ rustJs: rustJsAt, cargo: { package: "app", offline: true } });
+
+/** `rust-js build`, in `dir`, as the developer runs it: what it said, and
+ * how it ended. */
+function rustJs(dir: string, args: string[] = [], env: Record<string, string> = {}) {
+  const run = Bun.spawnSync([process.execPath, cli, "build", ...args], {
+    cwd: dir,
+    env: { ...process.env, RUST_JS_COMPILER: compiler, ...env },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  return { code: run.exitCode, output: run.stdout.toString() + run.stderr.toString() };
+}
+
+/** `file` written, then `rust-js build`, which must succeed. */
+function saved(dir: string, file: string, text: string) {
+  writeFileSync(file, text);
+  const built = rustJs(dir);
+  expect(built.output).toBe("");
+  expect(built.code).toBe(0);
+}
 
 // Real Vite, real compiler, real React Fast Refresh. Isolated sources and
 // outputs: the example application and its development server are untouched.
-test("Vite builds and refreshes an app's Rust, recovers from errors and module changes", async () => {
+test("Vite builds and refreshes an app's Rust as rust-js build writes it, through an error and module changes", async () => {
   buildCompiler();
   const dir = fixture("vite");
   const source = `#![allow(non_snake_case)]
@@ -40,10 +62,10 @@ pub fn App() -> JSX::Element {
 `;
   viteApp(dir, source);
   const app = join(dir, "src/App.rs"), text = join(dir, "src/text.rs"), output = join(dir, "src/App.jsx");
-  writeFileSync(text, 'pub fn label() -> &\'static str { "Count " }');
-  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
+  saved(dir, text, 'pub fn label() -> &\'static str { "Count " }');
+  await build({ root: dir, configFile: false, plugins: [react()], logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -55,71 +77,45 @@ pub fn App() -> JSX::Element {
     await button.filter({ hasText: "Count 0" }).waitFor();
     await button.click();
     await button.filter({ hasText: "Count 1" }).waitFor();
-    writeFileSync(text, 'pub fn label() -> &\'static str { "Changed " }');
+    saved(dir, text, 'pub fn label() -> &\'static str { "Changed " }');
     await button.filter({ hasText: "Changed 1" }).waitFor();
 
-    writeFileSync(app, source.replace("<button onClick", '<button className="updated" onClick'));
+    saved(dir, app, source.replace("<button onClick", '<button className="updated" onClick'));
     await page.locator("button.updated").waitFor();
     expect(await button.textContent()).toBe("Changed 1");
 
+    // An error is rustc's, rust-js build's, and nothing is written: the page
+    // keeps what last compiled, its state too.
     const good = readFileSync(output, "utf8");
     writeFileSync(app, source + "pub fn broken(");
-    await page.locator("vite-error-overlay").waitFor();
+    const broken = rustJs(dir);
+    expect([broken.code, broken.output.includes("unclosed delimiter")]).toEqual([1, true]);
     expect(readFileSync(output, "utf8")).toBe(good);
-    writeFileSync(app, source);
-    await page.locator("vite-error-overlay").waitFor({ state: "detached" });
+    saved(dir, app, source);
     await button.filter({ hasText: "Changed 1" }).waitFor();
 
+    // A module gone is an error too, and back, it's what the page shows.
     unlinkSync(text);
-    await page.locator("vite-error-overlay").waitFor();
-    writeFileSync(text, 'pub fn label() -> &\'static str { "Restored " }');
-    await page.locator("vite-error-overlay").waitFor({ state: "detached" });
+    expect(rustJs(dir).code).toBe(1);
+    saved(dir, text, 'pub fn label() -> &\'static str { "Restored " }');
     await button.filter({ hasText: "Restored 1" }).waitFor();
 
-    // Adding a declared module and quickly editing it must converge on the
-    // latest source.
+    // A declared module, added and edited before a build: the build is of
+    // the latest source.
     writeFileSync(app, source.replace("mod text;", "mod text; mod extra;").replace("text::label()", "extra::label()"));
     writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "First " }');
-    writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }');
+    saved(dir, join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }');
     await button.filter({ hasText: /Latest [01]/ }).waitFor();
-
-    // `rust-js:app` follows the root's file when it stops containing JSX,
-    // `App.js`, and back to `App.jsx` on the next edit.
-    writeFileSync(app, `#![allow(non_snake_case)]
-use react::JSX;
-#[rust_js::link_name = "react#createElement"]
-fn make(tag: &str, props: (), child: &str) -> JSX::Element {
-    unreachable!()
-}
-pub fn App() -> JSX::Element {
-    make("button", (), "Plain")
-}
-`);
-    await button.filter({ hasText: "Plain" }).waitFor();
-    expect(existsSync(output)).toBe(false);
-    expect(existsSync(join(dir, "src/App.js"))).toBe(true);
-    writeFileSync(app, source);
-    await button.filter({ hasText: "Restored 0" }).waitFor();
-    expect(existsSync(join(dir, "src/App.js"))).toBe(false);
   } finally {
     await browser?.close();
     await server.close();
   }
-  writeFileSync(app, "this is not Rust");
-  await expect(build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" })).rejects.toThrow();
 }, 180_000);
 
-// An app's Rust is built with Cargo, its one way (ADR 0374): `compile` is the
-// playground's own, and one of them is given.
-test("The Vite plugin is given an app's Cargo package, or the playground's compile", () => {
-  expect(() => rustJs({})).toThrow("give `cargo`");
-  expect(() => rustJs({ cargo: { package: "app" }, compile: async () => {} })).toThrow("give `cargo`");
-});
-
-// Tailwind reads class names in the Rust, and React Compiler memoizes the
-// component rust-js writes (ADR 0041). A save must still be a Fast Refresh:
-// Tailwind reloads the page when a file it scans changes, unless that file
-// is JS, and a `.rs` file isn't.
+// Tailwind reads class names in the JSX rust-js writes, and React Compiler
+// memoizes the component (ADR 0041). The `.rs` files aren't Tailwind's
+// sources: an edit of one, before it's built, would be a file it scans
+// changing, which reloads the page. A build is still a Fast Refresh.
 test("Tailwind and React Compiler keep Fast Refresh's state", async () => {
   buildCompiler();
   const dir = fixture("vite-tailwind");
@@ -136,10 +132,10 @@ pub fn App() -> JSX::Element {
 }
 `;
   viteApp(dir, app("font-bold"));
-  // `target/` is gitignored, which Tailwind's own detection respects.
-  writeFileSync(join(dir, "src/index.css"), '@import "tailwindcss";\n@source "./App.rs";\n');
-  writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "rust-js:app"; createRoot(document.getElementById("root")).render(<App/>);');
-  const plugins = [plugin(), react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
+  writeFileSync(join(dir, "src/index.css"), '@import "tailwindcss" source(none);\n@source "./App.jsx";\n');
+  writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "./App"; createRoot(document.getElementById("root")).render(<App/>);');
+  expect(rustJs(dir).code).toBe(0);
+  const plugins = [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
   const server = await createServer({ root: dir, cacheDir, configFile: false, plugins, logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
@@ -159,7 +155,7 @@ pub fn App() -> JSX::Element {
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     // A class that's new to Tailwind: its CSS arrives, and the state stays.
-    writeFileSync(join(dir, "src/App.rs"), app("font-bold underline"));
+    saved(dir, join(dir, "src/App.rs"), app("font-bold underline"));
     await page.locator("button.underline").waitFor();
     await page.waitForFunction(() => getComputedStyle(document.querySelector("button")!).textDecorationLine === "underline");
     expect(await button.textContent()).toBe("Count 1");
@@ -170,10 +166,10 @@ pub fn App() -> JSX::Element {
   }
 }, 120_000);
 
-// The generated JSX is committed, as ReScript recommends for its JS (ADR 0041),
-// and the source map isn't. So a checkout without rust-js still builds: the
-// plugin says so and uses the committed file, with or without its map.
-test("Without rust-js, a build uses the committed JSX", async () => {
+// The generated JSX is committed, as ReScript recommends for its JS (ADR
+// 0041), and the source map isn't. So a checkout without rust-js still
+// builds, Vite's alone; `rust-js build` says there's none to compile it.
+test("Without rust-js, Vite builds the committed JSX, and rust-js build says so", async () => {
   buildCompiler();
   const dir = fixture("vite-committed");
   viteApp(dir, `#![allow(non_snake_case)]
@@ -184,43 +180,19 @@ pub fn App() -> JSX::Element {
     }
 }
 `);
-  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
-  const committed = readFileSync(join(dir, "src/App.jsx"), "utf8");
+  expect(rustJs(dir).code).toBe(0);
   unlinkSync(join(dir, "src/App.jsx.map"));
-
-  const warnings: string[] = [];
-  const logger = { ...createLogger("silent"), warn: (message: string) => { warnings.push(message); } };
   const missing = join(dir, "no-rust-js");
-  await build({ root: dir, configFile: false, plugins: [plugin(missing), react()], customLogger: logger, logLevel: "warn" });
-  expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toBe(committed);
+  const none = rustJs(dir, [], { RUST_JS_COMPILER: missing });
+  expect([none.code, none.output.trim()]).toEqual([1, `rust-js: no rust-js at ${missing}: install rust-js or build it with cargo build to compile the Rust`]);
+  await build({ root: dir, configFile: false, plugins: [react()], logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  expect(warnings.join("\n")).toContain(`no rust-js at ${missing}: using the committed ${join(dir, "src/App.jsx")}`);
-
-  // In dev too, and the map the file names but no one committed isn't an error.
-  warnings.length = 0;
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(missing), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
-  try {
-    await server.listen();
-    if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
-    expect((await server.transformRequest("/src/App.jsx"))?.code).toContain("Committed");
-    expect(warnings.join("\n")).toContain("using the committed");
-    expect(warnings.join("\n")).not.toContain("source map");
-  } finally {
-    // Closed while it optimizes a dependency an import of App.jsx asked for,
-    // Vite waits for that load forever: the optimization was cancelled.
-    await server.waitForRequestsIdle();
-    await server.close();
-  }
-
-  // Without the committed file, there's nothing to fall back on.
-  unlinkSync(join(dir, "src/App.jsx"));
-  await expect(build({ root: dir, configFile: false, plugins: [plugin(missing), react()], logLevel: "silent" })).rejects.toThrow("no rust-js at");
 }, 120_000);
 
-// As it starts, Vite writes the patch that tells the app's Cargo, and its
+// `rust-js build` writes the patch that tells the app's Cargo, and its
 // editor, where the crates its npm packages have are; a crate installed
 // twice stops it, with who asked for each.
-test("Vite writes the app's patch as it starts, and stops at a crate installed twice", async () => {
+test("rust-js build writes the app's patch, and stops at a crate installed twice", async () => {
   buildCompiler();
   const dir = fixture("vite-patch");
   viteApp(dir, `#![allow(non_snake_case)]
@@ -239,7 +211,7 @@ pub fn App() -> JSX::Element {
     writeFileSync(join(at, "src", "lib.rs"), "");
   };
   crate(join(dir, "node_modules", "@x", "a"), "0.0.1");
-  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
+  expect(rustJs(dir).code).toBe(0);
   expect(readFileSync(join(dir, ".cargo", "config.toml"), "utf8")).toContain('zz-a = { path = "node_modules/@x/a" }');
 
   // Another package that asks for another version of it.
@@ -249,13 +221,13 @@ pub fn App() -> JSX::Element {
   writeFileSync(join(dir, "node_modules", "@x", "b", "package.json"), JSON.stringify({ name: "@x/b", version: "0.0.1", "rust-js": { crate: "zz-b" }, peerDependencies: { "@x/a": "~0.0.2" } }));
   writeFileSync(join(dir, "node_modules", "@x", "b", "Cargo.toml"), `[package]\nname = "zz-b"\nversion = "0.0.1"\nedition = "2024"\n`);
   crate(join(dir, "node_modules", "@x", "b", "node_modules", "@x", "a"), "0.0.2");
-  await expect(build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" })).rejects.toThrow("zz-a is installed twice");
+  const twice = rustJs(dir);
+  expect([twice.code, twice.output.includes("zz-a is installed twice")]).toEqual([1, true]);
 }, 120_000);
 
-// A crate's checks in Vite (ADR 0117), of its Cargo build: a build runs all
-// of them, the server those not only for a build; what one says, of the
-// Rust, is Vite's warning.
-test("Vite runs a crate's checks, a build's all, the server's those for a save", async () => {
+// A crate's checks (ADR 0117), of its Cargo build: `rust-js build` runs
+// each; what one says, of the Rust, is its own output.
+test("rust-js build runs a crate's checks", () => {
   buildCompiler();
   const dir = fixture("vite-checks");
   viteApp(dir, `#![allow(non_snake_case)]
@@ -267,35 +239,22 @@ pub fn App() -> JSX::Element {
 }
 `, `[package.metadata.rust-js.hooks]
 check = [
-  { run = ["sh", "-c", "touch built"], when = "build" },
+  { run = ["sh", "-c", "touch built"] },
   { run = ["sh", "-c", "echo \\"$1:4:3: a note\\"", "sh", "{files}"], fail = "never" },
 ]
 `);
-  const warnings: string[] = [];
-  const logger = { ...createLogger("silent"), warn: (message: string) => { warnings.push(message); } };
-  await build({ root: dir, configFile: false, plugins: [plugin(), react()], customLogger: logger, logLevel: "warn" });
+  const checked = rustJs(dir);
+  expect(checked.code).toBe(0);
   expect(existsSync(join(dir, "built"))).toBe(true);
-  expect(warnings.join("\n")).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
-
-  unlinkSync(join(dir, "built"));
-  warnings.length = 0;
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
-  try {
-    await server.listen();
-    expect((await server.transformRequest("/src/App.jsx"))?.code).toContain("Checked");
-    expect(existsSync(join(dir, "built"))).toBe(false);
-    expect(warnings.join("\n")).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
-  } finally {
-    await server.waitForRequestsIdle();
-    await server.close();
-  }
+  expect(checked.output).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
 }, 120_000);
 
 // Fast Refresh keeps state under a context and in a memoized component
-// (ADR 0041). Saving a module runs it again, so a context made in it is a new
-// one, and React remounts what's under its provider: hand-written React does
-// the same. A context in a module of its own, as React advises, is untouched
-// when a component's module changes: rust-js leaves unchanged files alone.
+// (ADR 0041). Building a module runs it again, so a context made in it is a
+// new one, and React remounts what's under its provider: hand-written React
+// does the same. A context in a module of its own, as React advises, is
+// untouched when a component's module changes: rust-js leaves unchanged
+// files alone.
 test("Fast Refresh keeps state under a context from its own module, and in memo", async () => {
   buildCompiler();
   const dir = fixture("vite-context");
@@ -329,12 +288,12 @@ pub fn App() -> JSX::Element {
 }
 `;
   viteApp(dir, app("Count"));
-  writeFileSync(join(dir, "src/theme.rs"), `use react::{Context, create_context};
+  saved(dir, join(dir, "src/theme.rs"), `use react::{Context, create_context};
 thread_local! {
     pub static THEME: Context<&'static str> = create_context("light");
 }
 `);
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -351,7 +310,7 @@ thread_local! {
     await button.filter({ hasText: "Count 1" }).waitFor();
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
-    writeFileSync(join(dir, "src/App.rs"), app("Clicks"));
+    saved(dir, join(dir, "src/App.rs"), app("Clicks"));
     await button.filter({ hasText: /^Clicks/ }).waitFor();
     // The state, the context's value, and the page are all still there.
     expect(await button.textContent()).toBe("Clicks 1");
@@ -364,18 +323,17 @@ thread_local! {
   }
 }, 120_000);
 
-// A Cargo workspace (ADR 0101): Cargo builds each crate, rust-js as its
-// workspace wrapper, and the app imports its package's JS, where Cargo's
-// build of it has it, as `rust-js:<package>`. An edit to a crate the
-// component uses is a Fast Refresh, and an error is the overlay. The app is
-// a directory of the workspace, as a full-stack one's is: what Cargo builds
-// is outside Vite's root. Found in review: a package the Rust imports is the
-// app's, in `web/node_modules`, and Vite is given `ui`'s manifest, a member's,
-// whose sibling `models` is the workspace's too.
-test("Vite builds a Cargo workspace's package and refreshes it when a crate it uses changes", async () => {
+// A Cargo workspace (ADR 0101), a full-stack app's: Cargo builds each crate,
+// rust-js as its workspace wrapper, of the package `--package` names, and
+// writes each crate's JS beside its Rust. The app is a directory of the
+// workspace, Vite's root, which imports the package's JS where it is, and a
+// package the Rust imports is the app's, in the workspace's node_modules.
+// A build of a crate the component uses is a Fast Refresh.
+test("rust-js build builds a Cargo workspace's package, which Vite refreshes when a crate it uses changes", async () => {
   buildCompiler();
   const dir = fixture("vite-cargo");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["ui", "models"]\nresolver = "2"\n');
+  writeFileSync(join(dir, "package.json"), '{ "private": true, "type": "module" }\n');
   for (const name of ["ui", "models"]) mkdirSync(join(dir, name, "src"), { recursive: true });
   writeFileSync(join(dir, "models/Cargo.toml"), '[package]\nname = "models"\nversion = "0.1.0"\nedition = "2024"\n');
   const models = join(dir, "models/src/lib.rs");
@@ -396,21 +354,24 @@ pub fn App() -> JSX::Element {
 }
 `;
   writeFileSync(ui, source);
+  mkdirSync(join(dir, "node_modules/widget"), { recursive: true });
+  writeFileSync(join(dir, "node_modules/widget/package.json"), '{ "name": "widget", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(dir, "node_modules/widget/index.js"), 'export function greeting() { return "hello from widget"; }\n');
   const web = join(dir, "web");
   mkdirSync(join(web, "src"), { recursive: true });
-  mkdirSync(join(web, "node_modules/widget"), { recursive: true });
-  writeFileSync(join(web, "node_modules/widget/package.json"), '{ "name": "widget", "type": "module", "main": "index.js" }\n');
-  writeFileSync(join(web, "node_modules/widget/index.js"), 'export function greeting() { return "hello from widget"; }\n');
   writeFileSync(join(web, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(web, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "rust-js:ui"; createRoot(document.getElementById("root")).render(<App/>);');
-  const plugins = () => [rustJs({ rustJs: compiler, cargo: { package: "ui", manifestPath: "../ui/Cargo.toml", offline: true } }), react()];
-  await build({ root: web, configFile: false, plugins: plugins(), logLevel: "silent" });
-  expect(readFileSync(join(web, "dist/index.html"), "utf8")).toContain("/assets/");
-  // The JS is beside the Rust too, as a project commits it (ADR 0041), each
-  // crate's importing the others' there.
+  writeFileSync(join(web, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "../../ui/src/lib"; createRoot(document.getElementById("root")).render(<App/>);');
+  // A workspace has no package of its own: `--package` names the app's.
+  const unnamed = rustJs(dir);
+  expect([unnamed.code, unnamed.output.includes("`rust-js build --package <name>`")]).toEqual([1, true]);
+  const built = rustJs(dir, ["--package", "ui"]);
+  expect([built.code, built.output]).toEqual([0, ""]);
+  // Each crate's JS imports the others' beside their Rust (ADR 0041).
   expect(readFileSync(join(dir, "ui/src/lib.jsx"), "utf8")).toContain('from "../../models/src/lib.js"');
   expect(existsSync(join(dir, "models/src/lib.js"))).toBe(true);
-  const server = await createServer({ root: web, cacheDir, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
+  await build({ root: web, configFile: false, plugins: [react()], logLevel: "silent" });
+  expect(readFileSync(join(web, "dist/index.html"), "utf8")).toContain("/assets/");
+  const server = await createServer({ root: web, cacheDir, configFile: false, plugins: [react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -426,37 +387,11 @@ pub fn App() -> JSX::Element {
     await page.evaluate(() => { (window as any).sameDocument = true; });
 
     writeFileSync(models, 'pub fn label() -> &\'static str {\n    "Changed "\n}\n');
+    expect(rustJs(dir, ["--package", "ui"]).code).toBe(0);
     await button.filter({ hasText: "Changed 1" }).waitFor();
     expect(await page.evaluate(() => (window as any).sameDocument)).toBe(true);
-
-    // A source outside the workspace, a module by `#[path]`, is one rust-js
-    // read: an edit of it is one too. Found in review.
-    const shared = join(fixture("vite-cargo-shared"), "shared.rs");
-    writeFileSync(shared, 'pub fn label() -> &\'static str {\n    "Shared "\n}\n');
-    writeFileSync(models, `#[path = ${JSON.stringify(shared)}]\nmod shared;\n\npub fn label() -> &'static str {\n    shared::label()\n}\n`);
-    // Another module is another set of files: a reload.
-    await button.filter({ hasText: "Shared 0" }).waitFor();
-    await button.click();
-    writeFileSync(shared, 'pub fn label() -> &\'static str {\n    "Edited "\n}\n');
-    await button.filter({ hasText: "Edited 1" }).waitFor();
-
-    writeFileSync(ui, source + "pub fn broken(");
-    await page.locator("vite-error-overlay").waitFor();
-    writeFileSync(ui, source);
-    await page.locator("vite-error-overlay").waitFor({ state: "detached" });
-    await button.filter({ hasText: "Edited 1" }).waitFor();
   } finally {
     await browser?.close();
     await server.close();
   }
-  // Without rust-js, a build is of the JS committed beside the Rust.
-  const logger = createLogger("warn", { allowClearScreen: false });
-  const warnings: string[] = [];
-  logger.warn = (message) => { warnings.push(message); };
-  const missing = [rustJs({ rustJs: join(dir, "no-rust-js"), cargo: { package: "ui", manifestPath: "../ui/Cargo.toml", offline: true } }), react()];
-  await build({ root: web, configFile: false, plugins: missing, customLogger: logger, logLevel: "warn" });
-  expect(warnings.join("\n")).toContain("using the committed");
-  expect(readFileSync(join(web, "dist/index.html"), "utf8")).toContain("/assets/");
-  writeFileSync(ui, source + "pub fn broken(");
-  await expect(build({ root: web, configFile: false, plugins: plugins(), logLevel: "silent" })).rejects.toThrow("pub fn broken(");
 }, 180_000);

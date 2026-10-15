@@ -162,9 +162,9 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
     (response::new_with_body(blob), window.fetch(url))
 }
 `;
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), source);
-  run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js"), ...withWeb]);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js"), ...withWeb]);
   // To TypeScript, the trait is the union: by TypeScript's own name for it,
   // `Float32List`, where Rust takes each of its members; else each member,
   // `BodyInit`'s, whose `Float16Array` Rust has no type of.

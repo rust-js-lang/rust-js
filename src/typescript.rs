@@ -8,9 +8,12 @@ use std::process::{Command, Stdio};
 
 use crate::settings::Settings;
 
-/// The module the crate has, found from where it is, given the models on
-/// its stdin, writing their texts on its stdout.
-const PRINT: &str = r#"import { printModules } from "@rust-js/typescript";
+/// `@rust-js/typescript`, where `RUST_JS_TYPESCRIPT` says, `rust-js
+/// build`'s own (ADR 0412), or else the crate's, found from where it is,
+/// given the models on its stdin, writing their texts on its stdout.
+const PRINT: &str = r#"import { pathToFileURL } from "node:url";
+const at = process.env.RUST_JS_TYPESCRIPT;
+const { printModules } = await import(at ? pathToFileURL(at).href : "@rust-js/typescript");
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
 process.stdout.write(JSON.stringify(await printModules(JSON.parse(input))));
@@ -22,7 +25,7 @@ pub fn print(settings: &Settings, modules: &[serde_json::Value]) -> Result<Vec<S
     // Node runs it, as it does a crate's JS; `RUST_JS_NODE` names another.
     let node = std::env::var("RUST_JS_NODE").unwrap_or_else(|_| "node".to_string());
     let needs = format!(
-        "a crate's declarations (`declarations = true`) are printed by TypeScript, through @rust-js/typescript, which `{node}` runs where the crate is, `{}`: add it, `npm install --save-dev @rust-js/typescript`",
+        "a crate's declarations are printed by TypeScript, through @rust-js/typescript, which `{node}` runs where the crate is, `{}`: install `@rust-js/build`, which has it",
         settings.dir.display()
     );
     let mut child = Command::new(&node)

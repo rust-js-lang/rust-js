@@ -1,7 +1,9 @@
 # 0045. The playground is a Vite app, with React Compiler and Tailwind
 
 Status: Accepted. Extends [0044](0044-playground-on-react.md), whose context
-said Bun bundled the page.
+said Bun bundled the page. Amended by
+[0412](0412-rust-js-build-is-its-own-process.md): its Rust is compiled by
+`bun compile-rust.ts`, its own process beside Vite.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

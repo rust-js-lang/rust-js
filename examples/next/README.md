@@ -6,21 +6,23 @@ that as it would any route. Otherwise it's create-next-app's App Router
 template (Next.js 16, React 19, Tailwind CSS), in JavaScript.
 
 ```bash
-bun install      # or npm install
-bun run dev      # or npm run dev: http://localhost:3000; edit app/page.rs and save
-bun run build    # or npm run build: .next/
+bun install          # or npm install
+bun run dev          # or npm run dev: http://localhost:3000
+bunx rust-js build   # or npx rust-js build, in another terminal: after you edit app/page.rs
+bun run build        # or npm run build: .next/, once rust-js build --check says the JS is current
 ```
 
 ```
-save page.rs ─► withRustJs: cargo check with rust-js ─► page.jsx ─► Turbopack ─► Fast Refresh keeps state
+edit page.rs ─► rust-js build: cargo check with rust-js ─► page.jsx ─► next dev's Turbopack ─► Fast Refresh keeps state
 ```
 
-`next dev` and `next build` compile the app's Rust first, and `next dev`
-again on each save, through its config, `withRustJs(nextConfig)` in
-`next.config.mjs`. A compile error is rustc's, in the terminal, and the
-page keeps running the last version that compiled; `next build` stops at
-one. `rust-js-next compile` writes the JS alone, for what reads it before
-Next.js runs.
+Two processes, each its own: `next dev`, as Next.js runs it, and `rust-js
+build`, which compiles the app's Rust once, each time you run it, to
+`page.jsx` and `page.d.ts` beside it. Next.js sees the new JS as any
+edit, and Fast Refresh keeps the page's state. A compile error is rustc's,
+in `rust-js build`'s terminal, and the page keeps the JS that last
+compiled. `bun run build` checks first that what's committed is what the
+Rust compiles to, `rust-js build --check`, and stops if it isn't.
 
 - **A Rust route is a page as Next.js finds one**: `app/about/page.rs`, a
   module of the crate, `mod about { pub mod page; }` in `app/page.rs`, is
@@ -39,11 +41,11 @@ Next.js runs.
   says that release isn't installed, install it as `bun create @rust-js`
   said to: `rustup toolchain install <release> --profile minimal --target
   wasm32-unknown-unknown`, about 500 MB, once.
-- **The app is a Cargo package**, `Cargo.toml`, which `withRustJs` builds
+- **The app is a Cargo package**, `Cargo.toml`, which `rust-js build` builds
   with Cargo, and your editor's rust-analyzer checks. Its crates, `next`,
   `react` and `js`, are npm packages, named in `Cargo.toml` by version:
-  `rust-js-patch`, the app's `postinstall`, tells Cargo they're in
-  `node_modules`. rust-analyzer checks it through rust-js, `rust-js-check`
+  `rust-js build` tells Cargo they're in `node_modules`, a patch in
+  `.cargo/config.toml` it writes each time it runs. rust-analyzer checks it through rust-js, `rust-js-check`
   in `.vscode/settings.json`, which reads inside `jsx!`: what's wrong in
   JSX shows where it is, and what's used only there, `Image`, is used. Its
   own completion and hover still don't look inside `jsx!`.

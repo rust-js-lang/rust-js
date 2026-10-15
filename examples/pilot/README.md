@@ -8,15 +8,15 @@ examples/pilot/
 ├── Cargo.toml    the workspace: the three crates below
 ├── models        Contact, NewContact, Problem, and validate()  ◄── both sides
 ├── server        native Rust, std::net and serde_json:  /api/contacts
-├── frontend      React, compiled by rust-js as Cargo checks it (ADR 0101)
-└── web           Vite: imports `rust-js:frontend`, proxies /api to the server
+├── frontend      React, compiled by `rust-js build` as Cargo checks it (ADR 0101)
+└── web           Vite: imports frontend/src/lib.jsx, proxies /api to the server
 ```
 
 It's an app of its own, as one `bun create @rust-js` makes is, and not part
 of this repository's workspace: rust-js's packages and its crates, `js`,
 `webapi` and `react`, come from npm, named by version in `package.json`
-and `frontend/Cargo.toml`, and `rust-js-patch`, its `postinstall`, tells
-Cargo they're in `node_modules` (ADR 0118).
+and `frontend/Cargo.toml`, and `rust-js build`'s patch tells Cargo they're
+in `node_modules` (ADR 0118).
 
 The JS rust-js writes is committed beside the Rust it's from, as ReScript's
 projects do (ADR 0041): [`frontend/src/api.js`](frontend/src/api.js) is
@@ -41,6 +41,7 @@ cd examples/pilot
 bun install
 cargo +1.99.0 run -p server    # http://127.0.0.1:3000
 bun run dev                    # in another terminal
+bunx rust-js build --package frontend   # in a third, after you change the Rust
 ```
 
 Deployed, the server serves the built client beside its API, one process:

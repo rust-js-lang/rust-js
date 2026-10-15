@@ -11,6 +11,7 @@ import { chromium, type Browser, type Locator, type Page } from "@playwright/tes
 import type { Subprocess } from "bun";
 import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
+import { writePatch } from "../tooling/patch.js";
 import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
 import { channel } from "../scripts/toolchain.ts";
@@ -25,7 +26,8 @@ cpSync(checkout, pilot, { recursive: true, filter: (from) => !/(^|[/\\])(target|
 
 /** The pilot is an app of its own, which names its packages by version
  * (ROADMAP M3.3): installed as a package manager installs them, this
- * checkout's, and Cargo told where its crates are by its `postinstall`. */
+ * checkout's, and Cargo told where its crates are by the patch `rust-js
+ * build` writes. */
 function install() {
   const modules = join(pilot, "node_modules");
   const packs = fixture("pilot-crates");
@@ -38,7 +40,6 @@ function install() {
   // rust-js's JS packages, and the libraries, as this checkout has them.
   const linked: [string, string][] = [
     ["@rust-js/runtime", join(root, "runtime")],
-    ["@rust-js/vite-plugin", join(root, "vite-plugin")],
     ["@rust-js/build", join(root, "tooling")],
     ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
   ];
@@ -48,8 +49,7 @@ function install() {
     mkdirSync(dirname(join(modules, name)), { recursive: true });
     symlinkSync(target, join(modules, name));
   }
-  const patched = runSync([process.execPath, join(root, "tooling", "patch.js"), pilot], pilot, 60_000);
-  if (patched.code !== 0) throw new Error(`rust-js-patch failed:\n${patched.stderr}`);
+  writePatch(pilot);
 }
 
 /** The JS beside a pilot's Rust, by path. */
@@ -93,6 +93,9 @@ beforeAll(async () => {
   if (built.code !== 0) throw new Error(`the server's build failed:\n${built.stderr}`);
   [api, address] = await startServer();
   process.env.PILOT_API = address;
+  // The client's Rust compiled, its maps too, as the developer builds it first.
+  const first = rustJs();
+  if (first.code !== 0) throw new Error(`rust-js build failed:\n${first.stderr}`);
   vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0 } });
   await vite.listen();
   browser = await chromium.launch({ headless: true });
@@ -141,8 +144,9 @@ test("the pilot names rust-js's crates and packages by version, not by a path in
   }
   // One release of the compiler's packages, the react crate's too.
   const release = manifest.devDependencies["@rust-js/native"];
-  expect([manifest.dependencies["@rust-js/runtime"], manifest.dependencies["@rust-js/react"], manifest.devDependencies["@rust-js/build"], manifest.devDependencies["@rust-js/vite-plugin"]]).toEqual([release, release, release, release]);
-  expect(manifest.scripts.postinstall).toBe("rust-js-patch");
+  expect([manifest.dependencies["@rust-js/runtime"], manifest.dependencies["@rust-js/react"], manifest.devDependencies["@rust-js/build"]]).toEqual([release, release, release]);
+  expect(manifest.scripts.build).toBe("rust-js build --package frontend --check && vite build web");
+  expect(manifest.scripts.postinstall).toBeUndefined();
   for (const crate of ["frontend", "models", "server"]) {
     expect(readFileSync(join(checkout, crate, "Cargo.toml"), "utf8")).not.toContain('path = "../../');
   }
@@ -155,7 +159,7 @@ test("the pilot names rust-js's crates and packages by version, not by a path in
 test("the pilot's committed JS is what rust-js writes from its Rust", async () => {
   const committed = writtenJs(checkout);
   expect(committed.size).toBeGreaterThan(0);
-  // Built here, as Vite's plugin builds it, so a build that fails fails this.
+  // Built here, as `rust-js build` builds it, so a build that fails fails this.
   const react = JSON.parse(readFileSync(join(pilot, "node_modules", "react", "package.json"), "utf8")).version;
   await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: channel, compiler, packageName: "frontend", offline: true, react, inSource: true });
   expect(writtenJs(pilot)).toEqual(committed);
@@ -260,6 +264,12 @@ test("the server refuses invalid JSON and a contact breaking the rules", async (
 }, 60_000);
 
 // The Rust edited as the pilot runs: `list.rs`, its heading in it.
+/** `rust-js build --package frontend`, in the pilot, as the developer runs
+ * it beside Vite's dev server (ADR 0412): how it ended, and what it said. */
+function rustJs() {
+  return runSync([process.execPath, join(root, "tooling", "cli.js"), "build", "--package", "frontend"], pilot, 300_000, { RUST_JS_COMPILER: compiler });
+}
+
 const list = join(pilot, "frontend", "src", "list.rs");
 const listSource = readFileSync(list, "utf8");
 const heading = (text: string) => {
@@ -268,44 +278,51 @@ const heading = (text: string) => {
   return edited;
 };
 
-// A save is a Fast Refresh (M3.4): the page shows the new Rust and keeps its
-// state, the search typed, and itself: it isn't reloaded.
-test("a save of the Rust is a Fast Refresh, which keeps what's typed", async () => {
+/** `list.rs` written as `text`, then built, as the developer does. */
+function saved(text: string) {
+  writeFileSync(list, text);
+  const built = rustJs();
+  if (built.code !== 0) throw new Error(`rust-js build failed:\n${built.stderr}`);
+}
+
+// A build is a Fast Refresh (M3.4): the page shows the new Rust and keeps
+// its state, the search typed, and itself: it isn't reloaded.
+test("a build of the Rust is a Fast Refresh, which keeps what's typed", async () => {
   const page = await open();
   await page.getByLabel("Search").fill("gr");
   await page.locator(".contacts li a", { hasText: "Grace Hopper" }).waitFor();
   await page.evaluate(() => Object.assign(window, { kept: true }));
   try {
-    writeFileSync(list, heading("People"));
+    saved(heading("People"));
     await page.getByRole("heading", { name: "People" }).waitFor();
     expect(await page.getByLabel("Search").inputValue()).toBe("gr");
     expect(await page.evaluate(() => "kept" in window)).toBe(true);
   } finally {
-    writeFileSync(list, listSource);
+    saved(listSource);
   }
   await page.getByRole("heading", { name: "Contacts" }).waitFor();
   await page.close();
-}, 60_000);
+}, 120_000);
 
-// A compile error is Vite's overlay, and the app runs on as it last compiled;
-// fixed, the overlay goes, and the page is the fix (M3.4).
-test("a compile error shows in Vite's overlay, and the app runs on until it's fixed", async () => {
+// A compile error is rustc's, `rust-js build`'s, which writes nothing: the
+// app runs on as it last compiled, and the next build is the fix (M3.4).
+test("a compile error is rust-js build's, and the app runs on until it's fixed", async () => {
   const page = await open();
   await page.locator(".contacts li a").first().waitFor();
   try {
     writeFileSync(list, listSource + "\npub fn broken(");
-    await page.locator("vite-error-overlay").waitFor();
+    const broken = rustJs();
+    expect([broken.code, broken.stderr.includes("unclosed delimiter")]).toEqual([1, true]);
     await page.getByLabel("Search").fill("ada");
     expect(await settled(page.locator(".contacts li a"), ["Ada Lovelace"])).toEqual(["Ada Lovelace"]);
-    writeFileSync(list, heading("Fixed"));
-    await page.locator("vite-error-overlay").waitFor({ state: "detached" });
+    saved(heading("Fixed"));
     await page.getByRole("heading", { name: "Fixed" }).waitFor();
   } finally {
-    writeFileSync(list, listSource);
+    saved(listSource);
   }
   await page.getByRole("heading", { name: "Contacts" }).waitFor();
   await page.close();
-}, 60_000);
+}, 120_000);
 
 // What the browser runs maps back to the Rust (M3.4): its devtools show
 // `list.rs`, as it was saved, and set its breakpoints there.

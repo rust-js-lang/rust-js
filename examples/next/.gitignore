@@ -45,7 +45,7 @@ next-env.d.ts
 *.jsx.map
 *.js.map
 
-# What Cargo writes, and the patch rust-js-patch writes, of what's
+# What Cargo writes, and the patch `rust-js build` writes, of what's
 # installed: its crates are npm packages, which the lockfile of the app's
 # package manager pins.
 /target

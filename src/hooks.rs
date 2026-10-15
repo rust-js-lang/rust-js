@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::format::Map;
-use crate::settings::{Fail, Settings, When};
+use crate::settings::{Fail, Settings};
 
 /// `code` and its `map`, a module's, which will be `js_path`, through each
 /// of the crate's transforms, in order. What one gives is kept only if it's
@@ -69,16 +69,14 @@ fn run_transform(settings: &Settings, command: &[String], js_path: &Path, code: 
     String::from_utf8(output.stdout).map_err(|_| "gave what isn't UTF-8".to_string())
 }
 
-/// Run the crate's checks of `written`, the JS files a build wrote, or,
-/// for a `save`, those not only for a build. What each says is printed, of
-/// the Rust where it names the JS; an error if one that fails the build did.
-pub fn check(settings: &Settings, written: &[PathBuf], save: bool) -> Result<(), String> {
+/// Run the crate's checks of `written`, the JS files a build wrote, each
+/// one, as `rust-js build` runs them (ADR 0412). What each says is printed,
+/// of the Rust where it names the JS; an error if one that fails the build
+/// did.
+pub fn check(settings: &Settings, written: &[PathBuf]) -> Result<(), String> {
     let mut maps = Maps::default();
     let mut failed = Vec::new();
     for check in &settings.hooks.check {
-        if save && check.when == When::Build {
-            continue;
-        }
         let tool = name(&check.run);
         let args: Vec<String> = check
             .run

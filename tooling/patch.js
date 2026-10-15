@@ -1,16 +1,13 @@
-#!/usr/bin/env node
 // The patch an app's Cargo needs to find the crates its npm packages have:
 // each package with `"rust-js": { "crate": ".." }`, found as Node finds a
 // package, from the app and from each such package, where its package
 // manager put it, all in one `node_modules`, npm's and bun's way, or in a
 // store, and linked, pnpm's. Cargo, and an editor's rust-analyzer, are told
 // where each is by `[patch.crates-io]`, in the app's `.cargo/config.toml`,
-// between rust-js's lines, which an install's `postinstall` writes again.
-//
-//   rust-js-patch [app-dir]
+// between rust-js's lines, which `rust-js build` and the editor's check
+// write each time they run Cargo (ADR 0412).
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
 
 const BEGIN = "# rust-js: begin";
 const END = "# rust-js: end";
@@ -40,7 +37,7 @@ export function writePatch(app) {
   const block = [
     BEGIN,
     "# Where Cargo finds each crate an npm package has: written by rust-js from",
-    "# what's installed, as each install ends. Edits here are written over.",
+    "# what's installed, as each build runs. Edits here are written over.",
     "[patch.crates-io]",
     ...lines,
     END,
@@ -136,15 +133,4 @@ function shown(root, dir) {
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
-  const app = resolve(process.argv[2] ?? ".");
-  try {
-    const crates = writePatch(app);
-    if (crates.length) console.log(`rust-js: Cargo finds ${crates.map(c => c.crate).join(", ")} in node_modules`);
-  } catch (error) {
-    console.error(`rust-js: ${error instanceof Error ? error.message : error}`);
-    process.exitCode = 1;
-  }
 }

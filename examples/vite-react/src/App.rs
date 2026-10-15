@@ -1,6 +1,6 @@
 // create-vite's React template, `App.jsx`, written in Rust. rust-js compiles
-// it to `App.jsx` beside it (@rust-js/vite-plugin does, on every save), and
-// Vite serves that with Fast Refresh, as it would the original.
+// it to `App.jsx` beside it (`rust-js build`, its own command beside Vite),
+// and Vite serves that with Fast Refresh, as it would the original.
 
 #![allow(non_snake_case)]
 

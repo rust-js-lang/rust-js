@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* The classes are App.jsx's, which rust-js build writes: an edit of App.rs
+   isn't one Tailwind reloads the page for. */
+@source not "./**/*.rs";
 
 :root {
   --text: #6b6375;

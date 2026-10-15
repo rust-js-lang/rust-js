@@ -71,13 +71,14 @@ for (const field of ["dependencies", "devDependencies"]) {
     if (spec.startsWith("workspace:")) manifest[field][name] = dist ? archive(name) : self.version;
   }
 }
-// The compiler is the app's own, as the plugin finds it, from the app: a
-// release's or a distribution's. A distribution's `@rust-js/build` is the
-// app's too, and the plugin's, where a release's is the registry's.
+// The compiler is the app's own, as `rust-js build` finds it, from the app:
+// a release's or a distribution's. A distribution's `@rust-js/build` is the
+// app's too, where a release's is the registry's.
 manifest.devDependencies["@rust-js/native"] = dist ? archive("@rust-js/native") : self.version;
 if (dist) {
   manifest.devDependencies["@rust-js/build"] = archive("@rust-js/build");
-  manifest.overrides = { ...manifest.overrides, "@rust-js/build": archive("@rust-js/build") };
+  // And what `@rust-js/build` has by version: its `@rust-js/typescript`.
+  manifest.overrides = { ...manifest.overrides, "@rust-js/build": archive("@rust-js/build"), "@rust-js/typescript": archive("@rust-js/typescript") };
 }
 for (const field of ["dependencies", "devDependencies"]) {
   manifest[field] = Object.fromEntries(Object.entries(manifest[field]).sort(([a], [b]) => a.localeCompare(b)));
@@ -101,4 +102,8 @@ Then:
   cd ${directory}
   ${manager} install
   ${manager} run dev
+
+And in another terminal, after you change its Rust:
+
+  ${manager === "bun" ? "bunx" : "npx"} rust-js build
 `);

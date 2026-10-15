@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { planCargoLibraries, readsCargo, rustcShim } from "../tooling/cargo.js";
+import { planCargoLibraries, rustcShim } from "../tooling/cargo.js";
 import { fixture, root, run } from "./support";
 
 const toolchain = readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(/channel = "([^"]+)"/)![1];
@@ -110,24 +110,3 @@ for (;;) {
   }
   expect(failed.slice(0, 3)).toEqual([]);
 }, 60_000);
-
-// What a host rebuilds a Cargo build for, Vite's and Next.js's alike: what
-// Cargo reads of the workspace, not what it writes, and each source rust-js
-// read, outside the workspace too. Next.js's had its own, which missed a
-// module by `#[path]` outside it and a file `include_str!` reads (the third
-// architecture audit).
-test("a Cargo build's inputs are what Cargo reads and each source rust-js read", () => {
-  const build = { workspace: "/app", target: "/app/target", manifests: [{ sources: ["/shared/label.rs", "/app/src/words.txt"] }] };
-  expect([
-    readsCargo("/app/src/lib.rs", build),
-    readsCargo("/app/Cargo.toml", build),
-    readsCargo("/app/Cargo.lock", build),
-    readsCargo("/shared/label.rs", build),
-    readsCargo("/app/src/words.txt", build),
-  ]).toEqual([true, true, true, true, true]);
-  expect([
-    readsCargo("/app/target/wasm32-unknown-unknown/debug/build/out.rs", build),
-    readsCargo("/app/src/notes.txt", build),
-    readsCargo("/elsewhere/lib.rs", build),
-  ]).toEqual([false, false, false]);
-});

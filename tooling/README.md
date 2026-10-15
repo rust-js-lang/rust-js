@@ -1,54 +1,48 @@
-# Build hosts
+# Build an app: `rust-js build`
 
-`build.js` is what a host builds an app's Rust with: Cargo, which checks each
-crate with the native compiler as its workspace wrapper (ADR 0101), the one
-way an app's Rust is built (ADR 0374). Vite's and Next.js's plugins use it;
-another host can too, without importing either.
+An app's Rust is compiled one way: `rust-js build`, `@rust-js/build`'s
+command, run in the app's directory, its own process beside the app's dev
+server or build, `next dev` or `vite`, which are the host's alone (ADR 0412).
+
+```sh
+rust-js build                       # the package the app's Cargo.toml is of
+rust-js build --package frontend    # a workspace's: the app's client
+rust-js build --check               # writes nothing; fails, naming each file, if one is stale
+```
+
+It runs once: Cargo checks each crate with the native compiler as its
+workspace wrapper (ADR 0101), the one way an app's Rust is built (ADR 0374),
+and each module's JS, its map and its `.d.ts` are written beside its Rust,
+to be committed (ADR 0041): the dev server sees them as any edit, and Fast
+Refresh keeps state. Then each of the workspace's crates' checks of its JS
+run, a build's (ADR 0117). A compile error is rustc's, and nothing is
+written. Cargo builds in `node_modules/.cache/rust-js/target`, out of what a
+bundler watches, unless `CARGO_TARGET_DIR` says otherwise. An app's `build`
+script checks before it builds: `rust-js build --check && next build`.
 
 Distributed tooling supports Node.js and Bun using standard Node.js APIs. Bun
 is used to develop, test, and create packages in this repository; users do not
 need it to run installed packages. The native launcher uses the host's current
 JavaScript runtime.
 
-```js
-import { createNativeBuilder } from "@rust-js/build/build";
+`@rust-js/build`'s modules are `rust-js build`'s own; it exports only
+`/manifest` and `/publish`, the playground's, which compiles its own Rust with
+rust-js.wasm (ADR 0045). An app runs the command.
 
-const builder = createNativeBuilder({ root: "/absolute/app" });
-const session = builder.cargoSession({ manifestPath: "/absolute/app/Cargo.toml", packageName: "app", inSource: true });
-const built = await session.build({ save: false, warn: console.warn });
-// Again when what it read changes:
-if (session.reads(changedFile)) await session.build({ save: true, warn: console.warn });
-```
-
-A session's `build` is `cargo check` of the package, then each of the
-workspace's crates' checks of its JS (ADR 0117), a save's or a build's; its JS
-is beside each module's Rust, to be committed (ADR 0041), unless `inSource` is
-`false`. `reads(file)` says whether a change to `file` is one to build again
-for, `sources()` what the last build read, to watch, and `committed()` the JS
-committed beside the package's root, which a host builds from without a
-compiler. Cargo builds in `node_modules/.cache/rust-js/target`, out of what a
-bundler watches, unless `CARGO_TARGET_DIR` says otherwise.
-
-`@rust-js/build` exposes package entry points: `/build` for the builder,
-`/cargo` for Cargo's checks, `/manifest` for build-result validation, and
-`/publish` for WASI artifact publication. Vite and the playground declare this
-package dependency; neither imports tooling through a path outside its own
-package.
-
-`/patch`, and its command, `rust-js-patch [app-dir]`, tell an app's Cargo where
+`/patch` tells an app's Cargo where
 the crates its npm packages have are: each package with `"rust-js": { "crate" }`,
 as `@rust-js/builtins` and `@rust-js/webapi` have, found as Node finds it, in
 npm's, bun's or pnpm's layout, is a `[patch.crates-io]` entry in the app's
-`.cargo/config.toml`, between `# rust-js: begin` and `# rust-js: end`. An app
-runs it as its `postinstall`, so Cargo and its editor have them once it's
-installed. A crate installed twice, which would be two of each of its types, is
+`.cargo/config.toml`, between `# rust-js: begin` and `# rust-js: end`, which
+`rust-js build` and the editor's check, `rust-js-check`, write each time they
+run Cargo. A crate installed twice, which would be two of each of its types, is
 refused, with who asked for each.
 
-Both host packages are on npm, released with the compiler (ADR 0120). Local
-tarballs can be made with `bun pm pack` from `tooling/` and `vite-plugin/`.
-Compiler discovery first uses the supplied `rustJs` path, then the application's
-`@rust-js/native` package, then the development checkout; compiler binaries are
-not included in these host packages.
+`@rust-js/build` is on npm, released with the compiler (ADR 0120). A local
+tarball can be made with `bun pm pack` from `tooling/`. `rust-js build` finds
+the compiler as `RUST_JS_COMPILER` names it, then the application's
+`@rust-js/native` package, then the development checkout; the compiler binary
+isn't in `@rust-js/build`.
 
 Build and package a native compiler for the current macOS or Linux host:
 
@@ -63,10 +57,9 @@ Rust toolchain, its minimal profile and the `wasm32-unknown-unknown` target, on
 the destination machine first. The launcher
 asks that toolchain for its sysroot and sets the dynamic-library search path
 before forwarding arguments and exit status to the compiler. It does not install
-toolchains or modify global configuration. The builder discovers this package
-automatically. To override it, set `rustJs` to an absolute compiler or launcher
-path, including its installed `.bin` link.
-The host hashes and watches both the launcher and its compiler binary.
+toolchains or modify global configuration. `rust-js build` finds this package
+automatically; `RUST_JS_COMPILER` names another. It has no command of its own:
+an app's is `rust-js build`.
 
 This is a local packaging path, tested on the development host. It still depends
 on Node.js or Bun, rustup, and compatible native system libraries. Clean-machine testing,
@@ -99,7 +92,6 @@ Cargo where they are:
 {
   "devDependencies": {
     "vite": "8.3.0",
-    "@rust-js/vite-plugin": "./artifacts/vite-plugin.tgz",
     "@rust-js/build": "./artifacts/build.tgz",
     "@rust-js/native": "./artifacts/native.tgz",
     "@rust-js/react": "./artifacts/react.tgz",
@@ -112,18 +104,18 @@ Cargo where they are:
 }
 ```
 
-```js
-rustJs({ cargo: { package: "app" } })
+```sh
+rust-js build
 ```
 
 The isolated package test installs offline with lifecycle scripts disabled,
-repeats installation with a frozen lockfile, and builds a React app's Cargo
-package through the plugin. It omits Vite's peer for its direct hook test; the
-separate Vite suite exercises the real bundler and Fast Refresh. The installed
-launcher and host are exercised under Node.js, with a failing stub for Bun on
-`PATH` so a hidden dependency fails the test. The CLI uses a Node.js shebang;
-Bun-only users can run `bun node_modules/.bin/rust-js`. The builder invokes it
-with its own runtime.
+repeats installation with a frozen lockfile, and runs the installed `rust-js
+build` on a React app's Cargo package; the Vite and Next.js suites exercise
+the real bundlers and Fast Refresh beside it. The installed command and
+launcher are exercised under Node.js, with a failing stub for Bun on `PATH`
+so a hidden dependency fails the test. The command uses a Node.js shebang;
+Bun-only users can run `bun node_modules/.bin/rust-js build`. The builder
+invokes the compiler with its own runtime.
 
 The builder queries `rust-js --version-json` before a build: its `version`,
 `toolchain`, and `abi`, matching the compiler identity in emitted manifests.
@@ -142,8 +134,8 @@ mod model;
 
 The shared module can contain supported Serde models and portable validation
 functions. Keep native I/O in the server and browser APIs in the client. The
-compiler manifest lists the loaded shared file in `sources`, so a session
-builds the client again when it changes; rebuild the native server separately.
+compiler manifest lists the loaded shared file in `sources`; after changing
+it, run `rust-js build` for the client, and rebuild the native server.
 
 [`test/shared-code.test.ts`](../test/shared-code.test.ts) creates an app outside
 the repository, compiles the same models and validation for both targets, and
@@ -162,22 +154,14 @@ multi-file replacement.
 
 Cargo builds a workspace's libraries with rust-js as its workspace wrapper
 ([ADR 0101](../docs/decisions/0101-cargo-workspace-wrapper.md)), each to JS of
-its own ([ADR 0100](../docs/decisions/0100-separate-crates.md)):
-
-```js
-import { checkCargo } from "@rust-js/build/cargo";
-
-const { js, crates } = await checkCargo({
-  manifestPath: "Cargo.toml", toolchain: "<pinned release>", compiler: "/path/to/rust-js",
-  packageName: "frontend", features: [],
-});
-```
+its own ([ADR 0100](../docs/decisions/0100-separate-crates.md)), as `rust-js
+build --package frontend` asks for:
 
 It runs `RUSTC_WORKSPACE_WRAPPER=<compiler> cargo check --target
 wasm32-unknown-unknown`. Each library of the workspace that `frontend` uses,
 and `frontend` itself, is JS in Cargo's target directory, beside the metadata
-of that build of it, importing the others; `js` is `frontend`'s, and `crates`
-each crate's JS and manifest. A feature set built before is the JS it was.
+of that build of it, importing the others, then written beside its Rust. A
+feature set built before is the JS it was.
 Each file a crate's manifest lists is checked, of a build Cargo has as done
 too: one gone or edited is refused, and `cargo clean -p <package> --target
 wasm32-unknown-unknown` builds it again.
@@ -185,56 +169,25 @@ Registry crates, build scripts and procedural macros are built by rustc, as
 Cargo asks; of registry crates, only serde's are known to rust-js at run time.
 `cargo build` is refused.
 
-A crate using React depends on the bindings in rust-js, and `checkCargo`'s
-`react` is the release it's checked for (ADR 0043), the latest otherwise:
+A crate using React depends on the bindings in rust-js, and the React the
+app has installed is the release it's checked for (ADR 0043), the latest
+otherwise:
 
 ```toml
 [dependencies]
 react = { package = "rust-js-react", path = "/path/to/rust-js/react" }
 ```
 
-In Vite, the plugin's `cargo` option, its one way, builds the workspace with
-a session, for the React the app has installed, and the app imports the
-package's JS as `rust-js:<package>`:
+In an app, `rust-js build --package frontend` builds the workspace, for the
+React the app has installed, each module's JS beside its Rust, to be
+committed (ADR 0041): `frontend/src/api.rs` is `frontend/src/api.js`. The
+app imports the package's JS where it is:
 
 ```js
-// vite.config.js, in the workspace's web/
-plugins: [rustJs({ cargo: { package: "frontend", manifestPath: "../Cargo.toml" } }), react()]
+// web/src/main.jsx, Vite's root a directory of the workspace
+import { App } from "../../frontend/src/lib.jsx";
 ```
 
-```js
-import { App } from "rust-js:frontend";
-```
-
-An edit to any crate of the workspace is one `cargo check`, and the JS it
-changes is a Fast Refresh. Each module's JS is written beside its Rust, to be
-committed (ADR 0041): `frontend/src/api.rs` is `frontend/src/api.js`. Without
-rust-js, Vite builds from those. `cargo: { inSource: false }` leaves the JS in
-Cargo's target directory only, which must then be one Vite serves from.
-
-## Experimental Cargo planning
-
-`@rust-js/build/cargo` exports `planCargoLibraries({ manifestPath, toolchain, target,
-packageName?, features?, noDefaultFeatures? })`. Supply an exact toolchain pin and
-an explicit target triple. `packageName` selects a member of a virtual workspace.
-
-The planner invokes Cargo metadata with `--frozen`: create and commit the lockfile
-first. It resolves offline without changing that lockfile, and returns local
-library packages in dependency order, preserving dependency aliases, source paths,
-editions and Cargo-resolved features. Development dependencies are excluded.
-Registry/git packages, build scripts, procedural macros and packages without an
-ordinary library target are rejected when reachable from the selected library.
-
-This is dependency discovery, not a Cargo compilation entry point. It does not
-produce rustc invocations, compile dependencies to JS, establish a cross-crate ABI
-or cache compilation artifacts. Metadata feature sets are Cargo resolution data,
-not a substitute for Cargo compiler-unit/build-script information. The native
-builder and Vite do not consume this experimental plan yet.
-
-The compiler also has an experimental scalar linkage proof, described in
-[ADR 0085](../docs/decisions/0085-scalar-library-linkage.md). A producer uses
-`rust-js shared.rs -o shared.js --library --manifest shared.json`; a consumer
-passes `--dependency shared.json` plus real rustc `--extern` metadata after `--`.
-This supports only the documented scalar free-function ABI. The caller must build
-matching metadata and JS and rebuild dependencies after source edits. The Cargo
-planner, native build adapter and Vite do not orchestrate these steps yet.
+A change to any crate of the workspace is one more `rust-js build`, and the
+JS it changes is a Fast Refresh. Without rust-js, the app builds from what's
+committed.

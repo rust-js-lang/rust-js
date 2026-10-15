@@ -6,7 +6,7 @@ import { chromium } from "@playwright/test";
 import { buildCompiler, compiler, fixture, root } from "./support";
 
 const example = join(root, "examples/next");
-const bin = join(root, "next-plugin/bin.js");
+const cli = join(root, "tooling/cli.js");
 
 const about = `#![allow(non_snake_case)]
 
@@ -120,9 +120,6 @@ function generated(dir: string): Map<string, string> {
 // computes, an aria-label, and the anchor's other props (ADR 0200, 0208).
 function app(name: string): string {
   const dir = copy(name);
-  const cargo = join(dir, "Cargo.toml");
-  // With declarations, as react.dev has them (ADR 0196).
-  writeFileSync(cargo, readFileSync(cargo, "utf8") + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
     .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod post;\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\nmod counter;\nmod fonts;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
@@ -817,11 +814,14 @@ pub fn Counter() -> JSX::Element {
 }
 
 
-// `next dev` and `next build`, as the app's scripts run them, its config
-// compiling its Rust (ADR 0380); `rust-js-next compile`, its JS alone.
+// `next dev` and `next build`, as the app's scripts run them, Next.js's
+// alone; `rust-js build`, the app's Rust compiled, its own process beside
+// them (ADR 0412).
 function command(dir: string, args: string[]) {
-  const program = args[0] === "compile" ? bin : join(dir, "node_modules/next/dist/bin/next");
-  return spawn(process.execPath, [program, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
+  return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
+}
+function rustJs(dir: string, args: string[], env: Record<string, string> = {}) {
+  return spawn(process.execPath, [cli, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, ...env } });
 }
 
 function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | null; output: string }> {
@@ -831,9 +831,13 @@ function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | nul
   return new Promise((done) => child.on("exit", (code) => done({ code, output })));
 }
 
-test("next build builds a Next.js app whose routes and components are Rust, its config compiling them", async () => {
+test("next build builds a Next.js app whose routes and components are Rust, rust-js build compiling them first", async () => {
   buildCompiler();
   const dir = app("next-build");
+  const compiled = await finished(rustJs(dir, ["build"]));
+  expect([compiled.code, compiled.output]).toEqual([0, ""]);
+  // What it wrote is what the Rust compiles to, as CI checks before a build.
+  expect((await finished(rustJs(dir, ["build", "--check"]))).code).toBe(0);
   const { code, output } = await finished(command(dir, ["build"]));
   expect([code, output.includes("○ /about")]).toEqual([0, true]);
   // Its JS modules are ES modules to Node too, of the package's
@@ -999,92 +1003,60 @@ test("next build builds a Next.js app whose routes and components are Rust, its 
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');
 
-  // A Rust error is the build's, rustc's message, and no Next.js build.
+  // A change not compiled is what the check says, by file, and a Rust
+  // error is rust-js build's, rustc's message.
+  writeFileSync(join(dir, "app/counter.rs"), counter("Counted "));
+  const stale = await finished(rustJs(dir, ["build", "--check"]));
+  expect([stale.code, stale.output.includes("isn't what it compiles to"), stale.output.includes("app/counter.jsx")]).toEqual([1, true, true]);
   writeFileSync(join(dir, "app/counter.rs"), counter("Count ") + "pub fn broken(");
-  const failed = await finished(command(dir, ["build"]));
-  expect([failed.code, failed.output.includes("unclosed delimiter"), failed.output.includes("Creating an optimized production build")]).toEqual([1, true, false]);
+  const failed = await finished(rustJs(dir, ["build"]));
+  expect([failed.code, failed.output.includes("unclosed delimiter")]).toEqual([1, true]);
 }, 300_000);
 
-// `rust-js-next compile` writes the app's JS and runs no Next.js, for what an
+// `rust-js build` writes the app's JS and runs no Next.js, for what an
 // app's build reads of its Rust first, as react.dev's static files read its
-// llmsTxt.
-test("rust-js-next compile writes the app's JS alone", async () => {
+// llmsTxt; with no `--check`'s, any other argument is its usage.
+test("rust-js build writes the app's JS alone", async () => {
   buildCompiler();
   const dir = app("next-compile");
-  const { code } = await finished(command(dir, ["compile"]));
-  expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, ".next"))]).toEqual([0, true, false]);
+  const { code } = await finished(rustJs(dir, ["build"]));
+  expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, "app/linked.d.ts")), existsSync(join(dir, ".next"))]).toEqual([0, true, true, false]);
+  const wrong = await finished(rustJs(dir, ["build", "--watch"]));
+  expect([wrong.code, wrong.output]).toEqual([2, "rust-js: unknown argument --watch\nusage: rust-js build [--package <name>] [--check]\n"]);
 }, 300_000);
 
-// The config Next.js reads is the app's own, an object or Next.js's
-// function of the phase. Its Rust is compiled developing and building
-// only: `next start` compiles nothing, so an app with no Cargo.toml starts.
-test("withRustJs gives Next.js the app's config, and compiles only to develop and build", async () => {
-  const dir = fixture("with-rust-js");
-  mkdirSync(join(dir, "node_modules"));
-  symlinkSync(realpathSync(join(example, "node_modules/next")), join(dir, "node_modules/next"));
-  writeFileSync(join(dir, "package.json"), "{}");
-  const { withRustJs } = await import(join(root, "next-plugin/index.js"));
-  const cwd = process.cwd();
-  process.chdir(dir);
-  try {
-    expect(await withRustJs({ reactStrictMode: true })("phase-production-server", {})).toEqual({ reactStrictMode: true });
-    const config = withRustJs((phase: string, { defaultConfig }: { defaultConfig: object }) => ({ phase, defaultConfig }));
-    expect(await config("phase-production-server", { defaultConfig: { a: 1 } })).toEqual({ phase: "phase-production-server", defaultConfig: { a: 1 } });
-    // Building, it compiles: here, of no Cargo.toml, the error is Cargo's.
-    await expect(withRustJs({})("phase-production-build", {})).rejects.toThrow("Cargo.toml");
-    // Next.js loads its config twice in a build: one compile, both loads'.
-    const [first, second] = await Promise.allSettled([withRustJs({})("phase-production-build", {}), withRustJs({})("phase-production-build", {})]);
-    expect(first.status).toBe("rejected");
-    expect((first as PromiseRejectedResult).reason).toBe((second as PromiseRejectedResult).reason);
-  } finally {
-    process.chdir(cwd);
-  }
-});
-
-// Without a compiler, a teammate's who doesn't write Rust, the app is built
-// from the JS committed beside its Rust, its root's or, a root of `mod`s
-// alone (ADR 0382), its modules'.
-test("withRustJs builds an app from its committed JS where there's no compiler", async () => {
-  const dir = fixture("with-rust-js-committed");
-  mkdirSync(join(dir, "node_modules"));
-  symlinkSync(realpathSync(join(example, "node_modules/next")), join(dir, "node_modules/next"));
-  writeFileSync(join(dir, "package.json"), "{}");
-  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[lib]\npath = "src/lib.rs"\n\n[workspace]\n');
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "src/lib.rs"), '#[path = "Link.rs"]\npub mod link;\n');
-  writeFileSync(join(dir, "src/Link.jsx"), "// Generated by rust-js from src/Link.rs. Do not edit.\n");
-  const { withRustJs } = await import(join(root, "next-plugin/index.js"));
-  const said: string[] = [];
-  const write = process.stderr.write;
-  const [cwd, given] = [process.cwd(), process.env.RUST_JS_COMPILER];
-  process.chdir(dir);
-  process.env.RUST_JS_COMPILER = join(dir, "missing", "rust-js");
-  process.stderr.write = ((line: string) => said.push(line) > 0) as typeof process.stderr.write;
-  try {
-    expect(await withRustJs({ a: 1 })("phase-production-build", {})).toEqual({ a: 1 });
-  } finally {
-    process.stderr.write = write;
-    process.chdir(cwd);
-    if (given === undefined) delete process.env.RUST_JS_COMPILER;
-    else process.env.RUST_JS_COMPILER = given;
-  }
-  expect(said.join("")).toContain("using the committed JS beside the Rust");
-}, 120_000);
+// Without a compiler, a teammate's who doesn't write Rust, `next build`
+// builds the JS committed beside the Rust, Next.js's own; `rust-js build`
+// says there's none to compile it.
+test("next build builds the committed JS where there's no compiler, and rust-js build says so", async () => {
+  const dir = copy("next-without-compiler");
+  const { code } = await finished(command(dir, ["build"]));
+  expect([code, existsSync(join(dir, ".next/server/app/index.html"))]).toEqual([0, true]);
+  const missing = join(dir, "missing", "rust-js");
+  const none = await finished(rustJs(dir, ["build"], { RUST_JS_COMPILER: missing }));
+  expect([none.code, none.output.trim()]).toEqual([1, `rust-js: no rust-js at ${missing}: install rust-js or build it with cargo build to compile the Rust`]);
+}, 300_000);
 
 // What's committed is what rust-js writes now, as the pilot's is: a change
 // to the compiler is committed with the example's JS it changes.
 test("the example's committed JS is what rust-js writes from its Rust", async () => {
   buildCompiler();
   const dir = copy("next-committed");
-  const { code } = await finished(command(dir, ["compile"]));
+  const { code } = await finished(rustJs(dir, ["build"]));
   expect(code).toBe(0);
   expect(generated(example).size).toBeGreaterThan(0);
   expect(generated(dir)).toEqual(generated(example));
 }, 300_000);
 
-test("next dev serves Rust routes, refreshes a save in place, and recovers from an error, its config compiling them", async () => {
+test("next dev serves Rust routes, refreshes each rust-js build in place, and recovers from an error", async () => {
   buildCompiler();
   const dir = app("next-dev");
+  // The app's Rust compiled, then Next.js's dev server, each its own process.
+  expect((await finished(rustJs(dir, ["build"]))).code).toBe(0);
+  const save = async (text: string) => {
+    writeFileSync(join(dir, "app/counter.rs"), text);
+    return finished(rustJs(dir, ["build"]));
+  };
   const port = 3200 + Math.floor(Math.random() * 500);
   const server = command(dir, ["dev", "--port", String(port)]);
   let output = "";
@@ -1109,7 +1081,7 @@ test("next dev serves Rust routes, refreshes a save in place, and recovers from 
     // under the suite's load, and an update before then is lost: a save
     // until one is shown, each another, as the same JS is no update.
     for (let tries = 0; ; tries++) {
-      writeFileSync(join(dir, "app/counter.rs"), counter(`Warm${tries} `));
+      await save(counter(`Warm${tries} `));
       try {
         await button.filter({ hasText: `Warm${tries} 1` }).waitFor({ timeout: 5_000 });
         break;
@@ -1118,17 +1090,17 @@ test("next dev serves Rust routes, refreshes a save in place, and recovers from 
       }
     }
 
-    // A save is a Fast Refresh: the client component keeps its state.
-    writeFileSync(join(dir, "app/counter.rs"), counter("Clicks "));
+    // A build is a Fast Refresh: the client component keeps its state.
+    await save(counter("Clicks "));
     await button.filter({ hasText: "Clicks 1" }).waitFor({ timeout: 30_000 });
 
-    // An error is rustc's, in the terminal, and Next.js goes on; fixed, the
-    // page is the Rust's again.
-    const before = output.length;
-    writeFileSync(join(dir, "app/counter.rs"), counter("Clicks ") + "pub fn broken(");
-    while (!output.slice(before).includes("error")) await Bun.sleep(100);
+    // An error is rustc's, rust-js build's, and Next.js goes on serving what
+    // was written; fixed, the page is the Rust's again.
+    const broken = await save(counter("Clicks ") + "pub fn broken(");
+    expect([broken.code, broken.output.includes("error")]).toEqual([1, true]);
     expect(server.exitCode).toBe(null);
-    writeFileSync(join(dir, "app/counter.rs"), counter("Taps "));
+    await button.filter({ hasText: "Clicks 1" }).waitFor();
+    await save(counter("Taps "));
     await button.filter({ hasText: "Taps 1" }).waitFor({ timeout: 30_000 });
 
     // A route below it, and next/link back, without loading the page again.

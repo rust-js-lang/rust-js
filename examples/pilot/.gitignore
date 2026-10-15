@@ -1,7 +1,7 @@
 /target
 /node_modules
 /web/dist
-# The patch rust-js-patch writes, the install's `postinstall`, of where the
+# The patch `rust-js build` writes, of where the
 # crates in node_modules are.
 /.cargo
 # The JS rust-js writes beside the Rust is committed (ADR 0041); its maps aren't.

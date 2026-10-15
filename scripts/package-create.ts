@@ -26,8 +26,8 @@ try {
   // it made goes with it, with its overrides', `create/<template>`, in place
   // of the example's own. The crates the example has by path, from this
   // checkout, are an app's npm packages, each at its crate's version, named
-  // in its Cargo.toml by version: its `postinstall`, rust-js-patch, tells
-  // Cargo where they are. Each crate a crate it names uses is a package too.
+  // in its Cargo.toml by version: `rust-js build`'s patch tells Cargo where
+  // they are. Each crate a crate it names uses is a package too.
   const templates = Object.entries(JSON.parse(readFileSync(join(root, "create/templates.json"), "utf8")) as Record<string, { example: string }>)
     .map(([name, { example }]) => ({ name, example }));
   const cargo = (dir: string) =>
@@ -73,7 +73,6 @@ try {
     const manifest = JSON.parse(readFileSync(templatePath, "utf8"));
     for (const { dir, npm } of crates) manifest.dependencies[npm] = crateVersion(dir);
     manifest.devDependencies["@rust-js/build"] = "workspace:*";
-    manifest.scripts = { ...manifest.scripts, postinstall: "rust-js-patch" };
     writeFileSync(templatePath, JSON.stringify(manifest, null, 2) + "\n");
   }
   mkdirSync(dirname(output), { recursive: true });

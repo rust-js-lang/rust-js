@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { runSync } from "./child";
+import { writePatch } from "../tooling/patch.js";
 import { fixture, root } from "./support";
 
 type Crate = { npm: string; crate: string; lib: string; version: string; peers?: Record<string, string>; deps?: string; source: string };
@@ -52,12 +53,21 @@ function app(name: string) {
   return dir;
 }
 
-const patch = (dir: string) => runSync([process.execPath, join(root, "tooling", "patch.js"), dir], dir, 60_000);
+/** The patch `rust-js build` writes of `dir` (ADR 0412): how it ended, and
+ * what it said, as the command reports it. */
+const patch = (dir: string) => {
+  try {
+    writePatch(dir);
+    return { code: 0, stderr: "" };
+  } catch (error) {
+    return { code: 1, stderr: `rust-js: ${(error as Error).message}` };
+  }
+};
 const config = (dir: string) => readFileSync(join(dir, ".cargo", "config.toml"), "utf8");
 const check = (dir: string) => runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(dir, "Cargo.toml")], dir, 300_000, { RUSTC_BOOTSTRAP: undefined });
 
 const block = (lines: string[]) =>
-  `# rust-js: begin\n# Where Cargo finds each crate an npm package has: written by rust-js from\n# what's installed, as each install ends. Edits here are written over.\n[patch.crates-io]\n${lines.join("\n")}\n# rust-js: end\n`;
+  `# rust-js: begin\n# Where Cargo finds each crate an npm package has: written by rust-js from\n# what's installed, as each build runs. Edits here are written over.\n[patch.crates-io]\n${lines.join("\n")}\n# rust-js: end\n`;
 
 test("an app's patch names each crate its packages have, where npm put it, and Cargo finds them", () => {
   const dir = app("patch-flat");

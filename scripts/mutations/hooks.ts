@@ -10,12 +10,4 @@ export const mutations: Mutation[] = [
     replace: "        let _ = rust;\n        out.push_str(line);",
     tests: ["test/settings.test.ts", "-t", "said of the Rust"],
   },
-  {
-    name: "check-build-only-on-save",
-    breaks: "a check only for a build, too slow for a save, runs on each save",
-    file: "src/hooks.rs",
-    find: "        if save && check.when == When::Build {",
-    replace: "        if false && save && check.when == When::Build {",
-    tests: ["test/settings.test.ts", "-t", "only in a build"],
-  },
 ];

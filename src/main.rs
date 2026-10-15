@@ -270,8 +270,8 @@ fn main() -> ExitCode {
         }
         // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).
         Ok(command::Command::Checks(checks)) => {
-            let checked = settings::read(&checks.input, false)
-                .and_then(|settings| hooks::check(&settings, &checks.files, checks.save));
+            let checked =
+                settings::read(&checks.input, false).and_then(|settings| hooks::check(&settings, &checks.files));
             return match checked {
                 Ok(()) => ExitCode::SUCCESS,
                 Err(error) => {
@@ -344,14 +344,17 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         cargo,
         library: export_library,
         dependencies: dependency_paths,
-        save,
+        declarations,
         manifest,
         std_coverage,
         ..
     } = build;
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
-    let settings = settings::read(&input, cargo)?;
+    let settings = settings::Settings {
+        declarations,
+        ..settings::read(&input, cargo)?
+    };
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
@@ -387,7 +390,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     // Once it's all written, the crate's checks of it. Cargo's build runs
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
     if exit == ExitCode::SUCCESS && !cargo {
-        hooks::check(&plan.settings, &plan.written, save)?;
+        hooks::check(&plan.settings, &plan.written)?;
     }
     Ok(exit)
 }
