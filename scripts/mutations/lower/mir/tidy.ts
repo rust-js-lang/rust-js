@@ -732,4 +732,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "cell-first-value-apart",
+    breaks: "a cell a pointer's taken to is `const x = {}; x.value = 1;`, not `const x = { value: 1 };`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut first_cell_values);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+    snapshots: true,
+  },
 ];

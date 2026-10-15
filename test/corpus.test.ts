@@ -235,7 +235,7 @@ firstPart("a compile-fail case rust-js compiles, or rejects for another reason, 
   expect(await control("compiles", "//@ compile-fail: does not support\nfn main() {}\n")).toEqual([
     "rust-js compiled it, but `compile-fail` says it can't",
   ]);
-  expect(await control("other-error", "//@ compile-fail: a text no error has\nfn main() { let x = 1u8; let p: *const u8 = &x; println!(\"{}\", p.is_null()); }\n")).toEqual([
+  expect(await control("other-error", "//@ compile-fail: a text no error has\nfn main() { let x: f32 = unsafe { std::mem::transmute(1u32) }; println!(\"{}\", x); }\n")).toEqual([
     expect.stringContaining("rust-js's first error doesn't say"),
   ]);
 }, 120_000);

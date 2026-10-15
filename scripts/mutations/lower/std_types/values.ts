@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
   },
+  {
+    name: "pointer-as-ref-option-refused",
+    breaks: "a pointer's `as_ref()` of what could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::Pointer(PointerOp::AsRef | PointerOp::AsMut)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
 ];

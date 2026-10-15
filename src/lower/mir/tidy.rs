@@ -269,6 +269,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // `const result = e; return result;` of what the function gives: `return e;`.
     js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
     // And their arms that do nothing.
+    // A cell a pointer's taken to, made where its value's first set.
+    js::statement_lists(body, &mut first_cell_values);
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));

@@ -1,7 +1,7 @@
 //! A call and what calls share: `Call`, a call made, `apply`, calling a
 //! function value with what's given, `catching`, a JS call that may throw
-//! made a `Result` (ADR 0035), `given_to_js`, a value made what JS takes,
-//! and `ptr_eq_refused`. Which call it is, MIR's lowering says
+//! made a `Result` (ADR 0035), and `given_to_js`, a value made what JS
+//! takes. Which call it is, MIR's lowering says
 //! (`mir/calls.rs`, `mir/std_calls.rs`).
 
 use super::recognition::Catching;
@@ -23,13 +23,6 @@ pub(super) struct Call<'c, 'tcx> {
     /// Each argument's type.
     pub(super) tys: &'c [Ty<'tcx>],
     pub(super) span: Span,
-}
-
-/// Why `std::ptr::eq` of a Rust value, `of`, is refused (ADR 0285).
-pub(super) fn ptr_eq_refused(of: Ty<'_>) -> String {
-    format!(
-        "`std::ptr::eq` of a `{of}`: rust-js shares a copy no one changes and writes a number as its value, so where a Rust value is has no JS counterpart; compare the values, or references to JS objects"
-    )
 }
 
 /// Arguments given to JS: a trailing `undefined` is one it's given, which

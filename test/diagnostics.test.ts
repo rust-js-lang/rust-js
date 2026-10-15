@@ -9,13 +9,21 @@ beforeAll(buildCompiler, 600_000);
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
-  ["unsupported type", 'pub fn f(x: *const u8) -> *const u8 { x }', "does not support addressable memory yet: values of type `*const u8`"],
+  ["unsupported type", 'pub fn f(x: *const [u8]) -> *const [u8] { x }', "does not support addressable memory yet: values of type `*const [u8]`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.
   ["a const block of a static's dyn", 'trait T { fn get(&self) -> u32; }\nstruct A(u32);\nimpl T for A { fn get(&self) -> u32 { self.0 } }\nstatic S: A = A(1);\npub fn f() -> u32 { let x = [const { &S as &dyn T }; 1]; x[0].get() }', "does not support constants of type `&dyn T`"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
   // ADR 0390: addressable memory, which JavaScript has none of, says so.
   ["a transmute", "pub fn f(x: u32) -> f32 { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: calling `std::intrinsics::transmute`"],
-  ["a raw pointer to a value", "pub fn f() -> bool { let x = 1; let p = &raw const x; p.is_null() }", "does not support addressable memory yet: a raw pointer to a value"],
+  // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
+  ["a pointer's address", "pub fn f() -> usize { let x = 1; let p = &raw const x; p as usize }", "does not support addressable memory yet: a pointer's address"],
+  ["a pointer made of an address", "pub fn f() -> bool { let p = 3 as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer made of an address"],
+  ["a pointer read as another type's", "pub fn f() -> u16 { let x = 1u32; let p = &raw const x as *const u16; unsafe { *p } }", "does not support addressable memory yet: a pointer read as another type's"],
+  ["a pointer into a slice", "pub fn f(s: &[u8]) -> u8 { unsafe { *s.as_ptr() } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["a pointer through a &mut", "pub fn f(r: &mut u32) -> *mut u32 { r }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to"],
+  ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
   ["camelCase fields that collide", '#![allow(non_snake_case)]\n#[rust_js::camel_case]\nconst _: () = ();\npub struct P { pub first_name: u32, pub firstName: u32 }\npub fn f(p: &P) -> u32 { p.first_name + p.firstName }', "both `firstName` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
@@ -39,8 +47,7 @@ for (const [name, source, message, crate] of [
   ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],
   // `ptr::eq` of a Rust value: an unchanged copy is one JS object, and a
   // number is its value, so a place's address isn't JS's (ADR 0285).
-  ["ptr::eq of a Rust struct", "#[derive(Clone, Copy)]\npub struct P { pub x: u32 }\npub fn f(a: &P, b: &P) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `P`"],
-  ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `u32`"],
+  ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
   ["a width for a JsError", 'pub fn f(e: &js::JsError) -> String { format!("{:>9?}", e) }', "options for a", "js"],
   ["a width for a serde_json Value", 'pub fn f(v: &serde_json::Value) -> String { format!("{:>9}", v) }', "options for a", "serde"],

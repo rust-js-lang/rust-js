@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && kind == Std::FmtDisplay && self.displays_itself(ty) {\n",
     tests: ["test/bindings.test.ts","-t","js::shown"],
   },
+  {
+    name: "pointer-p-refused",
+    breaks: "`{:p}` of a raw pointer is refused, even where an assertion that holds never shows it",
+    file: "src/lower/format_spec.rs",
+    find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value),\n",
+    replace: "",
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer"],
+  },
 ];

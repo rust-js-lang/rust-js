@@ -349,4 +349,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathEq\"), vec![a, b]));\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
+  {
+    name: "pointer-eq-refused",
+    breaks: "`p == q` of raw pointers is refused",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.is_handle_pointer(ty) {\n            return Ok(Expr::bin(Op::Eq, a, b));\n",
+    replace: "        if false {\n            return Ok(Expr::bin(Op::Eq, a, b));\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "pointer-held-compared-by-value",
+    breaks: "what holds a raw pointer, an `Option` of one, compares it with `$eq`, the handles' fields, not their identity",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::RawPtr(..) if self.is_handle_pointer(ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
 ];

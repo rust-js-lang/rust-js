@@ -190,6 +190,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.with_options(Some(options), |cx| cx.writer_call(fmt, args, value, &given, span));
         }
         let text = match kind {
+            // A raw pointer's address, which JS hasn't (ADR 0407).
+            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value),
             Std::FmtPointer => return Err(self.unsupported(span, &format!("`{{:p}}` of a `{ty}`"))),
             Std::FmtRadix(radix) => {
                 let Some(num) = num.filter(|&n| !n.float()) else {

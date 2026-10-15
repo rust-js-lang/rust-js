@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            (ty::Adt(adt, args), _) if adt.is_enum() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
   },
+  {
+    name: "pointer-unrepresentable",
+    breaks: "a raw pointer's values are refused",
+    file: "src/lower/support.rs",
+    find: "            ty::RawPtr(inner, _)\n                if !matches!(\n",
+    replace: "            ty::RawPtr(inner, _)\n                if false && !matches!(\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
 ];

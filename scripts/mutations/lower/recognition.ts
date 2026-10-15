@@ -1449,4 +1449,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
   },
+  {
+    name: "pointer-std-unknown",
+    breaks: "std's functions of a raw pointer are refused as memory",
+    file: "src/lower/recognition.rs",
+    find: "        if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {\n",
+    replace: "        if let Some(op) = None::<PointerOp> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "pointer-as-mut-not-cell",
+    breaks: "a pointer's `as_mut()` is refused as a `&mut` used as a value",
+    file: "src/lower/recognition.rs",
+    find: "                | Std::Pointer(PointerOp::AsMut)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
 ];

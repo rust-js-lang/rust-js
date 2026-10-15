@@ -1,6 +1,8 @@
 # 0285. `std::ptr::eq` of JS objects is whether they're one
 
-Status: Accepted. Extends [0111](0111-js-types-as-structs.md).
+Status: Accepted, amended by [0407](0407-a-raw-pointer-is-a-handle-on-its-place.md):
+`ptr::eq` of Rust values is their places', a pointer being a handle on
+one. Extends [0111](0111-js-types-as-structs.md).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

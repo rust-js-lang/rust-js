@@ -366,6 +366,42 @@ pub(super) fn read_at_once(stmts: &[Stmt], at: usize, name: &str) -> bool {
     still
 }
 
+/// `const x = { value: undefined };`, a cell a pointer is taken to, declared
+/// before its value (ADR 0407), and its first mention in the same block its
+/// value set, `x.value = 1;`, of what doesn't read `x`: `const x = { value:
+/// 1 };` there, nothing before it having it.
+pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Const(name, value) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let empty = matches!(&value.kind, ExprKind::Object(props)
+            if matches!(props.as_slice(), [js::Prop::Field(key, held)] if key == js::HELD && matches!(held.kind, ExprKind::Undefined)));
+        let name = name.clone();
+        let first = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) > 0);
+        let set = first.and_then(|j| match &stmts[j].kind {
+            StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Member(cell, key)
+                    if key == js::HELD && matches!(&cell.kind, ExprKind::Var(v) if *v == name))
+                    && !value.mentions_var(&name) =>
+            {
+                Some((j, value.clone()))
+            }
+            _ => None,
+        });
+        match (empty, set) {
+            (true, Some((j, value))) => {
+                let span = stmts[j].span;
+                stmts[j] = StmtKind::Const(name, Expr::object(vec![js::Prop::Field(js::HELD.into(), value)])).at(span);
+                stmts.remove(i);
+            }
+            _ => i += 1,
+        }
+    }
+}
+
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
 /// `value` alone is read and set, by those names: `let n = x`, `n` where
 /// each reads its `value` (ADR 0287). Nothing else has it, so nothing else

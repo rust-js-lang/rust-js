@@ -6,6 +6,7 @@ pub(super) mod registry;
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
 use super::fn_def;
 use super::format_spec::Radix;
+use super::pointers::PointerOp;
 use super::representation::Num;
 use super::std_types::any::AnyOp;
 use super::std_types::cow::CowOp;
@@ -151,6 +152,8 @@ pub(super) enum Std {
     Process(ProcessOp),
     /// A path's own method (ADR 0405).
     Path(PathOp),
+    /// std's of a raw pointer, a handle on its place (ADR 0407).
+    Pointer(PointerOp),
     /// `MaybeUninit`'s, and a `Box`'s made before its value (ADR 0332).
     Uninit(UninitOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
@@ -472,6 +475,8 @@ impl Std {
                 | Std::CellGetMut
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
+                // A pointer's `as_mut()`, its handle, a cell (ADR 0407).
+                | Std::Pointer(PointerOp::AsMut)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
                 | Std::Slice(
                     SliceOp::PushMut { .. }
@@ -559,6 +564,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // The one thread there is yields to none (ADR 0142).
         if std_path(tcx, def_id) == "std::thread::yield_now" {
             return Some(Some(Std::Nothing));
+        }
+        // A raw pointer's, a handle on its place (ADR 0407).
+        if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {
+            return Some(Some(Std::Pointer(op)));
         }
         // The process a program runs in, Node's (ADR 0391).
         if let Some(op) = node_only(tcx, def_id) {

@@ -428,4 +428,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::str(\"StripPrefixError(())\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "pointer-debug-refused",
+    breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
+    file: "src/lower/display.rs",
+    find: "        if self.is_handle_pointer(ty) {\n            return Ok(self.pointer_shown(value));\n",
+    replace: "        if false {\n            return Ok(self.pointer_shown(value));\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
 ];

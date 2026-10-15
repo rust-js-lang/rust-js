@@ -187,6 +187,34 @@ pub fn rewritten() -> f32 {
   expect(call("rewritten")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
 });
 
+// A pointer's address, which JS hasn't, is rust-js's error where it's
+// shown; a null one's is `0x0`, as every program shows it (ADR 0407).
+test("a pointer's address is rust-js's error where it's shown", () => {
+  const dir = fixture("pointer-shown");
+  writeFileSync(join(dir, "lib.rs"), `pub fn debug() -> String {
+    let x = 1;
+    format!("{:?}", &raw const x)
+}
+
+pub fn pointer() -> String {
+    let x = 1;
+    format!("{:p}", &raw const x)
+}
+
+pub fn none() -> String {
+    format!("{:?} {:p}", std::ptr::null::<u8>(), std::ptr::null::<u8>())
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
+  const error = "rust-js does not support showing a pointer's address, which JS hasn't\n";
+  expect(call("debug")).toBe(error);
+  expect(call("pointer")).toBe(error);
+  expect(call("none")).toBe("0x0 0x0\n");
+});
+
 // A `None` given to JS is `undefined` given, never left out: a JS function
 // may count its arguments, as `Math.max` does (ADR 0330).
 test("an undefined given to JS is an argument, never left out", () => {

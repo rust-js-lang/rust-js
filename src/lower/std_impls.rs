@@ -645,6 +645,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.counted_rc(ty).is_some() => true,
             // A `Cow` compares what it borrows, not its variant (ADR 0400).
             ty::Adt(..) if self.recognition().is_cow(ty) => true,
+            // A raw pointer, by its handle, not what it points to (ADR 0407).
+            ty::RawPtr(..) if self.is_handle_pointer(ty) => true,
             // `Vec`, `Box`, `Rc` and cells compare what they hold.
             ty::Adt(_, args) if self.is_std_wrapper(ty) => args.types().any(|t| self.custom_eq_in(t, seen)),
             ty::Adt(adt, args) => adt
@@ -691,6 +693,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (js::ExprKind::Bool(true), _) => return Ok(Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, b))),
                 _ => {}
             }
+        }
+        // A raw pointer, its handle, one for each place (ADR 0407).
+        if self.is_handle_pointer(ty) {
+            return Ok(Expr::bin(Op::Eq, a, b));
         }
         // A path's components, `a/b` and `a//b` alike (ADR 0401).
         if self.recognition().is_path(ty) {

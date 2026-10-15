@@ -262,6 +262,9 @@ struct State<'m, 'tcx> {
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
     in_place: std::collections::HashMap<Local, Expr>,
+    /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
+    /// whose `value` is the place it points to (ADR 0407).
+    pointed: super::pointers::Pointed,
     /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
     /// that, which `next_back` steps from its source's end.
     maps: std::collections::HashMap<Local, Expr>,
@@ -455,18 +458,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What THIR's drop facts refuse of its closures holding what has a
         // destructor.
         self.check_closure_drops()?;
-        // `std::ptr::eq` of a Rust value, whose pointer MIR makes first,
-        // refused (ADR 0285).
-        for e in self.thir.exprs.iter() {
-            if let thir::ExprKind::Call { fun, .. } = e.kind
-                && let Some((id, args)) = fn_def(self.thir[fun].ty)
-                && self.recognition().classify(id, args) == Some(Std::PtrEq)
-                && let Some(of) = args.types().next()
-                && !self.is_js_object(of)
-            {
-                return Err(self.tcx.dcx().span_err(e.span, super::calls::ptr_eq_refused(of)));
-            }
-        }
         let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
         let outer_tested = std::mem::take(&mut self.locals.mir.tested);
         let outer_captured = std::mem::take(&mut self.locals.mir.captured);
@@ -508,6 +499,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             binding_var: false,
             flattened: Default::default(),
             in_place: Default::default(),
+            pointed: self.pointed_locals(mir_body),
             maps: Default::default(),
             named: Default::default(),
             parts: Default::default(),
@@ -747,7 +739,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
             {
                 self.check_variable(&state, local, def_span)?;
-                out.push(StmtKind::Let(state.locals.names[local].clone(), None).at(js::Span::NONE));
+                let name = state.locals.names[local].clone();
+                // One a pointer is taken to, its cell (ADR 0407).
+                out.push(
+                    match state.pointed.locals.contains(&local) {
+                        true => StmtKind::Const(
+                            name,
+                            Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::undefined())]),
+                        ),
+                        false => StmtKind::Let(name, None),
+                    }
+                    .at(js::Span::NONE),
+                );
                 state.locals.declared[local] = true;
             }
         }
@@ -1983,6 +1986,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match state.locals.names[local].as_str() {
             "" => Ok(Value::Expr(Expr::undefined())),
+            // A cell a pointer is taken to (ADR 0407): its `value`.
+            name if state.pointed.locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
             name => Ok(Value::Expr(Expr::var(name))),
         }
     }
@@ -2108,6 +2113,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let context_member = super::recognition::is_context_member(self.tcx, ty);
         match &e.kind {
             js::ExprKind::Member(..) if context_member => true,
+            // A pointer, one handle for each place, of a place that's the same
+            // anywhere (ADR 0407): `$ptr(COUNT, "value")`.
+            js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$ptr" | "$ptrTo")) => {
+                args.iter().all(|arg| alike(arg) || arg.is_constant())
+            }
             _ => alike(e),
         }
     }
@@ -2271,6 +2281,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty()
             && state.locals.user[place.local]
             && state.locals.writes[place.local] == 1
+            && !state.pointed.borrowed.contains(&place.local)
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && target.projection.is_empty()
             && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
@@ -2288,6 +2299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty()
             && state.locals.user[place.local]
             && state.locals.writes[place.local] == 1
+            && !state.pointed.borrowed.contains(&place.local)
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && !target.projection.is_empty()
             && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()
@@ -2348,6 +2360,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 "flattened props taken apart here: take them apart where they're given, `fn f(Props { a, anchor }: Props)`",
             ));
+        }
+        // A pointer nothing reads, which making does nothing (ADR 0407).
+        if let Rvalue::RawPtr(..) = rvalue
+            && place.projection.is_empty()
+            && state.locals.reads[place.local] == 0
+            && !state.locals.borrowed[place.local]
+        {
+            state.binding_var = false;
+            return Ok(());
         }
         let value = self.mir_rvalue(state, rvalue, span, out);
         state.binding_var = false;
@@ -2530,8 +2551,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A `&mut` to a place that's always the same, made once: the
         // place, named where it's used, as borrowck keeps it the same.
+        // Not one borrowed whole, `&r`, which is a value of its own then.
         if place.projection.is_empty()
             && state.locals.writes[local] == 1
+            && !state.pointed.borrowed.contains(&local)
             && let Value::Ref(target) = &value
             && same_place(state, target)
         {
@@ -2582,7 +2605,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         };
-        if place.projection.is_empty() && self.foldable(state, local) && (state.locals.reads[local] == 1 || parts) {
+        if place.projection.is_empty()
+            && !state.pointed.locals.contains(&local)
+            && self.foldable(state, local)
+            && (state.locals.reads[local] == 1 || parts)
+        {
             state.pending.push((local, value));
             return Ok(());
         }
@@ -2596,6 +2623,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
             if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l]));
         if place.projection.is_empty()
+            && !state.pointed.locals.contains(&local)
             && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local]
@@ -2615,6 +2643,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the variable itself in JS, written through the borrow: a `let`,
             // which tidy makes a `const` where nothing assigns it.
             let js_span = state.let_spans.get(&local).copied().unwrap_or(js_span);
+            // One a pointer is taken to, a cell (ADR 0407).
+            if state.pointed.locals.contains(&local) {
+                let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), expr)]);
+                out.push(StmtKind::Const(name, cell).at(js_span));
+                return Ok(());
+            }
             out.push(
                 match state.locals.borrowed[local] {
                     true => StmtKind::Let(name, Some(expr)),
@@ -2907,7 +2941,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (None, "") => Expr::undefined(),
                 (None, name) => {
                     state.named.insert(place.local);
-                    Expr::var(name)
+                    match state.pointed.locals.contains(&place.local) {
+                        true => Expr::held(Expr::var(name)),
+                        false => Expr::var(name),
+                    }
                 }
             }
         } else if matches!(
@@ -2991,6 +3028,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match elem {
             // A reference is what it refers to (ADR 0023), and so are a box
             // and a pointer, a `static mut`'s.
+            // A raw pointer's place, a handle's `value` (ADR 0407).
+            PlaceElem::Deref if self.is_handle_pointer(ty.ty) => self.pointee_place(base),
             PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() || ty.ty.is_raw_ptr() => base,
             // JS's props have no `rest`: what's left of them is taken apart
             // from the rest, `{ href, ...rest }` (ADR 0195).
@@ -3361,13 +3400,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Ok(Value::Expr(self.mir_called_value(state, (def_id, args), c.span)?)),
                 }
             }
-            // A pointer to a `static mut`, its `{ value }`'s place (ADR 0096).
+            // A pointer to a `static mut`, a handle on its `{ value }`'s place
+            // (ADRs 0096, 0407); a reference to one, the place.
             Operand::Constant(c)
                 if let Some(def_id) = self.const_static(c)
                     && self.tcx.is_mutable_static(def_id)
                     && self.krate.fns.contains_key(&def_id) =>
             {
-                Ok(Value::Ref(Expr::held(self.fn_ref(def_id))))
+                Ok(match self.is_handle_pointer(c.ty()) {
+                    true => Value::Expr(Expr::call(
+                        Expr::helper("$ptr"),
+                        vec![self.fn_ref(def_id), Expr::str(js::HELD)],
+                    )),
+                    false => Value::Ref(Expr::held(self.fn_ref(def_id))),
+                })
             }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
@@ -3448,11 +3494,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(def_id) = self.const_static(c)
             && !tcx.is_mutable_static(def_id)
         {
-            if tcx.is_foreign_item(def_id) {
-                return Ok(self.js_ref(&bindings::js_name(tcx, def_id)));
-            }
-            if self.krate.fns.contains_key(&def_id) {
-                return Ok(self.fn_ref(def_id));
+            let referred = match tcx.is_foreign_item(def_id) {
+                true => Some(self.js_ref(&bindings::js_name(tcx, def_id))),
+                false => self.krate.fns.contains_key(&def_id).then(|| self.fn_ref(def_id)),
+            };
+            if let Some(referred) = referred {
+                // A raw pointer to one, a handle on it (ADR 0407): of what isn't
+                // an object, a cell of its value, which nothing writes.
+                return Ok(match ty.kind() {
+                    ty::RawPtr(pointee, _) if self.is_handle_pointer(ty) => {
+                        match self.is_object(*pointee) && !self.is_cell_pointee(*pointee) {
+                            true => self.pointer_to(referred, *pointee, c.span)?,
+                            false => Expr::object(vec![Prop::Field(js::HELD.into(), referred)]),
+                        }
+                    }
+                    _ => referred,
+                });
             }
         }
         let value = match (self.mir_const_value(c.const_, ty, c.span)).and_then(|value| const_js(tcx, value)) {
@@ -3842,6 +3899,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
                     }
+                    // An array's pointer as its first item's (ADR 0407).
+                    PointerCoercion::ArrayToPointer if self.is_handle_pointer(*to) => {
+                        let pointer = self.mir_expr(state, operand, out)?;
+                        return Ok(Value::Expr(self.first_item_pointer(pointer)));
+                    }
                     PointerCoercion::Unsize | PointerCoercion::MutToConstPointer | PointerCoercion::ArrayToPointer => {
                         if *coercion == PointerCoercion::Unsize {
                             self.check_unsize(*to, span)?;
@@ -3855,6 +3917,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | PointerCoercion::ClosureFnPointer(_) => {
                         return self.mir_operand(state, operand, out);
                     }
+                }
+            }
+            Rvalue::Cast(kind, operand, to)
+                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>
+            {
+                let from = operand.ty(decls, tcx);
+                let value = self.mir_expr(state, operand, out)?;
+                match self.pointer_cast(*kind, value.clone(), (from, *to), span)? {
+                    Some(cast) => cast,
+                    None => self.cast(value, from, *to, span)?,
                 }
             }
             Rvalue::Cast(_, operand, to) => {
@@ -3904,8 +3976,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {
                 self.mir_place(state, *place, span, out)?
             }
-            // Any other, of a place's address (ADR 0390).
-            Rvalue::RawPtr(..) => return Err(refuse(tcx, span, Refused::Memory("a raw pointer to a value"))),
+            // A pointer to a place, a handle on it (ADR 0407); of what a pointer
+            // points to, `&raw const *p`, that pointer.
+            Rvalue::RawPtr(_, place) => {
+                if let [PlaceElem::Deref] = place.projection.as_slice()
+                    && self.is_handle_pointer(decls[place.local].ty)
+                {
+                    let pointer = self.read_local_value(state, place.local, out)?;
+                    return Ok(pointer);
+                }
+                // Of what a reference made once of a whole local refers to, a
+                // pointer to that local.
+                if let [PlaceElem::Deref] = place.projection.as_slice()
+                    && let Some(&local) = state.pointed.refs.get(&place.local)
+                    && state.pointed.locals.contains(&local)
+                {
+                    let target = self.mir_place(state, Place::from(local), span, out)?;
+                    return Ok(Value::Expr(self.pointer_to(target, place.ty(decls, tcx).ty, span)?));
+                }
+                self.check_slice_item_pointer((state.body, &state.pointed.copies), *place, span)?;
+                let pointee = place.ty(decls, tcx).ty;
+                let target = self.mir_place(state, *place, span, out)?;
+                // Of what a `&mut` refers to, a value JS can't change in place:
+                // through its box or handle, `r.value`, whose place isn't the
+                // one it refers to, which another pointer to it wouldn't be.
+                if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
+                    && let ty::Ref(_, referent, ty::Mutability::Mut) =
+                        *Place::ty_from(base.local, base.projection, decls, tcx).ty.kind()
+                    && self.is_cell_pointee(referent)
+                {
+                    let base = Place {
+                        local: base.local,
+                        projection: tcx.mk_place_elems(base.projection),
+                    };
+                    let reference = self.mir_place(state, base, span, out)?;
+                    if js::same_path(&target, &Expr::held(reference)) {
+                        return Err(refuse(
+                            tcx,
+                            span,
+                            Refused::Memory("a raw pointer to what a `&mut` refers to"),
+                        ));
+                    }
+                }
+                self.pointer_to(target, pointee, span)?
+            }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
     }
@@ -4206,6 +4320,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Calls ───────────────────────────────────────────────────────────
 
+    /// A call of a function pointer, which may be JS's (ADR 0330): called
+    /// with its arguments given to JS.
+    fn mir_fn_pointer_call(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        if !matches!(func.ty(&state.body.local_decls, self.tcx).kind(), ty::FnPtr(..)) {
+            return Err(self.unsupported(span, "calling a function value, from its MIR"));
+        }
+        let mut operands: Vec<&Operand<'tcx>> = vec![func];
+        operands.extend(args.iter().map(|a| &a.node));
+        let values = self.take_operands(state, &operands, out)?;
+        let mut exprs = values
+            .into_iter()
+            .map(|v| self.value_expr(v, span))
+            .collect::<R<Vec<_>>>()?;
+        let callee = exprs.remove(0);
+        super::calls::given_to_js(&mut exprs);
+        Ok(Value::Expr(Expr::call(callee, exprs)))
+    }
+
     fn mir_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -4221,22 +4360,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
-            // A function pointer, which may be JS's (ADR 0330): called with
-            // its arguments given to JS.
-            if !matches!(func.ty(decls, self.tcx).kind(), ty::FnPtr(..)) {
-                return Err(self.unsupported(span, "calling a function value, from its MIR"));
-            }
-            let mut operands: Vec<&Operand<'tcx>> = vec![func];
-            operands.extend(args.iter().map(|a| &a.node));
-            let values = self.take_operands(state, &operands, out)?;
-            let mut exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            let callee = exprs.remove(0);
-            super::calls::given_to_js(&mut exprs);
-            return Ok(Value::Expr(Expr::call(callee, exprs)));
+            return self.mir_fn_pointer_call(state, func, args, span, out);
         };
+        self.check_slice_pointer(state.body, (def_id, generic_args), args, span)?;
         // `..Default::default()` of a struct whose `Default` is derived, an
         // update's base: each default the update reads, none it replaces that
         // does nothing, a component's `children: C` among them, which needs no

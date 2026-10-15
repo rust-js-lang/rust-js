@@ -6,6 +6,7 @@ use crate::lower::calls::Call;
 use crate::lower::combinators::IterSource;
 use crate::lower::combinators::{Comb, StepOp};
 use crate::lower::drops::Drops;
+use crate::lower::pointers::PointerOp;
 use crate::lower::recognition::Std;
 use crate::lower::std_types::any::AnyOp;
 use crate::lower::std_types::heap::HeapOp;
@@ -159,6 +160,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Option` of the same type, or the closure's own.
             | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
             | Std::Last
+            // What a pointer points to, boxed as it's given (ADR 0407).
+            | Std::Pointer(PointerOp::AsRef | PointerOp::AsMut)
             // A map's value it had, or has, boxed by `$insert`, `$remove`, `$someGet`.
             | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)
             // `as_ref()`: the same value, box and all.
@@ -235,6 +238,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(js);
         }
         if let Some(js) = self.path_call(known, &mut values) {
+            return Ok(js);
+        }
+        if let Some(js) = self.pointer_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.uninit_call(known, call, &mut values, out)? {
@@ -378,6 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
             Std::Path(_) => unreachable!("lowered by path_call"),
+            Std::Pointer(_) => unreachable!("lowered by pointer_call"),
             Std::Uninit(_) => unreachable!("lowered by uninit_call"),
             Std::Cow(_) => unreachable!("lowered by mir_std_call"),
             Std::Rc(_) => unreachable!("lowered by mir_std_call"),

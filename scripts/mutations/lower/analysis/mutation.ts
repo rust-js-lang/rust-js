@@ -82,4 +82,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
   },
+  {
+    name: "pointee-copies-shared",
+    breaks: "a copy of what a pointer points to is the same object, so two copies' pointers are one",
+    file: "src/lower/analysis/mutation.rs",
+    find: "            if let ty::RawPtr(pointee, _) = expr.ty.kind()\n",
+    replace: "            if let ty::RawPtr(pointee, _) = expr.ty.kind()\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "std-macro-pointee-copied",
+    breaks: "a thread-local's value, which std's `thread_local!` points to, is copied where it's read, `half == null ? half : half`",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "constant element is rendered where"],
+  },
 ];

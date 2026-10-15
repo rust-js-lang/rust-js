@@ -2,7 +2,8 @@
 
 Status: Accepted, amended by [0406](0406-a-union-is-the-field-it-holds.md):
 a union isn't addressable memory; reading its bytes as another type's is,
-refused where it runs. Extends [0262](0262-when-rust-and-js-disagree.md).
+refused where it runs; and by [0407](0407-a-raw-pointer-is-a-handle-on-its-place.md):
+a raw pointer is a handle on its place; its address isn't JS's. Extends [0262](0262-when-rust-and-js-disagree.md).
 
 Case: D ([0262](0262-when-rust-and-js-disagree.md)): JavaScript has no
 memory a program can address, so what reads or writes it can't be kept.

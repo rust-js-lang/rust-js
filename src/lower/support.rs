@@ -141,6 +141,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return None;
             }
             ty::Ref(_, inner, Mutability::Not) => return self.unsupported_in(*inner, seen),
+            // A raw pointer, a handle on its place, of what it points to
+            // (ADR 0407); one to what has no size, a slice's, isn't yet.
+            ty::RawPtr(inner, _)
+                if !matches!(
+                    self.tcx.struct_tail_for_codegen(*inner, self.typing_env).kind(),
+                    ty::Slice(_) | ty::Str | ty::Dynamic(..)
+                ) =>
+            {
+                return self.unsupported_in(*inner, seen);
+            }
             // `&mut` to a JS object is the object; to anything else, it would
             // need a place to point at.
             // And to a generic iterator, the JS iterator it steps (ADR 0071).

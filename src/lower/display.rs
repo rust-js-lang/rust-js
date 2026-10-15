@@ -850,6 +850,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
         let (value, ty) = self.through_boxes(value, ty);
+        // A raw pointer shows its address, which JS hasn't (ADR 0407).
+        if self.is_handle_pointer(ty) {
+            return Ok(self.pointer_shown(value));
+        }
         // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't;
         // a `TypeId` its hash, which rust-js doesn't keep (ADR 0331).
         if self.recognition().is_dyn_any(ty) {
