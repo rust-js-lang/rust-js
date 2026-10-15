@@ -24,6 +24,7 @@ newest release its requirement allows.
 | indexmap 2.11 | blocked | hashbrown: a pointer tested for null |
 | bitflags 2.13 | runs | |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
+| arrayvec 0.7 | runs | |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a pointer tested for null |
 | once_cell 1.21 | refused | `std::thread::current` called |
@@ -31,12 +32,15 @@ newest release its requirement allows.
 | uuid 1.28 | refused | a pointer into what JS may hold a copy of |
 | url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; smallvec's; percent-encoding: `String::from_utf8_lossy` called |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
-| rust_decimal 1.38 | blocked | arrayvec: `ptr::copy_nonoverlapping`; serde_core: `size_of` of a type parameter |
+| rust_decimal 1.38 | blocked | serde_core: `size_of` of a type parameter |
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-4 of 16 compile, and each of the 3 with a probe runs as natively, as on
-2026-10-05. Two had gone back with the lowering from MIR (ADR 0364), and
+5 of 17 compile, and each of the 4 with a probe runs as natively.
+arrayvec, measured 2026-10-16, after ADRs 0407 and 0392's amendments, runs
+whole: its `ArrayVec` and `ArrayString`, of raw pointers into an array of
+`MaybeUninit`s, and its `io::Write`. Earlier, 4 of 16 compiled, and each of
+the 3 with a probe ran as natively, as on 2026-10-05. Two had gone back with the lowering from MIR (ADR 0364), and
 are fixed: a `&mut` of what a generic `Option`'s `Some` holds, chrono's
 (ADR 0051), and another crate's generic writer given a `Formatter`,
 bitflags' `to_writer` (ADR 0180); and chrono's `enum Void {}` was declared

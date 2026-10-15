@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
     snapshots: true,
   },
+  {
+    name: "uninit-array-undefined",
+    breaks: "an array of `MaybeUninit`s not yet written, arrayvec's `ArrayVec::new`, is `undefined`, so writing an item through its pointer fails",
+    file: "src/lower/std_types/uninit.rs",
+    find: "                ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {\n",
+    replace: "                ty::Array(each, len) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
+  },
 ];

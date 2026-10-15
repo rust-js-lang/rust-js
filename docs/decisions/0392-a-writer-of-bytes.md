@@ -10,7 +10,9 @@ all's written, as `fmt::Write`'s defaults are made of its `write_str`. An
 `io::Error` is a type it names, `io::Result<usize>`, of no value: no write
 of rust-js's fails, and one of the crate's that writes none, or fails, is
 rust-js's error where it does (case D), as an `io::Error`'s `{:?}` is a
-compile error (`test/corpus/io_write_impl.rs`).
+compile error. A write to one of known type, `write!(v, ..)` of an
+`ArrayVec<u8, 16>`, is its dictionary's, `Std::UserIoWrite`; and a write's
+result's `unwrap_or(())` is `()` (`test/corpus/io_write_impl.rs`).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): the bytes written are
 the program's output, so they're Rust's, as they are.

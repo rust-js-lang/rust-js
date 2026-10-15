@@ -48,6 +48,28 @@ fn peeked(count: &mut u32) -> u32 {
     unsafe { ptr::read(p) }
 }
 
+struct Noisy(u32);
+
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+/// Each item of a slice dropped in place through its pointer, as arrayvec's
+/// `truncate` drops its tail; the vector forgotten after, its first item
+/// taken out first.
+fn dropped_tail() {
+    let mut items = vec![Noisy(1), Noisy(2), Noisy(3)];
+    unsafe {
+        let tail = std::slice::from_raw_parts_mut(items.as_mut_ptr().add(1), 2);
+        ptr::drop_in_place(tail);
+    }
+    let first = unsafe { ptr::read(&items[0]) };
+    std::mem::forget(items);
+    println!("{}", first.0);
+}
+
 fn main() {
     let mut v = vec![1, 2, 3, 4, 5];
     println!("{:?} {:?}", drained(&mut v, 1, 3), v);
@@ -66,6 +88,7 @@ fn main() {
     println!("{bytes:?}");
     let taken: Vec<i32> = Taken { iter: [4, 5, 6].iter() }.collect();
     println!("{taken:?}");
+    dropped_tail();
     let mut count = 4;
     println!("{} {count}", peeked(&mut count));
 }

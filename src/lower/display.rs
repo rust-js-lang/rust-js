@@ -172,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> Expr {
         let constant = match answer {
-            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => Expr::undefined(),
+            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
             FmtResultAnswer::Ok => self.some(Expr::undefined()),
             FmtResultAnswer::MapErr => super::std_types::result::ok(Expr::undefined()),
@@ -201,6 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
         match answer {
             FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
+            FmtResultAnswer::UnwrapOr => Expr::undefined(),
             FmtResultAnswer::MapErr => {
                 let f = message.expect("`map_err`'s function");
                 let mapped = super::std_types::result::err(self.applied(f, result));

@@ -540,6 +540,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What a pointer to a `pointee` points to: of a slice, the slice it is,
+    /// else the place it's a handle on, `pointee_place`.
+    fn pointed_place(&self, pointer: Expr, pointee: Ty<'tcx>) -> Expr {
+        match pointee.is_slice() {
+            true => pointer,
+            false => self.pointee_place(pointer),
+        }
+    }
+
     /// `*p`, the place a pointer is a handle on: `object[key]` of one made
     /// here, `$ptr(object, key)`, `object` of `$ptrTo(object)`, `x` of a
     /// cell `{ value: x }`, else its `value`.
@@ -631,9 +640,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("pointer", pointer, out),
                 };
                 let pointee = pointee.expect("a raw pointer");
-                let referred = match pointee.is_slice() || op == PointerOp::AsMut && self.is_cell_pointee(pointee) {
+                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {
                     true => pointer.clone(),
-                    false => self.pointee_place(pointer.clone()),
+                    false => self.pointed_place(pointer.clone(), pointee),
                 };
                 let some = match self.boxed_payload(pointee) {
                     true => self.some(referred),
@@ -644,7 +653,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             PointerOp::Same => arg(),
             PointerOp::SliceLen => Expr::member(arg(), "length"),
             PointerOp::DropInPlace => {
-                let place = self.pointee_place(arg());
+                let place = self.pointed_place(arg(), pointee.expect("a pointer"));
                 let place = match place.reads_same() {
                     true => place,
                     false => self.spill("value", place, out),
@@ -690,12 +699,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // isn't an object, the handle itself, a cell.
             PointerOp::Place | PointerOp::PlaceMut => {
                 let pointer = arg();
-                // A slice's is the slice; a cell's handle, the cell.
-                let itself = pointee.is_some_and(|p| p.is_slice())
-                    || op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p));
-                match itself {
+                let pointee = pointee.expect("a pointer");
+                // A cell's handle, the cell.
+                match op == PointerOp::PlaceMut && self.is_cell_pointee(pointee) {
                     true => pointer,
-                    false => self.pointee_place(pointer),
+                    false => self.pointed_place(pointer, pointee),
                 }
             }
             PointerOp::Cast => {

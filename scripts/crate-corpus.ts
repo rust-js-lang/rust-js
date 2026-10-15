@@ -26,6 +26,7 @@ const corpus: Crate[] = [
   { name: "indexmap", version: "2.11.4" },
   { name: "bitflags", version: "2.9.4" },
   { name: "smallvec", version: "1.15.1" },
+  { name: "arrayvec", version: "0.7.8" },
   { name: "thiserror", version: "2.0.16" },
   { name: "anyhow", version: "1.0.99" },
   { name: "once_cell", version: "1.21.3" },

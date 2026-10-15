@@ -126,6 +126,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.trait_call(write_str, generic_args, exprs, span, out)?
                     .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?
             }
+            // A writer of bytes of the crate's own: its dictionary's
+            // `write_all` or `write_fmt`, given it in a box, as generic code
+            // gives it (ADR 0392).
+            Std::UserIoWrite => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let trait_id = tcx.trait_of_assoc(def_id).expect("`io::Write`'s method");
+                let tr = ty::TraitRef::new_from_args(tcx, trait_id, generic_args);
+                let dictionary = self.dictionary(tr, span)?;
+                let receiver = exprs.remove(0);
+                let receiver = match self.is_cell_pointee(tr.self_ty()) {
+                    true => receiver,
+                    false => super::super::mut_refs::boxed(receiver),
+                };
+                exprs.insert(0, receiver);
+                Expr::call(Expr::member(dictionary, bindings::fn_name(tcx, def_id)), exprs)
+            }
             _ => return Ok(None),
         })))
     }

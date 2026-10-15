@@ -120,6 +120,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // what it reads or replaces it gives back, and what it
                     // drops in place, it drops (ADR 0407).
                     | Std::Pointer(_)
+                    // A write, through a `&mut` to the crate's writer, which it
+                    // writes to and doesn't drop (ADRs 0166, 0392).
+                    | Std::UserWrite
+                    | Std::UserIoWrite
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:
@@ -320,6 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::IterByRef
             | Std::NonZeroNew
             | Std::UserWrite
+            | Std::UserIoWrite
             | Std::DequeRemove
             | Std::Step(_)
             | Std::ToJson(_)

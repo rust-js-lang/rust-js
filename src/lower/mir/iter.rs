@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         def_id: DefId,
         arg_tys: &[Ty<'tcx>],
-        values: Vec<Expr>,
+        mut values: Vec<Expr>,
         output: Ty<'tcx>,
         span: Span,
         made: &mut Vec<Stmt>,
@@ -35,6 +35,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
+        let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
+        // One taken by value, `items.fold(..)`'s, dropped as it's done, which
+        // JS doesn't: of a generic iterator, one its callers give none with a
+        // destructor (ADR 0190); of the crate's own with one, arrayvec's
+        // `Drain`, consumed, `collect()`, dropped after, as the method's end
+        // drops it. One whose result holds it, `map(f)`, is refused.
+        if !receiver_ty.is_ref()
+            && is_std_def(tcx, trait_id, StdItem::Iterator)
+            && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
+        {
+            if self.drop_query().drops_but_params(receiver_ty) == crate::lower::drops::Drops::Nothing {
+                self.require_no_drops(receiver_ty);
+            } else if self.is_user_iterator(receiver_ty) && !values.is_empty() {
+                if output.walk().any(|part| part.as_type() == Some(receiver_ty)) {
+                    let name = tcx.item_name(def_id);
+                    return Err(self.unsupported(
+                        span,
+                        &format!("`{name}` of an iterator with a destructor, from its MIR"),
+                    ));
+                }
+                let held = self.spill("iter", values.remove(0), made);
+                values.insert(0, held.clone());
+                let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)?
+                else {
+                    return Ok(None);
+                };
+                let result = self.spill("result", result, made);
+                self.drop_value(held, receiver_ty, span, made)?;
+                return Ok(Some(result));
+            }
+        }
+        self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)
+    }
+
+    /// `mir_iter_call`'s, once what it drops is seen to.
+    fn mir_iter_method(
+        &mut self,
+        def_id: DefId,
+        (trait_id, arg_tys): (DefId, &[Ty<'tcx>]),
+        values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let tcx = self.tcx;
         // Its name, for what's refused of it, and to ask of the crate's impl.
         let name = tcx.item_name(def_id);
         let name = name.as_str();
@@ -43,22 +88,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iter_ty = receiver_ty.peel_refs();
         if let Some(stepped) = self.given_iterator_call(std_method, iter_ty, &values) {
             return Ok(Some(stepped));
-        }
-        // One taken by value, `items.fold(..)`'s, dropped as it's done, which
-        // JS doesn't: of a generic iterator, one its callers give none with a
-        // destructor (ADR 0190); of the crate's own with one, refused.
-        if !receiver_ty.is_ref()
-            && is_std_def(tcx, trait_id, StdItem::Iterator)
-            && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
-        {
-            if self.drop_query().drops_but_params(receiver_ty) == crate::lower::drops::Drops::Nothing {
-                self.require_no_drops(receiver_ty);
-            } else if self.is_user_iterator(receiver_ty) {
-                return Err(self.unsupported(
-                    span,
-                    &format!("`{name}` of an iterator with a destructor, from its MIR"),
-                ));
-            }
         }
         // `x.into_iter()`: a range stays one, an iterator is itself, and a
         // collection's items are a JS iterator of them.

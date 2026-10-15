@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
   },
+  {
+    name: "user-io-write-of-a-droppable",
+    breaks: "a write to a writer of bytes of the crate's with a destructor, arrayvec's `ArrayVec<u8, CAP>`, is refused as though the write dropped it",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::UserIoWrite\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
+  },
 ];

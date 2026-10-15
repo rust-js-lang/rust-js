@@ -1529,4 +1529,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
   },
+  {
+    name: "user-io-write-unrecognized",
+    breaks: "`write!` to a writer of bytes of the crate's, of known type, isn't its dictionary's, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            return Some(Std::UserIoWrite);\n",
+    replace: "            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
+  },
+  {
+    name: "io-result-unwrap-or-refused",
+    breaks: "`unwrap_or(())` of a write's result is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"unwrap_or\" | \"unwrap_or_default\" => FmtResultAnswer::UnwrapOr,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
+  },
 ];

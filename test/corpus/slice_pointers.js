@@ -3,6 +3,7 @@
 import {
   $at,
   $drain,
+  $index,
   $iter,
   $iterator,
   $nextSome,
@@ -38,7 +39,7 @@ function tail(items, from) {
   return $ptrSliceMut(start, (items.length - from) >>> 0);
 }
 
-function takenIterator_next(taken) {
+function takenIterator_next(taken, dropT) {
   return $nextSome(taken.iter);
 }
 
@@ -46,6 +47,49 @@ function peeked(count) {
   count.value = (count.value + 1) >>> 0;
   const p = $ptr(count, "value");
   return p.value;
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function dropped_tail() {
+  const items = [[1], [2], [3]];
+  let tail;
+  try {
+    tail = $ptrSliceMut($ptrAdd($ptr(items, 0), 1), 2);
+  } catch (error) {
+    for (const item of items) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    for (const item of tail) {
+      noisyDrop_drop(item);
+    }
+  } catch (error) {
+    for (const item of items) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  let first;
+  try {
+    first = $index(items, 0);
+  } catch (error) {
+    for (const item of items) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${first[0]}`);
+  } catch (error) {
+    noisyDrop_drop(first);
+    throw error;
+  }
+  noisyDrop_drop(first);
 }
 
 function main() {
@@ -71,6 +115,7 @@ function main() {
   console.log(`[${bytes.map((item) => String(item)).join(", ")}]`);
   const taken = $iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true).toArray();
   console.log(`[${taken.map((item) => String(item)).join(", ")}]`);
+  dropped_tail();
   let count = 4;
   const count$1 = { value: count };
   const value = peeked(count$1);

@@ -5707,6 +5707,7 @@ fn lowered_from_values(known: Std) -> bool {
             | Std::IterByRef
             | Std::NonZeroNew
             | Std::UserWrite
+            | Std::UserIoWrite
             | Std::DequeRemove
             | Std::Step(_)
             | Std::Cow(_)

@@ -8,6 +8,9 @@ const Bytes = {
   zeroed(CAP) {
     return { xs: new Array(CAP).fill(0), len: 0 };
   },
+  uninit(CAP) {
+    return { xs: Array.from({ length: CAP }), len: 0 };
+  },
   sum(bytes, CAP) {
     return bytes.xs.reduce((a, b) => (a + b) >>> 0, 0);
   },
@@ -15,6 +18,14 @@ const Bytes = {
 
 function main() {
   const b = Bytes.zeroed(4);
+  const u = Bytes.uninit(3);
+  const len = u.len;
+  if (len >= 3) {
+    throw new Error(`index out of bounds: the len is 3 but the index is ${len}`);
+  }
+  u.xs[len] = 7;
+  u.len = (u.len + 1) >>> 0;
+  console.log(`${u.xs.length} ${u.xs[0]}`);
   const fixed = [0, 0, 0];
   console.log(`${Bytes.sum(b, 4)} ${b.len} ${fixed[2]}`);
 }

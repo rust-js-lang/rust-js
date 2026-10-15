@@ -71,8 +71,14 @@ released any more: `rust-js build` is the one way to build an app.
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
 - **A writer of bytes of the crate's, `impl io::Write`**, where a `W: Write`
-  goes: its `write_all` and `write_fmt` std's, its `write` till all's
-  written (ADR 0392). arrayvec compiles, whole.
+  goes or of its own type: its `write_all` and `write_fmt` std's, its
+  `write` till all's written (ADR 0392).
+- **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
+  (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
+  `MaybeUninit`s.
+- **An iterator of the crate's with a destructor, consumed**, `collect()`,
+  dropped after, as Rust's method drops it (ADR 0098); and
+  `ptr::drop_in_place` of a slice drops each item (ADR 0407).
 - **A `str`'s `as_ptr()`, only read through**, a copy's source: a pointer to
   its UTF-8 bytes, as arrayvec's `ArrayString` copies them in (ADR 0407).
 - **`as_ref()` of text as a `Path`**, `s.as_str().as_ref()` in an

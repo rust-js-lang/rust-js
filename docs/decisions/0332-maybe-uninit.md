@@ -7,8 +7,11 @@ Status: Accepted. Extends [0074](0074-mut-boxes.md) and
 zero, of a struct too, as `mem::zeroed()`'s is. And a `MaybeUninit<T>` is
 plain data as its `T` is, laid out alike, so an array of them zeroed is
 its zeros; of a length generic code is given, `[MaybeUninit<u8>; CAP]`,
-arrayvec's, `new Array(CAP).fill(0)`, as a zeroed slice is made
-(`test/corpus/zeroed_uninit_arrays.rs`).
+arrayvec's, `new Array(CAP).fill(0)`, as a zeroed slice is made; one not
+yet written, `uninit().assume_init()`, is as many items not yet written,
+`Array.from({ length: CAP })`, arrayvec's `ArrayVec::new`, where another
+array's, written whole, `Box::new_uninit()`'s of a `vec!`'s, is
+`undefined` still (`test/corpus/zeroed_uninit_arrays.rs`).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), and D for a zeroed
 type no JS value is all zeros of.

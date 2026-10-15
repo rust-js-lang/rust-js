@@ -47,7 +47,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it holds: the function's type argument, or a `Box`'s item.
         let item = generic_args.types().next().expect("a type argument");
         Ok(Some(match op {
-            UninitOp::Uninit => Expr::undefined(),
+            // An array of `MaybeUninit`s, written an item at a time, is its
+            // items, each not yet written: arrayvec's `MaybeUninit::uninit()
+            // .assume_init()` of `[MaybeUninit<T>; CAP]`. Another's is written
+            // whole.
+            UninitOp::Uninit => match *item.kind() {
+                ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {
+                    let n = match len.try_to_target_usize(self.tcx) {
+                        Some(n) => Expr::int(i128::from(n)),
+                        None => self.const_arg(len, span)?,
+                    };
+                    crate::lower::plain::filled(n, None)
+                }
+                _ => Expr::undefined(),
+            },
             UninitOp::Zeroed => self.zero(item, span)?,
             // `Array.from({ length: n })`; of a zero, `new Array(n).fill(0)`,
             // or an object made for each.

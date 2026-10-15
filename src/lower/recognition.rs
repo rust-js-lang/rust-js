@@ -215,6 +215,10 @@ pub(super) enum Std {
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
     /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
     UserWrite,
+    /// `write!(w, ..)` or `w.write_all(bytes)` of a writer of bytes of the
+    /// crate's that keeps std's: its dictionary's, made of its `write`
+    /// (ADR 0392).
+    UserIoWrite,
     Clear,
     Retain,
     /// `panic!("..")`, `assert!(..)`: `throw new Error(..)`.
@@ -1230,6 +1234,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     fn classify_io_write(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
         if std_path(self.tcx, trait_) != "std::io::Write" {
             return None;
+        }
+        // A writer of bytes of the crate's own that keeps std's `write_all`
+        // and `write_fmt`: its dictionary's (ADR 0392).
+        if io_write_default(self.tcx, def_id).is_some()
+            && matches!(ty.peel_refs().kind(), ty::Adt(..))
+            && self.has_user_impl(trait_, ty.peel_refs())
+        {
+            return Some(Std::UserIoWrite);
         }
         let name = self.tcx.item_name(def_id);
         if let Some(error) = self.stream(ty.peel_refs()) {
@@ -4486,6 +4498,8 @@ pub(super) enum FmtResultAnswer {
     /// `map_err(f)`: `Ok(())`, or `Err(f(error))`, a `Result` of its own,
     /// arrayvec's `write_fmt(f).map_err(CapacityError::new)`.
     MapErr,
+    /// `unwrap_or(())`, `unwrap_or_default()`: `()` either way.
+    UnwrapOr,
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
@@ -4497,6 +4511,7 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
         "is_err" => FmtResultAnswer::Is(false),
         "ok" => FmtResultAnswer::Ok,
         "map_err" => FmtResultAnswer::MapErr,
+        "unwrap_or" | "unwrap_or_default" => FmtResultAnswer::UnwrapOr,
         _ => return None,
     })
 }

@@ -1,6 +1,10 @@
 # 0098. A destructor runs where rustc runs it, in a `finally`
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and [0052](0052-std-trait-impls.md).
+Amended: an iterator of the crate's with a destructor consumed by value,
+`collect()`, `count()`, is dropped after, as the method's end drops it,
+arrayvec's `Drain`; one an adapter holds, `map(f)`, is an error still
+(`test/corpus/iterator_drop_consumed.rs`).
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

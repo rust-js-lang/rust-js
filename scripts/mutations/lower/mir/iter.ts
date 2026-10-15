@@ -573,4 +573,20 @@ export const mutations: Mutation[] = [
     replace: "                let boxed = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
+  {
+    name: "consumed-iterator-undropped",
+    breaks: "an iterator of the crate's with a destructor, consumed by `collect()`, is never dropped, so what its drop does doesn't happen",
+    file: "src/lower/mir/iter.rs",
+    find: "                self.drop_value(held, receiver_ty, span, made)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
+  },
+  {
+    name: "adapter-iterator-dropped",
+    breaks: "an adapter of an iterator with a destructor, `map(f)`, drops it as soon as it's made, though the adapter holds it",
+    file: "src/lower/mir/iter.rs",
+    find: "                if output.walk().any(|part| part.as_type() == Some(receiver_ty)) {\n",
+    replace: "                if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an adapter of an iterator with a destructor"],
+  },
 ];

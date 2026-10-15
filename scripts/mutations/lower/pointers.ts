@@ -72,8 +72,8 @@ export const mutations: Mutation[] = [
     name: "pointer-as-mut-reads",
     breaks: "`p.as_mut()` of a number is its value, not a handle on it, so writing it is lost",
     file: "src/lower/pointers.rs",
-    find: "                let referred = match pointee.is_slice() || op == PointerOp::AsMut && self.is_cell_pointee(pointee) {\n",
-    replace: "                let referred = match pointee.is_slice() {\n",
+    find: "                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {\n",
+    replace: "                let referred = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -152,8 +152,8 @@ export const mutations: Mutation[] = [
     name: "non-null-as-mut-of-its-value",
     breaks: "a `NonNull`'s `as_mut()` of a number is the number, not the handle on its place, `handle.value.value`",
     file: "src/lower/pointers.rs",
-    find: "                    || op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p));\n",
-    replace: "                    || false;\n",
+    find: "                match op == PointerOp::PlaceMut && self.is_cell_pointee(pointee) {\n",
+    replace: "                match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
   },
   {
@@ -269,22 +269,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
   {
-    name: "slice-pointer-place-read",
-    breaks: "`*p` of a slice pointer reads a `.value` the slice hasn't",
-    file: "src/lower/pointers.rs",
-    find: "                let itself = pointee.is_some_and(|p| p.is_slice())\n",
-    replace: "                let itself = false\n",
-    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
-  },
-  {
-    name: "slice-pointer-as-mut-read",
-    breaks: "`NonNull::<[T]>::as_mut()` reads a `.value` the slice hasn't",
-    file: "src/lower/pointers.rs",
-    find: "                let referred = match pointee.is_slice() || op == PointerOp::AsMut && self.is_cell_pointee(pointee) {\n",
-    replace: "                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
-  },
-  {
     name: "read-only-pointer-of-value-refused",
     breaks: "a `*const` of a shared reference to a value with no place JS names, arrayvec's `elt as *const _`, is refused, though a cell of it reads the same",
     file: "src/lower/pointers.rs",
@@ -355,5 +339,13 @@ export const mutations: Mutation[] = [
     find: "                    PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)\n",
     replace: "                    PlaceContext::MutatingUse(MutatingUseContext::Store)\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_pointer.rs$"],
+  },
+  {
+    name: "slice-pointer-place-read",
+    breaks: "what a slice pointer points to, `*p`, `as_mut()`, `drop_in_place`, is read as a handle's `.value`, which a slice hasn't",
+    file: "src/lower/pointers.rs",
+    find: "        match pointee.is_slice() {\n            true => pointer,\n",
+    replace: "        match false {\n            true => pointer,\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
 ];

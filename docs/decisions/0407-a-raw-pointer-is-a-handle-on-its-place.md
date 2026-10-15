@@ -108,8 +108,11 @@ part of one (ADR 0335), which writes through to it
 item's, its first item's handle, `$ptr(items, 0)`; and
 `ptr::slice_from_raw_parts(p, n)`, `slice_from_raw_parts_mut` and
 `NonNull::slice_from_raw_parts` a view of `n` items from an item's
-pointer, as `from_raw_parts_mut` is. arrayvec's `Drain` keeps the slice it
-drains so, and hashbrown's allocator gives a `NonNull<[u8]>`.
+pointer, as `from_raw_parts_mut` is; `ptr::drop_in_place(tail)` drops each
+of its items, arrayvec's `truncate`. arrayvec's `Drain` keeps the slice it
+drains so, and hashbrown's allocator gives a `NonNull<[u8]>`. What a
+pointer points to, the slice it is or the place it's a handle on, is
+`pointed_place`'s alone.
 
 A `&mut` slice's `as_mut_ptr()` is a handle on its first item, which
 was refused but of a whole array: a view writes through, so its items'
