@@ -20,6 +20,7 @@
 //! | `Pin` | its pointer | `pin` |
 //! | `MaybeUninit`, a `Box` of one | what it holds, or `undefined` | `uninit` |
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
+//! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
@@ -35,6 +36,7 @@ pub(super) mod number;
 pub(super) mod once;
 pub(super) mod option;
 pub(super) mod pin;
+pub(super) mod process;
 pub(super) mod range;
 pub(super) mod rc;
 pub(super) mod result;

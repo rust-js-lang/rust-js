@@ -623,6 +623,7 @@ fn fresh(items: &Expr) -> bool {
                 "$setAlgebra",
                 "$sortedEntries",
                 "$sortedKeys",
+                "$args",
             ]
             .contains(&name.as_str()),
             _ => false,

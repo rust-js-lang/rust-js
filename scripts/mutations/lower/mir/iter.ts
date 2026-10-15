@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "mir-len-whole",
     breaks: "`it.len()` of a stepped `$iter` counts what it's given already",
     file: "src/lower/mir/iter.rs",
-    find: "                (Some(IterMethod::Len), None) if array => {\n                    Expr::bin(Op::Sub, Expr::member(it.clone(), \"end\"), Expr::member(it, \"at\"))\n",
-    replace: "                (Some(IterMethod::Len), None) if array => {\n                    Expr::member(Expr::member(it, \"items\"), \"length\")\n",
+    find: "        Expr::bin(Op::Sub, Expr::member(it.clone(), \"end\"), Expr::member(it, \"at\"))\n",
+    replace: "        Expr::member(Expr::member(it, \"items\"), \"length\")\n",
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
@@ -546,5 +546,23 @@ export const mutations: Mutation[] = [
       "-t",
       "gives the value itself is none"
     ]
+  },
+  {
+    name: "fresh-iter-len-stepped",
+    breaks: "`v.iter().len()` is what's left of a `$iter` made for it, `$iter(v).end - $iter(v).at`, not `v.length`",
+    file: "src/lower/mir/iter.rs",
+    find: "        if crate::lower::iterators::is_stepped_items(&it)\n",
+    replace: "        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "args-not-stepped",
+    breaks: "`env::args()` held is stepped as a JS iterator, which knows no length, not a `$iter` of its array",
+    file: "src/lower/mir/iter.rs",
+    find: "            || self.recognition().is_process_items(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
   },
 ];

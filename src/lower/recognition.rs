@@ -16,6 +16,7 @@ use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::option::OptionPlaceOp;
 use super::std_types::pin::PinOp;
+use super::std_types::process::ProcessOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
 use super::std_types::slice::{SliceOp, SortWith};
@@ -145,6 +146,8 @@ pub(super) enum Std {
     Pin(PinOp),
     /// `TypeId`s and a `dyn Any`'s downcasts (ADR 0331).
     Any(AnyOp),
+    /// The process a program runs in, Node's (ADR 0391): `env::args()`.
+    Process(ProcessOp),
     /// `MaybeUninit`'s, and a `Box`'s made before its value (ADR 0332).
     Uninit(UninitOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
@@ -525,6 +528,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if diagnostic("mem_forget") {
             return Some(Some(Std::Forget));
+        }
+        // The process a program runs in, Node's (ADR 0391).
+        if let Some(op) = node_only(tcx, def_id) {
+            return Some(Some(Std::Process(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
         let utf8 = match std_path(tcx, def_id).as_str() {
@@ -2877,6 +2884,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
+    /// `env::args()`'s, an array of the process's arguments (ADR 0391).
+    pub(super) fn is_process_items(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::Args")
+    }
+
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
@@ -3670,6 +3682,20 @@ pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
 /// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
 /// path compared here would miss.
+/// std's functions of the process a program runs in, which Node has and a
+/// browser hasn't (ADR 0391), each by its path: the one list of what works
+/// in Node only. Each is a helper of the runtime's `process.js`.
+const NODE_ONLY: &[(&str, ProcessOp)] = &[
+    ("std::env::args", ProcessOp::Args),
+    ("std::process::exit", ProcessOp::Exit),
+];
+
+/// Which of std's functions that work in Node only `id` is, if it's one.
+pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {
+    let path = std_path(tcx, id);
+    NODE_ONLY.iter().find(|(of, _)| *of == path).map(|&(_, op)| op)
+}
+
 /// std's functions of addressable memory, which JavaScript has none of
 /// (ADR 0390): `std::ptr`'s and a raw pointer's own, and what makes a value
 /// of bytes, `transmute` and `zeroed`.

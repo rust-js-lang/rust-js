@@ -147,7 +147,8 @@ export function compileJs(
 
 export function runJs(runtime: string[], js: string, dir: string, name: string): Run {
   const outcomeFile = join(dir, `${name}.json`);
-  return execute([...runtime, join(root, "test/corpus-run.ts"), js, outcomeFile], outcomeFile);
+  // Its arguments are as native's: its path, then where its outcome goes.
+  return execute([...runtime, join(root, "test/corpus-run.ts"), js, outcomeFile, js, outcomeFile], outcomeFile);
 }
 
 export const show = (outcome: Outcome | string) => (typeof outcome === "string" ? outcome : JSON.stringify(outcome));

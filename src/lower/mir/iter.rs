@@ -145,9 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 (Some(IterMethod::NextBack), None) if array && boxed => Expr::call_helper("$nextBackSome", vec![it]),
                 (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),
-                (Some(IterMethod::Len), None) if array => {
-                    Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
-                }
+                (Some(IterMethod::Len), None) if array => self.items_left(it, made),
                 // A chain made here of an array's items, which nothing else
                 // steps, skipped or taken from, no closure of its to run: its
                 // items' count, `$iter(xs).drop(1).toArray().length`, which is
@@ -534,6 +532,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// How many items a `$iter` of an array has left, its `len()`: of one
+    /// made here, `$iter(v)`, which nothing has stepped, its array's length,
+    /// `v.length`; else `it.end - it.at`, `it` held if it's made here.
+    fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
+        if crate::lower::iterators::is_stepped_items(&it)
+            && let js::ExprKind::Call(_, items) = &it.kind
+        {
+            return Expr::member(items[0].clone(), "length");
+        }
+        let it = match it.reads_same() {
+            true => it,
+            false => self.spill("it", it, made),
+        };
+        Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
+    }
+
     /// Whether std's iterator `ty` is a `$iter` of an array, as
     /// `std_iterator` makes it: an array's own, a string's `chars()`,
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a
@@ -547,6 +561,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_deque_iter(ty)
             || self.recognition().is_slice_iter_mut(ty)
             || self.recognition().is_tree_iter(ty)
+            || self.recognition().is_process_items(ty)
     }
 
     /// A std iterator of type `ty` made of `value`, an array or a text, as

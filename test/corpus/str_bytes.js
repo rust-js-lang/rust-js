@@ -37,7 +37,7 @@ function main() {
   const all = Array.from(new TextEncoder().encode(word));
   console.log(`[${all.map((item) => String(item)).join(", ")}]`);
   console.log(
-    `${$iter(Array.from(new TextEncoder().encode(word))).end - $iter(Array.from(new TextEncoder().encode(word))).at} ${Array.from(new TextEncoder().encode(word)).length} ${Array.from(word).length}`,
+    `${Array.from(new TextEncoder().encode(word)).length} ${Array.from(new TextEncoder().encode(word)).length} ${Array.from(word).length}`,
   );
   console.log(`${Array.from(new TextEncoder().encode(word)).filter((b) => b >= 128).length}`);
   const sum = Array.from(new TextEncoder().encode("abc")).reduce((a, b) => (a + b) >>> 0, 0);

@@ -1297,4 +1297,12 @@ export const mutations: Mutation[] = [
     replace: "        ty.boxed_ty().is_some_and(|inner| inner.is_array())\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_iter.rs$"],
   },
+  {
+    name: "env-args-unknown",
+    breaks: "`env::args()` is refused, not the process's arguments",
+    file: "src/lower/recognition.rs",
+    find: "    (\"std::env::args\", ProcessOp::Args),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+  },
 ];

@@ -419,4 +419,13 @@ export const mutations: Mutation[] = [
       "a range mapped and collected"
     ]
   },
+  {
+    name: "args-copied",
+    breaks: "`env::args().collect()` copies the array `$args()` has just made, `$args().slice()`",
+    file: "src/lower/iterators.rs",
+    find: "                \"$args\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
+  },
 ];
