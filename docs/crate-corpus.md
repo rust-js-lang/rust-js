@@ -13,35 +13,48 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-05, after ADR 0191, Rust 1.98.1, each crate at the
+Measured 2026-10-15, after ADR 0414, Rust 1.99.0, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.18 | refused | a user `Future` |
+| either 1.19 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
-| indexmap 2.11 | blocked | hashbrown: a raw pointer |
-| bitflags 2.13 | runs | |
+| indexmap 2.11 | blocked | hashbrown: a pointer tested for null |
+| bitflags 2.13 | compiles | its probe: `this Formatter` |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
 | thiserror 2.0 | runs | |
-| anyhow 1.0 | refused | a raw pointer |
-| once_cell 1.21 | refused | a constant of a raw pointer |
-| semver 1.0 | refused | a constant of a `NonNull` |
-| uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
-| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
-| regex 1.11 | blocked | memchr: a raw pointer |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | compiles | no probe yet |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
+| anyhow 1.0 | refused | a pointer tested for null |
+| once_cell 1.21 | refused | `std::thread::current` called |
+| semver 1.0 | refused | `this Formatter` |
+| uuid 1.28 | refused | a pointer into what JS may hold a copy of |
+| url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; smallvec's; percent-encoding: `String::from_utf8_lossy` called |
+| regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
+| rust_decimal 1.38 | blocked | arrayvec: `ptr::copy_nonoverlapping`; serde_core: `size_of` of a type parameter |
+| chrono 0.4 (`alloc`) | refused | a `&mut` of a number kept or given, from MIR |
+| time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-4 of 16 compile, and each of the 3 with a probe runs as natively. What stops the most, by the crates it stops:
+3 of 16 compile, and each of the 2 with a probe that's compiled runs as
+natively: 4 compiled on 2026-10-05. Two went back with the lowering from
+MIR (ADR 0364): chrono's `&mut` of a number, and a `Formatter` bitflags'
+probe and semver hand on. What stops the most, by the crates it stops:
 
-1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
-   `transmute`, `handle_alloc_error`: 9.
-2. **A user `Future`:** 2.
-3. **One each:** a `const` block, a user `io::Write`, `size_of` of a type
-   parameter, `u8::checked_ilog10`, `{:?}` of a `PhantomData`.
+1. **Raw memory,** a pointer tested for null, read as another type, into
+   what JS may hold a copy of, `copy_nonoverlapping`: 7, though a raw
+   pointer to a place is one now (ADR 0407).
+2. **A `Formatter` handed on,** and **`handle_alloc_error`**: 2 each, and a
+   user `Future`: 2.
+3. **One each:** chrono's `&mut` of a number, `thread::current`,
+   `assert_unchecked`, `size_of` of a type parameter, `Ref`'s `Deref`,
+   `{:?}` of a `PhantomData`, `rev` of a lazy iterator,
+   `from_utf8_lossy`.
+
+The measuring itself had gone wrong: since ADR 0412 every crate Cargo
+builds through rust-js is given `--declarations`, and the script, which
+made Cargo's environment its own way, had no `RUST_JS_TYPESCRIPT`, so
+TypeScript's printer wasn't found, and three crates stopped there. It's
+`cargoEnv`'s now, the build's own.
 
 ## Fixed by measuring
 

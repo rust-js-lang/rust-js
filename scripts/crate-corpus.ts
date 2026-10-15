@@ -15,7 +15,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { rustcShim } from "../tooling/cargo.js";
+import { cargoEnv } from "../tooling/cargo.js";
 
 type Crate = { name: string; version: string; features?: string[]; defaultFeatures?: boolean };
 
@@ -90,7 +90,7 @@ for (const crate of chosen) {
   const run = spawnSync(
     "cargo",
     [`+${toolchain}`, "check", "--lib", "--keep-going", "--message-format=json", "--target", "wasm32-unknown-unknown"],
-    { cwd: dir, env: { ...process.env, RUSTC_WRAPPER: compiler, RUSTC: rustcShim(compiler), RUST_JS_CRATES: JSON.stringify(crates) }, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
+    { cwd: dir, env: cargoEnv(compiler, undefined, { crates }), maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
   );
   const compiled: string[] = [];
   const refused = new Map<string, string>();
