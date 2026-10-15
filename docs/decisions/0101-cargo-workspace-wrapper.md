@@ -1,7 +1,10 @@
 # 0101. Cargo builds a workspace with rust-js as its workspace wrapper
 
 Status: Accepted, amended by [0412](0412-rust-js-build-is-its-own-process.md):
-its one host is `rust-js build`. Extends [0100](0100-separate-crates.md), and replaces
+its one host is `rust-js build`; and by [0414](0414-a-library-on-npm-as-rescripts-are.md):
+rust-js is Cargo's `RUSTC_WRAPPER`, compiling the app's own crates, each of
+Cargo's packages of a path, a crate an npm package has too, as
+`RUST_JS_CRATES` names them; a registry's crate is still rustc's. Extends [0100](0100-separate-crates.md), and replaces
 [0085](0085-scalar-library-linkage.md)'s planning of a Cargo graph for
 building one.
 
@@ -227,4 +230,5 @@ copies, and without rust-js, builds from them, as it does a committed
 
 ## Amended by
 
+- [0414](0414-a-library-on-npm-as-rescripts-are.md): rust-js compiles each of Cargo's packages of a path, not only the workspace's members: a crate from npm is one.
 - [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

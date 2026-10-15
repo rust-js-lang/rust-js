@@ -26,6 +26,9 @@ webapi = { package = "rust-js-webapi", path = "../webapi", version = "~0.0.1" }
 # first React its gates have (ADR 0043). Its npm package's peer dependencies.
 [package.metadata.rust-js]
 npm = { react = ">=18.0.0", react-dom = ">=18.0.0" }
+# A binding crate: what it binds is JS's own, so rustc checks it and
+# rust-js reads its metadata; it has no JS to compile (ADRs 0024, 0414).
+bindings = true
 
 # rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
 [lints.rust]

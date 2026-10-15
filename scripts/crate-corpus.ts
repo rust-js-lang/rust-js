@@ -13,7 +13,7 @@
 // whether its probe runs as natively.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { rustcShim } from "../tooling/cargo.js";
 
@@ -84,10 +84,13 @@ for (const crate of chosen) {
   );
   writeFileSync(join(dir, "lib.rs"), existsSync(probe) ? readFileSync(probe, "utf8") : "");
   writeFileSync(join(dir, "main.rs"), "fn main() {\n    print!(\"{}\", probe::report());\n}\n");
+  // Every crate the probe builds is rust-js's to compile, a registry's too.
+  const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
+  const crates = (JSON.parse(metadata.stdout).packages as { manifest_path: string }[]).map((pkg) => realpathSync(dirname(pkg.manifest_path)));
   const run = spawnSync(
     "cargo",
     [`+${toolchain}`, "check", "--lib", "--keep-going", "--message-format=json", "--target", "wasm32-unknown-unknown"],
-    { cwd: dir, env: { ...process.env, RUSTC_WRAPPER: compiler, RUSTC: rustcShim(compiler) }, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
+    { cwd: dir, env: { ...process.env, RUSTC_WRAPPER: compiler, RUSTC: rustcShim(compiler), RUST_JS_CRATES: JSON.stringify(crates) }, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
   );
   const compiled: string[] = [];
   const refused = new Map<string, string>();

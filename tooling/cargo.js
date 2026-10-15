@@ -17,16 +17,22 @@ export const target = "wasm32-unknown-unknown";
 
 const execute = promisify(execFile);
 
-/** Cargo's environment of a check through rust-js: the workspace's
- * wrapper, rustc's shim, the React the react crate is built for, the app,
+/** Cargo's environment of a check through rust-js: rust-js as the wrapper
+ * of every crate, compiling those `crates` names, the app's own, and
+ * rustc's shim, the React the react crate is built for, the app,
  * `RUST_JS_APP`, a program no crate of the build uses (ADR 0360), and
  * where `@rust-js/typescript` is, `@rust-js/build`'s own, which prints each
- * module's `.d.ts` (ADRs 0207, 0412). */
-function cargoEnv(compiler, react, app) {
+ * module's `.d.ts` (ADRs 0207, 0412).
+ * @param {string} compiler
+ * @param {string | undefined} react
+ * @param {{ app?: string, crates: string[] }} build
+ * @returns {NodeJS.ProcessEnv} */
+export function cargoEnv(compiler, react, { app, crates }) {
   const env = {
     ...process.env,
-    RUSTC_WORKSPACE_WRAPPER: resolve(compiler),
+    RUSTC_WRAPPER: resolve(compiler),
     RUSTC: rustcShim(resolve(compiler)),
+    RUST_JS_CRATES: JSON.stringify(crates),
     RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
   };
   if (react) env.RUST_JS_REACT = react;
@@ -36,10 +42,29 @@ function cargoEnv(compiler, react, app) {
   return env;
 }
 
-/** The app a check builds: the package it's asked for, or else its
- * manifest's own, as Cargo says, a workspace's root without one having none. */
-async function appOf(manifest, packageName, toolchain) {
-  return packageName ?? (await cargoWorkspace({ manifestPath: manifest, toolchain })).own;
+/** What a check builds: the app, the package it's asked for, or else its
+ * manifest's own, as Cargo says, a workspace's root without one having
+ * none; and the crates rust-js compiles, the app's own, each of Cargo's
+ * packages of a path, not a registry's or git's: the workspace's members,
+ * a path dependency, and a crate an npm package has, which the patch names
+ * (ADR 0414), by its directory. A binding crate, one whose
+ * `[package.metadata.rust-js]` says `bindings = true`, is rustc's: what it
+ * binds is JS's own, and rust-js reads its metadata (ADR 0024).
+ * @param {{ manifestPath: string, packageName?: string, toolchain?: string, offline?: boolean }} options
+ * @returns {Promise<{ app?: string, crates: string[] }>} */
+export async function cargoBuild({ manifestPath, packageName, toolchain, offline = false }) {
+  const manifest = resolve(manifestPath);
+  const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
+  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
+    throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
+  });
+  const { packages } = JSON.parse(stdout);
+  const app = packageName ?? packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
+  const crates = packages
+    .filter((pkg) => pkg.source === null && pkg.metadata?.["rust-js"]?.bindings !== true)
+    .map((pkg) => realpathSync(dirname(pkg.manifest_path)))
+    .sort();
+  return { app, crates };
 }
 
 /**
@@ -55,7 +80,7 @@ export async function editorCheck({ manifestPath, toolchain, compiler, react, ta
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
-  const env = { ...cargoEnv(compiler, react, await appOf(manifest, undefined, toolchain)), CARGO_TARGET_DIR: targetDir };
+  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, toolchain })), CARGO_TARGET_DIR: targetDir };
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
       .on("error", failed)
@@ -65,8 +90,8 @@ export async function editorCheck({ manifestPath, toolchain, compiler, react, ta
 
 /** Cargo's rustc, for every crate it compiles: rust-js's `--rustc`, rustc
  * with rust-js's tool known (ADR 0112). The binding crates need it, which
- * the workspace's wrapper runs for only when they're its members, and a
- * plain rustc doesn't know the tool. The same pinned rustc, for the rest. */
+ * the wrapper gives to rustc, and a plain rustc doesn't know the tool. The
+ * same pinned rustc, for the rest. */
 export function rustcShim(compiler) {
   const dir = join(tmpdir(), "rust-js", createHash("sha256").update(compiler).digest("hex").slice(0, 16));
   const shim = join(dir, "rustc");
@@ -155,7 +180,7 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
  * `manifests` is each crate's, validated, as the compiler wrote it.
  * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]> }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], targetDir }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
@@ -163,7 +188,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = { ...cargoEnv(compiler, react, await appOf(manifest, packageName, toolchain)), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline })), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");
@@ -210,7 +235,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // Each crate's modules' JS, where it's served from.
   const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
   if (!inSource) return { js, crates, manifests: validated, files: served((file) => file) };
-  const moved = writeInSource(manifests, ledger, routes, { check });
+  const moved = writeInSource(manifests, ledger, routes, { check, packages });
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
   return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)) };
 }
@@ -233,9 +258,14 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
  * Turbopack would take as a route of its own (ADR 0276).
+ * @param {{ check?: boolean, packages?: { name: string, dir: string }[] }} [options] `packages`,
+ * the npm packages whose crates the build compiles, as the patch has them:
+ * what's in one is the package's (ADR 0414), imported by its name, replaced
+ * and never written through, as a store may share it, and not the app's to
+ * check.
  * @returns {Map<string, string>}
  */
-export function writeInSource(manifests, ledger, routes = [], { check = false } = {}) {
+export function writeInSource(manifests, ledger, routes = [], { check = false, packages = [] } = {}) {
   const routed = (file) => routes.some((dir) => !relative(resolve(dir), file).startsWith(".."));
   const moved = new Map();
   // `mod root { .. }` of a `[lib] path = "src/root.rs"` is where the root
@@ -273,7 +303,7 @@ export function writeInSource(manifests, ledger, routes = [], { check = false } 
     const files = [];
     for (const { file, map, types, links, type_links } of modules) {
       const to = moved.get(file);
-      const js = relinked(readFileSync(file), links, to, moved).toString("utf8")
+      const js = relinked(readFileSync(file), links, to, moved, packages).toString("utf8")
         .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
       writes.set(to, Buffer.from(js));
       files.push(to);
@@ -281,7 +311,7 @@ export function writeInSource(manifests, ledger, routes = [], { check = false } 
       // what they import where it's copied too.
       if (types && existsSync(types) && !routed(to)) {
         const typesTo = to.replace(/\.jsx?$/, ".d.ts");
-        writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, moved));
+        writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, moved, packages));
         files.push(typesTo);
       }
       if (map && existsSync(map)) {
@@ -303,9 +333,10 @@ export function writeInSource(manifests, ledger, routes = [], { check = false } 
     recorded.crates[root] = files.map((file) => ({ file, hash: fingerprint(writes.get(file)) }));
   }
   // Checked, not written: each committed file that isn't what it compiles
-  // to, or that's missing. A map, which a project doesn't commit, isn't.
+  // to, or that's missing. A map, which a project doesn't commit, isn't, nor
+  // a package's, which isn't the app's.
   if (check) {
-    const outdated = [...writes].filter(([file, bytes]) => !file.endsWith(".map")
+    const outdated = [...writes].filter(([file, bytes]) => !file.endsWith(".map") && !packageOf(packages, file)
       && !(existsSync(file) && readFileSync(file).equals(Buffer.from(bytes))));
     if (outdated.length) {
       const files = outdated.map(([file]) => `  ${relative(process.cwd(), file)}`).join("\n");
@@ -314,29 +345,47 @@ export function writeInSource(manifests, ledger, routes = [], { check = false } 
     return moved;
   }
   writes.set(ledger, Buffer.from(JSON.stringify(recorded, null, 2) + "\n"));
-  commit(writes, stale, ledger);
+  commit(writes, stale, ledger, (file) => !packageOf(packages, file));
   return moved;
+}
+
+/**
+ * The npm package of `packages` that `file` is in, if one is: a crate's
+ * there is the package's (ADR 0414).
+ * @param {{ name: string, dir: string }[]} packages
+ * @param {string} file
+ */
+export function packageOf(packages, file) {
+  return packages.find(({ dir }) => file.startsWith(dir + sep));
 }
 
 /**
  * `bytes`, a file rust-js wrote, for where it's copied, `to`: each
  * specifier the compiler found in it by a parse, its manifest's `links`
  * (ADR 0101), that names a file copied too names the copy, from `to`;
- * after a directive, in an `export .. from` or in a declaration alike.
- * Nothing else changes: a string that reads like an import is the program's.
+ * after a directive, in an `export .. from` or in a declaration alike. One
+ * in another npm package than `to` is by the package's name, as Node finds
+ * it wherever its package manager put it, `@acme/greet/src/lib.js` (ADR
+ * 0414). Nothing else changes: a string that reads like an import is the
+ * program's.
  * @param {Buffer} bytes
  * @param {{ start: number, end: number, file: string }[]} links
  * @param {string} to
  * @param {Map<string, string>} moved
+ * @param {{ name: string, dir: string }[]} packages
  */
-function relinked(bytes, links, to, moved) {
+function relinked(bytes, links, to, moved, packages) {
   const parts = [];
   let at = 0;
   for (const { start, end, file } of links) {
     const target = moved.get(file);
     if (!target) continue;
+    const home = packageOf(packages, target);
     const path = relative(dirname(to), target);
-    parts.push(bytes.subarray(at, start), Buffer.from(path.startsWith(".") ? path : `./${path}`));
+    const specifier = home && home !== packageOf(packages, to)
+      ? `${home.name}/${relative(home.dir, target).split(sep).join("/")}`
+      : path.startsWith(".") ? path : `./${path}`;
+    parts.push(bytes.subarray(at, start), Buffer.from(specifier));
     at = end;
   }
   parts.push(bytes.subarray(at));

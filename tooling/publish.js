@@ -68,8 +68,13 @@ export function publishArtifacts(manifestPath, manifest, files) {
  * @param {Map<string, Buffer | string>} writes
  * @param {string[]} stale
  * @param {string} [last]
+ * @param {(path: string) => boolean} [inPlace] whether a file replaced is
+ * written in place, as a bundler watching it sees; one that isn't, an npm
+ * package's, whose package manager's store may share it by a hard link with
+ * other projects, is replaced by a new file, so the store's stays as it is
+ * (ADR 0414).
  */
-export function commit(writes, stale, last) {
+export function commit(writes, stale, last, inPlace = () => true) {
   const id = randomUUID();
   const staged = [];
   const changed = [];
@@ -95,7 +100,7 @@ export function commit(writes, stale, last) {
       // sees it change, where it can miss one renamed over it, and never
       // sees it missing (ADR 0192). A new one is renamed into place, and a
       // stale one moved away, as it's removed.
-      const replaced = change.stage && existsSync(change.path);
+      const replaced = change.stage && existsSync(change.path) && inPlace(change.path);
       if (replaced) {
         copyFileSync(change.path, change.backup);
         change.saved = true;

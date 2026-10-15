@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
   },
+  {
+    name: "header-path-as-cargo-gives",
+    breaks: "a module's header names its Rust as Cargo gave it, from the app, so a package's JS an app writes isn't its author's, `node_modules/.pnpm/..`",
+    file: "src/output.rs",
+    find: "                .and_then(|(file, dir)| file.strip_prefix(dir).ok().map(std::path::Path::to_path_buf))\n",
+    replace: "                .and_then(|(file, dir)| file.strip_prefix(dir).ok().map(std::path::Path::to_path_buf).filter(|_| false))\n",
+    tests: ["test/libraries.test.ts", "-t", "from npm into"],
+  },
 ];

@@ -157,9 +157,12 @@ Cargo builds a workspace's libraries with rust-js as its workspace wrapper
 its own ([ADR 0100](../docs/decisions/0100-separate-crates.md)), as `rust-js
 build --package frontend` asks for:
 
-It runs `RUSTC_WORKSPACE_WRAPPER=<compiler> cargo check --target
-wasm32-unknown-unknown`. Each library of the workspace that `frontend` uses,
-and `frontend` itself, is JS in Cargo's target directory, beside the metadata
+It runs `RUSTC_WRAPPER=<compiler> cargo check --target
+wasm32-unknown-unknown`, with the app's own crates, Cargo's packages of a
+path, in `RUST_JS_CRATES`
+([ADR 0414](../docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
+Each of those that `frontend` uses, the crate of an npm package too, and
+`frontend` itself, is JS in Cargo's target directory, beside the metadata
 of that build of it, importing the others, then written beside its Rust. A
 feature set built before is the JS it was.
 Each file a crate's manifest lists is checked, of a build Cargo has as done

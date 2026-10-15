@@ -4,7 +4,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
+import { cargoWorkspace, checkCargo, editorCheck, packageOf } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** This checkout, where a compiler built from it is. */
@@ -159,7 +159,8 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
       const { root: workspace } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
       const built = await builder.checkCargo(options);
       for (const [crate, manifest] of built.manifests) {
-        if (manifest.input.startsWith(workspace + sep)) {
+        // The app's own crates' checks, not an npm package's (ADR 0414).
+        if (manifest.input.startsWith(workspace + sep) && !packageOf(options.packages ?? [], manifest.input)) {
           await checks({ input: manifest.input, files: built.files.get(crate) ?? [], warn });
         }
       }
@@ -187,7 +188,7 @@ export async function buildApp({ app, packageName: named, check = false, log = (
   // The app's Cargo, and its editor, find the crates its npm packages have
   // by a patch, which an install's `postinstall` writes, and again here:
   // an app of no `package.json` has none.
-  if (existsSync(join(app, "package.json"))) writePatch(app);
+  const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
   const compiler = findCompiler(app);
   if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
@@ -196,7 +197,7 @@ export async function buildApp({ app, packageName: named, check = false, log = (
   const { own } = await builder.cargoWorkspace({ manifestPath });
   const packageName = named ?? own;
   if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the app's package, \`rust-js build --package <name>\``);
-  await builder.build({ manifestPath, packageName, check, routes: nextRoutes(app), warn: (message) => log(message.trimEnd()) });
+  await builder.build({ manifestPath, packageName, check, routes: nextRoutes(app), packages, warn: (message) => log(message.trimEnd()) });
 }
 
 /** A Next.js app's Pages Router directories, where a file is a route, of

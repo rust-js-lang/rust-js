@@ -432,8 +432,9 @@ tooling while preserving rust-js's own readable-output goals.
   checks the crate hash of what rustc loaded against it. `test/crates.test.ts`
   compiles a three-crate app, each crate on its own, and compares it with native.
   [ADR 0101](docs/decisions/0101-cargo-workspace-wrapper.md) builds a workspace
-  with Cargo: rust-js is its `RUSTC_WORKSPACE_WRAPPER`, compiling each library
-  of the workspace with Cargo's flags, and rustc builds serde, build scripts and
+  with Cargo: rust-js is its wrapper, compiling each library of the
+  workspace with Cargo's flags, and since ADR 0414 each crate of an npm
+  package too, and rustc builds serde, build scripts and
   procedural macros. The same crates as a workspace, with serde from crates.io,
   print what native `cargo run` does and follow an edit; each feature set is
   JS of its own, beside Cargo's metadata of it, and rust-js changed rebuilds

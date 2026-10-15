@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations"],
   },
+  {
+    name: "cargo-npm-crate-rustcs",
+    breaks: "a crate an npm package has is rustc's, as a registry's is, so a call into it is refused",
+    file: "src/cargo.rs",
+    find: "    Ok(crates.contains(&dir))\n",
+    replace: "    Ok(crates.contains(&dir) && false)\n",
+    tests: ["test/libraries.test.ts", "-t", "from npm into"],
+  },
+  {
+    name: "cargo-registry-crate-compiled",
+    breaks: "a registry's crate, serde's, is compiled by rust-js, not rustc, and its derive's metadata isn't rustc's",
+    file: "src/cargo.rs",
+    find: "    Ok(crates.contains(&dir))\n",
+    replace: "    Ok(crates.contains(&dir) || true)\n",
+    tests: ["test/cargo-workspace.test.ts"],
+  },
 ];

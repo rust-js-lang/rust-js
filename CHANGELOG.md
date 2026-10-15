@@ -9,7 +9,26 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ## Unreleased
 
+### New
+
+- **A Rust library is shared on npm, as ReScript's are**: one package of
+  its crate and the JS its author's `rust-js build` wrote. A JS app imports
+  that JS; a rust-js app names the crate in its `Cargo.toml` and compiles it
+  by its own rust-js into the package, wherever npm, bun or pnpm put it,
+  and imports it by the package's name, `@acme/greet/src/lib.js`. A
+  package's files are replaced, never written through, so a store sharing
+  them keeps its own, and `rust-js build --check` is of the app's JS alone.
+  A binding crate says it's one, `[package.metadata.rust-js] bindings =
+  true`, and is rustc's to check
+  ([ADR 0414](docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
+
 ### Changed
+
+- **A module's header names its Rust from its crate's directory**,
+  `src/api.rs`, whichever build wrote it, not `frontend/src/api.rs` from
+  the workspace's; and a package installed under an alias of another name
+  is refused, as JS imports its crate's JS by its own
+  ([ADR 0414](docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
 
 - **An app's Rust is compiled one way: `rust-js build`**, its own process
   beside `next dev` or `vite`, run once each time, which writes each

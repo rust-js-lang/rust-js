@@ -1,11 +1,11 @@
-//! rust-js as Cargo's `RUSTC_WORKSPACE_WRAPPER` (ADR 0101). Cargo runs it
-//! with rustc's path and the flags it worked out, for each member of the
-//! workspace it builds, and for its probes of rustc. A library of the
-//! workspace, checked for rust-js's target, is compiled by rust-js: its
-//! metadata where Cargo expects it (ADR 0100), and its JS and manifest beside
-//! it, in `rust-js/<crate>-<hash>/`, one for each build of it Cargo keeps.
-//! Anything else, a probe, a build script, a procedural macro, a native
-//! build, is rustc's, as Cargo asked.
+//! rust-js as Cargo's `RUSTC_WRAPPER` (ADRs 0101, 0414). Cargo runs it with
+//! rustc's path and the flags it worked out, for each crate it builds, and
+//! for its probes of rustc. A library of the app's own, one `RUST_JS_CRATES`
+//! names, checked for rust-js's target, is compiled by rust-js: its metadata
+//! where Cargo expects it (ADR 0100), and its JS and manifest beside it, in
+//! `rust-js/<crate>-<hash>/`, one for each build of it Cargo keeps. Anything
+//! else, a probe, a build script, a procedural macro, a native build, a
+//! registry's crate, is rustc's, as Cargo asked.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -26,8 +26,10 @@ pub enum Invocation {
 /// (ADR 0360).
 pub const APP: &str = "RUST_JS_APP";
 
-/// The packages of the bindings rust-js ships: `react/`, `webapi/` and `builtins/`.
-const BINDINGS: [&str; 3] = ["rust-js-react", "rust-js-webapi", "rust-js-builtins"];
+/// The crates rust-js compiles, the app's own, by their directories, as the
+/// tooling says: each of Cargo's packages of a path, its workspace's, a path
+/// dependency, or a crate an npm package has, but a binding crate (ADR 0414).
+pub const CRATES: &str = "RUST_JS_CRATES";
 
 pub fn translate(args: Vec<String>) -> Invocation {
     let Some(rustc) = args
@@ -54,13 +56,19 @@ pub fn translate(args: Vec<String>) -> Invocation {
     let probe = flags
         .iter()
         .any(|flag| flag == "-" || flag == "-vV" || flag.starts_with("--print"));
-    // rust-js's bindings are metadata only (ADR 0024), rustc's to check, a
-    // member of the workspace or not: installed under an app's
-    // `node_modules`, they're in its workspace. rustc is rust-js's `--rustc`,
-    // with its tool known, as the tooling runs Cargo (ADR 0112).
-    let bindings = std::env::var("CARGO_PKG_NAME").is_ok_and(|name| BINDINGS.contains(&name.as_str()));
-    if probe || bindings || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
+    // rustc is rust-js's `--rustc`, with its tool known, as the tooling runs
+    // Cargo (ADR 0112): a binding crate's, which is metadata only (ADR 0024),
+    // and a registry's, which `RUST_JS_CRATES` leaves out, are checked by it.
+    if probe || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
+    }
+    match is_own() {
+        Ok(true) => {}
+        Ok(false) => return rustc_itself(&rustc, given),
+        Err(error) => {
+            eprintln!("rust-js: {error}");
+            return Invocation::Rustc(ExitCode::FAILURE);
+        }
     }
     match compile(&flags) {
         Ok(args) => Invocation::RustJs(args),
@@ -69,6 +77,21 @@ pub fn translate(args: Vec<String>) -> Invocation {
             Invocation::Rustc(ExitCode::FAILURE)
         }
     }
+}
+
+/// Whether the crate Cargo builds is one of the app's own, which
+/// `RUST_JS_CRATES` names, by where Cargo has it.
+fn is_own() -> Result<bool, String> {
+    let crates = std::env::var(CRATES).map_err(|_| {
+        format!(
+            "Cargo ran rust-js without `{CRATES}`, the crates it compiles, which `rust-js build` gives it: run that"
+        )
+    })?;
+    let crates: Vec<PathBuf> =
+        serde_json::from_str(&crates).map_err(|e| format!("`{CRATES}` isn't a list of directories: {e}"))?;
+    let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
+    let dir = std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))?;
+    Ok(crates.contains(&dir))
 }
 
 /// rust-js's arguments for a library Cargo checks for its target.

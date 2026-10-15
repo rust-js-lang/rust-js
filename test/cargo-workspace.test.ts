@@ -8,7 +8,7 @@ import { cpSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, sta
 import { dirname, join } from "node:path";
 import { node } from "./programs";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
-import { cargo, check, printed } from "./crates";
+import { cargo, check, printed, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -114,7 +114,8 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
   const models = join(dir, "models", "src", "lib.rs");
   writeFileSync(models, readFileSync(models, "utf8") + "\npub fn more() {}\n");
   await expect(check(manifest)).rejects.toThrow("`cargo clean` to build it again");
-  expect(() => run(cargo(manifest, "build", "--target", "wasm32-unknown-unknown", "-p", "validation"), 600_000, { RUSTC_WORKSPACE_WRAPPER: compiler }))
+  const env = await throughRustJs(manifest);
+  expect(() => run(cargo(manifest, "build", "--target", "wasm32-unknown-unknown", "-p", "validation"), 600_000, env))
     .toThrow("`cargo build` asks for what rustc links");
 }, 600_000);
 

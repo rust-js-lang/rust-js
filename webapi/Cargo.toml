@@ -21,3 +21,8 @@ js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.1" }
 # rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
+
+# A binding crate: what it binds is JS's own, so rustc checks it and
+# rust-js reads its metadata; it has no JS to compile (ADRs 0024, 0414).
+[package.metadata.rust-js]
+bindings = true

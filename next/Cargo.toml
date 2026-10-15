@@ -22,6 +22,9 @@ react = { package = "rust-js-react", path = "../react", version = "~0.0.3" }
 # The npm package it binds, which an app has beside it.
 [package.metadata.rust-js]
 npm = { next = ">=16.0.0" }
+# A binding crate: what it binds is JS's own, so rustc checks it and
+# rust-js reads its metadata; it has no JS to compile (ADRs 0024, 0414).
+bindings = true
 
 # rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
 [lints.rust]

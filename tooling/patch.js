@@ -14,16 +14,18 @@ const END = "# rust-js: end";
 
 /**
  * Write the patch of the app at `app`, and return the crates it names, each
- * with where it is, from the app. Throws, writing nothing, if a crate is
- * installed twice, which would be two of each of its types, or a package's
- * crate is another version than it is.
+ * with where it is, from the app, and its package: its name, which JS
+ * imports it by, and its directory, its real path (ADR 0414). Throws,
+ * writing nothing, if a crate is installed twice, which would be two of each
+ * of its types, a package's crate is another version than it is, or a
+ * package is installed under another name than its own.
  * @param {string} app
- * @returns {{ crate: string, path: string }[]}
+ * @returns {{ crate: string, path: string, name: string, dir: string }[]}
  */
 export function writePatch(app) {
   const root = realpathSync(app);
   const crates = installedCrates(root);
-  const lines = [...crates].sort(([x], [y]) => x.localeCompare(y)).map(([crate, path]) => `${crate} = { path = ${JSON.stringify(path)} }`);
+  const lines = [...crates].sort(([x], [y]) => x.localeCompare(y)).map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`);
   const config = join(root, ".cargo", "config.toml");
   const rest = existsSync(config) ? withoutBlock(readFileSync(config, "utf8")) : "";
   if (/^\s*\[\s*patch\s*\.\s*("crates-io"|crates-io)\s*\]/m.test(rest)) {
@@ -45,7 +47,7 @@ export function writePatch(app) {
   ].join("\n");
   mkdirSync(dirname(config), { recursive: true });
   writeFileSync(config, rest.trim() ? `${rest.trimEnd()}\n\n${block}` : block);
-  return [...crates].map(([crate, path]) => ({ crate, path }));
+  return [...crates].map(([crate, { dir, name }]) => ({ crate, path: shown(root, dir), name, dir }));
 }
 
 /** `text` without rust-js's block, and the blank line rust-js put before it. */
@@ -58,10 +60,10 @@ function withoutBlock(text) {
 }
 
 /**
- * Each crate the app's packages have, by its name, and where it is, from
- * the app: one, or an error naming each place and who asked for it.
+ * Each crate the app's packages have, by its name, and its package's name
+ * and directory: one, or an error naming each place and who asked for it.
  * @param {string} root the app's directory, its real path
- * @returns {Map<string, string>}
+ * @returns {Map<string, { name: string, dir: string }>}
  */
 function installedCrates(root) {
   /** @type {Map<string, Map<string, { version: string, askers: Set<string> }>>} */
@@ -76,6 +78,11 @@ function installedCrates(root) {
     const pkg = readJson(join(dir, "package.json"));
     const crate = pkg["rust-js"]?.crate;
     if (typeof crate !== "string") continue;
+    // JS imports it by its name, which is where Node finds it only if it's
+    // installed under it, not an alias's, `"x": "npm:@acme/greet"`.
+    if (pkg.name !== name) {
+      throw new Error(`${pkg.name} is installed as ${name}, for ${asker}, and JS imports its crate's JS by its own name: install it as ${pkg.name}`);
+    }
     const at = found.get(crate) ?? new Map();
     found.set(crate, at);
     const place = at.get(dir) ?? { version: pkg.version, askers: new Set() };
@@ -92,7 +99,8 @@ function installedCrates(root) {
     if (at.size > 1) {
       throw new Error(`${crate} is installed twice, which would be two of each of its types: ${places.join("; ")}. Install one version, which each package asks for`);
     }
-    crates.set(crate, shown(root, [...at.keys()][0]));
+    const dir = [...at.keys()][0];
+    crates.set(crate, { name: readJson(join(dir, "package.json")).name, dir });
   }
   return crates;
 }

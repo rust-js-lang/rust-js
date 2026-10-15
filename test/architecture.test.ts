@@ -686,6 +686,22 @@ test("an app's Rust is compiled one way, rust-js build", () => {
   expect(read("tooling/cargo.js")).toContain("parseManifest(readFileSync(manifest");
 });
 
+// Which crates rust-js compiles has one answer, the tooling's, from Cargo's
+// metadata (ADR 0414): each package of a path, but a binding crate, which
+// says so in its own `Cargo.toml`. No list of names, and no wrapper of the
+// workspace's members alone, which a crate from npm isn't one of.
+test("the crates rust-js compiles are the ones the tooling names, a binding crate saying it's one", () => {
+  expect(read("src/cargo.rs")).not.toContain("rust-js-react");
+  expect(read("src/cargo.rs")).toContain("RUST_JS_CRATES");
+  const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().trim().split("\n");
+  const wrappers = tracked.filter((file) => /\.(ts|js|rs)$/.test(file) && file !== "test/architecture.test.ts")
+    .filter((file) => read(file).includes("RUSTC_WORKSPACE_WRAPPER"));
+  expect(wrappers).toEqual([]);
+  for (const crate of ["builtins", "webapi", "react", "next", "node"]) {
+    expect({ crate, bindings: /^\[package\.metadata\.rust-js\][^[]*^bindings = true$/m.test(read(`${crate}/Cargo.toml`)) }).toEqual({ crate, bindings: true });
+  }
+});
+
 test("native and WASI compiler dependency versions agree", () => {
   const dependencies = (path: string) => {
     const section = read(path).split("[dependencies]\n")[1].split(/\n\[/)[0];

@@ -140,6 +140,19 @@ test("a package whose crate is another version than it is refused", () => {
   expect(written.stderr).toContain("@x/a is 0.0.1, and its crate, zz-a, 0.0.2");
 });
 
+// JS imports a crate's JS by its package's name (ADR 0414), which Node finds
+// only where the package is installed under it, not an alias's.
+test("a package installed under another name than its own is refused", () => {
+  const dir = app("patch-alias");
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ private: true, dependencies: { "@x/a": "~0.0.1", "b-alias": "npm:@x/b@~0.0.1" } }));
+  install(join(dir, "node_modules", "@x", "a"), a());
+  install(join(dir, "node_modules", "b-alias"), b);
+  const written = patch(dir);
+  expect(written.code).not.toBe(0);
+  expect(written.stderr).toContain("@x/b is installed as b-alias, for the app");
+  expect(existsSync(join(dir, ".cargo", "config.toml"))).toBe(false);
+});
+
 test("what else the app's config has is kept, and a patch of its own refused", () => {
   const dir = app("patch-config");
   install(join(dir, "node_modules", "@x", "a"), a());

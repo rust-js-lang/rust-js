@@ -7,7 +7,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync
 import { join } from "node:path";
 import { cfgFlags } from "../react/cfg.js";
 import { buildCompiler, buildReact, compiler, fixture, root, run, target } from "./support";
-import { cargo, check } from "./crates";
+import { cargo, check, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -71,7 +71,7 @@ test("the bindings installed inside a Cargo workspace are rustc's to check, as o
   const { js } = await check(manifest, { packageName: "ui" });
   expect(body(js)).toContain('import { useState } from "react";');
   // A check of the whole workspace too, the bindings with it.
-  run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown"), 600_000, { RUSTC_WORKSPACE_WRAPPER: compiler });
+  run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown"), 600_000, await throughRustJs(manifest));
 }, 600_000);
 
 test("a Cargo build is for the React release it's asked for, and follows a change of it", async () => {

@@ -1,6 +1,8 @@
 # 0119. Bindings the community maintains, in one repository
 
-Status: Accepted in part: the repository, `rust-js-lang/bindings`, its
+Status: Accepted in part, amended by [0414](0414-a-library-on-npm-as-rescripts-are.md):
+a binding's `Cargo.toml` says `bindings = true`, so rust-js leaves it to
+rustc, where a library's crate is compiled. Accepted in part: the repository, `rust-js-lang/bindings`, its
 `AGENTS.md`, and its first binding, `@rust-js-bindings/canvas-confetti`
 1.9.0, its example run as its test. Its bot, its publishing as it merges,
 and the following of each library are deferred: a binding is published by
@@ -56,7 +58,8 @@ meets is a fix, released within the hour.
 ```
 rust-js-lang/bindings
 ├─ bindings/canvas-confetti/
-│  ├─ Cargo.toml       rust-js-bindings-canvas-confetti 1.9.x: its library's major and minor (ADR 0116)
+│  ├─ Cargo.toml       rust-js-bindings-canvas-confetti 1.9.x: its library's major and minor (ADR 0116),
+│  │                   `[package.metadata.rust-js] bindings = true` (ADR 0414)
 │  ├─ package.json     owners, and its peer dependencies (ADR 0118)
 │  ├─ src/lib.rs       written, by a person or a coding agent
 │  └─ README.md
