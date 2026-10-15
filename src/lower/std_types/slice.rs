@@ -486,6 +486,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 helper("$cloneFromSlice", vec![items, source, Expr::undefined(), f])
             }
+            // Of a type parameter's, by its dictionary's `clone_from` where its
+            // impl writes one, as std's calls it, else a clone of each.
+            SliceOp::CloneFromSlice if matches!(item().kind(), ty::Param(_)) => {
+                let (items, source) = (arg(), arg());
+                let clone = self.clone_arg(item(), span)?;
+                let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item()]), span)?;
+                let clone_from = Expr::member(dictionary, "clone_from");
+                let place = helper("$ptr", vec![Expr::var("items"), Expr::var("i")]);
+                let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
+                let f = Expr::arrow(
+                    vec!["items".into(), "i".into(), "from".into()],
+                    vec![StmtKind::Expr(called).at(js::Span::NONE)],
+                );
+                helper(
+                    "$cloneFromSlice",
+                    vec![items, source, clone, Expr::bin(Op::And, clone_from, f)],
+                )
+            }
             SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
                 return Err(self.unsupported(
                     span,

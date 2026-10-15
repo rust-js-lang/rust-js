@@ -70,6 +70,9 @@ released any more: `rust-js build` is the one way to build an app.
   arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
+- **`clone_from_slice` in generic code** calls each item's own
+  `clone_from`, where its impl writes one, through its `Clone` dictionary,
+  as std's does (ADR 0324).
 - **A `&mut &mut u32`**, a `&mut` to a `&mut` of a number or a string, is a
   cell of the cell, as arrayvec's `ScopeExitGuard` holds one
   ([ADR 0338](docs/decisions/0338-slice-split-off.md)).

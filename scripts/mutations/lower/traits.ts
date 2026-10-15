@@ -1052,4 +1052,12 @@ export const mutations: Mutation[] = [
     replace: "            false => Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
+  {
+    name: "own-clone-from-not-in-dictionary",
+    breaks: "an impl's own `clone_from` isn't in its `Clone` dictionary, so a generic `clone_from_slice` clones each item instead",
+    file: "src/lower/traits.rs",
+    find: "                && !own_clone_from\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_generic.rs$"],
+  },
 ];

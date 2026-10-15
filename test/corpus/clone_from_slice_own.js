@@ -10,7 +10,10 @@ export function entry() {
 
 export function countedClone() {
   if ($countedClone === undefined) {
-    $countedClone = { clone: countedClone_clone };
+    $countedClone = {
+      clone: countedClone_clone,
+      clone_from: (arg0, arg1) => countedClone_clone_from(arg0.value, arg1),
+    };
   }
   return $countedClone;
 }
@@ -27,7 +30,7 @@ function countedClone_clone_from(counted, source) {
 
 export function lightClone() {
   if ($lightClone === undefined) {
-    $lightClone = { clone: lightClone_clone };
+    $lightClone = { clone: lightClone_clone, clone_from: lightClone_clone_from };
   }
   return $lightClone;
 }

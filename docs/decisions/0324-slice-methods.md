@@ -26,8 +26,12 @@ by a helper of `slice_ops.js` where JS has no method of its own.**
 
 (Amended: `clone_from_slice` of items whose `Clone` has a `clone_from` of
 the crate's calls it on each, as std's does, given a handle on a number or
-text; of items with such a type inside them, or generic where the crate
-has one, it's refused. It had cloned each, which a review found.)
+text; of items with such a type inside them, it's refused. It had cloned
+each, which a review found. Of a type parameter's items, arrayvec's
+`clone_from`'s, each is its dictionary's `clone_from` where the impl
+writes one, which is in its `Clone` dictionary for it, else a clone:
+`TClone.clone_from && ((items, i, from) => TClone.clone_from($ptr(items,
+i), from))`, `test/corpus/clone_from_slice_generic.rs`.)
 | `is_sorted()`, `is_sorted_by(f)`, `is_sorted_by_key(f)` | `$isSortedBy(v, (a, b) => a <= b)` of numbers, `$cmp(a, b) <= 0` of others; `$isSortedByKey(v, f, cmp)` |
 | `partition_point(p)` | `$partitionPoint(v, p)`, by std's binary search, `p`'s calls the same |
 | `chunks_exact(n)`, `rchunks(n)`, `rchunks_exact(n)`, `.remainder()` | an array of chunks, and its `remainder` |

@@ -5,7 +5,7 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, is_std_def, is_std_method,
+    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, is_clone_from, is_std_def, is_std_method,
     is_writer_default, known_derive, std_item,
 };
 use super::representation::{Num, const_js, eval_const};
@@ -2412,12 +2412,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A std trait's provided methods, like `Clone::clone_from`,
             // aren't in its dictionary: nothing calls them through it. But a
-            // `dyn Error` calls `source` (ADR 0141), and generic code writing
-            // to any writer `write_char` and `write_fmt` (ADR 0180).
+            // `dyn Error` calls `source` (ADR 0141), generic code writing
+            // to any writer `write_char` and `write_fmt` (ADR 0180), and a
+            // generic `clone_from_slice` an impl's own `clone_from`, as std's
+            // does, which it asks the dictionary for.
             let source = self.is_error_source(item.def_id);
+            let own_clone_from = is_clone_from(self.tcx, item.def_id) && self.recognition().has_clone_from(id);
             if !self.is_rust_trait(tr.def_id)
                 && self.tcx.defaultness(item.def_id).has_value()
                 && !in_std_dictionary(self.tcx, item.def_id)
+                && !own_clone_from
             {
                 continue;
             }

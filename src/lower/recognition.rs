@@ -3229,7 +3229,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Does the impl `imp` write its own `clone_from`?
-    fn has_clone_from(&self, imp: DefId) -> bool {
+    pub(super) fn has_clone_from(&self, imp: DefId) -> bool {
         self.tcx
             .associated_items(imp)
             .in_definition_order()
@@ -4948,6 +4948,15 @@ pub(crate) fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefI
 /// Is `id` the method `name` of std's trait `item`, `Error::source`?
 pub(crate) fn is_std_method(tcx: TyCtxt<'_>, id: DefId, item: StdItem, name: &str) -> bool {
     tcx.item_name(id).as_str() == name && tcx.trait_of_assoc(id).is_some_and(|tr| is_std_def(tcx, tr, item))
+}
+
+/// `Clone::clone_from`, which a `Clone` dictionary has where its impl
+/// writes its own (ADR 0324).
+pub(crate) fn is_clone_from(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.item_name(id).as_str() == "clone_from"
+        && tcx
+            .trait_of_assoc(id)
+            .is_some_and(|tr| tcx.is_lang_item(tr, LangItem::Clone))
 }
 
 /// A provided method of a std trait that rust-js's dictionary of it has,
