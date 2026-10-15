@@ -2592,9 +2592,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             body.push(StmtKind::Return(Some(Expr::var(cache))).at(js::Span::NONE));
         } else {
-            // Keyed by a const parameter's value first, a number, which only a
-            // `Map` holds (ADR 0107).
-            let map = if self.given.const_params.is_empty() {
+            // Keyed by a const parameter's value first, or a type's fact, a
+            // number, which only a `Map` holds (ADRs 0107, 0145).
+            let map = if self.given.const_params.is_empty() && self.given.type_facts.is_empty() {
                 "WeakMap"
             } else {
                 "Map"
@@ -2608,14 +2608,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .at(js::Span::NONE),
             );
             // One dictionary for each set of what it's given: its const
-            // parameters' values, its dictionaries, and its drops, which may be
-            // none.
+            // parameters' values, its dictionaries, what it asks of its type
+            // parameters, `TSize` (ADR 0145), and its drops, which may be none.
             let keys = Expr::array(
                 self.given
                     .const_params
                     .iter()
                     .map(|(_, value)| value.clone())
                     .chain(self.given.evidence.iter().map(|(_, value)| value.clone()))
+                    .chain(self.given.type_facts.iter().map(|(_, _, value)| value.clone()))
                     .chain(self.given_drops().iter().map(|name| Expr::var(name)))
                     .collect(),
             );

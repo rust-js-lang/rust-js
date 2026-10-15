@@ -14,9 +14,13 @@ use std::collections::{HashMap, HashSet};
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
 /// through a generic function of the crate's it passes the parameter on to:
-/// a caller gives each, after the function's dictionaries. A trait's method
-/// and an impl's, called through dictionaries, and a library's function its
-/// consumers can reach, which never see this, ask none: theirs are errors.
+/// a caller gives each, after the function's dictionaries. An impl's method,
+/// called through its dictionary, asks its impl too of the impl's type
+/// parameters, which the dictionary is made with, `wrapFootprint(TSize)`,
+/// and gives its method. A
+/// trait's method, an impl's of its own type parameters, and a library's
+/// function its consumers can reach, which never see this, ask none: theirs
+/// are errors.
 pub(super) fn type_fact_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
@@ -85,14 +89,24 @@ pub(super) fn type_fact_params<'tcx>(
     }
     let mut params: HashMap<DefId, Vec<(u32, TypeFact)>> = HashMap::new();
     for (id, index, fact) in asked {
-        let through_dictionary = tcx.trait_of_assoc(id).is_some() || tcx.trait_impl_of_assoc(id).is_some();
         let reached = library && crate::lower::library::reachable(tcx, id);
-        if !through_dictionary && !reached {
-            params.entry(id).or_default().push((index, fact));
+        if reached || tcx.trait_of_assoc(id).is_some() {
+            continue;
+        }
+        match tcx.trait_impl_of_assoc(id) {
+            // Of the impl's own parameters: the method's, which its
+            // dictionary gives it of its own, and so the dictionary's.
+            Some(impl_id) if (index as usize) < tcx.generics_of(impl_id).count() => {
+                params.entry(impl_id).or_default().push((index, fact));
+                params.entry(id).or_default().push((index, fact));
+            }
+            Some(_) => {}
+            None => params.entry(id).or_default().push((index, fact)),
         }
     }
     for facts in params.values_mut() {
         facts.sort();
+        facts.dedup();
     }
     params
 }

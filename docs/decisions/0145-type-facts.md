@@ -2,7 +2,13 @@
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md), [0090](0090-wasm32-front-end.md)
 and [0098](0098-destructors.md). Amended:
-`mem::needs_drop` is a fact too (below).
+`mem::needs_drop` is a fact too (below); and a trait impl's method asks
+its impl what it asks of the impl's type parameters: the impl's
+dictionary is made of them, `wrapFootprint(TSize)`, one for each set,
+keyed in a `Map`, and gives its methods each, which a direct call of one
+is given too. A trait's default method and an impl's method of its own
+type parameters ask none still, nor a library's function its consumers
+can reach (`test/corpus/impl_type_facts.rs`, `impl_const_size.rs`).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

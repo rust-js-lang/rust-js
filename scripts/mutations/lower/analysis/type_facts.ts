@@ -35,4 +35,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
     snapshots: true,
   },
+  {
+    name: "impl-facts-unlifted",
+    breaks: "an impl's dictionary isn't made of what its method asks of the impl's type parameter, so the method's `size_of::<T>()` is refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                params.entry(impl_id).or_default().push((index, fact));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
+  },
+  {
+    name: "impl-method-facts-dropped",
+    breaks: "an impl's method takes no fact of the impl's type parameter, so a call of it isn't given its `TSize`",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                params.entry(id).or_default().push((index, fact));\n            }\n",
+    replace: "            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
+  },
 ];
