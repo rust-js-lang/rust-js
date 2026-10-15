@@ -1321,4 +1321,12 @@ export const mutations: Mutation[] = [
     replace: "std_path(self.tcx, adt.did()) == \"std::env::NoSuchError\"",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
+  {
+    name: "yield-now-unknown",
+    breaks: "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
+    file: "src/lower/recognition.rs",
+    find: "        if std_path(tcx, def_id) == \"std::thread::yield_now\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_yield.rs$"],
+  },
 ];

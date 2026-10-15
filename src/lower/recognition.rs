@@ -172,7 +172,8 @@ pub(super) enum Std {
     IsEmpty,
     VecNew,
     /// What JS has nothing of: a `Vec`'s capacity asked for, `reserve`,
-    /// `shrink_to_fit`: its arguments, for what they do, and `undefined`
+    /// `shrink_to_fit`, and `thread::yield_now()`, of the one thread there
+    /// is (ADR 0142): its arguments, for what they do, and `undefined`
     /// (ADR 0315).
     Nothing,
     /// `vec![a, b]`.
@@ -528,6 +529,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if diagnostic("mem_forget") {
             return Some(Some(Std::Forget));
+        }
+        // The one thread there is yields to none (ADR 0142).
+        if std_path(tcx, def_id) == "std::thread::yield_now" {
+            return Some(Some(Std::Nothing));
         }
         // The process a program runs in, Node's (ADR 0391).
         if let Some(op) = node_only(tcx, def_id) {

@@ -195,7 +195,6 @@ threads-sendsync/send-type-inference.rs	error: rust-js does not support a channe
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
 threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `std::iter::Iterator::cycle` yet
 threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
-threads-sendsync/yield2.rs	error: rust-js does not support calling `std::thread::yield_now` yet
 traits/coercion.rs	error: rust-js does not support values of type `dyn std::io::Write` yet
 traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support `&mut` to a `Self` yet
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet

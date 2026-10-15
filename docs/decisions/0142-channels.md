@@ -1,6 +1,7 @@
 # 0142. A channel on one thread is a queue its ends share
 
-Status: Accepted. Extends [0098](0098-destructors.md).
+Status: Accepted. Extends [0098](0098-destructors.md). Amended:
+`thread::yield_now()` is nothing (below).
 
 Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -62,3 +63,8 @@ destructors (ADR 0098), which keep the count:
 
 - `sync_channel`, `recv_timeout`, `iter()` and `try_iter()` are still errors.
 - `std::thread::spawn` is an error, so both ends are always on the one thread.
+- **`thread::yield_now()` is nothing** (amended, 2026-10-15): the one
+  thread there is yields to none, which no program can see (case A of ADR
+  0262). It's std's `Nothing`, as a `Vec`'s `reserve` is (ADR 0315); the
+  corpus's `thread_yield.rs`, and rustc's `threads-sendsync/yield2.rs`,
+  which was refused, pass.
