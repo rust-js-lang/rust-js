@@ -41,6 +41,9 @@ export function fail(message: string): never;
   assign it, and what follows a call of one isn't reached.
 - **`never` is TypeScript's own word for it**: a caller's code after the
   call is unreachable to TypeScript too.
+- **A type with a field of it is represented as any other**: std's
+  `PoisonError` has a `_never: !`, which made a `TryLockError` refused but
+  for a case of its own in what rust-js represents. That case is gone.
 
 ## Why
 

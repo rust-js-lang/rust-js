@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },
   {
-    name: "try-lock-error-unsupported",
-    breaks: "a `TryLockError` value is refused",
-    file: "src/lower/support.rs",
-    find: "            ty::Adt(_, args) if self.recognition().is_try_lock_error(ty) => {\n                return self.unsupported_in(args.type_at(0), seen);\n            }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts","-t","try_lock"],
-  },
-  {
     name: "never-unsupported",
     breaks: "a function that never returns, `-> !`, is refused",
     file: "src/lower/support.rs",
