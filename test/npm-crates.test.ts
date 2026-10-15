@@ -31,7 +31,7 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
     return join(dir, "package");
   };
   const repository = (directory: string) => ({ type: "git", url: "git+https://github.com/rust-js-lang/rust-js.git", directory });
-  const crates = { "@rust-js/builtins": "~0.0.1", "@rust-js/webapi": "~0.0.1" };
+  const crates = { "@rust-js/builtins": "~0.0.2", "@rust-js/webapi": "~0.0.3" };
   for (const [name, peers, crateFiles] of [
     ["builtins", undefined, ["src/atomics.rs", "src/date.rs", "src/intl.rs", "src/lib.rs", "src/promise.rs", "src/proxy.rs", "src/reflect.rs", "src/symbol.rs", "src/typed_arrays.rs", "src/weak.rs"]],
     ["webapi", { "@rust-js/builtins": crates["@rust-js/builtins"] }, ["src/lib.rs"]],

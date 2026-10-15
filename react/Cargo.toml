@@ -3,7 +3,7 @@
 # latest the crate knows (ADR 0043); build.rs gives its `cfg`s.
 [package]
 name = "rust-js-react"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 description = "React for rust-js: components written in Rust, compiled to the JSX you'd write"
 license = "MIT"
@@ -19,8 +19,8 @@ name = "react"
 path = "src/lib.rs"
 
 [dependencies]
-js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.1" }
-webapi = { package = "rust-js-webapi", path = "../webapi", version = "~0.0.1" }
+js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.2" }
+webapi = { package = "rust-js-webapi", path = "../webapi", version = "~0.0.3" }
 
 # The npm packages it binds, which an app has beside it: from 18.0, the
 # first React its gates have (ADR 0043). Its npm package's peer dependencies.

@@ -80,11 +80,11 @@
     },
     "runtime": {
       "name": "@rust-js/runtime",
-      "version": "0.0.3",
+      "version": "0.0.4",
     },
     "tooling": {
       "name": "@rust-js/build",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "bin": {
         "rust-js": "./cli.js",
         "rust-js-check": "./check.js",
@@ -95,7 +95,7 @@
     },
     "typescript": {
       "name": "@rust-js/typescript",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "dependencies": {
         "typescript": "7.0.2",
       },

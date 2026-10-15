@@ -1,6 +1,6 @@
 {
   "name": "@rust-js/build",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Build preparation, manifests, and publication for rust-js hosts.",
   "license": "MIT",

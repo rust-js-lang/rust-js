@@ -2,15 +2,27 @@
 
 Each release of rust-js's compiler and the packages released with it, at its
 version: `@rust-js/native`, `@rust-js/build`, `@rust-js/typescript`,
-`@rust-js/runtime`, `@rust-js/resources`, `@rust-js/create` and
-`@rust-js/react` ([ADR 0120](docs/decisions/0120-first-npm-release.md)).
-`@rust-js/builtins` and `@rust-js/webapi` are released on their own, each
-at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
+`@rust-js/runtime`, `@rust-js/create`, `@rust-js/react` and `@rust-js/next`
+([ADR 0120](docs/decisions/0120-first-npm-release.md)). `@rust-js/builtins`,
+`@rust-js/webapi` and `@rust-js/node` are released on their own, each at its
+version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
-## Unreleased
+## 0.0.4
+
+For macOS on Apple silicon, with Rust 1.99.0, from 1.98.1. `@rust-js/builtins`
+is 0.0.2 and `@rust-js/webapi` 0.0.3, each its own release (ADR 0116). New
+with it: `@rust-js/typescript`, which prints each module's `.d.ts`;
+`@rust-js/next`, Next.js's crate, at 0.0.4; and `@rust-js/node`, Node.js's,
+at its own 0.0.1. `@rust-js/vite-plugin` and `@rust-js/resources` aren't
+released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rust-js build` is how an app's Rust is compiled**, a command of its
+  own beside `vite` or `next dev`, run once each time: each module's JS and
+  `.d.ts` beside its Rust, to commit, and `rust-js build --check`, an app's
+  `build` script's first step, fails where what's committed is stale
+  ([ADR 0412](docs/decisions/0412-rust-js-build-is-its-own-process.md)).
 - **A Rust library is shared on npm, as ReScript's are**: one package of
   its crate and the JS its author's `rust-js build` wrote. A JS app imports
   that JS; a rust-js app names the crate in its `Cargo.toml` and compiles it
@@ -18,46 +30,52 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
   and imports it by the package's name, `@acme/greet/src/lib.js`. A
   package's files are replaced, never written through, so a store sharing
   them keeps its own, and `rust-js build --check` is of the app's JS alone,
-  a failed build of the app's errors, not a package's warnings. A package
-  whose `exports` hide the JS the app imports is refused.
-  A binding crate says it's one, `[package.metadata.rust-js] bindings =
-  true`, and is rustc's to check
+  a failed build of the app's errors, not a package's warnings. A binding
+  crate says it's one, `[package.metadata.rust-js] bindings = true`, and is
+  rustc's to check
   ([ADR 0414](docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
+- **Next.js**: an app's routes and components in Rust, beside its JS, one
+  file at a time; the next crate binds all of Next.js, `next/link`,
+  `next/router`, `next/image`, `next/font`'s Google Fonts, metadata,
+  `getStaticProps` and the rest, typed as Next.js types them, and an app's
+  `next.config` may be Rust (ADRs 0192, 0346, 0350, 0354, 0359, 0378).
+- **TypeScript declarations**: a `.d.ts` beside each module's JS, printed by
+  TypeScript, so the TypeScript of an app moving to Rust is checked against
+  it, under any `tsconfig.json` (ADRs 0196, 0207, 0413).
+- **The bindings cover what TypeScript types**: `webapi` TypeScript's DOM,
+  `js` its ES library, `react` @types/react, `node` @types/node, each
+  measured against them, and coverage only grows (ADRs 0281, 0283, 0347,
+  0351).
+- **rustc's own tests that rust-js compiles and runs as Rust does: 2,062 of
+  2,214**, from 1,899 of 2,206. Bodies are lowered from rustc's MIR (ADR
+  0364). Among what compiles now: unions; raw pointers, a handle on their
+  place; plain data as its bytes, `transmute` and `zeroed` of it; `i128`
+  and `u128`; `Duration`; `Wrapping` and `NonZero`; every std data
+  structure, or an error that names it, `LinkedList`, `BTreeMap`'s entries,
+  `Cow`, `Rc`'s counts, `RefCell`'s borrows; an iterator of the crate's
+  given to generic code; a struct of a `dyn` last field; functions that
+  never return.
+- **JS as a person writes it**: destructuring, `const`, labeled blocks,
+  loops, spreads and calls, conditionals for two-arm `match`es, imports in
+  one block, laid out by the app's Prettier, a file's leading comments, a
+  license's, kept (ADRs 0291, 0278, 0313, 0381, 0383).
 
 ### Changed
 
+- **`@rust-js/vite-plugin`, its `rust-js:<package>` imports, `rust-js-patch`
+  and its `postinstall`** are gone: `rust-js build` writes the patch Cargo
+  reads, and an app imports the JS beside its Rust (ADR 0412).
 - **A module's header names its Rust from its crate's directory**,
   `src/api.rs`, whichever build wrote it, not `frontend/src/api.rs` from
-  the workspace's; and a package installed under an alias of another name
-  is refused, as JS imports its crate's JS by its own
-  ([ADR 0414](docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
-
-- **An app's Rust is compiled one way: `rust-js build`**, its own process
-  beside `next dev` or `vite`, run once each time, which writes each
-  module's JS and `.d.ts` beside its Rust; `rust-js build --check` fails
-  where what's committed is stale, and an app's `build` script runs it
-  first; `--package <name>` names a workspace's app. `withRustJs`,
-  `rust-js-next`, `@rust-js/vite-plugin` and its `rust-js:<package>`
-  imports, `rust-js-patch` and its `postinstall`, the compiler's own
-  command, the `declarations` key and a check's `when` are gone
-  ([ADR 0412](docs/decisions/0412-rust-js-build-is-its-own-process.md)).
+  the workspace's (ADR 0414).
 - **`react::Ref<T>` is @types/react's `Ref<T>`**, a ref a prop holds, an
   object or a callback, and `react::DetailedHTMLProps<E, T>` and
-  `react::SVGProps<T>` an element's props, its `ref` too, which a component's props flatten. The trait of
-  what JSX's `ref` takes is `IntoRef`; next/link's `ref` is a `Ref`,
-  `Some(anchor.into())` ([ADR 0384](docs/decisions/0384-a-ref-prop-is-reacts-ref.md)).
-- **A file's leading comments are its JS's**, a license's, after rust-js's
-  own line ([ADR 0383](docs/decisions/0383-a-files-leading-comments-are-its-jss.md)).
-- **The app's Prettier lays out what rust-js writes**, its JS and its
-  `.d.ts`, where it finds a config, as the app's `prettier --check` reads it,
-  so the app's format check passes on them; a change to the config builds
-  again. `[package.metadata.rust-js.format]` is gone: move its options to
-  `.prettierrc` ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
-- **A Next.js app's config compiles its Rust: `withRustJs(nextConfig)`.**
-  `next dev`, `next build`, a custom server and react.dev's
-  `next-remote-watch` each load it, so an app's scripts stay its own;
-  `rust-js-next dev` and `build` are gone, and `rust-js-next compile`
-  writes the JS alone ([ADR 0380](docs/decisions/0380-with-rust-js.md)).
+  `react::SVGProps<T>` an element's props, its `ref` too, which a
+  component's props flatten. The trait of what JSX's `ref` takes is
+  `IntoRef` ([ADR 0384](docs/decisions/0384-a-ref-prop-is-reacts-ref.md)).
+- **`[package.metadata.rust-js.format]` is gone**: the app's Prettier lays
+  out what rust-js writes; move its options to `.prettierrc`
+  ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
 
 ### Fixed
 
@@ -82,17 +100,53 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 - **A crate root of `mod`s alone writes no JS**, an app's list of its files;
   and a module of a `js::import!` alone writes its import, which was lost
   ([ADR 0382](docs/decisions/0382-a-module-has-a-file-for-what-it-has.md)).
-- **A dev server compiles once for a save, on macOS too.** macOS reports a
-  compiler that ran as changed, so each compile was the next one's event,
-  twice a second, idle. Now only a compiler replaced since it said what it
-  is builds again
-  ([ADR 0379](docs/decisions/0379-a-compiler-that-ran-is-no-change.md)).
 - **Switching an app's rust-js, up or down, builds its crates again.** Cargo
   had the crates another rust-js built as done, as an installed compiler's
   file is as old as its package says, and the build stopped at
   `incompatible dependency compiler identity`. Now `rustc -vV`, through
   rust-js, says which rust-js it is, and Cargo keeps each one's build apart
   ([ADR 0101](docs/decisions/0101-cargo-workspace-wrapper.md)).
+
+### May now be refused
+
+What 0.0.3 compiled wrongly, or not at all, is now right or an error that
+names it:
+
+- Memory addressed by number, a pointer cast to an integer or read at an
+  offset, is an error that says so (ADR 0390).
+- A crate's `[package.metadata.rust-js]` `declarations` key or `format`
+  table is an error that says what replaces it.
+- An npm package with a crate installed under an alias of another name,
+  `"x": "npm:@acme/greet"`, or whose `exports` hide the JS an app imports,
+  is an error that says what to do (ADR 0414).
+
+### Upgrade from 0.0.3
+
+1. Install Rust 1.99.0, which rust-js 0.0.4 runs with:
+   `rustup toolchain install 1.99.0 --profile minimal --target wasm32-unknown-unknown`.
+2. In `package.json`, set `@rust-js/runtime` and `@rust-js/react` to `0.0.4`
+   in `dependencies`, `@rust-js/builtins` to `0.0.2` and `@rust-js/webapi`
+   to `0.0.3`, and `@rust-js/native` and `@rust-js/build` to `0.0.4` in
+   `devDependencies`. Remove `@rust-js/vite-plugin`, and the `postinstall`,
+   `rust-js-patch`. Make the `build` script `rust-js build --check && vite
+   build`.
+3. In `vite.config.js`, remove `rustJs(..)` and its import: Vite serves the
+   JS beside your Rust as any JS.
+4. In `Cargo.toml`, name the crates' releases:
+   `react = { package = "rust-js-react", version = "~0.0.4" }`, and
+   `~0.0.2` and `~0.0.3` for `js` and `webapi`. Remove a `declarations`
+   key: a `.d.ts` is always written.
+5. `bun install` (or npm's, pnpm's), then `bunx rust-js build`: the JS and
+   `.d.ts` beside your Rust are 0.0.4's. Commit them with the upgrade.
+6. From now on, run `rust-js build` after each change to your Rust, beside
+   `bun run dev`.
+
+### Roll back to 0.0.3
+
+Revert the upgrade's commit, its `package.json`, `vite.config.js`,
+`Cargo.toml` and the JS, then `bun install`, and `cargo clean --target
+wasm32-unknown-unknown`: Cargo keeps each rust-js's build apart from 0.0.4
+on, but not 0.0.3's.
 
 ## 0.0.3
 
