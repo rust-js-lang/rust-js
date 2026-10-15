@@ -30,7 +30,6 @@ cast/coercion-as-explicit-cast.rs	error: rust-js does not support addressable me
 cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/supported-cast.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support this constant, from its MIR yet
-closures/2229_closure_analysis/run_pass/mut_ref.rs	error: rust-js does not support values of type `&mut &mut std::string::String` yet
 codegen/box-str-drop-glue.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<[u8]>` as `std::boxed::Box<str>`, which aren't numbers alone
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet

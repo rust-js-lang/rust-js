@@ -68,6 +68,12 @@ fn unread(n: &i32) -> i32 {
     *n
 }
 
+/// One to a field, whose handle making it would make for nothing.
+fn unread_field(pair: &(i32, i32)) -> i32 {
+    let _p: *const i32 = &pair.0;
+    pair.1
+}
+
 // A `ref mut` binding read through a match guard, the `&mut` a value of its
 // own there.
 fn guarded(mut n: i32) -> i32 {
@@ -143,7 +149,7 @@ fn main() {
     let b = a;
     println!("{} {} {}", same(&a, &b), same(&a, &a), a == b);
 
-    println!("{} {}", unread(&4), guarded(6));
+    println!("{} {} {}", unread(&4), guarded(6), unread_field(&(1, 2)));
     let literal: *const i32 = &3;
     let same_literal = literal;
     println!("{} {}", unsafe { *literal }, literal == same_literal);

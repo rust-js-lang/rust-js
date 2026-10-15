@@ -3811,11 +3811,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         // Through `outer`, a `&mut` to `list`, a `&mut` to what
                         // isn't a cell: what `list` is.
-                        (_, Value::Ref(e))
-                            if !place.projection.is_empty()
-                                && !self.is_cell_pointee(pointee)
-                                && !self.is_cell(pointee) =>
-                        {
+                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {
                             Value::Expr(e)
                         }
                         (_, value) => value,
@@ -4023,14 +4019,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self.mir_expr(state, operand, out)?;
                 self.repeat((item, item_ty), *count, constant, span, out)?
             }
+            // A borrow only for a slice's length, a bounds check's or a slice
+            // pattern's test, which nothing points through: the slice, whose
+            // `PtrMetadata` is its `length`, a subslice's copy's too.
+            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,
             // A pointer to a JS object, `std::ptr::eq`'s: the object (ADR 0285).
             Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {
                 self.mir_place(state, *place, span, out)?
             }
             // A pointer to a place, a handle on it (ADR 0407); of what a pointer
-            // points to, `&raw const *p`, that pointer; of a slice, the slice,
-            // a slice pattern's borrow for its length's too, whose
-            // `PtrMetadata` is its `length`.
+            // points to, `&raw const *p`, that pointer; of a slice, the slice.
             Rvalue::RawPtr(_, place) => {
                 if let [PlaceElem::Deref] = place.projection.as_slice()
                     && self.is_handle_pointer(decls[place.local].ty)

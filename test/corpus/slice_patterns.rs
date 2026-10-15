@@ -77,4 +77,10 @@ fn main() {
         first.push('!');
     }
     println!("{:?}", names);
+    // An item of the rest, a subslice JS holds a copy of, bounds-checked:
+    // its length's borrow points through nothing.
+    if let [first, rest @ ..] = names.as_mut_slice() {
+        std::mem::swap(first, &mut rest[0]);
+    }
+    println!("{:?}", names);
 }

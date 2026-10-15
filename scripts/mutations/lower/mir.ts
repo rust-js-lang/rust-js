@@ -1735,8 +1735,8 @@ export const mutations: Mutation[] = [
     name: "mir-through-alias-handle",
     breaks: "MIR's `&mut outer[0]` through `outer`, a `&mut` to `list`, indexes a handle on `list`",
     file: "src/lower/mir.rs",
-    find: "                            if !place.projection.is_empty()\n",
-    replace: "                            if false\n",
+    find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {\n",
+    replace: "                        (_, Value::Ref(e)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
@@ -1793,14 +1793,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && generic_args.types().any(|t| self.is_cell(t))\n",
     replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
-  },
-  {
-    name: "mir-through-cell-ref-unwrapped",
-    breaks: "MIR's `&*r` of a `&&mut i32` gives the number, not its cell, `refs.contains(&&mut 2)`",
-    file: "src/lower/mir.rs",
-    find: "                                && !self.is_cell(pointee) =>\n",
-    replace: "                                =>\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -2381,6 +2373,7 @@ export const mutations: Mutation[] = [
     find: "            && state.locals.reads[place.local] == 0\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+    snapshots: true,
   },
   {
     name: "reborrowed-pointer-new-handle",
@@ -2454,5 +2447,13 @@ export const mutations: Mutation[] = [
     find: "                    && state.pointed.read_only.contains(&place.local)\n",
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
+  },
+  {
+    name: "mir-fake-raw-refused",
+    breaks: "a bounds check's borrow for a subslice's length is taken as a pointer into the copy JS holds of it, and refused",
+    file: "src/lower/mir.rs",
+    find: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_patterns.rs$"],
   },
 ];

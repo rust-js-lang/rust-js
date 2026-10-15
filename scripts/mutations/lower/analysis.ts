@@ -81,6 +81,7 @@ export const mutations: Mutation[] = [
     find: "        .chain(coded_inline_consts(tcx, all_bodies))\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    snapshots: true,
   },
   {
     name: "coded-inline-consts-every",

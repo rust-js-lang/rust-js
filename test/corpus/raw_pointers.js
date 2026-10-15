@@ -56,6 +56,10 @@ function unread(n) {
   return n;
 }
 
+function unread_field(pair) {
+  return pair[1];
+}
+
 function guarded(n) {
   const z = {
     get value() {
@@ -123,7 +127,7 @@ function main() {
   const a = { x: 1, y: 1 };
   const b = { ...a };
   console.log(`${same(a, b)} ${same(a, a)} ${$eq(a, b)}`);
-  console.log(`${unread(4)} ${guarded(6)}`);
+  console.log(`${unread(4)} ${guarded(6)} ${unread_field([1, 2])}`);
   const literal = { value: 3 };
   const sameLiteral = literal;
   console.log(`${literal.value} ${literal === sameLiteral}`);
