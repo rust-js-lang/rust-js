@@ -122,4 +122,28 @@ export const mutations: Mutation[] = [
     replace: "mutable ? $lock(cell) : $lockRead(cell)",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    name: "dyn-cell-impl-unset",
+    breaks: "`$dynCell` gives the cell no `impl`",
+    file: "src/runtime/borrow.js",
+    find: "  Object.defineProperty(cell, \"impl\", { value: both, writable: true, configurable: true });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
+  },
+  {
+    name: "dyn-cell-impl-replaced",
+    breaks: "a cell made a `dyn` of a second trait loses the first's methods",
+    file: "src/runtime/borrow.js",
+    find: "held === undefined || held === impl ? impl : { ...held, ...impl }",
+    replace: "impl",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
+  },
+  {
+    name: "dyn-cell-impl-enumerable",
+    breaks: "a cell made a `dyn` isn't equal to a cell of its value: `==` compares its `impl`",
+    file: "src/runtime/borrow.js",
+    find: "{ value: both, writable: true, configurable: true }",
+    replace: "{ value: both, writable: true, configurable: true, enumerable: true }",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
+  },
 ];

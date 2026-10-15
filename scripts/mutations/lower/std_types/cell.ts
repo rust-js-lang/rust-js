@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "guard-value-unboxed",
     breaks: "`*m.lock().unwrap() += 2` of a number writes a copy",
     file: "src/lower/std_types/cell.rs",
-    find: "                match mutable && self.is_boxable(guard.types().next().expect(\"what it guards\")) {",
-    replace: "                match false {",
+    find: "                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {",
+    replace: "                match self.cell_dyn_trait(guarded).is_some() {",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
@@ -113,5 +113,13 @@ export const mutations: Mutation[] = [
     find: "                && let [rethrow] = handler.as_slice()\n",
     replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
     tests: ["test/lowering.test.ts", "-t", "field only ever borrowed for a moment"],
+  },
+  {
+    name: "dyn-cell-guard-value",
+    breaks: "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
+    file: "src/lower/std_types/cell.rs",
+    find: "                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {\n",
+    replace: "                match mutable && self.is_boxable(guarded) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
 ];

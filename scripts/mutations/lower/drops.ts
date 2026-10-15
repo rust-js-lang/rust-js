@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "        for (span, what, _) in facts.problems.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "drop|partial|moved"],
   },
+  {
+    name: "dyn-cell-drop-of-value",
+    breaks: "a `RefCell<dyn T>` dropped drops its `value` as the pair, not the cell it is",
+    file: "src/lower/drops.rs",
+    find: "                    Some(_) => value,\n",
+    replace: "                    Some(_) => Expr::held(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_drop.rs$"],
+  },
 ];

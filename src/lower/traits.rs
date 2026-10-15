@@ -16,6 +16,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
+use rustc_middle::ty::elaborate::supertrait_def_ids;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
@@ -1797,6 +1798,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(values)
     }
 
+    /// The trait of a `RefCell<dyn T>` that `ty` is or points at: the
+    /// crate's own `T` (ADR 0397).
+    pub(super) fn dyn_cell_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        let cell = self.pointee(ty);
+        if !self.is_std_type(cell, StdItem::RefCell) {
+            return None;
+        }
+        let ty::Adt(_, args) = cell.kind() else { return None };
+        self.cell_dyn_trait(args.type_at(0))
+    }
+
+    /// The trait of `held`, a `dyn` whose `RefCell` is its pair, `{ value,
+    /// impl }`, its guard too: the crate's own (ADR 0397). A `dyn FnMut`'s
+    /// holds the function.
+    pub(super) fn cell_dyn_trait(&self, held: Ty<'tcx>) -> Option<DefId> {
+        match held.kind() {
+            ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&id| self.is_rust_trait(id)),
+            _ => None,
+        }
+    }
+
+    /// Another of the crate's traits that `held`, in a cell made a `dyn` of
+    /// `trait_id`, has, with a method named as one of `trait_id`'s: neither
+    /// the other's supertrait. A cell made a `dyn` of two has one `impl`,
+    /// both's methods (ADR 0397), which two of one name can't be.
+    fn dyn_cell_clash(&self, held: Ty<'tcx>, trait_id: DefId) -> Option<DefId> {
+        let methods = |id: DefId| -> HashSet<Symbol> {
+            supertrait_def_ids(self.tcx, id)
+                .flat_map(|of| self.tcx.associated_items(of).in_definition_order())
+                .filter(|item| item.is_fn())
+                .map(|item| item.name())
+                .collect()
+        };
+        let under = |sub: DefId, of: DefId| supertrait_def_ids(self.tcx, sub).any(|id| id == of);
+        let named = methods(trait_id);
+        let bounds = self.declared_bounds(held, self.typing_env.param_env);
+        self.tcx.all_traits_including_private().find(|&other| {
+            self.is_rust_trait(other)
+                && !under(trait_id, other)
+                && !under(other, trait_id)
+                && (bounds.contains(&other) || self.has_user_impl(other, held))
+                && !methods(other).is_disjoint(&named)
+        })
+    }
+
     /// The trait a `dyn` of `ty` is a pair of, `{ value, impl }` (ADR 0049):
     /// one rust-js compiled, or std's `Display` or `Error`, whose
     /// dictionaries it makes (ADR 0141). A `dyn Debug` is a string instead.
@@ -1931,6 +1977,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is the same value either way.
         let pointee = self.pointee(target);
         let tail = self.tcx.struct_tail_for_codegen(pointee, self.typing_env);
+        // A `RefCell<dyn T>` is its cell with its `impl`, a pair (ADR 0397).
+        if self.dyn_cell_trait(target).is_some() {
+            return Ok(());
+        }
         if pointee.is_adt()
             && matches!(tail.kind(), ty::Dynamic(traits, ..)
                 if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))
@@ -1954,6 +2004,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&dyn Debug` is the string it shows (ADR 0060).
         if self.is_dyn_debug(target) && !self.is_dyn_debug(source) {
             return self.dyn_debug_string(value, self.pointee(source), span);
+        }
+        // A `RefCell<C>` as a `RefCell<dyn T>`: the same cell, given its
+        // `impl`, in place, so an `Rc` of it before is the same (ADR 0397).
+        if self.dyn_cell_trait(target).is_some()
+            && let (ty::Adt(_, from), ty::Adt(_, to)) = (self.pointee(source).kind(), self.pointee(target).kind())
+            && let Some(tr) = self.dyn_trait_ref(to.type_at(0), from.type_at(0))
+        {
+            // A `dyn` of its supertrait, whose dictionary would be the cell's
+            // `impl`'s: not yet.
+            if matches!(from.type_at(0).kind(), ty::Dynamic(..)) {
+                return Err(self.unsupported(span, &format!("a `{source}` as a `{target}`")));
+            }
+            let dictionary = self.dictionary(tr, span)?;
+            // A counted `Rc`'s, or a `Weak`'s, of one, whose `dyn` is a pair
+            // around the `Rc` (ADR 0320): not yet.
+            if self.counted_rc(target).is_some() || self.weak_of(target).is_some() {
+                return Err(self.unsupported(span, &format!("a counted `{target}`")));
+            }
+            // One made here, `{ value: .. }`, is made with it.
+            return match value.kind {
+                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
+                {
+                    props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
+                    Ok(Expr::object(props))
+                }
+                // Another's, which may be a `dyn` of another trait already:
+                // its `impl` has both's methods, unless they share a name.
+                _ => match self.dyn_cell_clash(from.type_at(0), tr.def_id) {
+                    Some(other) => Err(self.unsupported(
+                        span,
+                        &format!(
+                            "a `{target}` of a cell that may be a `dyn {}` too: its one `impl` can't hold two methods of one name",
+                            self.tcx.def_path_str(other)
+                        ),
+                    )),
+                    None => Ok(Expr::call(Expr::helper("$dynCell"), vec![value, dictionary])),
+                },
+            };
         }
         if self.dynamic_trait(target).is_none() {
             return Ok(value);

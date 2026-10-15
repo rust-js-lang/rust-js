@@ -366,8 +366,8 @@ export const mutations: Mutation[] = [
     name: "mir-rc-dyn-unpaired",
     breaks: "`Rc<dyn Any>` made from MIR is the value, not its pair with its dictionary",
     file: "src/lower/mir.rs",
-    find: "                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));\n",
-    replace: "                let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)));\n",
+    find: "let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..))",
+    replace: "let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)))",
     tests: ["test/corpus.test.ts","-t","dyn_any_generic"],
   },
   {
@@ -2317,5 +2317,13 @@ export const mutations: Mutation[] = [
     find: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
+  {
+    name: "dyn-cell-cast-unsized",
+    breaks: "a coercion to `RefCell<dyn T>` keeps the cell without its `impl`",
+    file: "src/lower/mir.rs",
+    find: "matches!(self.pointee(*to).kind(), ty::Dynamic(..)) || self.dyn_cell_trait(*to).is_some();",
+    replace: "matches!(self.pointee(*to).kind(), ty::Dynamic(..));",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
 ];

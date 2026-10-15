@@ -109,7 +109,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ty::Adt(_, guard) = generic_args.type_at(0).kind() else {
                     unreachable!("a guard")
                 };
-                match mutable && self.is_boxable(guard.types().next().expect("what it guards")) {
+                let guarded = guard.types().next().expect("what it guards");
+                // A `RefCell<dyn T>`'s is the cell, its pair (ADR 0397).
+                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {
                     true => arg(),
                     false => Expr::held(arg()),
                 }

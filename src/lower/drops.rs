@@ -402,9 +402,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.drop_items(values, value_ty, span, made, out)?;
                 }
             }
-            // A `RefCell`'s value (ADR 0320).
+            // A `RefCell`'s value (ADR 0320); of a `RefCell<dyn T>`, the cell
+            // is the pair, `{ value, impl }` (ADR 0397).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => {
-                self.drop_in(Expr::held(value), args.type_at(0), span, made, out)?
+                let inner = args.type_at(0);
+                let value = match self.cell_dyn_trait(inner) {
+                    Some(_) => value,
+                    None => Expr::held(value),
+                };
+                self.drop_in(value, inner, span, made, out)?
             }
             // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
             // what it points at, if that has a destructor; a `Weak`: `$weakDrop`

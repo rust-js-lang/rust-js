@@ -3774,7 +3774,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
                 // Through a reference, a `Box` or an `Rc`, as `unsize_trait` sees it.
-                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));
+                // To a `dyn`, or a `RefCell<dyn T>`, a pair too (ADR 0397).
+                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..)) || self.dyn_cell_trait(*to).is_some();
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);

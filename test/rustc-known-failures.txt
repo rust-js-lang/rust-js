@@ -95,7 +95,7 @@ drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<
 drop/or-pattern-drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 drop/rc-trait-object-double-drop.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 dropck/compound-type-of-raw-pointers.rs	error: rust-js does not support values of type `*const NoisyDrop<&std::vec::Vec<i32>>` yet
-dst/dst-coerce-rc.rs	error: rust-js does not support a `std::cell::RefCell<dyn Baz>`, whose last field is a `dyn` yet
+dst/dst-coerce-rc.rs	error: rust-js does not support a counted `std::rc::Rc<std::cell::RefCell<dyn Baz>>` yet
 dst/dst-coercions.rs	error: rust-js does not support values of type `*const dyn T` yet
 dst/dst-field-align.rs	error: rust-js does not support a `Baz<dyn Bar>`, whose last field is a `dyn` yet
 dst/dst-raw.rs	error: rust-js does not support values of type `*const dyn Trait` yet

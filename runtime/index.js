@@ -2319,6 +2319,17 @@ export function $deadlock() {
   throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }
 
+// A `RefCell<C>` as a `RefCell<dyn T>` (ADR 0397): the same cell, given the
+// dictionary of `C`'s `T`, so it's the pair a `dyn` is, its guard too. One
+// made a `dyn` of another trait already has both's methods. Not enumerable,
+// as `borrows` isn't.
+export function $dynCell(cell, impl) {
+  const held = cell.impl;
+  const both = held === undefined || held === impl ? impl : { ...held, ...impl };
+  Object.defineProperty(cell, "impl", { value: both, writable: true, configurable: true });
+  return cell;
+}
+
 // `{:?}` of a `dyn Any` made where it's shown (ADR 0331): what std shows of
 // any, once what made it ran.
 export function $debugAny() {
