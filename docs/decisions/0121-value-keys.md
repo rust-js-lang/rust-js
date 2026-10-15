@@ -56,7 +56,8 @@ for (const [cell, kind] of cells) { .. } // the key as it was put in
   - a key whose `PartialEq` is the crate's own, which `$key` would ignore;
   - a `BTreeMap` or `BTreeSet` of these keys: their order is the key's
     `Ord`, fields in declared order, which a string of names in their order
-    isn't;
+    isn't (amended by [0404](0404-a-b-tree-keyed-by-value.md): one whose
+    `Ord` is derived all through is a `$KeyMap` read in its order);
   - a map of these keys in JSON, as serde_json refuses a key that isn't a
     string.
 

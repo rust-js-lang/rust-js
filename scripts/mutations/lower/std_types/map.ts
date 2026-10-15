@@ -219,4 +219,28 @@ export const mutations: Mutation[] = [
     replace: "            MapOp::Get if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
   },
+  {
+    name: "value-key-trees-refused",
+    breaks: "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is refused",
+    file: "src/lower/std_types/map.rs",
+    find: "            || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))\n",
+    replace: "            || (self.is_value_key(ty) && !ordered)\n",
+    tests: ["test/corpus.test.ts", "-t", "^value_key_trees.rs$"],
+  },
+  {
+    name: "value-key-tree-own-ord",
+    breaks: "a B-tree keyed by a struct whose `Ord` is the crate's own keeps two its `Ord` finds `Equal`",
+    file: "src/lower/std_types/map.rs",
+    find: "            ty::Adt(adt, args) => {\n                self.recognition().derives(self.ord_trait(), ty)\n                    && adt\n",
+    replace: "            ty::Adt(adt, args) => {\n                adt\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a B-tree key whose Ord is the crate's own"],
+  },
+  {
+    name: "value-key-tree-own-enum-ord",
+    breaks: "a B-tree keyed by a tuple holding a fieldless enum whose `Ord` is the crate's own keeps two its `Ord` finds `Equal`",
+    file: "src/lower/std_types/map.rs",
+    find: "                !self.is_rust_adt(adt.did()) || self.recognition().derives(self.ord_trait(), ty)\n",
+    replace: "                true || !self.is_rust_adt(adt.did())\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a B-tree key holding a fieldless enum whose Ord"],
+  },
 ];

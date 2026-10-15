@@ -507,9 +507,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(self.partial_eq_trait(), peeled)
             && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));
         primitive
-            || (!ordered && self.is_value_key(ty))
+            || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))
             || self.recognition().is_path(peeled)
             || self.is_cow_key(peeled)
+    }
+
+    /// A key a B-tree finds as a `$KeyMap` keeps it: one whose `Ord` is
+    /// derived, or std's, all through, so two it orders `Equal` are equal
+    /// field by field, as `$key` tells them, and its order is `cmp_fn`'s
+    /// (ADR 0404).
+    pub(in crate::lower) fn orders_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        let ty = ty.peel_refs();
+        if seen.contains(&ty) {
+            return true;
+        }
+        seen.push(ty);
+        match ty.kind() {
+            ty::Adt(adt, _) if self.js_eq(ty).is_some() => {
+                !self.is_rust_adt(adt.did()) || self.recognition().derives(self.ord_trait(), ty)
+            }
+            _ if self.js_eq(ty).is_some() => true,
+            ty::Tuple(parts) => parts.iter().all(|t| self.orders_by_value(t, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.orders_by_value(*item, seen),
+            ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
+                self.orders_by_value(args.type_at(0), seen)
+            }
+            ty::Adt(adt, args) => {
+                self.recognition().derives(self.ord_trait(), ty)
+                    && adt
+                        .all_fields()
+                        .all(|field| self.orders_by_value(self.field_ty(field, args), seen))
+            }
+            _ => false,
+        }
     }
 
     /// A `Cow` a map finds by what it borrows, or by that itself, `&str` or

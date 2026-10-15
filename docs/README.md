@@ -471,6 +471,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0401 A path compares, orders and keys a map by its components](decisions/0401-a-path-compares-by-its-components.md)
 - [0402 A `Cow` keys a map by what it borrows](decisions/0402-a-cow-keys-a-map-by-what-it-borrows.md)
 - [0403 A map's value that could look like `None` is given back boxed](decisions/0403-a-map-value-that-looks-like-none.md)
+- [0404 A B-tree keyed by value, whose `Ord` is derived](decisions/0404-a-b-tree-keyed-by-value.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
