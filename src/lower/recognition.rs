@@ -3153,6 +3153,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// dictionaries are the ones a function is given. One that is a type here,
     /// `<Count as Source>::Item` in an impl's signature, is that type.
     pub(super) fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
+        self.is_unknown_in(ty, self.typing_env)
+    }
+
+    /// `is_unknown`, of a type of another function's, whose parameters are
+    /// its own: asked in its `typing_env`, as the caller's would find its
+    /// parameters at other indexes, arrayvec's `CAP`.
+    pub(super) fn is_unknown_in(&self, ty: Ty<'tcx>, typing_env: ty::TypingEnv<'tcx>) -> bool {
         match ty.kind() {
             ty::Param(_) => true,
             ty::Alias(
@@ -3163,7 +3170,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 },
             ) => self
                 .tcx
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
                 .map_or(true, |known| {
                     matches!(
                         known.kind(),

@@ -4051,6 +4051,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.check_slice_item_pointer((state.body, &state.pointed.copies), *place, span)?;
                 let pointee = place.ty(decls, tcx).ty;
                 let target = self.mir_place(state, *place, span, out)?;
+                // Only read through, of what a reference or box refers to:
+                // where it is matters to nothing (`Pointed::read_only`).
+                if let [PlaceElem::Deref] = place.projection.as_slice()
+                    && state.pointed.read_only.contains(&place.local)
+                {
+                    return Ok(Value::Expr(self.read_only_pointer_to(target, pointee, span)?));
+                }
                 // Of what a `&mut` refers to, a value JS can't change in place:
                 // through its box or handle, `r.value`, whose place isn't the
                 // one it refers to, which another pointer to it wouldn't be.
@@ -4416,7 +4423,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
-        self.check_slice_pointer(state.body, (def_id, generic_args), args, span)?;
         // `..Default::default()` of a struct whose `Default` is derived, an
         // update's base: each default the update reads, none it replaces that
         // does nothing, a component's `children: C` among them, which needs no

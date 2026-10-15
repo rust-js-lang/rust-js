@@ -9,7 +9,7 @@ beforeAll(buildCompiler, 600_000);
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
-  ["unsupported type", 'pub fn f(x: *const [u8]) -> *const [u8] { x }', "does not support addressable memory yet: values of type `*const [u8]`"],
+  ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
   // A `const { .. }` block's type is its value's, not its placeholder's.
   ["a const block of a static's dyn", 'trait T { fn get(&self) -> u32; }\nstruct A(u32);\nimpl T for A { fn get(&self) -> u32 { self.0 } }\nstatic S: A = A(1);\npub fn f() -> u32 { let x = [const { &S as &dyn T }; 1]; x[0].get() }', "does not support constants of type `&dyn T`"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
@@ -22,8 +22,6 @@ for (const [name, source, message, crate] of [
   ["a pointer's address", "pub fn f() -> usize { let x = 1; let p = &raw const x; p as usize }", "does not support addressable memory yet: a pointer's address"],
   ["a pointer made of an address", "pub fn f() -> bool { let p = 3 as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer made of an address"],
   ["a pointer read as another type's", "pub fn f() -> u16 { let x = 1u32; let p = &raw const x as *const u16; unsafe { *p } }", "does not support addressable memory yet: a pointer read as another type's"],
-  // A shared slice's `as_ptr()` is only read through, as a copy reads the same.
-  ["a pointer into a slice", "pub fn f(s: &mut [u8]) -> u8 { unsafe { *s.as_mut_ptr() } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer through a &mut", "pub fn f(r: &mut u32) -> *mut u32 { r }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to"],
@@ -52,6 +50,7 @@ for (const [name, source, message, crate] of [
   // `ptr::eq` of a Rust value: an unchanged copy is one JS object, and a
   // number is its value, so a place's address isn't JS's (ADR 0285).
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
+  ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
   ["a width for a JsError", 'pub fn f(e: &js::JsError) -> String { format!("{:>9?}", e) }', "options for a", "js"],
   ["a width for a serde_json Value", 'pub fn f(v: &serde_json::Value) -> String { format!("{:>9}", v) }', "options for a", "serde"],

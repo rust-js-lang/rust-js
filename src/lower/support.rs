@@ -142,12 +142,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Ref(_, inner, Mutability::Not) => return self.unsupported_in(*inner, seen),
             // A raw pointer, a handle on its place, of what it points to
-            // (ADR 0407), a `NonNull` too; one to what has no size, a
-            // slice's, isn't yet.
+            // (ADR 0407), a `NonNull` too, and one to a slice, the slice;
+            // one to text or a `dyn`, which holds a length or a vtable too,
+            // isn't yet.
             _ if let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)
                 && !matches!(
                     self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(),
-                    ty::Slice(_) | ty::Str | ty::Dynamic(..)
+                    ty::Str | ty::Dynamic(..)
                 ) =>
             {
                 return self.unsupported_in(inner, seen);

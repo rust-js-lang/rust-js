@@ -75,6 +75,8 @@ pub(in crate::lower) enum PointerOp {
     Slice {
         mutable: bool,
     },
+    /// A pointer to a slice's `len()`, the slice's, which it is.
+    SliceLen,
     /// `ptr::drop_in_place(p)`, `p.drop_in_place()`: what dropping what it
     /// points to runs, there, in Rust's order (ADR 0098).
     DropInPlace,
@@ -116,6 +118,17 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::boxed::Box::<T>::from_raw", PointerOp::FromRaw),
     ("std::boxed::Box::<T, A>::from_raw", PointerOp::FromRaw),
     ("std::ptr::drop_in_place", PointerOp::DropInPlace),
+    // A pointer to a slice, of an item's pointer and a length: a view of
+    // them, as `from_raw_parts_mut`'s, or the whole array, it.
+    ("std::ptr::slice_from_raw_parts", PointerOp::Slice { mutable: true }),
+    ("std::ptr::slice_from_raw_parts_mut", PointerOp::Slice { mutable: true }),
+    (
+        "std::ptr::NonNull::<[T]>::slice_from_raw_parts",
+        PointerOp::Slice { mutable: true },
+    ),
+    ("std::ptr::const_ptr::<impl *const [T]>::len", PointerOp::SliceLen),
+    ("std::ptr::mut_ptr::<impl *mut [T]>::len", PointerOp::SliceLen),
+    ("std::ptr::NonNull::<[T]>::len", PointerOp::SliceLen),
     ("std::ptr::copy", PointerOp::Copy { dst_first: false }),
     ("std::ptr::copy_nonoverlapping", PointerOp::Copy { dst_first: false }),
     ("std::slice::from_raw_parts", PointerOp::Slice { mutable: false }),
@@ -206,6 +219,12 @@ pub(super) struct Pointed {
     /// places aren't the array's; and a named constant, each use of which
     /// is a value of its own, where Rust's may be one place.
     pub(super) copies: HashSet<Local>,
+    /// Each reference or box `r` whose every pointer, `&raw const *r`, is
+    /// only read through, `ptr::read(p)` or `*p`, arrayvec's `Drain`'s:
+    /// never compared, kept or written through, so a cell of what `r`
+    /// refers to reads the same, as Rust's aliasing rules let nothing
+    /// change it till the pointer's last read.
+    pub(super) read_only: HashSet<Local>,
 }
 
 fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
@@ -311,6 +330,7 @@ fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
         refs,
         borrowed,
         copies,
+        read_only: HashSet::new(),
     }
 }
 
@@ -323,7 +343,113 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = body.local_decls[local].ty;
             !self.is_object(ty) || self.is_cell_pointee(ty)
         });
+        pointed.read_only = self.read_only_refs(body);
         pointed
+    }
+
+    /// `Pointed::read_only`: each reference or box whose pointers are each
+    /// made once, and only read through.
+    fn read_only_refs(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+        let mut refs: HashMap<Local, bool> = HashMap::new();
+        let mut pointers = Vec::new();
+        for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let (place, Rvalue::RawPtr(kind, of)) = &**assign else {
+                continue;
+            };
+            let [PlaceElem::Deref] = of.projection.as_slice() else {
+                continue;
+            };
+            if *kind == mir::RawPtrKind::FakeForPtrMetadata {
+                continue;
+            }
+            // Returned, it's the caller's, whose uses aren't these.
+            let read = place.projection.is_empty() && place.local != mir::RETURN_PLACE;
+            *refs.entry(of.local).or_insert(true) &= read;
+            if read {
+                pointers.push((place.local, of.local));
+            }
+        }
+        for (pointer, of) in pointers {
+            if !self.only_read_through(body, pointer) {
+                refs.insert(of, false);
+            }
+        }
+        refs.into_iter().filter_map(|(of, read)| read.then_some(of)).collect()
+    }
+
+    /// Whether a pointer `local` is assigned once and only read through:
+    /// `*p`, given to `ptr::read`, or copied whole to a local that is.
+    fn only_read_through(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
+        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
+        struct Uses<'b, 'tcx> {
+            local: Local,
+            body: &'b mir::Body<'tcx>,
+            read: &'b dyn Fn(&mir::Operand<'tcx>) -> bool,
+            stores: usize,
+            copies: Vec<Local>,
+            only: bool,
+        }
+        impl<'tcx> Visitor<'tcx> for Uses<'_, 'tcx> {
+            fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, at: mir::Location) {
+                if place.local != self.local {
+                    return;
+                }
+                let through = place.projection.first() == Some(&PlaceElem::Deref);
+                self.only &= match context {
+                    PlaceContext::NonUse(_) => true,
+                    PlaceContext::MutatingUse(MutatingUseContext::Store) if place.projection.is_empty() => {
+                        self.stores += 1;
+                        true
+                    }
+                    PlaceContext::NonMutatingUse(_) if through => true,
+                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect) => true,
+                    // Given whole to a call, which must be `ptr::read`, or
+                    // copied whole to a local.
+                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy | NonMutatingUseContext::Move) => {
+                        let block = &self.body.basic_blocks[at.block];
+                        match block
+                            .statements
+                            .get(at.statement_index)
+                            .map(|statement| &statement.kind)
+                        {
+                            Some(StatementKind::Assign(assign))
+                                if matches!(
+                                    &assign.1,
+                                    Rvalue::Use(mir::Operand::Copy(_) | mir::Operand::Move(_), _)
+                                ) && assign.0.projection.is_empty() =>
+                            {
+                                self.copies.push(assign.0.local);
+                                true
+                            }
+                            Some(_) => false,
+                            None => {
+                                matches!(&block.terminator().kind, mir::TerminatorKind::Call { func, .. } if (self.read)(func))
+                            }
+                        }
+                    }
+                    _ => false,
+                };
+            }
+        }
+        let read = |func: &mir::Operand<'tcx>| {
+            crate::lower::fn_def(func.ty(body, self.tcx)).is_some_and(|(def_id, args)| {
+                self.recognition().classify(def_id, args) == Some(Std::Pointer(PointerOp::Read))
+            })
+        };
+        let mut uses = Uses {
+            local,
+            body,
+            read: &read,
+            stores: 0,
+            copies: Vec::new(),
+            only: true,
+        };
+        uses.visit_body(body);
+        // A copy back, a cycle, would be a second store, so this ends.
+        uses.only && uses.stores == 1 && uses.copies.into_iter().all(|copy| self.only_read_through(body, copy))
     }
 
     /// Whether a value of type `ty` is a way to change another's: a `&mut`,
@@ -335,7 +461,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
     /// are but a pointer to a JS object, which is the object (ADR 0285).
     pub(super) fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
-        raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| !self.is_js_object(pointee))
+        raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !pointee.is_slice())
+    }
+
+    /// A pointer only read through, of what a reference or box refers to,
+    /// arrayvec's `ptr::read(elt as *const _)` of a slice's item
+    /// (`Pointed::read_only`): `pointer_to`'s, or of a value with no place
+    /// JS names, a cell of it, as a constant's is, which reads the same.
+    pub(super) fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+            || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
+        match named || pointee.is_slice() || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+            true => self.pointer_to(place, pointee, span),
+            false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
+        }
     }
 
     /// A raw pointer to `place`, the place's JS: `$ptrTo(object)` of an
@@ -344,6 +483,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is refused.
     pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let handle = |object: Expr, key: Expr| Expr::call(Expr::helper("$ptr"), vec![object, key]);
+        // A slice's is the slice, an array or a view of part of one.
+        if pointee.is_slice() {
+            return Ok(place);
+        }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
         // is the place's.
@@ -456,7 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("pointer", pointer, out),
                 };
                 let pointee = pointee.expect("a raw pointer");
-                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {
+                let referred = match pointee.is_slice() || op == PointerOp::AsMut && self.is_cell_pointee(pointee) {
                     true => pointer.clone(),
                     false => self.pointee_place(pointer.clone()),
                 };
@@ -467,6 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)
             }
             PointerOp::Same => arg(),
+            PointerOp::SliceLen => Expr::member(arg(), "length"),
             PointerOp::DropInPlace => {
                 let place = self.pointee_place(arg());
                 let place = match place.reads_same() {
@@ -514,7 +658,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // isn't an object, the handle itself, a cell.
             PointerOp::Place | PointerOp::PlaceMut => {
                 let pointer = arg();
-                match op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p)) {
+                // A slice's is the slice; a cell's handle, the cell.
+                let itself = pointee.is_some_and(|p| p.is_slice())
+                    || op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p));
+                match itself {
                     true => pointer,
                     false => self.pointee_place(pointer),
                 }
@@ -542,6 +689,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         match kind {
+            // A slice's, which is the slice, as its first item's: `$ptr(items, 0)`.
+            mir::CastKind::PtrToPtr
+                if let (Some((ty::Slice(item), _)), Some((b, _))) = (
+                    raw_pointee(self.tcx, from).map(|(a, m)| (*a.kind(), m)),
+                    raw_pointee(self.tcx, to),
+                ) && self.same_place(item, b) =>
+            {
+                Ok(Some(Expr::call(Expr::helper("$ptr"), vec![value, Expr::int(0)])))
+            }
             mir::CastKind::PtrToPtr if self.is_handle_pointer(from) && self.is_handle_pointer(to) => {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {
                     unreachable!("pointers")
@@ -618,47 +774,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// may show one.
     pub(super) fn pointer_shown(&self, pointer: Expr) -> Expr {
         Expr::call(Expr::helper("$ptrShown"), vec![pointer])
-    }
-
-    /// A slice's `as_mut_ptr()`, a pointer into an array JS may hold a copy
-    /// of, `&mut v[1..]`'s, whose place isn't the one it's a copy of:
-    /// refused, but of a whole array or `Vec` made a slice just there,
-    /// `arr.as_mut_ptr()`'s. A shared slice's `as_ptr()` is only read
-    /// through, which a copy reads the same.
-    pub(super) fn check_slice_pointer(
-        &self,
-        body: &mir::Body<'tcx>,
-        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        args: &[rustc_span::Spanned<mir::Operand<'tcx>>],
-        span: Span,
-    ) -> R<()> {
-        if self.recognition().classify(def_id, generic_args) != Some(Std::Pointer(PointerOp::FirstItem)) {
-            return Ok(());
-        }
-        let Some(receiver) = args.first() else { return Ok(()) };
-        let receiver_ty = receiver.node.ty(body, self.tcx);
-        if !receiver_ty.peel_refs().is_slice() {
-            return Ok(());
-        }
-        // Of a shared slice, `as_ptr()`: a pointer only read through, of
-        // items nothing changes while they're lent, which a copy reads the
-        // same, arrayvec's `other.as_ptr()` of the slice it extends from.
-        if matches!(receiver_ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) {
-            return Ok(());
-        }
-        let whole = receiver.node.place().is_some_and(|place| {
-            place.projection.is_empty()
-                && body.basic_blocks.iter().flat_map(|data| &data.statements).any(|statement| {
-                    matches!(&statement.kind, StatementKind::Assign(assign)
-                        if assign.0.local == place.local
-                            && matches!(&assign.1, Rvalue::Cast(mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _), from, _)
-                                if from.ty(body, self.tcx).peel_refs().is_array()))
-                })
-        });
-        match whole {
-            true => Ok(()),
-            false => Err(refuse(self.tcx, span, Refused::Memory(COPIED))),
-        }
     }
 
     /// A pointer to an item of a slice, `&s[0] as *const T`, or into what a

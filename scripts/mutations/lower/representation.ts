@@ -388,4 +388,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
     snapshots: true,
   },
+  {
+    name: "generic-boxed-in-callers-env",
+    breaks: "a callee's projection is normalized in its caller's environment, whose parameters are numbered otherwise: rustc crashes",
+    file: "src/lower/representation.rs",
+    find: "        self.recognition().is_unknown_in(ty, typing_env)\n",
+    replace: "        self.recognition().is_unknown_in(ty, self.typing_env)\n",
+    tests: ["test/corpus.test.ts", "-t", "^deref_projection_generic.rs$"],
+  },
 ];

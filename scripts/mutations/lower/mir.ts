@@ -2448,19 +2448,19 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a pointer into a subslice's copy"],
   },
   {
-    name: "slice-pointer-unchecked",
-    breaks: "a slice's `as_ptr()` of a slice JS may hold a copy of is taken",
-    file: "src/lower/mir.rs",
-    find: "        self.check_slice_pointer(state.body, (def_id, generic_args), args, span)?;\n",
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a pointer into a slice"],
-  },
-  {
     name: "mir-some-value-mut-refused",
     breaks: "a `&mut` of what a generic `Option`'s `Some` holds, chrono's, is refused, where it's a handle that writes the option a `Some`",
     file: "src/lower/mir.rs",
     find: "                    && fixed_place(option) =>\n",
     replace: "                    && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "option_some_mut"],
+  },
+  {
+    name: "raw-const-of-shared-a-place",
+    breaks: "a `*const` of what a shared reference refers to is taken as a place's, refused where JS names none, arrayvec's `elt as *const _`",
+    file: "src/lower/mir.rs",
+    find: "                    && state.pointed.read_only.contains(&place.local)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
 ];

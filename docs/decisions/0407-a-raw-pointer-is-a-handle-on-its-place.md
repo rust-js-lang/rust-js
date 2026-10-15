@@ -7,7 +7,8 @@ Case: C ([0262](0262-when-rust-and-js-disagree.md)) for a pointer used as
 a reference is, read, written, compared, stepped along an array; D for
 what reads memory by where it is, an address, a pointer read as another
 type's, or a place JS may hold a copy of: a compile error, or, for an
-address shown, rust-js's error where it's shown.
+address shown, rust-js's error where it's shown; A for a pointer only
+read through, a cell of a value JS names no place of.
 
 ## Context
 
@@ -97,22 +98,45 @@ and reaches its items by raw pointers (`test/corpus/array_vec_raw.rs`):
   or a trait's `Self::CAPACITY` of an `impl<T, const CAP: usize>`, which
   resolves to its impl's now: its MIR, given its use's arguments, as code.
 
+### A pointer to a slice
+
+**A `*const [T]`, `*mut [T]` or `NonNull<[T]>` is the slice itself**, as
+a pointer to a JS object is the object (ADR 0285): an array, or a view of
+part of one (ADR 0335), which writes through to it
+(`test/corpus/slice_pointers.rs`). Read through, `*p`, `as_ref()` and
+`as_mut()`, it's the slice; its `len()` the slice's `length`; cast to its
+item's, its first item's handle, `$ptr(items, 0)`; and
+`ptr::slice_from_raw_parts(p, n)`, `slice_from_raw_parts_mut` and
+`NonNull::slice_from_raw_parts` a view of `n` items from an item's
+pointer, as `from_raw_parts_mut` is. arrayvec's `Drain` keeps the slice it
+drains so, and hashbrown's allocator gives a `NonNull<[u8]>`.
+
+A `&mut` slice's `as_mut_ptr()` is a handle on its first item, which
+was refused but of a whole array: a view writes through, so its items'
+places are the array's.
+
+**A pointer only read through**, of what a reference or a box refers to,
+arrayvec's `ptr::read(elt as *const _)` of a slice's item, is the place's
+handle where JS names one, or else a cell of the value, `{ value }`, as a
+constant's is. Only read through means each pointer made of `*r` is
+dereferenced or given to `ptr::read`, or copied whole to a local that
+is: never compared, kept, returned or written through, so where it is
+matters to nothing, and Rust's aliasing rules let nothing change what it
+points to till its last read. The program can't tell (case A). A pointer
+compared, `ptr::eq(a, b)` of numbers, is still refused.
+
 ### Refused
 
 - **An address**: `p as usize`, `3 as *const T`, a pointer read as
   another type's, `{:?}` and `{:p}` of a pointer (but `0x0` of `null`),
   rust-js's error where it's shown, as only an assertion that fails shows
   one.
-- **A place JS may hold a copy of**: an item of a slice, a slice's
-  `as_mut_ptr` but of a whole array made one just there (a shared slice's
-  `as_ptr` is only read through, which a copy reads the same: a pointer
-  of it compared with one into the array it was copied from is another,
-  a difference rare enough to list here), a subslice's
+- **A place JS may hold a copy of**: an item of a slice, a subslice's
   reference's, a named constant's; what a `&mut` refers to through its box
-  or handle; what a shared reference holds, a value, where it has no
-  place. Each would be a pointer to another place than Rust's.
-- **A pointer to what has no size**, `*const [T]`, `*const dyn T`, which
-  holds a length or a vtable too.
+  or handle, and what a reference holds, a value, where it has no place,
+  but a pointer only read through. Each would be a pointer to another place than Rust's.
+- **A pointer to a `str` or a `dyn T`**, which holds a length of bytes JS
+  hasn't, or a vtable.
 
 ## Why
 

@@ -209,7 +209,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// function or a JS iterator already: a closure, whose `&mut` is the
     /// closure, or an iterator (ADR 0061).
     pub(super) fn is_generic_boxed(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
-        self.is_unknown(ty)
+        let typing_env = ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis());
+        self.recognition().is_unknown_in(ty, typing_env)
             && !self.declared_bounds(ty, param_env).into_iter().any(|id| {
                 self.tcx.fn_trait_kind_from_def_id(id).is_some()
                     || is_std_def(self.tcx, id, StdItem::Iterator)

@@ -64,7 +64,11 @@ released any more: `rust-js build` is the one way to build an app.
   `as_mut`, `cast`, `from(&mut x)` and the rest, as a raw pointer's; and
   an array's items are reached as arrayvec reaches them: casts where JS has
   the same place, `ptr::copy`, `slice::from_raw_parts`, and a generic
-  constant, `[const { MaybeUninit::uninit() }; CAP]`, as code
+  constant, `[const { MaybeUninit::uninit() }; CAP]`, as code. A pointer to
+  a slice, `*mut [T]` or `NonNull<[T]>`, is the slice; a `&mut` slice's
+  `as_mut_ptr()` is no longer refused; and a pointer only read through,
+  arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
+  place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
 - **A generic function or impl that asks `size_of::<T>()` is given it** in a
   trait impl's method, through the impl's dictionary, and across crates, by
@@ -96,6 +100,10 @@ released any more: `rust-js build` is the one way to build an app.
   ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
 
 ### Fixed
+
+- **rustc no longer crashes** where a generic function calls another whose
+  parameter is a projection, `<T as Deref>::Target`: whether the callee's
+  value is boxed is asked in the callee's environment, not its caller's.
 
 - **A declaration means the same under every `tsconfig.json`.** A field a
   caller may leave out is `?: T | undefined`, as @types/react writes one,

@@ -479,8 +479,8 @@ export const mutations: Mutation[] = [
     name: "projection-not-unknown",
     breaks: "`drain`'s `Vec<S::Item>` is refused as a type, and std's `I::Item` too",
     file: "src/lower/recognition.rs",
-    find: "            ) => self\n                .tcx\n                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
-    replace: "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
+    find: "            ) => self\n                .tcx\n                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n",
+    replace: "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n",
     tests: ["test/corpus.test.ts","-t","associated_types"],
   },
   {
