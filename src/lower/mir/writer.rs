@@ -349,7 +349,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .recognition()
                         .write_call(def_id, self.krate.fns.contains_key(&def_id));
                     if matches!(operation, crate::lower::recognition::WriteCall::Unsupported) && writes && whole {
-                        return Some((span, format!("calling `{}`", self.tcx.def_path_str(def_id))));
+                        return Some((span, crate::lower::refusal::calling(self.tcx, def_id)));
                     }
                     if !whole || !writes || aliases.contains(&destination.local) {
                         return Some((span, this()));

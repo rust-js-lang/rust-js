@@ -1645,8 +1645,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.tcx.defaultness(id).has_value()
             && !in_std_dictionary(self.tcx, id)
         {
-            let what = format!("calling `{}`", self.tcx.def_path_str(id));
-            return Err(self.unsupported(span, &what));
+            return Err(super::refusal::refuse(
+                self.tcx,
+                span,
+                super::refusal::Refused::Call(id),
+            ));
         }
         if operational(self.tcx, self.krate.foreign, trait_id) {
             let dictionary = self.dictionary(tr, span)?;

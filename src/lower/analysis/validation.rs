@@ -2,6 +2,7 @@
 
 use crate::lower::bindings;
 use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
+use crate::lower::refusal::{Refused, refuse};
 use crate::lower::representation::marks_js_object;
 use crate::lower::traits;
 use crate::lower::{Body, strip};
@@ -103,19 +104,15 @@ pub(super) fn reject_unsupported(
                 if traits::implementable(tcx, foreign, trait_id) {
                     continue;
                 }
-                let path = tcx.def_path_str(trait_id);
-                tcx.dcx().span_err(
-                    tcx.def_span(def_id),
-                    format!("rust-js does not support user implementations of `{path}` yet"),
-                );
+                let what = format!("user implementations of `{}`", tcx.def_path_str(trait_id));
+                refuse(tcx, tcx.def_span(def_id), Refused::Feature(&what));
                 valid = false;
                 continue;
             }
             DefKind::Static { .. } if tcx.is_thread_local_static(def_id.to_def_id()) => "`#[thread_local]` statics",
             _ => continue,
         };
-        tcx.dcx()
-            .span_err(tcx.def_span(def_id), format!("rust-js does not support {what} yet"));
+        refuse(tcx, tcx.def_span(def_id), Refused::Feature(what));
         valid = false;
     }
     valid
@@ -137,14 +134,13 @@ pub(super) fn reject_static_references(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]
                 ExprKind::RawBorrow { arg, .. } => (arg, true),
                 _ => continue,
             };
-            let what = match static_of(thir, arg) {
+            let refused = match static_of(thir, arg) {
                 Some(d) if tcx.is_foreign_item(d) => continue,
-                Some(_) if raw => "raw addresses of statics",
-                Some(d) if tcx.is_mutable_static(d) => "`&mut` references to a `static mut`",
+                Some(_) if raw => Refused::Memory("raw addresses of statics"),
+                Some(d) if tcx.is_mutable_static(d) => Refused::Feature("`&mut` references to a `static mut`"),
                 _ => continue,
             };
-            tcx.dcx()
-                .span_err(expr.span, format!("rust-js does not support {what} yet"));
+            refuse(tcx, expr.span, refused);
             valid = false;
         }
     }
@@ -208,7 +204,7 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
 pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
     let mut valid = true;
     let mut refuse = |span: Span, what: String| {
-        tcx.dcx().span_err(span, format!("rust-js does not support {what} yet"));
+        refuse(tcx, span, Refused::Feature(&what));
         valid = false;
     };
     // The structs of more than one rest: made, `{ ...template, ...files }`,

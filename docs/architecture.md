@@ -262,6 +262,7 @@ and answer. Each is checked to stay that way.
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
 | `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |
+| `refusal.rs` | How a refusal is said, `refuse` and its `words`: "rust-js does not support .. yet", and of addressable memory, that (ADR 0390) |
 | `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
 | `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` and `slice.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs`, `heap.rs`, `text.rs`, `number.rs`, `option.rs`, `result.rs` (`?` and the `From` of its error), `cell.rs`, `rc.rs`, `cow.rs`, `once.rs`, `lazy.rs`, `range.rs`, `channel.rs`, `pin.rs`, `uninit.rs`, `any.rs`; and `values.rs`, which hands a std call to its type's module (ADR 0314). A rewrite tidy makes of a type's helpers is the type's module's, which tidy calls: a map's counted entry (`map::counted_entries`), a range made as stepped (`range::range_items`), a cell's borrow none can fail (`cell::unguarded`) |
 | `iterators.rs`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |

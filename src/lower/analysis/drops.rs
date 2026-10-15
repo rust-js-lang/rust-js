@@ -129,10 +129,9 @@ pub(super) fn drop_params<'tcx>(
                         && holds_user_drop(tcx, foreign, ty, &mut Vec::new())
                     {
                         let (name, param) = (tcx.item_name(callee), tcx.generics_of(callee).param_at(index, tcx).name);
-                        tcx.dcx().span_err(
-                            expr.span,
-                            format!("rust-js does not support giving component `{name}`'s `{param}` a type with a destructor yet: React gives a component no drop"),
-                        );
+                        let what = format!("giving component `{name}`'s `{param}` a type with a destructor");
+                        let refused = crate::lower::refusal::Refused::Because(&what, "React gives a component no drop");
+                        crate::lower::refusal::refuse(tcx, expr.span, refused);
                     }
                 }
                 continue;

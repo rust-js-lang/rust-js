@@ -333,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn num(&self, ty: Ty<'tcx>, span: Span) -> R<Num> {
-        Num::of(ty).ok_or_else(|| self.unsupported(span, &format!("values of type `{ty}`")))
+        Num::of(ty).ok_or_else(|| super::refusal::refuse(self.tcx, span, super::refusal::Refused::Type("values", ty)))
     }
 }
 

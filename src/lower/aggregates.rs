@@ -89,7 +89,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(bindings::unit_variant(self.tcx, adt_def.did(), variant));
         }
         if adt_def.is_union() {
-            return Err(self.unsupported(span, "unions"));
+            return Err(super::refusal::refuse(
+                self.tcx,
+                span,
+                super::refusal::Refused::Memory("unions"),
+            ));
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));

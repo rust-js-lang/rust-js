@@ -2,6 +2,7 @@
 //! it's made or bound, which says what part of it is the one.
 
 use super::recognition::{StdItem, is_std_def};
+use super::refusal::{Refused, refuse};
 use super::representation::Num;
 use super::{FnCx, R, Shape};
 use rustc_ast::Mutability;
@@ -15,7 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn check_value_ty(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
         match self.unsupported_part(ty) {
             None => Ok(()),
-            Some(part) => Err(self.unsupported(span, &format!("values of type `{part}`"))),
+            Some(part) => Err(refuse(self.tcx, span, Refused::Type("values", part))),
         }
     }
 

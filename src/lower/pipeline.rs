@@ -152,8 +152,7 @@ pub fn lower_crate<'tcx>(
                 initialized.push(body);
                 continue;
             }
-            tcx.dcx()
-                .span_err(span, format!("rust-js does not support {what} of type `{ty}` yet"));
+            super::refusal::refuse(tcx, span, super::refusal::Refused::Type(what, ty));
             failed = true;
             continue;
         };

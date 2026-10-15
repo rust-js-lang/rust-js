@@ -58,6 +58,7 @@ mod patterns;
 mod pipeline;
 mod places;
 mod recognition;
+mod refusal;
 mod representation;
 mod serde;
 mod shortcuts;
@@ -654,18 +655,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn unsupported(&self, span: Span, what: &str) -> ErrorGuaranteed {
-        self.tcx
-            .dcx()
-            .span_err(span, format!("rust-js does not support {what} yet"))
+        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))
     }
 
     /// No dictionary for `tr` was given: a component's, which React never
     /// gives one (ADR 0201), or one rust-js doesn't make.
     fn no_evidence(&self, span: Span, tr: ty::TraitRef<'tcx>) -> ErrorGuaranteed {
         if bindings::is_component(self.tcx, self.item) {
-            self.tcx.dcx().span_err(
+            let what = format!("a component's `{tr}`");
+            refusal::refuse(
+                self.tcx,
                 span,
-                format!("rust-js does not support a component's `{tr}` yet: React gives a component no dictionary"),
+                refusal::Refused::Because(&what, "React gives a component no dictionary"),
             )
         } else {
             self.unsupported(span, &format!("implementation evidence for `{tr}`"))

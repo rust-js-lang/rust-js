@@ -441,8 +441,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             _ => {
-                let what = format!("calling `{}`", self.tcx.def_path_str(def_id));
-                return Err(self.unsupported(span, &what));
+                return Err(super::refusal::refuse(
+                    self.tcx,
+                    span,
+                    super::refusal::Refused::Call(def_id),
+                ));
             }
         })
     }

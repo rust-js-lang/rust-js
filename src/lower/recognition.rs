@@ -3670,6 +3670,46 @@ pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
 /// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
 /// path compared here would miss.
+/// std's functions of addressable memory, which JavaScript has none of
+/// (ADR 0390): `std::ptr`'s and a raw pointer's own, and what makes a value
+/// of bytes, `transmute` and `zeroed`.
+pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let path = std_path(tcx, id);
+    path.starts_with("std::ptr::")
+        || matches!(
+            path.as_str(),
+            "std::intrinsics::transmute"
+                | "std::intrinsics::transmute_unchecked"
+                | "std::mem::transmute"
+                | "std::mem::transmute_copy"
+                | "std::mem::zeroed"
+                | "std::mem::uninitialized"
+        )
+}
+
+/// A type of addressable memory, or with one in it (ADR 0390): a raw
+/// pointer, a union, whose fields share their bytes, or std's `NonNull`;
+/// in what a crate's own type holds too, but not in std's, whose private
+/// fields a `Vec`'s pointer is among.
+pub(crate) fn is_memory_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    fn walk<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        if seen.contains(&ty) {
+            return false;
+        }
+        seen.push(ty);
+        ty.walk().filter_map(|arg| arg.as_type()).any(|part| match part.kind() {
+            ty::RawPtr(..) => true,
+            ty::Adt(adt, _) if adt.is_union() || std_path(tcx, adt.did()) == "std::ptr::NonNull" => true,
+            ty::Adt(adt, _) if adt.did().is_local() && part != ty => walk(tcx, part, seen),
+            ty::Adt(adt, args) if adt.did().is_local() => adt
+                .all_fields()
+                .any(|field| walk(tcx, field.ty(tcx, args).skip_normalization(), seen)),
+            _ => false,
+        })
+    }
+    walk(tcx, ty, &mut Vec::new())
+}
+
 fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
     let path = tcx.def_path_str(id);
     match path.split_once("::") {

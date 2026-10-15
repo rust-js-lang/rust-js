@@ -711,3 +711,11 @@ test("lowering returns symbolic output and leaves linking to the driver", () => 
   expect(read("src/lower/pipeline.rs")).toContain("Option<Unlinked>");
   expect(read("src/main.rs")).toContain("link::link(unlinked)");
 });
+
+// A refusal is said one way, by `refusal.rs` (ADR 0390): eleven places
+// wrote "rust-js does not support .. yet" themselves, so a refusal of
+// addressable memory couldn't say so wherever it was made.
+test("only refusal.rs words a refusal", () => {
+  const wording = sources.filter(file => file !== "src/lower/refusal.rs" && read(file).includes("rust-js does not support"));
+  expect(wording).toEqual([]);
+});

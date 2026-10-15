@@ -445,13 +445,9 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
         if serde_impl(tcx, def_id.to_def_id()).is_some()
             && let Some((adt, _)) = untagged_adt(tcx, tcx.type_of(def_id).instantiate_identity().skip_normalization())
         {
-            error(
-                tcx.def_span(def_id),
-                format!(
-                    "rust-js does not support serde of the untagged enum `{}` yet (ADR 0214)",
-                    tcx.item_name(adt.did())
-                ),
-            );
+            let what = format!("serde of the untagged enum `{}`", tcx.item_name(adt.did()));
+            let refused = super::refusal::Refused::Because(&what, "see ADR 0214");
+            error(tcx.def_span(def_id), super::refusal::words(tcx, refused));
         }
     }
     valid

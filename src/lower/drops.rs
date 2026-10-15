@@ -1014,10 +1014,8 @@ pub(super) fn check_no_drops(
                 match params {
                     None if reported.insert(check.span) => {
                         let (path, name) = (tcx.def_path_str(check.callee), param_name(tcx, check.callee, *index));
-                        tcx.dcx().span_err(
-                            check.span,
-                            format!("rust-js does not support giving `{path}`'s `{name}` a type with a destructor, where it takes none yet"),
-                        );
+                        let what = format!("giving `{path}`'s `{name}` a type with a destructor, where it takes none");
+                        super::refusal::refuse(tcx, check.span, super::refusal::Refused::Feature(&what));
                     }
                     None => {}
                     Some(params) => {

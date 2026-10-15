@@ -44,6 +44,7 @@ use super::jsx::JsxArg;
 use super::recognition::{
     BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, pure_std, std_item, trait_method,
 };
+use super::refusal::{Refused, refuse};
 use super::representation::{const_js, variant_field};
 use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
@@ -3105,7 +3106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let read = Expr::member(base, variant_field(self.tcx, variant, i));
                 Ok(self.held(read, self.field_ty(&variant.fields[field], args)))
             }
-            (ty::Adt(adt, _), _) if adt.is_union() => Err(self.unsupported(span, "unions")),
+            (ty::Adt(adt, _), _) if adt.is_union() => Err(refuse(self.tcx, span, Refused::Memory("unions"))),
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
@@ -4916,7 +4917,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value => value,
             });
         }
-        Err(self.unsupported(span, &format!("calling `{}`", self.tcx.def_path_str(def_id))))
+        Err(refuse(self.tcx, span, Refused::Call(def_id)))
     }
 
     /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and

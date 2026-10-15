@@ -1,4 +1,4 @@
-//@ compile-fail: rust-js does not support raw addresses of statics yet
+//@ compile-fail: rust-js does not support addressable memory yet: raw addresses of statics
 // A static's raw address has no JS value (ADR 0096).
 static LIMIT: u32 = 7;
 

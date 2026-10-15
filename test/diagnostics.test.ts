@@ -11,8 +11,8 @@ for (const [name, source, message, crate] of [
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const u8) -> *const u8 { x }', "does not support"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
-  // ADR 0123: what `..` binds is a copy, as `&v[a..b]` is (ADR 0063), so one to write through can't be.
-  ["a &mut rest of a slice pattern", "pub fn f(v: &mut [u32]) { if let [_, rest @ ..] = v { rest[0] = 1; } }", "a `&mut` to part of a slice"],
+  // ADR 0390: addressable memory, which JavaScript has none of, says so.
+  ["a transmute", "pub fn f(x: u32) -> f32 { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: calling `std::intrinsics::transmute`"],
   ["camelCase fields that collide", '#![allow(non_snake_case)]\n#[rust_js::camel_case]\nconst _: () = ();\npub struct P { pub first_name: u32, pub firstName: u32 }\npub fn f(p: &P) -> u32 { p.first_name + p.firstName }', "both `firstName` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
@@ -24,7 +24,7 @@ for (const [name, source, message, crate] of [
   ["a number name of a tagged enum's variant", '#[rust_js::tag = "kind"]\npub enum E { #[rust_js::name = 1] A { n: u32 }, B { n: u32 } }\npub fn f() -> E { E::A { n: 1 } }', "`#[rust_js::name]` is a string"],
   // Its `otherwise` is any other object, which a derive would take for one of its own.
   ["an otherwise variant not last", '#[rust_js::tag = "kind"]\npub enum E { #[rust_js::otherwise] O(&\'static js::JsObject), A { n: u32 } }\npub fn f() -> E { E::A { n: 1 } }', "`otherwise` variant is its last", "js"],
-  ["a derive of an open union", '#[rust_js::tag = "kind"]\n#[derive(Clone)]\npub enum E { A { n: u32 }, #[rust_js::otherwise] O(&\'static js::JsObject) }\npub fn f(e: &E) -> E { e.clone() }', "deriving `Clone` of a discriminated union with an `otherwise`", "js"],
+  ["a derive of an open union", '#[rust_js::tag = "kind"]\n#[derive(Clone)]\npub enum E { A { n: u32 }, #[rust_js::otherwise] O(&\'static js::JsObject) }\npub fn f(e: &E) -> E { e.clone() }', "deriving `Clone` of a discriminated union with an `otherwise` variant yet: it would take the object it holds", "js"],
   ["#[thread_local] static", "#![feature(thread_local)]\n#[thread_local] static N: std::cell::Cell<u32> = std::cell::Cell::new(0);\npub fn f() -> u32 { N.get() }", "does not support `#[thread_local]` statics"],
   ["static holding a reference to another", "static A: u32 = 1;\nstatic B: &u32 = &A;\npub fn f() -> u32 { *B }", "does not support statics of type `&'static u32`"],
   // A `dyn Error`'s dictionary has its `source`, and none of what else std provides (ADR 0141).

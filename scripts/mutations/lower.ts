@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "crash-after-rejection",
     breaks: "rust-js panics after it says what it doesn't support",
     file: "src/lower.rs",
-    find: '        self.tcx\n            .dcx()\n            .span_err(span, format!("rust-js does not support {what} yet"))\n    }',
-    replace: '        self.tcx.dcx().span_err(span, format!("rust-js does not support {what} yet"));\n        panic!("a crash after the rejection")\n    }',
+    find: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))\n    }',
+    replace: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what));\n        panic!("a crash after the rejection")\n    }',
     tests: ["test/corpus.test.ts", "-t", "union_const|closure_clone\\.rs"],
   },
   {
@@ -130,8 +130,8 @@ export const mutations: Mutation[] = [
     name: "component-evidence-unnamed",
     breaks: "a component that would use a dictionary is rust-js's \"implementation evidence\" error, not that React gives a component none",
     file: "src/lower.rs",
-    find: "        if bindings::is_component(self.tcx, self.item) {\n            self.tcx.dcx().span_err(",
-    replace: "        if false {\n            self.tcx.dcx().span_err(",
+    find: "        if bindings::is_component(self.tcx, self.item) {\n            let what",
+    replace: "        if false {\n            let what",
     tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
   },
   {

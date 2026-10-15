@@ -28,11 +28,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 .instantiate_identity()
                 .skip_normalization()
                 .def_id;
-            let message = format!(
-                "rust-js does not support deriving `{}` of a discriminated union with an `otherwise` variant yet: it would take the object it holds for a variant of its own",
+            let what = format!(
+                "deriving `{}` of a discriminated union with an `otherwise` variant",
                 tcx.item_name(tr)
             );
-            tcx.dcx().span_err(tcx.def_span(def), message);
+            let why = "it would take the object it holds for a variant of its own";
+            super::refusal::refuse(tcx, tcx.def_span(def), super::refusal::Refused::Because(&what, why));
             valid = false;
         }
         let attrs: Vec<_> = tcx
