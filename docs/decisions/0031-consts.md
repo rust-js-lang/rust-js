@@ -1,6 +1,7 @@
 # 0031. A `const` is the value rustc computed, under its own name
 
-Status: Accepted.
+Status: Accepted. Amended: a constant whose value rustc can't say is its
+initializer's, each use a copy where it may change (below).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -109,3 +110,20 @@ writes `const {Intro, MaxWidth, p: P, a: A} = MDXComponents;`, which
 was four `const`s. One alone stays `const P = T.p;`. A JSX test reads
 two of one table and one of another; mutations keep them apart, and
 destructure both tables' from the first.
+
+## Amendment: a constant rustc can't say, used as a value of its own
+
+A constant whose value rustc can't say as a value tree (2026-10-15),
+`const EMPTY: Vec<i32> = Vec::new()`, is its initializer's, as a
+static's is (ADR 0096), whatever its type: each use of a constant is a
+value of its own, so its one JS value is copied at each use where it may
+change, `EMPTY.slice()`. Which uses copy is `const_use_copied`'s, one
+place: of a `Copy` type, where something changes one in place, as before;
+of another, where it isn't shareable, a `Vec`'s, whose `push` changes it.
+`const_copy` makes the copy, a clone of one that isn't `Copy`. A repeat
+of one, `[EMPTY; 3]`, makes it again for each item,
+`Array.from({ length: 3 }, () => EMPTY.slice())`; and `[x; 1]` of a value
+that isn't `Copy` is the one there is, which Rust allows of any value.
+The corpus's `const_block_vec.rs`, which was a compile-fail case of the
+refusal, and rustc's `consts/const-blocks/const-repeat.rs` and
+`array-slice-vec/issue-18425.rs`, pass.

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "array-repeat-shared",
     breaks: "`[x; N]` of what's changed is one object, `N` times",
     file: "src/lower.rs",
-    find: "        let copied = if self.is_copy(item_ty) || constant {\n            self.contains_mutated(item_ty)",
-    replace: "        let copied = if self.is_copy(item_ty) || constant {\n            false",
+    find: "        } else if self.is_copy(item_ty) {\n            self.contains_mutated(item_ty)",
+    replace: "        } else if self.is_copy(item_ty) {\n            false",
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
   },
   {
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     name: "const-use-shared",
     breaks: "each use of a `const` of a struct something changes is the one object, so `p.x += dx` on `let mut p = ORIGIN` changes `ORIGIN` for its next use",
     file: "src/lower.rs",
-    find: "            return Ok(if self.contains_mutated(ty) {\n                self.copy(place, ty)\n            } else {\n                place\n            });",
+    find: "            return match self.const_use_copied(ty) {\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
     replace: "            return Ok(place);",
     tests: ["test/compiler.test.ts", "-t", "constants are the values rustc computed, by name"],
   },
@@ -154,8 +154,8 @@ export const mutations: Mutation[] = [
     name: "repeat-const-not-copy",
     breaks: "`[const { .. }; N]` of a value that isn't `Copy` is refused",
     file: "src/lower.rs",
-    find: "        let copied = if self.is_copy(item_ty) || constant {",
-    replace: "        let copied = if self.is_copy(item_ty) {",
+    find: "        let copied = if constant {\n            self.const_use_copied(item_ty)\n",
+    replace: "        let copied = if false {\n            self.const_use_copied(item_ty)\n",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
   {
@@ -205,5 +205,13 @@ export const mutations: Mutation[] = [
       "-t",
       "a string written across lines keeps its lines"
     ]
+  },
+  {
+    name: "repeat-one-refused",
+    breaks: "`[x; 1]` of a value that isn't `Copy` is refused, not the one there is",
+    file: "src/lower.rs",
+    find: "        } else if n == Some(1) {\n",
+    replace: "        } else if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
 ];

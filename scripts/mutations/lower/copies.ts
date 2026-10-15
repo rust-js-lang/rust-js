@@ -152,4 +152,20 @@ export const mutations: Mutation[] = [
       "thread-local by reference as its variable"
     ]
   },
+  {
+    name: "vec-const-use-shared",
+    breaks: "each use of a `Vec` constant is its one JS array, so changing one changes every other",
+    file: "src/lower/copies.rs",
+    find: "        self.contains_mutated(ty) || (!self.is_copy(ty) && !shareable(self.tcx, ty))\n",
+    replace: "        self.contains_mutated(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
+  },
+  {
+    name: "const-use-uncloned",
+    breaks: "a use of a `Vec` constant is copied as a `Copy` value is, which is the array itself",
+    file: "src/lower/copies.rs",
+    find: "        if self.is_copy(ty) {\n            return Ok(self.copy(place, ty));\n",
+    replace: "        if true {\n            return Ok(self.copy(place, ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
+  },
 ];

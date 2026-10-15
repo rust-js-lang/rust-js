@@ -145,7 +145,11 @@ pub fn lower_crate<'tcx>(
                 if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
                     .into_iter()
                     .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
-            if (mutable || super::copies::shareable(tcx, ty) || once)
+            // A constant's each use is a value of its own, copied where it may
+            // change (`named_const`), so its one JS value needn't be shareable:
+            // `const EMPTY: Vec<i32> = Vec::new()`'s `[]` (ADR 0031).
+            let constant = !matches!(tcx.def_kind(def_id), DefKind::Static { .. });
+            if (mutable || constant || super::copies::shareable(tcx, ty) || once)
                 && let Some(body) = initializer
                 && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
             {

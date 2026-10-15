@@ -222,8 +222,8 @@ export const mutations: Mutation[] = [
     name: "once-static-refused",
     breaks: "a `static` `OnceLock` is refused",
     file: "src/lower/pipeline.rs",
-    find: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
-    replace: "            if (mutable || super::copies::shareable(tcx, ty))\n",
+    find: "            if (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
+    replace: "            if (mutable || constant || super::copies::shareable(tcx, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
@@ -290,8 +290,8 @@ export const mutations: Mutation[] = [
     name: "static-mut-initializer-refused",
     breaks: "a `static mut` of a function, whose value rustc can't say, is refused, not its initializer's in its cell",
     file: "src/lower/pipeline.rs",
-    find: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
-    replace: "            if (super::copies::shareable(tcx, ty) || once)\n",
+    find: "            if (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
+    replace: "            if (constant || super::copies::shareable(tcx, ty) || once)\n",
     tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
   },
   {
@@ -310,5 +310,13 @@ export const mutations: Mutation[] = [
     replace: "            false\n",
     tests: ["test/corpus.test.ts", "-t", "^(user_deref|as_deref|bitwise_operators).rs$"],
     snapshots: true,
+  },
+  {
+    name: "unshareable-const-refused",
+    breaks: "a constant whose value rustc can't say and isn't shareable, `const EMPTY: Vec<i32>`, is refused",
+    file: "src/lower/pipeline.rs",
+    find: "            if (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
+    replace: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
 ];

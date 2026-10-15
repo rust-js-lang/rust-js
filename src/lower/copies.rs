@@ -192,6 +192,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_copy(ty)
     }
 
+    /// Is each use of a constant of `ty` a copy of its one JS value: where
+    /// something changes one in place, or, of one that isn't `Copy`, where
+    /// it isn't `shareable`, a `Vec`'s, whose `push` changes it (ADR 0031)?
+    pub(super) fn const_use_copied(&self, ty: Ty<'tcx>) -> bool {
+        self.contains_mutated(ty) || (!self.is_copy(ty) && !shareable(self.tcx, ty))
+    }
+
+    /// A use of a constant's one JS value, `place`, copied (`const_use_copied`):
+    /// a `Copy` value's copy, another's clone, `[...EMPTY]` of a `Vec`'s, as
+    /// each use of a constant is a value of its own.
+    pub(super) fn const_copy(&mut self, place: Expr, ty: Ty<'tcx>, span: rustc_span::Span) -> super::R<Expr> {
+        if self.is_copy(ty) {
+            return Ok(self.copy(place, ty));
+        }
+        let mut made = Vec::new();
+        let clone = self.clone_value(place, ty, span, &mut made)?;
+        match made.is_empty() {
+            true => Ok(clone),
+            false => Err(self.unsupported(span, &format!("a use of a constant of type `{ty}`"))),
+        }
+    }
+
     pub(super) fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
         // Each type once: a type met along two paths isn't walked twice. It
         // ends at a `Box`, which is `Other`, so no answer depends on another.

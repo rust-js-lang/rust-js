@@ -45,7 +45,8 @@ for (const [name, source, message, crate] of [
   // A static's initializer is code where rustc's value can't say it (ADR 0096),
   // but not one reading another static, nor of a value that can change in place.
   ["a static of a function read from another static", 'pub fn f() {}\nstatic A: fn() = f;\npub static B: &fn() = &A;\npub fn g() { B() }', "statics of type"],
-  ["a constant of a Vec of functions", 'pub fn f() {}\npub const C: Vec<fn()> = Vec::new();\npub fn g() -> usize { C.len() }', "constants of type"],
+  // A constant's each use is a copy (ADR 0031); a static's one value isn't.
+  ["a static of a Vec of functions", 'pub fn f() {}\npub static V: Vec<fn()> = Vec::new();\npub fn g() -> usize { V.len() }', "statics of type"],
   // ADR 0121: a key found by its value is one a derived `Eq` compares.
   ["map keyed by a struct of its own equality", '#[derive(Hash)] pub struct P { pub x: u32 }\nimpl PartialEq for P { fn eq(&self, o: &P) -> bool { self.x % 10 == o.x % 10 } }\nimpl Eq for P {}\npub fn f() -> usize { let m: std::collections::HashMap<P, u32> = std::collections::HashMap::new(); m.len() }', "does not support values of type `P`"],
   ["map keyed by a struct with a field of its own equality", '#[derive(Hash)] pub struct Q(pub u32);\nimpl PartialEq for Q { fn eq(&self, o: &Q) -> bool { self.0 % 10 == o.0 % 10 } }\nimpl Eq for Q {}\n#[derive(PartialEq, Eq, Hash)] pub struct P { pub q: Q }\npub fn f() -> usize { let m: std::collections::HashSet<P> = std::collections::HashSet::new(); m.len() }', "does not support values of type `P`"],

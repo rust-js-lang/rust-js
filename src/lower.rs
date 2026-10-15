@@ -478,11 +478,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
             let place = self.fn_ref(def_id);
-            return Ok(if self.contains_mutated(ty) {
-                self.copy(place, ty)
-            } else {
-                place
-            });
+            return match self.const_use_copied(ty) {
+                true => self.const_copy(place, ty, span),
+                false => Ok(place),
+            };
         }
         if let Some(value) =
             eval_const(self.tcx, self.typing_env, def_id, args, span).and_then(|value| const_js(self.tcx, value))
@@ -612,8 +611,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // value that nothing changes needs none of; one that isn't
         // `Copy` is a constant's, made again for each, as each use of
         // a constant is.
-        let copied = if self.is_copy(item_ty) || constant {
+        let copied = if constant {
+            self.const_use_copied(item_ty)
+        } else if self.is_copy(item_ty) {
             self.contains_mutated(item_ty)
+        } else if n == Some(1) {
+            // The one there is, which Rust allows of any value.
+            return Ok(Expr::array(vec![item]));
         } else if self.needs_clone(item_ty) {
             return Err(self.unsupported(span, "`[x; N]` of a value that isn't `Copy`"));
         } else {
@@ -629,12 +633,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let array = Expr::new_(Expr::var("Array"), vec![length]);
             return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
         }
-        let item = if item.reads_same() {
-            item
-        } else {
-            self.spill("item", item, out)
+        // A constant's use is its copy already, `EMPTY.slice()`: made again
+        // for each, as each use of a constant is.
+        let copy = match constant {
+            true => item,
+            false => {
+                let item = match item.reads_same() {
+                    true => item,
+                    false => self.spill("item", item, out),
+                };
+                self.copy(item, item_ty)
+            }
         };
-        let copy = self.copy(item, item_ty);
         let length = Expr::object(vec![Prop::Field("length".into(), length)]);
         let from = Expr::member(Expr::var("Array"), "from");
         Ok(Expr::call(

@@ -1,4 +1,4 @@
-//@ compile-fail: rust-js does not support addressable memory yet: constants of type `U`
+//@ compile-fail: rust-js does not support addressable memory yet: unions
 // A union's constant, and its fields read, are rejected, not a crash: rust-js
 // has no representation of a union yet. From rustc's union-const-codegen.rs.
 union U {
