@@ -137,15 +137,15 @@ pub fn lower_crate<'tcx>(
             // can be every use's, and it reads no static, whose value may not
             // be made yet.
             // A `OnceLock`, only ever made empty, or a `LazyLock`, which
-            // makes its value when it's used, is one JS cell too (ADRs 0317, 0318).
+            // makes its value when it's used, is one JS cell too (ADRs 0317, 0318),
+            // and so is a `static mut`, its value's `{ value }` (ADR 0096).
             let mutable = matches!(tcx.def_kind(def_id), DefKind::Static { mutability, .. } if mutability.is_mut());
             let once = matches!(tcx.def_kind(def_id), DefKind::Static { .. })
                 && matches!(ty.kind(), ty::Adt(adt, _)
                 if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
                     .into_iter()
                     .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
-            if !mutable
-                && (super::copies::shareable(tcx, ty) || once)
+            if (mutable || super::copies::shareable(tcx, ty) || once)
                 && let Some(body) = initializer
                 && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
             {
@@ -382,6 +382,11 @@ pub fn lower_crate<'tcx>(
                         },
                     ] => value.clone(),
                     _ => Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new()),
+                };
+                // A `static mut`'s is its `{ value }` (ADR 0096).
+                let value = match tcx.static_mutability(key.to_def_id()) {
+                    Some(mutability) if mutability.is_mut() => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),
+                    _ => value,
                 };
                 let info = &fns[&key.to_def_id()];
                 let span = tcx.def_span(key).source_callsite();

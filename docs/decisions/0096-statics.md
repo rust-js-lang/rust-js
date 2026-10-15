@@ -1,6 +1,8 @@
 # 0096. A `static` is its module's value, and a `static mut` its `{ value }`
 
 Status: Accepted. Extends [0031](0031-consts.md) and [0037](0037-thread-locals.md).
+Amended: a `static mut` whose value rustc can't say is its initializer's,
+in its `{ value }` (below).
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -149,6 +151,13 @@ a function pointer, or a `dyn`.
   value, whatever its type's `Sync` says.
 - A `pub static mut` is an exported `{ value }` that JS can change, as
   Rust code can, in `unsafe`.
+- **A `static mut` whose value rustc can't say**, a function's, or a
+  struct of one, is its initializer's, as a `static`'s is, in its `{ value
+  }` (amended, 2026-10-15): one JS cell is every use's, whatever its type,
+  as its uses read and write its `value`; one its module alone uses is a
+  `let`, as any is. It was refused; the corpus's `static_mut_fns.rs`, and
+  rustc's `statics/static-function-pointer.rs`, `consts/const-fn-val.rs`
+  and `consts/const-vec-of-fns.rs`, pass.
 - Left for later: a `&mut` to a `static mut`, a static holding a
   reference to another, and `Mutex` or `OnceLock` in a static, which none of
   the tests use.

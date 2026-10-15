@@ -222,8 +222,8 @@ export const mutations: Mutation[] = [
     name: "once-static-refused",
     breaks: "a `static` `OnceLock` is refused",
     file: "src/lower/pipeline.rs",
-    find: "                && (super::copies::shareable(tcx, ty) || once)\n",
-    replace: "                && super::copies::shareable(tcx, ty)\n",
+    find: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
+    replace: "            if (mutable || super::copies::shareable(tcx, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
@@ -285,5 +285,21 @@ export const mutations: Mutation[] = [
     find: "            super::std_types::cell::plain_statics(&mut lowered.items, &quiet);\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","thread-local only its module"],
+  },
+  {
+    name: "static-mut-initializer-refused",
+    breaks: "a `static mut` of a function, whose value rustc can't say, is refused, not its initializer's in its cell",
+    file: "src/lower/pipeline.rs",
+    find: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
+    replace: "            if (super::copies::shareable(tcx, ty) || once)\n",
+    tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
+  },
+  {
+    name: "static-mut-initializer-unboxed",
+    breaks: "a `static mut` another module may write is its initializer's value, not its `{ value }`",
+    file: "src/lower/pipeline.rs",
+    find: "                    Some(mutability) if mutability.is_mut() => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
   },
 ];

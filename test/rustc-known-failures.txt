@@ -73,11 +73,9 @@ consts/const-cast.rs	error: rust-js does not support statics of type `TestStruct
 consts/const-err-rpass.rs	error: rust-js does not support constants of type `*const u8` yet
 consts/const-eval/issue-64908.rs	error: rust-js does not support `size_of` of a type parameter yet
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support constants of type `std::mem::MaybeUninit<*const i32>` yet
-consts/const-fn-val.rs	error: rust-js does not support statics of type `Bar<fn() -> isize>` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support this expression yet
 consts/const-size_of_val-align_of_val.rs	error: rust-js does not support constants of type `Ugh` yet
 consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet
-consts/const-vec-of-fns.rs	error: rust-js does not support statics of type `&'static mut [S<fn()>]` yet
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support constants of type `*const u8` yet
 consts/issue-17718-borrow-interior.rs	error: rust-js does not support statics of type `&'static usize` yet
 consts/issue-21721.rs	error: rust-js does not support values of type `*const u8` yet
@@ -174,7 +172,6 @@ rfcs/rfc-2091-track-caller/tracked-trait-obj.rs	error: rust-js does not support 
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet
-statics/static-function-pointer.rs	error: rust-js does not support statics of type `fn(isize) -> isize` yet
 statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support statics of type `*const ArenaSet<std::vec::Vec<u8>>` yet
 statics/static-recursive.rs	error: rust-js does not support statics of type `*const u8` yet
 stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support values of type `*const [u8]` yet
