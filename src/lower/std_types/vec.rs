@@ -111,6 +111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Std::Append => Expr::call(Expr::helper("$append"), vec![arg(), arg()]),
+            Std::WriteText => Expr::call(Expr::helper("$writeText"), vec![arg(), arg()]),
             Std::Push => {
                 let (v, x) = (arg(), arg());
                 Expr::call(Expr::member(v, "push"), vec![x])

@@ -591,7 +591,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 /// `Display`, `Error` or `Any`: a std trait whose `dyn` is a pair (ADRs
 /// 0141, 0331).
 fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    [StdItem::Display, StdItem::Error]
+    [StdItem::Display, StdItem::Error, StdItem::IoWrite]
         .into_iter()
         .any(|item| is_std_def(tcx, id, item))
         || any_trait(tcx) == Some(id)
@@ -1090,6 +1090,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
+        // standard stream, written to it (ADR 0392).
+        if is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
+            && let Some(writer) = self.recognition().io_writer(ty)
+        {
+            return Ok(Expr::helper(writer));
+        }
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef) && !self.has_user_impl(tr.def_id, ty) {
             let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
             let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
@@ -1544,10 +1551,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut values = values;
             let receiver = values.remove(0);
-            // The pair is read twice, so one with effects goes in a `const`
-            // first. It's still first: `operands` put anything before it that
-            // needed statements in `const`s of its own.
-            let pair = if receiver.has_effects() {
+            // The pair is read twice, so one that doesn't read the same, made
+            // here or with effects, goes in a `const` first. It's still first:
+            // `operands` put anything before it that needed statements in
+            // `const`s of its own.
+            let pair = if !receiver.reads_same() {
                 self.spill("receiver", receiver, out)
             } else {
                 receiver
@@ -1635,7 +1643,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where the writer is known, `write!(c, ..)` is its own `write_str`, or
         // a string's `+=`, written in place (ADRs 0148, 0166): a dictionary is
         // for generic code (ADR 0180).
-        if is_std_def(self.tcx, trait_id, StdItem::FmtWrite) && !tr.args.has_non_region_param() {
+        // So is an `io::Write`'s: a stream's `print!`, a `Vec<u8>`'s bytes
+        // added (ADR 0392).
+        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite) || is_std_def(self.tcx, trait_id, StdItem::IoWrite))
+            && !tr.args.has_non_region_param()
+        {
             return Ok(None);
         }
         // A std trait's dictionary has only its required methods, and those

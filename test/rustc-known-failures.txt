@@ -41,7 +41,6 @@ cast/codegen-object-shim.rs	error: rust-js does not support `{}` of a `dyn std::
 cast/coercion-as-explicit-cast.rs	error: rust-js does not support this expression yet
 cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support values of type `*const ()` yet
 cast/supported-cast.rs	error: rust-js does not support values of type `*const std::string::String` yet
-cast/trait-object-cast-segfault-4333.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support constants of type `*const i32` yet
 closures/2229_closure_analysis/run_pass/mut_ref.rs	error: rust-js does not support values of type `&mut &mut std::string::String` yet
 closures/2229_closure_analysis/run_pass/unsafe_ptr.rs	error: rust-js does not support values of type `*const S` yet
@@ -52,7 +51,6 @@ codegen/correctly-monomorphize-generic-drop-impl.rs	error: rust-js does not supp
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 coercion/basic-ptr-coercions.rs	error: rust-js does not support values of type `*const isize` yet
-coercion/box-dyn-to-ref-dyn.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 collections/hashmap/hashmap-path-key.rs	error: rust-js does not support values of type `&std::path::Path` yet
 const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support this `const` block yet
 const_prop/dont-propagate-generic-instance.rs	error: rust-js does not support `type_name` of a type parameter yet
@@ -135,7 +133,6 @@ let-else/let-else-drop-order.rs	error: rust-js does not support a `&mut` of this
 lifetimes/rvalue-cleanup-shortcircuit.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::null_mut`
 lint/issue-20343.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
-macros/colorful-write-macros.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support values of type `*const i32` yet
 methods/inherent-method-resolution-on-deref-type-53843.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
@@ -195,7 +192,6 @@ threads-sendsync/send-type-inference.rs	error: rust-js does not support a channe
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
 threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `std::iter::Iterator::cycle` yet
 threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
-traits/coercion.rs	error: rust-js does not support values of type `dyn std::io::Write` yet
 traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support `&mut` to a `Self` yet
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet

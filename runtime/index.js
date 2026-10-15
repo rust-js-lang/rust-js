@@ -3377,6 +3377,49 @@ export function $write(text, error) {
   }
   $printed[error] = rest;
 }
+// Bytes written to a standard stream (ADR 0392), and how many: Node's, as
+// they are; where there's none, the text they are, a character split
+// between two writes kept till its end comes.
+export const $decoders = [];
+export function $printBytes(bytes, error) {
+  const stream = globalThis.process?.[error ? "stderr" : "stdout"];
+  if (stream?.write) stream.write(Uint8Array.from(bytes));
+  else $write(($decoders[error] ??= new TextDecoder()).decode(Uint8Array.from(bytes), { stream: true }), error);
+  return bytes.length;
+}
+// `io::Write`'s dictionaries (ADR 0392): of a standard stream, and of a
+// `Vec<u8>`, given in a box as a generic `&mut` is, whose bytes are added to
+// it. A write never fails: `write` is `Ok` of all it's given, and the others
+// nothing (ADR 0132).
+export const $stdoutWriter = {
+  write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 0) }),
+  write_all: (_, bytes) => void $printBytes(bytes, 0),
+  write_fmt: (_, text) => $print(text),
+  flush: () => {},
+};
+export const $stderrWriter = {
+  write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 1) }),
+  write_all: (_, bytes) => void $printBytes(bytes, 1),
+  write_fmt: (_, text) => $eprint(text),
+  flush: () => {},
+};
+export const $vecWriter = {
+  write: (w, bytes) => (w.value.push(...bytes), { TAG: "Ok", _0: bytes.length }),
+  write_all: (w, bytes) => void w.value.push(...bytes),
+  write_fmt: (w, text) => $writeText(w.value, text),
+  flush: () => {},
+};
+// A `Box<dyn Write>`'s, given in a box: the pair it holds, written through.
+export const $dynWriter = {
+  write: (w, bytes) => w.value.impl.write(w.value, bytes),
+  write_all: (w, bytes) => w.value.impl.write_all(w.value, bytes),
+  write_fmt: (w, text) => w.value.impl.write_fmt(w.value, text),
+  flush: (w) => w.value.impl.flush(w.value),
+};
+// `write!(v, ..)` of a `Vec<u8>`: its text's UTF-8 bytes added.
+export function $writeText(v, text) {
+  v.push(...new TextEncoder().encode(text));
+}
 
 // The process a program runs in, Node's (ADR 0391): what std asks of it,
 // each through `$process`, which in a browser, that has none, panics,

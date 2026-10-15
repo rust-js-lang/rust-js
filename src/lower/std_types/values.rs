@@ -314,6 +314,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::VecNew
             | Std::Nothing
             | Std::Append
+            | Std::WriteText
             | Std::Push
             | Std::Len
             | Std::Index

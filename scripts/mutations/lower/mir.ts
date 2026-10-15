@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "mir-fmt-result-unwrapped",
     breaks: "`write!(s, ..).unwrap()` unwraps the nothing an `Ok` `fmt::Result` is in JS, as if it were a `Result`",
     file: "src/lower/mir.rs",
-    find: "        if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
-    replace: "        if false && arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
+    find: "        if self.of_never_failing(def_id, &arg_tys) {\n",
+    replace: "        if false && self.of_never_failing(def_id, &arg_tys) {\n",
     tests: ["test/corpus.test.ts","-t","string_pushes"],
   },
   {
@@ -1895,8 +1895,8 @@ export const mutations: Mutation[] = [
     name: "mir-failing-result-methods-refused",
     breaks: "MIR's `r.is_err()` of a `write!` that may fail is refused",
     file: "src/lower/mir.rs",
-    find: "                return Ok(Value::Expr(self.fmt_result_values(answer, result, message, span, out)));\n",
-    replace: "                return Err(self.unsupported(span, \"methods of a `fmt::Result` that may fail, from its MIR\"));\n",
+    find: "        let may_fail = self.krate.any_failing && self.is_fmt_result(arg_tys[0].peel_refs());\n",
+    replace: "        let may_fail = false;\n",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {

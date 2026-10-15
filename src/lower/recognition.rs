@@ -246,6 +246,9 @@ pub(super) enum Std {
     AsciiEq,
     /// `v.append(&mut other)`: `$append(v, other)`, which empties `other`.
     Append,
+    /// `write!(v, ..)` of a `Vec<u8>`, an `io::Write`: its text's UTF-8
+    /// bytes added, `$writeText(v, text)` (ADR 0392).
+    WriteText,
     /// `println!` and `print!`, or with `error`, `eprintln!` and
     /// `eprint!`: `console.log(..)` of a line (ADR 0087).
     Print {
@@ -431,6 +434,12 @@ pub(super) enum StreamOp {
     Nothing,
     /// `write!(out, ..)`: `print!` or `eprint!`.
     Write { error: bool },
+    /// `out.write_all(bytes)`: those bytes written, `$printBytes(bytes,
+    /// error)` (ADR 0392).
+    WriteBytes { error: bool },
+    /// `out.write(bytes)`: those bytes written, and `Ok` of how many,
+    /// which is all of them (ADR 0392).
+    Written { error: bool },
 }
 
 impl Std {
@@ -1073,15 +1082,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::UserWrite);
         }
-        // Writing to a standard stream (ADR 0132).
-        if let Some(error) = self.stream(ty.peel_refs())
-            && std_path(tcx, trait_) == "std::io::Write"
-        {
-            return match tcx.item_name(def_id).as_str() {
-                "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),
-                "flush" => Some(Std::Stream(StreamOp::Nothing)),
-                _ => None,
-            };
+        // Writing to a standard stream or a `Vec<u8>` (ADRs 0132, 0392).
+        if let Some(write) = self.classify_io_write(def_id, trait_, ty) {
+            return Some(write);
         }
         // `v.extend(items)` (ADR 0062).
         if is_extend(tcx, trait_) && self.is_vec_like(ty.peel_refs()) {
@@ -1127,6 +1130,34 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
         let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
         (from_str || to_owned).then_some(Std::Same)
+    }
+
+    /// A write, `io::Write`'s, to a standard stream, `print!`'s (ADR 0132),
+    /// or to a `Vec<u8>`, its bytes added, as `extend_from_slice` adds
+    /// them (ADR 0392), where the writer's type is known.
+    fn classify_io_write(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
+        if std_path(self.tcx, trait_) != "std::io::Write" {
+            return None;
+        }
+        let name = self.tcx.item_name(def_id);
+        if let Some(error) = self.stream(ty.peel_refs()) {
+            return match name.as_str() {
+                "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),
+                "write_all" => Some(Std::Stream(StreamOp::WriteBytes { error })),
+                "write" => Some(Std::Stream(StreamOp::Written { error })),
+                "flush" => Some(Std::Stream(StreamOp::Nothing)),
+                _ => None,
+            };
+        }
+        if self.io_writer(ty) != Some("$vecWriter") {
+            return None;
+        }
+        match name.as_str() {
+            "write_fmt" => Some(Std::WriteText),
+            "write_all" => Some(Std::Comb(Comb::ExtendFromSlice)),
+            "flush" => Some(Std::Nothing),
+            _ => None,
+        }
     }
 
     /// A `From`'s or an `Into`'s conversion, of std's, that `ty` is given
@@ -2084,6 +2115,31 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::io::Stderr" | "std::io::StderrLock" => Some(true),
             _ => None,
         }
+    }
+
+    /// The runtime's `io::Write` of `ty`, or of what a `&mut` to it is to,
+    /// if std's is one rust-js knows (ADR 0392): a `Vec<u8>`'s, which adds
+    /// to it, a standard stream's, which writes to it, or a `Box<dyn
+    /// Write>`'s, which is the pair it holds and writes through it.
+    pub(super) fn io_writer(&self, ty: Ty<'tcx>) -> Option<&'static str> {
+        let ty = match ty.kind() {
+            ty::Ref(_, inner, Mutability::Mut) => *inner,
+            _ => ty,
+        };
+        match self.stream(ty) {
+            Some(false) => return Some("$stdoutWriter"),
+            Some(true) => return Some("$stderrWriter"),
+            None => {}
+        }
+        if ty.boxed_ty().is_some_and(|inner| {
+            matches!(inner.kind(), ty::Dynamic(traits, ..)
+                if traits.principal_def_id().is_some_and(|id| is_std_def(self.tcx, id, StdItem::IoWrite)))
+        }) {
+            return Some("$dynWriter");
+        }
+        let bytes = matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec)
+            && matches!(args.type_at(0).kind(), ty::Uint(ty::UintTy::U8)));
+        bytes.then_some("$vecWriter")
     }
 
     /// `io::Result<()>`, which a write gives: always `Ok`, as nothing rust-js
@@ -3555,6 +3611,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // fmt::Write`: its dictionary's `write_str`, `write_char` and
         // `write_fmt` (ADR 0180).
         || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)
+        // Generic code, or a `dyn`, that writes bytes to any writer, a `W:
+        // io::Write`: its dictionary's `write`, `write_all`, `write_fmt` and
+        // `flush` (ADR 0392).
+        || is_std_def(tcx, id, StdItem::IoWrite)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -4281,6 +4341,8 @@ pub(super) enum FmtResultAnswer {
     Expect,
     /// `is_ok()`, `is_err()`.
     Is(bool),
+    /// `ok()`: `Some(())`, or `None` (ADR 0392).
+    Ok,
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
@@ -4290,6 +4352,7 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
         "expect" => FmtResultAnswer::Expect,
         "is_ok" => FmtResultAnswer::Is(true),
         "is_err" => FmtResultAnswer::Is(false),
+        "ok" => FmtResultAnswer::Ok,
         _ => return None,
     })
 }
@@ -4446,6 +4509,7 @@ pub(crate) enum StdItem {
     Error,
     FmtWrite,
     Formatter,
+    IoWrite,
     From,
     Hash,
     HashMap,
@@ -4504,6 +4568,7 @@ impl StdItem {
             StdItem::Error => Symbol::intern("Error"),
             StdItem::FmtWrite => Symbol::intern("FmtWrite"),
             StdItem::Formatter => Symbol::intern("Formatter"),
+            StdItem::IoWrite => Symbol::intern("IoWrite"),
             StdItem::From => sym::From,
             StdItem::Hash => sym::Hash,
             StdItem::HashMap => sym::HashMap,
@@ -4717,9 +4782,13 @@ pub(crate) fn is_std_method(tcx: TyCtxt<'_>, id: DefId, item: StdItem, name: &st
 
 /// A provided method of a std trait that rust-js's dictionary of it has,
 /// which a `dyn` or generic code calls through it: `Error::source` (ADR
-/// 0141), and `fmt::Write`'s `write_char` and `write_fmt` (ADR 0180).
+/// 0141), `fmt::Write`'s `write_char` and `write_fmt` (ADR 0180), and
+/// `io::Write`'s `write_all` and `write_fmt` (ADR 0392).
 pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    is_std_method(tcx, id, StdItem::Error, "source") || is_writer_default(tcx, id)
+    is_std_method(tcx, id, StdItem::Error, "source")
+        || is_writer_default(tcx, id)
+        || is_std_method(tcx, id, StdItem::IoWrite, "write_all")
+        || is_std_method(tcx, id, StdItem::IoWrite, "write_fmt")
 }
 
 /// `fmt::Write`'s `write_char` or `write_fmt`, which std's writes with

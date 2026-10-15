@@ -4617,6 +4617,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A call of `def_id`, of its arguments' values, `arg_tys` their types.
+    /// Whether `def_id` is a method of a write's result, which never fails
+    /// (`never_fails`): `Result`'s own, not `Argument::new_debug(&r)`'s, nor
+    /// `?`'s.
+    fn of_never_failing(&self, def_id: rustc_span::def_id::DefId, arg_tys: &[Ty<'tcx>]) -> bool {
+        let tcx = self.tcx;
+        arg_tys.first().is_some_and(|ty| self.never_fails(ty.peel_refs()))
+            && tcx.def_kind(def_id) == DefKind::AssocFn
+            && tcx
+                .impl_of_assoc(def_id)
+                .is_some_and(|imp| self.recognition().is_result(tcx.type_of(imp).skip_binder()))
+    }
+
+    /// A method of a write's result: an `Ok` `fmt::Result` is nothing in JS
+    /// (ADR 0054), and so is a write's `io::Result<()>` (ADR 0132). Its
+    /// `unwrap()` is `()`, after what made it ran (ADR 0148), `is_ok()`
+    /// `true`, `ok()` `Some(())`: its answer, `fmt_result_values`'.
+    fn never_failing_call(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let Some(answer) = super::recognition::fmt_result_answer(self.tcx, def_id) else {
+            return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
+        };
+        let mut values = values.into_iter();
+        let result = self.value_expr(values.next().expect("the result"), span)?;
+        let message = values.next().map(|v| self.value_expr(v, span)).transpose()?;
+        // Only in a crate where a `fmt::Result` may be an `Err` is one tested:
+        // what `$fmtTry` caught (ADR 0187).
+        let may_fail = self.krate.any_failing && self.is_fmt_result(arg_tys[0].peel_refs());
+        if may_fail || result.has_effects() || message.as_ref().is_some_and(Expr::has_effects) {
+            self.flush(state, out)?;
+        }
+        Ok(Value::Expr(
+            self.fmt_result_values(answer, result, message, may_fail, span, out),
+        ))
+    }
+
     fn mir_call_values(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -4687,40 +4728,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             return Ok(Value::Expr(super::calls::apply(made, exprs)));
         }
-        // An `Ok` `fmt::Result` is nothing in JS (ADR 0054): its `unwrap()` is
-        // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.
-        if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
-            && tcx.def_kind(def_id) == DefKind::AssocFn
-            // `Result`'s own, not `Argument::new_debug(&r)`'s, nor `?`'s.
-            && tcx
-                .impl_of_assoc(def_id)
-                .is_some_and(|imp| self.recognition().is_result(tcx.type_of(imp).skip_binder()))
-        {
-            let Some(answer) = super::recognition::fmt_result_answer(tcx, def_id) else {
-                return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
-            };
-            // In a crate where one may be an `Err`: of what `$fmtTry` caught,
-            // tested (ADR 0187).
-            if self.krate.any_failing {
-                let mut values = values.into_iter();
-                let result = self.value_expr(values.next().expect("the result"), span)?;
-                let message = values.next().map(|v| self.value_expr(v, span)).transpose()?;
-                self.flush(state, out)?;
-                return Ok(Value::Expr(self.fmt_result_values(answer, result, message, span, out)));
-            }
-            for value in values {
-                let value = self.value_expr(value, span)?;
-                if value.has_effects() {
-                    self.flush(state, out)?;
-                    out.push(StmtKind::Expr(value).at(self.js_span(span)));
-                }
-            }
-            return Ok(Value::Expr(match answer {
-                super::recognition::FmtResultAnswer::Unwrap | super::recognition::FmtResultAnswer::Expect => {
-                    Expr::undefined()
-                }
-                super::recognition::FmtResultAnswer::Is(ok) => Expr::bool(ok),
-            }));
+        if self.of_never_failing(def_id, &arg_tys) {
+            return self.never_failing_call(state, def_id, (values, &arg_tys), span, out);
         }
         // `x?`: `Try::branch(x)`, kept as `x` (`Value::Branch`), and what it
         // returns, `FromResidual::from_residual(r)` (ADR 0052).

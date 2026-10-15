@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     replace: "                if false && !text {",
     tests: ["test/corpus.test.ts", "-t", "begin_panic_value"],
   },
+  {
+    name: "stream-write-count-bare",
+    breaks: "a stream's `write(bytes)` is the count, not `Ok` of it",
+    file: "src/lower/format_args.rs",
+    find: "                    StreamOp::Written { .. } => super::std_types::result::ok(written),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
+    snapshots: true,
+  },
 ];

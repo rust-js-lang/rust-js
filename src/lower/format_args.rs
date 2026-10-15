@@ -153,6 +153,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
                 }
             }
+            StreamOp::WriteBytes { error } | StreamOp::Written { error } => {
+                let bytes = values.next().expect("a write's bytes");
+                let stream = Expr::num(f64::from(u8::from(error)));
+                let written = Expr::call(Expr::helper("$printBytes"), vec![bytes, stream]);
+                match op {
+                    StreamOp::Written { .. } => super::std_types::result::ok(written),
+                    _ => written,
+                }
+            }
             _ => Expr::undefined(),
         }
     }

@@ -1,6 +1,9 @@
 # 0132. A `Box` from its value, `Default` of a `&str`, `type_name`, and standard streams
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md) and [0054](0054-display.md).
+Amended by [0392](0392-a-writer-of-bytes.md): a write through a generic or
+`dyn` `io::Write`, `write_all` and `write` are supported, and `ok()` of an
+`io::Result<()>`.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -52,5 +55,5 @@ Some small std forms were errors:
 ## Consequences
 
 - These compile.
-- A write through a generic `impl Write` parameter, `write_all` and
-  `Mutex` are still errors.
+- `Mutex` is still an error. A write through a generic `impl Write`
+  parameter, and `write_all`, were too, until ADR 0392.

@@ -166,19 +166,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         answer: FmtResultAnswer,
         result: Expr,
         message: Option<Expr>,
+        may_fail: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> Expr {
         let constant = match answer {
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => Expr::undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
+            FmtResultAnswer::Ok => self.some(Expr::undefined()),
         };
-        // Only what `$fmtTry` caught may be an `Err`, or a variable it's in.
-        let may_be_err = match &result.kind {
-            js::ExprKind::Call(callee, _) => callee.helper_name() == Some("$fmtTry"),
-            js::ExprKind::Var(_) => true,
-            _ => false,
-        };
+        // Only what `$fmtTry` caught may be an `Err`, or a variable it's in,
+        // and only where one may fail.
+        let may_be_err = may_fail
+            && match &result.kind {
+                js::ExprKind::Call(callee, _) => callee.helper_name() == Some("$fmtTry"),
+                js::ExprKind::Var(_) => true,
+                _ => false,
+            };
         if !may_be_err {
             for value in std::iter::once(result).chain(message) {
                 if value.has_effects() {
@@ -194,6 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
         match answer {
+            FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
             FmtResultAnswer::Is(true) => ok,
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
