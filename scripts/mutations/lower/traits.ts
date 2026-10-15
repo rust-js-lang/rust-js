@@ -1004,4 +1004,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
     snapshots: true,
   },
+  {
+    name: "dictionary-coded-const-getter",
+    breaks: "a library's dictionary of an impl's function constant looks for a generic impl's initializer, and is refused",
+    file: "src/lower/traits.rs",
+    find: "                        Some(own) if super::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
+    replace: "                        Some(own) if false && super::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
 ];

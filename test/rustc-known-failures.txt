@@ -2,8 +2,6 @@
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
 abi/c-stack-returning-int64.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support addressable memory yet: a `transmute` of `for<'a> extern "C" fn(&'a isize) -> std::option::Option<&'a isize>` as `for<'a> extern "C" fn(&'a isize) -> &'a isize`, which 
-associated-consts/mismatched_impl_ty_2.rs	error: rust-js does not support this constant yet
-associated-consts/mismatched_impl_ty_3.rs	error: rust-js does not support this constant yet
 associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<impl Tr1 + std::clone::Clone + std::iter::Iterator + std::ops::Add<u8> + std::convert::Into<u8> as Tr1>::As1` yet
 associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
 associated-types/associated-item-long-paths.rs	error: rust-js does not support `size_of` of a type parameter yet
@@ -56,7 +54,6 @@ consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type 
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support calling `std::slice::from_raw_parts` yet
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
-consts/issue-58435-ice-with-assoc-const.rs	error: rust-js does not support this constant yet
 consts/load-preserves-partial-init.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 consts/mozjs-error.rs	error: rust-js does not support this constant yet
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet

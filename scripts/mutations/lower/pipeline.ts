@@ -319,4 +319,12 @@ export const mutations: Mutation[] = [
     replace: "            if (mutable || super::copies::shareable(tcx, ty) || once)\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
+  {
+    name: "impl-const-not-namespaced",
+    breaks: "an inherent impl's constant is a constant of its module, where `S.ID` reads its type's object",
+    file: "src/lower/pipeline.rs",
+    find: "        let Some(owner) = &info.owner else { continue };\n",
+    replace: "        let Some(owner) = None::<&String> else { continue };\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
 ];

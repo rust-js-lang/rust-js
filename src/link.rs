@@ -97,6 +97,9 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
             Item::Function(function) => function_names(function, visitor),
             Item::Namespace(namespace) => {
                 visitor.name(&namespace.name);
+                for constant in &mut namespace.constants {
+                    expr(&mut constant.value, visitor);
+                }
                 for function in &mut namespace.methods {
                     function_names(function, visitor);
                 }

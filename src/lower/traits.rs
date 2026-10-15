@@ -2262,6 +2262,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // each time, as a constant is, of the impl's evidence (ADR 0176);
                     // a trait's default's, of the dictionary's.
                     let getter = match own {
+                        // A function's, a constant of its module (ADR 0410).
+                        Some(own) if super::analysis::impl_const(self.tcx, own) => Expr::arrow(
+                            Vec::new(),
+                            vec![StmtKind::Return(Some(self.fn_ref(own))).at(js::Span::NONE)],
+                        ),
                         Some(own) => self.impl_const_getter(own, span)?,
                         // The trait's default, copied into the impl as a default
                         // method is, `Self` the impl's type (ADR 0049).

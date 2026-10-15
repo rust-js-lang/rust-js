@@ -434,6 +434,7 @@ pub fn lower_crate<'tcx>(
                             }
                             None => module_namespaces.push(js::Namespace {
                                 name: owner.clone(),
+                                constants: Vec::new(),
                                 methods: vec![lowered.function],
                                 export,
                             }),
@@ -467,6 +468,32 @@ pub fn lower_crate<'tcx>(
     }
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
+    }
+    // An inherent impl's constant is its type's object's, `S.ID`, as its
+    // methods are (ADR 0410).
+    for &def_id in &consts {
+        let info = &fns[&def_id.to_def_id()];
+        let Some(owner) = &info.owner else { continue };
+        let Some(items) = const_items.get_mut(&info.module) else {
+            continue;
+        };
+        let Some(at) = items.iter().position(|c| c.name == info.name) else {
+            continue;
+        };
+        let constant = items.remove(at);
+        let module_namespaces = pass.namespaces.entry(info.module).or_default();
+        match module_namespaces.iter_mut().find(|n| n.name == *owner) {
+            Some(namespace) => {
+                namespace.export |= constant.export;
+                namespace.constants.push(constant);
+            }
+            None => module_namespaces.push(js::Namespace {
+                name: owner.clone(),
+                export: constant.export,
+                constants: vec![constant],
+                methods: Vec::new(),
+            }),
+        }
     }
     // Each function a block makes and gives, where its block was (ADR 0296).
     let holes = &mut pass.holes;

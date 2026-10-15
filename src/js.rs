@@ -462,7 +462,10 @@ impl Item {
     /// Each variable it reads, its functions' bodies' too.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
         match self {
-            Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| visit_stmts(&m.body, read)),
+            Item::Namespace(namespace) => {
+                namespace.constants.iter().for_each(|c| c.value.visit_vars(read));
+                namespace.methods.iter().for_each(|m| visit_stmts(&m.body, read));
+            }
             Item::Const(constant) => constant.value.visit_vars(read),
             Item::Statements(stmts) => visit_stmts(stmts, read),
             Item::Function(function) => visit_stmts(&function.body, read),
@@ -472,7 +475,9 @@ impl Item {
     /// Where its Rust is, of what's in the crate's sources.
     fn spans(&self) -> Vec<Span> {
         let spans: Vec<Span> = match self {
-            Item::Namespace(namespace) => namespace.methods.iter().map(|m| m.span).collect(),
+            Item::Namespace(namespace) => (namespace.constants.iter().map(|c| c.span))
+                .chain(namespace.methods.iter().map(|m| m.span))
+                .collect(),
             Item::Const(constant) => vec![constant.span],
             Item::Statements(stmts) => stmts.iter().map(|s| s.span).collect(),
             Item::Function(function) => vec![function.span],
@@ -603,6 +608,8 @@ pub fn each_item_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Vec<Stmt>)
 /// `export const Counter = { new(step) { .. }, tick(counter) { .. } };`.
 pub struct Namespace {
     pub name: String,
+    /// Its constants, `ID: (s) => s`, properties before its methods (ADR 0410).
+    pub constants: Vec<Const>,
     /// Its methods, as functions: the object's properties.
     pub methods: Vec<Function>,
     pub export: bool,

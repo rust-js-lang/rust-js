@@ -319,9 +319,22 @@ impl<'a> Cx<'a> {
     /// shorthand, as a hand-written object of functions has them.
     fn namespace(&self, n: &js::Namespace) -> Statement<'a> {
         let b = &self.b;
+        let constants = n.constants.iter().map(|c| {
+            let key = PropertyKey::new_static_identifier(span(c.span), self.name(&c.name), b);
+            ObjectPropertyKind::new_object_property(
+                span(c.span),
+                PropertyKind::Init,
+                key,
+                self.expr(&c.value),
+                false,
+                false,
+                false,
+                b,
+            )
+        });
         let methods = {
             ArenaVec::from_iter_in(
-                n.methods.iter().map(|f| {
+                constants.chain(n.methods.iter().map(|f| {
                     let params = self.params(FormalParameterKind::FormalParameter, &f.params);
                     let body = self.function_body(&f.body);
                     let value = Expression::new_function_expression(
@@ -349,7 +362,7 @@ impl<'a> Cx<'a> {
                         false,
                         b,
                     )
-                }),
+                })),
                 b,
             )
         };

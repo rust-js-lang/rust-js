@@ -155,6 +155,32 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
 
 /// The `const { .. }` blocks of functions that aren't generic, whose
 /// initializers are kept in case they're lowered as code.
+/// An impl's associated constant whose value rustc's value tree can't say,
+/// one of a function, a closure or a `dyn` (ADR 0410): lowered as code, one
+/// value for every use, its type's object's, or of a trait impl, a constant
+/// of its module. An inherent impl's, or a trait impl's of no type
+/// parameters, whose are its dictionary's (ADR 0176); not a trait's
+/// default, which is its `Self`'s. Any other's is its value, where it's used.
+pub(super) fn impl_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let Some(imp) = tcx.impl_of_assoc(def_id) else {
+        return false;
+    };
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+    let coded = ty.walk().filter_map(|arg| arg.as_type()).any(|t| {
+        matches!(
+            t.kind(),
+            ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..)
+        )
+    });
+    coded
+        && (tcx.trait_impl_of_assoc(def_id).is_none()
+            || !tcx
+                .generics_of(imp)
+                .own_params
+                .iter()
+                .any(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. })))
+}
+
 fn inline_consts(tcx: TyCtxt<'_>) -> impl Iterator<Item = LocalDefId> {
     tcx.hir_body_owners().filter(move |&d| {
         tcx.def_kind(d) == DefKind::AnonConst
@@ -201,7 +227,11 @@ fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<L
 pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     tcx.hir_crate_items(())
         .definitions()
-        .filter(|&def_id| matches!(tcx.def_kind(def_id), DefKind::Const { .. } | DefKind::Static { .. }))
+        .filter(|&def_id| match tcx.def_kind(def_id) {
+            DefKind::Const { .. } | DefKind::Static { .. } => true,
+            DefKind::AssocConst { .. } => impl_const(tcx, def_id.to_def_id()),
+            _ => false,
+        })
         .chain(inline_consts(tcx))
         .filter(|&def_id| !tcx.is_foreign_item(def_id) && tcx.hir_maybe_body_owned_by(def_id).is_some())
         .filter_map(|def_id| {
@@ -380,6 +410,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             }
             // Not std's storage for a thread-local, which JS needs none of.
             DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),
+            // An impl's own, of a type, not a dictionary's (ADR 0176): a
+            // constant of its module too (ADR 0410).
+            DefKind::AssocConst { .. } => impl_const(tcx, d.to_def_id()),
             _ => false,
         })
         .chain(coded_inline_consts(tcx, all_bodies))

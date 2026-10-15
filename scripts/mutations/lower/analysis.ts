@@ -151,4 +151,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "an untagged enum is its payload, told apart"],
   },
+  {
+    name: "impl-const-any-type",
+    breaks: "an impl's constant of a number is lowered as code, `S.ZERO`, not its value, `0`",
+    file: "src/lower/analysis.rs",
+    find: "    coded\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
+    replace: "    true\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "impl-const-generic-trait-impl",
+    breaks: "a generic trait impl's constant, of its parameters' evidence, is lowered once as a constant of its module, which has none",
+    file: "src/lower/analysis.rs",
+    find: "    coded\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
+    replace: "    coded\n        && (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
 ];

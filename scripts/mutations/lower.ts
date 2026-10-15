@@ -214,4 +214,12 @@ export const mutations: Mutation[] = [
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
+  {
+    name: "trait-const-unresolved",
+    breaks: "`<() as Trait>::ASSOC`, a function, is refused, not its impl's",
+    file: "src/lower.rs",
+    find: "            Some(_) if !args.has_non_region_param() => {\n",
+    replace: "            Some(_) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
 ];

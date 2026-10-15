@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
       "adjacent text children stay apart"
     ]
   },
+  {
+    name: "namespace-constants-unprinted",
+    breaks: "a type's object's constants aren't printed, so `S.ID` is `undefined`",
+    file: "src/to_oxc.rs",
+    find: "        let constants = n.constants.iter().map(|c| {\n",
+    replace: "        let constants = n.constants.iter().take(0).map(|c| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
 ];
