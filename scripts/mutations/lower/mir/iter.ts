@@ -300,18 +300,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-range-len-refused",
-    "breaks": "`r.len()` of a range of numbers from MIR is refused",
-    "file": "src/lower/mir/iter.rs",
-    "find": "                    if let Some((start, end)) = range_bounds(&it)\n",
-    "replace": "                    if let Some((start, end)) = range_bounds(&it).filter(|_| false)\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "range_values"
-    ]
-  },
-  {
     "name": "mir-bytes-len-refused",
     "breaks": "`s.bytes().len()` from MIR is refused",
     "file": "src/lower/mir/iter.rs",

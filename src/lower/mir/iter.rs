@@ -153,17 +153,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(IterMethod::Len), None) if counted_chain(&it) => {
                     Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
                 }
-                // A range of numbers' count, none where it ends before it starts.
-                (Some(IterMethod::Len), Some(RangeKind::Exclusive))
-                    if let Some((start, end)) = range_bounds(&it)
-                        && self
-                            .range_index(iter_ty)
-                            .and_then(Num::of)
-                            .is_some_and(|num| !num.big()) =>
-                {
-                    let count = Expr::bin(Op::Sub, end, start);
-                    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![count, Expr::int(0)])
-                }
+                // A range of numbers' count (`range_len`).
+                (Some(IterMethod::Len), Some(kind)) if let Some(count) = self.range_len(&it, iter_ty, kind) => count,
                 _ => {
                     // Its type's name, not its closures', which name where they're written.
                     let shown = match iter_ty.kind() {
@@ -246,8 +237,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
-        // finds it (ADR 0170).
-        if std_method == Some(IterMethod::SizeHint) && !self.is_user_iterator(iter_ty) {
+        // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
+        if std_method == Some(IterMethod::SizeHint)
+            && !self.is_user_iterator(iter_ty)
+            && self.range_kind(iter_ty.peel_refs()).is_none()
+        {
             let mut it = values.into_iter().next().expect("the receiver");
             // A `map`'s is its source's, as Rust's `Map` passes it on; its
             // closure, unrun, is made for nothing.
@@ -730,19 +724,4 @@ fn counted_chain(e: &Expr) -> bool {
         at = source;
     }
     stages > 0 && crate::lower::iterators::is_stepped_items(at)
-}
-
-/// A range's bounds, each read once: of `{ start: a, end: b }` made there,
-/// `a` and `b`, or of one that reads the same, `r.start` and `r.end`.
-fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
-    match &range.kind {
-        js::ExprKind::Object(props) => match &props[..] {
-            [js::Prop::Field(s, start), js::Prop::Field(e, end)] if s == "start" && e == "end" => {
-                Some((start.clone(), end.clone()))
-            }
-            _ => None,
-        },
-        _ if range.reads_same() => Some((Expr::member(range.clone(), "start"), Expr::member(range.clone(), "end"))),
-        _ => None,
-    }
 }

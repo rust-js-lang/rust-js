@@ -77,6 +77,8 @@ pub(in crate::lower) enum RangeOp {
     IsEmpty,
     /// `len()`: `Math.max(0, r.end - r.start)`.
     Len,
+    /// `size_hint()`: how many are left, exactly, as both bounds, `[n, n]`.
+    SizeHint,
     /// A `Range`'s `next()` and `next_back()`, and an `a..`'s `next()`,
     /// which move its `start` or its `end`, as Rust's do.
     Next,
@@ -84,6 +86,14 @@ pub(in crate::lower) enum RangeOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A range's `len()`, `range_count` of its bounds, where it's a range
+    /// of numbers that aren't BigInts, `a..b` or `a..=b`, that `it` reads.
+    pub(in crate::lower) fn range_len(&self, it: &Expr, range: Ty<'tcx>, kind: RangeKind) -> Option<Expr> {
+        let numbers = self.range_index(range).and_then(Num::of).is_some_and(|num| !num.big());
+        let (start, end) = range_bounds(it)?;
+        (numbers && matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive)).then(|| range_count(start, end, kind))
+    }
+
     /// What a range's bounds are: the `u32` of a `Range<u32>`.
     pub(in crate::lower) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
@@ -289,9 +299,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };
                 Expr::unary(UnaryOp::Not, Expr::bin(op, start.clone(), end.clone()))
             }
+            // What's left of the numbers, both bounds; of BigInts, an error.
+            (RangeOp::SizeHint, [start, end]) if index.and_then(Num::of).is_some_and(|n| !n.big()) => {
+                let left = self.spill("left", range_count(start.clone(), end.clone(), kind), out);
+                Expr::array(vec![left.clone(), left])
+            }
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
         })
     }
+}
+
+/// How many numbers a range of `start` and `end` has left, of `kind`:
+/// `Math.max(end - start, 0)`, one more of `a..=b`, none once stepping has
+/// passed its end. A range's `len()` and `size_hint()` alike.
+pub(in crate::lower) fn range_count(start: Expr, end: Expr, kind: RangeKind) -> Expr {
+    let gap = Expr::bin(Op::Sub, end, start);
+    let gap = match kind {
+        RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),
+        _ => gap,
+    };
+    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![gap, Expr::int(0)])
 }
 
 /// A range made where it's stepped, `$iterator({ start: 0, end: n },
@@ -320,4 +347,19 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
         false => range.end.clone(),
     };
     Some(Expr::call_helper("$lazyRange", vec![range.start.clone(), end]))
+}
+
+/// A range's bounds, each read once: of `{ start: a, end: b }` made there,
+/// `a` and `b`, or of one that reads the same, `r.start` and `r.end`.
+pub(in crate::lower) fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
+    match &range.kind {
+        js::ExprKind::Object(props) => match &props[..] {
+            [js::Prop::Field(s, start), js::Prop::Field(e, end)] if s == "start" && e == "end" => {
+                Some((start.clone(), end.clone()))
+            }
+            _ => None,
+        },
+        _ if range.reads_same() => Some((Expr::member(range.clone(), "start"), Expr::member(range.clone(), "end"))),
+        _ => None,
+    }
 }

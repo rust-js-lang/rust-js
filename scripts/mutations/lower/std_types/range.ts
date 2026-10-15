@@ -90,4 +90,32 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii|range_inclusive_next_back"],
   },
+  {
+    name: "range-count-inclusive-short",
+    breaks: "an inclusive range's `len()` and `size_hint()` count one fewer than it has",
+    file: "src/lower/std_types/range.rs",
+    find: "        RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
+  },
+  {
+    name: "range-count-negative",
+    breaks: "a range stepped past its end counts below zero",
+    file: "src/lower/std_types/range.rs",
+    find: "    Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![gap, Expr::int(0)])\n",
+    replace: "    gap\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
+  },
+  {
+    "name": "mir-range-len-refused",
+    "breaks": "`r.len()` of a range of numbers from MIR is refused",
+    "file": "src/lower/std_types/range.rs",
+    "find": "        let (start, end) = range_bounds(it)?;\n",
+    "replace": "        let (start, end) = range_bounds(it).filter(|_| false)?;\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "range_values"
+    ]
+  },
 ];

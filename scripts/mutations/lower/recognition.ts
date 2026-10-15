@@ -407,8 +407,8 @@ export const mutations: Mutation[] = [
     name: "user-size-hint-unknown",
     breaks: "`size_hint()` of an iterator of the crate's that keeps std's is an error",
     file: "src/lower/recognition.rs",
-    find: "                return Some(Std::SizeHint(false));",
-    replace: "                return None;",
+    find: "            return Some(Std::SizeHint(false));",
+    replace: "            return None;",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {
@@ -1400,5 +1400,13 @@ export const mutations: Mutation[] = [
     find: "                || boxed;\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
+  },
+  {
+    name: "range-size-hint-unknown",
+    breaks: "a range's `size_hint()` is refused, not its bounds'",
+    file: "src/lower/recognition.rs",
+    find: "            Some(RangeKind::Exclusive | RangeKind::Inclusive) => Some(Std::Range(RangeOp::SizeHint)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
   },
 ];

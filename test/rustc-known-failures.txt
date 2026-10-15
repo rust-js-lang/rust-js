@@ -155,7 +155,6 @@ process/env-vars.rs	error: rust-js does not support iterating over `std::env::Va
 ptr_ops/ptr-swap-overlapping-regions.rs	error: rust-js does not support calling `std::ptr::swap` yet
 ptr_ops/ptr-write-bool-representation.rs	error: rust-js does not support calling `std::ptr::write` yet
 ptr_ops/raw-pointer-type-basic.rs	error: rust-js does not support values of type `*const isize` yet
-range/range_inclusive.rs	error: rust-js does not support calling `std::iter::Iterator::size_hint` yet
 raw-ref-op/raw-ref-op.rs	error: rust-js does not support values of type `*const i32` yet
 recursion/instantiable.rs	error: rust-js does not support values of type `*const foo` yet
 recursion/recursive-struct-with-raw-pointer-field.rs	error: rust-js does not support values of type `*mut [Loopy; 1]` yet

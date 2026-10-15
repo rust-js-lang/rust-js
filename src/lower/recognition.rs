@@ -956,15 +956,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // An iterator is a JS array (ADR 0036), and a `split` one of strings
         // (ADR 0034). Its adapters are the array's methods.
-        // `size_hint()` of an iterator of the crate's that keeps std's, or of
-        // std's that knows its length (ADR 0170).
-        if tcx.is_diagnostic_item(sym::Iterator, trait_) && tcx.item_name(def_id).as_str() == "size_hint" {
-            if self.is_user_iterator(ty) {
-                return Some(Std::SizeHint(false));
-            }
-            if self.range_kind(ty.peel_refs()).is_none() && self.is_array_iter(ty.peel_refs()) {
-                return Some(Std::SizeHint(true));
-            }
+        // `size_hint()`, where it's known (`classify_size_hint`).
+        if tcx.is_diagnostic_item(sym::Iterator, trait_)
+            && tcx.item_name(def_id).as_str() == "size_hint"
+            && let Some(known) = self.classify_size_hint(ty)
+        {
+            return Some(known);
         }
         if tcx.is_diagnostic_item(sym::Iterator, trait_) {
             let collects_string = || {
@@ -1147,6 +1144,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
         let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
         (from_str || to_owned).then_some(Std::Same)
+    }
+
+    /// `size_hint()` of an iterator of the crate's that keeps std's, of std's
+    /// that knows its length (ADR 0170), or of a range, its bounds' (ADR
+    /// 0129).
+    fn classify_size_hint(&self, ty: Ty<'tcx>) -> Option<Std> {
+        if self.is_user_iterator(ty) {
+            return Some(Std::SizeHint(false));
+        }
+        match self.range_kind(ty.peel_refs()) {
+            Some(RangeKind::Exclusive | RangeKind::Inclusive) => Some(Std::Range(RangeOp::SizeHint)),
+            None if self.is_array_iter(ty.peel_refs()) => Some(Std::SizeHint(true)),
+            _ => None,
+        }
     }
 
     /// A write, `io::Write`'s, to a standard stream, `print!`'s (ADR 0132),

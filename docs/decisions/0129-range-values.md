@@ -1,6 +1,7 @@
 # 0129. A range is a value: `{ start, end }`, iterated as its items
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0128](0128-iterator-sources.md).
+Amended: a range's `size_hint()`, and an inclusive one's `len()` (below).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -75,3 +76,13 @@ from it, its items:**
 
 - **A range a set or a map is made of, or extended by, is its items**
   (ADR 0344): `new Set($range(1, 7))`, where it was the range's object.
+
+## Amendment: how many are left
+
+A range's `size_hint()` (2026-10-15) is how many numbers it has left,
+exactly, as both bounds, `[n, n]`; an inclusive range's `len()` is that
+count too, as an exclusive one's was. Both are `range_count`'s, one place:
+`Math.max(end - start, 0)`, one more of `a..=b`, none once stepping has
+passed its end or where it ends before it starts. Of BigInts, an error.
+The corpus's `range_size_hint.rs`, and rustc's `range/range_inclusive.rs`,
+pass.
