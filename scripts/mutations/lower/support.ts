@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if false && let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
+  {
+    name: "io-error-unsupported",
+    breaks: "an `io::Error`, which a writer of the crate's `io::Result<usize>` names, is refused as a type",
+    file: "src/lower/support.rs",
+    find: "                    || self.recognition().is_io_error(ty) =>\n",
+    replace: "                    || false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
+  },
 ];

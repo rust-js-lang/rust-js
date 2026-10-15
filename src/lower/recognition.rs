@@ -2234,7 +2234,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.is_io_error(args.type_at(1)))
     }
 
-    fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
+    /// `io::Error`, which no write of rust-js's gives (ADR 0392): a type a
+    /// writer of the crate's names, `io::Result<usize>`, of no value.
+    pub(super) fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
     }
 
@@ -4974,6 +4976,16 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || is_writer_default(tcx, id)
         || is_std_method(tcx, id, StdItem::IoWrite, "write_all")
         || is_std_method(tcx, id, StdItem::IoWrite, "write_fmt")
+}
+
+/// `io::Write`'s `write_all`, `Some(true)`, or `write_fmt`, `Some(false)`,
+/// which std's writes with `write` (ADR 0392).
+pub(crate) fn io_write_default(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
+    match () {
+        _ if is_std_method(tcx, id, StdItem::IoWrite, "write_all") => Some(true),
+        _ if is_std_method(tcx, id, StdItem::IoWrite, "write_fmt") => Some(false),
+        _ => None,
+    }
 }
 
 /// `fmt::Write`'s `write_char` or `write_fmt`, which std's writes with

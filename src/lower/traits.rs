@@ -5,8 +5,8 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, is_clone_from, is_std_def, is_std_method,
-    is_writer_default, known_derive, std_item,
+    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, io_write_default, is_clone_from,
+    is_std_def, is_std_method, is_writer_default, known_derive, std_item,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -2305,6 +2305,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ]))
     }
 
+    /// A dictionary's `method`, which std's defaults of a writer write
+    /// with, named once where it's more than a name: `{ write_str,
+    /// write_char: write_str, .. }`.
+    fn writer_method(&mut self, props: &mut [Prop], shared: &mut Vec<js::Stmt>, method: &str, span: Span) -> R<Expr> {
+        let value = props.iter().find_map(|prop| match prop {
+            Prop::Field(name, value) if name == method => Some(value.clone()),
+            _ => None,
+        });
+        let value = value.ok_or_else(|| self.unsupported(span, &format!("a writer without its `{method}`")))?;
+        if matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)) {
+            return Ok(value);
+        }
+        let name = self.fresh(method);
+        shared.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
+        for prop in props.iter_mut() {
+            if let Prop::Field(field, value) = prop
+                && field == method
+            {
+                *value = Expr::var(&name);
+            }
+        }
+        Ok(Expr::var(&name))
+    }
+
     pub(super) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<js::Function> {
         let span = self.tcx.def_span(id);
         // An impl of a generic trait, `Convert<f64>`, or of a std one,
@@ -2460,29 +2484,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
             // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
-                let write_str = props.iter().find_map(|prop| match prop {
-                    Prop::Field(name, value) if name == "write_str" => Some(value.clone()),
-                    _ => None,
-                });
-                let write_str = write_str.ok_or_else(|| self.unsupported(span, "a writer without its `write_str`"))?;
-                // One function for the three, named once where it's more than
-                // a name: `{ write_str, write_char: write_str, .. }`.
-                let write_str = match write_str.kind {
-                    js::ExprKind::Var(_) | js::ExprKind::Symbol(_) => write_str,
-                    _ => {
-                        let name = self.fresh("write_str");
-                        shared.push(StmtKind::Const(name.clone(), write_str).at(js::Span::NONE));
-                        for prop in &mut props {
-                            if let Prop::Field(field, value) = prop
-                                && field == "write_str"
-                            {
-                                *value = Expr::var(&name);
-                            }
-                        }
-                        Expr::var(&name)
-                    }
-                };
+                let write_str = self.writer_method(&mut props, &mut shared, "write_str", span)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
+                continue;
+            }
+            // std's own `write_all` and `write_fmt` of a writer of bytes of the
+            // crate's: its `write`'s till all's written, as std's (ADR 0392).
+            if let Some(all) = io_write_default(self.tcx, item.def_id)
+                && !self.krate.fns.contains_key(&method)
+            {
+                let write = self.writer_method(&mut props, &mut shared, "write", span)?;
+                let helper = match all {
+                    true => "$ioWriteAll",
+                    false => "$ioWriteFmt",
+                };
+                props.push(Prop::Field(
+                    bindings::fn_name(self.tcx, item.def_id),
+                    Expr::call(Expr::helper(helper), vec![write]),
+                ));
                 continue;
             }
             // A library's trait's default, whose body is the library's (ADR 0100):

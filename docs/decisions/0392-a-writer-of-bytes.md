@@ -2,7 +2,15 @@
 
 Status: Accepted. Amends [0132](0132-std-odds.md); extends
 [0180](0180-generic-writers.md), [0141](0141-std-trait-objects.md) and
-[0108](0108-generic-operators-and-into.md).
+[0108](0108-generic-operators-and-into.md). Amended: a writer of bytes of
+the crate's, `impl io::Write`, arrayvec's `ArrayVec<u8, CAP>`, has a
+dictionary too: its `write` and `flush`, and std's `write_all` and
+`write_fmt`, `$ioWriteAll(write)` and `$ioWriteFmt(write)`, its `write` till
+all's written, as `fmt::Write`'s defaults are made of its `write_str`. An
+`io::Error` is a type it names, `io::Result<usize>`, of no value: no write
+of rust-js's fails, and one of the crate's that writes none, or fails, is
+rust-js's error where it does (case D), as an `io::Error`'s `{:?}` is a
+compile error (`test/corpus/io_write_impl.rs`).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): the bytes written are
 the program's output, so they're Rust's, as they are.

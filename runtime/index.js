@@ -3906,6 +3906,26 @@ export const $dynWriter = {
   write_fmt: (w, text) => w.value.impl.write_fmt(w.value, text),
   flush: (w) => w.value.impl.flush(w.value),
 };
+// `io::Write`'s `write_all` of a writer of the crate's, std's: its `write`
+// till all's written. One it writes none of, or fails, an `io::Error`,
+// which JS has no value of, is rust-js's error, as no write of rust-js's
+// fails (ADR 0392).
+export function $ioWriteAll(write) {
+  return (w, bytes) => {
+    for (let at = 0; at < bytes.length; ) {
+      const written = write(w, at === 0 ? bytes : bytes.slice(at));
+      if (written.TAG === "Err" || written._0 === 0) {
+        throw new Error("rust-js does not support a write that fails, whose `io::Error` JS has no value of");
+      }
+      at += written._0;
+    }
+  };
+}
+// Its `write_fmt`: the text's UTF-8 bytes, all written.
+export function $ioWriteFmt(write) {
+  const all = $ioWriteAll(write);
+  return (w, text) => all(w, Array.from(new TextEncoder().encode(text)));
+}
 // `write!(v, ..)` of a `Vec<u8>`: its text's UTF-8 bytes added.
 export function $writeText(v, text) {
   v.push(...new TextEncoder().encode(text));

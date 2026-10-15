@@ -112,7 +112,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_js_object(ty) => return None,
             // A standard stream, and what writing to one gives: nothing JS
             // needs, `undefined` (ADR 0132).
-            ty::Adt(..) if self.recognition().stream(ty).is_some() || self.recognition().is_io_unit_result(ty) => {
+            ty::Adt(..)
+                if self.recognition().stream(ty).is_some()
+                    || self.recognition().is_io_unit_result(ty)
+                    || self.recognition().is_io_error(ty) =>
+            {
                 return None;
             }
             // `{ message, line, column }` (ADR 0077), and `{ kind, value }` (ADR 0083).
