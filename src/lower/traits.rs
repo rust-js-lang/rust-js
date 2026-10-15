@@ -2061,15 +2061,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Of `source` unsized as `target`, a reference to a struct of the
-    /// crate's whose last field, or its last field's, is a `dyn`: the type
-    /// that field is in `source`, and the `dyn` (ADR 0409).
+    /// crate's whose last field, or its last field's, is a `dyn` of the
+    /// crate's trait: the type that field is in `source`, and the `dyn` (ADR
+    /// 0409). Not one of no trait to call, a `dyn Send`, or a `dyn FnMut`, the
+    /// JS function: the same struct either way.
     pub(super) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
         let (from, to) = (self.pointee(source), self.pointee(target));
         if !target.is_ref() || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did())) {
             return None;
         }
         let (concrete, tail) = self.tcx.struct_lockstep_tails_for_codegen(from, to, self.typing_env);
-        matches!(tail.kind(), ty::Dynamic(..)).then_some((concrete, tail))
+        matches!(tail.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)))
+        .then_some((concrete, tail))
     }
 
     /// The struct a `ty`'s last `dyn` field is in, of `value`, a `ty`:

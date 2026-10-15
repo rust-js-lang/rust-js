@@ -1020,4 +1020,12 @@ export const mutations: Mutation[] = [
     replace: "        return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
+  {
+    name: "dyn-tail-of-no-trait",
+    breaks: "a `&Fat<dyn Send>`, of no trait to call, is given an `impl` it has none of, and rust-js panics",
+    file: "src/lower/traits.rs",
+    find: "            if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)))\n        .then_some((concrete, tail))\n",
+    replace: "            if true)\n        .then_some((concrete, tail))\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a struct of a dyn Send last field"],
+  },
 ];
