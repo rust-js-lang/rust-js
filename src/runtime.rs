@@ -130,6 +130,7 @@ helpers! {
     Force,
     ForceLock,
     CowMut,
+    Path,
     Rc,
     JoinWith,
     StrEdits,
@@ -309,6 +310,8 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    "$pathEq",
+    "$pathCmp",
     "$find",
     "$rfind",
     "$byteLen",
@@ -523,6 +526,7 @@ impl Helper {
             Helper::Force => include_str!("runtime/force.js"),
             Helper::ForceLock => include_str!("runtime/force_lock.js"),
             Helper::CowMut => include_str!("runtime/cow_mut.js"),
+            Helper::Path => include_str!("runtime/path.js"),
             Helper::Rc => include_str!("runtime/rc.js"),
             Helper::JoinWith => include_str!("runtime/join_with.js"),
             Helper::StrEdits => include_str!("runtime/str_edits.js"),

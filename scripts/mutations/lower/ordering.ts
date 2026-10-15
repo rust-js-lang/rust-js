@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty).filter(|_| false) => {\n                let y",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
   },
+  {
+    name: "path-cmp-refused",
+    breaks: "ordering paths is refused, where it's their components'",
+    file: "src/lower/ordering.rs",
+    find: "        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper(\"$pathCmp\"), vec![a, b]));\n",
+    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathCmp\"), vec![a, b]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
+  },
 ];

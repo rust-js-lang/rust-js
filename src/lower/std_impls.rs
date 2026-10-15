@@ -692,6 +692,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {}
             }
         }
+        // A path's components, `a/b` and `a//b` alike (ADR 0401).
+        if self.recognition().is_path(ty) {
+            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));
+        }
         if self.js_eq(ty).is_some() {
             return Ok(Expr::bin(Op::Eq, a, b));
         }

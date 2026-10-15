@@ -85,6 +85,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if partial && Num::of(ty).is_some_and(Num::float) {
             return Ok(Expr::call(Expr::helper("$partialCmp"), vec![a, b]));
         }
+        // A path's components in turn (ADR 0401).
+        if self.recognition().is_path(ty) {
+            return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));
+        }
         if self.is_primitive_ord(ty) || self.is_text_ord(ty) {
             return Ok(Expr::call(Expr::helper("$cmp"), vec![a, b]));
         }

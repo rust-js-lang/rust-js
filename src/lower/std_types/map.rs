@@ -132,15 +132,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What makes a map or a set of `key`s: `Map` and `Set`, or for a key
-    /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121). One of no
-    /// key type, serde_json's `Map`, is of strings.
+    /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121), and for a
+    /// path, `$PathMap` and `$PathSet` (ADR 0401). One of no key type,
+    /// serde_json's `Map`, is of strings.
     pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
-        let by_value = key.is_some_and(|key| self.is_value_key(key) && !self.is_js_key(key));
-        let name = match (set, by_value) {
-            (false, false) => return Expr::var("Map"),
-            (true, false) => return Expr::var("Set"),
-            (false, true) => "$KeyMap",
-            (true, true) => "$KeySet",
+        let name = match key {
+            // Paths, each kept under its components (ADR 0401).
+            Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
+            Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
+            _ => return Expr::var(["Map", "Set"][usize::from(set)]),
         };
         Expr::helper(name)
     }
@@ -161,6 +161,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A map's or a set's method, of its arguments' values, `tys` their
     /// types (ADR 0364). One whose answer nothing reads is JS's own, by
     /// `discarded_calls`.
+    /// A map or a set made of `items`, `collect`'s or `from`'s, of what its
+    /// type, among `generic_args`, says: `new Map(items)`. A B-tree of
+    /// paths keeps the last of equal ones, which may be told apart, as std
+    /// sorts what it's made of and keeps the last, where `insert` keeps the
+    /// first: `$pathTree(new $PathSet(), items, true)` (ADR 0401).
+    pub(in crate::lower) fn made_of(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>, items: Expr) -> Expr {
+        let class = self.made(set, generic_args);
+        let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
+        let paths = map.is_some_and(|map| {
+            self.is_sorted(map)
+                && matches!(map.peel_refs().kind(), ty::Adt(_, args)
+                    if args.types().next().is_some_and(|key| self.recognition().is_path(key)))
+        });
+        match paths {
+            true => Expr::call(
+                Expr::helper("$pathTree"),
+                vec![Expr::new_(class, Vec::new()), items, Expr::bool(set)],
+            ),
+            false => Expr::new_(class, vec![items]),
+        }
+    }
+
     pub(in crate::lower) fn map_values(
         &mut self,
         op: MapOp,
@@ -185,6 +207,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || matches!(op, MapOp::TreeEnd { .. }) && set;
         if gives_item && types.first().is_some_and(|&item| self.boxed_payload(item)) {
             return Err(self.unsupported(span, &format!("an item of a `{receiver}` that could look like `None`")));
+        }
+        // A key a path map holds given back, which `a//b` finds as `a/b`:
+        // the one asked with, not yet (ADR 0401).
+        let gives_key = matches!(
+            op,
+            MapOp::GetKeyValue
+                | MapOp::RemoveEntry
+                | MapOp::SetGet
+                | MapOp::SetTake
+                | MapOp::SetReplace
+                | MapOp::EntryKey
+                | MapOp::EntryRemove { entry: true }
+        );
+        if gives_key && types.first().is_some_and(|&key| self.recognition().is_path(key)) {
+            return Err(self.unsupported(
+                span,
+                &format!("the key a `{receiver}` holds, which a path it finds may not be"),
+            ));
         }
         let ordered = matches!(op, MapOp::Algebra(_) | MapOp::TreeEnd { .. } | MapOp::TreeSplitOff);
         let cmp = match (ordered && self.is_sorted(receiver), types.first()) {
@@ -255,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::From { set } => {
                 let items = arg();
                 let items = self.items_of(items, tys[0], span, out)?;
-                Expr::new_(self.made(set, generic_args), vec![items])
+                self.made_of(set, generic_args, items)
             }
             MapOp::Insert => {
                 let list = vec![arg(), arg(), arg()];
@@ -459,7 +499,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_primitive_key(peeled)
             && !self.has_user_impl(self.partial_eq_trait(), peeled)
             && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));
-        primitive || (!ordered && self.is_value_key(ty))
+        primitive || (!ordered && self.is_value_key(ty)) || self.recognition().is_path(peeled)
     }
 
     /// A key a `$KeyMap` finds by its value (ADR 0121): one that isn't its

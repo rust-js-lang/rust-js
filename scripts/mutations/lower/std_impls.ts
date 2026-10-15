@@ -341,4 +341,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
   },
+  {
+    name: "path-eq-as-text",
+    breaks: "`==` of paths is refused, where it's their components'",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper(\"$pathEq\"), vec![a, b]));\n",
+    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathEq\"), vec![a, b]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
+  },
 ];

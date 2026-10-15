@@ -8,12 +8,16 @@ class $KeyMap extends Map {
       }
     }
   }
+  // The string an entry is kept under: its key's value (ADR 0121).
+  keyOf(key) {
+    return $key(key);
+  }
   get(key) {
-    const entry = super.get($key(key));
+    const entry = super.get(this.keyOf(key));
     return entry === undefined ? undefined : entry[1];
   }
   set(key, value) {
-    const found = $key(key);
+    const found = this.keyOf(key);
     const entry = super.get(found);
     if (entry === undefined) {
       super.set(found, [key, value]);
@@ -23,10 +27,10 @@ class $KeyMap extends Map {
     return this;
   }
   has(key) {
-    return super.has($key(key));
+    return super.has(this.keyOf(key));
   }
   delete(key) {
-    return super.delete($key(key));
+    return super.delete(this.keyOf(key));
   }
   *entries() {
     for (const [key, value] of super.values()) {

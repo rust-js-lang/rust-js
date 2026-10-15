@@ -959,8 +959,16 @@ export const mutations: Mutation[] = [
     name: "cow-eq-borrowed-right-whole",
     breaks: "`\"a\" == cow` compares the text with the `Cow` object",
     file: "src/lower/traits.rs",
-    find: "                    false => self.cow_side(b, rhs).0,\n",
-    replace: "                    false => b,\n",
+    find: "                    false => self.cow_side(b, rhs),\n",
+    replace: "                    false => (b, rhs),\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
+  {
+    name: "os-str-beside-path-as-text",
+    breaks: "an `OsStr` beside a path compares as text, `a//b` not `a/b`",
+    file: "src/lower/traits.rs",
+    find: "                let ty = match self.recognition().is_path(rhs) {\n                    true => rhs,\n",
+    replace: "                let ty = match self.recognition().is_path(rhs) {\n                    true => lhs,\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
 ];

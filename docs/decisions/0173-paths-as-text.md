@@ -37,7 +37,9 @@ stopped thiserror, and with it most crates' error types.
 - **Not a string otherwise:** a path's `==` compares its components, so
   `a/b` and `a//b` are equal, which a string's wouldn't be. `==`, ordering
   and a path as a map's key stay errors, as do the path methods not here,
-  `join` and `parent` among them.
+  `join` and `parent` among them. (Amended by
+  [0401](0401-a-path-compares-by-its-components.md): `==`, ordering and a
+  map's key are its components'.)
 - **Text in, text out:** a path is made only from text here, so it's
   always valid UTF-8, and `to_str()` is always `Some`.
 

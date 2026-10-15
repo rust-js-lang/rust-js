@@ -2790,6 +2790,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// A `Path` or a `PathBuf`, whose `==` and ordering are its components'
+    /// (ADR 0401), where an `OsStr`'s are its text's.
+    pub(super) fn is_path(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
+            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::path::Path" | "std::path::PathBuf"))
+    }
+
     /// A `Path`, a `PathBuf`, what `display()` shows of one, or an `OsStr` or
     /// `OsString`: its text, a JS string (ADR 0173). Not a string otherwise: a
     /// path's `==` compares its components, `a/b` and `a//b` equal.

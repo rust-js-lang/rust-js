@@ -580,7 +580,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition.rs", "    fn classify_inherent(", 848],
   ["src/lower/recognition.rs", "    fn classify_trait_method(", 342],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 689],
-  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 481],
+  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 477],
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

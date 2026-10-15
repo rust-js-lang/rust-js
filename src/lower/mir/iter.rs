@@ -491,12 +491,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if self.is_map(output) {
                     // A map or a set of what its key is, as a `From` of items
                     // makes one (ADR 0121).
-                    let key = match output.kind() {
-                        ty::Adt(_, args) => args.types().next(),
-                        _ => None,
-                    };
-                    let class = self.map_class(self.is_set(output), key);
-                    Expr::new_(class, vec![it])
+                    let set = self.is_set(output);
+                    self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
                 } else {
                     return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
                 }
