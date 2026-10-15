@@ -162,10 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 !var.mutable
                     && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)
                     && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
-                        ty::GenericArgKind::Type(t) => {
-                            !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
-                                && !self.is_js_object(t)
-                        }
+                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),
                         _ => true,
                     })
             })

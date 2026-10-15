@@ -646,9 +646,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cow` compares what it borrows, not its variant (ADR 0400).
             ty::Adt(..) if self.recognition().is_cow(ty) => true,
             // A raw pointer, by its handle, not what it points to (ADR 0407).
-            ty::RawPtr(..) if self.is_handle_pointer(ty) => true,
-            // `Vec`, `Box`, `Rc` and cells compare what they hold.
-            ty::Adt(_, args) if self.is_std_wrapper(ty) => args.types().any(|t| self.custom_eq_in(t, seen)),
+            _ if self.is_handle_pointer(ty) => true,
+            // `Vec`, `Box`, `Rc` and cells compare what they hold, and every
+            // std type, its type's arguments, not its private fields: a
+            // `BTreeMap`'s `NonNull` nodes are no pointer the program compares.
+            ty::Adt(adt, args) if self.is_std_wrapper(ty) || self.recognition().is_std(adt.did()) => {
+                args.types().any(|t| self.custom_eq_in(t, seen))
+            }
             ty::Adt(adt, args) => adt
                 .all_fields()
                 .any(|f| self.custom_eq_in(self.field_ty(f, args), seen)),

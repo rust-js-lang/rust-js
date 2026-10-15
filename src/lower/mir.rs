@@ -667,7 +667,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let is_plain = |ty: Ty<'tcx>| {
                 ty.walk().all(|arg| match arg.kind() {
                     ty::GenericArgKind::Type(t) => {
-                        !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                        !self.refers_mutably(t)
                             // Inside a binder, a function pointer's parameter, unknown.
                             && !t.has_escaping_bound_vars()
                             && t.is_freeze(self.tcx, self.typing_env)
@@ -3500,7 +3500,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A reference to a static, which is the static (ADR 0023): a JS
         // global (ADR 0021), or the crate's, its module's `const` (ADR 0096).
-        if let ty::Ref(_, _, ty::Mutability::Not) | ty::RawPtr(_, ty::Mutability::Not) = ty.kind()
+        let pointer = super::pointers::raw_pointee(tcx, ty);
+        if (matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+            || pointer.is_some_and(|(_, mutability)| mutability.is_not()))
             && let Some(def_id) = self.const_static(c)
             && !tcx.is_mutable_static(def_id)
         {
@@ -3511,10 +3513,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(referred) = referred {
                 // A raw pointer to one, a handle on it (ADR 0407): of what isn't
                 // an object, a cell of its value, which nothing writes.
-                return Ok(match ty.kind() {
-                    ty::RawPtr(pointee, _) if self.is_handle_pointer(ty) => {
-                        match self.is_object(*pointee) && !self.is_cell_pointee(*pointee) {
-                            true => self.pointer_to(referred, *pointee, c.span)?,
+                return Ok(match pointer {
+                    Some((pointee, _)) if self.is_handle_pointer(ty) => {
+                        match self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+                            true => self.pointer_to(referred, pointee, c.span)?,
                             false => Expr::object(vec![Prop::Field(js::HELD.into(), referred)]),
                         }
                     }

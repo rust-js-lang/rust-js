@@ -60,6 +60,9 @@ released any more: `rust-js build` is the one way to build an app.
   one block, laid out by the app's Prettier, a file's leading comments, a
   license's, kept (ADRs 0291, 0278, 0313, 0381, 0383).
 
+- **A `NonNull<T>` is its raw pointer**: `new`, `as_ptr`, `as_ref`,
+  `as_mut`, `cast`, `from(&mut x)` and the rest, as a raw pointer's
+  ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
 - **A crate of crates.io's is compiled into the app**, where rust-js can
   compile it: its JS committed in `rust-js/crates/<name>-<version>/`,
   imported from there, and checked by `rust-js build --check`. One it

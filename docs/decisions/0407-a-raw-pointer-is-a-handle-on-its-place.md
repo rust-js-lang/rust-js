@@ -55,6 +55,21 @@ const node = { value: 1, next: $ptrTo(second) };
   of its own, its handle, which it wasn't, and read `n.value` of a number
   (`borrowed`).
 
+### A `NonNull`
+
+**A `NonNull<T>` is its raw pointer**, never `null`, as a `Pin` is its
+pointer (ADR 0329): a handle on its place. `NonNull::new(p)` and
+`new_unchecked(p)` are `p`, an `Option` of one being `None` of `null`, as
+JS reads it `!= null` (ADR 0030); `as_ptr()` is the pointer; `as_ref()`
+and `as_mut()` are its place, never `None`; `cast`, `add`, `sub`, `read`,
+`write`, `replace` and `swap` are a raw pointer's; `NonNull::from(&mut x)`
+is a pointer to `x`, `$ptrTo` of an object, and the `&mut`'s handle of
+what isn't one. Whether a type is a raw pointer, a `NonNull` too, is
+`pointers::raw_pointee`'s alone, which the architecture test holds.
+`test/corpus/non_null.rs` holds it, a list of nodes linked by `NonNull`
+too. Found by the crates.io corpus: anyhow, smallvec, semver and
+hashbrown's types hold one, where 912 of 1,398 refusals were of it.
+
 ### Refused
 
 - **An address**: `p as usize`, `3 as *const T`, a pointer read as

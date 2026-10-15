@@ -702,6 +702,15 @@ test("the crates rust-js compiles are the ones the tooling names, a binding crat
   expect(wrappers).toEqual([]);
 });
 
+// Whether a type is a raw pointer, a `NonNull`, which is its pointer, or a
+// pattern type of one, has one answer, `pointers::raw_pointee` (ADR 0407):
+// no other module matches rustc's raw pointer itself.
+test("a raw pointer is one by raw_pointee alone", () => {
+  const matching = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/pointers.rs")
+    .filter((file) => /ty::RawPtr\b/.test(read(file)));
+  expect(matching).toEqual([]);
+});
+
 test("native and WASI compiler dependency versions agree", () => {
   const dependencies = (path: string) => {
     const section = read(path).split("[dependencies]\n")[1].split(/\n\[/)[0];

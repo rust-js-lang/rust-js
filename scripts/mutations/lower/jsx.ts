@@ -130,8 +130,8 @@ export const mutations: Mutation[] = [
     name: "getter-in-place",
     breaks: "a JS object's getter, `n.textContent`, is read after what writes it",
     file: "src/lower/jsx.rs",
-    find: "                            && !self.is_js_object(t)\n",
-    replace: "",
+    find: "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),\n",
+    replace: "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t),\n",
     tests: ["test/jsx.test.ts","-t","spreads a struct through a reference as the struct"],
   },
   {

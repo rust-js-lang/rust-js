@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
     name: "pointer-held-compared-by-value",
     breaks: "what holds a raw pointer, an `Option` of one, compares it with `$eq`, the handles' fields, not their identity",
     file: "src/lower/std_impls.rs",
-    find: "            ty::RawPtr(..) if self.is_handle_pointer(ty) => true,\n",
+    find: "            _ if self.is_handle_pointer(ty) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },

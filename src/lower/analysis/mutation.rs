@@ -69,11 +69,11 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             // What a raw pointer points to has a place of its own, which a copy
             // shared with another wouldn't be (ADR 0407): copied as if changed.
             // Not std's own, inside a macro of its, `thread_local!`'s.
-            if let ty::RawPtr(pointee, _) = expr.ty.kind()
+            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)
                 && !expr.span.in_external_macro(tcx.sess.source_map())
-                && object_like(tcx, *pointee)
+                && object_like(tcx, pointee)
             {
-                mutated.insert(*pointee);
+                mutated.insert(pointee);
             }
             // `a[i] = ..` changes the array `a` the same way.
             if let ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } = expr.kind

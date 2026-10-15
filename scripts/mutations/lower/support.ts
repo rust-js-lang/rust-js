@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "pointer-unrepresentable",
     breaks: "a raw pointer's values are refused",
     file: "src/lower/support.rs",
-    find: "            ty::RawPtr(inner, _)\n                if !matches!(\n",
-    replace: "            ty::RawPtr(inner, _)\n                if false && !matches!(\n",
+    find: "            _ if let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
+    replace: "            _ if false && let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
 ];

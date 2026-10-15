@@ -46,10 +46,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointer-methods-unknown",
-    breaks: "a raw pointer's methods are refused",
+    breaks: "a raw pointer's methods, and a `NonNull`'s, are refused",
     file: "src/lower/pointers.rs",
-    find: "        .find(|(name, _)| *name == method)\n",
-    replace: "        .find(|_| false)\n",
+    find: "    methods.iter().find(|(name, _)| *name == method).map(|&(_, op)| op)\n",
+    replace: "    methods.iter().find(|_| false).map(|&(_, op)| op)\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -139,5 +139,29 @@ export const mutations: Mutation[] = [
     find: "                        refs.get(&from.local).copied().flatten()\n                    }\n                    _ => None,",
     replace: "                        None\n                    }\n                    _ => None,",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "non-null-not-a-pointer",
+    breaks: "a `NonNull` isn't its pointer, so its values and its methods are refused",
+    file: "src/lower/pointers.rs",
+    find: "if super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::NonNull)",
+    replace: "if false && super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::NonNull)",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+  },
+  {
+    name: "non-null-as-mut-of-its-value",
+    breaks: "a `NonNull`'s `as_mut()` of a number is the number, not the handle on its place, `handle.value.value`",
+    file: "src/lower/pointers.rs",
+    find: "                match op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p)) {\n",
+    replace: "                match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+  },
+  {
+    name: "non-null-from-object-unwrapped",
+    breaks: "`NonNull::from(&mut object)` is the object, not a handle on it, so `as_ref()` reads its `value` field",
+    file: "src/lower/pointers.rs",
+    find: "                    (true, _) => helper(\"$ptrTo\", vec![reference]),\n",
+    replace: "                    (true, _) => reference,\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
   },
 ];

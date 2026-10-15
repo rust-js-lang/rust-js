@@ -6,6 +6,7 @@
 //! `*p` is `p.value`, `p == q` is `p === q`.
 //! What reads memory by where it is, an address, isn't JS's: refused.
 //! A pointer to a JS object, `ptr::eq`'s, is the object (ADR 0285).
+//! A `NonNull<T>` is its pointer, never `null`.
 
 use std::collections::{HashMap, HashSet};
 
@@ -52,6 +53,32 @@ pub(in crate::lower) enum PointerOp {
     /// `p.cast::<U>()`, `cast_mut()`, `cast_const()`: the same handle, where
     /// what it points to stays what it is, or is `()`.
     Cast,
+    /// A `NonNull`'s `as_ptr()`, `NonNull::new_unchecked(p)`, and
+    /// `NonNull::new(p)`: the pointer itself, as a `NonNull` is, and an
+    /// `Option` of one, whose `None` is `null`, as JS reads `!= null`
+    /// (ADR 0030), and whose `Some` is the handle, which never looks like
+    /// `None`.
+    Same,
+    /// A `NonNull`'s `as_ref()` and `as_mut()`: its place, never `None`.
+    Place,
+    PlaceMut,
+    /// `NonNull::from(r)` of a reference: a pointer to what it refers to,
+    /// `$ptrTo(object)` of an object; a `&mut` of what isn't one is a
+    /// handle on its place already (ADR 0099).
+    FromRef,
+}
+
+/// The type a pointer points to, and whether it's `*mut`: a raw pointer's,
+/// and a `NonNull`'s, which is its pointer, never `null`. The one answer of
+/// whether a type is a raw pointer (ADR 0407).
+pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
+    match ty.kind() {
+        ty::RawPtr(pointee, mutability) => Some((*pointee, *mutability)),
+        ty::Adt(adt, args) if super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::NonNull) => {
+            Some((args.type_at(0), ty::Mutability::Mut))
+        }
+        _ => None,
+    }
 }
 
 /// std's functions of a raw pointer, by path, and its methods, by name.
@@ -95,19 +122,39 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("cast_const", PointerOp::Cast),
 ];
 
+/// A `NonNull`'s functions, by name, which a raw pointer's are of the same
+/// names: but `as_ref` and `as_mut`, never `None`.
+const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
+    ("as_ptr", PointerOp::Same),
+    ("new_unchecked", PointerOp::Same),
+    ("new", PointerOp::Same),
+    ("as_ref", PointerOp::Place),
+    ("as_mut", PointerOp::PlaceMut),
+    ("read", PointerOp::Read),
+    ("write", PointerOp::Write),
+    ("replace", PointerOp::Replace),
+    ("swap", PointerOp::Swap),
+    ("add", PointerOp::Add),
+    ("offset", PointerOp::Add),
+    ("sub", PointerOp::Sub),
+    ("cast", PointerOp::Cast),
+];
+
 /// Which of std's functions of a raw pointer `path` is, a function's or a
-/// raw pointer's method's, if JS has it.
+/// raw pointer's method's, or a `NonNull`'s, if JS has it.
 pub(super) fn pointer_op(path: &str) -> Option<PointerOp> {
     if let Some(&(_, op)) = POINTER_FNS.iter().find(|(of, _)| *of == path) {
         return Some(op);
     }
-    let method = path
-        .strip_prefix("std::ptr::const_ptr::<impl *const T>::")
-        .or_else(|| path.strip_prefix("std::ptr::mut_ptr::<impl *mut T>::"))?;
-    POINTER_METHODS
-        .iter()
-        .find(|(name, _)| *name == method)
-        .map(|&(_, op)| op)
+    let (methods, method) = match path.strip_prefix("std::ptr::NonNull::<T>::") {
+        Some(method) => (NON_NULL_METHODS, method),
+        None => (
+            POINTER_METHODS,
+            path.strip_prefix("std::ptr::const_ptr::<impl *const T>::")
+                .or_else(|| path.strip_prefix("std::ptr::mut_ptr::<impl *mut T>::"))?,
+        ),
+    };
+    methods.iter().find(|(name, _)| *name == method).map(|&(_, op)| op)
 }
 
 /// What a body takes raw pointers and references to: the locals it takes
@@ -248,10 +295,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pointed
     }
 
+    /// Whether a value of type `ty` is a way to change another's: a `&mut`,
+    /// or a pointer, a `NonNull` too, which a copy of it shares.
+    pub(super) fn refers_mutably(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut)) || raw_pointee(self.tcx, ty).is_some()
+    }
+
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
     /// are but a pointer to a JS object, which is the object (ADR 0285).
     pub(super) fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::RawPtr(pointee, _) if !self.is_js_object(*pointee))
+        raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| !self.is_js_object(pointee))
     }
 
     /// A raw pointer to `place`, the place's JS: `$ptrTo(object)` of an
@@ -326,10 +379,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let pointee = match tys.first().map(|t| t.kind()) {
-            Some(ty::RawPtr(pointee, _)) => Some(*pointee),
-            _ => None,
-        };
+        // Of the pointer, or of the reference to one a `NonNull`'s `as_ref`
+        // and `as_mut` take.
+        let pointee = tys
+            .first()
+            .and_then(|t| raw_pointee(self.tcx, t.peel_refs()))
+            .map(|(pointee, _)| pointee);
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(Some(match op {
             PointerOp::Null => Expr::null(),
@@ -379,6 +434,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => referred,
                 };
                 Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)
+            }
+            PointerOp::Same => arg(),
+            PointerOp::FromRef => {
+                let reference = arg();
+                let (referent, mutable) = match tys.first().map(|t| t.kind()) {
+                    Some(ty::Ref(_, referent, m)) => (*referent, m.is_mut()),
+                    _ => unreachable!("a reference"),
+                };
+                match (self.is_object(referent) && !self.is_cell_pointee(referent), mutable) {
+                    (true, _) => helper("$ptrTo", vec![reference]),
+                    (false, true) => reference,
+                    // A shared reference of what isn't an object is its
+                    // value, a copy, with no place of its own.
+                    (false, false) => return Err(refuse(self.tcx, span, Refused::Memory(COPIED))),
+                }
+            }
+            // Never `null`, so never `None`: the place, or of a `&mut` of what
+            // isn't an object, the handle itself, a cell.
+            PointerOp::Place | PointerOp::PlaceMut => {
+                let pointer = arg();
+                match op == PointerOp::PlaceMut && pointee.is_some_and(|p| self.is_cell_pointee(p)) {
+                    true => pointer,
+                    false => self.pointee_place(pointer),
+                }
             }
             PointerOp::Cast => {
                 let to = generic_args.types().last().filter(|_| generic_args.len() > 1);

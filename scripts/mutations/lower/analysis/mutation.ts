@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "pointee-copies-shared",
     breaks: "a copy of what a pointer points to is the same object, so two copies' pointers are one",
     file: "src/lower/analysis/mutation.rs",
-    find: "            if let ty::RawPtr(pointee, _) = expr.ty.kind()\n",
-    replace: "            if let ty::RawPtr(pointee, _) = expr.ty.kind()\n                && false\n",
+    find: "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n",
+    replace: "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {

@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .enumerate()
             .filter_map(|(index, arg)| {
                 let ty = arg.as_type()?;
-                let params = owned_params(ty);
+                let params = owned_params(self.tcx, ty);
                 let own = self.drop_query().drops_but_params(ty) != Drops::Nothing;
                 (own || !params.is_empty()).then(|| (index as u32, (!own).then_some(params)))
             })
@@ -205,7 +205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let owner = self.tcx.typeck_root_def_id(self.body_owner);
-        let params = owned_params(ty);
+        let params = owned_params(self.tcx, ty);
         self.krate
             .no_drops
             .borrow_mut()
@@ -979,13 +979,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// The type parameters a value of `ty` holds, not behind a reference: what
 /// it drops of a caller's (ADR 0190).
-fn owned_params(ty: Ty<'_>) -> Vec<u32> {
+fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<u32> {
     let mut params = Vec::new();
     let mut walker = ty.walk();
     while let Some(part) = walker.next() {
         let Some(part) = part.as_type() else { continue };
         match part.kind() {
-            ty::Ref(..) | ty::RawPtr(..) => walker.skip_current_subtree(),
+            // Behind a reference, or a pointer, a `NonNull`'s too (ADR 0407).
+            ty::Ref(..) => walker.skip_current_subtree(),
+            _ if super::pointers::raw_pointee(tcx, part).is_some() => walker.skip_current_subtree(),
             ty::Param(param) => params.push(param.index),
             _ => {}
         }

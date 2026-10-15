@@ -559,8 +559,8 @@ export const mutations: Mutation[] = [
     name: "mir-foreign-static-by-pointer",
     breaks: "a JS global a foreign static names, which MIR reads through a raw pointer, isn't its global",
     file: "src/lower/mir.rs",
-    find: "        if let ty::Ref(_, _, ty::Mutability::Not) | ty::RawPtr(_, ty::Mutability::Not) = ty.kind()\n",
-    replace: "        if let ty::Ref(_, _, ty::Mutability::Not) = ty.kind()\n",
+    find: "            || pointer.is_some_and(|(_, mutability)| mutability.is_not()))\n",
+    replace: "            || false)\n",
     tests: ["test/jsx.test.ts"],
   },
   {
@@ -2418,8 +2418,8 @@ export const mutations: Mutation[] = [
     name: "static-pointer-unhandled",
     breaks: "a pointer to an immutable static is the static, which `*p` reads `value` of",
     file: "src/lower/mir.rs",
-    find: "                    ty::RawPtr(pointee, _) if self.is_handle_pointer(ty) => {\n",
-    replace: "                    ty::RawPtr(pointee, _) if false && self.is_handle_pointer(ty) => {\n",
+    find: "                    Some((pointee, _)) if self.is_handle_pointer(ty) => {\n",
+    replace: "                    Some((pointee, _)) if false && self.is_handle_pointer(ty) => {\n",
     tests: ["test/snapshots.test.ts", "-t", "counter"],
   },
   {

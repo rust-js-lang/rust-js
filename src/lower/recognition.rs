@@ -480,8 +480,9 @@ impl Std {
                 | Std::CellGetMut
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
-                // A pointer's `as_mut()`, its handle, a cell (ADR 0407).
-                | Std::Pointer(PointerOp::AsMut)
+                // A pointer's `as_mut()`, its handle, a cell (ADR 0407), and
+                // a `NonNull`'s.
+                | Std::Pointer(PointerOp::AsMut | PointerOp::PlaceMut)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
                 | Std::Slice(
                     SliceOp::PushMut { .. }
@@ -571,6 +572,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
             _ => {}
+        }
+        // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to
+        // what it refers to (ADR 0407).
+        if diagnostic("from_fn")
+            && self_ty
+                .is_some_and(|t| matches!(t.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::NonNull)))
+            && args.types().nth(1).is_some_and(|t| t.is_ref())
+        {
+            return Some(Some(Std::Pointer(super::pointers::PointerOp::FromRef)));
         }
         // A raw pointer's, a handle on its place (ADR 0407).
         if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {
@@ -3454,9 +3464,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 | ty::Array(..)
                 | ty::Slice(_)
                 | ty::Ref(..)
-                | ty::RawPtr(..)
                 | ty::Tuple(_) => true,
-                _ => false,
+                _ => super::pointers::raw_pointee(self.tcx, t).is_some(),
             })
         })
     }
@@ -3896,8 +3905,7 @@ pub(crate) fn is_memory_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         }
         seen.push(ty);
         ty.walk().filter_map(|arg| arg.as_type()).any(|part| match part.kind() {
-            ty::RawPtr(..) => true,
-            ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::ptr::NonNull" => true,
+            _ if super::pointers::raw_pointee(tcx, part).is_some() => true,
             ty::Adt(adt, _) if adt.did().is_local() && part != ty => walk(tcx, part, seen),
             ty::Adt(adt, args) if adt.did().is_local() => adt
                 .all_fields()
@@ -4638,6 +4646,8 @@ pub(crate) enum StdItem {
     MaybeUninit,
     Mutex,
     MutexGuard,
+    /// `std::ptr::NonNull`, which is its pointer (ADR 0407).
+    NonNull,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
     Ord,
@@ -4696,6 +4706,7 @@ impl StdItem {
             StdItem::MaybeUninit => Symbol::intern("MaybeUninit"),
             StdItem::Mutex => Symbol::intern("Mutex"),
             StdItem::MutexGuard => Symbol::intern("MutexGuard"),
+            StdItem::NonNull => Symbol::intern("NonNull"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),

@@ -1453,7 +1453,7 @@ export const mutations: Mutation[] = [
     name: "pointer-as-mut-not-cell",
     breaks: "a pointer's `as_mut()` is refused as a `&mut` used as a value",
     file: "src/lower/recognition.rs",
-    find: "                | Std::Pointer(PointerOp::AsMut)\n",
+    find: "                | Std::Pointer(PointerOp::AsMut | PointerOp::PlaceMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
