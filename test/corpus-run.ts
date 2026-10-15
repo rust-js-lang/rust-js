@@ -19,7 +19,14 @@ let ended = false;
 process.once("exit", (code) => {
   if (!ended) writeFileSync(outcomeFile, JSON.stringify({ exit: code }));
 });
-const { entry } = await import(pathToFileURL(module).href);
-const outcome = observe(entry);
+// What its module throws as it loads, a constant it makes as code (ADR
+// 0096), ends it as `main` would.
+const run = await import(pathToFileURL(module).href).then(
+  ({ entry }) => entry,
+  (error) => () => {
+    throw error;
+  },
+);
+const outcome = observe(run);
 ended = true;
 writeFileSync(outcomeFile, JSON.stringify(outcome));

@@ -51,7 +51,7 @@ consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type 
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support calling `std::slice::from_raw_parts` yet
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
-consts/load-preserves-partial-init.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
+consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/std/iter.rs	error: rust-js does not support constants of type `std::iter::Empty<u32>` yet
@@ -83,7 +83,6 @@ liveness/var-defined-after-early-return.rs	error: rust-js does not support addre
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<Element>` as `usize`, which aren't numbers alone
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support `&mut` to a `&mut [u8]` yet
-mir/mir_assign_eval_order.rs	error: rust-js does not support values of type `&mut &mut i32` yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 mir/mir_autoderef.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 mir/mir_misc_casts.rs	error: rust-js does not support addressable memory yet: a pointer made of an address

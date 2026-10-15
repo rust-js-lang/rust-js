@@ -234,6 +234,9 @@ did any of them prints Rust's answer now:
   `keep<'a>(v: &mut Vec<&'a mut u32>, x: &'a mut u32)`, or in `self`, is a
   handle on the local: a box of it was copied back when the call returned,
   and the writes through it after were lost (ADR 0099).
+- **A reborrow of a reference reassigned before it's used**, `add(&mut *x,
+  { x = &mut q; 10 })`, wrote what `x` referred to after, not before
+  (ADR 0099).
 - `collect::<Result<Vec<_>, _>>()` and `collect::<Option<Vec<_>>>()` gave the
   array of `Result`s or `Option`s, not the first `Err` or `None`.
 - `println!("{} {:?}", v.len(), v.pop())` read `v.len()` after the pop.

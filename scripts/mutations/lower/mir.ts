@@ -2456,4 +2456,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_patterns.rs$"],
   },
+  {
+    name: "reborrow-of-reassigned-unheld",
+    breaks: "a reborrow, `&mut *x`, of a reference reassigned before it's used is of what `x` refers to when it's used, not then",
+    file: "src/lower/mir.rs",
+    find: "            self.hold_refs_through(state, local, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_reborrow_reassigned.rs$"],
+  },
 ];

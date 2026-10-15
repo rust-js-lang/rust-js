@@ -102,6 +102,10 @@ returned. It reads and writes its place:
   `x` in `v`, and `hold(&mut self, x: &'a mut u32)` of a `Holder<'a>` in
   `self` (`test/corpus/mut_ref_escapes.rs`); a box of either gave a
   wrong answer, the writes through it after the call lost.
+- A reborrow of a reference reassigned after, `&mut *x` before `x = z`,
+  named where it's used, `x.value`, is of what `x` was, held where `x` is
+  reassigned, `const x$1 = x`: `add(&mut *x, { x = &mut q; 10 })` added to
+  `q`, a wrong answer (`test/corpus/mut_ref_reborrow_reassigned.rs`).
 - Of an object, a handle's `value` is the object, and changes through it
   are the object's; only a `&mut` to an object that's kept, and replaced
   whole through, needs one.

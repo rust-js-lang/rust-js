@@ -2442,6 +2442,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `place = value`: a temporary's value kept for where it's used, a
     /// variable's `const` where it's made once, or an assignment.
+    /// Each `&mut` named where it's used, `state.refs`, whose place is
+    /// through `local`, `x.value`, made of what `local` holds now, held:
+    /// `local` is about to be written.
+    fn hold_refs_through(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<()> {
+        let name = state.locals.names[local].clone();
+        if name.is_empty()
+            || !state
+                .refs
+                .values()
+                .any(|target| root_var(target) == Some(name.as_str()))
+        {
+            return Ok(());
+        }
+        self.flush(state, out)?;
+        let held = self.spill(&name, Expr::var(&name), out);
+        for target in state.refs.values_mut() {
+            if root_var(target) == Some(name.as_str()) {
+                *target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target.clone());
+            }
+        }
+        Ok(())
+    }
+
     fn mir_store(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -2479,6 +2502,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Place::from(local),
             false => place,
         };
+        // A reference reassigned, `x = z`, that a `&mut` named where it's
+        // used is through, `x.value` of `&mut *x` made before: what `x` is
+        // now, held, so it's still the place it was.
+        if place.projection.is_empty() {
+            self.hold_refs_through(state, local, out)?;
+        }
         // A field's path stored in a local, a getter's `element.isContentEditable`,
         // or a call's, `isItem()` of `isItem(item)`: whether it's a `bool`, as
         // of a place read (`mir_place`).
@@ -3763,9 +3792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a reference written again, `list` of `&mut list.value`
                     // in a loop that moves `list` on: what it is now, held.
                     let root = place.projection.first() == Some(&PlaceElem::Deref)
-                        && state.locals.writes[place.local]
-                            + usize::from(state.body.args_iter().any(|a| a == place.local))
-                            > 1
+                        && written_again(state, place.local)
                         && state.body.local_decls[place.local].ty.is_ref();
                     let target = match root {
                         true => {
@@ -3786,8 +3813,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if matches!(kind, BorrowKind::Shared)
                     && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))
                     && place.projection.first() == Some(&PlaceElem::Deref)
-                    && state.locals.writes[place.local] + usize::from(state.body.args_iter().any(|a| a == place.local))
-                        > 1
+                    && written_again(state, place.local)
                     && state.body.local_decls[place.local].ty.is_ref()
                     && !state.locals.names[place.local].is_empty()
                 {
@@ -6091,6 +6117,13 @@ fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>>
     }
     let (local, c) = constant?;
     (Some(local) == referred).then_some(c)
+}
+
+/// Whether `local` is written again after it's first given its value, a
+/// reference reassigned, so a place through it isn't the one it was. A
+/// parameter's first value is its argument.
+fn written_again(state: &State<'_, '_>, local: Local) -> bool {
+    state.locals.writes[local] + usize::from(state.body.args_iter().any(|a| a == local)) > 1
 }
 
 /// Whether `place` names the same place wherever it's read: variables and
