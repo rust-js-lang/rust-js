@@ -114,8 +114,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-next-some-loop-kept",
     breaks: "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\")\n",
-    replace: "    if !matches!(step, \"$next\" | \"$rangeNext\")\n",
+    find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\" | DICTIONARY)\n",
+    replace: "    if !matches!(step, \"$next\" | \"$rangeNext\" | DICTIONARY)\n",
     tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
   },
   {
@@ -169,5 +169,22 @@ export const mutations: Mutation[] = [
       "-t",
       "a for loop of a mut binding"
     ]
+  },
+  {
+    name: "dictionary-loop-kept",
+    breaks: "a `for` over an adapter's `I` stays a `while (true)` stepping its dictionary, not `for (const b of $iterator(..))`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        ) if it == iter && given(callee) => DICTIONARY,\n",
+    replace: "        ) if false => DICTIONARY,\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_clones.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "dictionary-loop-boxed",
+    breaks: "a `for` over an adapter's `I` of a generic item binds its `Some` still boxed",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                boxed = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
 ];

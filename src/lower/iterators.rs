@@ -17,6 +17,68 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+/// `$iterator(value, next)`: a JS iterator of `value`, a Rust iterator,
+/// stepped by `next`, which gives its `Option`; of one whose `Some` may be
+/// boxed (ADR 0051), `boxed`, unboxed. The one JS form of it.
+pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool) -> Expr {
+    let mut list = vec![value, next];
+    if boxed {
+        list.push(Expr::bool(true));
+    }
+    Expr::call(Expr::helper("$iterator"), list)
+}
+
+/// Whether `id`'s type parameter `param`, bound by `Iterator`, is given as it
+/// is (ADR 0411): one an impl's type holds, `I` of `Doubled<I>`, or the
+/// function's signature has in anything but itself, `Wrap<I>` or a result,
+/// whose value its caller may read as its own type, and so stepped by its
+/// `Iterator` dictionary, `{ next }`, where it's stepped. One given only
+/// itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
+/// callee's evidence and its caller's argument alike.
+pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let bound = tcx
+        .param_env(id)
+        .caller_bounds()
+        .iter()
+        .filter_map(|clause| clause.as_trait_clause())
+        .any(|p| p.def_id() == iterator && p.self_ty().skip_binder() == Ty::new_param(tcx, param.index, param.name));
+    if !bound {
+        return false;
+    }
+    // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
+    // projection isn't given back.
+    let has = |ty: Ty<'tcx>| {
+        let mut walk = ty.walk();
+        while let Some(arg) = walk.next() {
+            match arg.as_type().map(|t| *t.kind()) {
+                Some(ty::Alias(..)) => walk.skip_current_subtree(),
+                Some(ty::Param(p)) if p.index == param.index => return true,
+                _ => {}
+            }
+        }
+        false
+    };
+    let held = match tcx.def_kind(id) {
+        rustc_hir::def::DefKind::Impl { .. } => Some(id),
+        _ => tcx.impl_of_assoc(id),
+    }
+    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));
+    let signature = matches!(
+        tcx.def_kind(id),
+        rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+    ) && tcx.trait_of_assoc(id).is_none()
+        && tcx.trait_impl_of_assoc(id).is_none()
+        && {
+            let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
+            has(sig.output())
+                || sig.inputs().iter().any(|&input| {
+                    !matches!(input.peel_refs().kind(), ty::Param(p) if p.index == param.index) && has(input)
+                })
+        };
+    held || signature
+}
+
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if
 /// it doesn't depend on `p` and reads the same however often it's read.
 fn sought(test: &Expr) -> Option<Expr> {
@@ -97,7 +159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
     /// a range's by its `$rangeNext`.
     pub(super) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
-        Expr::call(Expr::helper("$iterator"), vec![value, next])
+        stepped(value, next, false)
     }
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
@@ -123,6 +185,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// range, an object (ADR 0129), where `input` is an `Iterator` or an
     /// `IntoIterator`. A range is itself anywhere else.
     pub(super) fn given_as_iterator(&self, callee: DefId, input: ty::Ty<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+        // As it is, with its dictionary (ADR 0411).
+        if let ty::Param(param) = input.kind()
+            && given_as_it_is(self.tcx, callee, *param)
+        {
+            return false;
+        }
         let ty = self.reveal(ty);
         if self.is_user_iterator(ty) {
             return true;
@@ -205,6 +273,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: &str,
         span: Span,
     ) -> R<Expr> {
+        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
+        Ok(stepped(value, next, boxed))
+    }
+
+    /// The function that steps the crate's iterator of type `ty`, its impl's
+    /// `method` of `trait_id`, `countdownIterator_next`, and whether its
+    /// `Some` is boxed, as a generic `next`'s is (ADR 0051).
+    fn user_next(&mut self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str, span: Span) -> R<(Expr, bool)> {
         let next = trait_method(self.tcx, trait_id, method);
         let args = self.args_of(trait_id, ty.peel_refs());
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
@@ -237,11 +313,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
             ),
         };
-        let mut list = vec![value, next];
-        if boxed {
-            list.push(Expr::bool(true));
+        Ok((next, boxed))
+    }
+
+    /// The `Iterator` dictionary this function was given for `ty`, a type
+    /// parameter given as it is (ADR 0411).
+    pub(super) fn iterator_evidence(&self, ty: ty::Ty<'tcx>) -> Option<Expr> {
+        let ty = ty.peel_refs();
+        if !matches!(ty.kind(), ty::Param(_)) {
+            return None;
         }
-        Ok(Expr::call(Expr::helper("$iterator"), list))
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        self.evidence_for(ty::TraitRef::new(self.tcx, iterator, [ty]))
+    }
+
+    /// `ty`'s `Iterator` dictionary, `{ next }` (ADR 0411): its `next`
+    /// steps a `ty` as it is, a range's `$rangeNext`, the crate's own its
+    /// impl's, a JS iterator's `$next`, each giving the `Option` generic code
+    /// reads, a `Some` that looks like `None` boxed (ADR 0051).
+    pub(super) fn iterator_dictionary(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        let next = match self.range_kind(ty) {
+            Some(kind) => match kind.step(false) {
+                Some(step) => Expr::helper(step),
+                None => return Err(self.unsupported(span, &format!("the `Iterator` of a `{ty}`"))),
+            },
+            None if self.is_user_iterator(ty) => {
+                let trait_id = std_item(self.tcx, StdItem::Iterator);
+                self.user_next(ty, trait_id, "next", span)?.0
+            }
+            None => match self.iterator_item(ty) {
+                Some(item) if !self.boxed_payload(item) => Expr::helper("$next"),
+                _ => Expr::helper("$nextSome"),
+            },
+        };
+        Ok(Expr::object(vec![js::Prop::Field("next".into(), next)]))
     }
 
     /// What an iterator of type `iterator` yields: its `Item`.

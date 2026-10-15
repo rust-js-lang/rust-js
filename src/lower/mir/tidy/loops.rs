@@ -45,6 +45,9 @@ pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>
     }
 }
 
+/// The step of an `Iterator` dictionary, `IIterator.next(it)` (ADR 0411).
+const DICTIONARY: &str = "dictionary";
+
 pub(super) fn for_of(
     made: &Stmt,
     looped: &Stmt,
@@ -79,6 +82,9 @@ pub(super) fn for_of(
     let ExprKind::Call(callee, args) = &next.kind else {
         return None;
     };
+    // A helper's step, or an `Iterator` dictionary's, `IIterator.next(it)`,
+    // of one given as it is (ADR 0411).
+    let given = |d: &Expr| matches!(&d.kind, ExprKind::Member(of, name) if name == "next" && matches!(of.kind, ExprKind::Var(_)));
     let step = match (callee.helper_name(), args.as_slice()) {
         (
             Some(f),
@@ -89,9 +95,18 @@ pub(super) fn for_of(
                 },
             ],
         ) if it == iter => f,
+        (
+            None,
+            [
+                Expr {
+                    kind: ExprKind::Var(it),
+                    ..
+                },
+            ],
+        ) if it == iter && given(callee) => DICTIONARY,
         _ => return None,
     };
-    if !matches!(step, "$next" | "$nextSome" | "$rangeNext")
+    if !matches!(step, "$next" | "$nextSome" | "$rangeNext" | DICTIONARY)
         || js::mentions_in(std::slice::from_ref(looped), iter) != 1
         || js::mentions_in(after, iter) != 0
     {
@@ -130,18 +145,22 @@ pub(super) fn for_of(
         (label, block) => label.clone().or(block),
     };
     let label = &label;
-    // An item that may itself be `None` was boxed by `$nextSome` for the
-    // test, and `$someValue` takes it out: JS's `for` binds it as it is.
-    if step == "$nextSome" {
-        let unboxed = |value: &Expr| {
-            crate::lower::std_types::option::some_value_of(value)
-                .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
-        };
+    // An item that may itself be `None` was boxed by `$nextSome`, or a
+    // dictionary's `next`, for the test, and `$someValue` takes it out: JS's
+    // `for` binds it as it is, a dictionary's `$iterator` unboxing it.
+    let unboxed = |value: &Expr| {
+        crate::lower::std_types::option::some_value_of(value)
+            .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
+    };
+    let mut boxed = false;
+    if matches!(step, "$nextSome" | DICTIONARY) {
         let first = inner.first_mut()?;
         match &mut first.kind {
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if unboxed(value) => {
                 *value = Expr::var(item);
+                boxed = true;
             }
+            _ if step == DICTIONARY => {}
             _ => return None,
         }
     }
@@ -151,6 +170,14 @@ pub(super) fn for_of(
         return None;
     }
     let looped = match step {
+        // Stepped by its dictionary, a JS iterator of it.
+        DICTIONARY => StmtKind::ForOf {
+            label: label.clone(),
+            pattern,
+            mutable,
+            iterable: crate::lower::iterators::stepped(source.clone(), (**callee).clone(), boxed),
+            body,
+        },
         "$next" | "$nextSome" => StmtKind::ForOf {
             label: label.clone(),
             pattern,

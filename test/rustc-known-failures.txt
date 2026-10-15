@@ -82,7 +82,6 @@ functions-closures/clone-closure.rs	error: rust-js does not support cloning a cl
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 indexing/indexing-spans-caller-location.rs	error: rust-js does not support calling `std::panic::Location::<'a>::line` yet
 intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
-iterators/iter-map-fold-type-length.rs	error: rust-js does not support `&mut` to a `I` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 layout/null-pointer-optimization.rs	error: rust-js does not support `{:?}` of a `fn()` yet
 let-else/let-else-drop-order.rs	error: rust-js does not support a `&mut` of this in a variable yet
@@ -128,7 +127,7 @@ threads-sendsync/send-type-inference.rs	error: rust-js does not support a channe
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
 threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `std::iter::Iterator::cycle` yet
 threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
-traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support `&mut` to a `Self` yet
+traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet

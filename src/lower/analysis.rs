@@ -3,6 +3,7 @@
 mod debug;
 mod drops;
 mod fmt_failures;
+mod iterator_steps;
 mod mutation;
 mod naming;
 mod plain_locals;
@@ -280,6 +281,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub drop_params: HashMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
     pub copied: HashSet<(DefId, u32)>,
+    /// The type parameters given as they are whose `Iterator` dictionary is
+    /// given, as they're stepped (ADR 0411).
+    pub stepped: HashSet<(DefId, u32)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
@@ -522,6 +526,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let changed_vecs = changed_vecs(tcx, all_bodies);
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, counted.any());
     let copied = copied_params(tcx, all_bodies, &fns, library);
+    let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns);
     let type_facts = type_fact_params(tcx, all_bodies, &fns, library);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let generic_consts = generic_consts(tcx, all_bodies);
@@ -551,6 +556,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         changed_vecs,
         drop_params,
         copied,
+        stepped,
         type_facts,
         failing,
         generic_consts,

@@ -1,6 +1,9 @@
 # 0061. `impl Iterator` is the type it hides; a generic iterator is any JS iterable
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
+Amended by [0411](0411-an-iterator-given-as-it-is-has-its-dictionary.md):
+a parameter an impl's type holds, or a signature has in anything but
+itself, is given as it is, and stepped by its `Iterator` dictionary.
 
 Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
 

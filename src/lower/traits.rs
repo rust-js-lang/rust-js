@@ -119,10 +119,19 @@ fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
 /// Signature order, including parent impl bounds. Never depend on body usage.
 /// A component has none: React calls it with its props, never a dictionary
 /// (ADR 0201).
+/// What the crate's analyses say of its type parameters' bounds: those
+/// whose `Copy` takes a copy function (ADR 0289), and those whose
+/// `Iterator` is given its dictionary (ADR 0411), by their indices.
+#[derive(Clone, Copy)]
+pub(super) struct Given<'a> {
+    pub copied: &'a HashSet<(DefId, u32)>,
+    pub stepped: &'a HashSet<(DefId, u32)>,
+}
+
 pub(super) fn bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
-    copied: &HashSet<(DefId, u32)>,
+    given: Given<'_>,
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let mut result = Vec::new();
@@ -136,7 +145,7 @@ pub(super) fn bounds<'tcx>(
     }
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         let clause = clause.skip_normalization();
-        if let Some(tr) = bound_of(tcx, foreign, copied, clause, id)
+        if let Some(tr) = bound_of(tcx, foreign, given, clause, id)
             && !result.contains(&tr)
         {
             result.push(tr);
@@ -196,7 +205,7 @@ pub(super) fn may_have_destructors(tcx: TyCtxt<'_>, foreign: &super::library::Fo
 fn bound_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
-    copied: &HashSet<(DefId, u32)>,
+    given: Given<'_>,
     clause: ty::Clause<'tcx>,
     id: DefId,
 ) -> Option<ty::TraitRef<'tcx>> {
@@ -217,9 +226,16 @@ fn bound_of<'tcx>(
     if tcx.is_lang_item(tr.def_id, LangItem::Copy)
         && super::analysis::copies_by_callers(tcx, id)
         && let ty::Param(param) = tr.self_ty().kind()
-        && !copied.contains(&(tcx.typeck_root_def_id(id), param.index))
+        && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))
     {
         return None;
+    }
+    // An `Iterator` a type holds or a function gives back: its dictionary,
+    // which steps it as it is (ADR 0411).
+    if is_std_def(tcx, tr.def_id, StdItem::Iterator)
+        && let ty::Param(param) = tr.self_ty().kind()
+    {
+        return given.stepped.contains(&(id, param.index)).then_some(tr);
     }
     (operational(tcx, foreign, tr.def_id) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }
@@ -245,16 +261,16 @@ pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '
 pub(super) fn own_bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
-    copied: &HashSet<(DefId, u32)>,
+    given: Given<'_>,
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let own: Vec<_> = tcx
         .clauses_of(id)
         .clauses
         .iter()
-        .filter_map(|&(clause, _)| bound_of(tcx, foreign, copied, clause, id))
+        .filter_map(|&(clause, _)| bound_of(tcx, foreign, given, clause, id))
         .collect();
-    bounds(tcx, foreign, copied, id)
+    bounds(tcx, foreign, given, id)
         .into_iter()
         .filter(|tr| own.contains(tr))
         .collect()
@@ -821,7 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.push(name.into());
         }
         params.extend(
-            bounds(self.tcx, self.krate.foreign, self.krate.copied, id)
+            bounds(self.tcx, self.krate.foreign, self.krate.given, id)
                 .into_iter()
                 .map(|tr| {
                     // `writeT` and `readT`, as a generic codec's (ADR 0081).
@@ -946,6 +962,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(found) = self.evidence_for(tr) {
             return Ok(found);
+        }
+        // An `Iterator`'s, of a type that isn't a parameter given one (ADR
+        // 0411). One given as it is, which a JS iterator's `next` can't step,
+        // that the analysis found nothing here steps: rust-js's own error.
+        if is_std_def(self.tcx, tr.def_id, StdItem::Iterator) {
+            if let ty::Param(param) = tr.self_ty().kind()
+                && super::iterators::given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param)
+            {
+                return Err(self.unsupported(
+                    span,
+                    &format!("stepping `{}`, which rust-js found nothing here steps", tr.self_ty()),
+                ));
+            }
+            return self.iterator_dictionary(tr.self_ty(), span);
         }
         // `Any`'s: its type's key, `{ type_id: () => "i32" }` (ADR 0331).
         if any_trait(self.tcx) == Some(tr.def_id) {
@@ -1449,7 +1479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|param| self.const_arg(args.const_at(param.index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
             let bound = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
@@ -1763,7 +1793,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|index| self.const_arg(generic_args.const_at(index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in own_bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
+        for bound in own_bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
             values.push(
                 self.dictionary(
                     ty::EarlyBinder::bind(self.tcx, bound)
@@ -1799,13 +1829,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         names: &[String],
         span: Span,
     ) -> R<Vec<Expr>> {
-        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, method);
+        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, method);
         // Its const parameters' values first, the impl's and its own (ADR 0135).
         let mut values = const_params(self.tcx, method)
             .into_iter()
             .map(|param| self.const_arg(args.const_at(param.index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, method) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {
             let here = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
@@ -2438,7 +2468,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 params.push(name);
             }
             // A generic method's own evidence is its caller's, after the arguments.
-            let declared: Vec<_> = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, item.def_id)
+            let declared: Vec<_> = own_bounds(self.tcx, self.krate.foreign, self.krate.given, item.def_id)
                 .into_iter()
                 .map(|bound| {
                     ty::EarlyBinder::bind(self.tcx, bound)
@@ -2615,9 +2645,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut specialized = Vec::new();
         // A generic default's own evidence is its caller's, after its
         // arguments (ADR 0106); the rest is the impl's, made here.
-        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, id);
+        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, id);
         let mut own_params = Vec::new();
-        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
             if own.contains(&bound) {
                 let word = format!(
                     "{}{}",

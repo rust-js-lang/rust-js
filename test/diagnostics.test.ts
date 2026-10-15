@@ -139,7 +139,6 @@ for (const [name, source, message, crate] of [
   // A generic iterator a struct of the crate's holds, which a range given
   // it isn't a JS iterator of, stepped through a `&mut` to the field:
   // refused (rustc's iter-map-fold-type-length threw).
-  ["a &mut to a generic iterator in a field", "pub struct Iter<I>(I);\nimpl<I: Iterator> Iterator for Iter<I> { type Item = I::Item; fn next(&mut self) -> Option<I::Item> { self.0.next() } }\npub fn f() -> usize { Iter(0..3).count() }", "`&mut` to a `I`"],
   ["{:.2e}", 'pub fn f(x: f64) -> String { format!("{:.2e}", x) }', "`{:.2e}` and the like"],
   ["malformed import", '#[rust_js::import("./style.css")]\nconst _: () = ();\npub fn f() {}', "write it"],
   ["malformed binding", '#[rust_js::link_name(123)] pub fn f() {}', "a binding needs"],

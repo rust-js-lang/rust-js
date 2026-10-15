@@ -733,7 +733,7 @@ export const mutations: Mutation[] = [
     name: "copy-bound-always-dropped",
     breaks: "a `Copy` bound never takes a copy function, so `kept(p)` shares `p`'s object",
     file: "src/lower/traits.rs",
-    find: "        && !copied.contains(&(tcx.typeck_root_def_id(id), param.index))\n",
+    find: "        && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
   },
@@ -1011,5 +1011,13 @@ export const mutations: Mutation[] = [
     find: "                        Some(own) if super::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     replace: "                        Some(own) if false && super::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
+  {
+    name: "iterator-bound-not-evidence",
+    breaks: "an adapter's `I: Iterator` takes no dictionary, so its `next` has none to step `I` by",
+    file: "src/lower/traits.rs",
+    find: "        return given.stepped.contains(&(id, param.index)).then_some(tr);\n",
+    replace: "        return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
 ];

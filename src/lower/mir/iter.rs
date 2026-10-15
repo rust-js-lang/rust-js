@@ -41,6 +41,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let std_method = self.recognition().iterator_method(def_id);
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
         let iter_ty = receiver_ty.peel_refs();
+        if let Some(stepped) = self.given_iterator_call(std_method, iter_ty, &values) {
+            return Ok(Some(stepped));
+        }
         // One taken by value, `items.fold(..)`'s, dropped as it's done, which
         // JS doesn't: of a generic iterator, one its callers give none with a
         // destructor (ADR 0190); of the crate's own with one, refused.
@@ -262,11 +265,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
             }
             return Ok(Some(Expr::call_helper("$sizeHint", vec![it])));
-        }
-        // `by_ref()` of the crate's iterator: a `&mut` to it, it itself, which
-        // its own `next` steps.
-        if std_method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {
-            return Ok(values.into_iter().next());
         }
         // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
         // `&mut I`, which is `I`'s own, of what the `&mut` is to.
@@ -501,6 +499,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
+    /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
+    /// to it, it itself, which its own `next` steps; and of a type parameter
+    /// given as it is, with its `Iterator` dictionary (ADR 0411), `by_ref()`
+    /// and `into_iter()`, itself, and `next(&mut it)`, the dictionary's.
+    fn given_iterator_call(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, values: &[Expr]) -> Option<Expr> {
+        let receiver = values.first()?.clone();
+        if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {
+            return Some(receiver);
+        }
+        let dictionary = self.iterator_evidence(iter_ty)?;
+        match method? {
+            IterMethod::Next => Some(Expr::call(Expr::member(dictionary, "next"), vec![receiver])),
+            IterMethod::ByRef | IterMethod::IntoIter => Some(receiver),
+            _ => None,
+        }
+    }
+
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
     pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -514,6 +529,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if self.is_user_iterator(ty) => {
                 let trait_id = std_item(self.tcx, StdItem::Iterator);
                 self.user_iterator(value, ty, trait_id, "next", span)
+            }
+            // One given its dictionary, stepped by it, its `Some` unboxed
+            // (ADR 0411).
+            None if let Some(dictionary) = self.iterator_evidence(ty) => {
+                let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+                Ok(crate::lower::iterators::stepped(
+                    value,
+                    Expr::member(dictionary, "next"),
+                    boxed,
+                ))
             }
             // A generic one, which may be given an array (ADR 0061): JS's
             // iterator of it.

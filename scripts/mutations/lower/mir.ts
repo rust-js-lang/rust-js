@@ -2092,14 +2092,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","ptr::eq of JS objects"],
   },
   {
-    name: "mir-generic-iter-field-lent",
-    breaks: "MIR's generic iterator a field holds is stepped through a `&mut`, a range given it throwing",
-    file: "src/lower/mir.rs",
-    find: "                    && place.projection.iter().any(|elem| matches!(elem, PlaceElem::Field(..)))\n",
-    replace: "                    && false\n",
-    tests: ["test/diagnostics.test.ts","-t","a &mut to a generic iterator in a field"],
-  },
-  {
     name: "mir-constant-written-shared",
     breaks: "MIR's named constant a local copies is the constant itself though the local is written, changing it",
     file: "src/lower/mir.rs",

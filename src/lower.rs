@@ -254,8 +254,9 @@ struct CrateFacts<'a, 'tcx> {
     changed_vecs: &'a HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop for (ADR 0098).
     drop_params: &'a HashMap<DefId, Vec<u32>>,
-    /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
-    copied: &'a HashSet<(DefId, u32)>,
+    /// The type parameters whose `Copy` bound takes a copy function (ADR
+    /// 0289), and whose `Iterator` its dictionary (ADR 0411).
+    given: traits::Given<'a>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
     type_facts: &'a HashMap<DefId, Vec<(u32, TypeFact)>>,
     /// The functions that may return `Err(fmt::Error)`, and whether any of

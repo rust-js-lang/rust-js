@@ -288,7 +288,8 @@ outside its owner, and how much each module knows of the rest.
 |---|---|---|
 | What lowering from MIR found of a body's variables, `mir::Found` (ADR 0364) | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
 | What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
-| Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped_by`, `stepped_range` |
+| Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` |
+| Whether a generic iterator is given as it is, and its `Iterator` dictionary, `{ next }` (ADR 0411) | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` |
 | An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
 | `&mut`s to values JS can't change in place, given to a call: a box, `{ value: place }`, and what's copied back (ADR 0074) | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
 | Writing to a `Formatter`: its JS; of MIR, which locals are it and its builders (ADRs 0054, 0136) | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
