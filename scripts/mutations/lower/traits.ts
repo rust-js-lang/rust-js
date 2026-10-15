@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "known-into-through-dictionary",
     breaks: "`i % 2` and `\"paren\".into()`, of known types, are a dictionary's call, `{ rem: .. }.rem(i, 2)`, not `i % 2`",
     file: "src/lower/traits.rs",
-    find: "            && !tr.args.has_non_region_param()\n",
-    replace: "            && false\n",
+    find: "            || is_std_def(self.tcx, trait_id, StdItem::Into))\n            && !tr.args.has_non_region_param()\n",
+    replace: "            || is_std_def(self.tcx, trait_id, StdItem::Into))\n            && false\n",
     tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped from MIR is its numbers"],
   },
   {
