@@ -88,6 +88,10 @@ and reaches its items by raw pointers (`test/corpus/array_vec_raw.rs`):
 - **`slice::from_raw_parts(p, n)`** is those items, a copy as a shared
   subslice is (ADR 0063), or the whole array itself; `from_raw_parts_mut`'s
   a view of them (ADR 0335).
+- **`ptr::drop_in_place(p)`** runs what dropping what it points to runs,
+  there, in Rust's order (ADR 0098); a raw pointer's `write`, `read` and
+  `replace` keep or give back what they're given, so a generic `push` that
+  writes its `T` through one takes a destructor of it (ADR 0190).
 - **A constant of the crate's rustc can't say as a value**, one of a type
   parameter or a const generic, `[const { MaybeUninit::uninit() }; CAP]`,
   or a trait's `Self::CAPACITY` of an `impl<T, const CAP: usize>`, which
@@ -100,7 +104,10 @@ and reaches its items by raw pointers (`test/corpus/array_vec_raw.rs`):
   rust-js's error where it's shown, as only an assertion that fails shows
   one.
 - **A place JS may hold a copy of**: an item of a slice, a slice's
-  `as_ptr` but of a whole array made one just there, a subslice's
+  `as_mut_ptr` but of a whole array made one just there (a shared slice's
+  `as_ptr` is only read through, which a copy reads the same: a pointer
+  of it compared with one into the array it was copied from is another,
+  a difference rare enough to list here), a subslice's
   reference's, a named constant's; what a `&mut` refers to through its box
   or handle; what a shared reference holds, a value, where it has no
   place. Each would be a pointer to another place than Rust's.

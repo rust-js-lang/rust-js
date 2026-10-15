@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
+  {
+    name: "pointer-ops-would-drop",
+    breaks: "a raw pointer's `write` is taken as dropping what it's given, so a generic `push` given a type with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Pointer(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+  },
 ];

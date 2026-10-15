@@ -22,7 +22,8 @@ for (const [name, source, message, crate] of [
   ["a pointer's address", "pub fn f() -> usize { let x = 1; let p = &raw const x; p as usize }", "does not support addressable memory yet: a pointer's address"],
   ["a pointer made of an address", "pub fn f() -> bool { let p = 3 as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer made of an address"],
   ["a pointer read as another type's", "pub fn f() -> u16 { let x = 1u32; let p = &raw const x as *const u16; unsafe { *p } }", "does not support addressable memory yet: a pointer read as another type's"],
-  ["a pointer into a slice", "pub fn f(s: &[u8]) -> u8 { unsafe { *s.as_ptr() } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  // A shared slice's `as_ptr()` is only read through, as a copy reads the same.
+  ["a pointer into a slice", "pub fn f(s: &mut [u8]) -> u8 { unsafe { *s.as_mut_ptr() } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer through a &mut", "pub fn f(r: &mut u32) -> *mut u32 { r }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to"],

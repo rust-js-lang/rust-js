@@ -75,6 +75,9 @@ pub(in crate::lower) enum PointerOp {
     Slice {
         mutable: bool,
     },
+    /// `ptr::drop_in_place(p)`, `p.drop_in_place()`: what dropping what it
+    /// points to runs, there, in Rust's order (ADR 0098).
+    DropInPlace,
     /// `NonNull::from(r)` of a reference: a pointer to what it refers to,
     /// `$ptrTo(object)` of an object; a `&mut` of what isn't one is a
     /// handle on its place already (ADR 0099).
@@ -112,6 +115,7 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::boxed::Box::<T>::into_raw", PointerOp::IntoRaw),
     ("std::boxed::Box::<T>::from_raw", PointerOp::FromRaw),
     ("std::boxed::Box::<T, A>::from_raw", PointerOp::FromRaw),
+    ("std::ptr::drop_in_place", PointerOp::DropInPlace),
     ("std::ptr::copy", PointerOp::Copy { dst_first: false }),
     ("std::ptr::copy_nonoverlapping", PointerOp::Copy { dst_first: false }),
     ("std::slice::from_raw_parts", PointerOp::Slice { mutable: false }),
@@ -141,6 +145,7 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
     ("copy_from", PointerOp::Copy { dst_first: true }),
     ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
+    ("drop_in_place", PointerOp::DropInPlace),
 ];
 
 /// A `NonNull`'s functions, by name, which a raw pointer's are of the same
@@ -163,6 +168,7 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
     ("copy_from", PointerOp::Copy { dst_first: true }),
     ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
+    ("drop_in_place", PointerOp::DropInPlace),
 ];
 
 /// Which of std's functions of a raw pointer `path` is, a function's or a
@@ -461,6 +467,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)
             }
             PointerOp::Same => arg(),
+            PointerOp::DropInPlace => {
+                let place = self.pointee_place(arg());
+                let place = match place.reads_same() {
+                    true => place,
+                    false => self.spill("value", place, out),
+                };
+                self.drop_value(place, pointee.expect("a pointer"), span, out)?;
+                Expr::undefined()
+            }
             PointerOp::Copy { dst_first } => {
                 let (a, b, count) = (arg(), arg(), arg());
                 let (src, dst) = if dst_first { (b, a) } else { (a, b) };
@@ -605,10 +620,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::helper("$ptrShown"), vec![pointer])
     }
 
-    /// A slice's `as_ptr()` or `as_mut_ptr()`, a pointer into an array JS
-    /// may hold a copy of, `&v[1..]`'s, whose place isn't the one it's a
-    /// copy of: refused, but of a whole array or `Vec` made a slice just
-    /// there, `arr.as_ptr()`'s.
+    /// A slice's `as_mut_ptr()`, a pointer into an array JS may hold a copy
+    /// of, `&mut v[1..]`'s, whose place isn't the one it's a copy of:
+    /// refused, but of a whole array or `Vec` made a slice just there,
+    /// `arr.as_mut_ptr()`'s. A shared slice's `as_ptr()` is only read
+    /// through, which a copy reads the same.
     pub(super) fn check_slice_pointer(
         &self,
         body: &mir::Body<'tcx>,
@@ -620,7 +636,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         let Some(receiver) = args.first() else { return Ok(()) };
-        if !receiver.node.ty(body, self.tcx).peel_refs().is_slice() {
+        let receiver_ty = receiver.node.ty(body, self.tcx);
+        if !receiver_ty.peel_refs().is_slice() {
+            return Ok(());
+        }
+        // Of a shared slice, `as_ptr()`: a pointer only read through, of
+        // items nothing changes while they're lent, which a copy reads the
+        // same, arrayvec's `other.as_ptr()` of the slice it extends from.
+        if matches!(receiver_ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) {
             return Ok(());
         }
         let whole = receiver.node.place().is_some_and(|place| {

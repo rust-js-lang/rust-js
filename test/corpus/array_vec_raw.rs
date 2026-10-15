@@ -6,6 +6,14 @@ use std::mem::{self, MaybeUninit};
 use std::ptr;
 use std::slice;
 
+struct Noisy(&'static str);
+
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Point {
     x: i32,
@@ -94,6 +102,25 @@ impl<T, const CAP: usize> Stack<T, CAP> {
         }
     }
 
+    /// Copies of `other`'s items after its own, read through the shared
+    /// slice's pointer.
+    fn extend_from_slice(&mut self, other: &[T])
+    where
+        T: Copy,
+    {
+        assert!(self.len + other.len() <= CAP);
+        unsafe { ptr::copy_nonoverlapping(other.as_ptr(), self.as_mut_ptr().add(self.len), other.len()) };
+        self.len += other.len();
+    }
+
+    /// Its last items dropped, in place, till it has `len`.
+    fn truncate(&mut self, len: usize) {
+        while self.len > len {
+            self.len -= 1;
+            unsafe { ptr::drop_in_place(self.as_mut_ptr().add(self.len)) };
+        }
+    }
+
     fn as_slice(&self) -> &[T] {
         unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
     }
@@ -112,6 +139,8 @@ fn main() {
     println!("{:?}", numbers.as_slice());
     println!("{}", numbers.remove(0));
     numbers.as_mut_slice().sort();
+    let more = [20, 30, 40];
+    numbers.extend_from_slice(&more[1..]);
     println!("{:?} {}", numbers.as_slice(), numbers.len);
     let mut words: Stack<String, 4> = Stack::new();
     words.push("b".to_string());
@@ -127,6 +156,11 @@ fn main() {
     let row = [4, 5, 6];
     let first = (&row as *const [i32; 3]).cast::<i32>();
     println!("{}", unsafe { *first.add(2) });
+    let mut noisy: Stack<Noisy, 3> = Stack::new();
+    noisy.push(Noisy("a"));
+    noisy.push(Noisy("b"));
+    noisy.truncate(0);
+    println!("{}", noisy.len);
     let full: Stack<i32, 3> = Stack::from_array([7, 8, 9]);
     println!("{} {:?}", full.is_full(), full.into_array());
     // A `Copy` value JS holds as an object, which a copy changes: each

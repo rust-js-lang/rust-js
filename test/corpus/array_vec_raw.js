@@ -9,6 +9,7 @@ import {
   $ptrSlice,
   $ptrSliceMut,
   $ptrWhole,
+  $slice,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -18,15 +19,19 @@ export function entry() {
   main();
 }
 
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
-function stackCapacity(CAP) {
+function stackCapacity(CAP, dropT) {
   if ($stackCapacity === undefined) {
     $stackCapacity = new Map();
   }
-  return $traitImpl($stackCapacity, [CAP], () => ({
+  return $traitImpl($stackCapacity, [CAP, dropT], () => ({
     get CAPACITY() {
       return CAP;
     },
@@ -64,11 +69,23 @@ const Stack = {
   as_mut_ptr(stack, CAP) {
     return $ptr(stack.xs, 0);
   },
-  push(stack, value, CAP, TSize) {
+  push(stack, value, CAP, TSize, dropT) {
+    let value$live = true;
     if (!(stack.len < CAP)) {
+      dropT?.(value);
       throw new Error("assertion failed: self.len < CAP");
     }
-    step(Stack.as_mut_ptr(stack, CAP), stack.len, TSize).value = value;
+    let tmp;
+    try {
+      tmp = step(Stack.as_mut_ptr(stack, CAP), stack.len, TSize);
+      value$live = false;
+    } catch (error) {
+      if (value$live) {
+        dropT?.(value);
+      }
+      throw error;
+    }
+    tmp.value = value;
     stack.len = (stack.len + 1) >>> 0;
   },
   insert(stack, index, value, CAP) {
@@ -89,6 +106,25 @@ const Stack = {
     $ptrCopy($ptrAdd(p, 1), p, (((stack.len - index) >>> 0) - 1) >>> 0);
     stack.len = (stack.len - 1) >>> 0;
     return taken;
+  },
+  extend_from_slice(stack, other, CAP) {
+    if (!((stack.len + other.length) >>> 0 <= CAP)) {
+      throw new Error("assertion failed: self.len + other.len() <= CAP");
+    }
+    $ptrCopy(
+      $ptr(other, 0),
+      $ptrAdd(Stack.as_mut_ptr(stack, CAP), stack.len),
+      other.length,
+      (item) => item,
+    );
+    stack.len = (stack.len + other.length) >>> 0;
+  },
+  truncate(stack, len, CAP, dropT) {
+    while (stack.len > len) {
+      stack.len = (stack.len - 1) >>> 0;
+      const value = $ptrAdd(Stack.as_mut_ptr(stack, CAP), stack.len).value;
+      dropT?.(value);
+    }
   },
   as_slice(stack, CAP) {
     return $ptrSlice(Stack.as_ptr(stack, CAP), stack.len);
@@ -111,6 +147,8 @@ function main() {
   );
   console.log(`${Stack.remove(numbers, 0, 8)}`);
   Stack.as_mut_slice(numbers, 8).sort((a, b) => a - b);
+  const more = [20, 30, 40];
+  Stack.extend_from_slice(numbers, $slice(more, 1), 8);
   console.log(
     `[${Stack.as_slice(numbers, 8)
       .map((item) => String(item))
@@ -139,6 +177,11 @@ function main() {
   const row = [4, 5, 6];
   const first = $ptr(row, 0);
   console.log(`${$ptrAdd(first, 2).value}`);
+  const noisy = Stack.new(3);
+  Stack.push(noisy, ["a"], 3, 8, noisyDrop_drop);
+  Stack.push(noisy, ["b"], 3, 8, noisyDrop_drop);
+  Stack.truncate(noisy, 0, 3, noisyDrop_drop);
+  console.log(`${noisy.len}`);
   const full = Stack.from_array([7, 8, 9], 3);
   console.log(
     `${Stack.is_full(full, 3)} [${Stack.into_array(full, 3)

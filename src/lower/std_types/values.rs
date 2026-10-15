@@ -116,6 +116,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::GuardValue { .. }
                     // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
                     | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)
+                    // A raw pointer's: what it writes stays where it points,
+                    // what it reads or replaces it gives back, and what it
+                    // drops in place, it drops (ADR 0407).
+                    | Std::Pointer(_)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

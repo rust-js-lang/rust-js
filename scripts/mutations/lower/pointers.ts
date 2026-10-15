@@ -228,4 +228,20 @@ export const mutations: Mutation[] = [
     replace: "                let name = if mutable { \"$ptrSlice\" } else { \"$ptrSlice\" };\n",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
   },
+  {
+    name: "shared-slice-pointer-refused",
+    breaks: "a shared slice's `as_ptr()`, arrayvec's `other.as_ptr()`, is refused, though a copy reads the same",
+    file: "src/lower/pointers.rs",
+    find: "        if matches!(receiver_ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+  },
+  {
+    name: "drop-in-place-skipped",
+    breaks: "`ptr::drop_in_place(p)` drops nothing, so a destructor never runs",
+    file: "src/lower/pointers.rs",
+    find: "                self.drop_value(place, pointee.expect(\"a pointer\"), span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+  },
 ];
