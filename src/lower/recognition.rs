@@ -2884,9 +2884,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
-    /// `env::args()`'s, an array of the process's arguments (ADR 0391).
+    /// `env::args()`'s, an array of the process's arguments, which knows
+    /// its length (ADR 0391).
     pub(super) fn is_process_items(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::Args")
+    }
+
+    /// `env::VarError`, what `env::var` gives of a variable it hasn't:
+    /// `"NotPresent"`, as an enum's unit variant is (ADR 0391).
+    pub(super) fn is_var_error(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::VarError")
     }
 
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
@@ -3687,6 +3694,8 @@ pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// in Node only. Each is a helper of the runtime's `process.js`.
 const NODE_ONLY: &[(&str, ProcessOp)] = &[
     ("std::env::args", ProcessOp::Args),
+    ("std::env::var", ProcessOp::Var),
+    ("std::env::vars", ProcessOp::Vars),
     ("std::process::exit", ProcessOp::Exit),
 ];
 

@@ -1305,4 +1305,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
   },
+  {
+    name: "env-var-unknown",
+    breaks: "`env::var(key)` is refused, not the process's environment",
+    file: "src/lower/recognition.rs",
+    find: "    (\"std::env::var\", ProcessOp::Var),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
+  {
+    name: "var-error-unknown",
+    breaks: "a `VarError` isn't shown as std shows it",
+    file: "src/lower/recognition.rs",
+    find: "std_path(self.tcx, adt.did()) == \"std::env::VarError\"",
+    replace: "std_path(self.tcx, adt.did()) == \"std::env::NoSuchError\"",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
 ];

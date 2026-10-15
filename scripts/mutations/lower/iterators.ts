@@ -428,4 +428,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
     snapshots: true,
   },
+  {
+    name: "vars-copied",
+    breaks: "`env::vars().collect()` copies the array `$vars()` has just made",
+    file: "src/lower/iterators.rs",
+    find: "                \"$vars\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+    snapshots: true,
+  },
 ];

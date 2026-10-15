@@ -10,7 +10,8 @@ which has none: a panic that names what needed it, never silent drift.
 ## Context
 
 std asks things of the process a program runs in: `env::args()`, its
-arguments, and `process::exit(code)`, its end. Node has a process; a
+arguments, `env::var(key)` and `env::vars()`, its environment, and
+`process::exit(code)`, its end. Node has a process; a
 browser hasn't. rust-js refused both, and with them rustc's tests of
 arguments and of `exit`. Node's own modules are the `node` crate (ADR
 0272): a program that imports one says it runs in Node. std's functions
@@ -27,6 +28,8 @@ browser, that panics, naming what needed it.**
 | Rust | JS |
 |---|---|
 | `env::args()` | `$args()`: `process.argv.slice(1)`, the program's path, then its arguments, as `node app.js a b` gives them; an array |
+| `env::var(key)` | `$var(key)`: `Ok` of `process.env[key]`, or `Err` of `VarError::NotPresent`, `"NotPresent"` as an enum's unit variant is |
+| `env::vars()` | `$vars()`: `Object.entries(process.env)`, an array of `[key, value]` |
 | `process::exit(code)` | `$exit(code)`: `process.exit(code)` |
 
 ```js
@@ -51,9 +54,12 @@ Error: `std::env::args` needs Node's process, which a browser hasn't (ADR 0391)
   crate is its server's and its pages'. A call in `getStaticProps` works;
   the same in a component panics in the browser, as the call would in
   TypeScript, whose `process` is undefined there.
-- **`env::args()` is an array**, so `collect()` is it, and `len()` its
-  `length`; so is any `v.iter().len()` now, not `$iter(v).end -
-  $iter(v).at`.
+- **`env::args()` and `env::vars()` are arrays**, so `collect()` is
+  each, and `env::args().len()` its `length`; so is any `v.iter().len()`
+  now, not `$iter(v).end - $iter(v).at`.
+- **A `VarError` is shown as std shows it**, "environment variable not
+  found" and `NotPresent`. JS's environment is text, so `NotUnicode` is
+  only one a program makes, shown as std shows it too.
 - **The harnesses give a program native's arguments**: `corpus-run.ts`
   takes them after the outcome file, the corpus's `[case.js,
   outcome.json]` as its native binary's `[native, outcome.json]`, the
@@ -67,7 +73,9 @@ Error: `std::env::args` needs Node's process, which a browser hasn't (ADR 0391)
 - **In a browser it says why**: not JS's own `TypeError` of an undefined
   `process`, but which of std's functions needed Node.
 - **It's tested**: the corpus's `env_args.rs` collects, counts, skips,
-  steps and gives `env::args()`; `process.test.ts` exits with a code, and
+  steps and gives `env::args()`; `env_vars.rs` reads a variable there and
+  one missing, shows a `VarError` of each kind, and finds, collects and
+  steps `env::vars()`; `process.test.ts` exits with a code, and
   panics so in a browser; four rustc tests pass.
 
 ## Alternatives
@@ -80,5 +88,5 @@ Error: `std::env::args` needs Node's process, which a browser hasn't (ADR 0391)
 
 ## Consequences
 
-- `env::var`, `env::vars` and `env::current_dir` are next, each one more
-  `NODE_ONLY` entry and helper.
+- What's next of Node's, `env::current_dir` say, is one more `NODE_ONLY`
+  entry and helper.

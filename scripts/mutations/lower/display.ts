@@ -404,4 +404,12 @@ export const mutations: Mutation[] = [
     replace: "            FmtResultAnswer::Is(false) => Expr::bool(false),",
     tests: ["test/corpus.test.ts","-t","fmt_error_write"],
   },
+  {
+    name: "var-error-display-as-debug",
+    breaks: "a `VarError`'s `{}` is its `{:?}`, `NotPresent`, not \"environment variable not found\"",
+    file: "src/lower/display.rs",
+    find: "                \"environment variable not found\",\n",
+    replace: "                \"NotPresent\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
 ];

@@ -1,5 +1,6 @@
 //! The process a program runs in (ADR 0391): its arguments, `env::args()`,
-//! and its end, `process::exit(code)`. Node has one, and a browser hasn't:
+//! its environment, `env::var(key)` and `env::vars()`, and its end,
+//! `process::exit(code)`. Node has one, and a browser hasn't:
 //! each is a helper of the runtime's `process.js`, which in a browser
 //! panics, saying which, and recognition's `NODE_ONLY` is the one list of
 //! them.
@@ -13,6 +14,11 @@ use crate::lower::recognition::Std;
 pub(in crate::lower) enum ProcessOp {
     /// `env::args()`: its arguments, its program's path first, an array.
     Args,
+    /// `env::var(key)`: `Ok` of its environment's variable, or `Err` of
+    /// `VarError::NotPresent`. JS's are text, so never `NotUnicode`.
+    Var,
+    /// `env::vars()`: its environment's pairs, an array.
+    Vars,
     /// `process::exit(code)`: it ends, with that code.
     Exit,
 }
@@ -22,6 +28,8 @@ impl ProcessOp {
     pub(in crate::lower) fn helper(self) -> &'static str {
         match self {
             ProcessOp::Args => "$args",
+            ProcessOp::Var => "$var",
+            ProcessOp::Vars => "$vars",
             ProcessOp::Exit => "$exit",
         }
     }

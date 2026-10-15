@@ -12,6 +12,15 @@ function $process(what) {
 function $args() {
   return $process("`std::env::args`").argv.slice(1);
 }
+// `env::var(key)`: `Ok` of the variable, or `Err` of `VarError::NotPresent`.
+function $var(key) {
+  const value = $process("`std::env::var`").env[key];
+  return value === undefined ? { TAG: "Err", _0: "NotPresent" } : { TAG: "Ok", _0: value };
+}
+// `env::vars()`: each variable's name and value.
+function $vars() {
+  return Object.entries($process("`std::env::vars`").env);
+}
 // `process::exit(code)`.
 function $exit(code) {
   $process("`std::process::exit`").exit(code);

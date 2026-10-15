@@ -624,6 +624,7 @@ fn fresh(items: &Expr) -> bool {
                 "$sortedEntries",
                 "$sortedKeys",
                 "$args",
+                "$vars",
             ]
             .contains(&name.as_str()),
             _ => false,

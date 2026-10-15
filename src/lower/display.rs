@@ -702,6 +702,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_string_like(ty) || self.is_parse_error(ty) {
             return Ok(value);
         }
+        // An environment's `VarError`, as std shows it.
+        if self.recognition().is_var_error(ty) {
+            let shown = (
+                "environment variable not found",
+                "environment variable was not valid unicode: ",
+                "",
+            );
+            return Ok(var_error_shown(value, shown));
+        }
         // A lock's `TryLockError`, as std shows it.
         if self.recognition().is_try_lock_error(ty) {
             let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));
@@ -923,6 +932,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && adt.variants().is_empty()
         {
             return Ok(Expr::str(""));
+        }
+        // An environment's `VarError`: its variant.
+        if self.recognition().is_var_error(ty) {
+            return Ok(var_error_shown(value, ("NotPresent", "NotUnicode(", ")")));
         }
         // A lock's `TryLockError`, as std shows it: its variant's name, quoted.
         if self.recognition().is_try_lock_error(ty) {
@@ -1526,4 +1539,17 @@ pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span
     for part in parts {
         out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target.clone(), part)).at(js_span));
     }
+}
+
+/// A `VarError` shown, `value`: of `NotPresent`, its text; of `NotUnicode`,
+/// the text around its `OsString`'s `{:?}` (ADR 0391). A value shown is held
+/// where it's read twice (ADR 0377).
+fn var_error_shown(value: Expr, (present, before, after): (&str, &str, &str)) -> Expr {
+    let shown = Expr::call(Expr::helper("$debugStr"), vec![Expr::member(value.clone(), "_0")]);
+    let unicode = Expr::template(vec![before.to_string(), after.to_string()], vec![shown]);
+    Expr::cond(
+        Expr::bin(Op::Eq, value, Expr::str("NotPresent")),
+        Expr::str(present),
+        unicode,
+    )
 }

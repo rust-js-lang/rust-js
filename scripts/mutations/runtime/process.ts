@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "argv.slice(0)",
     tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
   },
+  {
+    name: "var-missing-unnamed",
+    breaks: "a missing variable is an `Err` of no `VarError` std has, shown as a `NotUnicode`",
+    file: "src/runtime/process.js",
+    find: "{ TAG: \"Err\", _0: \"NotPresent\" }",
+    replace: "{ TAG: \"Err\", _0: \"Missing\" }",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
 ];
