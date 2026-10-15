@@ -39,7 +39,7 @@ sizes.get("src/./main.rs");
 - **A map gives back the key it holds**, as it was put in, which `a//b`
   finds as `a/b`. A `$KeyMap`'s `keyOf` is what a path map changes.
 - **A B-tree made of items** keeps the last of equal paths, as std sorts
-  them and keeps the last, where `insert` keeps the first: `$pathTree`.
+  them and keeps the last, where `insert` keeps the first: `$treeFrom`.
 - **Still refused**: what gives back the key a path map holds for one
   asked with, `get_key_value`, `remove_entry`, a set's `get`, `take` and
   `replace`, an entry's `key()`, which would give the one asked with; and

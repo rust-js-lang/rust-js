@@ -48,8 +48,10 @@ for (const [name, source, message, crate] of [
   // but not one reading another static, nor of a value that can change in place.
   ["a static of a function read from another static", 'pub fn f() {}\nstatic A: fn() = f;\npub static B: &fn() = &A;\npub fn g() { B() }', "statics of type"],
   // A `RefCell<dyn T>` is its cell with its `impl` (ADR 0397), but not yet in a counted `Rc`.
-  // A path map finds `a//b` as the `a/b` it holds, which it can't give back yet (ADR 0401).
-  ["the key a path map holds", 'use std::{collections::HashMap, path::{Path, PathBuf}};\npub fn f(m: &HashMap<PathBuf, u32>) -> Option<(&PathBuf, &u32)> { m.get_key_value(Path::new("a//b")) }', "does not support the key a `std::collections::HashMap<std::path::PathBuf, u32>` holds, which a path it finds may not be"],
+  // A path map finds `a//b` as the `a/b` it holds, and a `Cow` map `"a"` as the
+  // `Cow` it holds, which neither can give back yet (ADRs 0401, 0402).
+  ["the key a path map holds", 'use std::{collections::HashMap, path::{Path, PathBuf}};\npub fn f(m: &HashMap<PathBuf, u32>) -> Option<(&PathBuf, &u32)> { m.get_key_value(Path::new("a//b")) }', "does not support the key a `std::collections::HashMap<std::path::PathBuf, u32>` holds, which what it's found by may not be"],
+  ["the key a Cow map holds", 'use std::{borrow::Cow, collections::HashSet};\npub fn f(s: &HashSet<Cow<\'static, str>>) -> bool { s.get("a").is_some() }', "does not support the key a `std::collections::HashSet<std::borrow::Cow<'_, str>>` holds"],
   ["a counted Rc of a RefCell of a dyn", 'use std::{cell::RefCell, rc::Rc};\npub trait T { fn f(&self) -> i32; }\nimpl T for i32 { fn f(&self) -> i32 { *self } }\npub fn g() -> usize { let a = Rc::new(RefCell::new(1)); let b: Rc<RefCell<dyn T>> = a.clone(); Rc::strong_count(&b) }', "does not support a counted `std::rc::Rc<std::cell::RefCell<dyn T>>`"],
   // A cell made a `dyn` of two traits has one `impl`, both's methods (ADR 0397).
   ["a RefCell made a dyn of two traits of one method name", 'use std::{cell::RefCell, rc::Rc};\npub trait A { fn f(&self) -> i32; }\npub trait B { fn f(&self) -> i32; }\npub struct S;\nimpl A for S { fn f(&self) -> i32 { 1 } }\nimpl B for S { fn f(&self) -> i32 { 2 } }\npub fn g() -> i32 { let s = Rc::new(RefCell::new(S)); let a: Rc<RefCell<dyn A>> = s.clone(); let b: Rc<RefCell<dyn B>> = s; a.borrow().f() + b.borrow().f() }', "may be a `dyn B` too: its one `impl` can't hold two methods of one name"],

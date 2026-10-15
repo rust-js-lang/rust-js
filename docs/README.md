@@ -469,6 +469,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0399 `hint::unreachable_unchecked()` is unreachable code's throw](decisions/0399-unreachable-unchecked.md)
 - [0400 A `Cow` compares and orders as what it borrows](decisions/0400-a-cow-compares-as-what-it-borrows.md)
 - [0401 A path compares, orders and keys a map by its components](decisions/0401-a-path-compares-by-its-components.md)
+- [0402 A `Cow` keys a map by what it borrows](decisions/0402-a-cow-keys-a-map-by-what-it-borrows.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

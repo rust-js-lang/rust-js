@@ -32,7 +32,9 @@ words.sort((a, b) => $cmp(a._0, b._0));
   part, not as `$eq` of its object, whose `TAG` differs.
 - **Still refused**: a `Cow` as a map's key, whose map would find a
   borrowed one by what it borrows, and give back the key it holds, not
-  the one asked with.
+  the one asked with. (Amended by
+  [0402](0402-a-cow-keys-a-map-by-what-it-borrows.md): a `Cow<str>` or a
+  `Cow<[T]>` keys a map by what it borrows.)
 
 ## Why
 

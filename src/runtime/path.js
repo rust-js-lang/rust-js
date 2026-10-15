@@ -47,15 +47,3 @@ class $PathSet extends $KeySet {
     return $pathKey(path);
   }
 }
-
-// A B-tree of paths made of `items`, its entries or a set's items: of equal
-// ones, the last, as std's sorts them and keeps the last, where `insert`
-// keeps the first.
-function $pathTree(tree, items, set) {
-  for (const item of items) {
-    tree.delete(set ? item : item[0]);
-    if (set) tree.add(item);
-    else tree.set(item[0], item[1]);
-  }
-  return tree;
-}

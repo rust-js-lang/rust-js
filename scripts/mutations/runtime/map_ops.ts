@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "  return value;",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },
+  {
+    name: "tree-from-keeps-first",
+    breaks: "a B-tree of paths or `Cow`s made of items keeps the first of equal ones, where std keeps the last",
+    file: "src/runtime/map_ops.js",
+    find: "    tree.delete(set ? item : item[0]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(path_keys|cow_keys).rs$"],
+  },
 ];

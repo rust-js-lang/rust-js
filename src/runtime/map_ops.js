@@ -176,3 +176,15 @@ function $vacantInsert([m, key], value, handle) {
   m.set(key, value);
   return handle ? $mutGet(m, key) : value;
 }
+
+// A B-tree made of `items`, its entries or a set's items, of keys it finds
+// others by, a path's or a `Cow`'s: of equal ones, the last, as std's sorts
+// them and keeps the last, where `insert` keeps the first (ADR 0401).
+function $treeFrom(tree, items, set) {
+  for (const item of items) {
+    tree.delete(set ? item : item[0]);
+    if (set) tree.add(item);
+    else tree.set(item[0], item[1]);
+  }
+  return tree;
+}

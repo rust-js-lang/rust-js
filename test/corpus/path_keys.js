@@ -10,10 +10,10 @@ import {
   $iter,
   $orInsert,
   $pathCmp,
-  $pathTree,
   $remove,
   $sortedEntries,
   $sortedKeys,
+  $treeFrom,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -56,13 +56,13 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  const set = $pathTree(new $PathSet(), $iter(["b/c", "b", "b//c"]), true);
+  const set = $treeFrom(new $PathSet(), $iter(["b/c", "b", "b//c"]), true);
   console.log(
     `{${Array.from($sortedKeys(set, $pathCmp))
       .map((item) => $debugStr(item))
       .join(", ")}}`,
   );
-  const from = $pathTree(
+  const from = $treeFrom(
     new $PathMap(),
     [
       ["x/y", 1],

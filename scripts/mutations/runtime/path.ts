@@ -58,12 +58,4 @@ export const mutations: Mutation[] = [
     replace: "class $PathSet extends $KeySet {\n  keyOf(path) {\n    return path;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
   },
-  {
-    name: "path-tree-keeps-first",
-    breaks: "a B-tree of paths made of items keeps the first of equal ones, where std keeps the last",
-    file: "src/runtime/path.js",
-    find: "    tree.delete(set ? item : item[0]);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
-  },
 ];

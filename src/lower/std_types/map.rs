@@ -132,13 +132,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What makes a map or a set of `key`s: `Map` and `Set`, or for a key
-    /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121), and for a
-    /// path, `$PathMap` and `$PathSet` (ADR 0401). One of no key type,
-    /// serde_json's `Map`, is of strings.
+    /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121), for a
+    /// path, `$PathMap` and `$PathSet` (ADR 0401), and for a `Cow`,
+    /// `$CowMap` and `$CowSet` (ADR 0402). One of no key type, serde_json's
+    /// `Map`, is of strings.
     pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
         let name = match key {
             // Paths, each kept under its components (ADR 0401).
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
+            // `Cow`s, each kept under what it borrows (ADR 0402).
+            Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
             _ => return Expr::var(["Map", "Set"][usize::from(set)]),
         };
@@ -158,31 +161,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.map_class(set, key)
     }
 
-    /// A map's or a set's method, of its arguments' values, `tys` their
-    /// types (ADR 0364). One whose answer nothing reads is JS's own, by
-    /// `discarded_calls`.
     /// A map or a set made of `items`, `collect`'s or `from`'s, of what its
-    /// type, among `generic_args`, says: `new Map(items)`. A B-tree of
-    /// paths keeps the last of equal ones, which may be told apart, as std
-    /// sorts what it's made of and keeps the last, where `insert` keeps the
-    /// first: `$pathTree(new $PathSet(), items, true)` (ADR 0401).
+    /// type, among `generic_args`, says: `new Map(items)`. A B-tree of keys
+    /// it finds others by keeps the last of equal ones, as std sorts what
+    /// it's made of and keeps the last, where `insert` keeps the first:
+    /// `$treeFrom(new $PathSet(), items, true)` (ADRs 0401, 0402).
     pub(in crate::lower) fn made_of(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>, items: Expr) -> Expr {
         let class = self.made(set, generic_args);
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
-        let paths = map.is_some_and(|map| {
+        let last_of_equal = map.is_some_and(|map| {
             self.is_sorted(map)
                 && matches!(map.peel_refs().kind(), ty::Adt(_, args)
-                    if args.types().next().is_some_and(|key| self.recognition().is_path(key)))
+                    if args.types().next().is_some_and(|key| self.finds_others(key)))
         });
-        match paths {
+        match last_of_equal {
             true => Expr::call(
-                Expr::helper("$pathTree"),
+                Expr::helper("$treeFrom"),
                 vec![Expr::new_(class, Vec::new()), items, Expr::bool(set)],
             ),
             false => Expr::new_(class, vec![items]),
         }
     }
 
+    /// A map's or a set's method, of its arguments' values, `tys` their
+    /// types (ADR 0364). One whose answer nothing reads is JS's own, by
+    /// `discarded_calls`.
     pub(in crate::lower) fn map_values(
         &mut self,
         op: MapOp,
@@ -208,8 +211,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if gives_item && types.first().is_some_and(|&item| self.boxed_payload(item)) {
             return Err(self.unsupported(span, &format!("an item of a `{receiver}` that could look like `None`")));
         }
-        // A key a path map holds given back, which `a//b` finds as `a/b`:
-        // the one asked with, not yet (ADR 0401).
+        // The key a map holds given back, of one it finds others by: the one
+        // asked with, not yet (ADRs 0401, 0402).
         let gives_key = matches!(
             op,
             MapOp::GetKeyValue
@@ -220,10 +223,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | MapOp::EntryKey
                 | MapOp::EntryRemove { entry: true }
         );
-        if gives_key && types.first().is_some_and(|&key| self.recognition().is_path(key)) {
+        if gives_key && types.first().is_some_and(|&key| self.finds_others(key)) {
             return Err(self.unsupported(
                 span,
-                &format!("the key a `{receiver}` holds, which a path it finds may not be"),
+                &format!("the key a `{receiver}` holds, which what it's found by may not be"),
             ));
         }
         let ordered = matches!(op, MapOp::Algebra(_) | MapOp::TreeEnd { .. } | MapOp::TreeSplitOff);
@@ -499,7 +502,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_primitive_key(peeled)
             && !self.has_user_impl(self.partial_eq_trait(), peeled)
             && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));
-        primitive || (!ordered && self.is_value_key(ty)) || self.recognition().is_path(peeled)
+        primitive
+            || (!ordered && self.is_value_key(ty))
+            || self.recognition().is_path(peeled)
+            || self.is_cow_key(peeled)
+    }
+
+    /// A `Cow` a map finds by what it borrows, or by that itself, `&str` or
+    /// `&[T]`, never an object like the `Cow`'s, `{ TAG, _0 }`, so `$CowMap`
+    /// tells them apart (ADR 0402): a `Cow<str>`, or a `Cow<[T]>` of what
+    /// compares by value.
+    pub(in crate::lower) fn is_cow_key(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition()
+            .cow_parts(ty.peel_refs())
+            .is_some_and(|(borrowed, _)| match borrowed.kind() {
+                ty::Str => true,
+                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),
+                _ => false,
+            })
+    }
+
+    /// A key a map finds another by that it can be told apart from: a
+    /// path, `a//b` finding `a/b` (ADR 0401), or a `Cow`, `Borrowed("a")`
+    /// finding `Owned("a")` (ADR 0402). The key it holds given back isn't
+    /// the one asked with, and of equal ones a B-tree made of items keeps
+    /// the last, where `insert` keeps the first.
+    fn finds_others(&self, key: Ty<'tcx>) -> bool {
+        self.is_cow_key(key) || self.recognition().is_path(key)
     }
 
     /// A key a `$KeyMap` finds by its value (ADR 0121): one that isn't its

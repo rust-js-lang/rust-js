@@ -1441,16 +1441,24 @@ export class $PathSet extends $KeySet {
   }
 }
 
-// A B-tree of paths made of `items`, its entries or a set's items: of equal
-// ones, the last, as std's sorts them and keeps the last, where `insert`
-// keeps the first.
-export function $pathTree(tree, items, set) {
-  for (const item of items) {
-    tree.delete(set ? item : item[0]);
-    if (set) tree.add(item);
-    else tree.set(item[0], item[1]);
+// A map, or a set, of `Cow`s, each kept under what it borrows, as std's
+// `Hash` and `Eq` of one deref it (ADR 0402): `Borrowed("a")`, `Owned("a")`
+// and a `&str` "a" alike. What it borrows, text or an array, is never an
+// object like a `Cow`'s, `{ TAG, _0 }`, so either is known by its shape.
+export function $cowKey(key) {
+  return $key(typeof key === "object" && !Array.isArray(key) ? key._0 : key);
+}
+
+export class $CowMap extends $KeyMap {
+  keyOf(key) {
+    return $cowKey(key);
   }
-  return tree;
+}
+
+export class $CowSet extends $KeySet {
+  keyOf(key) {
+    return $cowKey(key);
+  }
 }
 
 // A counted `Rc` or `Arc` (ADR 0320): `{ value, strong, weak }`, which each
@@ -2209,6 +2217,18 @@ export function $entry(m, key) {
 export function $vacantInsert([m, key], value, handle) {
   m.set(key, value);
   return handle ? $mutGet(m, key) : value;
+}
+
+// A B-tree made of `items`, its entries or a set's items, of keys it finds
+// others by, a path's or a `Cow`'s: of equal ones, the last, as std's sorts
+// them and keeps the last, where `insert` keeps the first (ADR 0401).
+export function $treeFrom(tree, items, set) {
+  for (const item of items) {
+    tree.delete(set ? item : item[0]);
+    if (set) tree.add(item);
+    else tree.set(item[0], item[1]);
+  }
+  return tree;
 }
 
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
