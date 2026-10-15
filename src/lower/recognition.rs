@@ -882,11 +882,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::Same);
         }
-        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a
-        // `Box`'s of what it holds (ADR 0331).
+        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a `Box`'s
+        // of what it holds (ADR 0331), or text's as a `Path` (ADR 0173).
         if is_std_def(tcx, trait_, StdItem::AsRef)
             && tcx.item_name(def_id).as_str() == "as_ref"
-            && ty.is_box()
+            && (ty.is_box() || self.is_path_like(args.type_at(1)))
             && self.borrows_as_itself(ty, args.type_at(1))
         {
             return Some(Std::Same);
@@ -3333,6 +3333,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let (from, to) = (pointee(from), pointee(to));
         from == to
             || (self.is_string_like(from) && to.is_str())
+            // A path is its text (ADR 0173).
+            || ((self.is_string_like(from) || self.is_path_like(from)) && self.is_path_like(to))
             || ((from.is_array() || self.is_std_type(from, StdItem::Vec)) && to.is_slice())
     }
 

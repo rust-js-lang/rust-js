@@ -1513,4 +1513,20 @@ export const mutations: Mutation[] = [
     replace: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
   },
+  {
+    name: "as-ref-path-dispatched",
+    breaks: "`as_ref()` of text as a `Path` asks for std's impl's dictionary, which there's none of, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && (ty.is_box() || self.is_path_like(args.type_at(1)))\n",
+    replace: "            && ty.is_box()\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
+  },
+  {
+    name: "text-not-borrowed-as-path",
+    breaks: "text isn't the same JS value as the `Path` it borrows as",
+    file: "src/lower/recognition.rs",
+    find: "            || ((self.is_string_like(from) || self.is_path_like(from)) && self.is_path_like(to))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
+  },
 ];

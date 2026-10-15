@@ -1,6 +1,9 @@
 # 0173. A path is its text
 
-Status: Accepted. Extends [0063](0063-text.md).
+Status: Accepted. Extends [0063](0063-text.md). Amended: text's or a
+path's `as_ref()` as a `Path` is the same JS value, `Std::Same`, as
+`borrows_as_itself` says: arrayvec's `ArrayString`'s `AsRef<Path>`,
+`self.as_str().as_ref()` (`test/corpus/as_ref_path.rs`).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
