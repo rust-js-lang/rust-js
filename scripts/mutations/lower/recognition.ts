@@ -1369,4 +1369,12 @@ export const mutations: Mutation[] = [
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
+  {
+    name: "needs-drop-unknown",
+    breaks: "`mem::needs_drop::<T>()` is refused, not rustc's answer",
+    file: "src/lower/recognition.rs",
+    find: "        \"std::mem::needs_drop\" => return Some(TypeFact::NeedsDrop),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
+  },
 ];

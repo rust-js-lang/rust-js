@@ -386,6 +386,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::UnaryOperator(_)
             | Std::Reverse
             | Std::SizeOf
+            | Std::NeedsDrop
             | Std::AlignOf
             | Std::SizeOfVal => unreachable!("lowered by numeric_call"),
             Std::IterSource(_) => unreachable!("lowered by iter_source_call"),

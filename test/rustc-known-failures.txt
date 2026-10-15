@@ -212,7 +212,6 @@ union/union-drop.rs	error: rust-js does not support values of type `U` yet
 union/union-generic-rpass.rs	error: rust-js does not support unions yet
 union/union-inherent-method.rs	error: rust-js does not support values of type `U` yet
 union/union-macro.rs	error: rust-js does not support values of type `m1::U` yet
-union/union-manuallydrop-rpass.rs	error: rust-js does not support calling `std::mem::needs_drop` yet
 union/union-modification.rs	error: rust-js does not support values of type `&mut Foo` yet
 union/union-nodrop.rs	error: rust-js does not support unions yet
 union/union-nonzero.rs	error: rust-js does not support values of type `U2<&u8, ()>` yet

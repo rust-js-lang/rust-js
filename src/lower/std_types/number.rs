@@ -1343,6 +1343,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // checks programs for, as a `const` of it has (ADR 0090). A
             // generic function is one JS function for every type, so a type
             // parameter's is given by its caller (ADR 0145).
+            Std::NeedsDrop => {
+                let of = generic_args.types().next().expect("`needs_drop`'s type argument");
+                self.type_fact_value(of, TypeFact::NeedsDrop, span)?
+            }
             Std::SizeOf | Std::AlignOf | Std::SizeOfVal => {
                 let of = generic_args.types().next().expect("a size's type argument");
                 let fact = match known {
@@ -1375,6 +1379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Align => ("align_of", Std::AlignOf),
             TypeFact::Name => ("type_name", Std::TypeName { of_val: false }),
             TypeFact::Id => ("the `TypeId`", Std::Any(AnyOp::TypeIdOf)),
+            TypeFact::NeedsDrop => ("needs_drop", Std::NeedsDrop),
         };
         if let ty::Param(param) = of.kind() {
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
@@ -1388,6 +1393,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self
                 .given_type_fact(param.index, fact)
                 .ok_or_else(|| self.unsupported(span, &format!("`{what}` of a type parameter")));
+        }
+        if fact == TypeFact::NeedsDrop {
+            return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));
         }
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes(known, of, span)?));

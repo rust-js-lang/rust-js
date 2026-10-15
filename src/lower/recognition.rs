@@ -222,6 +222,9 @@ pub(super) enum Std {
     /// sized `x`: the wasm32 target's, as their constants are (ADR 0090).
     SizeOf,
     AlignOf,
+    /// `mem::needs_drop::<T>()`: rustc's answer, `true` or `false`, or a
+    /// type parameter's, given (ADR 0145).
+    NeedsDrop,
     SizeOfVal,
     /// `mem::drop(x)`: `x`'s destructor, and `mem::forget(x)`: none (ADR 0098).
     Drop,
@@ -529,6 +532,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if diagnostic("mem_align_of") {
             return Some(Some(Std::AlignOf));
+        }
+        if type_fact(tcx, def_id) == Some(TypeFact::NeedsDrop) {
+            return Some(Some(Std::NeedsDrop));
         }
         if diagnostic("mem_size_of_val") {
             return Some(Some(Std::SizeOfVal));
@@ -4183,6 +4189,31 @@ pub(crate) enum TypeFact {
     Name,
     /// Its `TypeId`'s key (ADR 0331).
     Id,
+    /// `mem::needs_drop::<T>()`: whether dropping one runs code, as rustc
+    /// says (ADR 0145).
+    NeedsDrop,
+}
+
+impl TypeFact {
+    /// Every fact: the one list of them.
+    pub(crate) const ALL: [TypeFact; 5] = [
+        TypeFact::Size,
+        TypeFact::Align,
+        TypeFact::Name,
+        TypeFact::Id,
+        TypeFact::NeedsDrop,
+    ];
+
+    /// Its word in the name of a type parameter's, `TSize`.
+    pub(crate) fn word(self) -> &'static str {
+        match self {
+            TypeFact::Size => "Size",
+            TypeFact::Align => "Align",
+            TypeFact::Name => "Name",
+            TypeFact::Id => "Id",
+            TypeFact::NeedsDrop => "NeedsDrop",
+        }
+    }
 }
 
 /// The fact `def_id` asks of its type argument: `size_of` and `size_of_val`
@@ -4199,6 +4230,7 @@ pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
     match std_path(tcx, def_id).as_str() {
         "std::any::type_name" | "std::any::type_name_of_val" => return Some(TypeFact::Name),
         "std::any::TypeId::of" => return Some(TypeFact::Id),
+        "std::mem::needs_drop" => return Some(TypeFact::NeedsDrop),
         _ => {}
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).

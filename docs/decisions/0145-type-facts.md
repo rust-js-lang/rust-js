@@ -1,7 +1,8 @@
 # 0145. A generic function is given the size and name of a type parameter it asks for
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md), [0090](0090-wasm32-front-end.md)
-and [0098](0098-destructors.md).
+and [0098](0098-destructors.md). Amended:
+`mem::needs_drop` is a fact too (below).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -78,3 +79,12 @@ describe(1n, 8, "u64");
 ## Consequences
 
 - 5 rustc tests pass that stopped at a size or a name of a type parameter.
+
+## Amendment: `needs_drop`
+
+`mem::needs_drop::<T>()` (2026-10-15) is a fact of `T` too, `TNeedsDrop`
+where it's a type parameter's: rustc's answer, `true` or `false`, which is
+what the program sees, as native Rust's. It was refused. The facts are one
+list, `TypeFact::ALL`, each named by its `word`, which the analysis that
+passes them and the parameters that take them both ask. The corpus's
+`needs_drop.rs`, and rustc's `union/union-manuallydrop-rpass.rs`, pass.

@@ -76,7 +76,7 @@ pub(super) fn type_fact_params<'tcx>(
     while changed {
         changed = false;
         for &((caller, from), (callee, to)) in &passed {
-            for fact in [TypeFact::Size, TypeFact::Align, TypeFact::Name, TypeFact::Id] {
+            for fact in TypeFact::ALL {
                 if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {
                     changed = true;
                 }

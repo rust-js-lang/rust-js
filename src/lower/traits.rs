@@ -828,13 +828,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Then each fact it asks of a type parameter, `TSize` (ADR 0145).
         for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
             let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
-            let word = match fact {
-                TypeFact::Size => "Size",
-                TypeFact::Align => "Align",
-                TypeFact::Name => "Name",
-                TypeFact::Id => "Id",
-            };
-            let name = self.fresh(&format!("{}{word}", param_word(param.name)));
+            let name = self.fresh(&format!("{}{}", param_word(param.name), fact.word()));
             self.given.type_facts.push((index, fact, Expr::var(&name)));
             params.push(name.into());
         }

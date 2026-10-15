@@ -244,4 +244,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
     tests: ["test/corpus.test.ts","-t","nonzero"],
   },
+  {
+    name: "needs-drop-inverted",
+    breaks: "`mem::needs_drop::<T>()` answers the opposite of rustc",
+    file: "src/lower/std_types/number.rs",
+    find: "Expr::bool(of.needs_drop(self.tcx, self.typing_env))",
+    replace: "Expr::bool(!of.needs_drop(self.tcx, self.typing_env))",
+    tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
+  },
 ];
