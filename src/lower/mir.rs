@@ -3872,6 +3872,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {
                 self.mir_place(state, *place, span, out)?
             }
+            // Any other, of a place's address (ADR 0390).
+            Rvalue::RawPtr(..) => return Err(refuse(tcx, span, Refused::Memory("a raw pointer to a value"))),
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
     }

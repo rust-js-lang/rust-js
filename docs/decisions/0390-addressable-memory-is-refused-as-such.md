@@ -34,8 +34,9 @@ error: rust-js does not support addressable memory yet: calling `std::intrinsics
   `transmute_copy`, `zeroed` and `uninitialized` (`addresses_memory`); a
   type with a raw pointer, a union or a `NonNull` in it, in a crate's own
   type's fields too, but not in std's, whose private fields a `Vec`'s
-  pointer is among (`is_memory_type`); and a static's raw address and a
-  union's field, refused where they're read.
+  pointer is among (`is_memory_type`); and a static's raw address, a raw
+  pointer to a value, `&raw const x` or `&x as *const T`, and a union's
+  field, refused where they're made or read.
 - **Only what's refused is asked**: `ptr::eq` (ADR 0285), `MaybeUninit`
   (ADR 0332) and a `static mut`'s place are supported as before.
 - **The architecture test holds the one way**: no other file says "rust-js

@@ -13,6 +13,7 @@ for (const [name, source, message, crate] of [
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
   // ADR 0390: addressable memory, which JavaScript has none of, says so.
   ["a transmute", "pub fn f(x: u32) -> f32 { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: calling `std::intrinsics::transmute`"],
+  ["a raw pointer to a value", "pub fn f() -> bool { let x = 1; let p = &raw const x; p.is_null() }", "does not support addressable memory yet: a raw pointer to a value"],
   ["camelCase fields that collide", '#![allow(non_snake_case)]\n#[rust_js::camel_case]\nconst _: () = ();\npub struct P { pub first_name: u32, pub firstName: u32 }\npub fn f(p: &P) -> u32 { p.first_name + p.firstName }', "both `firstName` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],

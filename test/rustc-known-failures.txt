@@ -19,7 +19,7 @@ async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not supp
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
 autoref-autoderef/deref-chain-method-calls-13264.rs	error: rust-js does not support values of type `*const Node` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support values of type `*const usize` yet
-binding/zero_sized_subslice_match.rs	error: rust-js does not support this expression yet
+binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 binop/augmented-assignment.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support values of type `*const isize` yet
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
@@ -31,17 +31,17 @@ c-variadic/inherent-method.rs	error: rust-js does not support values of type `*c
 c-variadic/trait-method.rs	error: rust-js does not support values of type `*const std::ffi::c_void` yet
 c-variadic/valid.rs	error: rust-js does not support values of type `*const std::ffi::c_void` yet
 cast/as-cast-unifies-raw-pointer-and-fn-type.rs	error: rust-js does not support values of type `*const T` yet
-cast/cast-not-treated-as-lvalue.rs	error: rust-js does not support this expression yet
-cast/cast-ptr-to-fat-ptr.rs	error: rust-js does not support this expression yet
+cast/cast-not-treated-as-lvalue.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
+cast/cast-ptr-to-fat-ptr.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 cast/cast-rfc0401-vtable-kinds.rs	error: rust-js does not support values of type `*const FooS<T>` yet
 cast/cast-rfc0401.rs	error: rust-js does not support values of type `*const [u8; 1]` yet
 cast/cast-to-infer-ty.rs	error: rust-js does not support values of type `*const i32` yet
 cast/cast.rs	error: rust-js does not support values of type `*const &str` yet
 cast/codegen-object-shim.rs	error: rust-js does not support `{}` of a `dyn std::string::ToString` yet
-cast/coercion-as-explicit-cast.rs	error: rust-js does not support this expression yet
+cast/coercion-as-explicit-cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support values of type `*const ()` yet
 cast/supported-cast.rs	error: rust-js does not support values of type `*const std::string::String` yet
-closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support constants of type `*const i32` yet
+closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
 closures/2229_closure_analysis/run_pass/mut_ref.rs	error: rust-js does not support values of type `&mut &mut std::string::String` yet
 closures/2229_closure_analysis/run_pass/unsafe_ptr.rs	error: rust-js does not support values of type `*const S` yet
 closures/region-obligations-closure-and-projection.rs	error: rust-js does not support values of type `*mut u8` yet
@@ -58,37 +58,37 @@ const-generics/type-dependent/issue-61936.rs	error: rust-js does not support cal
 const-generics/type-dependent/issue-69816.rs	error: rust-js does not support `Default` of `[<T as std::iter::Iterator>::Item; N]` yet
 const-generics/type-dependent/issue-70507.rs	error: rust-js does not support values of type `*const [T; N]` yet
 const-generics/type-dependent/issue-71805.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
-const-ptr/pointer-address-stability.rs	error: rust-js does not support this expression yet
+const-ptr/pointer-address-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 consts/const_constructor/const-construct-call.rs	error: rust-js does not support constants of type `std::panic::AssertUnwindSafe<(std::option::Option<i32>, std::result::Result<i32, bool>)>` yet
 consts/const_discriminant.rs	error: rust-js does not support constants of type `std::mem::Discriminant<Test>` yet
-consts/const_fn_unsize.rs	error: rust-js does not support constants of type `std::ptr::NonNull<[i32]>` yet
-consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support constants of type `&'static &'static WrapEmbedded` yet
-consts/const_refs_to_static.rs	error: rust-js does not support constants of type `*const i32` yet
+consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: constants of type `std::ptr::NonNull<[i32]>`
+consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support addressable memory yet: constants of type `&'static &'static WrapEmbedded`
+consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
 consts/const_unsafe_unreachable.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
-consts/const-block.rs	error: rust-js does not support statics of type `Foo` yet
+consts/const-block.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/const-blocks/const-repeat.rs	error: rust-js does not support constants of type `std::vec::Vec<i32>` yet
-consts/const-byte-str-cast.rs	error: rust-js does not support this expression yet
-consts/const-cast-ptr-int.rs	error: rust-js does not support statics of type `TestStruct` yet
-consts/const-cast.rs	error: rust-js does not support statics of type `TestStruct` yet
-consts/const-err-rpass.rs	error: rust-js does not support constants of type `*const u8` yet
+consts/const-byte-str-cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
+consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
+consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
+consts/const-err-rpass.rs	error: rust-js does not support addressable memory yet: constants of type `*const u8`
 consts/const-eval/issue-64908.rs	error: rust-js does not support `size_of` of a type parameter yet
-consts/const-eval/ptr_fragments.rs	error: rust-js does not support constants of type `std::mem::MaybeUninit<*const i32>` yet
-consts/const-region-ptrs-noncopy.rs	error: rust-js does not support this expression yet
-consts/const-size_of_val-align_of_val.rs	error: rust-js does not support constants of type `Ugh` yet
+consts/const-eval/ptr_fragments.rs	error: rust-js does not support addressable memory yet: constants of type `std::mem::MaybeUninit<*const i32>`
+consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: values of type `*const [u64; 8]`
+consts/const-size_of_val-align_of_val.rs	error: rust-js does not support addressable memory yet: constants of type `Ugh`
 consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet
-consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support constants of type `*const u8` yet
+consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support addressable memory yet: constants of type `*const u8`
 consts/issue-17718-borrow-interior.rs	error: rust-js does not support statics of type `&'static usize` yet
 consts/issue-21721.rs	error: rust-js does not support values of type `*const u8` yet
 consts/issue-33537.rs	error: rust-js does not support values of type `*const i8` yet
 consts/issue-58435-ice-with-assoc-const.rs	error: rust-js does not support this constant yet
-consts/load-preserves-partial-init.rs	error: rust-js does not support constants of type `BagOfBits<[usize; 1]>` yet
+consts/load-preserves-partial-init.rs	error: rust-js does not support addressable memory yet: constants of type `BagOfBits<[usize; 1]>`
 consts/mozjs-error.rs	error: rust-js does not support this constant yet
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
-consts/static-mut-refs.rs	error: rust-js does not support statics of type `*mut [isize]` yet
-consts/static-raw-pointer-interning.rs	error: rust-js does not support statics of type `Foo` yet
-consts/static-raw-pointer-interning2.rs	error: rust-js does not support statics of type `Foo` yet
+consts/static-mut-refs.rs	error: rust-js does not support addressable memory yet: values of type `*mut [isize]`
+consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
+consts/static-raw-pointer-interning2.rs	error: rust-js does not support addressable memory yet: values of type `*mut i32`
 consts/std/iter.rs	error: rust-js does not support constants of type `std::iter::Empty<u32>` yet
-consts/zst_no_llvm_alloc.rs	error: rust-js does not support constants of type `*const ()` yet
+consts/zst_no_llvm_alloc.rs	error: rust-js does not support addressable memory yet: constants of type `*const ()`
 derives/debug/derive-debug.rs	error: rust-js does not support values of type `*const (dyn std::marker::Send + 'static)` yet
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet
 derives/deriving-hash.rs	error: rust-js does not support user implementations of `std::hash::Hasher` yet
@@ -138,7 +138,7 @@ methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not sup
 methods/method-two-traits-distinguished-via-where-clause.rs	error: rust-js does not support values of type `*const [isize]` yet
 mir/mir_assign_eval_order.rs	error: rust-js does not support values of type `&mut &mut i32` yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
-mir/mir_autoderef.rs	error: rust-js does not support this expression yet
+mir/mir_autoderef.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 mir/mir_misc_casts.rs	error: rust-js does not support values of type `*const ()` yet
 mir/mir_raw_fat_ptr.rs	error: rust-js does not support values of type `*const S<[u8]>` yet
 nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support values of type `*mut T` yet
@@ -147,11 +147,11 @@ overloaded/fixup-deref-mut.rs	error: rust-js does not support values of type `*m
 packed/dyn-trait.rs	error: rust-js does not support calling `std::mem::ManuallyDrop::<T>::new` yet
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
 packed/issue-118537-field-offset.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
-packed/misaligned-reference-drop-field-99838.rs	error: rust-js does not support this expression yet
+packed/misaligned-reference-drop-field-99838.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 packed/packed-struct-address-of-element.rs	error: rust-js does not support values of type `*const usize` yet
 packed/packed-struct-generic-layout.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 packed/packed-struct-layout.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
-packed/packed-struct-optimized-enum.rs	error: rust-js does not support this expression yet
+packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 packed/packed-tuple-struct-layout.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 pattern/move-ref-patterns/move-ref-patterns-dynamic-semantics.rs	error: rust-js does not support moving part of a value with a destructor yet
 privacy/pub-extern-privacy.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
@@ -172,11 +172,11 @@ rfcs/rfc-2091-track-caller/tracked-trait-obj.rs	error: rust-js does not support 
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet
-statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support statics of type `*const ArenaSet<std::vec::Vec<u8>>` yet
-statics/static-recursive.rs	error: rust-js does not support statics of type `*const u8` yet
+statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support addressable memory yet: calling `std::intrinsics::transmute`
+statics/static-recursive.rs	error: rust-js does not support addressable memory yet: statics of type `*const u8`
 stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support values of type `*const [u8]` yet
-structs-enums/align-struct.rs	error: rust-js does not support this expression yet
-structs-enums/enum-alignment.rs	error: rust-js does not support this expression yet
+structs-enums/align-struct.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
+structs-enums/enum-alignment.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support calling `std::mem::zeroed` yet
@@ -199,13 +199,13 @@ transmute/transmute-array-to-scalar.rs	error: rust-js does not support calling `
 try-trait/try-operator-various-contexts.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
 type/type-name-basic.rs	error: rust-js does not support type_name of a type with a type parameter yet
 typeck/issue-18937-1.rs	error: rust-js does not support values of type `*mut [U]` yet
-typeck/typeck_type_placeholder_1.rs	error: rust-js does not support statics of type `TestStruct` yet
+typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support values of type `*const T` yet
 unboxed-closures/type-id-higher-rank.rs	error: rust-js does not support `{:?}` of a `TypeId`, its hash yet
 union/union_destructure.rs	error: rust-js does not support values of type `Foo` yet
 union/union-align.rs	error: rust-js does not support values of type `U16` yet
-union/union-const-codegen.rs	error: rust-js does not support constants of type `U` yet
-union/union-const-eval-field.rs	error: rust-js does not support constants of type `DummyUnion` yet
+union/union-const-codegen.rs	error: rust-js does not support addressable memory yet: constants of type `U`
+union/union-const-eval-field.rs	error: rust-js does not support addressable memory yet: constants of type `DummyUnion`
 union/union-derive-rpass.rs	error: rust-js does not support values of type `U` yet
 union/union-drop-assign.rs	error: rust-js does not support values of type `U` yet
 union/union-drop.rs	error: rust-js does not support values of type `U` yet
@@ -217,7 +217,7 @@ union/union-modification.rs	error: rust-js does not support values of type `&mut
 union/union-nodrop.rs	error: rust-js does not support unions yet
 union/union-nonzero.rs	error: rust-js does not support values of type `U2<&u8, ()>` yet
 union/union-overwrite.rs	error: rust-js does not support values of type `U<u8, u16>` yet
-union/union-packed.rs	error: rust-js does not support constants of type `U` yet
+union/union-packed.rs	error: rust-js does not support addressable memory yet: constants of type `U`
 union/union-pat-refutability.rs	error: rust-js does not support values of type `U` yet
 union/union-trait-impl.rs	error: rust-js does not support unions yet
 union/union-transmute.rs	error: rust-js does not support values of type `U` yet
