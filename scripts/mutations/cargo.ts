@@ -100,10 +100,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cargo-registry-crate-compiled",
-    breaks: "a registry's crate, serde's, is compiled by rust-js, not rustc, and its derive's metadata isn't rustc's",
+    breaks: "a registry's or git's crate is compiled by rust-js, not rustc, which refuses what rustc takes",
     file: "src/cargo.rs",
     find: "    Ok(crates.contains(&dir))\n",
     replace: "    Ok(crates.contains(&dir) || true)\n",
-    tests: ["test/cargo-workspace.test.ts"],
+    tests: ["test/libraries.test.ts", "-t", "a crate of git's"],
   },
 ];

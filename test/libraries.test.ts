@@ -206,3 +206,23 @@ test("a library packed by npm is built into an app by each package manager's ins
     expect({ manager, code: checked.code, stderr: checked.stderr }).toEqual({ manager, code: 0, stderr: "" });
   }
 }, 600_000);
+
+// A crate of git's, as one of a registry's, is rustc's (ADR 0101): never the
+// app's to compile, though rust-js would refuse it, an address read as a
+// number (ADR 0390).
+test("a crate of git's, as a registry's, is rustc's, though rust-js would refuse it", () => {
+  const dir = fixture("library-git");
+  const crate = join(dir, "addr");
+  mkdirSync(join(crate, "src"), { recursive: true });
+  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "addr"\nversion = "0.1.0"\nedition = "2024"\n');
+  writeFileSync(join(crate, "src", "lib.rs"), "pub fn address(x: &u8) -> usize {\n    x as *const u8 as usize\n}\n");
+  const git = (...args: string[]) => runSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], crate, 60_000);
+  for (const args of [["init", "-q"], ["add", "."], ["commit", "-q", "-m", "addr"]]) expect(git(...args).code).toBe(0);
+  const app = join(dir, "app");
+  mkdirSync(join(app, "src"), { recursive: true });
+  writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\naddr = { git = ${JSON.stringify(`file://${crate}`)} }\n\n[workspace]\n`);
+  writeFileSync(join(app, "src", "lib.rs"), "pub fn answer() -> u32 {\n    42\n}\n");
+  const built = build(app);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+}, 600_000);
