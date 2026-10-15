@@ -136,7 +136,9 @@ while (!fs.existsSync(${JSON.stringify(stop)})) if (!fs.existsSync(${JSON.string
 console.log(missing);`], { stdout: "pipe" });
   const reader = looking.stdout.getReader();
   let said = "";
-  while (!said.includes("looking")) said += new TextDecoder().decode((await reader.read()).value);
+  // Till it says so, or ends: a read once it has is done at once, again and
+  // again, which would spin without end.
+  for (let chunk; !said.includes("looking") && !(chunk = await reader.read()).done;) said += new TextDecoder().decode(chunk.value);
   for (let i = 1; i <= 2000; i++) commit(new Map([[file, String(i)]]), []);
   writeFileSync(stop, "");
   for (let chunk; !(chunk = await reader.read()).done;) said += new TextDecoder().decode(chunk.value);

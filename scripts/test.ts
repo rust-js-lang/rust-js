@@ -8,6 +8,7 @@
 // splits the suite across its machines (DEVELOPMENT.md).
 import { join } from "node:path";
 
+import { stopGroup } from "../test/child";
 import { pruneNativeCache } from "../test/native-cache";
 
 // What no test used for a week, before any runs (test/native-cache.ts).
@@ -27,8 +28,33 @@ done`], { stdout: "inherit", stderr: "inherit" });
 
 const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map((name) => `test/${name}.test.ts`);
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
-const run = (args: string[]) => Bun.spawnSync([process.execPath, "test", "--parallel", ...shard, ...args], { stdout: "inherit", stderr: "inherit" }).exitCode;
-const rest = run(["--timings=target/test-timings.json", "--update-timings", ...browsers.map((file) => `--path-ignore-patterns=${file}`)]);
-const pages = run(["--timings=target/test-timings.json", ...browsers]);
+// And past 25 minutes, it's stopped, and fails: a test worker on CI spun
+// for 34 minutes in a `spawnSync` of rustc, which had ended unreaped, past
+// its own timeout (2026-10-15), and the job ran on till it was cancelled.
+// What the watchdog printed says where. Each run is a process group of its
+// own, so its workers are stopped with it; Ctrl-C is given them too.
+const deadline = Date.now() + 25 * 60_000;
+let running: number | undefined;
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    if (running !== undefined) stopGroup(running, signal);
+    process.exit(1);
+  });
+}
+const run = async (args: string[]) => {
+  const suite = Bun.spawn([process.execPath, "test", "--parallel", ...shard, ...args], { stdout: "inherit", stderr: "inherit", detached: true });
+  running = suite.pid;
+  const stop = setTimeout(() => {
+    console.log("--- the suite past 25 minutes: stopped, and failed; what it waited on is above");
+    stopGroup(suite.pid);
+  }, Math.max(0, deadline - Date.now()));
+  // A run stopped by a signal has no exit code: it failed.
+  const code = (await suite.exited) ?? 1;
+  clearTimeout(stop);
+  running = undefined;
+  return code;
+};
+const rest = await run(["--timings=target/test-timings.json", "--update-timings", ...browsers.map((file) => `--path-ignore-patterns=${file}`)]);
+const pages = Date.now() < deadline ? await run(["--timings=target/test-timings.json", ...browsers]) : 1;
 watchdog.kill();
 process.exit(rest || pages);

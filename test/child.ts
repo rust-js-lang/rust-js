@@ -49,10 +49,10 @@ const maxBuffer = 16 * 1024 * 1024;
 const grace = 1000;
 
 /** Stop `pid` and what it started: each process runs as the leader of a
- * group of its own, and the group is what's killed. */
-function stopGroup(pid: number) {
+ * group of its own, and the group is what's killed, by `signal`. */
+export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
   try {
-    process.kill(-pid, "SIGKILL");
+    process.kill(-pid, signal);
   } catch {
     // The group has ended already.
   }
