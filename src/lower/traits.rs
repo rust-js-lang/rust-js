@@ -1589,32 +1589,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut values = values;
             let receiver = values.remove(0);
-            // The pair is read twice, so one that doesn't read the same, made
-            // here or with effects, goes in a `const` first. It's still first:
-            // `operands` put anything before it that needed statements in
-            // `const`s of its own.
-            let pair = if !receiver.reads_same() {
-                self.spill("receiver", receiver, out)
-            } else {
-                receiver
+            // A `&mut self` method is given the pair, whose `value` a box's is: a
+            // number's impl writes the place it reads (ADR 0099).
+            let by_mut = matches!(
+                self.tcx
+                    .fn_sig(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()[0]
+                    .kind(),
+                ty::Ref(_, _, Mutability::Mut)
+            );
+            // A pair made here of parts read the same, a struct's last field's
+            // `{ value: x.ptr, impl: x.impl }` (ADR 0409), is its parts.
+            let parts = match &receiver.kind {
+                js::ExprKind::Object(props) if !by_mut => match props.as_slice() {
+                    [Prop::Field(held, value), Prop::Field(dictionary, of)]
+                        if held == js::HELD
+                            && dictionary == js::DICTIONARY
+                            && value.reads_same()
+                            && of.reads_same() =>
+                    {
+                        Some((value.clone(), of.clone()))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            };
+            let (this, impl_of) = match parts {
+                Some(parts) => parts,
+                None => {
+                    // The pair is read twice, so one that doesn't read the same,
+                    // made here or with effects, goes in a `const` first. It's
+                    // still first: `operands` put anything before it that needed
+                    // statements in `const`s of its own.
+                    let pair = if !receiver.reads_same() {
+                        self.spill("receiver", receiver, out)
+                    } else {
+                        receiver
+                    };
+                    let dictionary = Expr::member(pair.clone(), js::DICTIONARY);
+                    (if by_mut { pair } else { Expr::held(pair) }, dictionary)
+                }
             };
             let principal = self.dyn_trait_ref(tr.self_ty(), tr.self_ty()).unwrap();
             let dictionary = self
-                .super_evidence(principal, tr, Expr::member(pair.clone(), js::DICTIONARY))
+                .super_evidence(principal, tr, impl_of)
                 .ok_or_else(|| self.unsupported(span, "this trait object supertrait"))?;
-            // A `&mut self` method is given the pair, whose `value` a box's is: a
-            // number's impl writes the place it reads (ADR 0099).
-            let receiver = self
-                .tcx
-                .fn_sig(id)
-                .instantiate_identity()
-                .skip_normalization()
-                .skip_binder()
-                .inputs()[0];
-            let this = match receiver.kind() {
-                ty::Ref(_, _, Mutability::Mut) => pair,
-                _ => Expr::held(pair),
-            };
             values.insert(0, this);
             values.extend(self.own_evidence(id, generic_args, span)?);
             let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
@@ -1976,6 +1998,67 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `holder`, what holds a `dyn`'s value as its last field, a `RefCell`
+    /// or a struct, given `dictionary`, the `impl` of `held`'s `trait_id`,
+    /// in place (ADRs 0397, 0409): one made here, `{ value: .. }`, made with
+    /// it; another, which may be a `dyn` of another trait already, given
+    /// both's methods, unless they share a name.
+    fn given_impl(
+        &self,
+        holder: Expr,
+        (held, trait_id): (Ty<'tcx>, DefId),
+        dictionary: Expr,
+        target: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        if let js::ExprKind::Object(props) = &holder.kind
+            && matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD)
+        {
+            let mut props = props.clone();
+            props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
+            return Ok(Expr::object(props));
+        }
+        if let Some(other) = self.dyn_cell_clash(held, trait_id) {
+            return Err(self.unsupported(
+                span,
+                &format!(
+                    "a `{target}` of a value that may be a `dyn {}` too: its one `impl` can't hold two methods of one name",
+                    self.tcx.def_path_str(other)
+                ),
+            ));
+        }
+        Ok(Expr::call(Expr::helper("$dynCell"), vec![holder, dictionary]))
+    }
+
+    /// Of `source` unsized as `target`, a reference to a struct of the
+    /// crate's whose last field, or its last field's, is a `dyn`: the type
+    /// that field is in `source`, and the `dyn` (ADR 0409).
+    pub(super) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+        let (from, to) = (self.pointee(source), self.pointee(target));
+        if !target.is_ref() || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did())) {
+            return None;
+        }
+        let (concrete, tail) = self.tcx.struct_lockstep_tails_for_codegen(from, to, self.typing_env);
+        matches!(tail.kind(), ty::Dynamic(..)).then_some((concrete, tail))
+    }
+
+    /// The struct a `ty`'s last `dyn` field is in, of `value`, a `ty`:
+    /// `value` itself, or its last field's, `fat.inner`.
+    pub(super) fn tail_parent(&self, mut value: Expr, mut ty: Ty<'tcx>) -> Expr {
+        loop {
+            let ty::Adt(adt, args) = ty.kind() else { return value };
+            let Some(last) = adt.non_enum_variant().fields.iter().last() else {
+                return value;
+            };
+            let field = self.field_ty(last, args);
+            if matches!(field.kind(), ty::Dynamic(..)) || !matches!(field.kind(), ty::Adt(..)) {
+                return value;
+            }
+            value = self.project(value, ty, adt.non_enum_variant().fields.len() - 1);
+            ty = field;
+        }
+    }
+
     /// An unsizing JS can't make: of a pointer of the crate's own, or to a
     /// struct whose last field is a `dyn`.
     pub(super) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
@@ -1986,19 +2069,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.unsupported(span, &format!("unsizing a `{target}`")));
         }
-        // `&Fat<Bar>` to `&Fat<dyn ToBar>`: the struct's last field would
-        // be a `dyn`'s value and impl, or a `dyn Debug`'s string, which it
-        // isn't. One ending in a slice, or a `dyn FnMut`, the JS function,
-        // is the same value either way.
-        let pointee = self.pointee(target);
-        let tail = self.tcx.struct_tail_for_codegen(pointee, self.typing_env);
         // A `RefCell<dyn T>` is its cell with its `impl`, a pair (ADR 0397).
         if self.dyn_cell_trait(target).is_some() {
             return Ok(());
         }
+        // `&Fat<Bar>` to `&Fat<dyn ToBar>`: the struct given its last field's
+        // `impl` (ADR 0409), behind a reference; what owns one would drop its
+        // last field through it, not yet. A `dyn Debug`'s would be the string
+        // it shows, which the field isn't. One ending in a slice, or a `dyn
+        // FnMut`, the JS function, is the same value either way.
+        let pointee = self.pointee(target);
+        let tail = self.tcx.struct_tail_for_codegen(pointee, self.typing_env);
         if pointee.is_adt()
             && matches!(tail.kind(), ty::Dynamic(traits, ..)
                 if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))
+            && (!target.is_ref() || self.is_dyn_debug(tail))
         {
             return Err(self.unsupported(span, &format!("a `{pointee}`, whose last field is a `dyn`")));
         }
@@ -2037,26 +2122,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.counted_rc(target).is_some() || self.weak_of(target).is_some() {
                 return Err(self.unsupported(span, &format!("a counted `{target}`")));
             }
-            // One made here, `{ value: .. }`, is made with it.
-            return match value.kind {
-                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
-                {
-                    props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
-                    Ok(Expr::object(props))
+            return self.given_impl(value, (from.type_at(0), tr.def_id), dictionary, target, span);
+        }
+        // `&Fat<Bar>` as a `&Fat<dyn ToBar>`: the same struct, the one its
+        // last field is in given `Bar`'s `ToBar` as its `impl`, as a
+        // `RefCell`'s is (ADR 0409).
+        if let Some((concrete, tail)) = self.dyn_tail(source, target) {
+            // Of a `dyn` already, the same struct; as another trait's, its
+            // supertrait's, not yet.
+            if matches!(concrete.kind(), ty::Dynamic(..)) {
+                let erased = |ty| self.tcx.erase_and_anonymize_regions(ty);
+                if erased(concrete) == erased(tail) {
+                    return Ok(value);
                 }
-                // Another's, which may be a `dyn` of another trait already:
-                // its `impl` has both's methods, unless they share a name.
-                _ => match self.dyn_cell_clash(from.type_at(0), tr.def_id) {
-                    Some(other) => Err(self.unsupported(
-                        span,
-                        &format!(
-                            "a `{target}` of a cell that may be a `dyn {}` too: its one `impl` can't hold two methods of one name",
-                            self.tcx.def_path_str(other)
-                        ),
-                    )),
-                    None => Ok(Expr::call(Expr::helper("$dynCell"), vec![value, dictionary])),
-                },
+                return Err(self.unsupported(span, &format!("a `{source}` as a `{target}`")));
+            }
+            let tr = self.dyn_trait_ref(tail, concrete).expect("a `dyn` of a trait");
+            let dictionary = self.dictionary(tr, span)?;
+            let value = match value.reads_same() {
+                true => value,
+                false => self.spill("value", value, out),
             };
+            let parent = self.tail_parent(value.clone(), self.pointee(target));
+            let given = self.given_impl(parent.clone(), (concrete, tr.def_id), dictionary, target, span)?;
+            if js::same_path(&parent, &value) {
+                return Ok(given);
+            }
+            out.push(StmtKind::Expr(given).at(js::Span::NONE));
+            return Ok(value);
         }
         if self.dynamic_trait(target).is_none() {
             return Ok(value);

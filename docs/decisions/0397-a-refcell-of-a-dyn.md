@@ -1,7 +1,9 @@
 # 0397. A `RefCell<dyn T>` is its cell, with its `impl`
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and
-[0328](0328-refcell-borrow-counts.md).
+[0328](0328-refcell-borrow-counts.md); generalized by
+[0409](0409-a-struct-of-a-dyn-last-field.md): any struct of a `dyn` last
+field, behind a reference, is given its `impl` the one way a cell is.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's changed
 through one `Rc` is seen through the other, and each call is the impl

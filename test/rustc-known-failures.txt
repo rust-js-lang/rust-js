@@ -71,14 +71,11 @@ derives/deriving-hash.rs	error: rust-js does not support user implementations of
 derives/deriving-with-repr-packed-3.rs	error: rust-js does not support addressable memory yet: a pointer's address
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
 drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
-drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<dyn Trait>`, whose last field is a `dyn` yet
 drop/rc-trait-object-double-drop.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 dst/dst-coerce-rc.rs	error: rust-js does not support a counted `std::rc::Rc<std::cell::RefCell<dyn Baz>>` yet
 dst/dst-coercions.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn T`
 dst/dst-field-align.rs	error: rust-js does not support a `Baz<dyn Bar>`, whose last field is a `dyn` yet
 dst/dst-raw.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Trait`
-dst/dst-trait.rs	error: rust-js does not support a `Fat<dyn ToBar>`, whose last field is a `dyn` yet
-dst/match-dst-struct.rs	error: rust-js does not support a `Foo<dyn Get>`, whose last field is a `dyn` yet
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::option::Option<Size>` as `u8`, which aren't numbers alone
 enum/enum-clike-ffi-as-int.rs	error: rust-js does not support addressable memory yet: a `transmute` of `extern "C" fn(usize) -> Foo` as `extern "C" fn(usize) -> u32`, which aren't numbers alone
 enum/enum-univariant-repr.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[Univariant]` as `&[i32]`, which aren't numbers alone

@@ -1,6 +1,7 @@
 //@ compile-fail: whose last field is a `dyn`
-// A struct whose last field becomes a trait object, `&Fat<dyn Show>`, has no
-// JS shape yet: rejected, not run with a field that isn't one.
+// A struct whose last field becomes a trait object is the struct with its
+// `impl` behind a reference (ADR 0409), but what owns one, a `Box`, would
+// drop that field through its `impl`: rejected, not run without its drop.
 trait Show {
     fn show(&self) -> i32;
 }
@@ -23,6 +24,6 @@ fn read(fat: &Fat<dyn Show>) -> i32 {
 }
 
 fn main() {
-    let fat = Fat { size: 1, inner: Seven };
+    let fat: Box<Fat<dyn Show>> = Box::new(Fat { size: 1, inner: Seven });
     println!("{}", read(&fat));
 }

@@ -3666,6 +3666,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return self.union_field_borrowed(span).map(Value::Expr);
                 }
+                // A struct's last field, a `dyn`: its value, and the `impl` its
+                // struct was given when it was made one, a pair; of a `&mut`,
+                // one on the field's place (ADR 0409).
+                if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
+                    && matches!(place.ty(decls, tcx).ty.kind(), ty::Dynamic(..))
+                {
+                    let base_ty = base.ty(decls, tcx).ty;
+                    let base = mir::Place::from(base.local).project_deeper(base.projection, tcx);
+                    let parent = self.mir_place(state, base, span, out)?;
+                    let parent = match parent.reads_same() {
+                        true => parent,
+                        false => self.spill("value", parent, out),
+                    };
+                    let value = self.project(parent.clone(), base_ty, field.as_usize());
+                    let dictionary = Expr::member(parent, js::DICTIONARY);
+                    return Ok(Value::Expr(match kind {
+                        BorrowKind::Mut { .. } => Expr::pair(value, dictionary),
+                        _ => Expr::object(vec![
+                            Prop::Field(js::HELD.into(), value),
+                            Prop::Field(js::DICTIONARY.into(), dictionary),
+                        ]),
+                    }));
+                }
                 // A generic iterator a field holds, stepped through a `&mut` to
                 // it: what it's given, a range say, may be no JS iterator, as a
                 // caller's argument is made one; refused.
@@ -3860,8 +3883,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
                 // Through a reference, a `Box` or an `Rc`, as `unsize_trait` sees it.
-                // To a `dyn`, or a `RefCell<dyn T>`, a pair too (ADR 0397).
-                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..)) || self.dyn_cell_trait(*to).is_some();
+                // To a `dyn`, or a `RefCell<dyn T>`, a pair too (ADR 0397), or
+                // a struct whose last field is one (ADR 0409).
+                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..))
+                    || self.dyn_cell_trait(*to).is_some()
+                    || self.dyn_tail(operand.ty(decls, tcx), *to).is_some();
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);

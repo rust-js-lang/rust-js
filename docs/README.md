@@ -476,6 +476,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0406 A union is the object of the field it holds](decisions/0406-a-union-is-the-field-it-holds.md)
 - [0407 A raw pointer is a handle on its place](decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)
 - [0408 Plain data is its bytes](decisions/0408-plain-data-is-its-bytes.md)
+- [0409 A struct of a `dyn` last field is the struct, with its `impl`](decisions/0409-a-struct-of-a-dyn-last-field.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
