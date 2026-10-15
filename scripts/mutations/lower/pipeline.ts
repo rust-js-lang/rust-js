@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
     replace: "                    export: (tcx.visibility(key).is_public())",
-    tests: ["test/diagnostics.test.ts", "-t", "a const block of a static's dyn"],
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
   {
     name: "path-directory-ignored",
