@@ -85,6 +85,12 @@ time, valid and deterministic by construction:
   may write `s`: JS gives a function an object, not a copy (2026-10-15).
   A chain that ends in `collect` has no `skip`, where std's `Vec` of a
   chain it knows is empty runs none of it (ADR 0055's B).
+- Functions `main` declares, of two integers, giving an `Option` or a
+  `Result<T, String>`: steps `let t = a.checked_add(b)?;`, `ok_or(..)?`
+  of a `Result`'s, each of which may give up, and `if c { return .. }`,
+  then their value; called with arguments in order, an `Option`'s value
+  as it is, a `Result`'s `unwrap_or(d)` or `is_ok()`. What they note says
+  which steps ran before one gave up (2026-10-15).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.

@@ -104,10 +104,17 @@ export type Expr =
   // `s.scaled(k).a`, of `self`, copied before its argument, which may write
   // `s`, is made: JS passes an object, not a copy.
   | { kind: "method-s"; ty: Ty; name: string; method: "get" | "add" | "scaled"; arg?: Expr }
+  // A call of a function `main` declares, its arguments in order: one of
+  // an `Option`, its value; one of a `Result`, `unwrap_or(d)` or `is_ok()`.
+  | { kind: "fcall"; ty: Ty; name: string; a: Expr; b: Expr; ending?: { op: "unwrap_or"; value: Expr } | { op: "is_ok" } }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 // A closure's parameters keep the names they were made with, so a chain in
 // another's closure never takes the outer's name for its own.
+export type FnStep =
+  | { op: "try"; name: string; how: "add" | "sub" | "mul" | "div"; a: Expr; b: Expr }
+  | { op: "early"; c: Expr; value?: Expr };
+
 export type Step = { op: "map" | "filter"; x: string; body: Expr } | { op: "take" | "skip"; n: number };
 export type End =
   | { op: "collect" | "sum" | "count" | "max" | "min" | "last" | "next" }
@@ -148,6 +155,11 @@ export type Stmt =
   // labeled, left or gone round again from the inner, `break 'l3` and
   // `continue 'l3`.
   | { kind: "while"; counter: string; n: number; c: Expr; body: Stmt[] }
+  // A function of two integers, declared in `main`, that gives an `Option`
+  // or a `Result`: steps `let x = a.checked_add(b)?;`, each of which may
+  // give up, and `if c { return .. }`, then its value. What it notes says
+  // which steps ran before one gave up.
+  | { kind: "fn"; name: string; ty: IntTy; result: "Option" | "Result"; params: [string, string]; steps: FnStep[]; tail: Expr }
   | { kind: "labeled"; label: string; outer: string; inner: string; n: number; m: number; brk: Expr; cont: Expr; body: Stmt[] };
 
 export type Program = Stmt[];
@@ -201,6 +213,22 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
   if (r.chance(0.12)) {
     const chained = chain(r, ty, scope, depth);
     if (chained) return chained;
+  }
+  const optionFns = scope.filter((v) => v.ty === `opt-fn<${inside(ty, "Option")}>`);
+  if (optionFns.length > 0 && r.chance(0.4)) {
+    const elem = inside(ty, "Option")!;
+    return { kind: "fcall", ty, name: r.pick(optionFns).name, a: expr(r, elem, scope, depth - 1), b: expr(r, elem, scope, depth - 1) };
+  }
+  const resultFns = scope.filter((v) => v.ty === `res-fn<${ty}>`);
+  if (isInt(ty) && resultFns.length > 0 && r.chance(0.3)) {
+    const ending = { op: "unwrap_or" as const, value: expr(r, ty, scope, depth - 1) };
+    return { kind: "fcall", ty, name: r.pick(resultFns).name, a: expr(r, ty, scope, depth - 1), b: expr(r, ty, scope, depth - 1), ending };
+  }
+  const anyResult = scope.filter((v) => v.ty.startsWith("res-fn<"));
+  if (ty === "bool" && anyResult.length > 0 && r.chance(0.2)) {
+    const f = r.pick(anyResult);
+    const elem = f.ty.slice(7, -1);
+    return { kind: "fcall", ty, name: f.name, a: expr(r, elem, scope, depth - 1), b: expr(r, elem, scope, depth - 1), ending: { op: "is_ok" } };
   }
   const structsHere = scope.filter((v) => v.ty === "S");
   if (ty === "i32" && structsHere.length > 0 && r.chance(0.35)) {
@@ -677,10 +705,35 @@ function substitute(e: Expr, name: string, to = "x"): Expr {
   return out as Expr;
 }
 
+/** A function of two `ty`s, `name`'s, of `?`s and early returns. */
+function fnDef(r: Random, name: string, ty: IntTy, result: "Option" | "Result", counter: { n: number }): Stmt {
+  const params: [string, string] = [`p${counter.n++}`, `q${counter.n++}`];
+  const scope: Scope = params.map((p) => ({ name: p, ty, mutable: false }));
+  const steps: FnStep[] = [];
+  for (let i = 0, n = 1 + r.int(4); i < n; i++) {
+    if (r.chance(0.65)) {
+      const name = `t${counter.n++}`;
+      steps.push({ op: "try", name, how: r.pick(["add", "sub", "mul", "div"] as const), a: expr(r, ty, scope, 2), b: expr(r, ty, scope, 2) });
+      scope.push({ name, ty, mutable: false });
+    } else {
+      steps.push({ op: "early", c: expr(r, "bool", scope, 2), value: r.chance(0.6) ? expr(r, ty, scope, 2) : undefined });
+    }
+  }
+  return { kind: "fn", name, ty, result, params, steps, tail: expr(r, ty, scope, 2) };
+}
+
 /** The program seed `seed` says, the same each time. */
 export function generate(seed: number): Program {
   const r = random(seed);
-  return block(r, [], 2, { n: 0 }, 6 + r.int(8));
+  const counter = { n: 0 };
+  // Its functions first, which what follows may call.
+  const fns: Stmt[] = [];
+  for (let i = 0, n = r.int(3); i < n; i++) {
+    const result = r.pick(["Option", "Result"] as const);
+    fns.push(fnDef(r, `h${counter.n++}`, r.pick(intTypes), result, counter));
+  }
+  const scope: Scope = fns.map((f) => (f.kind === "fn" ? { name: f.name, ty: `${f.result === "Option" ? "opt" : "res"}-fn<${f.ty}>`, mutable: false } : undefined)!);
+  return [...fns, ...block(r, scope, 2, counter, 6 + r.int(8))];
 }
 
 const suffix = (ty: Ty) => (ty === "bool" ? "" : ty);
@@ -709,6 +762,11 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "fcall": {
+      const call = `${e.name}(${show(e.a)}, ${show(e.b)})`;
+      if (!e.ending) return call;
+      return e.ending.op === "is_ok" ? `${call}.is_ok()` : `${call}.unwrap_or(${show(e.ending.value)})`;
+    }
     case "method-s":
       if (e.method === "get") return `${e.name}.get()`;
       if (e.method === "add") return `${e.name}.add(${show(e.arg!)})`;
@@ -913,6 +971,19 @@ function lines(stmts: Stmt[], indent: string): string[] {
         return [`${indent}for (${s.key}, ${s.item}) in ${s.map}.clone() {`, ...nested(s.body), `${indent}}`];
       case "if-let-b":
         return [`${indent}if let E::B(${s.name}) = ${show(s.value)} {`, ...nested(s.then), `${indent}} else {`, ...nested(s.else), `${indent}}`];
+      case "fn": {
+        const [p, q] = s.params;
+        const out = s.result === "Option" ? (v: string) => `Some(${v})` : (v: string) => `Ok(${v})`;
+        const none = s.result === "Option" ? "None" : 'Err(String::from("early"))';
+        const body = s.steps.map((step) => {
+          if (step.op === "early") return `${indent}    if ${show(step.c)} {\n${indent}        return ${step.value ? out(show(step.value)) : none};\n${indent}    }`;
+          const checked = `${show(step.a)}.checked_${step.how}(${show(step.b)})`;
+          const tried = s.result === "Option" ? `${checked}?` : `${checked}.ok_or(format!("${step.how} {} {}", ${p}, ${q}))?`;
+          return `${indent}    let ${step.name} = ${tried};`;
+        });
+        const result = s.result === "Option" ? `Option<${s.ty}>` : `Result<${s.ty}, String>`;
+        return [`${indent}fn ${s.name}(${p}: ${s.ty}, ${q}: ${s.ty}) -> ${result} {`, ...body, `${indent}    ${out(show(s.tail))}`, `${indent}}`];
+      }
       case "while":
         return [
           `${indent}let mut ${s.counter}: u32 = 0;`,
