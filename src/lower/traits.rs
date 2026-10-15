@@ -644,6 +644,12 @@ pub(super) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
     format!("$drop{}", tcx.item_name(item))
 }
 
+/// The key a dictionary has a fact of its associated type `item` under,
+/// `ItemSize` (ADR 0145).
+pub(super) fn item_fact_key(tcx: TyCtxt<'_>, item: DefId, fact: TypeFact) -> String {
+    format!("{}{}", tcx.item_name(item), fact.word())
+}
+
 /// A type as a word of an evidence name: a type parameter's, `T`, or an
 /// associated type's of one, `SItem` of `<S as Source>::Item`.
 fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
@@ -1372,27 +1378,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0178): the impl's, or what a `dyn` names, `dyn Zone<Offset = T>`.
     fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
-        for item in self.tcx.associated_items(tr.def_id).in_definition_order() {
-            if self.tcx.def_kind(item.def_id) != DefKind::AssocTy
-                || item.is_impl_trait_in_trait()
-                || !self.tcx.generics_of(item.def_id).own_params.is_empty()
-            {
-                continue;
-            }
-            let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item.def_id, tr.args);
-            let Ok(item_ty) = self
-                .tcx
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
-            else {
-                continue;
-            };
+        for (item, item_ty) in self.item_types(tr) {
             if self.drops(item_ty) == Drops::Runs
                 && let Some(drop) = self.drop_function(item_ty, span)?
             {
-                props.push(Prop::Field(item_drop_key(self.tcx, item.def_id), drop));
+                props.push(Prop::Field(item_drop_key(self.tcx, item), drop));
             }
         }
         Ok(props)
+    }
+
+    /// A dictionary's facts of its associated types, what generic code asks
+    /// of `<A as Array>::Item` (ADR 0145): `ItemSize`, its type's for `tr`.
+    fn item_facts(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+        let mut props = Vec::new();
+        for (item, item_ty) in self.item_types(tr) {
+            for &(_, fact) in self.krate.type_facts.get(&item).into_iter().flatten() {
+                let value = self.type_fact_value(item_ty, fact, span)?;
+                props.push(Prop::Field(item_fact_key(self.tcx, item, fact), value));
+            }
+        }
+        Ok(props)
+    }
+
+    /// Each associated type of `tr`'s trait, plain, and what it is for `tr`.
+    fn item_types(&self, tr: ty::TraitRef<'tcx>) -> Vec<(DefId, Ty<'tcx>)> {
+        let items = self.tcx.associated_items(tr.def_id).in_definition_order();
+        items
+            .filter(|item| {
+                self.tcx.def_kind(item.def_id) == DefKind::AssocTy
+                    && !item.is_impl_trait_in_trait()
+                    && self.tcx.generics_of(item.def_id).own_params.is_empty()
+            })
+            .filter_map(|item| {
+                let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item.def_id, tr.args);
+                let normalized = self
+                    .tcx
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection));
+                Some((item.def_id, normalized.ok()?))
+            })
+            .collect()
     }
 
     fn object_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
@@ -2658,6 +2683,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));
         }
         props.extend(self.item_drops(tr, span)?);
+        props.extend(self.item_facts(tr, span)?);
         let object = Expr::object(props);
         let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());
         let mut body = Vec::new();

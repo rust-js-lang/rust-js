@@ -20,7 +20,13 @@ gives an impl's dictionary for a callee's bound, a `C: Push<T>` of a
 `Stack<T>`, or calls a std method that only calls its bound's,
 `collect()` that's `FromIterator::from_iter` (ADR 0160), arrayvec's
 `Clone` (`test/corpus/impl_type_facts_through_trait.rs`). Which impl
-gives the dictionary is `traits::evidence_impl`'s alone.
+gives the dictionary is `traits::evidence_impl`'s alone. And a fact of an
+associated type of the crate's trait, `size_of::<A::Item>()` of smallvec's
+`A: Array`, asked directly or of a callee given it, is its trait's
+dictionary's, `AArray.ItemSize`: each impl's dictionary carries it of its
+type for it, `T`'s of `type Item = T`, which its factory is given
+(`test/corpus/associated_type_facts.rs`). A type's layout fact is
+`type_fact_value`'s alone, `size_of_val` of a value's bytes apart.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

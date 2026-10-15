@@ -76,6 +76,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **`size_of::<A::Item>()` in generic code**, of an associated type of the
+  crate's trait: its dictionary's, `AArray.ItemSize` (ADR 0145).
 - **`p.offset_from(q)`** of two pointers into one array (ADR 0407), and
   **`next_power_of_two()`** and its checked one (ADR 0064): hashbrown's.
 - **An iterator of the crate's with a destructor, consumed**, `collect()`,

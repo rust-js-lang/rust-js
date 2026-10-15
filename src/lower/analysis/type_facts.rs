@@ -33,6 +33,11 @@ pub(super) fn type_fact_params<'tcx>(
     (given, trait_impls): (Given<'_>, &[DefId]),
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let mut asked: HashSet<(DefId, u32, TypeFact)> = HashSet::new();
+    // What a trait's dictionaries carry of its associated type, asked of
+    // `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
+    // as a callee's type parameter.
+    let mut carried: HashSet<(DefId, TypeFact)> = HashSet::new();
+    let mut passed_carried: Vec<(DefId, (DefId, u32))> = Vec::new();
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
     for body in all_bodies {
@@ -72,6 +77,9 @@ pub(super) fn type_fact_params<'tcx>(
                     && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
                 {
                     asked.insert((caller, param.index, fact));
+                }
+                if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
+                    carried.insert((assoc, fact));
                 }
                 continue;
             }
@@ -141,6 +149,9 @@ pub(super) fn type_fact_params<'tcx>(
                 {
                     passed.push(((caller, param.index), (callee, index as u32)));
                 }
+                if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(ty)) {
+                    passed_carried.push((assoc, (callee, index as u32)));
+                }
             }
         }
     }
@@ -165,6 +176,34 @@ pub(super) fn type_fact_params<'tcx>(
                 }
             }
         }
+        for &(assoc, (callee, to)) in &passed_carried {
+            for fact in TypeFact::ALL {
+                if asked.contains(&(callee, to, fact)) {
+                    changed |= carried.insert((assoc, fact));
+                }
+            }
+        }
+        // Each impl's dictionary carries it of its type for it: `T`'s of
+        // `type Item = T`, which its impl asks of its own parameter.
+        let impls: Vec<_> = (carried.iter())
+            .flat_map(|&(assoc, fact)| {
+                let trait_id = tcx.trait_of_assoc(assoc).expect("an associated type");
+                tcx.all_impls(trait_id)
+                    .filter(|imp| imp.is_local())
+                    .filter_map(move |imp| {
+                        let item = *tcx.impl_item_implementor_ids(imp).get(&assoc)?;
+                        Some((imp, tcx.type_of(item).instantiate_identity().skip_normalization(), fact))
+                    })
+            })
+            .collect();
+        for (imp, ty, fact) in impls {
+            if let ty::Param(param) = ty.kind() {
+                changed |= asked.insert((imp, param.index, fact));
+            }
+            if let Some(assoc) = carried_by(ty) {
+                changed |= carried.insert((assoc, fact));
+            }
+        }
     }
     let mut params: HashMap<DefId, Vec<(u32, TypeFact)>> = HashMap::new();
     for (id, index, fact) in asked {
@@ -181,9 +220,28 @@ pub(super) fn type_fact_params<'tcx>(
             None => params.entry(id).or_default().push((index, fact)),
         }
     }
+    // An associated type's own entry: what its trait's dictionaries carry.
+    for (assoc, fact) in carried {
+        params.entry(assoc).or_default().push((0, fact));
+    }
     for facts in params.values_mut() {
         facts.sort();
         facts.dedup();
     }
     params
+}
+
+/// The associated type of the crate's own trait `ty` projects, whose facts
+/// the trait's dictionaries carry: `<A as Array>::Item`.
+fn carried_by(ty: ty::Ty<'_>) -> Option<DefId> {
+    match ty.kind() {
+        ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) if def_id.is_local() => Some(*def_id),
+        _ => None,
+    }
 }

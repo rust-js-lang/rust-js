@@ -83,4 +83,28 @@ export const mutations: Mutation[] = [
     replace: "            let _ = fact;\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts"],
   },
+  {
+    name: "assoc-fact-uncarried",
+    breaks: "`size_of::<A::Item>()` isn't carried by `A: Array`'s dictionary, and is refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    carried.insert((assoc, fact));\n",
+    replace: "                    let _ = (assoc, fact);\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
+  },
+  {
+    name: "assoc-fact-unpassed",
+    breaks: "a callee given `A::Item` that asks its size doesn't make its caller's dictionary carry it",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    changed |= carried.insert((assoc, fact));\n                }\n            }\n        }\n",
+    replace: "                    let _ = (assoc, fact);\n                }\n            }\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
+  },
+  {
+    name: "assoc-fact-impl-unasked",
+    breaks: "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            if let ty::Param(param) = ty.kind() {\n                changed |= asked.insert((imp, param.index, fact));\n",
+    replace: "            if let ty::Param(param) = ty.kind() {\n                let _ = (imp, param, fact);\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
+  },
 ];

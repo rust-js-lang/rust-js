@@ -252,4 +252,12 @@ export const mutations: Mutation[] = [
     replace: "                    false => next,\n",
     tests: ["test/corpus.test.ts", "-t", "^next_power_of_two.rs$"],
   },
+  {
+    name: "assoc-fact-not-read",
+    breaks: "`size_of::<A::Item>()` isn't read from `A: Array`'s dictionary, and is refused",
+    file: "src/lower/std_types/number.rs",
+    find: "                .is_some_and(|facts| facts.iter().any(|&(_, f)| f == fact))\n",
+    replace: "                .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
+  },
 ];

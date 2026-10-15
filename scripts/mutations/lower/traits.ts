@@ -1100,4 +1100,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => \"$ioWriteFmt\",\n",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
+  {
+    name: "dictionary-item-facts-missing",
+    breaks: "an impl's dictionary has no `ItemSize`, so generic code reads `undefined`",
+    file: "src/lower/traits.rs",
+    find: "        props.extend(self.item_facts(tr, span)?);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
+  },
 ];

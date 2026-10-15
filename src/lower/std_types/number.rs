@@ -1354,9 +1354,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Layout { fact, of_val } => {
                 let of = generic_args.types().next().expect("a size's type argument");
-                let bytes = match of.kind() {
-                    ty::Param(_) => self.type_fact_value(of, fact, span)?,
-                    _ => Expr::int(self.layout_bytes((fact, of_val), of, span)?),
+                // A type's, its own fact; a value's of a type rustc knows, its
+                // bytes, which may be the value's own.
+                let bytes = match of_val && !matches!(of.kind(), ty::Param(_)) {
+                    true => Expr::int(self.layout_bytes((fact, of_val), of, span)?),
+                    false => self.type_fact_value(of, fact, span)?,
                 };
                 // What's measured still runs, if it does anything.
                 if of_val {
@@ -1382,6 +1384,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Id => "the `TypeId`",
             TypeFact::NeedsDrop => "needs_drop",
         };
+        // An associated type's, `<A as Array>::Item`'s: its trait's
+        // dictionary's (ADR 0145).
+        if let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = of.kind()
+            && self
+                .krate
+                .type_facts
+                .get(def_id)
+                .is_some_and(|facts| facts.iter().any(|&(_, f)| f == fact))
+            && let Some(dictionary) = self.evidence_for(alias.trait_ref(self.tcx))
+        {
+            return Ok(Expr::member(
+                dictionary,
+                super::super::traits::item_fact_key(self.tcx, *def_id, fact),
+            ));
+        }
         if let ty::Param(param) = of.kind() {
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if fact == TypeFact::Id
