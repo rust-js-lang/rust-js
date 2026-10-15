@@ -3437,6 +3437,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A constant's JS, by its value tree.
+    /// A constant of the crate's rustc can't say as a value, one of a type
+    /// parameter's or a const generic's: its MIR, given `args`, its uses',
+    /// lowered as code.
+    pub(super) fn crate_const_as_code(
+        &mut self,
+        def_id: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> R<Expr> {
+        let tcx = self.tcx;
+        let instantiate = |body: mir::Body<'tcx>| {
+            tcx.instantiate_and_normalize_erasing_regions(args, self.typing_env, ty::EarlyBinder::bind(tcx, body))
+        };
+        let body = instantiate(tcx.mir_for_ctfe(def_id).clone());
+        let promoted = tcx
+            .promoted_mir(def_id)
+            .iter()
+            .map(|p| instantiate(p.clone()))
+            .collect();
+        self.const_as_code(Mir::new(tcx, body, promoted))
+    }
+
+    /// A constant rustc can't say as a value, its MIR lowered as code: what
+    /// it returns, or a function of it, called.
+    fn const_as_code(&mut self, mir: Mir<'tcx>) -> R<Expr> {
+        let (_, stmts) = self.mir_function(&mir, Some(Vec::new()))?;
+        Ok(match stmts.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(value)),
+                    ..
+                },
+            ] => value.clone(),
+            _ => Expr::call(Expr::arrow(Vec::new(), stmts), Vec::new()),
+        })
+    }
+
     fn mir_const(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
         let ty = c.ty();
         if ty.is_unit() || matches!(ty.kind(), ty::FnDef(..)) {
@@ -3531,17 +3567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if let Const::Unevaluated(uv, _) = c.const_
                 && let Some(promoted) = uv.promoted =>
             {
-                let mir = Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new());
-                let (_, stmts) = self.mir_function(&mir, Some(Vec::new()))?;
-                return Ok(match stmts.as_slice() {
-                    [
-                        Stmt {
-                            kind: StmtKind::Return(Some(value)),
-                            ..
-                        },
-                    ] => value.clone(),
-                    _ => Expr::call(Expr::arrow(Vec::new(), stmts), Vec::new()),
-                });
+                return self.const_as_code(Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new()));
             }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };

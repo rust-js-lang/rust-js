@@ -72,3 +72,61 @@ function $ptrShown(pointer) {
   if (pointer === null) return "0x0";
   throw new Error("rust-js does not support showing a pointer's address, which JS hasn't");
 }
+
+// `ptr::copy(src, dst, n)`, `copy_nonoverlapping`: the `n` items from where
+// `src` points to where `dst` does, as `memmove` copies them, each `copy`'d
+// where a `Copy` value is an object something changes; of one array, its
+// `copyWithin`.
+function $ptrCopy(src, dst, count, copy) {
+  if (count === 0) return;
+  if (count === 1) {
+    dst.value = copy === undefined ? src.value : copy(src.value);
+    return;
+  }
+  if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
+    throw new Error("rust-js does not support copying items but between arrays, which reads memory by where it is");
+  }
+  if (src.of === dst.of && copy === undefined) {
+    src.of.copyWithin(dst.at, src.at, src.at + count);
+    return;
+  }
+  const items = src.of.slice(src.at, src.at + count);
+  for (let i = 0; i < count; i++) dst.of[dst.at + i] = copy === undefined ? items[i] : copy(items[i]);
+}
+
+// `slice::from_raw_parts(p, n)`: the `n` items from where `p` points, a
+// copy, as a shared subslice is, or all of an array, the array itself.
+function $ptrSlice(pointer, count) {
+  const [items, start] = $ptrItems(pointer, count);
+  return start === 0 && count === items.length ? items : items.slice(start, start + count);
+}
+
+// `slice::from_raw_parts_mut(p, n)`: a view of the `n` items from where `p`
+// points (ADR 0335), or all of an array, the array itself.
+function $ptrSliceMut(pointer, count) {
+  const [items, start] = $ptrItems(pointer, count);
+  return start === 0 && count === items.length ? items : $view(items, start, start + count);
+}
+
+// The array a pointer is into, and its index there, for `count` items from
+// it: none, of no array but one place, is an array of it.
+function $ptrItems(pointer, count) {
+  if (Array.isArray(pointer.of)) return [pointer.of, pointer.at];
+  if (count <= 1) return [count === 0 ? [] : [pointer.value], 0];
+  throw new Error("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
+}
+
+// A pointer to an array's first item, as one to the whole of it, of
+// `length` items: arrayvec's `ptr::read(p as *const [T; CAP])`. Of another
+// item, or of fewer, it would be memory by where it is.
+function $ptrWhole(pointer, length) {
+  if (Array.isArray(pointer.of) && pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
+  throw new Error("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
+}
+
+// A pointer as one to another type, in generic code where whether JS has it
+// at the same place depends on the type: arrayvec's `ptr.cast::<u8>()` of
+// a type with no size, which reads memory by where it is.
+function $ptrRecast(pointer) {
+  throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+}

@@ -70,6 +70,29 @@ what isn't one. Whether a type is a raw pointer, a `NonNull` too, is
 too. Found by the crates.io corpus: anyhow, smallvec, semver and
 hashbrown's types hold one, where 912 of 1,398 refusals were of it.
 
+### Items of an array, as arrayvec and smallvec reach them
+
+A vector of a fixed capacity, arrayvec's, holds a `[MaybeUninit<T>; CAP]`
+and reaches its items by raw pointers (`test/corpus/array_vec_raw.rs`):
+
+- **A cast where JS has the same place is the same handle**: a pointer to
+  a `MaybeUninit<T>` and one to a `T` (ADR 0332), arrays of either too. An
+  array's pointer as its first item's is `$ptr(items, 0)`; the first
+  item's as the whole array's, `$ptrWhole(p, n)`, checked as it's made. In
+  generic code, where it depends on the type, arrayvec's `ptr.cast::<u8>()`
+  of a type with no size, `$ptrRecast(p)`, rust-js's error if it's made.
+- **`ptr::copy(src, dst, n)`, `copy_nonoverlapping`, `copy_to` and
+  `copy_from`** are `$ptrCopy(src, dst, n)`, of one array its
+  `copyWithin`; a `Copy` value JS holds as an object something changes is
+  copied into each place, as Rust's copy is, `(item) => ({ ...item })`.
+- **`slice::from_raw_parts(p, n)`** is those items, a copy as a shared
+  subslice is (ADR 0063), or the whole array itself; `from_raw_parts_mut`'s
+  a view of them (ADR 0335).
+- **A constant of the crate's rustc can't say as a value**, one of a type
+  parameter or a const generic, `[const { MaybeUninit::uninit() }; CAP]`,
+  or a trait's `Self::CAPACITY` of an `impl<T, const CAP: usize>`, which
+  resolves to its impl's now: its MIR, given its use's arguments, as code.
+
 ### Refused
 
 - **An address**: `p as usize`, `3 as *const T`, a pointer read as

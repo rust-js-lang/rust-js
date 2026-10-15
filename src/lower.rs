@@ -477,14 +477,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Anyone else's, like `u32::MAX`, is its value, written in place. A
     /// trait's in generic code, `S::SIDES`, is its impl's dictionary's (ADR 0106).
     fn named_const(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        // A trait's, of a type: its impl's (ADR 0410).
+        // A trait's, of a type: its impl's (ADR 0410), of one generic code
+        // names too, `Self::CAPACITY` of an `impl<T, const CAP: usize>`.
         let (def_id, args) = match self.tcx.trait_of_assoc(def_id) {
-            Some(_) if !args.has_non_region_param() => {
-                match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {
-                    Ok(Some(instance)) => (instance.def_id(), instance.args),
-                    _ => (def_id, args),
-                }
-            }
+            Some(_) => match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {
+                Ok(Some(instance)) => (instance.def_id(), instance.args),
+                _ => (def_id, args),
+            },
             _ => (def_id, args),
         };
         // One holding a `Cell`, which changes through a shared reference, is
@@ -507,6 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let dictionary = self.dictionary(ty::TraitRef::from_assoc(self.tcx, trait_id, args), span)?;
                 Ok(Expr::member(dictionary, bindings::fn_name(self.tcx, def_id)))
             }
+            // The crate's, of a type parameter's or a const generic's, which
+            // rustc can't say as a value, arrayvec's `[const {
+            // MaybeUninit::uninit() }; CAP]`: its MIR, given these, as code.
+            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),
             _ => Err(self.unsupported(span, "this constant")),
         }
     }

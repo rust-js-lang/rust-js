@@ -11,7 +11,7 @@
 use std::collections::{HashMap, HashSet};
 
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
 use super::calls::Call;
@@ -62,6 +62,19 @@ pub(in crate::lower) enum PointerOp {
     /// A `NonNull`'s `as_ref()` and `as_mut()`: its place, never `None`.
     Place,
     PlaceMut,
+    /// `ptr::copy(src, dst, n)`, `copy_nonoverlapping`, `src.copy_to(dst,
+    /// n)`, and `dst.copy_from(src, n)` (`dst_first`): `n` items from where
+    /// one points to where the other does, `$ptrCopy`, of one array its
+    /// `copyWithin`.
+    Copy {
+        dst_first: bool,
+    },
+    /// `slice::from_raw_parts(p, n)`: the `n` items from where `p` points, a
+    /// copy, as a shared subslice is (ADR 0063), or all of an array, it;
+    /// `from_raw_parts_mut`'s, a view of them (ADR 0335).
+    Slice {
+        mutable: bool,
+    },
     /// `NonNull::from(r)` of a reference: a pointer to what it refers to,
     /// `$ptrTo(object)` of an object; a `&mut` of what isn't one is a
     /// handle on its place already (ADR 0099).
@@ -99,6 +112,10 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::boxed::Box::<T>::into_raw", PointerOp::IntoRaw),
     ("std::boxed::Box::<T>::from_raw", PointerOp::FromRaw),
     ("std::boxed::Box::<T, A>::from_raw", PointerOp::FromRaw),
+    ("std::ptr::copy", PointerOp::Copy { dst_first: false }),
+    ("std::ptr::copy_nonoverlapping", PointerOp::Copy { dst_first: false }),
+    ("std::slice::from_raw_parts", PointerOp::Slice { mutable: false }),
+    ("std::slice::from_raw_parts_mut", PointerOp::Slice { mutable: true }),
 ];
 
 const POINTER_METHODS: &[(&str, PointerOp)] = &[
@@ -120,6 +137,10 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("cast", PointerOp::Cast),
     ("cast_mut", PointerOp::Cast),
     ("cast_const", PointerOp::Cast),
+    ("copy_to", PointerOp::Copy { dst_first: false }),
+    ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
+    ("copy_from", PointerOp::Copy { dst_first: true }),
+    ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
 ];
 
 /// A `NonNull`'s functions, by name, which a raw pointer's are of the same
@@ -138,6 +159,10 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("offset", PointerOp::Add),
     ("sub", PointerOp::Sub),
     ("cast", PointerOp::Cast),
+    ("copy_to", PointerOp::Copy { dst_first: false }),
+    ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
+    ("copy_from", PointerOp::Copy { dst_first: true }),
+    ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
 ];
 
 /// Which of std's functions of a raw pointer `path` is, a function's or a
@@ -436,6 +461,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)
             }
             PointerOp::Same => arg(),
+            PointerOp::Copy { dst_first } => {
+                let (a, b, count) = (arg(), arg(), arg());
+                let (src, dst) = if dst_first { (b, a) } else { (a, b) };
+                let mut list = vec![src, dst, count];
+                // A `Copy` value JS holds as an object something changes:
+                // each place its own, as Rust's copy is.
+                if let Some(item) = pointee.filter(|&t| self.contains_mutated(t) && self.is_copy(t)) {
+                    let copy = self.copy(Expr::var("item"), item);
+                    list.push(Expr::arrow(
+                        vec!["item".into()],
+                        vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
+                    ));
+                }
+                out.push(StmtKind::Expr(helper("$ptrCopy", list)).at(self.js_span(span)));
+                Expr::undefined()
+            }
+            PointerOp::Slice { mutable } => {
+                let name = if mutable { "$ptrSliceMut" } else { "$ptrSlice" };
+                helper(name, vec![arg(), arg()])
+            }
             PointerOp::FromRef => {
                 let reference = arg();
                 let (referent, mutable) = match tys.first().map(|t| t.kind()) {
@@ -461,18 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             PointerOp::Cast => {
                 let to = generic_args.types().last().filter(|_| generic_args.len() > 1);
-                let same = match (pointee, to) {
-                    (Some(from), Some(to)) => from == to || from.is_unit() || to.is_unit(),
-                    _ => true,
-                };
-                if !same {
-                    return Err(refuse(
-                        self.tcx,
-                        span,
-                        Refused::Memory("a pointer read as another type's"),
-                    ));
+                match (pointee, to) {
+                    (Some(from), Some(to)) => self.recast(arg(), from, to, span)?,
+                    _ => arg(),
                 }
-                arg()
             }
         }))
     }
@@ -494,14 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {
                     unreachable!("pointers")
                 };
-                match a == b || a.is_unit() || b.is_unit() {
-                    true => Ok(Some(value)),
-                    false => Err(refuse(
-                        self.tcx,
-                        span,
-                        Refused::Memory("a pointer read as another type's"),
-                    )),
-                }
+                Ok(Some(self.recast(value, *a, *b, span)?))
             }
             mir::CastKind::PointerWithExposedProvenance if self.is_handle_pointer(to) => match value.as_int() {
                 Some(0) => Ok(Some(Expr::null())),
@@ -511,6 +541,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Err(refuse(self.tcx, span, Refused::Memory("a pointer's address")))
             }
             _ => Ok(None),
+        }
+    }
+
+    /// A pointer to an `a` as one to a `b`, where JS has it at the same
+    /// place: the same handle, of the same type, `()`, or a `MaybeUninit`
+    /// of it, which is its value (ADR 0332), an array of them too; an
+    /// array's, its first item's, arrayvec's `self.xs.as_ptr() as *const
+    /// T`; and its first item's, the whole array's, checked as it's made,
+    /// `$ptrWhole`. In generic code, where whether it is depends on the
+    /// type, arrayvec's `ptr.cast::<u8>()` of a type with no size: checked
+    /// where it's made, `$ptrRecast`. Else it reads one type's memory as
+    /// another's, which is refused.
+    pub(super) fn recast(&self, pointer: Expr, a: Ty<'tcx>, b: Ty<'tcx>, span: Span) -> R<Expr> {
+        if self.same_place(a, b) || a.is_unit() || b.is_unit() {
+            return Ok(pointer);
+        }
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        match (a.kind(), b.kind()) {
+            (ty::Array(item, _), _) if self.same_place(*item, b) => Ok(self.first_item_pointer(pointer)),
+            (_, ty::Array(item, length)) if self.same_place(a, *item) => {
+                Ok(helper("$ptrWhole", vec![pointer, self.const_arg(*length, span)?]))
+            }
+            _ if a.has_param() || b.has_param() => Ok(helper("$ptrRecast", vec![pointer])),
+            _ => Err(refuse(
+                self.tcx,
+                span,
+                Refused::Memory("a pointer read as another type's"),
+            )),
+        }
+    }
+
+    /// Whether what an `a` and a `b` are is one value in JS: the same type,
+    /// or a `MaybeUninit` of it, which is its value (ADR 0332), or arrays of
+    /// as many of those.
+    fn same_place(&self, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
+        let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);
+        let (a, b) = (value(a), value(b));
+        match (a.kind(), b.kind()) {
+            _ if a == b => true,
+            (ty::Array(x, n), ty::Array(y, m)) => n == m && self.same_place(*x, *y),
+            _ => false,
         }
     }
 

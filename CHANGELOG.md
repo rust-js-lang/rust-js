@@ -61,7 +61,10 @@ released any more: `rust-js build` is the one way to build an app.
   license's, kept (ADRs 0291, 0278, 0313, 0381, 0383).
 
 - **A `NonNull<T>` is its raw pointer**: `new`, `as_ptr`, `as_ref`,
-  `as_mut`, `cast`, `from(&mut x)` and the rest, as a raw pointer's
+  `as_mut`, `cast`, `from(&mut x)` and the rest, as a raw pointer's; and
+  an array's items are reached as arrayvec reaches them: casts where JS has
+  the same place, `ptr::copy`, `slice::from_raw_parts`, and a generic
+  constant, `[const { MaybeUninit::uninit() }; CAP]`, as code
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
 - **A crate of crates.io's is compiled into the app**, where rust-js can
   compile it: its JS committed in `rust-js/crates/<name>-<version>/`,
