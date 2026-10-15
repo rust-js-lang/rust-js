@@ -990,11 +990,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::Same);
         }
-        // 1.99's of a `Box<[T; N]>`, which is its array: through a `&mut`, a
-        // handle on the box (ADR 0099).
+        // 1.99's of a `Box<[T; N]>` or a `Box<[T]>`, which is its array:
+        // through a `&mut`, a handle on the box (ADRs 0099, 0388).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
-            && ty.peel_refs().boxed_ty().is_some_and(|inner| inner.is_array())
+            && self.is_boxed_items(ty.peel_refs())
         {
             return Some(Std::Pointee);
         }
@@ -2109,6 +2109,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_lang_adt(&self, ty: Ty<'tcx>, item: LangItem) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), item))
+    }
+
+    /// A `Box<[T; N]>` or a `Box<[T]>`: its array, in JS (ADR 0023).
+    pub(super) fn is_boxed_items(&self, ty: Ty<'tcx>) -> bool {
+        ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())
     }
 
     pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {

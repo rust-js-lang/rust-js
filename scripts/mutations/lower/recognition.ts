@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
     name: "boxed-array-into-iter-refused",
     breaks: "`into_iter()` of 1.99's `Box<[T; N]>` is refused",
     file: "src/lower/recognition.rs",
-    find: "            && ty.peel_refs().boxed_ty().is_some_and(|inner| inner.is_array())\n        {\n            return Some(Std::Pointee);\n",
+    find: "            && self.is_boxed_items(ty.peel_refs())\n        {\n            return Some(Std::Pointee);\n",
     replace: "            && false\n        {\n            return Some(Std::Pointee);\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
   },
@@ -1288,5 +1288,13 @@ export const mutations: Mutation[] = [
     find: "            && tcx.erase_and_anonymize_regions(self.reveal(ty)) == tcx.erase_and_anonymize_regions(self.reveal(other))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(into_itself|generic_into).rs$"],
+  },
+  {
+    name: "boxed-slice-iter-unknown",
+    breaks: "a `Box<[T]>`'s `into_iter()`, by value or through a `&` or a `&mut`, is refused",
+    file: "src/lower/recognition.rs",
+    find: "        ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())\n",
+    replace: "        ty.boxed_ty().is_some_and(|inner| inner.is_array())\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_slice_iter.rs$"],
   },
 ];

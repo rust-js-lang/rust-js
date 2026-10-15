@@ -130,7 +130,6 @@ indexing/indexing-spans-caller-location.rs	error: rust-js does not support calli
 intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
 intrinsics/volatile-composite-types.rs	error: rust-js does not support calling `std::ptr::write_volatile` yet
 iterators/bytes-iterator-clone-12677.rs	error: rust-js does not support cloning `std::str::Bytes<'_>` yet
-iterators/into-iter-on-boxed-slices-lint.rs	error: rust-js does not support calling `std::iter::IntoIterator::into_iter` yet
 iterators/iter-map-fold-type-length.rs	error: rust-js does not support `&mut` to a `I` yet
 layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
