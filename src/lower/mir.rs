@@ -2794,9 +2794,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push((**handle).clone());
                 continue;
             }
-            // What it returns can hold the borrow: a box would be copied back
-            // before it's used.
-            if self.result_borrows(def_id, i) {
+            // What it returns, or another parameter, can hold the borrow: a
+            // box would be copied back before it's used.
+            if self.borrow_outlives_call(def_id, i) {
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }

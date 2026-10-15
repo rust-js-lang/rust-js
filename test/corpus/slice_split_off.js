@@ -69,14 +69,9 @@ function main() {
   );
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
-    const word = take_word({
-      get value() {
-        return text;
-      },
-      set value(value) {
-        text = value;
-      },
-    });
+    const input = { value: text };
+    const word = take_word(input);
+    text = input.value;
     if (!word) {
       console.log("");
       const w = [1, 2, 3, 4, 5, 6];

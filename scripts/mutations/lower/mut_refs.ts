@@ -74,4 +74,21 @@ export const mutations: Mutation[] = [
     replace: "            false => StmtKind::Expr(Expr::undefined()).at(at),\n",
     tests: ["test/corpus.test.ts","-t","mut_number_args"],
   },
+  {
+    name: "borrow-kept-by-parameter-boxed",
+    breaks: "a `&mut` of a local given to a function that keeps it in another parameter is a box, copied back when the call returns, so writes through it after are lost",
+    file: "src/lower/mut_refs.rs",
+    find: "            .filter(|&(j, _)| j != i)\n",
+    replace: "            .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_escapes.rs$"],
+  },
+  {
+    name: "borrow-kept-by-what-it-refers-to",
+    breaks: "a `&mut` of a reference is taken as kept where what it refers to is, `pick(slot: &mut &'a [i32], other: &'a [i32])`'s, a handle where a box reads as the original",
+    file: "src/lower/mut_refs.rs",
+    find: "            ty::Ref(region, ..) => vec![region],\n",
+    replace: "            ty::Ref(..) => regions(input),\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_ref.rs$"],
+    snapshots: true,
+  },
 ];

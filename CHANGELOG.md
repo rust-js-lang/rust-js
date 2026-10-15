@@ -217,6 +217,10 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **A `&mut` of a local a function keeps in another parameter**,
+  `keep<'a>(v: &mut Vec<&'a mut u32>, x: &'a mut u32)`, or in `self`, is a
+  handle on the local: a box of it was copied back when the call returned,
+  and the writes through it after were lost (ADR 0099).
 - `collect::<Result<Vec<_>, _>>()` and `collect::<Option<Vec<_>>>()` gave the
   array of `Result`s or `Option`s, not the first `Err` or `None`.
 - `println!("{} {:?}", v.len(), v.pop())` read `v.len()` after the pop.

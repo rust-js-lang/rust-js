@@ -93,9 +93,15 @@ returned. It reads and writes its place:
 - Its place is fixed when it's made, as a variable's is: `&mut list.value`
   keeps the `list` object of that moment, `const o = list;`, so moving
   `list` on doesn't move the handle.
-- A call whose result can hold its parameter's borrow, one whose return
-  type names that parameter's lifetime, is given a handle, not a box: the
-  box is copied back when the call returns, and the borrow outlives it.
+- A call that can keep its parameter's borrow, one whose return type, or
+  another parameter's, names the borrow's own lifetime (not what it
+  refers to's: `take_word<'a>(input: &mut &'a [u8]) -> Option<&'a [u8]>`
+  gives back a slice, keeping nothing of the borrow), is given a handle,
+  not a box: the box is copied back when the call returns, and the borrow
+  outlives it. `keep<'a>(v: &mut Vec<&'a mut u32>, x: &'a mut u32)` keeps
+  `x` in `v`, and `hold(&mut self, x: &'a mut u32)` of a `Holder<'a>` in
+  `self` (`test/corpus/mut_ref_escapes.rs`); a box of either gave a
+  wrong answer, the writes through it after the call lost.
 - Of an object, a handle's `value` is the object, and changes through it
   are the object's; only a `&mut` to an object that's kept, and replaced
   whole through, needs one.

@@ -172,9 +172,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         None
     }
 
-    /// Can what `fn_id` returns hold the borrow its parameter `i` is given: does
-    /// its return type name a lifetime that parameter's type does (ADR 0099)?
-    pub(super) fn result_borrows(&self, fn_id: DefId, i: usize) -> bool {
+    /// Can the borrow `fn_id`'s parameter `i` is given outlive the call: does
+    /// its result's type, or another parameter's, which may keep it, name
+    /// the borrow's lifetime (ADR 0099)? `keep<'a>(v: &mut
+    /// Vec<&'a mut u32>, x: &'a mut u32)` keeps `x` in `v`.
+    pub(super) fn borrow_outlives_call(&self, fn_id: DefId, i: usize) -> bool {
         let sig = self
             .tcx
             .fn_sig(fn_id)
@@ -185,8 +187,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         let regions = |ty: Ty<'tcx>| ty.walk().filter_map(|part| part.as_region()).collect::<Vec<_>>();
-        let returned = regions(sig.output());
-        regions(input).iter().any(|region| returned.contains(region))
+        // The borrow's own lifetime, not what it refers to's: `pick(slot:
+        // &mut &'a [i32], other: &'a [i32])` replaces the slice, keeping
+        // nothing of the borrow.
+        let lent = match *input.kind() {
+            ty::Ref(region, ..) => vec![region],
+            _ => regions(input),
+        };
+        let others = sig
+            .inputs()
+            .iter()
+            .enumerate()
+            .filter(|&(j, _)| j != i)
+            .map(|(_, &ty)| ty);
+        others
+            .chain([sig.output()])
+            .any(|ty| regions(ty).iter().any(|region| lent.contains(region)))
     }
 
     /// What the call of `def_id`, given `generic_args`, gives, `value`, as
