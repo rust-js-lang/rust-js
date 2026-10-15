@@ -97,6 +97,16 @@ time, valid and deterministic by construction:
   Shape`, their areas summed by each one's own `area`, one `describe`d by
   `&dyn Shape`; and `total(&[Sq(a), Sq(b)])`, a generic function made for
   `Sq` (2026-10-15).
+- Floats, `f64` and `f32`, at the values where JS and Rust most often
+  part: `-0.0`, `0.1`, halves, `1e21` and `1e-7`, where JS's text turns to
+  an exponent, `2^53 + 1`, the smallest and largest, `NaN` and the
+  infinities. Arithmetic and `%`, `abs`, `floor`, `ceil`, `round`,
+  `trunc`, `sqrt`, `signum`, `fract`, `powi`, `min` and `max`; casts from
+  integers, between the two, and to integers, which saturate, `NaN` 0;
+  comparisons, `is_nan` and the like; and shown `{}`, `{:?}`, `{:.2}`,
+  `{:.0}`, which rounds a half to even, `{:e}`, `{:10.3}` and `{:+}`. Not
+  `exp`, `sin` and the like, which JS's `Math` needn't round as Rust does
+  (2026-10-15).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.

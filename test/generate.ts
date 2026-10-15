@@ -28,6 +28,15 @@ export type IntTy = (typeof intTypes)[number];
 export type Ty = string;
 
 const isInt = (ty: Ty): ty is IntTy => (intTypes as readonly string[]).includes(ty);
+export const floatTypes = ["f64", "f32"] as const;
+const isFloat = (ty: Ty) => ty === "f64" || ty === "f32";
+// Where a float's JS and Rust most often part: a sign of zero, a half that
+// rounds, where JS's text turns to an exponent, `2^53 + 1`, the smallest
+// and largest, and what isn't a number.
+const floatEdges: Record<"f64" | "f32", string[]> = {
+  f64: ["0.0", "-0.0", "1.0", "-1.0", "0.1", "0.5", "1.5", "2.5", "-2.5", "1e21", "1e-7", "123456789.125", "9007199254740993.0", "1e300", "5e-324", "f64::NAN", "f64::INFINITY", "f64::NEG_INFINITY", "f64::MAX", "f64::MIN_POSITIVE", "f64::EPSILON", "3.0", "-7.25", "1e15", "1e16"],
+  f32: ["0.0", "-0.0", "1.0", "0.1", "0.5", "2.5", "16777217.0", "1e-7", "3.4028235e38", "1e-45", "f32::NAN", "f32::INFINITY", "f32::MAX", "f32::EPSILON", "-7.25", "1e10"],
+};
 const inside = (ty: Ty, outer: "Vec" | "Option"): IntTy | undefined => {
   const m = new RegExp(`^${outer}<(\\w+)>$`).exec(ty);
   return m && isInt(m[1]) ? m[1] : undefined;
@@ -53,6 +62,8 @@ const range = (ty: IntTy): [bigint, bigint] => {
 
 export type Expr =
   | { kind: "lit"; ty: Ty; value: bigint | boolean }
+  // A float, as Rust writes it, `0.1f64`, `f64::NAN`.
+  | { kind: "flit"; ty: Ty; text: string }
   | { kind: "zero"; ty: Ty }
   | { kind: "var"; ty: Ty; name: string }
   | { kind: "bin"; ty: Ty; op: string; a: Expr; b: Expr }
@@ -62,6 +73,7 @@ export type Expr =
   | { kind: "cmp"; ty: Ty; op: string; a: Expr; b: Expr }
   | { kind: "logic"; ty: Ty; op: "&&" | "||"; a: Expr; b: Expr }
   | { kind: "not"; ty: Ty; a: Expr }
+  | { kind: "unary-neg"; ty: Ty; a: Expr }
   | { kind: "if"; ty: Ty; c: Expr; a: Expr; b: Expr }
   // `vec![a, b]`, `v[i]`, `S { a, b, c }`, `s.a`, `f(a)`, and what a
   // `Vec` or an `Option` can say, with or without a closure.
@@ -181,6 +193,7 @@ type Scope = { name: string; ty: Ty; mutable: boolean }[];
 
 function literal(r: Random, ty: Ty): Expr {
   if (ty === "bool") return { kind: "lit", ty, value: r.chance(0.5) };
+  if (ty === "f64" || ty === "f32") return { kind: "flit", ty, text: r.pick(floatEdges[ty]) };
   if (ty === "String") return { kind: "text", ty, value: r.pick(texts) };
   if (ty === "char") return { kind: "text", ty, value: r.pick(chars) };
   if (ty === "E") {
@@ -293,6 +306,15 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
   }
   const structs = written.filter((v) => v.ty === "S");
   if (ty === "i32" && structs.length > 0 && r.chance(0.3)) return { kind: "bump", ty, name: r.pick(structs).name };
+  // A float cast to an integer, which saturates, and `NaN` is 0; and what a
+  // float says of itself, or of another.
+  if (isInt(ty) && r.chance(0.06)) return { kind: "cast", ty, a: sub(r.pick(floatTypes)) };
+  if (ty === "bool" && r.chance(0.12)) {
+    const f = r.pick(floatTypes);
+    return r.chance(0.5)
+      ? { kind: "cmp", ty, op: r.pick(["==", "!=", "<", "<=", ">", ">="]), a: sub(f), b: sub(f) }
+      : { kind: "method", ty, name: r.pick(["is_nan", "is_finite", "is_infinite", "is_sign_negative"]), a: sub(f) };
+  }
   if (ty === "bool") {
     const choice = r.int(6);
     if (choice === 0) {
@@ -331,6 +353,28 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     return { kind: "if", ty, c: sub("bool"), a: sub("bool"), b: sub("bool") };
   }
   if (ty === "Map") return vars.length > 0 ? { kind: "var", ty, name: r.pick(vars).name } : { kind: "zero", ty };
+  if (isFloat(ty)) {
+    const other = ty === "f64" ? "f32" : "f64";
+    switch (r.int(9)) {
+      case 0:
+      case 1:
+        return { kind: "bin", ty, op: r.pick(["+", "-", "*", "/", "%"]), a: sub(ty), b: sub(ty) };
+      case 2:
+        return { kind: "method", ty, name: r.pick(["abs", "floor", "ceil", "round", "trunc", "sqrt", "signum", "fract"]), a: sub(ty) };
+      case 3:
+        return { kind: "method", ty, name: r.pick(["min", "max"]), a: sub(ty), b: sub(ty) };
+      case 4:
+        return { kind: "method", ty, name: "powi", a: sub(ty), b: { kind: "lit", ty: "i32", value: BigInt(r.int(7) - 2) } };
+      case 5:
+        return { kind: "cast", ty, a: sub(r.pick(intTypes)) };
+      case 6:
+        return { kind: "cast", ty, a: sub(other) };
+      case 7:
+        return { kind: "if", ty, c: sub("bool"), a: sub(ty), b: sub(ty) };
+      default:
+        return { kind: "unary-neg", ty, a: sub(ty) };
+    }
+  }
   if (ty === "String") {
     switch (r.int(7)) {
       case 0:
@@ -527,6 +571,7 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
 }
 
 function valueType(r: Random): Ty {
+  if (r.chance(0.08)) return r.pick(floatTypes);
   const n = r.next();
   if (n < 0.45) return r.pick(intTypes);
   if (n < 0.52) return "bool";
@@ -558,11 +603,13 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
       inner.push({ name, ty, mutable: true });
     } else if (choice < 5) {
       const target = r.pick(writable);
-      const ops = isInt(target.ty) ? ["=", "+=", "-=", "*=", "^=", "|=", "&="] : ["="];
+      const ops = isInt(target.ty) ? ["=", "+=", "-=", "*=", "^=", "|=", "&="] : isFloat(target.ty) ? ["=", "+=", "-=", "*=", "/="] : ["="];
       stmts.push({ kind: "assign", name: target.name, ty: target.ty, op: r.pick(ops), value: expr(r, target.ty, inner, 2) });
     } else if (choice < 8) {
       const ty = r.chance(0.7) ? r.pick(intTypes) : valueType(r);
-      const format = isInt(ty)
+      const format = isFloat(ty)
+        ? r.pick(["{}", "{:?}", "{:.2}", "{:.0}", "{:e}", "{:10.3}|", "{:+}", "{:.1}"])
+        : isInt(ty)
         ? r.pick(["{}", "{:?}", "{:x}", "{:#x}", "{:5}", "{:<4}|"])
         : ty === "bool"
           ? r.pick(["{}", "{:?}"])
@@ -775,6 +822,10 @@ function show(e: Expr): string {
     case "lit":
       // Through `id`, so rustc can't work out an overflow and reject it.
       return typeof e.value === "boolean" ? `id(${e.value})` : `id(${e.value}${suffix(e.ty)})`;
+    case "flit":
+      return /^f(32|64)::/.test(e.text) ? `id(${e.text})` : `id(${e.text}${e.ty})`;
+    case "unary-neg":
+      return `(-${show(e.a)})`;
     case "zero":
       if (inside(e.ty, "Vec")) return `Vec::<${inside(e.ty, "Vec")}>::new()`;
       if (inside(e.ty, "Option")) return `None::<${inside(e.ty, "Option")}>`;
@@ -783,6 +834,7 @@ function show(e: Expr): string {
       if (e.ty === "char") return "'a'";
       if (e.ty === "E") return "E::A";
       if (e.ty === "Map") return "BTreeMap::<u8, i32>::new()";
+      if (isFloat(e.ty)) return `id(0.0${e.ty})`;
       return e.ty === "bool" ? "false" : `id(0${e.ty})`;
     case "var":
       return isCopy(e.ty) ? e.name : `${e.name}.clone()`;
