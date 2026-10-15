@@ -18,6 +18,8 @@ enum Code {
 }
 
 const EMPTY: Discriminant<Shape> = discriminant(&Shape::Empty);
+// A static's is its value, which no MIR of its own gives.
+static SQUARE: Discriminant<Shape> = discriminant(&Shape::Square { side: 0.0 });
 
 fn same_kind(a: &Shape, b: &Shape) -> bool {
     discriminant(a) == discriminant(b)
@@ -33,6 +35,6 @@ fn main() {
     println!("{:?} {:?}", counts.get(&discriminant(&Shape::Circle(0.0))), counts.get(&EMPTY));
     println!("{:?}", discriminant(&Shape::Square { side: 1.0 }));
     println!("{:?} {:?}", discriminant(&Code::Low), discriminant(&Code::High));
-    println!("{}", discriminant(&shapes[3]) == EMPTY);
+    println!("{} {}", discriminant(&shapes[3]) == EMPTY, discriminant(&shapes[1]) == SQUARE);
     println!("{:?}", shapes[1]);
 }

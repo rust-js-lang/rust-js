@@ -17,6 +17,7 @@ function shapeDebug_fmt(shape) {
 }
 
 const EMPTY = 2;
+const SQUARE = 1;
 
 function same_kind(a, b) {
   return (
@@ -42,10 +43,10 @@ function main() {
     counts.set(key, (current + 1) >>> 0);
   }
   const value = { TAG: "Circle", _0: 0 };
-  const value$3 = counts.get(value.TAG === "Circle" ? 0 : value.TAG === "Square" ? 1 : 2);
-  const value$4 = counts.get(EMPTY);
+  const value$4 = counts.get(value.TAG === "Circle" ? 0 : value.TAG === "Square" ? 1 : 2);
+  const value$5 = counts.get(EMPTY);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   const value$1 = { TAG: "Square", side: 1 };
   console.log(`Discriminant(${value$1.TAG === "Circle" ? 0 : value$1.TAG === "Square" ? 1 : 2})`);
@@ -53,7 +54,11 @@ function main() {
     `Discriminant(${{ Low: 3, High: 10 }["Low"]}) Discriminant(${{ Low: 3, High: 10 }["High"]})`,
   );
   const value$2 = $index(shapes, 3);
-  console.log(`${(value$2.TAG === "Circle" ? 0 : value$2.TAG === "Square" ? 1 : 2) === EMPTY}`);
+  const value$6 = (value$2.TAG === "Circle" ? 0 : value$2.TAG === "Square" ? 1 : 2) === EMPTY;
+  const value$3 = $index(shapes, 1);
+  console.log(
+    `${value$6} ${(value$3.TAG === "Circle" ? 0 : value$3.TAG === "Square" ? 1 : 2) === SQUARE}`,
+  );
   console.log(`${shapeDebug_fmt($index(shapes, 1))}`);
 }
 //# sourceMappingURL=case.js.map
