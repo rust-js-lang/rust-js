@@ -356,4 +356,20 @@ export const mutations: Mutation[] = [
     replace: "    (\"as_ref\", PointerOp::AsRef),\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
   },
+  {
+    name: "to-bytes-refused",
+    breaks: "a pointer cast to bytes, an allocation's given to `realloc` or `dealloc`, is refused",
+    file: "src/lower/pointers.rs",
+    find: "            (_, ty::Uint(ty::UintTy::U8)) => Ok(helper(\"$ptrBytes\", vec![pointer])),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
+  },
+  {
+    name: "from-bytes-refused",
+    breaks: "an allocation's pointer to bytes cast to its items' is refused",
+    file: "src/lower/pointers.rs",
+    find: "            (ty::Uint(ty::UintTy::U8), _) => Ok(helper(\"$ptrTyped\", vec![pointer])),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
+  },
 ];

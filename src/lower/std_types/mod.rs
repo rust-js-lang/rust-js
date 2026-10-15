@@ -22,10 +22,12 @@
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
+//! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
 
+pub(super) mod alloc;
 pub(super) mod any;
 pub(super) mod cell;
 pub(super) mod channel;

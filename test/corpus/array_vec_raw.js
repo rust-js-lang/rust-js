@@ -4,10 +4,11 @@ import {
   $debugStr,
   $ptr,
   $ptrAdd,
+  $ptrBytes,
   $ptrCopy,
-  $ptrRecast,
   $ptrSlice,
   $ptrSliceMut,
+  $ptrTyped,
   $ptrWhole,
   $slice,
   $traitImpl,
@@ -40,7 +41,7 @@ function stackCapacity(CAP, dropT) {
 
 function step(p, n, TSize) {
   if (TSize === 0) {
-    return $ptrRecast($ptrAdd($ptrRecast(p), n));
+    return $ptrTyped($ptrAdd($ptrBytes(p), n));
   }
   return $ptrAdd(p, n);
 }

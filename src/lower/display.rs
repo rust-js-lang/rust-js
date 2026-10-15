@@ -924,6 +924,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value]));
         }
+        // A `Layout`'s, `Layout { size: 8, align: 4 (1 << 2) }`, and a
+        // `LayoutError`'s, its name (ADR 0417).
+        if let Some(layout) = self.recognition().layout(ty) {
+            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
+                return Err(self.unsupported(span, "options for a `Layout`'s `{:?}`"));
+            }
+            return Ok(match layout {
+                true => Expr::call(Expr::helper("$debugLayout"), vec![value]),
+                false => Expr::str("LayoutError"),
+            });
+        }
         // A part of a `{:?}` given its options (ADR 0058): a leaf applies them.
         if self.writing.options.is_some() && self.is_debug_leaf(ty) {
             let options = self.writing.options.take().expect("checked");

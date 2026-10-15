@@ -76,6 +76,8 @@ pub(super) enum ChannelError {
 /// The std functions whose JS meaning rust-js knows (ADRs 0023, 0025).
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Std {
+    /// The allocator's, or a `Layout`'s (ADR 0417).
+    Alloc(super::std_types::alloc::AllocOp),
     /// The argument itself: `Box::new(x)`, `Rc::new(x)`,
     /// `s.to_owned()`, `String::from(s)`, `v.iter()`, and `Deref` of
     /// `String`, `Rc`, `Vec`, `Ref`, `RefMut` and JS objects.
@@ -589,6 +591,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // A raw pointer's, a handle on its place (ADR 0407).
         if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {
             return Some(Some(Std::Pointer(op)));
+        }
+        // The allocator's, an array of slots (ADR 0417).
+        if let Some(op) = super::std_types::alloc::alloc_op(&std_path(tcx, def_id)) {
+            return Some(Some(Std::Alloc(op)));
         }
         // The process a program runs in, Node's (ADR 0391).
         if let Some(op) = node_only(tcx, def_id) {
@@ -2244,6 +2250,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result)
             && args.type_at(0).is_unit()
             && self.is_io_error(args.type_at(1)))
+    }
+
+    /// `Layout`, `{ size, align }` (ADR 0417), `Some(true)`; or
+    /// `LayoutError`, which says nothing, `Some(false)`.
+    pub(super) fn layout(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::alloc::Layout" => Some(true),
+            "std::alloc::LayoutError" => Some(false),
+            _ => None,
+        }
     }
 
     /// `io::Error`, which no write of rust-js's gives (ADR 0392): a type a

@@ -781,6 +781,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (_, ty::Array(item, length)) if self.same_place(a, *item) => {
                 Ok(helper("$ptrWhole", vec![pointer, self.const_arg(*length, span)?]))
             }
+            // To bytes, which JS has none of, and back: an allocation's
+            // pointer, given to the allocator (ADR 0417).
+            (_, ty::Uint(ty::UintTy::U8)) => Ok(helper("$ptrBytes", vec![pointer])),
+            (ty::Uint(ty::UintTy::U8), _) => Ok(helper("$ptrTyped", vec![pointer])),
             _ if a.has_param() || b.has_param() => Ok(helper("$ptrRecast", vec![pointer])),
             _ => Err(refuse(
                 self.tcx,

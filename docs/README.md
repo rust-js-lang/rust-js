@@ -484,6 +484,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0414 A library is shared on npm, as ReScript's are](decisions/0414-a-library-on-npm-as-rescripts-are.md)
 - [0415 A crate of crates.io's is compiled into the app, where it can be](decisions/0415-a-crate-of-crates-io-in-an-app.md)
 - [0416 `RangeBounds` in generic code: a dictionary of the range's bounds](decisions/0416-range-bounds-in-generic-code.md)
+- [0417 An allocation is an array of slots](decisions/0417-an-allocation-is-an-array-of-slots.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

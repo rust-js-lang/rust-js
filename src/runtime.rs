@@ -182,6 +182,7 @@ helpers! {
     TryFromInt,
     Print,
     Process,
+    Alloc,
     EmptyPattern,
     ToJson,
     FromJson,
@@ -632,6 +633,7 @@ impl Helper {
             // the task ends (ADR 0087).
             Helper::Print => include_str!("runtime/print.js"),
             Helper::Process => include_str!("runtime/process.js"),
+            Helper::Alloc => include_str!("runtime/alloc.js"),
             // `s.replace(p, r)` and `s.split(p)` of a pattern that may be empty,
             // which Rust matches at each char's boundary, both ends too, and JS
             // between UTF-16 units, splitting an emoji (ADR 0063).

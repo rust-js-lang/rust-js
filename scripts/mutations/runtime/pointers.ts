@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "  return q.at - p.at;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
   },
+  {
+    name: "bytes-view-forgotten",
+    breaks: "a pointer cast to bytes and back isn't the pointer it was",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer.bytes !== undefined) return pointer.bytes;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
+  },
 ];

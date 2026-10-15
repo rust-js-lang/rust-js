@@ -135,8 +135,44 @@ function $ptrWhole(pointer, length) {
 }
 
 // A pointer as one to another type, in generic code where whether JS has it
-// at the same place depends on the type: arrayvec's `ptr.cast::<u8>()` of
-// a type with no size, which reads memory by where it is.
+// at the same place depends on the type: of a whole array, as one to its
+// first item, smallvec's `*const A` as `*const A::Item`; of another, which
+// reads memory by where it is, rust-js's error.
 function $ptrRecast(pointer) {
+  if (pointer !== null && pointer.of === undefined && Array.isArray(pointer.value)) return $ptr(pointer.value, 0);
   throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+}
+
+// A pointer as one to bytes, `p.cast::<u8>()`, which JS has none of (ADR
+// 0417): one for each, given to the allocator and cast back, `$ptrTyped`,
+// but not read, written or stepped through.
+const $bytesViews = new WeakMap();
+
+function $ptrBytes(pointer) {
+  if (pointer === null || pointer.bytes !== undefined) return pointer;
+  let view = $bytesViews.get(pointer);
+  if (view === undefined) {
+    const refused = () => {
+      throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+    };
+    view = {
+      bytes: pointer,
+      get value() {
+        return refused();
+      },
+      set value(value) {
+        refused();
+      },
+    };
+    $bytesViews.set(pointer, view);
+  }
+  return view;
+}
+
+// A pointer to bytes as one to a type: what was cast to bytes, or an
+// allocation's first item. Of bytes that are bytes, rust-js's error.
+function $ptrTyped(pointer) {
+  if (pointer === null) return null;
+  if (pointer.bytes !== undefined) return pointer.bytes;
+  throw new Error("rust-js does not support bytes read as another type's, which reads memory by where it is");
 }

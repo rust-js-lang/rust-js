@@ -444,4 +444,12 @@ export const mutations: Mutation[] = [
     replace: "                let mapped = super::std_types::result::err(result);\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
   },
+  {
+    name: "layout-debug-refused",
+    breaks: "`{:?}` of a `Layout` is refused",
+    file: "src/lower/display.rs",
+    find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
+    replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
+  },
 ];

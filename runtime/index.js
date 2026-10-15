@@ -1868,10 +1868,46 @@ export function $ptrWhole(pointer, length) {
 }
 
 // A pointer as one to another type, in generic code where whether JS has it
-// at the same place depends on the type: arrayvec's `ptr.cast::<u8>()` of
-// a type with no size, which reads memory by where it is.
+// at the same place depends on the type: of a whole array, as one to its
+// first item, smallvec's `*const A` as `*const A::Item`; of another, which
+// reads memory by where it is, rust-js's error.
 export function $ptrRecast(pointer) {
+  if (pointer !== null && pointer.of === undefined && Array.isArray(pointer.value)) return $ptr(pointer.value, 0);
   throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+}
+
+// A pointer as one to bytes, `p.cast::<u8>()`, which JS has none of (ADR
+// 0417): one for each, given to the allocator and cast back, `$ptrTyped`,
+// but not read, written or stepped through.
+export const $bytesViews = new WeakMap();
+
+export function $ptrBytes(pointer) {
+  if (pointer === null || pointer.bytes !== undefined) return pointer;
+  let view = $bytesViews.get(pointer);
+  if (view === undefined) {
+    const refused = () => {
+      throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+    };
+    view = {
+      bytes: pointer,
+      get value() {
+        return refused();
+      },
+      set value(value) {
+        refused();
+      },
+    };
+    $bytesViews.set(pointer, view);
+  }
+  return view;
+}
+
+// A pointer to bytes as one to a type: what was cast to bytes, or an
+// allocation's first item. Of bytes that are bytes, rust-js's error.
+export function $ptrTyped(pointer) {
+  if (pointer === null) return null;
+  if (pointer.bytes !== undefined) return pointer.bytes;
+  throw new Error("rust-js does not support bytes read as another type's, which reads memory by where it is");
 }
 
 // A counted `Rc` or `Arc` (ADR 0320): `{ value, strong, weak }`, which each
@@ -3981,6 +4017,44 @@ export function $vars() {
 // `process::exit(code)`.
 export function $exit(code) {
   $process("`std::process::exit`").exit(code);
+}
+
+// The allocator (ADR 0417): an allocation is an array of slots, given as a
+// pointer to its first's bytes, which it's cast back from to its items'.
+export function $alloc(layout) {
+  return $ptrBytes($ptr([], 0));
+}
+
+// `realloc(p, layout, size)`: the same allocation, as an array grows.
+export function $realloc(pointer, layout, size) {
+  return pointer;
+}
+
+// `handle_alloc_error(layout)`: the program's end, as Rust says it.
+export function $allocError(layout) {
+  throw new Error(`memory allocation of ${layout.size} bytes failed`);
+}
+
+// `Layout::from_size_align(size, align)`: `Err` where `align` isn't a power
+// of two, or `size` rounded up to it is past `isize::MAX`.
+export function $layout(size, align) {
+  const ok = align > 0 && (align & (align - 1)) === 0 && size <= 2 ** 31 - align;
+  return ok ? { TAG: "Ok", _0: { size, align } } : { TAG: "Err", _0: undefined };
+}
+
+// `{:?}` of a `Layout`.
+export function $debugLayout(layout) {
+  return `Layout { size: ${layout.size}, align: ${layout.align} (1 << ${Math.log2(layout.align)}) }`;
+}
+
+// `Vec::from_raw_parts(p, len, cap)`: the array `p` points to the first of,
+// `len` long. Of another place, rust-js's error.
+export function $vecFromRaw(pointer, length) {
+  if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
+    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+  }
+  pointer.of.length = length;
+  return pointer.of;
 }
 
 export function $replace(s, pattern, replacement) {
