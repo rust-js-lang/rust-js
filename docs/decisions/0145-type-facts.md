@@ -12,7 +12,15 @@ type parameters ask none still (`test/corpus/impl_type_facts.rs`,
 reach asks too: its manifest says what, `type_facts`, its consumers' calls
 give it, and a consumer's generic function that passes its own type
 parameter on asks it too, arrayvec's `extend_from_slice` of its public
-`try_from` (`test/crates.test.ts`).
+`try_from` (`test/crates.test.ts`). A trait's method called of a type
+naming the caller's type parameter is its impl's, and asks what that
+asks: arrayvec's `from_iter` calling `array.extend(iter)` of an
+`ArrayVec<T, CAP>` asks `T`'s size, and passes it on; so does one that
+gives an impl's dictionary for a callee's bound, a `C: Push<T>` of a
+`Stack<T>`, or calls a std method that only calls its bound's,
+`collect()` that's `FromIterator::from_iter` (ADR 0160), arrayvec's
+`Clone` (`test/corpus/impl_type_facts_through_trait.rs`). Which impl
+gives the dictionary is `traits::evidence_impl`'s alone.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

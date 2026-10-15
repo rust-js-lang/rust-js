@@ -2,7 +2,8 @@
 //! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, which a
 //! caller's type answers.
 
-use crate::lower::recognition::{TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_fact};
+use crate::lower::recognition::{Recognition, TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_fact};
+use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
@@ -17,7 +18,10 @@ use std::collections::{HashMap, HashSet};
 /// a caller gives each, after the function's dictionaries. An impl's method,
 /// called through its dictionary, asks its impl too of the impl's type
 /// parameters, which the dictionary is made with, `wrapFootprint(TSize)`,
-/// and gives its method. A
+/// and gives its method. A trait's method called of a type naming the
+/// caller's type parameter, `stack.extend(iter)`, is its impl's, and a
+/// caller asks what each impl it gives a dictionary of for a callee's
+/// bound, or for `collect()`'s `FromIterator`, asks. A
 /// trait's method, an impl's of its own type parameters, and a library's
 /// function its consumers can reach, which never see this, ask none: theirs
 /// are errors.
@@ -26,6 +30,7 @@ pub(super) fn type_fact_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    (given, trait_impls): (Given<'_>, &[DefId]),
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let mut asked: HashSet<(DefId, u32, TypeFact)> = HashSet::new();
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
@@ -33,6 +38,12 @@ pub(super) fn type_fact_params<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
+        let recognition = Recognition {
+            tcx,
+            typing_env,
+            trait_impls,
+            foreign,
+        };
         for expr in body.thir.exprs.iter() {
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
@@ -64,6 +75,51 @@ pub(super) fn type_fact_params<'tcx>(
                 }
                 continue;
             }
+            // A std method that only calls its bound's, `collect()` that's
+            // `FromIterator::from_iter` (ADR 0160): that one's.
+            let (callee, args) = match recognition.resolve_delegated(callee, args) {
+                Some((method, method_args, _)) => (method, method_args),
+                None => (callee, args),
+            };
+            // A trait's method of a type that names it, `stack.extend(iter)`
+            // of a `Stack<T>`: its impl's, which asks of the impl's parameters.
+            let (callee, args) = match tcx.trait_of_assoc(callee) {
+                Some(_) => match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
+                    Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
+                        (instance.def_id(), instance.args)
+                    }
+                    _ => (callee, args),
+                },
+                None => (callee, args),
+            };
+            // Each impl whose dictionary it's given for a bound, `collect()`'s
+            // `B: FromIterator` of an `ArrayVec<T, CAP>`: what that asks of
+            // its type parameters, of a caller's given it, the caller asks.
+            for bound in bounds(tcx, foreign, given, callee) {
+                let bound = ty::EarlyBinder::bind(tcx, bound).instantiate(tcx, args);
+                let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, bound) else {
+                    continue;
+                };
+                let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
+                    continue;
+                };
+                for (index, arg) in impl_args.iter().enumerate() {
+                    if let Some(ty) = arg.as_type()
+                        && let ty::Param(param) = ty.kind()
+                    {
+                        match impl_id.is_local() {
+                            true => passed.push(((caller, param.index), (impl_id, index as u32))),
+                            false => {
+                                for (at, fact) in foreign.type_facts(impl_id) {
+                                    if at as usize == index {
+                                        asked.insert((caller, param.index, fact));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             // A library's function, which asks what its manifest says: of a
             // caller's type parameter given it, the caller asks it too.
             if !callee.is_local() {
@@ -91,6 +147,17 @@ pub(super) fn type_fact_params<'tcx>(
     let mut changed = true;
     while changed {
         changed = false;
+        // An impl's method asks its impl, whose dictionary gives it, of the
+        // impl's own type parameters.
+        let lifted: Vec<_> = (asked.iter())
+            .filter_map(|&(id, index, fact)| {
+                let impl_id = tcx.trait_impl_of_assoc(id)?;
+                ((index as usize) < tcx.generics_of(impl_id).count()).then_some((impl_id, index, fact))
+            })
+            .collect();
+        for fact in lifted {
+            changed |= asked.insert(fact);
+        }
         for &((caller, from), (callee, to)) in &passed {
             for fact in TypeFact::ALL {
                 if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {
@@ -106,9 +173,8 @@ pub(super) fn type_fact_params<'tcx>(
         }
         match tcx.trait_impl_of_assoc(id) {
             // Of the impl's own parameters: the method's, which its
-            // dictionary gives it of its own, and so the dictionary's.
+            // dictionary, asked them above, gives it of its own.
             Some(impl_id) if (index as usize) < tcx.generics_of(impl_id).count() => {
-                params.entry(impl_id).or_default().push((index, fact));
                 params.entry(id).or_default().push((index, fact));
             }
             Some(_) => {}

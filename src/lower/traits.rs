@@ -128,6 +128,20 @@ pub(super) struct Given<'a> {
     pub stepped: &'a HashSet<(DefId, u32)>,
 }
 
+/// The impl whose dictionary is the evidence of `tr`, and its arguments: a
+/// user's, the crate's or another's, as `codegen_select_candidate` selects
+/// it, where `tr` isn't a built-in one, a `dyn`'s.
+pub(super) fn evidence_impl<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    tr: ty::TraitRef<'tcx>,
+) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+    match tcx.codegen_select_candidate(typing_env.as_query_input(tr)) {
+        Ok(ImplSource::UserDefined(imp)) => Some((imp.impl_def_id, imp.args)),
+        _ => None,
+    }
+}
+
 pub(super) fn bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
@@ -1332,16 +1346,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        let selected = self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr));
         // The crate's own impl's accessor, or one a library exports (ADR 0100).
-        if let Ok(ImplSource::UserDefined(imp)) = selected
-            && (self.krate.trait_impls.contains(&imp.impl_def_id) || self.krate.foreign.item(imp.impl_def_id).is_some())
+        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, self.typing_env, tr)
+            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.item(impl_id).is_some())
         {
-            let callee = self.fn_ref(imp.impl_def_id);
-            let args = self.evidence_args(imp.impl_def_id, imp.args, span)?;
+            let callee = self.fn_ref(impl_id);
+            let args = self.evidence_args(impl_id, impl_args, span)?;
             return Ok(Expr::call(callee, args));
         }
         // A trait object's: Rust's built-in `impl Trait for dyn Trait`.
+        let selected = self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr));
         if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {
             return self.object_dictionary(tr, span);
         }

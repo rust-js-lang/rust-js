@@ -74,7 +74,9 @@ released any more: `rust-js build` is the one way to build an app.
   cell of the cell, as arrayvec's `ScopeExitGuard` holds one
   ([ADR 0338](docs/decisions/0338-slice-split-off.md)).
 - **A generic function or impl that asks `size_of::<T>()` is given it** in a
-  trait impl's method, through the impl's dictionary, and across crates, by
+  trait impl's method, through the impl's dictionary, called through its
+  trait from another impl's, or given that dictionary for a bound or
+  `collect()`, and across crates, by
   its library's manifest ([ADR 0145](docs/decisions/0145-type-facts.md)).
 - **A range's bounds in generic code**, `R: RangeBounds<usize>`'s
   `start_bound()` and `end_bound()`, of every range of std's
