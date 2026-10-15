@@ -2,7 +2,7 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0052](0052-std-trait-impls.md).
 
-Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+Case: C, A, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 
 ## Context
 
@@ -88,3 +88,12 @@ $iterator(fibonacci(), fibonacciIterator_next).find((x) => x > 50)
   `.drop`, `.toArray`). Current browsers, Node 22 and Bun all have them.
 - `for` over one is a `for .. of` on a JS iterator, which calls `next` once
   per item, as Rust does.
+- **B: a `collect` std knows is empty runs nothing; rust-js's runs what's
+  before it.** `vec![x].into_iter().map(|x| note(x)).skip(1).collect::<Vec<_>>()`:
+  std's `Vec` from an iterator whose `size_hint` is `0` makes the empty
+  `Vec` without iterating, so `note` isn't called; the JS's iterator steps,
+  as Rust's iterators are lazy, through `map` to `drop(1)`, and calls it.
+  A `sum` of the same chain, or a `collect` of one with an item left,
+  calls it natively too. Only a closure that does something before a
+  `skip` past every item, collected, can tell (a generated program's, seed
+  80072, 2026-10-15).

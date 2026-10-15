@@ -99,6 +99,11 @@ export type Expr =
   // whose arms are a value, values `1 | 2`, a range `3..=9`, or a binding
   // with a guard, `n if n > 4`.
   | { kind: "loop"; ty: Ty; counter: string; n: number; c: Expr; value: Expr }
+  // `S`'s methods: `s.get()`; `s.add(n)`, of `&mut self`, its argument
+  // reading `s`, as Rust's two-phase borrow lets it, never writing it; and
+  // `s.scaled(k).a`, of `self`, copied before its argument, which may write
+  // `s`, is made: JS passes an object, not a copy.
+  | { kind: "method-s"; ty: Ty; name: string; method: "get" | "add" | "scaled"; arg?: Expr }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 // A closure's parameters keep the names they were made with, so a chain in
@@ -196,6 +201,18 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
   if (r.chance(0.12)) {
     const chained = chain(r, ty, scope, depth);
     if (chained) return chained;
+  }
+  const structsHere = scope.filter((v) => v.ty === "S");
+  if (ty === "i32" && structsHere.length > 0 && r.chance(0.35)) {
+    const s = r.pick(structsHere);
+    const method = r.pick(["get", "add", "scaled"] as const);
+    if (method === "get") return { kind: "method-s", ty, name: s.name, method };
+    if (method === "add" && s.mutable) {
+      // What it's given reads `s`, and writes anything else.
+      const reading = scope.map((v) => (v.name === s.name ? { ...v, mutable: false } : v));
+      return { kind: "method-s", ty, name: s.name, method, arg: expr(r, "i32", reading, depth - 1) };
+    }
+    if (method === "scaled") return { kind: "method-s", ty, name: s.name, method, arg: expr(r, "i32", scope, depth - 1) };
   }
   if (isInt(ty) && r.chance(0.06)) {
     const counter = `c${r.int(1_000_000)}`;
@@ -444,8 +461,11 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
   } else {
     return undefined;
   }
+  // No `skip` before a `collect`: std's `Vec` of a chain it knows is empty
+  // runs none of it, where the JS's steps through it (ADR 0055's B).
+  const ops = end.op === "collect" ? (["map", "map", "filter", "filter", "take"] as const) : (["map", "map", "filter", "filter", "take", "skip"] as const);
   const steps: Step[] = Array.from({ length: r.int(4) }, (): Step => {
-    const op = r.pick(["map", "map", "filter", "filter", "take", "skip"] as const);
+    const op = r.pick(ops);
     if (op === "map" || op === "filter") {
       const { x, body } = closure(elem, op === "map" ? elem : "bool");
       return { op, x, body };
@@ -461,8 +481,8 @@ function valueType(r: Random): Ty {
   if (n < 0.52) return "bool";
   if (n < 0.62) return `Vec<${r.pick(intTypes)}>`;
   if (n < 0.7) return `Option<${r.pick(intTypes)}>`;
-  if (n < 0.75) return "S";
-  if (n < 0.85) return "String";
+  if (n < 0.79) return "S";
+  if (n < 0.86) return "String";
   if (n < 0.89) return "char";
   if (n < 0.95) return "E";
   return "Map";
@@ -689,6 +709,10 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "method-s":
+      if (e.method === "get") return `${e.name}.get()`;
+      if (e.method === "add") return `${e.name}.add(${show(e.arg!)})`;
+      return `${e.name}.scaled(${show(e.arg!)}).a`;
     case "loop":
       return `({ let mut ${e.counter}: u32 = 0; loop { ${e.counter} += 1; if ${e.counter} > id(${e.n}u32) || ${show(e.c)} { break ${show(e.value)}; } } })`;
     case "imatch": {
@@ -940,6 +964,21 @@ export function print(program: Program, seed?: number): string {
     "fn bump(s: &mut S) -> i32 {",
     "    s.a = s.a.wrapping_add(1);",
     "    s.a",
+    "}",
+    "",
+    "impl S {",
+    "    fn get(&self) -> i32 {",
+    "        self.a",
+    "    }",
+    "",
+    "    fn add(&mut self, n: i32) -> i32 {",
+    "        self.a = self.a.wrapping_add(n);",
+    "        self.a",
+    "    }",
+    "",
+    "    fn scaled(self, k: i32) -> S {",
+    "        S { a: self.a.wrapping_mul(k), b: self.b, c: self.c }",
+    "    }",
     "}",
     "",
     "struct D(u32);",

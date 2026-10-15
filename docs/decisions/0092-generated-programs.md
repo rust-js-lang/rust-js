@@ -79,6 +79,12 @@ time, valid and deterministic by construction:
   inner, `break 'l` and `continue 'l`; `loop` as an expression, `break
   value` where its test holds; and a `match` of an integer by values,
   `1 | 2`, a range `3..=9`, or a binding with a guard (2026-10-14).
+- Methods of `S`: `s.get()`; `s.add(n)`, of `&mut self`, its argument
+  reading `s`, as Rust's two-phase borrow lets it, never writing it; and
+  `s.scaled(k).a`, of `self`, copied before its argument is made, which
+  may write `s`: JS gives a function an object, not a copy (2026-10-15).
+  A chain that ends in `collect` has no `skip`, where std's `Vec` of a
+  chain it knows is empty runs none of it (ADR 0055's B).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.
