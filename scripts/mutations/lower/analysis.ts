@@ -143,4 +143,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && seen_modules.insert(module) {",
     tests: ["test/modules.test.ts", "-t", "a root of modules alone|js::import! imports a module"],
   },
+  {
+    name: "js-object-deref-dictionary",
+    breaks: "a JS object's `Deref` to the class it extends is given a dictionary, whose `deref` is never lowered",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&id| !is_js_object_deref(tcx, id))\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum is its payload, told apart"],
+  },
 ];

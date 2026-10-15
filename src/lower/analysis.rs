@@ -330,7 +330,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .map(|id| id.to_def_id())
         .collect();
     // The impls that get a dictionary: not `From`'s (ADR 0052), nor serde's,
-    // whose evidence is a codec (ADR 0081).
+    // whose evidence is a codec (ADR 0081), nor a JS object's `Deref` to the
+    // class it extends, which is never lowered: its dictionary is std's,
+    // the object itself (ADRs 0024, 0394).
     let dictionaries: Vec<DefId> = trait_impls
         .iter()
         .copied()
@@ -345,6 +347,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             )
         })
         .filter(|&id| serde_impl(tcx, id).is_none())
+        .filter(|&id| !is_js_object_deref(tcx, id))
         .collect();
 
     // Closures are lowered inside the function that creates them.
