@@ -1006,6 +1006,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Derived and std impls of `Default` and `Clone` (ADR 0052).
         let ty = tr.self_ty();
+        // A range's `RangeBounds`, of a range of std's or a pair of `Bound`s:
+        // each bound, a `Bound` of what its field holds, `{ TAG: "Included",
+        // _0: range.start }`, as any of its values is.
+        if is_std_def(self.tcx, tr.def_id, StdItem::RangeBounds)
+            && let Some((start, end)) = super::recognition::range_bounds(self.tcx, ty)
+        {
+            let mut props = Vec::new();
+            for (name, bound) in [("start_bound", start), ("end_bound", end)] {
+                let method = super::recognition::trait_method(self.tcx, tr.def_id, name);
+                let output = self.tcx.instantiate_and_normalize_erasing_regions(
+                    tr.args,
+                    self.typing_env,
+                    self.tcx.fn_sig(method).map_bound(|sig| sig.skip_binder().output()),
+                );
+                let range = Expr::var("range");
+                let variant = |name: &str| match output.kind() {
+                    ty::Adt(adt, _) => adt
+                        .variants()
+                        .iter_enumerated()
+                        .find(|(_, v)| v.name.as_str() == name)
+                        .map(|(i, _)| i),
+                    _ => None,
+                };
+                let value = match bound {
+                    super::recognition::RangeBound::Item(i) => Expr::index(range, Expr::int(i as i128)),
+                    super::recognition::RangeBound::Field(kind, field) => {
+                        let Some(index) = variant(kind) else {
+                            return Err(self.unsupported(span, "this range's bounds"));
+                        };
+                        self.adt_value(output, index, vec![Expr::member(range, field)], &[], span)?
+                    }
+                    super::recognition::RangeBound::Unbounded => {
+                        let Some(index) = variant("Unbounded") else {
+                            return Err(self.unsupported(span, "this range's bounds"));
+                        };
+                        self.adt_value(output, index, Vec::new(), &[], span)?
+                    }
+                };
+                let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
+                props.push(Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body)));
+            }
+            return Ok(Expr::object(props));
+        }
         // std's `Error` of one of its parse errors: its `Display` and `Debug`, as
         // a crate's impl's dictionary has them, and no `source`, which none of
         // them has (ADR 0186).

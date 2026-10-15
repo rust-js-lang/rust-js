@@ -69,6 +69,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **A generic function or impl that asks `size_of::<T>()` is given it** in a
   trait impl's method, through the impl's dictionary, and across crates, by
   its library's manifest ([ADR 0145](docs/decisions/0145-type-facts.md)).
+- **A range's bounds in generic code**, `R: RangeBounds<usize>`'s
+  `start_bound()` and `end_bound()`, of every range of std's
+  ([ADR 0416](docs/decisions/0416-range-bounds-in-generic-code.md)).
 - **A crate of crates.io's is compiled into the app**, where rust-js can
   compile it: its JS committed in `rust-js/crates/<name>-<version>/`,
   imported from there, and checked by `rust-js build --check`. One it

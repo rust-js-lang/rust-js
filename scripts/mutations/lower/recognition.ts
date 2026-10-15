@@ -1489,4 +1489,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
+  {
+    name: "range-bounds-unoperational",
+    breaks: "`range.start_bound()` in generic code is refused, though a range's dictionary gives it",
+    file: "src/lower/recognition.rs",
+    find: "        || is_std_def(tcx, id, StdItem::RangeBounds)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+  },
+  {
+    name: "range-inclusive-end-excluded",
+    breaks: "`2..=5`'s end is `Excluded`, one short",
+    file: "src/lower/recognition.rs",
+    find: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Included\", \"end\")),\n",
+    replace: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Excluded\", \"end\")),\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+  },
+  {
+    name: "bound-pair-items-swapped",
+    breaks: "a pair of `Bound`s' start is its end",
+    file: "src/lower/recognition.rs",
+    find: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(0), Item(1)),\n",
+    replace: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+  },
 ];

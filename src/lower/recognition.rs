@@ -3722,6 +3722,9 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // io::Write`: its dictionary's `write`, `write_all`, `write_fmt` and
         // `flush` (ADR 0392).
         || is_std_def(tcx, id, StdItem::IoWrite)
+        // `range.start_bound()` of an `R: RangeBounds<usize>`, arrayvec's
+        // `drain`: its dictionary's, a range's bounds as `Bound`s.
+        || is_std_def(tcx, id, StdItem::RangeBounds)
         // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394).
         || tcx.is_lang_item(id, LangItem::Deref)
         // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).
@@ -4653,6 +4656,8 @@ pub(crate) enum StdItem {
     MutexGuard,
     /// `std::ptr::NonNull`, which is its pointer (ADR 0407).
     NonNull,
+    /// `std::ops::RangeBounds`, a range's bounds, which generic code asks.
+    RangeBounds,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
     Ord,
@@ -4712,6 +4717,7 @@ impl StdItem {
             StdItem::Mutex => Symbol::intern("Mutex"),
             StdItem::MutexGuard => Symbol::intern("MutexGuard"),
             StdItem::NonNull => Symbol::intern("NonNull"),
+            StdItem::RangeBounds => Symbol::intern("RangeBounds"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),
@@ -4881,6 +4887,34 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
         _ => tcx.is_diagnostic_item(item.name(), id),
     }
+}
+
+/// A bound of a range, `RangeBounds`', of what the range is.
+#[derive(Clone, Copy)]
+pub(crate) enum RangeBound {
+    /// Its field's value, `Included` or `Excluded` of it: `start` of `2..5`.
+    Field(&'static str, &'static str),
+    /// None, `Unbounded`: the end of `2..`.
+    Unbounded,
+    /// A pair of `Bound`s' item: `(Bound::Excluded(1), Bound::Unbounded)`'s.
+    Item(usize),
+}
+
+/// The start and end bounds of a range of `ty`, a range of std's or a pair
+/// of `Bound`s, as its `RangeBounds` gives them; `None` of anything else.
+pub(crate) fn range_bounds(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<(RangeBound, RangeBound)> {
+    use RangeBound::{Field, Item, Unbounded};
+    let lang = |item: LangItem| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), item));
+    Some(match () {
+        _ if lang(LangItem::Range) => (Field("Included", "start"), Field("Excluded", "end")),
+        _ if lang(LangItem::RangeFrom) => (Field("Included", "start"), Unbounded),
+        _ if lang(LangItem::RangeTo) => (Unbounded, Field("Excluded", "end")),
+        _ if lang(LangItem::RangeInclusiveStruct) => (Field("Included", "start"), Field("Included", "end")),
+        _ if lang(LangItem::RangeToInclusive) => (Unbounded, Field("Included", "end")),
+        _ if lang(LangItem::RangeFull) => (Unbounded, Unbounded),
+        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(0), Item(1)),
+        _ => return None,
+    })
 }
 
 /// Std's `item`, which every std has: one of `core`'s, which a `#![no_std]`
