@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-workspace.test.ts", "-t", "another feature set"],
   },
   {
-    name: "cargo-bindings-compiled",
-    breaks: "the bindings installed inside an app's workspace are its members, and compiled by rust-js, which can't",
-    file: "src/cargo.rs",
-    find: "BINDINGS.contains(&name.as_str())",
-    replace: "BINDINGS.contains(&name.as_str()) && false",
-    tests: ["test/cargo-react.test.ts", "-t", "installed inside a Cargo workspace"],
-  },
-  {
     name: "cargo-version-without-identity",
     breaks: "`rustc -vV` through rust-js says rustc's lines alone, so Cargo has another rust-js's crates as done",
     file: "src/cargo.rs",

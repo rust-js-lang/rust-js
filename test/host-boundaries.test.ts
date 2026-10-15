@@ -52,20 +52,19 @@ test("preview reports reject malformed or ambiguous payloads", () => {
 // and its packaging read (the second architecture review: eight places
 // listed them). Each is as its Cargo.toml says, and the compiler's own list
 // of bindings, which can't read the catalog, is the catalog's.
-test("the catalog of crates is each one's Cargo.toml, and the compiler's bindings", () => {
-  type Manifest = { package: { name: string }; lib?: { name?: string }; dependencies?: Record<string, { package?: string }> };
+test("the catalog of crates is each one's Cargo.toml, each a binding crate", () => {
+  type Manifest = { package: { name: string; metadata?: { "rust-js"?: { bindings?: boolean } } }; lib?: { name?: string }; dependencies?: Record<string, { package?: string }> };
   for (const crate of crates) {
     const manifest = Bun.TOML.parse(readFileSync(join(root, crate.dir, "Cargo.toml"), "utf8")) as Manifest;
     expect([crate.dir, manifest.package.name, manifest.lib?.name]).toEqual([crate.dir, crate.cargo, crate.lib]);
+    // rustc checks it, and rust-js reads its metadata, as it says (ADR 0414).
+    expect([crate.dir, manifest.package.metadata?.["rust-js"]?.bindings]).toEqual([crate.dir, true]);
     // What it uses is shipped too, and built before it.
     for (const dep of Object.values(manifest.dependencies ?? {})) {
       const used = crates.findIndex((other) => other.cargo === dep.package);
       if (dep.package?.startsWith("rust-js-")) expect([crate.dir, dep.package, used >= 0 && used < crates.indexOf(crate)]).toEqual([crate.dir, dep.package, true]);
     }
   }
-  const cargo = readFileSync(join(root, "src/cargo.rs"), "utf8");
-  const bindings = cargo.match(/const BINDINGS: \[&str; \d+\] = \[([^\]]*)\];/)?.[1].match(/"[^"]+"/g)?.map((name) => JSON.parse(name));
-  expect(bindings?.sort()).toEqual(crates.filter((crate) => crate.binding).map((crate) => crate.cargo).sort());
   // React's, and what it uses.
   expect([...reactLibs].sort()).toEqual(["js", "react", "webapi"]);
 });

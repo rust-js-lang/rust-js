@@ -92,7 +92,9 @@ import { Greeting, greet } from "@acme/greet/src/lib.js";
   never held to the rust-js its author had. What the author's build wrote
   there, the app's writes again, and is the same where the two rust-js are.
 - **A crate's JS is the same whichever build writes it**: its header names
-  its Rust from its crate's directory, `src/lib.rs`, not from the app's.
+  its Rust from its crate's directory, Cargo's, `src/lib.rs`, not from the
+  app's. A file compiled alone, a test's or the playground's, has no crate
+  Cargo says, only the nearest `Cargo.toml`, maybe another's: as it's given.
 - **The app imports a package's JS by the package's name**, the file's path
   in it after, `@acme/greet/src/lib.js`, wherever its package manager put
   it; a crate's own modules, and the app's, by a relative path. A package

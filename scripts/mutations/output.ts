@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "                .and_then(|(file, dir)| file.strip_prefix(dir).ok().map(std::path::Path::to_path_buf).filter(|_| false))\n",
     tests: ["test/libraries.test.ts", "-t", "from npm into"],
   },
+  {
+    name: "header-from-nearest-manifest",
+    breaks: "a file compiled alone names its Rust from the nearest `Cargo.toml`, maybe another crate's, `web/rust/codemirror.rs` from the compiler's",
+    file: "src/output.rs",
+    find: "                .zip(absolute(&self.settings.dir).ok().filter(|_| self.settings.cargo))\n",
+    replace: "                .zip(absolute(&self.settings.dir).ok())\n",
+    tests: ["test/jsx.test.ts", "-t", "forwarded refs"],
+  },
 ];

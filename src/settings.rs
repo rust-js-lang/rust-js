@@ -22,6 +22,10 @@ pub struct Settings {
     /// Where its `Cargo.toml` is, which its hooks are run in, and what's
     /// said of a file is said from.
     pub dir: PathBuf,
+    /// Whether `dir` is Cargo's, the crate's own, of a crate Cargo builds:
+    /// a module's header names its Rust from it (ADR 0414). A file compiled
+    /// alone has only the nearest `Cargo.toml` above it, maybe another's.
+    pub cargo: bool,
 }
 
 /// `[package.metadata.rust-js.hooks]`.
@@ -151,6 +155,7 @@ mod cargo_toml {
             hooks: settings.hooks,
             declarations: false,
             dir,
+            cargo,
         })
     }
 }
