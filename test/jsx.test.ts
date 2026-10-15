@@ -3466,6 +3466,7 @@ pub struct Table {
     pub memo: &'static LocalKey<MemoExoticComponent<Props>>,
 }
 pub const TABLE: Table = Table { plain: Plain, memo: &Memoized };
+pub static MEMO: &LocalKey<MemoExoticComponent<Props>> = &Memoized;
 `, {
     "memoized.rs": `use react::{JSX, MemoExoticComponent, jsx, memo};
 pub struct Props {
@@ -3482,6 +3483,9 @@ thread_local! {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("export const TABLE = { plain: Plain, memo: Memoized };");
+  // A static of one by reference is the one variable too, which every use
+  // shares, so the static may be.
+  expect(jsx).toContain("export const MEMO = Memoized;");
   const { TABLE } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(TABLE.memo, { name: "m" }))).toBe("<b>m</b>");
