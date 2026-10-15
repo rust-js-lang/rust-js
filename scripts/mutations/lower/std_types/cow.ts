@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
   },
+  {
+    name: "cow-side-through-refs-unread",
+    breaks: "`&cow == &\"a\"`, a `Cow` behind a reference, compares the reference's `_0`",
+    file: "src/lower/std_types/cow.rs",
+    find: "        let (inner, inner_ty) = self.through_refs(value.clone(), ty);\n",
+    replace: "        let (inner, inner_ty) = (value.clone(), ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
 ];

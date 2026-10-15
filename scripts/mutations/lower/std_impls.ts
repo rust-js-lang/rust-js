@@ -325,4 +325,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fn_pointer_eq.rs$"],
   },
+  {
+    name: "cow-eq-as-enum",
+    breaks: "two `Cow`s compare their variants, `Borrowed(\"a\") != Owned(\"a\")`",
+    file: "src/lower/std_impls.rs",
+    find: "                ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                    (a, b, ty) = (x, self.cow_deref(&b, ty).expect(\"a `Cow`\").0, borrowed);\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
+  {
+    name: "cow-eq-structural",
+    breaks: "what holds a `Cow`, an `Option` of one, compares it with `$eq`, its variant too",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if self.recognition().is_cow(ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
 ];

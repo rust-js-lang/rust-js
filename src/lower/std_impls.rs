@@ -643,6 +643,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.has_user_impl(self.partial_eq_trait(), ty) => true,
             // A counted `Rc` compares what it points at, not its counts (ADR 0320).
             ty::Adt(..) if self.counted_rc(ty).is_some() => true,
+            // A `Cow` compares what it borrows, not its variant (ADR 0400).
+            ty::Adt(..) if self.recognition().is_cow(ty) => true,
             // `Vec`, `Box`, `Rc` and cells compare what they hold.
             ty::Adt(_, args) if self.is_std_wrapper(ty) => args.types().any(|t| self.custom_eq_in(t, seen)),
             ty::Adt(adt, args) => adt
@@ -662,7 +664,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
         // A `Box`, an `Rc` and a `Pin` compare what they point at, which
-        // they are in JS (ADRs 0023, 0329), its own `==` too.
+        // they are in JS (ADRs 0023, 0329), its own `==` too, and a `Cow`
+        // what it borrows.
         loop {
             match ty.kind() {
                 ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => {
@@ -672,6 +675,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let pointer = args.type_at(0);
                     (a, _) = self.through_refs(a, pointer);
                     (b, ty) = self.through_refs(b, pointer);
+                }
+                // A `Cow` what it borrows (ADR 0400).
+                ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {
+                    (a, b, ty) = (x, self.cow_deref(&b, ty).expect("a `Cow`").0, borrowed);
                 }
                 _ => break,
             }

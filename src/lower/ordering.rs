@@ -137,6 +137,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
+            // A `Cow`: what it borrows (ADR 0400).
+            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {
+                let y = self.cow_deref(&b, ty).expect("a `Cow`").0;
+                self.cmp_value(x, y, borrowed, partial, span, out)
+            }
             // `Reverse(x)`: `x`s the other way round, as its impl has it.
             ty::Adt(_, args) if self.is_reverse(ty) => {
                 let inside = |x: Expr| Expr::index(x, Expr::int(0));

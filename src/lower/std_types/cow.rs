@@ -40,7 +40,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `to_mut()` of text or a number, which JS never changes in place, is
         // a handle, `$cowMut` (`item_handles`).
         if op == CowOp::Deref || op == CowOp::IntoOwned && !self.needs_clone(owned) {
-            return Ok(Expr::member(cow, "_0"));
+            let (value, _) = self.cow_deref(&cow, cow_ty).expect("a `Cow` of one JS value");
+            return Ok(value);
         }
         let cow = if cow.reads_same() {
             cow
@@ -61,6 +62,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ];
         out.push(StmtKind::If(borrowed, made_owned, None).at(js_span));
         Ok(value)
+    }
+
+    /// What a `Cow` is through `Deref`, which std's `==`, ordering and hash
+    /// of one read: what it borrows or owns, its `_0`, of its borrowed type,
+    /// `cow == "a"` as `cow._0 === "a"`. `None` of another type.
+    pub(in crate::lower) fn cow_deref(&self, cow: &Expr, ty: Ty<'tcx>) -> Option<(Expr, Ty<'tcx>)> {
+        let (borrowed, _) = self.recognition().cow_parts(ty)?;
+        Some((Expr::member(cow.clone(), "_0"), borrowed))
+    }
+
+    /// One side of `==` of a `Cow` and what it borrows: a `Cow`'s, through
+    /// its references, what it borrows; another's, as it is.
+    pub(in crate::lower) fn cow_side(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        let (inner, inner_ty) = self.through_refs(value.clone(), ty);
+        match self.cow_deref(&inner, inner_ty) {
+            Some(read) => read,
+            None => (value, ty),
+        }
     }
 
     /// What `to_owned()` makes of what a `Cow` borrowed: a slice's is a new

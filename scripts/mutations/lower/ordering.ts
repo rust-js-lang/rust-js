@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
       "a derived order of an enum with fields"
     ]
   },
+  {
+    name: "cow-cmp-refused",
+    breaks: "ordering `Cow`s is refused, where it's what they borrow",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                let y",
+    replace: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty).filter(|_| false) => {\n                let y",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
 ];

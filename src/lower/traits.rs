@@ -1647,7 +1647,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let eq = self.tcx.associated_item_def_ids(trait_id)[0];
                 self.impl_call(eq, tr.args, vec![a, b], span)?
             } else {
-                self.eq_value(a, b, tr.self_ty(), span, out)?
+                // A `Cow` beside what it borrows, `cow == "a"`: what it borrows (ADR 0400).
+                let (lhs, rhs) = (tr.self_ty(), tr.args.type_at(1));
+                let (a, lhs) = match lhs == rhs {
+                    true => (a, lhs),
+                    false => self.cow_side(a, lhs),
+                };
+                let b = match tr.self_ty() == rhs {
+                    true => b,
+                    false => self.cow_side(b, rhs).0,
+                };
+                self.eq_value(a, b, lhs, span, out)?
             };
             return Ok(Some(if negate { Expr::unary(js::UnaryOp::Not, eq) } else { eq }));
         }

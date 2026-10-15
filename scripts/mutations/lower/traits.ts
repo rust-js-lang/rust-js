@@ -947,4 +947,20 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a RefCell of a dyn upcast"],
   },
+  {
+    name: "cow-eq-borrowed-left-whole",
+    breaks: "`cow == \"a\"` reads `\"a\"._0`, as if both were `Cow`s",
+    file: "src/lower/traits.rs",
+    find: "                    false => self.cow_side(a, lhs),\n",
+    replace: "                    false => (a, lhs),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
+  {
+    name: "cow-eq-borrowed-right-whole",
+    breaks: "`\"a\" == cow` compares the text with the `Cow` object",
+    file: "src/lower/traits.rs",
+    find: "                    false => self.cow_side(b, rhs).0,\n",
+    replace: "                    false => b,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
+  },
 ];
