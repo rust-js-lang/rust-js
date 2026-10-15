@@ -436,4 +436,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Ok(self.pointer_shown(value));\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
+  {
+    name: "fmt-map-err-unmapped",
+    breaks: "`map_err(f)` of a `fmt::Result` gives the error unmapped, not `f`'s",
+    file: "src/lower/display.rs",
+    find: "                let mapped = super::std_types::result::err(self.applied(f, result));\n",
+    replace: "                let mapped = super::std_types::result::err(result);\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
+  },
 ];

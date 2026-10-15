@@ -70,6 +70,8 @@ released any more: `rust-js build` is the one way to build an app.
   arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
+- **`map_err` of a `fmt::Result`**, `write_fmt(args).map_err(..)?` of a
+  writer that may fail (ADR 0187).
 - **A trait's default method calling its `Self`'s**, where `Self` is
   generic, `Holder<T, CAP>`: given the impl's `CAP`, and another default
   of it found in the impl's dictionary (ADR 0135).

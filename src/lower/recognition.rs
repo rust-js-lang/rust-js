@@ -4479,6 +4479,9 @@ pub(super) enum FmtResultAnswer {
     Is(bool),
     /// `ok()`: `Some(())`, or `None` (ADR 0392).
     Ok,
+    /// `map_err(f)`: `Ok(())`, or `Err(f(error))`, a `Result` of its own,
+    /// arrayvec's `write_fmt(f).map_err(CapacityError::new)`.
+    MapErr,
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
@@ -4489,6 +4492,7 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
         "is_ok" => FmtResultAnswer::Is(true),
         "is_err" => FmtResultAnswer::Is(false),
         "ok" => FmtResultAnswer::Ok,
+        "map_err" => FmtResultAnswer::MapErr,
         _ => return None,
     })
 }

@@ -2,6 +2,9 @@
 
 Status: Accepted. Amends [0054](0054-display.md), [0148](0148-write-to-string.md)
 and [0166](0166-user-fmt-write.md); extends [0100](0100-separate-crates.md).
+Amended: a `fmt::Result`'s `map_err(f)` is `Ok(())`, or `Err` of `f`'s
+value, a `Result` of its own, `fmt_result_values`' answer as the others'
+are: arrayvec's `ArrayString::try_from` (`test/corpus/fmt_result_map_err.rs`).
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

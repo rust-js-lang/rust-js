@@ -160,7 +160,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A method of a `fmt::Result`, `result`, in a crate where one may be
     /// an `Err` (ADR 0187): of what `$fmtTry` caught, or a variable it's in,
-    /// tested against `undefined`; another's, its constant answer.
+    /// tested against `undefined`; another's, its constant answer. `message`
+    /// is `expect`'s, or `map_err`'s function.
     pub(in crate::lower) fn fmt_result_values(
         &mut self,
         answer: FmtResultAnswer,
@@ -174,6 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => Expr::undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
             FmtResultAnswer::Ok => self.some(Expr::undefined()),
+            FmtResultAnswer::MapErr => super::std_types::result::ok(Expr::undefined()),
         };
         // Only what `$fmtTry` caught may be an `Err`, or a variable it's in,
         // and only where one may fail.
@@ -199,6 +201,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
         match answer {
             FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
+            FmtResultAnswer::MapErr => {
+                let f = message.expect("`map_err`'s function");
+                let mapped = super::std_types::result::err(self.applied(f, result));
+                Expr::cond(ok, super::std_types::result::ok(Expr::undefined()), mapped)
+            }
             FmtResultAnswer::Is(true) => ok,
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
