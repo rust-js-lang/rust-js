@@ -8,6 +8,10 @@ use std::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 const FROM: RangeFrom<i32> = 5..;
 const TO: RangeTo<i32> = ..8;
 const THROUGH: RangeToInclusive<i32> = ..=7;
+// A static's is its value, which no MIR of its own gives.
+static AFTER: RangeFrom<i32> = 2..;
+static BEFORE: RangeTo<i32> = ..3;
+static UPTO: RangeToInclusive<i32> = ..=4;
 
 struct Window {
     rows: Range<usize>,
@@ -97,6 +101,7 @@ fn main() {
 
     println!("{:?} {:?} {:?} {:?} {:?}", 4.., ..4, ..=4, .., (-2i64)..=2);
     println!("{:?} {:?} {:?} {} {}", FROM, TO, THROUGH, FROM.contains(&9), THROUGH.contains(&8));
+    println!("{:?} {:?} {:?} {}", AFTER, BEFORE, UPTO, AFTER.contains(&2));
     println!("{} {} {}", (1..4) == (1..4), (1..=4) != (1..=5), (2..) == (2..));
     let big: u64 = (1u64..4).sum();
     println!("{}", big);
