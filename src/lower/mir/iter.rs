@@ -550,7 +550,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
         self.array_source(ty).is_some()
             || self.recognition().is_str_chars(ty)
-            || self.recognition().is_str_bytes(ty)
             || self.is_str_split(ty)
             || self.recognition().is_deque_iter(ty)
             || self.recognition().is_slice_iter_mut(ty)

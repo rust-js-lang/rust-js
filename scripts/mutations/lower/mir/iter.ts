@@ -300,18 +300,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-bytes-len-refused",
-    "breaks": "`s.bytes().len()` from MIR is refused",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            || self.recognition().is_str_bytes(ty)\n",
-    "replace": "",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "str_bytes"
-    ]
-  },
-  {
     "name": "mir-counted-chain-len-refused",
     "breaks": "`xs.iter().skip(1).len()` from MIR is refused, not `xs.slice(1).length`",
     "file": "src/lower/mir/iter.rs",

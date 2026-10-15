@@ -74,5 +74,17 @@ function main() {
   const next = $next(rest);
   console.log(`${before} ${next == null ? "None" : `Some(${next})`} ${rest.end - rest.at}`);
   console.log(`${[1, 2, 3].slice(1).length}`);
+  const first = $iter(Array.from(new TextEncoder().encode("héllo")));
+  $next(first);
+  const second = $iter(first.items.slice(first.at, first.end));
+  console.log(
+    `[${first
+      .toArray()
+      .map((item) => String(item))
+      .join(", ")}] [${second
+      .toArray()
+      .map((item) => String(item))
+      .join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

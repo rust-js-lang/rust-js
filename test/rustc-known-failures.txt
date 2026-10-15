@@ -113,13 +113,11 @@ fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A`
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
-function-pointer/function-pointer-comparison-54696.rs	error: rust-js does not support `==` on `fn()` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 indexing/indexing-spans-caller-location.rs	error: rust-js does not support calling `std::panic::Location::<'a>::line` yet
 intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
 intrinsics/volatile-composite-types.rs	error: rust-js does not support calling `std::ptr::write_volatile` yet
-iterators/bytes-iterator-clone-12677.rs	error: rust-js does not support cloning `std::str::Bytes<'_>` yet
 iterators/iter-map-fold-type-length.rs	error: rust-js does not support `&mut` to a `I` yet
 layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet

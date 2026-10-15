@@ -610,6 +610,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_parse_error(ty)
             || self.recognition().is_type_id(ty)
             || self.recognition().is_discriminant(ty)
+            // A function pointer, by identity, as Rust's by address (ADR 0262).
+            || matches!(ty.kind(), ty::FnPtr(..))
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()

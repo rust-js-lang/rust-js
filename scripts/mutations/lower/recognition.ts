@@ -1409,4 +1409,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
   },
+  {
+    name: "mir-bytes-len-refused",
+    breaks: "`s.bytes()` isn't known as the array it is: its `len()` and its clone are refused",
+    file: "src/lower/recognition.rs",
+    find: "        if self.is_str_bytes(ty) {\n            return Some(true);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^str_bytes.rs$"],
+  },
 ];

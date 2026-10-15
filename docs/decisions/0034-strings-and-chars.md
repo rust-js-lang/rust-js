@@ -114,3 +114,12 @@ one by a range, say that JS counts differently. `is_empty()` works.
 - `lines`, `split_whitespace`, `parse` and `char`'s questions are ADR 0063's.
 - Not yet: `find`, `chars`, `char_indices`, `split` beyond those uses, and
   patterns that are closures.
+
+## Amendment: `bytes()` is an array source
+
+A string's `bytes()` (2026-10-15) is an iterator over an array, its UTF-8
+bytes, as `slice::Iter` is: recognition's `array_source` says so, the one
+list, so a clone of one is what it has left, `$iter` of it (ADR 0181), as
+a slice's is, and `steps_an_array` asks no list of its own. The corpus's
+`str_bytes.rs` clones one part-stepped; rustc's
+`iterators/bytes-iterator-clone-12677.rs` passes.

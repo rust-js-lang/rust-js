@@ -2870,12 +2870,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
-    /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them.
+    /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
+    /// and of a string's `bytes()`, an array of its bytes (ADR 0034).
     pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return None };
         if self.is_std_type(ty, StdItem::SliceIter) {
             return Some(false);
+        }
+        if self.is_str_bytes(ty) {
+            return Some(true);
         }
         let vec_into_iter =
             self.tcx.crate_name(adt.did().krate) == sym::alloc && std_path(self.tcx, adt.did()) == "std::vec::IntoIter";

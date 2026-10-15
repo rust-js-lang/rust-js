@@ -317,4 +317,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
+  {
+    name: "fn-pointer-eq-refused",
+    breaks: "`==` of two function pointers is refused, not JS's identity",
+    file: "src/lower/std_impls.rs",
+    find: "            || matches!(ty.kind(), ty::FnPtr(..))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fn_pointer_eq.rs$"],
+  },
 ];

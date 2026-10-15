@@ -49,4 +49,9 @@ fn main() {
     let next = rest.next();
     println!("{before} {next:?} {}", rest.len());
     println!("{}", [1, 2, 3].iter().skip(1).len());
+    // A clone of it is what it has left, as a slice's is (ADR 0181).
+    let mut first = "héllo".bytes();
+    first.next();
+    let second = first.clone();
+    println!("{:?} {:?}", first.collect::<Vec<u8>>(), second.collect::<Vec<u8>>());
 }
