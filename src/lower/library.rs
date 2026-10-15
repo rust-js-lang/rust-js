@@ -21,16 +21,31 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
         .is_some_and(|local| tcx.effective_visibilities(()).is_reachable(local))
 }
 
+/// What each function's contract says, of what a consumer can't work out
+/// from its types: the drops it takes (ADR 0098), whether it may fail
+/// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of
+/// its type parameters (ADR 0145).
+pub(super) struct Contracts<'a> {
+    pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
+    pub(super) failing: &'a HashSet<DefId>,
+    pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
+    pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+}
+
 /// The items another crate can reach, and the impls it calls through them.
 pub(super) fn exports(
     tcx: TyCtxt<'_>,
     functions: &HashMap<DefId, FnInfo>,
-    drop_params: &HashMap<DefId, Vec<u32>>,
-    failing: &HashSet<DefId>,
-    no_drops: &HashMap<DefId, BTreeSet<u32>>,
+    contracts: &Contracts<'_>,
     trait_impls: &[DefId],
     dependencies: &Dependencies,
 ) -> Library {
+    let Contracts {
+        drop_params,
+        failing,
+        no_drops,
+        type_facts,
+    } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
         .iter()
@@ -47,6 +62,9 @@ pub(super) fn exports(
                 .get(&id)
                 .map(|params| params.iter().copied().collect())
                 .unwrap_or_default(),
+            type_facts: (type_facts.get(&id).into_iter().flatten())
+                .map(|&(index, fact)| (index, fact.word().to_string()))
+                .collect(),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -113,6 +131,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// The item `id` is in its library's JS, if the library exports it.
+    /// What a library's item asks of its type parameters (ADR 0145).
+    pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
+        (self.item(id).into_iter().flat_map(|item| &item.type_facts))
+            .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (*index, fact)))
+            .collect()
+    }
+
     pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {
         if id.is_local() {
             return None;

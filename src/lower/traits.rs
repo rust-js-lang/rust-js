@@ -1485,8 +1485,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization();
             values.push(self.dictionary(bound, span)?);
         }
-        // Each fact it asks of a type parameter, of the type given for it (ADR 0145).
-        let facts = self.krate.type_facts.get(&id).cloned().unwrap_or_default();
+        // Each fact it asks of a type parameter, of the type given for it,
+        // a library's as its manifest says (ADR 0145).
+        let facts = match id.is_local() {
+            true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
+            false => self.krate.foreign.type_facts(id),
+        };
         for (index, fact) in facts {
             values.push(self.type_fact_value(args.type_at(index as usize), fact, span)?);
         }

@@ -51,4 +51,12 @@ export const mutations: Mutation[] = [
     replace: "            }\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
   },
+  {
+    name: "library-facts-unpassed",
+    breaks: "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        asked.insert((caller, param.index, fact));\n                    }\n                }\n                continue;\n",
+    replace: "                    }\n                }\n                continue;\n",
+    tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
+  },
 ];

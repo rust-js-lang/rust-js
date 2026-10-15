@@ -25,7 +25,7 @@ pub(super) fn type_fact_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
-    library: bool,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let mut asked: HashSet<(DefId, u32, TypeFact)> = HashSet::new();
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
@@ -64,6 +64,18 @@ pub(super) fn type_fact_params<'tcx>(
                 }
                 continue;
             }
+            // A library's function, which asks what its manifest says: of a
+            // caller's type parameter given it, the caller asks it too.
+            if !callee.is_local() {
+                for (index, fact) in foreign.type_facts(callee) {
+                    if let Some(ty) = args.get(index as usize).and_then(|arg| arg.as_type())
+                        && let ty::Param(param) = ty.kind()
+                    {
+                        asked.insert((caller, param.index, fact));
+                    }
+                }
+                continue;
+            }
             if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {
                 continue;
             }
@@ -89,8 +101,7 @@ pub(super) fn type_fact_params<'tcx>(
     }
     let mut params: HashMap<DefId, Vec<(u32, TypeFact)>> = HashMap::new();
     for (id, index, fact) in asked {
-        let reached = library && crate::lower::library::reachable(tcx, id);
-        if reached || tcx.trait_of_assoc(id).is_some() {
+        if tcx.trait_of_assoc(id).is_some() {
             continue;
         }
         match tcx.trait_impl_of_assoc(id) {

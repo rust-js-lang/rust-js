@@ -4283,6 +4283,11 @@ impl TypeFact {
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
+    /// The fact a word names, a library's manifest's (ADR 0145).
+    pub(crate) fn of_word(word: &str) -> Option<TypeFact> {
+        TypeFact::ALL.into_iter().find(|fact| fact.word() == word)
+    }
+
     pub(crate) fn word(self) -> &'static str {
         match self {
             TypeFact::Size => "Size",

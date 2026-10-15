@@ -726,9 +726,12 @@ pub fn lower_crate<'tcx>(
             super::library::exports(
                 tcx,
                 &fns,
-                &drop_params,
-                &failing,
-                &no_drops.borrow(),
+                &super::library::Contracts {
+                    drop_params: &drop_params,
+                    failing: &failing,
+                    no_drops: &no_drops.borrow(),
+                    type_facts: &type_facts,
+                },
                 &trait_impls,
                 dependencies,
             )

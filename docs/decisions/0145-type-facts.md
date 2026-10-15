@@ -7,8 +7,12 @@ its impl what it asks of the impl's type parameters: the impl's
 dictionary is made of them, `wrapFootprint(TSize)`, one for each set,
 keyed in a `Map`, and gives its methods each, which a direct call of one
 is given too. A trait's default method and an impl's method of its own
-type parameters ask none still, nor a library's function its consumers
-can reach (`test/corpus/impl_type_facts.rs`, `impl_const_size.rs`).
+type parameters ask none still (`test/corpus/impl_type_facts.rs`,
+`impl_const_size.rs`). And a library's function or impl its consumers can
+reach asks too: its manifest says what, `type_facts`, its consumers' calls
+give it, and a consumer's generic function that passes its own type
+parameter on asks it too, arrayvec's `extend_from_slice` of its public
+`try_from` (`test/crates.test.ts`).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

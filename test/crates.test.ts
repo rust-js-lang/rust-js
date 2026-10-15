@@ -251,6 +251,22 @@ test("a library's generic writer is given a consumer's Formatter", () => {
   expect(printed(join(dir, "app.js"))).toBe("<3> <9>\n");
 }, 300_000);
 
+// A library's function that asks the size of its type parameter is told it
+// by its consumer, as its manifest says (ADR 0145), directly or through the
+// consumer's own generic function, and a library's impl's dictionary too.
+test("a library's generic function is given the size of its consumer's type", () => {
+  const dir = fixture("library-type-facts");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub fn bytes<T>(n: usize) -> usize {\n    std::mem::size_of::<T>() * n\n}\n\npub trait Footprint {\n    fn footprint(&self) -> usize;\n}\n\npub struct Wrap<T>(pub Vec<T>);\n\nimpl<T> Footprint for Wrap<T> {\n    fn footprint(&self) -> usize {\n        bytes::<T>(self.0.len())\n    }\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use dep::Footprint;\n\nfn twice<T>(n: usize) -> usize {\n    2 * dep::bytes::<T>(n)\n}\n\nfn total<F: Footprint>(f: &F) -> usize {\n    f.footprint()\n}\n\npub fn main() {\n    let words = dep::Wrap(vec![1u32, 2]);\n    println!(\"{} {} {} {}\", dep::bytes::<u64>(3), twice::<u16>(5), words.footprint(), total(&dep::Wrap(vec![1u8])));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("24 20 8 1\n");
+}, 300_000);
+
 // A library's trait's default is the library's (ADR 0185): a consumer's impl
 // that doesn't write it calls the library's, which calls the impl's methods,
 // and its overrides, through its dictionary.

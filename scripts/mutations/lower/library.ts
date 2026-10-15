@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            drops: Vec::new(),",
     tests: ["test/crates.test.ts", "-t", "a library's generic trait method drops a consumer's value where Rust does"],
   },
+  {
+    name: "library-facts-unsaid",
+    breaks: "a library's manifest doesn't say what its functions ask of their type parameters",
+    file: "src/lower/library.rs",
+    find: "            type_facts: (type_facts.get(&id).into_iter().flatten())\n",
+    replace: "            type_facts: (None::<&Vec<(u32, super::recognition::TypeFact)>>.into_iter().flatten())\n",
+    tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
+  },
 ];

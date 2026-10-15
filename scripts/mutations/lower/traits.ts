@@ -1044,4 +1044,12 @@ export const mutations: Mutation[] = [
     replace: " {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
   },
+  {
+    name: "library-facts-ungiven",
+    breaks: "a library's function that asks its type parameter's size isn't given it by its consumer",
+    file: "src/lower/traits.rs",
+    find: "            false => self.krate.foreign.type_facts(id),\n",
+    replace: "            false => Vec::new(),\n",
+    tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
+  },
 ];

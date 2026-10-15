@@ -34,6 +34,11 @@ pub struct Item {
     /// had none, as it refused what needs one.
     #[serde(default)]
     pub no_drops: Vec<u32>,
+    /// What it asks of its type parameters, `Size` of the one at an index
+    /// (ADR 0145), which its consumers' calls give it. A library a compiler
+    /// wrote before had none, as it refused what asks one.
+    #[serde(default)]
+    pub type_facts: Vec<(u32, String)>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -63,6 +68,7 @@ pub struct Imported {
     pub drops: Vec<u32>,
     pub fails: bool,
     pub no_drops: Vec<u32>,
+    pub type_facts: Vec<(u32, String)>,
 }
 
 /// What one library gives its consumers.
@@ -137,6 +143,7 @@ impl Dependencies {
                     drops: item.drops,
                     fails: item.fails,
                     no_drops: item.no_drops,
+                    type_facts: item.type_facts,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());

@@ -527,7 +527,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, counted.any());
     let copied = copied_params(tcx, all_bodies, &fns, library);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns);
-    let type_facts = type_fact_params(tcx, all_bodies, &fns, library);
+    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let generic_consts = generic_consts(tcx, all_bodies);
     let pretty_debug = uses_pretty_debug(tcx, all_bodies);
