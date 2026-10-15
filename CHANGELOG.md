@@ -100,6 +100,13 @@ released any more: `rust-js build` is the one way to build an app.
 - **A crate root of `mod`s alone writes no JS**, an app's list of its files;
   and a module of a `js::import!` alone writes its import, which was lost
   ([ADR 0382](docs/decisions/0382-a-module-has-a-file-for-what-it-has.md)).
+- **A `&mut` of what a generic `Option`'s `Some` holds compiles**, `Some(x)`
+  of a `&mut Option<T>`, read, written or read in a guard, as chrono's
+  `set_if_consistent` does; **another crate's generic writer is given a
+  `Formatter`**, bitflags' `to_writer`; and **an enum of no variants is
+  declared `never`**, where its `.d.ts` didn't parse. chrono compiles and
+  bitflags runs again ([ADRs 0051](docs/decisions/0051-generic-options.md),
+  [0180](docs/decisions/0180-generic-writers.md)).
 - **Switching an app's rust-js, up or down, builds its crates again.** Cargo
   had the crates another rust-js built as done, as an installed compiler's
   file is as old as its package says, and the build stopped at

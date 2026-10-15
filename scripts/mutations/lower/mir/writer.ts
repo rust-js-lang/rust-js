@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "            false => {}\n",
     tests: ["test/lowering.test.ts", "-t", "a writer from its MIR returns the string it writes"],
   },
+  {
+    name: "mir-library-writer-formatter-refused",
+    breaks: "another rust-js crate's generic writer given a `Formatter`, bitflags' `to_writer`, is refused, where its library exports it",
+    file: "src/lower/mir/writer.rs",
+    find: " || self.krate.foreign.item(def_id).is_some())\n",
+    replace: ")\n",
+    tests: ["test/crates.test.ts", "-t", "generic writer is given"],
+  },
 ];

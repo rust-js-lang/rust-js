@@ -1334,7 +1334,14 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
     };
     let parsed = Parser::new(&allocator, code, source_type).parse();
     if let Some(error) = parsed.diagnostics.errors().next() {
-        return Err(format!("rust-js can't read the module it wrote: {error}"));
+        // Where, in what it wrote: the line the parse stopped at.
+        let at = error.labels.iter().next().map_or(0, |label| label.offset() as usize);
+        let line = code[..at.min(code.len())].matches('\n').count() + 1;
+        let text = code.lines().nth(line - 1).unwrap_or("").trim();
+        let what = if declarations { "declarations" } else { "module" };
+        return Err(format!(
+            "rust-js can't read the {what} it wrote: {error}, at line {line}: `{text}`"
+        ));
     }
     let mut found = Specifiers(Vec::new());
     found.visit_program(&parsed.program);
@@ -1348,5 +1355,18 @@ fn in_chain(e: &js::Expr) -> bool {
         ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => true,
         ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // A module or declarations rust-js wrote that don't parse are its bug:
+    // which, and the line, so the bug can be found (chrono's `enum Void {}`
+    // was `type Void = ;`).
+    #[test]
+    fn unreadable_output_says_where() {
+        let error = super::module_specifiers("export const a = 1;\ntype Void = ;\n", true).unwrap_err();
+        assert!(error.contains("the declarations it wrote"), "{error}");
+        assert!(error.contains("at line 2: `type Void = ;`"), "{error}");
     }
 }

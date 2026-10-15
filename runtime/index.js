@@ -399,6 +399,20 @@ export function $someValue(x) {
   return x;
 }
 
+// A `&mut` of what a generic `Option`'s `Some` holds, given a handle on the
+// option: it reads what's in the `Some`, and writes the option a `Some` of
+// what it's given (ADR 0051).
+export function $someMut(option) {
+  return {
+    get value() {
+      return $someValue(option.value);
+    },
+    set value(value) {
+      option.value = $some(value);
+    },
+  };
+}
+
 // `Some` of the item at `index`, or `None` when there's none there.
 export function $someAt(items, index) {
   return index >= 0 && index < items.length ? $some(items[index]) : undefined;

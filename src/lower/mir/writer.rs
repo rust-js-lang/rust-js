@@ -180,8 +180,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         generic_args: ty::GenericArgsRef<'tcx>,
         at: usize,
     ) -> bool {
-        def_id.is_local()
-            && self.krate.fns.contains_key(&def_id)
+        // The crate's own, or another rust-js crate's, which its library
+        // exports (ADR 0100): bitflags' `to_writer` its macro's `Debug` calls.
+        ((def_id.is_local() && self.krate.fns.contains_key(&def_id)) || self.krate.foreign.item(def_id).is_some())
             && self.formatter_param(def_id).is_none()
             && !self.recognition().fmt_write_on_formatter(def_id, generic_args)
             && (self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs())

@@ -515,6 +515,19 @@ export const maybe = (title: string | undefined): BadgeProps => ({ title, label:
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// An enum of no variants has no values: TypeScript's `never`, chrono's
+// `enum Void {}`, which was `type Void = ;`, no TypeScript at all.
+test("an enum of no variants is declared never", () => {
+  const dir = fixture("declarations-never");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub enum Void {}\n\npub fn absurd(v: Void) -> u32 {\n    match v {}\n}\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export type Void = never;");
+  writeFileSync(join(dir, "use.ts"), 'import { absurd, type Void } from "./lib.js";\nexport const never = (v: Void): number => absurd(v);\n');
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});
+
 // A style is React's `CSSProperties`, as a `<button>`'s `style` is, where it
 // was `any`.
 test("declarations type a style as React does", () => {

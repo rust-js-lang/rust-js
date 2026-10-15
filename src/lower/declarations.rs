@@ -193,6 +193,15 @@ fn keyword(keyword: &str) -> Value {
     json!({ "kind": "keyword", "keyword": keyword })
 }
 
+/// The union of `types`: TypeScript's `never` of none, a type with no
+/// values, an enum of no variants, chrono's `enum Void {}`.
+fn union(types: Vec<Value>) -> Value {
+    if types.is_empty() {
+        return keyword("never");
+    }
+    json!({ "kind": "union", "types": types })
+}
+
 /// `ty | undefined`, as @types/react writes an optional property; `any` and
 /// `unknown` have it already.
 fn or_undefined(ty: Value) -> Value {
@@ -587,7 +596,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         None => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
                     })
                     .collect();
-                json!({ "kind": "union", "types": types })
+                union(types)
             }
             // `{ TAG: "Circle"; _0: number } | "Empty"`, each variant as rust-js
             // makes it (ADR 0033), as ReScript's genType declares one, one of
@@ -621,7 +630,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         json!({ "kind": "object", "members": std::iter::once(tag).chain(fields).collect::<Vec<_>>() })
                     })
                     .collect();
-                json!({ "kind": "union", "types": types })
+                union(types)
             }
         };
         json!({
@@ -652,7 +661,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),
-            "type": { "kind": "union", "types": types },
+            "type": union(types),
         })
     }
 

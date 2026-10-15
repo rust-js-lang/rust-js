@@ -2203,6 +2203,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (**holder).clone()
             }
             Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
+            // Of what a generic `Option`'s `Some` holds, `$someValue(o)`: a
+            // handle that reads it so and writes `o` a `Some`, given a handle
+            // on `o` (ADR 0051).
+            Value::Ref(ref place)
+                if let Some(option) = super::std_types::option::some_value_of(place)
+                    && fixed_place(option) =>
+            {
+                let on = self.value_expr(Value::Ref(option.clone()), span)?;
+                Expr::call_helper("$someMut", vec![on])
+            }
             // Of a `()`, which has no place: nothing, as writing one is.
             Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,
             Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),

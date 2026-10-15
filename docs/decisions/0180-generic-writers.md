@@ -1,6 +1,9 @@
 # 0180. Generic code that writes to any writer is given a `fmt::Write` dictionary
 
-Status: Accepted. Extends [0166](0166-user-fmt-write.md),
+Status: Accepted, amended: another rust-js crate's generic writer, which
+its library exports (ADR 0100), is given a `Formatter` as the crate's own
+is, bitflags' `to_writer` its macro's `Debug` hands it, which the lowering
+from MIR (ADR 0364) had refused (`test/crates.test.ts`). Extends [0166](0166-user-fmt-write.md),
 [0148](0148-write-to-string.md), [0099](0099-mut-references.md) and
 [0106](0106-generic-traits.md).
 

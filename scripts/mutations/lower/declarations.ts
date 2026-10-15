@@ -456,4 +456,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
+  {
+    name: "empty-union-unprinted",
+    breaks: "an enum of no variants is declared `type Void = ;`, which isn't TypeScript, where it's `never`",
+    file: "src/lower/declarations.rs",
+    find: "    if types.is_empty() {\n        return keyword(\"never\");\n    }\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "no variants"],
+  },
 ];

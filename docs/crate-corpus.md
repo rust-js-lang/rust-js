@@ -22,7 +22,7 @@ newest release its requirement allows.
 | either 1.19 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
 | indexmap 2.11 | blocked | hashbrown: a pointer tested for null |
-| bitflags 2.13 | compiles | its probe: `this Formatter` |
+| bitflags 2.13 | runs | |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a pointer tested for null |
@@ -32,20 +32,23 @@ newest release its requirement allows.
 | url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; smallvec's; percent-encoding: `String::from_utf8_lossy` called |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
 | rust_decimal 1.38 | blocked | arrayvec: `ptr::copy_nonoverlapping`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | a `&mut` of a number kept or given, from MIR |
+| chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-3 of 16 compile, and each of the 2 with a probe that's compiled runs as
-natively: 4 compiled on 2026-10-05. Two went back with the lowering from
-MIR (ADR 0364): chrono's `&mut` of a number, and a `Formatter` bitflags'
-probe and semver hand on. What stops the most, by the crates it stops:
+4 of 16 compile, and each of the 3 with a probe runs as natively, as on
+2026-10-05. Two had gone back with the lowering from MIR (ADR 0364), and
+are fixed: a `&mut` of what a generic `Option`'s `Some` holds, chrono's
+(ADR 0051), and another crate's generic writer given a `Formatter`,
+bitflags' `to_writer` (ADR 0180); and chrono's `enum Void {}` was declared
+`type Void = ;`, now `never` (ADR 0196). What stops the most, by the crates
+it stops:
 
 1. **Raw memory,** a pointer tested for null, read as another type, into
    what JS may hold a copy of, `copy_nonoverlapping`: 7, though a raw
    pointer to a place is one now (ADR 0407).
-2. **A `Formatter` handed on,** and **`handle_alloc_error`**: 2 each, and a
-   user `Future`: 2.
-3. **One each:** chrono's `&mut` of a number, `thread::current`,
+2. **`handle_alloc_error`**, and a user `Future`: 2 each.
+3. **One each:** a `Formatter` handed to a closure, semver's,
+   `thread::current`,
    `assert_unchecked`, `size_of` of a type parameter, `Ref`'s `Deref`,
    `{:?}` of a `PhantomData`, `rev` of a lazy iterator,
    `from_utf8_lossy`.

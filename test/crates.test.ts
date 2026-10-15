@@ -235,6 +235,22 @@ test("a library's writer that may fail is one its consumer catches", () => {
   expect(printed(join(dir, "app.js"))).toBe("true \"05h \"\n07h\nOk(()) Err(Error)\n");
 }, 300_000);
 
+// A library's generic code that writes to any `fmt::Write` is given a
+// consumer's `Formatter`, as bitflags' macro hands its `to_writer` the one
+// its `Debug` is given (ADR 0180): the library's, compiled on its own.
+test("a library's generic writer is given a consumer's Formatter", () => {
+  const dir = fixture("library-fmt-writer");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "use std::fmt::{self, Write};\n\npub fn to_writer<W: Write>(n: u8, mut w: W) -> fmt::Result {\n    write!(w, \"<{}>\", n)\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use std::fmt;\n\nstruct Perms(u8);\n\nimpl fmt::Debug for Perms {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        dep::to_writer(self.0, f)\n    }\n}\n\npub fn main() {\n    let mut s = String::new();\n    dep::to_writer(9, &mut s).unwrap();\n    println!(\"{:?} {s}\", Perms(3));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("<3> <9>\n");
+}, 300_000);
+
 // A library's trait's default is the library's (ADR 0185): a consumer's impl
 // that doesn't write it calls the library's, which calls the impl's methods,
 // and its overrides, through its dictionary.

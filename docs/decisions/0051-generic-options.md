@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -83,6 +83,28 @@ function $some(x) {
 A box can reach a JS caller only for a value whose `Some` looks like
 `None`: an exported function's `Option<Option<i32>>` gives `Some(None)` as
 `{ $someNone: 0 }`.
+
+### A `&mut` of what a `Some` holds
+
+A pattern of a `&mut Option<T>`, `Some(x)`, binds a `&mut T` to what the
+`Some` holds, `$someValue(o)`, which JS can't assign. It's a handle, as any
+`&mut` kept is (ADR 0099), of the runtime's `$someMut(o)`, given a handle
+on the option: it reads `$someValue(o.value)`, and writes `o.value =
+$some(value)`, so a value that looks like `None` is boxed as it's written.
+
+```js
+function write(o, v) {
+  if (o.value != null) {
+    const x = $someMut(o);
+    x.value = v;
+  }
+}
+```
+
+Read, written, or read in a guard, chrono's `set_if_consistent`, which the
+lowering from MIR (ADR 0364) had refused. `test/corpus/option_some_mut.rs`
+holds it, a `Some(None)` written a `Some(Some(5))` and a `Some(Some(1))` a
+`Some(None)` too.
 
 ## Why
 

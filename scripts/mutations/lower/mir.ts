@@ -2455,4 +2455,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a pointer into a slice"],
   },
+  {
+    name: "mir-some-value-mut-refused",
+    breaks: "a `&mut` of what a generic `Option`'s `Some` holds, chrono's, is refused, where it's a handle that writes the option a `Some`",
+    file: "src/lower/mir.rs",
+    find: "                    && fixed_place(option) =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "option_some_mut"],
+  },
 ];
