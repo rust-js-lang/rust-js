@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "path-iter-as-ancestors",
+    breaks: "a path's `iter()` gives its ancestors, not its components",
+    file: "src/lower/std_types/path.rs",
+    find: "            PathOp::Iter => \"$pathParts\",\n",
+    replace: "            PathOp::Iter => \"$pathAncestors\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

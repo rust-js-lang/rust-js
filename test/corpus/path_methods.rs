@@ -34,6 +34,11 @@ fn main() {
         println!("ends {:?} {}", other, base.ends_with(other));
     }
 
+    for case in ["/usr/lib/../x/./y.txt", "a//b/", "./c", "", "/"] {
+        let p = Path::new(case);
+        let parts: Vec<&str> = p.iter().map(|part| part.to_str().unwrap()).collect();
+        println!("iter {:?} {:?} {}", parts, p.ancestors().collect::<Vec<_>>(), p.iter().count());
+    }
     let mut buf = PathBuf::from("/tmp");
     buf.push("cache");
     buf.push("item.json");

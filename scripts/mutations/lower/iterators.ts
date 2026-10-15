@@ -437,4 +437,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
     snapshots: true,
   },
+  {
+    name: "path-ancestors-not-fresh",
+    breaks: "a path's `ancestors()` collected are copied, `.slice()`, though the array is made for them",
+    file: "src/lower/iterators.rs",
+    find: "                \"$pathAncestors\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+    snapshots: true,
+  },
 ];

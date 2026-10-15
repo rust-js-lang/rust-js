@@ -2,6 +2,7 @@
 
 import {
   $debugStr,
+  $pathAncestors,
   $pathEndsWith,
   $pathEq,
   $pathExtension,
@@ -9,11 +10,13 @@ import {
   $pathFileStem,
   $pathJoin,
   $pathParent,
+  $pathParts,
   $pathPop,
   $pathSetExtension,
   $pathSetFileName,
   $pathStartsWith,
   $pathWithExtension,
+  $unwrap,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -67,6 +70,13 @@ function main() {
   }
   for (const other of ["rust", "lib/rust", "ib/rust", "/usr/lib/rust", "/lib/rust", ""]) {
     console.log(`ends ${$debugStr(other)} ${$pathEndsWith(base, other)}`);
+  }
+  for (const p of ["/usr/lib/../x/./y.txt", "a//b/", "./c", "", "/"]) {
+    const parts = $pathParts(p).map((part) => $unwrap(part));
+    const value = $pathAncestors(p);
+    console.log(
+      `iter [${parts.map((item) => $debugStr(item)).join(", ")}] [${value.map((item) => $debugStr(item)).join(", ")}] ${$pathParts(p).length}`,
+    );
   }
   let buf = "/tmp";
   buf = $pathJoin(buf, "cache");

@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "  return $componentsAfter($components(path), $components(child), $nextComponent) !== undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "path-ancestors-without-itself",
+    breaks: "a path's `ancestors()` start at its parent, where they start at it",
+    file: "src/runtime/path.js",
+    find: "  for (let p = path; p !== undefined; p = $pathParent(p)) all.push(p);\n",
+    replace: "  for (let p = $pathParent(path); p !== undefined; p = $pathParent(p)) all.push(p);\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

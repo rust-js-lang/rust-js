@@ -1556,6 +1556,13 @@ export function $pathParent(path) {
   return last === undefined || last === "/" ? undefined : $componentsPath(c);
 }
 
+// `p.ancestors()`: it, its parent, and theirs, to the last.
+export function $pathAncestors(path) {
+  const all = [];
+  for (let p = path; p !== undefined; p = $pathParent(p)) all.push(p);
+  return all;
+}
+
 // `p.file_name()`: its last component, if it's a name.
 export function $pathFileName(path) {
   const last = $nextComponentBack($components(path));

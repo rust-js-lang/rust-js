@@ -625,6 +625,8 @@ fn fresh(items: &Expr) -> bool {
                 "$sortedKeys",
                 "$args",
                 "$vars",
+                "$pathParts",
+                "$pathAncestors",
             ]
             .contains(&name.as_str()),
             _ => false,

@@ -28,6 +28,10 @@ pub(in crate::lower) enum PathOp {
     /// `p.is_relative()`: whether it starts with a separator, or doesn't.
     IsAbsolute,
     IsRelative,
+    /// `p.iter()`: its components' text, an array; `p.ancestors()`: it,
+    /// its parent and theirs, to the last.
+    Iter,
+    Ancestors,
 }
 
 impl PathOp {
@@ -44,6 +48,8 @@ impl PathOp {
             PathOp::WithFileName => "$pathSetFileName",
             PathOp::StartsWith => "$pathStartsWith",
             PathOp::EndsWith => "$pathEndsWith",
+            PathOp::Iter => "$pathParts",
+            PathOp::Ancestors => "$pathAncestors",
             PathOp::IsAbsolute | PathOp::IsRelative => return None,
         })
     }

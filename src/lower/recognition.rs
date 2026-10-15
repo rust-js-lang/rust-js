@@ -611,6 +611,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Some(Std::Path(PathOp::IsAbsolute)));
             }
             "std::path::Path::is_relative" => return Some(Some(Std::Path(PathOp::IsRelative))),
+            "std::path::Path::iter" => return Some(Some(Std::Path(PathOp::Iter))),
+            "std::path::Path::ancestors" => return Some(Some(Std::Path(PathOp::Ancestors))),
             "std::path::Path::to_path_buf" => return Some(Some(Std::Same)),
             "std::path::PathBuf::push" => return Some(Some(Std::StringEdit(StringEdit::PathPush))),
             "std::path::PathBuf::pop" => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
