@@ -36,12 +36,14 @@ pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool) -> Expr {
 /// itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+    // Bound by `Iterator` itself, as `bounds` reads its clauses, which make
+    // its evidence: not by a trait it's a supertrait of.
     let iterator = std_item(tcx, StdItem::Iterator);
     let bound = tcx
-        .param_env(id)
-        .caller_bounds()
-        .iter()
-        .filter_map(|clause| clause.as_trait_clause())
+        .clauses_of(id)
+        .instantiate_identity(tcx)
+        .into_iter()
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
         .any(|p| p.def_id() == iterator && p.self_ty().skip_binder() == Ty::new_param(tcx, param.index, param.name));
     if !bound {
         return false;
@@ -320,7 +322,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter given as it is (ADR 0411).
     pub(super) fn iterator_evidence(&self, ty: ty::Ty<'tcx>) -> Option<Expr> {
         let ty = ty.peel_refs();
-        if !matches!(ty.kind(), ty::Param(_)) {
+        // Only of one given as it is: another's is a JS iterator (ADR 0061),
+        // whatever bound names `Iterator`, a supertrait's too.
+        let ty::Param(param) = ty.kind() else {
+            return None;
+        };
+        if !given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param) {
             return None;
         }
         let iterator = std_item(self.tcx, StdItem::Iterator);

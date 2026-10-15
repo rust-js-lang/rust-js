@@ -64,6 +64,17 @@ fn second<I: Iterator<Item = i32>>(mut w: Wrap<I>) -> Option<i32> {
     w.0.next();
     w.0.next()
 }
+// Bound by a trait `Iterator` is a supertrait of, and given only itself: a
+// JS iterator, whose dictionary is no `Iterator`'s.
+pub trait Keyed: Iterator<Item = <Self as Keyed>::Key> {
+    type Key;
+}
+impl Keyed for std::vec::IntoIter<i32> {
+    type Key = i32;
+}
+fn sum_keyed<F: Keyed<Key = i32>>(f: F) -> i32 {
+    f.fold(0, |a, b| a + b)
+}
 // Given on to generic code as a JS iterator, stepped by its impl's `next`.
 fn sum_all<J: Iterator<Item = i32>>(j: J) -> i32 {
     j.sum()
@@ -109,6 +120,7 @@ fn main() {
     println!("{:?}", Pass(vec![Some(1), None, Some(3)].into_iter()).all());
     println!("{:?}", Pass(vec![Some(1), None].into_iter()).shown());
     println!("{:?} {:?} {:?}", first(3..5), second(Wrap(7..10)), second(Wrap(Countdown(5))));
+    println!("{}", sum_keyed(vec![11, 10, 1].into_iter()));
     let (t, spare) = total_of(Doubled { inner: 1..4 }, 7..8);
     println!("{} {}", t, spare.start);
 }

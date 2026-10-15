@@ -495,4 +495,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => Expr::helper(\"$next\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
+  {
+    name: "iterator-evidence-of-any-param",
+    breaks: "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
+    file: "src/lower/iterators.rs",
+    find: "        if !given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
+  },
 ];
