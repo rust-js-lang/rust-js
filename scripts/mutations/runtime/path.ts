@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "  for (let p = $pathParent(path); p !== undefined; p = $pathParent(p)) all.push(p);\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "path-rest-untrimmed-front",
+    breaks: "what `strip_prefix` leaves keeps the `.`s and separators before it: `a/./b`'s after `a` is `./b`",
+    file: "src/runtime/path.js",
+    find: "  while (d.front === 2 && d.path.length > 0) {\n",
+    replace: "  while (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

@@ -607,6 +607,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::path::Path::with_file_name" => return Some(Some(Std::Path(PathOp::WithFileName))),
             "std::path::Path::starts_with" => return Some(Some(Std::Path(PathOp::StartsWith))),
             "std::path::Path::ends_with" => return Some(Some(Std::Path(PathOp::EndsWith))),
+            "std::path::Path::strip_prefix" => return Some(Some(Std::Path(PathOp::StripPrefix))),
             "std::path::Path::is_absolute" | "std::path::Path::has_root" => {
                 return Some(Some(Std::Path(PathOp::IsAbsolute)));
             }
@@ -3025,6 +3026,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `"NotPresent"`, as an enum's unit variant is (ADR 0391).
     pub(super) fn is_var_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::VarError")
+    }
+
+    /// `path::StripPrefixError`, what `strip_prefix` gives of a path that
+    /// doesn't start with what's asked: `undefined`, as it holds nothing
+    /// (ADR 0405).
+    pub(super) fn is_strip_prefix_error(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::path::StripPrefixError")
     }
 
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.

@@ -24,6 +24,9 @@ pub(in crate::lower) enum PathOp {
     /// `p.starts_with(base)`, `p.ends_with(child)`: by whole components.
     StartsWith,
     EndsWith,
+    /// `p.strip_prefix(base)`: `Ok` of what's after it, or `Err` of a
+    /// `StripPrefixError`, `undefined`, which holds nothing.
+    StripPrefix,
     /// `p.is_absolute()` and `p.has_root()`, one question on Unix, and
     /// `p.is_relative()`: whether it starts with a separator, or doesn't.
     IsAbsolute,
@@ -48,6 +51,7 @@ impl PathOp {
             PathOp::WithFileName => "$pathSetFileName",
             PathOp::StartsWith => "$pathStartsWith",
             PathOp::EndsWith => "$pathEndsWith",
+            PathOp::StripPrefix => "$pathStripPrefix",
             PathOp::Iter => "$pathParts",
             PathOp::Ancestors => "$pathAncestors",
             PathOp::IsAbsolute | PathOp::IsRelative => return None,

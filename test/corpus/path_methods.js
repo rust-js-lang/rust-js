@@ -15,8 +15,10 @@ import {
   $pathSetExtension,
   $pathSetFileName,
   $pathStartsWith,
+  $pathStripPrefix,
   $pathWithExtension,
   $unwrap,
+  $unwrapOk,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -78,6 +80,28 @@ function main() {
       `iter [${parts.map((item) => $debugStr(item)).join(", ")}] [${value.map((item) => $debugStr(item)).join(", ")}] ${$pathParts(p).length}`,
     );
   }
+  const p = "/usr/lib/rust/";
+  for (const base of ["/usr", "/usr/", "/usr/lib/rust", "/usr/li", "usr", "/", "", "/usr//lib"]) {
+    const r = $pathStripPrefix(p, base);
+    console.log(
+      `strip ${$debugStr(base)} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : "Err(StripPrefixError(()))"} ${r.TAG === "Ok"}`,
+    );
+  }
+  const value = $pathStripPrefix("./a/b", "./a");
+  console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(StripPrefixError(()))"}`);
+  const value$1 = $pathStripPrefix("a/./b/.", "a");
+  console.log(
+    `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : "Err(StripPrefixError(()))"}`,
+  );
+  const value$2 = $pathStripPrefix("x/y", "z");
+  if (value$2.TAG === "Ok") {
+    console.log(`rest ${$debugStr(value$2._0)}`);
+  } else {
+    console.log("error prefix not found StripPrefixError(())");
+  }
+  console.log(
+    `${$unwrapOk($pathStripPrefix("a/b/c", "a"), undefined, (e) => "StripPrefixError(())")}`,
+  );
   let buf = "/tmp";
   buf = $pathJoin(buf, "cache");
   buf = $pathJoin(buf, "item.json");
@@ -95,10 +119,10 @@ function main() {
   console.log(`${popped[1]} ${$debugStr(buf)}`);
   const popped$1 = $pathPop(buf);
   buf = popped$1[0];
-  const value = popped$1[1];
+  const value$3 = popped$1[1];
   const popped$2 = $pathPop(buf);
   buf = popped$2[0];
-  console.log(`${value} ${popped$2[1]} ${$debugStr(buf)}`);
+  console.log(`${value$3} ${popped$2[1]} ${$debugStr(buf)}`);
   const popped$3 = $pathPop(buf);
   buf = popped$3[0];
   console.log(`${popped$3[1]} ${$debugStr(buf)}`);
@@ -107,10 +131,10 @@ function main() {
   let empty = "";
   const set$2 = $pathSetExtension(empty, "x");
   empty = set$2[0];
-  const value$1 = set$2[1];
+  const value$4 = set$2[1];
   const popped$4 = $pathPop(empty);
   empty = popped$4[0];
-  console.log(`${value$1} ${popped$4[1]}`);
+  console.log(`${value$4} ${popped$4[1]}`);
   empty = $pathSetFileName(empty, "named");
   console.log(`${$debugStr(empty)}`);
 }

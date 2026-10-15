@@ -707,6 +707,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_string_like(ty) || self.is_parse_error(ty) {
             return Ok(value);
         }
+        // A path's `StripPrefixError`, as std shows it.
+        if self.recognition().is_strip_prefix_error(ty) {
+            return Ok(Expr::str("prefix not found"));
+        }
         // An environment's `VarError`, as std shows it.
         if self.recognition().is_var_error(ty) {
             let shown = (
@@ -941,6 +945,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && adt.variants().is_empty()
         {
             return Ok(Expr::str(""));
+        }
+        // A path's `StripPrefixError`, which holds nothing.
+        if self.recognition().is_strip_prefix_error(ty) {
+            return Ok(Expr::str("StripPrefixError(())"));
         }
         // An environment's `VarError`: its variant.
         if self.recognition().is_var_error(ty) {

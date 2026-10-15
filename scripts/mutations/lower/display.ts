@@ -420,4 +420,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
+  {
+    name: "strip-prefix-error-shown-as-debug",
+    breaks: "`{}` of a `StripPrefixError` is its `{:?}`, where std shows `prefix not found`",
+    file: "src/lower/display.rs",
+    find: "            return Ok(Expr::str(\"prefix not found\"));\n",
+    replace: "            return Ok(Expr::str(\"StripPrefixError(())\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+  },
 ];

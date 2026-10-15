@@ -39,6 +39,18 @@ fn main() {
         let parts: Vec<&str> = p.iter().map(|part| part.to_str().unwrap()).collect();
         println!("iter {:?} {:?} {}", parts, p.ancestors().collect::<Vec<_>>(), p.iter().count());
     }
+    let p = Path::new("/usr/lib/rust/");
+    for base in ["/usr", "/usr/", "/usr/lib/rust", "/usr/li", "usr", "/", "", "/usr//lib"] {
+        let r = p.strip_prefix(base);
+        println!("strip {:?} {:?} {}", base, r, r.is_ok());
+    }
+    println!("{:?}", Path::new("./a/b").strip_prefix("./a"));
+    println!("{:?}", Path::new("a/./b/.").strip_prefix("a"));
+    match Path::new("x/y").strip_prefix("z") {
+        Ok(rest) => println!("rest {:?}", rest),
+        Err(e) => println!("error {} {:?}", e, e),
+    }
+    println!("{}", Path::new("a/b/c").strip_prefix("a").unwrap().display());
     let mut buf = PathBuf::from("/tmp");
     buf.push("cache");
     buf.push("item.json");

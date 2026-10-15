@@ -1483,10 +1483,15 @@ export function $nextComponentBack(c) {
   return undefined;
 }
 
-// What's left after going over its back, as a path: without the
-// separators and `.`s at the end of its body, as std's `as_path` trims them.
+// What's left, as a path: without the separators and `.`s at either end
+// of its body, as std's `as_path` trims them.
 export function $componentsPath(c) {
   const d = { ...c };
+  while (d.front === 2 && d.path.length > 0) {
+    const [text, size] = $frontText(d);
+    if ($partOf(text) !== undefined) break;
+    d.path = d.path.slice(size);
+  }
   while (d.back === 2 && d.path.length > $beforeBody(d)) {
     const [text, size] = $backText(d);
     if ($partOf(text) !== undefined) break;
@@ -1643,6 +1648,13 @@ export function $componentsAfter(c, prefix, next) {
     if (part !== want) return undefined;
     c = rest;
   }
+}
+
+// `p.strip_prefix(base)`: `Ok` of what's after `base`'s components, or
+// `Err` of a `StripPrefixError`, which holds nothing.
+export function $pathStripPrefix(path, base) {
+  const rest = $componentsAfter($components(path), $components(base), $nextComponent);
+  return rest === undefined ? { TAG: "Err", _0: undefined } : { TAG: "Ok", _0: $componentsPath(rest) };
 }
 
 export function $pathStartsWith(path, base) {

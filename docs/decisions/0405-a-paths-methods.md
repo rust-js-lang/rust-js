@@ -29,6 +29,7 @@ changed in place is its text's edit, as a `String`'s is.**
 | `p.parent()`, `p.file_name()`, `p.file_stem()`, `p.extension()` | `$pathParent(p)` and the rest, `undefined` for `None` |
 | `base.join(p)`, `p.with_extension(e)`, `p.with_file_name(n)` | `$pathJoin(base, p)`, `$pathWithExtension(p, e)`, `$pathSetFileName(p, n)` |
 | `p.starts_with(b)`, `p.ends_with(c)` | `$pathStartsWith(p, b)`, `$pathEndsWith(p, c)`: by whole components |
+| `p.strip_prefix(b)` | `$pathStripPrefix(p, b)`: `Ok` of what's after, or `Err` of a `StripPrefixError`, `undefined`, shown as std shows it |
 | `p.is_absolute()`, `p.has_root()`, `p.is_relative()` | `p.startsWith("/")`, or not |
 | `p.iter()`, `p.ancestors()` | `$pathParts(p)`, `$pathAncestors(p)`: arrays made for them, which a `collect` needn't copy |
 | `buf.push(p)`, `buf.set_file_name(n)` | `buf = $pathJoin(buf, p)` |
@@ -41,17 +42,17 @@ changed in place is its text's edit, as a `String`'s is.**
   prefixes, as Windows' `C:` is.
 - **A `PathBuf`'s shape is a string's**, not its fields' object, so a
   `&mut` to one names its place, as a `String`'s does.
-- **Still refused**: `strip_prefix`, whose error is a type of its own,
-  `components()`, whose items would be `Component`s, and what asks the
-  file system, `exists()` and `canonicalize()`.
+- **Still refused**: `components()`, whose items would be `Component`s,
+  and what asks the file system, `exists()` and `canonicalize()`.
 
 ## Why
 
 - **It's the program Rust runs**: the corpus's `path_methods.rs` asks
   each method of twenty paths, roots, `.`, `..`, doubled and trailing
   separators, hidden files and names ending in a `.`, joins, and pushes,
-  pops and sets a `PathBuf`'s name and extension, and goes over five
-  paths' `iter()` and `ancestors()`, each with native Rust;
+  pops and sets a `PathBuf`'s name and extension, goes over five paths'
+  `iter()` and `ancestors()`, and strips prefixes, shows the error of one
+  that isn't, each with native Rust;
   a runtime test panics on a separator in an extension, as std does.
   Mutations read a root's separator as a component's, keep a parent's
   trailing `.`, take `.bashrc`'s extension, append an absolute path,
