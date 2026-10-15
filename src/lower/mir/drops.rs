@@ -355,12 +355,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if adt.is_enum() => {
                 return self.open_drop_variants(state, block, (place, path), (*adt, args), cleanup, span, out);
             }
+            ty::Array(_, len) if let Some(size) = len.try_to_target_usize(tcx) => {
+                return self.open_drop_array(state, block, (place, path), size, cleanup, span, out);
+            }
             _ => {
                 let what = format!("dropping what's left of a `{ty}` some of which has moved, from its MIR");
                 return Err(self.unsupported(span, &what));
             }
         };
         self.drop_ladder(state, block, (place, path, path), fields, cleanup, span, out)?;
+        if !cleanup && let Some(flag) = &state.flags[path] {
+            out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// rustc's `open_drop_for_array`: of an array of `size` items some of
+    /// which have moved, `[a, b, c] = items`, what's left: each item moved
+    /// by its own path, and each run of the rest, as its flag says, a
+    /// subslice, one drop of them all, the last first.
+    #[allow(clippy::too_many_arguments)]
+    fn open_drop_array(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        size: u64,
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        // An item's path: a subslice moved, `[a, rest @ ..]`, is each of its
+        // items' too, as rustc's move paths have an array's.
+        let drops = state.drops.as_ref().expect("elaborated");
+        let item_path = |i: u64| {
+            move_path_children_matching(
+                &drops.move_data,
+                path,
+                |elem| matches!(elem, ProjectionElem::ConstantIndex { offset, .. } if offset == i),
+            )
+        };
+        let paths: Vec<Option<MovePathIndex>> = (0..size).map(item_path).collect();
+        // Each item moved by its own path, and each run of the rest between.
+        let mut pieces = Vec::new();
+        let mut i = 0;
+        while i < size {
+            let end = match paths[i as usize] {
+                Some(_) => i + 1,
+                None => (i..size).find(|&j| paths[j as usize].is_some()).unwrap_or(size),
+            };
+            let elem = match end - i {
+                1 => ProjectionElem::ConstantIndex {
+                    offset: i,
+                    min_length: size,
+                    from_end: false,
+                },
+                _ => ProjectionElem::Subslice {
+                    from: i,
+                    to: end,
+                    from_end: false,
+                },
+            };
+            pieces.push((self.tcx.mk_place_elem(place, elem), paths[i as usize]));
+            i = end;
+        }
+        // Last first, as rustc's ladder has them, each run in order.
+        for (part, subpath) in pieces.into_iter().rev() {
+            match subpath {
+                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, out)?,
+                None => self.complete_drop(state, block, (part, path), span, out)?,
+            }
+        }
         if !cleanup && let Some(flag) = &state.flags[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }

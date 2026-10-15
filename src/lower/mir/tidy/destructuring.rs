@@ -27,6 +27,9 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
                 continue;
             }
         };
+        let moved = constants_first(stmts, i, first, &name);
+        i += moved;
+        let first = first + moved;
         let made = first > i;
         let parts = parts(&stmts[first..], &name);
         let count = parts.len();
@@ -86,6 +89,33 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
         };
         i += 1;
     }
+}
+
+/// Each `let` of a constant among the parts of `name` read from `first`,
+/// a drop flag's, `let a$live = true;`, moved before `at`, so the parts are
+/// read in a row, `const a = _1[0]; const b = _1[1];`, one pattern, a
+/// `let`'s or a parameter's. What it declares nothing before it can read.
+/// How many moved.
+fn constants_first(stmts: &mut Vec<Stmt>, at: usize, first: usize, name: &str) -> usize {
+    let mut end = first;
+    let mut constants = Vec::new();
+    while let Some(stmt) = stmts.get(end) {
+        match &stmt.kind {
+            StmtKind::Let(bound, Some(value)) if value.is_constant() && bound != name => constants.push(end),
+            StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if part_read(value, name).is_some() => {}
+            _ => break,
+        }
+        end += 1;
+    }
+    // Those after the last part stay where they are.
+    while constants.last().map(|&k| k + 1) == Some(end) {
+        constants.pop();
+        end -= 1;
+    }
+    let moved: Vec<Stmt> = constants.iter().rev().map(|&k| stmts.remove(k)).collect();
+    let count = moved.len();
+    stmts.splice(at..at, moved.into_iter().rev());
+    count
 }
 
 /// A `let`'s pattern's rest, which MIR's lowering takes apart with each
@@ -268,16 +298,23 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             body.remove(0);
             continue;
         }
-        let read = nested_parts(body, &name);
+        // Read after the constants the body declares first, its drop flags.
+        constants_first(body, 0, 0, &name);
+        let start = (body.iter())
+            .take_while(
+                |stmt| matches!(&stmt.kind, StmtKind::Let(bound, Some(value)) if value.is_constant() && *bound != name),
+            )
+            .count();
+        let read = nested_parts(&body[start..], &name);
         let count = read.len();
-        if js::mentions_in(&body[count..], &name) > 0 {
+        if js::mentions_in(&body[start + count..], &name) > 0 {
             continue;
         }
         let read: Vec<_> = (read.iter())
             .map(|(path, bound, default)| (path.as_slice(), bound.as_str(), default.as_ref()))
             .collect();
         let Some(pattern) = nested_pattern(&read) else { continue };
-        body.drain(..count);
+        body.drain(start..start + count);
         *param = pattern;
     }
 }
