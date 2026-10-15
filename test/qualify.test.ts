@@ -37,13 +37,14 @@ test("a distribution's files are what its checksums say, or it isn't qualified",
 });
 
 // Qualification runs the tests through the compiler it gives them, so none
-// may reach for the checkout's debug build by name, or let the Vite plugin
-// find it: one that did passed only where a debug build was left behind.
+// may reach for the checkout's debug build by name: one that did passed only
+// where a debug build was left behind. `rust-js build` is given it as
+// `RUST_JS_COMPILER`, as each test that runs it says.
 test("tests use the compiler they're given", () => {
   const named: string[] = [];
   for (const file of readdirSync(join(root, "test")).filter((f) => f.endsWith(".ts") && f !== "support.ts")) {
     const source = readFileSync(join(root, "test", file), "utf8");
-    if (/join\(target, "debug", "rust-js"\)|target\/debug\/rust-js|rustJs\(\)/.test(source)) named.push(file);
+    if (/join\(target, "debug", "rust-js"\)|target\/debug\/rust-js/.test(source)) named.push(file);
   }
   expect(named).toEqual([]);
 });
