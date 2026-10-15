@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "generic-const-refused",
     breaks: "a constant of the crate's rustc can't say as a value, arrayvec's `[const { MaybeUninit::uninit() }; CAP]`, is refused, where its MIR is code",
     file: "src/lower.rs",
-    find: "            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),\n",
+    find: "            _ if def_id.is_local() && args.has_non_region_param() => self.crate_const_as_code(def_id, args),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
   },

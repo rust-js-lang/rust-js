@@ -145,7 +145,8 @@ fn main() {
 
     println!("{} {}", unread(&4), guarded(6));
     let literal: *const i32 = &3;
-    println!("{}", unsafe { *literal });
+    let same_literal = literal;
+    println!("{} {}", unsafe { *literal }, literal == same_literal);
     let once = 5;
     let at_once = &raw const once;
     println!("{}", unsafe { *at_once });

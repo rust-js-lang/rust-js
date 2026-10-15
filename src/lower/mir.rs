@@ -4023,15 +4023,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self.mir_expr(state, operand, out)?;
                 self.repeat((item, item_ty), *count, constant, span, out)?
             }
-            // A borrow only for a slice's length, a slice pattern's test: the
-            // slice, whose `PtrMetadata` is its `length`.
-            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,
             // A pointer to a JS object, `std::ptr::eq`'s: the object (ADR 0285).
             Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {
                 self.mir_place(state, *place, span, out)?
             }
             // A pointer to a place, a handle on it (ADR 0407); of what a pointer
-            // points to, `&raw const *p`, that pointer.
+            // points to, `&raw const *p`, that pointer; of a slice, the slice,
+            // a slice pattern's borrow for its length's too, whose
+            // `PtrMetadata` is its `length`.
             Rvalue::RawPtr(_, place) => {
                 if let [PlaceElem::Deref] = place.projection.as_slice()
                     && self.is_handle_pointer(decls[place.local].ty)

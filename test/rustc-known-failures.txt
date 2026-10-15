@@ -54,9 +54,7 @@ consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a 
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 consts/load-preserves-partial-init.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
-consts/static-mut-refs.rs	error: rust-js does not support addressable memory yet: values of type `*mut [isize]`
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
-consts/static-raw-pointer-interning2.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 consts/std/iter.rs	error: rust-js does not support constants of type `std::iter::Empty<u32>` yet
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 derives/debug/derive-debug.rs	error: rust-js does not support addressable memory yet: values of type `*const (dyn std::marker::Send + 'static)`
@@ -86,13 +84,11 @@ liveness/var-defined-after-early-return.rs	error: rust-js does not support addre
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<Element>` as `usize`, which aren't numbers alone
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support `&mut` to a `&mut [u8]` yet
-methods/method-two-traits-distinguished-via-where-clause.rs	error: rust-js does not support addressable memory yet: values of type `*const [isize]`
 mir/mir_assign_eval_order.rs	error: rust-js does not support values of type `&mut &mut i32` yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 mir/mir_autoderef.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 mir/mir_misc_casts.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 mir/mir_raw_fat_ptr.rs	error: rust-js does not support addressable memory yet: values of type `*const S<[u8]>`
-nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
 packed/dyn-trait.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support addressable memory yet: values of type `*const PackedUnsized`
 packed/issue-118537-field-offset.rs	error: rust-js does not support addressable memory yet: values of type `*const PackedUnsized`
@@ -132,7 +128,6 @@ traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait
 traits/principal-less-objects.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 try-trait/try-operator-various-contexts.rs	error: rust-js does not support addressable memory yet: values of type `(*const core::io::error::Custom) is !null`
 type/type-name-basic.rs	error: rust-js does not support type_name of a type with a type parameter yet
-typeck/issue-18937-1.rs	error: rust-js does not support addressable memory yet: values of type `*mut [U]`
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*const T`, which aren't numbers alone
 unboxed-closures/type-id-higher-rank.rs	error: rust-js does not support `{:?}` of a `TypeId`, its hash yet
@@ -144,7 +139,6 @@ union/union-overwrite.rs	node: ended {"panic":"rust-js does not support reading 
 union/union-transmute.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
 unsafe/new-unsafe-pointers.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone
-unsized/nonnull-unsized-slice.rs	error: rust-js does not support calling `std::convert::From::from` yet
 where-clauses/obligation-error-propagation.rs	error: rust-js does not support comparing `main::X`s yet
 zero-sized/write-volatile-zst.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 zero-sized/zero-sized-binary-heap-push.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::capacity` yet

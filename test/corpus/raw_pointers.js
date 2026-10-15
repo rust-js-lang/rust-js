@@ -124,8 +124,9 @@ function main() {
   const b = { ...a };
   console.log(`${same(a, b)} ${same(a, a)} ${$eq(a, b)}`);
   console.log(`${unread(4)} ${guarded(6)}`);
-  const literal = 3;
-  console.log(`${literal}`);
+  const literal = { value: 3 };
+  const sameLiteral = literal;
+  console.log(`${literal.value} ${literal === sameLiteral}`);
   const once = { value: 5 };
   const atOnce = $ptr(once, "value");
   console.log(`${atOnce.value}`);

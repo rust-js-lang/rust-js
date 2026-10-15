@@ -435,14 +435,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","slice_patterns"],
   },
   {
-    name: "mir-fake-raw-refused",
-    breaks: "a slice pattern's length test, a fake raw borrow, is refused",
-    file: "src/lower/mir.rs",
-    find: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,\n",
-    replace: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) if false => self.mir_place(state, *place, span, out)?,\n",
-    tests: ["test/corpus.test.ts","-t","slice_patterns"],
-  },
-  {
     name: "mir-mut-subslice-copied",
     breaks: "a `&mut` to a slice pattern's rest writes a copy, not the slice",
     file: "src/lower/mir.rs",

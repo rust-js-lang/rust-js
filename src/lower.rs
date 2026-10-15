@@ -509,7 +509,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The crate's, of a type parameter's or a const generic's, which
             // rustc can't say as a value, arrayvec's `[const {
             // MaybeUninit::uninit() }; CAP]`: its MIR, given these, as code.
-            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),
+            // One of neither is a constant of its module (ADR 0127).
+            _ if def_id.is_local() && args.has_non_region_param() => self.crate_const_as_code(def_id, args),
             _ => Err(self.unsupported(span, "this constant")),
         }
     }
