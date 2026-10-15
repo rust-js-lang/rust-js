@@ -70,6 +70,9 @@ released any more: `rust-js build` is the one way to build an app.
   arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
+- **A trait's default method calling its `Self`'s**, where `Self` is
+  generic, `Holder<T, CAP>`: given the impl's `CAP`, and another default
+  of it found in the impl's dictionary (ADR 0135).
 - **`clone_from_slice` in generic code** calls each item's own
   `clone_from`, where its impl writes one, through its `Clone` dictionary,
   as std's does (ADR 0324).

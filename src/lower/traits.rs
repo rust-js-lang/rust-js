@@ -2713,6 +2713,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn default_method(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
         let span = self.tcx.def_span(id);
         let mut specialized = Vec::new();
+        let mut in_impl_terms = Vec::new();
         // A generic default's own evidence is its caller's, after its
         // arguments (ADR 0106); the rest is the impl's, made here.
         let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, id);
@@ -2740,12 +2741,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let concrete = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
-            specialized.push((bound, self.dictionary(concrete, span)?));
+            let dictionary = self.dictionary(concrete, span)?;
+            // And in the impl's terms too, as the body asks: `self.remaining()`
+            // of a `Holder<T>`'s default, after the impl's own.
+            if concrete != bound {
+                in_impl_terms.push((concrete, dictionary.clone()));
+            }
+            specialized.push((bound, dictionary));
         }
         // And the impl's own, `SClone` of `impl<S: Clone> Movable<S> for
         // Point<S>`: a call on the impl's types, which the body's resolve
         // to, is given them.
         specialized.extend(self.given.evidence.iter().cloned());
+        specialized.extend(in_impl_terms);
         // Its trait's type parameters, `Self` among them, drop as the impl's
         // arguments for them do, with the impl's drops (ADR 0098): each is
         // made here, and the body is given it by name.
@@ -2795,6 +2803,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());
             consts.push((index, Expr::var(&name)));
             const_names.push(name);
+        }
+        // And the impl's, which its type, `Self`, names: `CAP` of an
+        // `ArrayVec<T, CAP>`. One numbered as one of the trait's is would
+        // be either: refused, as a method's own is (above).
+        let names_const = |index: u32| {
+            args.iter().any(|arg| {
+                arg.walk()
+                    .any(|part| matches!(part.as_const().map(|c| c.kind()), Some(ty::ConstKind::Param(p)) if p.index == index))
+            })
+        };
+        for (index, value) in self.given.const_params.clone() {
+            match consts.iter().any(|&(at, _)| at == index) {
+                true if names_const(index) => {
+                    return Err(self.unsupported(span, "a trait default's const parameter numbered as its impl's"));
+                }
+                true => {}
+                false => consts.push((index, value)),
+            }
         }
         let outer_consts = std::mem::replace(&mut self.given.const_params, consts);
         // A method's, or a constant's initializer, a trait's default (ADR 0176).

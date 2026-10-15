@@ -1060,4 +1060,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_generic.rs$"],
   },
+  {
+    name: "default-without-impl-consts",
+    breaks: "a trait's default method lowered for an impl isn't given the impl's const parameters its `Self` names, arrayvec's `CAP`, and is refused",
+    file: "src/lower/traits.rs",
+    find: "                false => consts.push((index, value)),\n",
+    replace: "                false => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_impl_const.rs$"],
+  },
+  {
+    name: "default-const-clash-taken",
+    breaks: "a trait default's const parameter numbered as one its impl's `Self` names is taken as either, the trait's value given for the impl's",
+    file: "src/lower/traits.rs",
+    find: "                true if names_const(index) => {\n",
+    replace: "                true if false => {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a default's const parameter numbered as its impl's"],
+  },
+  {
+    name: "default-impl-bound-unsubstituted",
+    breaks: "a trait default's bound of its impl is only in the trait's terms, `Self: Capacity`, so the body's `self.remaining()` of a `Holder<T>` finds no dictionary",
+    file: "src/lower/traits.rs",
+    find: "                in_impl_terms.push((concrete, dictionary.clone()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_impl_const.rs$"],
+  },
 ];

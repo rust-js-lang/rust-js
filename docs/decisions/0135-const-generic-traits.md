@@ -1,6 +1,13 @@
 # 0135. A trait's const parameter is its impl's, and a trait method's is given
 
 Status: Accepted. Extends [0107](0107-const-generics.md) and [0133](0133-impl-names-apart.md).
+Amended: a default copied into an impl is given the impl's const
+parameters its `Self` names too, arrayvec's `CAP` of `ArrayVec<T, CAP>`
+in `ArrayVecImpl::as_slice`'s `self.len()`; one numbered as one of the
+trait's own is an error, as a method's own is. And a default calling
+another of its `Self`'s, `full` calling `self.remaining()` of a
+`Holder<T, CAP>`, finds the impl's dictionary in the impl's terms too,
+as an own bound's is (`test/corpus/trait_default_impl_const.rs`).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
