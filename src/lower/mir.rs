@@ -3005,19 +3005,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::index(base, index)
             }
             // A slice pattern's rest, `xs.slice(1, xs.length - 1)`: a copy, as
-            // `&v[a..b]` is (ADR 0063), which a `&mut` to can't be (above).
+            // `&v[a..b]` is (ADR 0063); a `&mut` to it is a view (`rest_view`).
             PlaceElem::Subslice { from, to, from_end } if base.reads_same() => {
-                let mut range = vec![Expr::int(from.into())];
-                match (from_end, self.array_length(ty.ty)) {
-                    (true, _) if to == 0 => {}
-                    (true, Some(n)) => range.push(Expr::int(n - i128::from(to))),
-                    (true, None) => range.push(Expr::bin(
-                        Op::Sub,
-                        Expr::member(base.clone(), "length"),
-                        Expr::int(to.into()),
-                    )),
-                    (false, _) => range.push(Expr::int(to.into())),
-                }
+                let range = self.subslice_range(&base, ty.ty, (from, to, from_end));
                 Expr::call(Expr::member(base, "slice"), range)
             }
             // Of an array made here, `let [_, x @ .., _] = [a, b, c, d]`: it held
@@ -3029,6 +3019,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Err(self.unsupported(span, "this place, from its MIR")),
         })
+    }
+
+    /// Where a slice pattern's rest, `from..` and `to` short of the end,
+    /// starts and ends in `base`, its slice of `ty`: `[1, xs.length - 1]`, or
+    /// `[1]` to its end. `base` is read twice, so it reads the same.
+    fn subslice_range(&self, base: &Expr, ty: Ty<'tcx>, (from, to, from_end): (u64, u64, bool)) -> Vec<Expr> {
+        let mut range = vec![Expr::int(from.into())];
+        match (from_end, self.array_length(ty)) {
+            (true, _) if to == 0 => {}
+            (true, Some(n)) => range.push(Expr::int(n - i128::from(to))),
+            (true, None) => range.push(Expr::bin(
+                Op::Sub,
+                Expr::member(base.clone(), "length"),
+                Expr::int(to.into()),
+            )),
+            (false, _) => range.push(Expr::int(to.into())),
+        }
+        range
+    }
+
+    /// A `&mut` to a slice pattern's rest, `ref mut rest @ ..`: a view of
+    /// those items, `$view(xs, 1)`, as `&mut xs[1..]` is (ADR 0335). Of a
+    /// rest of a rest, which no pattern makes, `None`.
+    fn rest_view(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let Some((&PlaceElem::Subslice { from, to, from_end }, prefix)) = place.projection.split_last() else {
+            return Ok(None);
+        };
+        if prefix.iter().any(|elem| matches!(elem, PlaceElem::Subslice { .. })) {
+            return Ok(None);
+        }
+        let of = Place {
+            local: place.local,
+            projection: self.tcx.mk_place_elems(prefix),
+        };
+        let ty = of.ty(&state.body.local_decls, self.tcx).ty;
+        let items = self.mir_place(state, of, span, out)?;
+        let items = match items.reads_same() {
+            true => items,
+            false => self.spill("items", items, out),
+        };
+        let mut list = vec![items.clone()];
+        list.extend(self.subslice_range(&items, ty, (from, to, from_end)));
+        Ok(Some(self.view_call("$view", list)))
     }
 
     /// An array type's length, rustc's.
@@ -3526,15 +3565,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
-                // A part of a slice's copy, a slice pattern's rest, can't be
-                // written through.
+                // A slice pattern's rest, through a `&mut`: a view of it.
                 if matches!(kind, BorrowKind::Mut { .. })
                     && place
                         .projection
                         .iter()
                         .any(|elem| matches!(elem, PlaceElem::Subslice { .. }))
                 {
-                    return Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR"));
+                    return match self.rest_view(state, *place, span, out)? {
+                        Some(view) => Ok(Value::Expr(view)),
+                        None => Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR")),
+                    };
                 }
                 // A generic iterator a field holds, stepped through a `&mut` to
                 // it: what it's given, a range say, may be no JS iterator, as a
@@ -5828,6 +5869,7 @@ fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
         js::ExprKind::Index(object, index) => {
             same_place(state, object)
                 && (index.is_constant()
+                    || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
                         if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] == 1)))
         }
@@ -5967,10 +6009,20 @@ fn fixed_place(place: &Expr) -> bool {
         js::ExprKind::Var(_) => true,
         js::ExprKind::Member(object, _) => fixed_place(object),
         js::ExprKind::Index(object, index) => {
-            fixed_place(object) && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)))
+            fixed_place(object)
+                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) || from_end(object, index))
         }
         _ => false,
     }
+}
+
+/// Whether `index` counts back from the end of `object`, `xs.length - 1`,
+/// a slice pattern's suffix: `object`'s length can't change while an item
+/// of it is borrowed.
+fn from_end(object: &Expr, index: &Expr) -> bool {
+    matches!(&index.kind, js::ExprKind::Binary(Op::Sub, length, back)
+        if back.is_constant()
+            && matches!(&length.kind, js::ExprKind::Member(of, field) if field == "length" && of.written_alike(object)))
 }
 
 /// Whether a closure's `body` writes what it captured `i`th: assigns it,

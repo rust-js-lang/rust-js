@@ -1,6 +1,8 @@
 # 0123. A slice's pattern tests its length and its items
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md) and [0063](0063-text.md).
+Amended by [0389](0389-a-mutable-rest-is-a-view.md): a `..` bound through
+a `&mut` is a view.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -31,8 +33,9 @@ is; an array's length is its type's, so it needs no test:**
   a `ref mut` binding of it names a place, and `xs[i] = ..` writes one,
   where `xs.at(-1) = ..` isn't JS.
 - **What `..` binds is a copy** of the items it stands for, `xs.slice(a,
-  b)`, as `&v[a..b]` is (ADR 0063). So a `ref mut` one, or one of a `&mut
-  [T]`, which would be written through, is an error, as `&mut v[a..b]` is.
+  b)`, as `&v[a..b]` is (ADR 0063). A `ref mut` one, or one of a `&mut
+  [T]`, which is written through, is a view, `$view(xs, a, b)`, as
+  `&mut v[a..b]` is (ADR 0389; it was an error).
   An item bound by `ref mut`, or through a `&mut`, names its place, and
   writes it: `*head += 10` is `grid[0] = grid[0] + 10 | 0`.
 - **An array's first items, each a binding or `_`, are JS's own
@@ -54,5 +57,4 @@ is; an array's length is its type's, so it needs no test:**
 
 - Rust's slice patterns compile, compared with native Rust by the
   `slice_patterns` corpus case.
-- A `..` bound by `ref mut` is still an error, until a part of a slice can
-  be written through (ADR 0063).
+- A `..` bound by `ref mut` is a view (ADR 0389).

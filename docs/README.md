@@ -456,6 +456,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0386 A function that never returns, `-> !`](decisions/0386-a-function-that-never-returns.md)
 - [0387 A conversion of a type to itself is the value](decisions/0387-a-conversion-of-a-type-to-itself.md)
 - [0388 A boxed slice iterates as its array](decisions/0388-a-boxed-slice-iterates-as-its-array.md)
+- [0389 A slice pattern's rest through a `&mut` is a view](decisions/0389-a-mutable-rest-is-a-view.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

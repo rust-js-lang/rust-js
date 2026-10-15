@@ -1743,6 +1743,31 @@ impl Expr {
             if matches!(&value.kind, ExprKind::Var(name) if name == param))
     }
 
+    /// Whether this and `other` are written alike: the same JS, part by
+    /// part.
+    pub fn written_alike(&self, other: &Expr) -> bool {
+        let all = |x: &[Expr], y: &[Expr]| x.len() == y.len() && x.iter().zip(y).all(|(x, y)| x.written_alike(y));
+        match (&self.kind, &other.kind) {
+            (ExprKind::Num(x), ExprKind::Num(y)) => x.to_bits() == y.to_bits(),
+            (ExprKind::BigInt(x), ExprKind::BigInt(y)) => x == y,
+            (ExprKind::BigUint(x), ExprKind::BigUint(y)) => x == y,
+            (ExprKind::Bool(x), ExprKind::Bool(y)) => x == y,
+            (ExprKind::Str(x), ExprKind::Str(y)) | (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
+            (ExprKind::Undefined, ExprKind::Undefined) | (ExprKind::Null, ExprKind::Null) => true,
+            (ExprKind::Member(x, p), ExprKind::Member(y, q)) => p == q && x.written_alike(y),
+            (ExprKind::Index(x, i), ExprKind::Index(y, j)) => x.written_alike(y) && i.written_alike(j),
+            (ExprKind::Unary(p, x), ExprKind::Unary(q, y)) => {
+                std::mem::discriminant(p) == std::mem::discriminant(q) && x.written_alike(y)
+            }
+            (ExprKind::Binary(p, x, i), ExprKind::Binary(q, y, j)) => {
+                p == q && x.written_alike(y) && i.written_alike(j)
+            }
+            (ExprKind::Call(f, x), ExprKind::Call(g, y)) => f.written_alike(g) && all(x, y),
+            (ExprKind::Array(x), ExprKind::Array(y)) => all(x, y),
+            _ => false,
+        }
+    }
+
     /// Is this the same value, cheaply, however often it's read? A variable,
     /// a property of one, an item of one at a constant index (`t[0]`), or a
     /// constant: what can be written twice.

@@ -368,36 +368,14 @@ fn same_body(a: &[&Stmt], b: &[&Stmt]) -> bool {
 
 fn same_stmt(a: &Stmt, b: &Stmt) -> bool {
     match (&a.kind, &b.kind) {
-        (StmtKind::Assign(t, v), StmtKind::Assign(u, w)) => same_expr(t, u) && same_expr(v, w),
-        (StmtKind::Expr(x), StmtKind::Expr(y)) | (StmtKind::Throw(x), StmtKind::Throw(y)) => same_expr(x, y),
+        (StmtKind::Assign(t, v), StmtKind::Assign(u, w)) => t.written_alike(u) && v.written_alike(w),
+        (StmtKind::Expr(x), StmtKind::Expr(y)) | (StmtKind::Throw(x), StmtKind::Throw(y)) => x.written_alike(y),
         (StmtKind::Return(x), StmtKind::Return(y)) => match (x, y) {
-            (Some(x), Some(y)) => same_expr(x, y),
+            (Some(x), Some(y)) => x.written_alike(y),
             (None, None) => true,
             _ => false,
         },
         (StmtKind::Break(x), StmtKind::Break(y)) | (StmtKind::Continue(x), StmtKind::Continue(y)) => x == y,
-        _ => false,
-    }
-}
-
-/// Whether `a` and `b` are written alike, of what a match's arms do.
-fn same_expr(a: &Expr, b: &Expr) -> bool {
-    let all = |x: &[Expr], y: &[Expr]| x.len() == y.len() && x.iter().zip(y).all(|(x, y)| same_expr(x, y));
-    match (&a.kind, &b.kind) {
-        (ExprKind::Num(x), ExprKind::Num(y)) => x.to_bits() == y.to_bits(),
-        (ExprKind::BigInt(x), ExprKind::BigInt(y)) => x == y,
-        (ExprKind::BigUint(x), ExprKind::BigUint(y)) => x == y,
-        (ExprKind::Bool(x), ExprKind::Bool(y)) => x == y,
-        (ExprKind::Str(x), ExprKind::Str(y)) | (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
-        (ExprKind::Undefined, ExprKind::Undefined) | (ExprKind::Null, ExprKind::Null) => true,
-        (ExprKind::Member(x, p), ExprKind::Member(y, q)) => p == q && same_expr(x, y),
-        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_expr(x, y) && same_expr(i, j),
-        (ExprKind::Unary(p, x), ExprKind::Unary(q, y)) => {
-            std::mem::discriminant(p) == std::mem::discriminant(q) && same_expr(x, y)
-        }
-        (ExprKind::Binary(p, x, i), ExprKind::Binary(q, y, j)) => p == q && same_expr(x, y) && same_expr(i, j),
-        (ExprKind::Call(f, x), ExprKind::Call(g, y)) => same_expr(f, g) && all(x, y),
-        (ExprKind::Array(x), ExprKind::Array(y)) => all(x, y),
         _ => false,
     }
 }
@@ -578,7 +556,7 @@ fn is_subject(e: &Expr) -> bool {
 fn same_subject(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Unary(UnaryOp::Typeof, x), ExprKind::Unary(UnaryOp::Typeof, y)) => same_subject(x, y),
-        _ => same_expr(a, b),
+        _ => a.written_alike(b),
     }
 }
 
