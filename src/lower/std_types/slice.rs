@@ -220,9 +220,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let layout = self
-            .tcx
-            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(item))
-            .map_err(|_| self.unsupported(span, "an unstable sort of these items"))?;
+            .layout(item)
+            .ok_or_else(|| self.unsupported(span, "an unstable sort of these items"))?;
         let size = layout.size.bytes();
         let freeze = item.is_freeze(self.tcx, self.typing_env);
         Ok(if freeze && self.is_copy(item) && size <= 8 {

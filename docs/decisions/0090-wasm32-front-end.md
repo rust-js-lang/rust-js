@@ -86,3 +86,6 @@ cfg!(target_pointer_width = "32")// true
   JS function for every type.) A type with a pointer or a `usize` in it is
   smaller than on a 64-bit machine, as its `usize` is. 27 of rustc's 42
   tests that stopped here pass (`size_of.rs`; a type parameter's in `type_facts.rs`).
+  (Amended: a sized value's `align_of_val` is too, the same question of its
+  alignment, so the four are one std function rust-js knows, `Std::Layout`,
+  of a size or an alignment, and of a type or a value's.)

@@ -17,5 +17,6 @@ function main() {
   console.log("10 1 8");
   console.log("16 2");
   console.log("12 2");
+  console.log("8 4 2");
 }
 //# sourceMappingURL=case.js.map

@@ -1,8 +1,8 @@
-// `size_of`, `align_of` and a sized value's `size_of_val` are the wasm32
-// target's, which rust-js checks programs for (ADR 0090), as their
-// constants already are. Without a pointer or a `usize` in them, these types
+// `size_of`, `align_of` and a sized value's `size_of_val` and `align_of_val`
+// are the wasm32 target's, which rust-js checks programs for (ADR 0090), as
+// their constants already are. Without a pointer or a `usize` in them, these types
 // are the same size on the 64-bit machine the native side runs on.
-use std::mem::{align_of, size_of, size_of_val};
+use std::mem::{align_of, align_of_val, size_of, size_of_val};
 
 #[allow(dead_code)]
 #[repr(C)]
@@ -37,4 +37,5 @@ fn main() {
     println!("{} {}", size_of_val(&w), size_of::<Option<u8>>());
     let numbers = [1u32, 2, 3];
     println!("{} {}", size_of_val(&numbers), size_of_val(&w.b));
+    println!("{} {} {}", align_of_val(&w), align_of_val(&numbers), align_of_val(&w.b));
 }

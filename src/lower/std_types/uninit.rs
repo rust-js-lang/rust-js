@@ -5,10 +5,8 @@
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
-use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
-use rustc_middle::ty::{self, Ty};
-use rustc_span::Span;
+use rustc_middle::ty;
 
 /// What's asked of a `MaybeUninit` or a `Box` of one.
 #[derive(Clone, Copy, PartialEq)]
@@ -106,32 +104,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }))
-    }
-
-    /// A `ty` of all zero bytes, where that's one: a number's `0`, `false`,
-    /// `'\0'`, and a tuple or an array of them.
-    fn zero(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        if let Some(num) = Num::of(ty) {
-            return Ok(match num.big() {
-                true => Expr::bigint(0),
-                false => Expr::int(0),
-            });
-        }
-        match ty.kind() {
-            ty::Bool => Ok(Expr::bool(false)),
-            ty::Char => Ok(Expr::str("\0")),
-            ty::Tuple(items) if items.is_empty() => Ok(Expr::undefined()),
-            ty::Tuple(items) => Ok(Expr::array(
-                items.iter().map(|t| self.zero(t, span)).collect::<R<Vec<_>>>()?,
-            )),
-            ty::Array(item, len) => {
-                let len = len
-                    .try_to_target_usize(self.tcx)
-                    .ok_or_else(|| self.unsupported(span, "a zeroed array of a generic length"))?;
-                let zero = self.zero(*item, span)?;
-                Ok(Expr::array((0..len).map(|_| zero.clone()).collect()))
-            }
-            _ => Err(self.unsupported(span, &format!("a zeroed `{ty}`, which may be no value of it"))),
-        }
     }
 }

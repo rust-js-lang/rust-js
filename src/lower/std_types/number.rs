@@ -10,7 +10,6 @@ use crate::lower::calls::Call;
 use crate::lower::discriminants;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
-use crate::lower::std_types::any::AnyOp;
 use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -1334,18 +1333,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let of = generic_args.types().next().expect("`needs_drop`'s type argument");
                 self.type_fact_value(of, TypeFact::NeedsDrop, span)?
             }
-            Std::SizeOf | Std::AlignOf | Std::SizeOfVal => {
+            Std::Layout { fact, of_val } => {
                 let of = generic_args.types().next().expect("a size's type argument");
-                let fact = match known {
-                    Std::AlignOf => TypeFact::Align,
-                    _ => TypeFact::Size,
-                };
                 let bytes = match of.kind() {
                     ty::Param(_) => self.type_fact_value(of, fact, span)?,
-                    _ => Expr::int(self.layout_bytes(known, of, span)?),
+                    _ => Expr::int(self.layout_bytes((fact, of_val), of, span)?),
                 };
                 // What's measured still runs, if it does anything.
-                if matches!(known, Std::SizeOfVal) {
+                if of_val {
                     let measured = arg();
                     if measured.has_effects() {
                         out.push(StmtKind::Expr(measured).at(js_span));
@@ -1361,12 +1356,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
     pub(in crate::lower) fn type_fact_value(&self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
-        let (what, known) = match fact {
-            TypeFact::Size => ("size_of", Std::SizeOf),
-            TypeFact::Align => ("align_of", Std::AlignOf),
-            TypeFact::Name => ("type_name", Std::TypeName { of_val: false }),
-            TypeFact::Id => ("the `TypeId`", Std::Any(AnyOp::TypeIdOf)),
-            TypeFact::NeedsDrop => ("needs_drop", Std::NeedsDrop),
+        let what = match fact {
+            TypeFact::Size => "size_of",
+            TypeFact::Align => "align_of",
+            TypeFact::Name => "type_name",
+            TypeFact::Id => "the `TypeId`",
+            TypeFact::NeedsDrop => "needs_drop",
         };
         if let ty::Param(param) = of.kind() {
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
@@ -1385,7 +1380,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));
         }
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
-            return Ok(Expr::int(self.layout_bytes(known, of, span)?));
+            return Ok(Expr::int(self.layout_bytes((fact, false), of, span)?));
         }
         if of.has_param() {
             return Err(self.unsupported(span, &format!("{what} of a type with a type parameter")));
@@ -1399,12 +1394,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// The bytes `size_of`, `align_of` or `size_of_val` gives for `of`.
-    pub(in crate::lower) fn layout_bytes(&self, known: Std, of: Ty<'tcx>, span: Span) -> R<i128> {
-        let name = match known {
-            Std::SizeOf => "size_of",
-            Std::AlignOf => "align_of",
-            _ => "size_of_val",
+    /// The bytes `size_of`, `align_of`, `size_of_val` or `align_of_val`
+    /// gives for `of`: its size or alignment, and whether of a value's.
+    pub(in crate::lower) fn layout_bytes(&self, (fact, of_val): (TypeFact, bool), of: Ty<'tcx>, span: Span) -> R<i128> {
+        let name = match (fact, of_val) {
+            (TypeFact::Align, false) => "align_of",
+            (TypeFact::Align, true) => "align_of_val",
+            (_, false) => "size_of",
+            (_, true) => "size_of_val",
         };
         if of.has_param() {
             return Err(self.unsupported(span, &format!("`{name}` of a type parameter")));
@@ -1412,13 +1409,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !of.is_sized(self.tcx, self.typing_env) {
             return Err(self.unsupported(span, &format!("`{name}` of a value without one size")));
         }
-        // Of a type without parameters, as codegen asks: 1.98 finds an
-        // `async fn`'s future too generic to lay out otherwise (ADR 0109).
         let layout = self
-            .tcx
-            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(of))
-            .map_err(|_| self.unsupported(span, &format!("`{name}` of this type")))?;
-        let bytes = if matches!(known, Std::AlignOf) {
+            .layout(of)
+            .ok_or_else(|| self.unsupported(span, &format!("`{name}` of this type")))?;
+        let bytes = if fact == TypeFact::Align {
             layout.align.abi.bytes()
         } else {
             layout.size.bytes()

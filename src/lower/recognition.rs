@@ -226,16 +226,21 @@ pub(super) enum Std {
     BeginPanic,
     /// `hint::unreachable_unchecked()`: MIR's unreachable code's throw.
     Unreachable,
-    /// `size_of::<T>()`, `align_of::<T>()` and `size_of_val(&x)` of a
-    /// sized `x`: the wasm32 target's, as their constants are (ADR 0090).
-    SizeOf,
-    AlignOf,
+    /// `size_of::<T>()` and `align_of::<T>()`, and `size_of_val(&x)` and
+    /// `align_of_val(&x)` of a sized `x`: the wasm32 target's, as their
+    /// constants are (ADR 0090).
+    Layout {
+        fact: TypeFact,
+        of_val: bool,
+    },
     /// `mem::needs_drop::<T>()`: rustc's answer, `true` or `false`, or a
     /// type parameter's, given (ADR 0145).
     NeedsDrop,
     /// `mem::discriminant(&e)`: `e`'s variant's discriminant (ADR 0393).
     Discriminant,
-    SizeOfVal,
+    /// `mem::transmute::<A, B>(a)` of plain data (ADR 0408): its parts as
+    /// `B`'s.
+    Transmute,
     /// `mem::drop(x)`: `x`'s destructor, and `mem::forget(x)`: none (ADR 0098).
     Drop,
     Forget,
@@ -539,11 +544,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tcx = self.tcx;
         let diagnostic = |name: &str| tcx.is_diagnostic_item(Symbol::intern(name), def_id);
         let self_ty = args.types().next();
-        if diagnostic("mem_size_of") {
-            return Some(Some(Std::SizeOf));
-        }
-        if diagnostic("mem_align_of") {
-            return Some(Some(Std::AlignOf));
+        if let Some((fact, of_val)) = layout_query(tcx, def_id) {
+            return Some(Some(Std::Layout { fact, of_val }));
         }
         if type_fact(tcx, def_id) == Some(TypeFact::NeedsDrop) {
             return Some(Some(Std::NeedsDrop));
@@ -551,9 +553,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // An enum's variant's discriminant (ADR 0393).
         if std_path(tcx, def_id) == "std::mem::discriminant" {
             return Some(Some(Std::Discriminant));
-        }
-        if diagnostic("mem_size_of_val") {
-            return Some(Some(Std::SizeOfVal));
         }
         if diagnostic("mem_drop") {
             return Some(Some(Std::Drop));
@@ -564,6 +563,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // The one thread there is yields to none (ADR 0142).
         if std_path(tcx, def_id) == "std::thread::yield_now" {
             return Some(Some(Std::Nothing));
+        }
+        // Plain data's bytes as another type's, and all zero (ADR 0408).
+        match std_path(tcx, def_id).as_str() {
+            "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {
+                return Some(Some(Std::Transmute));
+            }
+            "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
+            _ => {}
         }
         // A raw pointer's, a handle on its place (ADR 0407).
         if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {
@@ -3883,16 +3890,7 @@ pub(crate) fn is_discriminant_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> boo
 /// of bytes, `transmute` and `zeroed`.
 pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let path = std_path(tcx, id);
-    path.starts_with("std::ptr::")
-        || matches!(
-            path.as_str(),
-            "std::intrinsics::transmute"
-                | "std::intrinsics::transmute_unchecked"
-                | "std::mem::transmute"
-                | "std::mem::transmute_copy"
-                | "std::mem::zeroed"
-                | "std::mem::uninitialized"
-        )
+    path.starts_with("std::ptr::") || matches!(path.as_str(), "std::mem::transmute_copy" | "std::mem::uninitialized")
 }
 
 /// A type of addressable memory, or with one in it (ADR 0390): a raw
@@ -4296,16 +4294,27 @@ impl TypeFact {
     }
 }
 
+/// The layout `def_id` asks of its type argument, its size or alignment, and
+/// whether of a value's: `size_of`, `align_of`, `size_of_val` and
+/// `align_of_val`. None of any other function.
+fn layout_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<(TypeFact, bool)> {
+    let diagnostic = |name: &str| tcx.is_diagnostic_item(Symbol::intern(name), def_id);
+    Some(match () {
+        _ if diagnostic("mem_size_of") => (TypeFact::Size, false),
+        _ if diagnostic("mem_size_of_val") => (TypeFact::Size, true),
+        _ if diagnostic("mem_align_of") => (TypeFact::Align, false),
+        // It has no diagnostic name.
+        _ if std_path(tcx, def_id) == "std::mem::align_of_val" => (TypeFact::Align, true),
+        _ => return None,
+    })
+}
+
 /// The fact `def_id` asks of its type argument: `size_of` and `size_of_val`
 /// its size, `align_of` its alignment, `type_name` and `type_name_of_val`
 /// its name. None of any other function.
 pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
-    let diagnostic = |name: &str| tcx.is_diagnostic_item(Symbol::intern(name), def_id);
-    if diagnostic("mem_size_of") || diagnostic("mem_size_of_val") {
-        return Some(TypeFact::Size);
-    }
-    if diagnostic("mem_align_of") {
-        return Some(TypeFact::Align);
+    if let Some((fact, _)) = layout_query(tcx, def_id) {
+        return Some(fact);
     }
     match std_path(tcx, def_id).as_str() {
         "std::any::type_name" | "std::any::type_name_of_val" => return Some(TypeFact::Name),

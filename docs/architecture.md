@@ -256,7 +256,7 @@ and answer. Each is checked to stay that way.
 | `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
 | `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
 | `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
-| `calls.rs` | What calls share: `Call`, a call made; `apply`, calling a function value; `catching`, a JS call that may throw made a `Result` (ADR 0035); `given_to_js`; `ptr_eq_refused` |
+| `calls.rs` | What calls share: `Call`, a call made; `apply`, calling a function value; `catching`, a JS call that may throw made a `Result` (ADR 0035); `given_to_js` |
 | `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
 | `drops.rs`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
@@ -265,6 +265,7 @@ and answer. Each is checked to stay that way.
 | `refusal.rs` | How a refusal is said, `refuse` and its `words`: "rust-js does not support .. yet", and of addressable memory, that (ADR 0390) |
 | `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
 | `pointers.rs` | A raw pointer, a handle on its place, `$ptr(object, key)` or `$ptrTo(object)`, or `null`: what a pointer is taken to, `*p`, std's functions of one, and what's refused, an address, or a place JS may hold a copy of (ADR 0407) |
+| `plain.rs` | Plain data, numbers, `bool`s and `char`s in tuples, arrays and structs, at rustc's offsets for wasm32: `layout`, the one answer of a type's layout; a `transmute` of plain data, its bytes as another type's; a zeroed value (ADR 0408) |
 | `unions.rs` | A union, the object of the one field it holds: its fields read, written and copied, rust-js's error where one's read as another type's (ADR 0406) |
 | `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` and `slice.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs`, `heap.rs`, `text.rs`, `number.rs`, `option.rs`, `result.rs` (`?` and the `From` of its error), `cell.rs`, `rc.rs`, `cow.rs`, `once.rs`, `lazy.rs`, `range.rs`, `channel.rs`, `pin.rs`, `uninit.rs`, `any.rs`, `process.rs` (Node's process, the one list of what works in Node only, ADR 0391), `path.rs` (a path's methods, over its components, ADR 0405); and `values.rs`, which hands a std call to its type's module (ADR 0314). A rewrite tidy makes of a type's helpers is the type's module's, which tidy calls: a map's counted entry (`map::counted_entries`), a range made as stepped (`range::range_items`), a cell's borrow none can fail (`cell::unguarded`) |
 | `iterators.rs`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |

@@ -243,6 +243,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.pointer_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        if let Some(js) = self.transmute_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.uninit_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -386,6 +389,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Path(_) => unreachable!("lowered by path_call"),
             Std::Pointer(_) => unreachable!("lowered by pointer_call"),
             Std::Uninit(_) => unreachable!("lowered by uninit_call"),
+            Std::Transmute => unreachable!("lowered by transmute_call"),
             Std::Cow(_) => unreachable!("lowered by mir_std_call"),
             Std::Rc(_) => unreachable!("lowered by mir_std_call"),
             Std::Slice(_) => unreachable!("lowered by mir_std_call"),
@@ -403,10 +407,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Operator(_)
             | Std::UnaryOperator(_)
             | Std::Reverse
-            | Std::SizeOf
-            | Std::NeedsDrop
-            | Std::AlignOf
-            | Std::SizeOfVal => unreachable!("lowered by numeric_call"),
+            | Std::Layout { .. }
+            | Std::NeedsDrop => unreachable!("lowered by numeric_call"),
             Std::IterSource(_) => unreachable!("lowered by iter_source_call"),
             Std::Concat
             | Std::StripPrefix

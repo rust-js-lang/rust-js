@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     breaks: "`size_of::<u16>` as a value, and `size_of::<T>` of a type parameter, is refused, where it's a call's arrow",
     file: "src/lower/items.rs",
     find: "        match known {\n            Std::Drop | Std::Forget => {",
-    replace: "        match known {\n            Std::SizeOf | Std::AlignOf => return Err(self.unsupported(span, \"`size_of` as a value\")),\n            Std::Drop | Std::Forget => {",
+    replace: "        match known {\n            Std::Layout { .. } => return Err(self.unsupported(span, \"`size_of` as a value\")),\n            Std::Drop | Std::Forget => {",
     tests: ["test/corpus.test.ts","-t","expression_values"],
   },
   {

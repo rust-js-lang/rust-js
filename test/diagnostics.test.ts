@@ -14,7 +14,10 @@ for (const [name, source, message, crate] of [
   ["a const block of a static's dyn", 'trait T { fn get(&self) -> u32; }\nstruct A(u32);\nimpl T for A { fn get(&self) -> u32 { self.0 } }\nstatic S: A = A(1);\npub fn f() -> u32 { let x = [const { &S as &dyn T }; 1]; x[0].get() }', "does not support constants of type `&dyn T`"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
   // ADR 0390: addressable memory, which JavaScript has none of, says so.
-  ["a transmute", "pub fn f(x: u32) -> f32 { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: calling `std::intrinsics::transmute`"],
+  // ADR 0408: plain data is its numbers; a reference's bytes are an address.
+  ["a transmute of a reference", "pub fn f(x: &u32) -> usize { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: a `transmute` of `&u32` as `usize`, which aren't numbers alone"],
+  ["a zeroed std struct", "pub fn f() -> std::time::Duration { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::time::Duration`, which may be no value of it"],
+  ["a zeroed std wrapper", "pub fn f() -> std::num::Wrapping<u32> { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::num::Wrapping<u32>`, which may be no value of it"],
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
   ["a pointer's address", "pub fn f() -> usize { let x = 1; let p = &raw const x; p as usize }", "does not support addressable memory yet: a pointer's address"],
   ["a pointer made of an address", "pub fn f() -> bool { let p = 3 as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer made of an address"],
