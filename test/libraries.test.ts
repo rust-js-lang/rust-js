@@ -5,7 +5,8 @@
 // package's name.
 
 import { beforeAll, expect, test } from "bun:test";
-import { cpSync, linkSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
@@ -162,4 +163,46 @@ test("a failed build says the app's errors, not what a library's crate warns of"
   expect(built.code).not.toBe(0);
   expect(built.stderr).toContain("src/lib.rs:2");
   expect(built.stderr).not.toContain("spare");
+}, 600_000);
+
+// As a user has it: the library packed by `npm pack`, its JS an older
+// rust-js's, and installed by npm, bun and pnpm, each as it installs, pnpm's
+// store linking each file into the app. Outside this checkout, so no
+// workspace of its is the app's.
+test("a library packed by npm is built into an app by each package manager's install", () => {
+  const lib = library();
+  writeFileSync(join(lib, "src", "lib.js"), `${readFileSync(join(lib, "src", "lib.js"), "utf8")}// an older rust-js's\n`);
+  const work = realpathSync(mkdtempSync(join(tmpdir(), "rust-js libraries ")));
+  const packedBy = runSync(["npm", "pack", "--pack-destination", work], lib, 120_000);
+  expect(packedBy.stderr).not.toContain("ERR");
+  const tarball = join(work, "acme-greet-1.0.0.tgz");
+  const env = { COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", COREPACK_ENABLE_STRICT: "0" };
+  const installs: Record<string, string[]> = {
+    npm: ["npm", "install", "--no-audit", "--no-fund"],
+    bun: [process.execPath, "install"],
+    pnpm: ["corepack", "pnpm@10.0.0", "install"],
+  };
+  for (const [manager, install] of Object.entries(installs)) {
+    const dir = join(work, manager);
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ private: true, dependencies: { "@acme/greet": `file:${tarball}` } }));
+    writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\ngreet = { package = "acme-greet", version = "1" }\n\n[workspace]\n');
+    writeFileSync(join(dir, "src", "lib.rs"), 'pub fn welcome() -> String {\n    greet::greet("Ada").text()\n}\n');
+    const installed = runSync(install, dir, 300_000, env);
+    expect({ manager, code: installed.code, stderr: installed.code ? installed.stderr : "" }).toEqual({ manager, code: 0, stderr: "" });
+    mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
+    symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+    // A witness of the installed file: one written through is seen in it.
+    const installedJs = realpathSync(join(dir, "node_modules", "@acme", "greet", "src", "lib.js"));
+    const shipped = readFileSync(installedJs, "utf8");
+    linkSync(installedJs, join(work, `${manager}-witness.js`));
+    const built = build(dir);
+    expect({ manager, code: built.code, stderr: built.stderr }).toEqual({ manager, code: 0, stderr: "" });
+    expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).toContain('from "@acme/greet/src/lib.js";');
+    expect(welcome(dir)).toBe("Hello, Ada!");
+    expect(readFileSync(installedJs, "utf8")).not.toContain("an older rust-js's");
+    expect({ manager, witness: readFileSync(join(work, `${manager}-witness.js`), "utf8") }).toEqual({ manager, witness: shipped });
+    const checked = build(dir, "--check");
+    expect({ manager, code: checked.code, stderr: checked.stderr }).toEqual({ manager, code: 0, stderr: "" });
+  }
 }, 600_000);
