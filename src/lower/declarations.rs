@@ -55,6 +55,7 @@ pub(super) fn module<'tcx>(
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
             DefKind::Struct => out.structure(def_id),
             DefKind::Enum => Some(out.enumeration(def_id)),
+            DefKind::Union => Some(out.union_type(def_id)),
             DefKind::TyAlias => Some(out.alias(def_id)),
             DefKind::Const { .. } | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
                 Some(out.constant(def_id))
@@ -595,6 +596,28 @@ impl<'tcx> Declarations<'_, 'tcx> {
         })
     }
 
+    /// `export type Number = { int: number } | { float: number };` of a
+    /// union, the object of the one field it holds (ADR 0406).
+    fn union_type(&mut self, def_id: DefId) -> Value {
+        let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
+        let fields: Vec<_> = self.tcx.adt_def(def_id).non_enum_variant().fields.iter().collect();
+        let types: Vec<Value> = (fields.into_iter())
+            .map(|field| {
+                let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
+                let member = json!({ "kind": "property", "name": field_key(self.tcx, field), "optional": false, "readonly": false, "type": ty });
+                json!({ "kind": "object", "members": [member] })
+            })
+            .collect();
+        json!({
+            "kind": "type",
+            "name": self.tcx.item_name(def_id).as_str(),
+            "exported": true,
+            "declare": false,
+            "typeParameters": self.generics(def_id),
+            "type": { "kind": "union", "types": types },
+        })
+    }
+
     /// `export const IconChevron: NamedExoticComponent<IconChevronProps>;`, a
     /// `thread_local!`'s value, or a `const`'s.
     fn constant(&mut self, def_id: DefId) -> Value {
@@ -782,7 +805,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 };
                 let declared = match tcx.def_kind(did) {
                     DefKind::Struct => adt.non_enum_variant().ctor.is_none(),
-                    DefKind::Enum => true,
+                    DefKind::Enum | DefKind::Union => true,
                     _ => false,
                 };
                 if !declared {
@@ -803,6 +826,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         let outer = std::mem::replace(&mut self.erased, inner);
                         let declared = match tcx.def_kind(did) {
                             DefKind::Struct => self.structure(did),
+                            DefKind::Union => Some(self.union_type(did)),
                             _ => Some(self.enumeration(did)),
                         };
                         self.erased = outer;

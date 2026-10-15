@@ -90,6 +90,8 @@ test("a failure is rejected, crashed or wrong, and one listed as rejected may no
   expect(failureKind("error: internal compiler error: ~/.rustup/x.rs:1:2: oops")).toBe("crashed");
   expect(failureKind("thread 'rustc' panicked at /rustc-dev/x.rs:1:2:")).toBe("crashed");
   expect(failureKind('bun: ended {"panic":"x"}')).toBe("wrong");
+  expect(failureKind('node: ended {"panic":"rust-js does not support reading a union\'s `b` while it holds `a`"}')).toBe("rejected");
+  expect(failureKind('node: ended {"panic":"assertion failed: rust-js does not support"}')).toBe("wrong");
   expect(failureKind("node: different stdout")).toBe("wrong");
   const listed = new Map([
     ["a.rs", "error: rust-js does not support statics yet"],

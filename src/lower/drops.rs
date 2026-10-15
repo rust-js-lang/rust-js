@@ -568,7 +568,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         };
                         out.push(StmtKind::If(test, fields, None).at(js_span));
                     }
-                } else {
+                } else if !adt.is_union() {
+                    // A union's fields are never dropped, which Rust holds
+                    // to what has no destructor, or a `ManuallyDrop` (ADR 0406).
                     return Err(self.unsupported(span, &format!("dropping `{ty}`")));
                 }
             }

@@ -168,4 +168,20 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return Ok(self.copy(place, ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
+  {
+    name: "union-copy-unmade",
+    breaks: "a union read where one of it may change is shared, not copied",
+    file: "src/lower/copies.rs",
+    find: "                if self.is_union(ty) {\n                    return once(place, &|u| self.union_copy(u, ty));\n",
+    replace: "                if false {\n                    return once(place, &|u| self.union_copy(u, ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
+  {
+    name: "union-holding-mutated-unseen",
+    breaks: "a union holding what changes in place, unchanged itself, isn't copied",
+    file: "src/lower/copies.rs",
+    find: "                    ty::Adt(..) if self.is_union(ty) => self.union_holds_mutated(ty),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
 ];

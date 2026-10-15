@@ -379,4 +379,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.is_std_wrapper(ty) || self.is_js_object(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "union-not-object",
+    breaks: "a `&mut` to a union is a box of it, not the object it is",
+    file: "src/lower/representation.rs",
+    find: "            || self.is_union(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+    snapshots: true,
+  },
 ];

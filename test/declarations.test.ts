@@ -696,6 +696,36 @@ export const pair: Pair<number> = [1, 2];
   expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
 });
 
+// A union is the object of the one field it holds (ADR 0406): to
+// TypeScript, a union of one-field objects.
+test("declarations type a union as the field it holds", () => {
+  const dir = fixture("declarations-union");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub union Number {
+    pub int: i32,
+    pub float: f64,
+}
+
+pub fn make(n: i32) -> Number {
+    Number { int: n }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export type Number = {\n    int: number;\n} | {\n    float: number;\n};");
+  writeFileSync(join(dir, "use.ts"), `import { make, type Number } from "./lib.js";
+export const made: Number = make(1);
+export const given: Number = { float: 0.5 };
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false },
+    files: ["use.ts"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+});
+
 // A `pub use` of a module's function is TypeScript's `export .. from`,
 // as react.dev's Challenges/index re-exports its Challenges.
 test("declarations re-export what a module's pub use names", () => {

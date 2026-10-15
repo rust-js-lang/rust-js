@@ -619,6 +619,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::path::PathBuf::pop" => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
             "std::path::PathBuf::set_extension" => return Some(Some(Std::StringEdit(StringEdit::SetExtension))),
             "std::path::PathBuf::set_file_name" => return Some(Some(Std::StringEdit(StringEdit::SetFileName))),
+            // A `ManuallyDrop` is what it holds (ADR 0406), never dropped.
+            "std::mem::ManuallyDrop::<T>::new" | "std::mem::ManuallyDrop::<T>::into_inner" => {
+                return Some(Some(Std::Same));
+            }
             // A `NonZero` is its number (ADR 0177).
             "std::num::NonZero::<T>::get" | "std::num::NonZero::<T>::new_unchecked" => return Some(Some(Std::Same)),
             "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),
@@ -804,6 +808,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 diagnostic("deref_method") && (ty.is_box() || matches!(ty.kind(), ty::Ref(_, _, Mutability::Not)));
             let same = self.is_string_like(ty)
                 || self.is_path_like(ty)
+                // A `ManuallyDrop`'s, the value it is (ADR 0406).
+                || self.is_lang_adt(ty, LangItem::ManuallyDrop)
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
                 || self.is_vec_like(ty)
@@ -3892,7 +3898,7 @@ pub(crate) fn is_memory_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         seen.push(ty);
         ty.walk().filter_map(|arg| arg.as_type()).any(|part| match part.kind() {
             ty::RawPtr(..) => true,
-            ty::Adt(adt, _) if adt.is_union() || std_path(tcx, adt.did()) == "std::ptr::NonNull" => true,
+            ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::ptr::NonNull" => true,
             ty::Adt(adt, _) if adt.did().is_local() && part != ty => walk(tcx, part, seen),
             ty::Adt(adt, args) if adt.did().is_local() => adt
                 .all_fields()

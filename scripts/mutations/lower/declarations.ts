@@ -408,4 +408,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "declarations type what"],
   },
+  {
+    name: "union-declared-any",
+    breaks: "an exported union is TypeScript's `any`, not the fields it may hold",
+    file: "src/lower/declarations.rs",
+    find: "            DefKind::Union => Some(out.union_type(def_id)),\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "union"],
+  },
 ];

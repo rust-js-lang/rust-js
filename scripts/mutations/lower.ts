@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))\n    }',
     replace: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what));\n        panic!("a crash after the rejection")\n    }',
-    tests: ["test/corpus.test.ts", "-t", "union_const|closure_clone\\.rs"],
+    tests: ["test/corpus.test.ts", "-t", "closure_clone\\.rs"],
   },
   {
     name: "array-repeat-shared",

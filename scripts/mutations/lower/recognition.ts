@@ -1433,4 +1433,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "manually-drop-new-unknown",
+    breaks: "`ManuallyDrop::new(x)` is refused, where it's `x`",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::mem::ManuallyDrop::<T>::new\" | \"std::mem::ManuallyDrop::<T>::into_inner\" => {\n",
+    replace: "            \"std::mem::ManuallyDrop::<T>::into_inner\" => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
+  {
+    name: "manually-drop-deref-unknown",
+    breaks: "`*md` of a `ManuallyDrop` is refused, where it's what it holds",
+    file: "src/lower/recognition.rs",
+    find: "                || self.is_lang_adt(ty, LangItem::ManuallyDrop)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
 ];

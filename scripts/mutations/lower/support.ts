@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^never_returns.rs$"],
   },
+  {
+    name: "union-unrepresentable",
+    breaks: "a union's values are refused",
+    file: "src/lower/support.rs",
+    find: "            (ty::Adt(adt, args), _) if adt.is_enum() || adt.is_union() => {\n",
+    replace: "            (ty::Adt(adt, args), _) if adt.is_enum() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
 ];

@@ -10,7 +10,7 @@ use rustc_span::{ErrorGuaranteed, Span};
 /// What's refused.
 #[derive(Clone, Copy)]
 pub(crate) enum Refused<'a, 'tcx> {
-    /// A feature, as its words say: "unions of this kind".
+    /// A feature, as its words say: "a `&mut` to a union's field".
     Feature(&'a str),
     /// A call of a function: "calling `std::env::args`".
     Call(DefId),
@@ -19,7 +19,7 @@ pub(crate) enum Refused<'a, 'tcx> {
     /// A feature, and why it's refused: "a component's `Clone`", "React
     /// gives a component no dictionary".
     Because(&'a str, &'a str),
-    /// A feature of addressable memory, as its words say: "unions".
+    /// A feature of addressable memory, as its words say: "a raw pointer to a value".
     Memory(&'a str),
 }
 
@@ -34,7 +34,7 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
 }
 
 /// Why addressable memory is refused.
-const MEMORY: &str = "JavaScript has no memory to address: a raw pointer, a union, `transmute` and `std::ptr` \
+const MEMORY: &str = "JavaScript has no memory to address: a raw pointer, `transmute` and `std::ptr` \
                       read or write bytes by where they are (ADR 0390)";
 
 /// What a refusal says: "rust-js does not support .. yet", and of

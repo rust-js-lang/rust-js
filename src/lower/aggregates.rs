@@ -88,13 +88,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if adt_def.is_enum() && variant.fields.is_empty() {
             return Ok(bindings::unit_variant(self.tcx, adt_def.did(), variant));
         }
-        if adt_def.is_union() {
-            return Err(super::refusal::refuse(
-                self.tcx,
-                span,
-                super::refusal::Refused::Memory("unions"),
-            ));
-        }
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));
         }
@@ -234,7 +227,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 item
             }
-        } else if adt_def.is_union() || self.is_fmt_result(ty) {
+        } else if self.is_fmt_result(ty) {
             return Err(self.unsupported(span, "this constructor as a value"));
         } else {
             let tag = (adt_def.is_enum()).then(|| {

@@ -113,6 +113,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Expr::call(Expr::member(place, "map"), vec![copy]);
                 }
+                // A union, a union of its own (ADR 0406).
+                if self.is_union(ty) {
+                    return once(place, &|u| self.union_copy(u, ty));
+                }
                 let ty::Adt(adt, args) = ty.kind() else { return place };
                 if !self.is_copy_enum(ty) {
                     return place;
@@ -245,6 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .iter()
                             .any(|&(_, t)| self.contains_mutated(t))
                     }),
+                    ty::Adt(..) if self.is_union(ty) => self.union_holds_mutated(ty),
                     // An array of what's changed in place holds what's changed:
                     // a copy of it copies each item (ADR 0052).
                     ty::Array(item, _) => self.contains_mutated(*item),

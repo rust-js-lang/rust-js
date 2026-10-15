@@ -1,6 +1,6 @@
-//@ compile-fail: rust-js does not support addressable memory yet: unions
-// A union's constant, and its fields read, are rejected, not a crash: rust-js
-// has no representation of a union yet. From rustc's union-const-codegen.rs.
+// A union's constant, and its fields read: of one type, `u64`, each reads
+// what it holds, whose bytes are the same (ADR 0406). From rustc's
+// union-const-codegen.rs.
 union U {
     a: u64,
     b: u64,

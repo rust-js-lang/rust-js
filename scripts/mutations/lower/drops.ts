@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => Expr::held(value),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_drop.rs$"],
   },
+  {
+    name: "union-drop-refused",
+    breaks: "a union with a destructor of its own is refused",
+    file: "src/lower/drops.rs",
+    find: "                } else if !adt.is_union() {\n",
+    replace: "                } else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
 ];

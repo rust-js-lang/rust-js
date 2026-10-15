@@ -2427,6 +2427,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             value => value,
         };
+        // A union's field written: the one it holds now (ADR 0406).
+        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
+            && self.is_union(base.ty(state.body, self.tcx).ty)
+        {
+            let union_ty = base.ty(state.body, self.tcx).ty;
+            let base = Place {
+                local: base.local,
+                projection: self.tcx.mk_place_elems(base.projection),
+            };
+            let value = self.value_expr(value, span)?;
+            self.flush(state, out)?;
+            let union = self.mir_place(state, base, span, out)?;
+            let written = self.union_write(union, union_ty, field, value);
+            out.push(StmtKind::Expr(written).at(self.js_span(span)));
+            return Ok(());
+        }
         let local = place.local;
         let place = match self.whole(state.body, &place) {
             true => Place::from(local),
@@ -3113,7 +3129,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let read = Expr::member(base, variant_field(self.tcx, variant, i));
                 Ok(self.held(read, self.field_ty(&variant.fields[field], args)))
             }
-            (ty::Adt(adt, _), _) if adt.is_union() => Err(refuse(self.tcx, span, Refused::Memory("unions"))),
+            // A union's, what it holds there (ADR 0406).
+            (ty::Adt(adt, _), _) if adt.is_union() => Ok(self.union_read(base, ty.ty, field)),
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
@@ -3585,6 +3602,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR")),
                     };
                 }
+                // A union's field, through a `&mut` (ADR 0406).
+                if matches!(kind, BorrowKind::Mut { .. })
+                    && let Some((base, PlaceElem::Field(..))) = place.as_ref().last_projection()
+                    && self.is_union(base.ty(decls, tcx).ty)
+                {
+                    return self.union_field_borrowed(span).map(Value::Expr);
+                }
                 // A generic iterator a field holds, stepped through a `&mut` to
                 // it: what it's given, a range say, may be no JS iterator, as a
                 // caller's argument is made one; refused.
@@ -3936,6 +3960,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             AggregateKind::Array(_) => Ok(Value::List(values)),
             AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::undefined())),
             AggregateKind::Tuple => Ok(Value::List(values)),
+            // A union, holding its one field (ADR 0406).
+            AggregateKind::Adt(did, _, args, _, Some(field)) => {
+                let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);
+                let value = values.into_iter().next().expect("a union's field");
+                let value = self.value_expr(value, span)?;
+                Ok(Value::Expr(self.union_value(ty, *field, value)))
+            }
             AggregateKind::Adt(did, variant_index, args, _, _) => {
                 let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);
                 let exprs = values

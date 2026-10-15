@@ -200,8 +200,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer = self.walks().assumed.replace(usize::MAX);
         seen.push(ty);
         let found = match (ty.kind(), self.shape(ty)) {
-            // An enum with fields (ADR 0033): every variant's fields.
-            (ty::Adt(adt, args), _) if adt.is_enum() => {
+            // An enum with fields (ADR 0033), and a union, the field it holds
+            // (ADR 0406): every field.
+            (ty::Adt(adt, args), _) if adt.is_enum() || adt.is_union() => {
                 let fields: Vec<Ty<'tcx>> = adt.all_fields().map(|f| self.field_ty(f, args)).collect();
                 fields.into_iter().find_map(|t| self.unsupported_in(t, seen))
             }

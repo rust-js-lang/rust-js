@@ -312,6 +312,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_guard(ty)
             || self.is_vec_like(ty)
             || self.is_map(ty)
+            // A union, the object of the field it holds (ADR 0406).
+            || self.is_union(ty)
             // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to
             // one is the pair, whose `value` its `&mut self` methods write.
             || matches!(ty.kind(), ty::Dynamic(..)) && self.dynamic_trait(ty).is_some()

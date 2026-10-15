@@ -68,6 +68,7 @@ mod std_impls;
 mod std_types;
 mod support;
 mod traits;
+mod unions;
 mod untagged;
 
 use crate::names::{fresh_in, js_ident};

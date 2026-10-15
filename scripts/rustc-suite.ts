@@ -168,6 +168,9 @@ export function difference(native: string, js: string): string {
  * own clear error; `crashed`, another compile error, such as a panic of
  * rustc's; or `wrong`, JS that ran otherwise than native Rust. */
 export function failureKind(reason: string): "rejected" | "crashed" | "wrong" {
+  // A panic of rust-js's own refusal where it runs, a union read as another
+  // type's bytes (ADR 0406): as clear a rejection as a compile error's.
+  if (/^(bun|node): ended \{"panic":"rust-js does not support /.test(reason)) return "rejected";
   if (/^(bun|node): /.test(reason)) return "wrong";
   return /^error: rust-js( does not support|:)/.test(reason) ? "rejected" : "crashed";
 }

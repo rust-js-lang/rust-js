@@ -151,6 +151,42 @@ pub fn copied() -> String {
   expect(call("copied")).toBe(error);
 });
 
+// A union's field read while it holds another reads its bytes as another
+// type's, which JS has none of: rust-js's error where it runs; a field of
+// the same type reads the same bytes (ADR 0406).
+test("a union's field it doesn't hold is rust-js's error where it's read", () => {
+  const dir = fixture("union-punned");
+  writeFileSync(join(dir, "lib.rs"), `union Number {
+    int: u32,
+    float: f32,
+    same: u32,
+}
+
+pub fn punned() -> f32 {
+    let n = Number { int: 1 };
+    unsafe { n.float }
+}
+
+pub fn same() -> u32 {
+    let n = Number { int: 7 };
+    unsafe { n.same }
+}
+
+pub fn rewritten() -> f32 {
+    let mut n = Number { float: 0.5 };
+    n.int = 2;
+    unsafe { n.float }
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
+  expect(call("punned")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
+  expect(call("same")).toBe("7\n");
+  expect(call("rewritten")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
+});
+
 // A `None` given to JS is `undefined` given, never left out: a JS function
 // may count its arguments, as `Math.max` does (ADR 0330).
 test("an undefined given to JS is an argument, never left out", () => {

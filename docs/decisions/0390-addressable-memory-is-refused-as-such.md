@@ -1,6 +1,8 @@
 # 0390. Addressable memory is refused, and says so
 
-Status: Accepted. Extends [0262](0262-when-rust-and-js-disagree.md).
+Status: Accepted, amended by [0406](0406-a-union-is-the-field-it-holds.md):
+a union isn't addressable memory; reading its bytes as another type's is,
+refused where it runs. Extends [0262](0262-when-rust-and-js-disagree.md).
 
 Case: D ([0262](0262-when-rust-and-js-disagree.md)): JavaScript has no
 memory a program can address, so what reads or writes it can't be kept.
@@ -23,7 +25,7 @@ said by `refusal.rs`, one way.**
 
 ```
 error: rust-js does not support addressable memory yet: calling `std::intrinsics::transmute`
-  = note: JavaScript has no memory to address: a raw pointer, a union, `transmute` and `std::ptr` read or write bytes by where they are (ADR 0390)
+  = note: JavaScript has no memory to address: a raw pointer, `transmute` and `std::ptr` read or write bytes by where they are (ADR 0390)
 ```
 
 - **`refuse(tcx, span, Refused)`** makes every refusal, and `words` says

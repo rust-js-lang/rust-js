@@ -204,9 +204,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-union-field-read",
-    breaks: "a union's field read from its MIR crashes rust-js, not refused",
+    breaks: "a union's field read is its object's member, `undefined` where it holds another",
     file: "src/lower/mir.rs",
-    find: "            (ty::Adt(adt, _), _) if adt.is_union() => Err(refuse(self.tcx, span, Refused::Memory(\"unions\"))),\n",
+    find: "            (ty::Adt(adt, _), _) if adt.is_union() => Ok(self.union_read(base, ty.ty, field)),\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","union_const"],
   },
@@ -2325,5 +2325,21 @@ export const mutations: Mutation[] = [
     find: "matches!(self.pointee(*to).kind(), ty::Dynamic(..)) || self.dyn_cell_trait(*to).is_some();",
     replace: "matches!(self.pointee(*to).kind(), ty::Dynamic(..));",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
+  },
+  {
+    name: "union-written-as-member",
+    breaks: "a union's field written is its object's member, the field it held kept",
+    file: "src/lower/mir.rs",
+    find: "        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()\n            && self.is_union(base.ty(state.body, self.tcx).ty)\n        {\n            let union_ty",
+    replace: "        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()\n            && false\n        {\n            let union_ty",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
+  {
+    name: "union-field-borrow-unrefused",
+    breaks: "a `&mut` to a union's field is taken, whose write would change which it holds unsaid",
+    file: "src/lower/mir.rs",
+    find: "                    && self.is_union(base.ty(decls, tcx).ty)\n",
+    replace: "                    && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a &mut to a union's field"],
   },
 ];
