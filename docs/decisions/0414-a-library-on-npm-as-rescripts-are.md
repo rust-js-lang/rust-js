@@ -103,7 +103,13 @@ import { Greeting, greet } from "@acme/greet/src/lib.js";
   one file into many projects, and each keeps its own.
 - **A package isn't the app's**: `rust-js build --check` compares the app's
   JS, not a package's, which isn't committed, and a package's checks (ADR
-  0117) aren't run.
+  0117) aren't run. **Its crate is quiet**: a failed build says the app's
+  errors, not what a package's crate warns of, its author's to act on.
+- **A package's `exports`, if it has them, export what the app imports**,
+  `"./src/*": "./src/*"`: one that hides a file the app's JS imports is an
+  error that says so, and what to export, before anything's written.
+- **One answer of which crates rust-js compiles**: ADR 0085's planner of
+  Cargo's graph, `planCargoLibraries`, which no build used, is removed.
 
 ## Why
 
@@ -120,7 +126,9 @@ import { Greeting, greet } from "@acme/greet/src/lib.js";
   built, its JS importing `@acme/greet/src/lib.js` and running; the
   package's JS the app's rust-js's, the store's unchanged; `--check` of the
   app passing with the package's JS another; and a JS app importing the
-  author's JS. `test/patch.test.ts` refuses an alias, and the architecture
+  author's JS; a package whose `exports` hide its JS refused, and one
+  exporting it imported; and a failed build without the package's
+  warnings. `test/patch.test.ts` refuses an alias, and the architecture
   test holds the one answer of which crates rust-js compiles: no list of
   names in the compiler, no workspace wrapper, and each binding crate of
   rust-js's saying it's one.
@@ -130,11 +138,7 @@ import { Greeting, greet } from "@acme/greet/src/lib.js";
 - **Each module's header names its Rust from its crate's directory**: a
   member's in a workspace changes, `frontend/src/api.rs` to `src/api.rs`,
   as the pilot's did.
-- **A library's `package.json` lets its JS be imported by path**: one with
-  `exports` exports `./src/*` too.
 - **A community binding says `bindings = true` too** (ADR 0119): one that
   doesn't is compiled by rust-js, as a library is.
-- **What an npm package's crate warns of is shown**, as Cargo shows a path
-  crate's; ReScript leaves a dependency's out. Not done here.
 - **A JS app needs `@rust-js/runtime`** where the library's JS imports it,
   a dependency of the library's, as `@rescript/runtime` is of ReScript's.

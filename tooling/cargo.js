@@ -1,5 +1,4 @@
-// Cargo's builds of rust-js crates (ADR 0101), and the experimental
-// local-library planning before them (ADR 0085). Cargo owns resolution; this
+// Cargo's builds of rust-js crates (ADR 0101). Cargo owns resolution; this
 // adapter does not infer dependencies from source files or run build scripts.
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -109,57 +108,6 @@ export function rustcShim(compiler) {
 /** One exact toolchain: a release, `1.99.0`, or a dated nightly (ADR 0109). */
 const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$/.test(toolchain ?? "");
 
-/** @param {{ manifestPath: string, toolchain: string, target: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean }} options */
-export async function planCargoLibraries({ manifestPath, toolchain, target, packageName, features = [], noDefaultFeatures = false }) {
-  if (!exactToolchain(toolchain)) throw new Error("Cargo planning requires an exact toolchain pin");
-  if (typeof target !== "string" || !target) throw new Error("Cargo planning requires an explicit target triple");
-  const manifest = resolve(manifestPath);
-  const args = [`+${toolchain}`, "metadata", "--format-version=1", "--frozen", "--manifest-path", manifest, "--filter-platform", target];
-  if (features.length) args.push("--features", features.join(","));
-  if (noDefaultFeatures) args.push("--no-default-features");
-  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 });
-  const metadata = JSON.parse(stdout);
-  const packages = new Map(metadata.packages.map(pkg => [pkg.id, pkg]));
-  const nodes = new Map(metadata.resolve.nodes.map(node => [node.id, node]));
-  const selected = packageName
-    ? metadata.workspace_members.filter(id => packages.get(id).name === packageName)
-    : metadata.resolve.root ? [metadata.resolve.root] : [];
-  if (selected.length !== 1) throw new Error("Select one Cargo workspace library with packageName");
-  const ordered = [];
-  const visited = new Set();
-  const visiting = new Set();
-  const pending = [{ id: selected[0] }];
-  while (pending.length) {
-    const { id, library: completed } = pending.pop();
-    if (completed) {
-      visiting.delete(id);
-      visited.add(id);
-      ordered.push(completed);
-      continue;
-    }
-    if (visited.has(id)) continue;
-    if (visiting.has(id)) throw new Error(`Cyclic Cargo library dependency: ${id}`);
-    const pkg = packages.get(id), node = nodes.get(id);
-    if (!pkg || !node) throw new Error(`Cargo metadata is missing package ${id}`);
-    if (pkg.source !== null) throw new Error(`Cargo JS planning currently supports only local path libraries: ${pkg.name}`);
-    if (pkg.targets.some(t => t.kind.includes("custom-build"))) throw new Error(`Cargo JS planning does not support build scripts: ${pkg.name}`);
-    if (pkg.targets.some(t => t.kind.includes("proc-macro"))) throw new Error(`Cargo JS planning does not support procedural macros: ${pkg.name}`);
-    const libraries = pkg.targets.filter(t => t.kind.includes("lib"));
-    if (libraries.length !== 1) throw new Error(`Cargo JS planning requires one ordinary library target: ${pkg.name}`);
-    const library = libraries[0];
-    const dependencies = node.deps.filter(dep => dep.dep_kinds.some(kind => kind.kind === null))
-      .map(dep => ({ name: dep.name, packageId: dep.pkg })).sort((a, b) => a.name.localeCompare(b.name));
-    visiting.add(id);
-    pending.push({ id, library: {
-      id, name: pkg.name, crateName: library.name, edition: library.edition,
-      manifestPath: pkg.manifest_path, sourcePath: library.src_path,
-      features: [...node.features].sort(), dependencies,
-    } });
-    for (const dependency of [...dependencies].reverse()) pending.push({ id: dependency.packageId });
-  }
-  return { root: selected[0], toolchain, target, workspaceRoot: metadata.workspace_root, libraries: ordered };
-}
-
 /**
  * `cargo check` of a workspace for rust-js's target, with rust-js as Cargo's
  * workspace wrapper (ADR 0101), and where each crate rust-js compiled has its
@@ -191,7 +139,10 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline })), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
-    const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");
+    // A package's crate is quiet: what it warns of is its author's, which
+    // the app can't act on, as ReScript has a dependency's (ADR 0414).
+    const quiet = (m) => m.message.level === "warning" && packageOf(packages, realpathSync(m.manifest_path));
+    const rendered = messages.filter(m => m.reason === "compiler-message" && !quiet(m)).map(m => m.message.rendered).join("");
     throw new Error(`cargo check failed:\n${rendered}${error.stderr ?? ""}`);
   });
   const crates = new Map();
@@ -383,13 +334,48 @@ function relinked(bytes, links, to, moved, packages) {
     const home = packageOf(packages, target);
     const path = relative(dirname(to), target);
     const specifier = home && home !== packageOf(packages, to)
-      ? `${home.name}/${relative(home.dir, target).split(sep).join("/")}`
+      ? imported(home, `./${relative(home.dir, target).split(sep).join("/")}`)
       : path.startsWith(".") ? path : `./${path}`;
     parts.push(bytes.subarray(at, start), Buffer.from(specifier));
     at = end;
   }
   parts.push(bytes.subarray(at));
   return Buffer.concat(parts);
+}
+
+/**
+ * The specifier a package's file, `subpath` in it, `./src/lib.js`, is
+ * imported by: the package's name and the path, `@acme/greet/src/lib.js`,
+ * which its `exports`, if it has them, export as that file, as Node reads
+ * them; else an error that says what to export (ADR 0414).
+ * @param {{ name: string, dir: string }} home
+ * @param {string} subpath
+ */
+function imported(home, subpath) {
+  const specifier = `${home.name}${subpath.slice(1)}`;
+  const { exports } = JSON.parse(readFileSync(join(home.dir, "package.json"), "utf8"));
+  if (exports === undefined || exportsFile(exports, subpath)) return specifier;
+  throw new Error(`${home.name}'s \`exports\` hides ${subpath}, which the app's JS imports, \`${specifier}\`: export it, \`"./src/*": "./src/*"\``);
+}
+
+/** Whether `exports`, a package's, export `subpath` as that file: by its
+ * own key, or a pattern's, `"./src/*": "./src/*"`, of any condition. Ones
+ * with no subpath export only the package's root. */
+function exportsFile(exports, subpath) {
+  if (typeof exports !== "object" || exports === null || Array.isArray(exports)) return false;
+  /** @returns {string[]} */
+  const targets = (value) => typeof value === "string" ? [value]
+    : Array.isArray(value) ? value.flatMap(targets)
+    : value && typeof value === "object" ? Object.values(value).flatMap(targets) : [];
+  return Object.entries(exports).some(([key, value]) => {
+    if (!key.startsWith(".")) return false;
+    const star = key.indexOf("*");
+    if (star < 0) return key === subpath && targets(value).includes(subpath);
+    const before = key.slice(0, star), after = key.slice(star + 1);
+    if (subpath.length < before.length + after.length || !subpath.startsWith(before) || !subpath.endsWith(after)) return false;
+    const middle = subpath.slice(before.length, subpath.length - after.length);
+    return targets(value).some((target) => target.replaceAll("*", middle) === subpath);
+  });
 }
 
 /**

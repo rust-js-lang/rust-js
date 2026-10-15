@@ -692,6 +692,8 @@ test("an app's Rust is compiled one way, rust-js build", () => {
 // workspace's members alone, which a crate from npm isn't one of.
 test("the crates rust-js compiles are the ones the tooling names, a binding crate saying it's one", () => {
   expect(read("src/cargo.rs")).not.toContain("rust-js-react");
+  // Nor a planner of Cargo's graph of its own, ADR 0085's, beside Cargo's.
+  expect(read("tooling/cargo.js")).not.toContain("planCargoLibraries");
   expect(read("src/cargo.rs")).toContain("RUST_JS_CRATES");
   const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().trim().split("\n");
   const wrappers = tracked.filter((file) => /\.(ts|js|rs)$/.test(file) && file !== "test/architecture.test.ts")

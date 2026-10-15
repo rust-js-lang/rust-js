@@ -60,8 +60,10 @@ compares native and JS results before and after a dependency edit. It covers an
 alias, nested consumer modules, function values, sibling output paths, unsupported
 signatures and rejection without overwriting prior output.
 
-The test orchestrates these commands explicitly. `planCargoLibraries` remains a
-planner; the build adapter and Vite do not yet compile its graph. No compiled-crate
+The test orchestrates these commands explicitly. `planCargoLibraries`, a
+planner of the graph no build used, is removed by
+[ADR 0414](0414-a-library-on-npm-as-rescripts-are.md): which crates rust-js
+compiles is answered once, from Cargo's metadata. No compiled-crate
 cache or automatic rebuild scheduler is introduced. Callers must pair native
 metadata and JS from the same source, features, target and compiler build. The
 contract checks signatures and source/artifact fingerprints, but does not bind

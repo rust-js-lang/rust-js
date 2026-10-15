@@ -16,8 +16,8 @@ beforeAll(buildCompiler, 600_000);
 const cli = join(root, "tooling", "cli.js");
 const build = (dir: string, ...args: string[]) => runSync([process.execPath, cli, "build", ...args], dir, 300_000, { RUST_JS_COMPILER: compiler });
 
-/** The library as its author has it, built by `rust-js build` and ready to pack. */
-function library() {
+/** The library as its author has it, built by `rust-js build` and ready to pack, its `package.json` with `exports` if given, and `more` Rust. */
+function library(exports?: Record<string, string>, more = "") {
   const dir = fixture("library");
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "package.json"), JSON.stringify({
@@ -26,6 +26,7 @@ function library() {
     main: "src/lib.js",
     types: "src/lib.d.ts",
     "rust-js": { crate: "acme-greet" },
+    exports,
   }));
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "acme-greet"\nversion = "1.0.0"\nedition = "2024"\n\n[lib]\nname = "greet"\n\n[workspace]\n');
   writeFileSync(join(dir, "src", "lib.rs"), `pub struct Greeting {
@@ -41,7 +42,7 @@ impl Greeting {
 pub fn greet(name: &str) -> Greeting {
     Greeting { name: name.to_string() }
 }
-`);
+${more}`);
   const built = build(dir);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
@@ -130,4 +131,35 @@ test("a JS app imports a rust-js library's JS as its author built it", () => {
   // A method is its type's function, given the value (ADR 0047).
   writeFileSync(join(dir, "main.js"), 'import { Greeting, greet } from "@acme/greet";\nconsole.log(Greeting.text(greet("Ada")));\n');
   expect(run([node ?? "node", join(dir, "main.js")]).trim()).toBe("Hello, Ada!");
+}, 600_000);
+
+// The app imports a package's JS by path, `@acme/greet/src/lib.js`: a package
+// with `exports` exports it too, or the build says what to export.
+test("a library whose exports hide its JS is refused, and one exporting it is imported by path", () => {
+  for (const [exports, ok] of [[{ ".": "./src/lib.js" }, false], [{ ".": "./src/lib.js", "./src/*": "./src/*" }, true]] as const) {
+    const lib = library(exports);
+    const dir = app("library-exports");
+    packed(lib, join(dir, "node_modules", "@acme", "greet"), cpSync);
+    const built = build(dir);
+    if (ok) {
+      expect(built.stderr).toBe("");
+      expect(welcome(dir)).toBe("Hello, Ada!");
+    } else {
+      expect(built.code).not.toBe(0);
+      expect(built.stderr).toContain("@acme/greet's `exports` hides ./src/lib.js, which the app's JS imports, `@acme/greet/src/lib.js`: export it, `\"./src/*\": \"./src/*\"`");
+    }
+  }
+}, 600_000);
+
+// A package's crate is quiet, as ReScript's dependencies are: what it warns
+// of is its author's, which the app can't act on; the app's own is said.
+test("a failed build says the app's errors, not what a library's crate warns of", () => {
+  const lib = library(undefined, "\npub fn unused() {\n    let spare = 1;\n}\n");
+  const dir = app("library-quiet");
+  packed(lib, join(dir, "node_modules", "@acme", "greet"), cpSync);
+  writeFileSync(join(dir, "src", "lib.rs"), 'pub fn welcome() -> String {\n    greet::greet("Ada").text() + 1\n}\n');
+  const built = build(dir);
+  expect(built.code).not.toBe(0);
+  expect(built.stderr).toContain("src/lib.rs:2");
+  expect(built.stderr).not.toContain("spare");
 }, 600_000);

@@ -17,7 +17,9 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
   by its own rust-js into the package, wherever npm, bun or pnpm put it,
   and imports it by the package's name, `@acme/greet/src/lib.js`. A
   package's files are replaced, never written through, so a store sharing
-  them keeps its own, and `rust-js build --check` is of the app's JS alone.
+  them keeps its own, and `rust-js build --check` is of the app's JS alone,
+  a failed build of the app's errors, not a package's warnings. A package
+  whose `exports` hide the JS the app imports is refused.
   A binding crate says it's one, `[package.metadata.rust-js] bindings =
   true`, and is rustc's to check
   ([ADR 0414](docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)).
