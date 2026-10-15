@@ -6,6 +6,7 @@ export function entry() {
   main();
 }
 
+const GREETING = "";
 const mainConst = "";
 const mainConst$1 = "";
 const mainConst$2 = undefined;
@@ -13,7 +14,7 @@ const mainConst$2 = undefined;
 function main() {
   let s = mainConst;
   s += "a";
-  console.log(`${s} ${$byteLen(mainConst$1)}`);
+  console.log(`${s} ${$byteLen(mainConst$1)} ${!GREETING}`);
   const slot = [1, 2];
   console.log(`(${slot[0]}, ${slot[1]})`);
 }

@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","std_odds"],
   },
   {
-    name: "io-result-unwrap-ok",
-    breaks: "an `io::Result<()>`'s `unwrap()` is a `Result`'s, of what's `undefined`, and throws",
-    file: "src/lower/recognition.rs",
-    find: "                    && args.types().nth(1).is_some_and(|e| self.is_io_error(e)) =>",
-    replace: "                    && args.types().nth(1).is_some_and(|e| self.is_io_error(e) && false) =>",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
-  },
-  {
     name: "option-take-unknown",
     breaks: "`opt.take()` is refused",
     file: "src/lower/recognition.rs",

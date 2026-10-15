@@ -6,6 +6,8 @@ use std::num::Wrapping;
 use std::ops::{Add, Mul};
 
 const START: Wrapping<u8> = Wrapping(250);
+// A static's is its value, which no MIR of its own gives.
+static STEP: Wrapping<u8> = Wrapping(7);
 
 fn pow<T: Mul<Output = T> + Copy>(base: T, one: T, exp: u32) -> T {
     let mut acc = one;
@@ -27,6 +29,7 @@ fn main() {
     let a = Wrapping(200u8);
     let b = a * Wrapping(2) + Wrapping(100);
     println!("{} {:?} {} {}", b, b, b.0, b == Wrapping(244));
+    println!("{}", START + STEP);
     let mut c = Wrapping(i32::MAX);
     c += Wrapping(1);
     c -= Wrapping(2);

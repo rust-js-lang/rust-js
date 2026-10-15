@@ -2167,14 +2167,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "is_ok" if result => Std::IsOk(true),
             "is_err" if result => Std::IsOk(false),
             "ok" if result => Std::ResultOk,
-            // A write's `io::Result<()>` is always `Ok`, and nothing (ADR 0132).
-            "unwrap" | "expect"
-                if result
-                    && args.types().next().is_some_and(|t| t.is_unit())
-                    && args.types().nth(1).is_some_and(|e| self.is_io_error(e)) =>
-            {
-                Std::Stream(StreamOp::Nothing)
-            }
             // An unchecked one panics where std's would be undefined behavior.
             "unwrap" | "expect" | "unwrap_unchecked" if result => Std::UnwrapOk,
             "unwrap_err" | "expect_err" | "unwrap_err_unchecked" if result => Std::UnwrapErr,

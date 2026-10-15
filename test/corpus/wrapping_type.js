@@ -7,6 +7,7 @@ export function entry() {
 }
 
 const START = [250];
+const STEP = [7];
 
 function pow(base, one, exp, TMul, TCopy) {
   let acc = TCopy.copy(one);
@@ -32,6 +33,7 @@ function main() {
   const wrapping = [(a[0] * 2) & 255];
   const b = [(wrapping[0] + 100) & 255];
   console.log(`${b[0]} ${b[0]} ${b[0]} ${$eq(b, [244])}`);
+  console.log(`${(START[0] + STEP[0]) & 255}`);
   let c = [2147483647];
   c = [(c[0] + 1) | 0];
   c = [(c[0] - 2) | 0];

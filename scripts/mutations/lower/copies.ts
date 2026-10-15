@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-unshareable",
-    breaks: "a constant `String` of no value tree is refused",
+    breaks: "a `static` `String` is refused, as if something could change it in place",
     file: "src/lower/copies.rs",
     find: "            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,\n",
     replace: "",
