@@ -404,6 +404,12 @@ export function $someAt(items, index) {
   return index >= 0 && index < items.length ? $some(items[index]) : undefined;
 }
 
+// `Some` of a map's value at `key`, boxed where it looks like `None`, or
+// `None` when there's none there.
+export function $someGet(map, key) {
+  return map.has(key) ? $some(map.get(key)) : undefined;
+}
+
 // A dictionary's value of `key` (ADR 0225): `Some` of it, boxed where it
 // looks like `None`, a JSON `null`'s `Some(None)`; `None` where the key
 // isn't its own, as `toString` isn't.
@@ -432,10 +438,13 @@ export function $iterator(iterator, next, boxed = false) {
   });
 }
 
+// A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
+// like `None` (ADR 0051), or `None`.
 export function $insert(map, key, value) {
+  const had = map.has(key);
   const old = map.get(key);
   map.set(key, value);
-  return old;
+  return had ? $some(old) : undefined;
 }
 
 export function $add(set, item) {
@@ -444,10 +453,13 @@ export function $add(set, item) {
   return added;
 }
 
+// A map's `remove(k)`: `Some` of the value it had, boxed where it looks
+// like `None` (ADR 0051), or `None`.
 export function $remove(map, key) {
+  const had = map.has(key);
   const old = map.get(key);
   map.delete(key);
-  return old;
+  return had ? $some(old) : undefined;
 }
 
 export function $repeat(item, count, clone) {

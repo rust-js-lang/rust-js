@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Pointee => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
+  {
+    name: "map-option-refused",
+    breaks: "a map's `get`, `insert` or `remove` of a value that could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
+  },
 ];

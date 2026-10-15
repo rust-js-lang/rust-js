@@ -159,6 +159,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Option` of the same type, or the closure's own.
             | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
             | Std::Last
+            // A map's value it had, or has, boxed by `$insert`, `$remove`, `$someGet`.
+            | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)
             // `as_ref()`: the same value, box and all.
             | Std::Pointee
             | Std::ResultOk

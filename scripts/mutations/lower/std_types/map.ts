@@ -211,4 +211,12 @@ export const mutations: Mutation[] = [
     replace: "            || self.recognition().is_path(peeled)\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_keys.rs$"],
   },
+  {
+    name: "map-get-unboxed",
+    breaks: "`get` of a map's value that looks like `None` is `m.get(k)`, `None` where it's there",
+    file: "src/lower/std_types/map.rs",
+    find: "            MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
+    replace: "            MapOp::Get if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
+  },
 ];

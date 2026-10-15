@@ -308,6 +308,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let list = vec![arg(), arg()];
                 helper("$add", list)
             }
+            // Of a value that could look like `None`, its `Some` boxed (ADR 0051).
+            MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {
+                helper("$someGet", vec![arg(), arg()])
+            }
             MapOp::Get => {
                 let (m, k) = (arg(), arg());
                 method(m, "get", vec![k])
