@@ -58,7 +58,6 @@ const-ptr/pointer-address-stability.rs	error: rust-js does not support addressab
 consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: constants of type `std::ptr::NonNull<[i32]>`
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support addressable memory yet: constants of type `&'static &'static WrapEmbedded`
 consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
-consts/const_unsafe_unreachable.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
 consts/const-block.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/const-byte-str-cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to a value
 consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
