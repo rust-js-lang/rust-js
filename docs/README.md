@@ -480,6 +480,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0410 An impl's constant of a function is lowered as code](decisions/0410-an-impls-function-constant-is-code.md)
 - [0411 An iterator given as it is is stepped by its dictionary](decisions/0411-an-iterator-given-as-it-is-has-its-dictionary.md)
 - [0412 `rust-js build` is its own process](decisions/0412-rust-js-build-is-its-own-process.md)
+- [0413 A declaration means the same under every tsconfig](decisions/0413-a-declaration-means-the-same-under-every-tsconfig.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

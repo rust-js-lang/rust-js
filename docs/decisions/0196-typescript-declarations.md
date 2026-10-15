@@ -29,8 +29,8 @@ export type RouteTag = "foundation" | "intermediate";
 
 export interface TagProps {
   variant: RouteTag;
-  text?: string;
-  className?: string;
+  text?: string | undefined;
+  className?: string | undefined;
 }
 
 export function Tag(props: TagProps): ReactNode;
@@ -41,7 +41,7 @@ export default Tag;
 | Rust | TypeScript |
 |---|---|
 | `bool`, a number, a 64-bit one, `&str`, `String`, `char` | `boolean`, `number`, `bigint`, `string` |
-| `Option<T>`, a field of one | `T \| null \| undefined`, an optional field `?: T` |
+| `Option<T>`, a field of one | `T \| null \| undefined`, an optional field `?: T \| undefined` (ADR 0413) |
 | `Vec<T>`, a slice, an array, a tuple | `T[]`, `[A, B]` |
 | a struct with named fields, a unit-only enum | an `interface`, the union of its names |
 | a type alias, `pub type Toc = Vec<TocItem>` | `export type Toc = TocItem[]` |
@@ -97,7 +97,7 @@ export default Tag;
 - **An `Option` takes JS's `null` too**, `T | null | undefined`, as rust-js
   reads `None` `!= null` (ADR 0030): a TypeScript caller's `null`, react.dev's
   Page giving its `LanguagesContext` `Languages | null`, is `None`.
-- **A field of one is optional, `?: T`, as TypeScript's own data has it**:
+- **A field of one is optional, `?: T | undefined`, as TypeScript's own data has it**:
   TypeScript reads it too, and gives what it reads to a prop whose default,
   JS's `= []`, takes `undefined` and not `null`. One marked
   `#[rust_js::nullable]` takes `null` too, `?: T | null`, where the data has

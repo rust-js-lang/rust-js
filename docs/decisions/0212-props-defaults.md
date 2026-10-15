@@ -35,8 +35,8 @@ export function ButtonLink({ size = "md", target = "_self" }) {
 
 ```ts
 export interface ButtonLinkProps<C> {
-    size?: Size;
-    target?: string;
+    size?: Size | undefined;
+    target?: string | undefined;
 }
 ```
 

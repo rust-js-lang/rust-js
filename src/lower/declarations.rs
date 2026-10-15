@@ -164,13 +164,47 @@ fn imported(name: &str) -> String {
     name.split('.').next().unwrap_or(name).to_string()
 }
 
-/// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`.
+/// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`;
+/// one of TypeScript's keyword types, js's `Unknown`'s `unknown`, that
+/// keyword, as every other is.
 fn reference(name: &str, args: Vec<Value>) -> Value {
+    if args.is_empty() && KEYWORDS.contains(&name) {
+        return keyword(name);
+    }
     json!({ "kind": "reference", "name": name, "args": args })
 }
 
+/// TypeScript's keyword types.
+const KEYWORDS: [&str; 11] = [
+    "string",
+    "number",
+    "bigint",
+    "boolean",
+    "symbol",
+    "object",
+    "any",
+    "unknown",
+    "undefined",
+    "void",
+    "never",
+];
+
 fn keyword(keyword: &str) -> Value {
     json!({ "kind": "keyword", "keyword": keyword })
+}
+
+/// `ty | undefined`, as @types/react writes an optional property; `any` and
+/// `unknown` have it already.
+fn or_undefined(ty: Value) -> Value {
+    if ty["kind"] == "keyword" && (ty["keyword"] == "any" || ty["keyword"] == "unknown") {
+        return ty;
+    }
+    let mut types = match ty["kind"].as_str() {
+        Some("union") => ty["types"].as_array().cloned().unwrap_or_default(),
+        _ => vec![ty],
+    };
+    types.push(keyword("undefined"));
+    json!({ "kind": "union", "types": types })
 }
 
 fn is_any(ty: &Value) -> bool {
@@ -501,6 +535,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     )
                 }
             };
+            // One a caller may leave out takes `undefined` too, as leaving it
+            // out does, under `exactOptionalPropertyTypes` as without it.
+            let ty = if optional { or_undefined(ty) } else { ty };
             members.push(json!({
                 "kind": "property",
                 "name": field_key(self.tcx, field),

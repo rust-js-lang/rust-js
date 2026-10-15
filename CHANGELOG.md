@@ -40,6 +40,13 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A declaration means the same under every `tsconfig.json`.** A field a
+  caller may leave out is `?: T | undefined`, as @types/react writes one,
+  where `?: T` refused `undefined` under `exactOptionalPropertyTypes`,
+  which Rust's `Option` takes as `None`. The declarations are checked under
+  `bundler`, `nodenext` and the strictest settings, Vite's template's
+  `erasableSyntaxOnly` among them
+  ([ADR 0413](docs/decisions/0413-a-declaration-means-the-same-under-every-tsconfig.md)).
 - **A `match` of a call's value calls it once.** With three arms or more,
   `match note(x) { 1 => .., 2 => .., _ => .. }` called `note` once per arm
   it tested. Found by a generated program
