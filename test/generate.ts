@@ -43,6 +43,8 @@ const inside = (ty: Ty, outer: "Vec" | "Option"): IntTy | undefined => {
 };
 // What's `Copy` can be read as it is; a `Vec`, a `String` or a map is read
 // through `clone()`, so it's never moved from the variable that holds it.
+// `(i32, u8)`, a tuple of two widths.
+const pairParts: [IntTy, IntTy] = ["i32", "u8"];
 const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && !["String", "Map", "D", "Shapes", "Shared"].includes(ty);
 
 // The struct every program has, whose fields are of three widths.
@@ -132,6 +134,11 @@ export type Expr =
   // counted, `Rc::strong_count(&r)`.
   | { kind: "shared"; ty: Ty; value?: Expr; of?: string }
   | { kind: "shared-read"; ty: Ty; name: string; count: boolean }
+  // A `Pair`, `(i32, u8)`, made, `(a, b)`, its parts read, `p.0`, by the
+  // `field` kind; and a `match` of two values at once, `match (a, b) {
+  // (1, _) => .., (_, 2) => .., (x, y) if x > 0 => .., _ => .. }`.
+  | { kind: "pair"; ty: Ty; a: Expr; b: Expr }
+  | { kind: "tmatch"; ty: Ty; a: Expr; b: Expr; first: string; second: string; x: string; y: string; guard: Expr; whenFirst: Expr; whenSecond: Expr; whenGuard: Expr; other: Expr }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 // A closure's parameters keep the names they were made with, so a chain in
@@ -187,6 +194,14 @@ export type Stmt =
   // A write through a `Shared`, `*r.borrow_mut() += e`, `e` made before
   // the borrow, which may read it too, its own borrow over by then.
   | { kind: "shared-write"; name: string; op: string; value: Expr }
+  // Destructuring: a `let` of a `Pair`'s parts, `let (mut x, mut y) = p;`,
+  // or an `S`'s, `let S { a: mut x, c: mut y, .. } = s;`; an assignment of
+  // two at once, `(x, y) = (e1, e2);`, whose right side is all made before
+  // either is written, as a swap needs; and a slice's first and last,
+  // `if let &[x, .., y] = v.as_slice() { .. } else { .. }`.
+  | { kind: "let-pair"; x: string; y: string; from: "Pair" | "S"; value: Expr }
+  | { kind: "assign-two"; x: string; y: string; a: Expr; b: Expr }
+  | { kind: "slice-pat"; x: string; y: string; name: string; then: Stmt[]; else: Stmt[] }
   // A `Vec` sorted where ties show, each stable as JS's `sort` is: by a key,
   // `sort_by_key(|x| *x % k)`, which keeps equal ones in order, by a
   // comparator of two, filtered by a closure that may note, `retain`, and
@@ -207,6 +222,7 @@ type Scope = { name: string; ty: Ty; mutable: boolean }[];
 function literal(r: Random, ty: Ty): Expr {
   if (ty === "bool") return { kind: "lit", ty, value: r.chance(0.5) };
   if (ty === "f64" || ty === "f32") return { kind: "flit", ty, text: r.pick(floatEdges[ty]) };
+  if (ty === "Pair") return { kind: "pair", ty, a: literal(r, pairParts[0]), b: literal(r, pairParts[1]) };
   if (ty === "String") return { kind: "text", ty, value: r.pick(texts) };
   if (ty === "char") return { kind: "text", ty, value: r.pick(chars) };
   if (ty === "E") {
@@ -374,6 +390,29 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     return { kind: "if", ty, c: sub("bool"), a: sub("bool"), b: sub("bool") };
   }
   if (ty === "Map") return vars.length > 0 ? { kind: "var", ty, name: r.pick(vars).name } : { kind: "zero", ty };
+  if (ty === "Pair") return { kind: "pair", ty, a: sub(pairParts[0]), b: sub(pairParts[1]) };
+  // A `Pair`'s part, and a `match` of two values at once.
+  if ((ty === "i32" || ty === "u8") && r.chance(0.08)) return { kind: "field", ty, a: sub("Pair"), field: ty === "i32" ? "0" : "1" };
+  if (isInt(ty) && r.chance(0.05)) {
+    const [t1, t2] = [r.pick(intTypes), r.pick(intTypes)];
+    const x = `tx${r.int(1_000_000)}`, y = `ty${r.int(1_000_000)}`;
+    const bound = [...scope, { name: x, ty: t1, mutable: false }, { name: y, ty: t2, mutable: false }];
+    return {
+      kind: "tmatch",
+      ty,
+      a: sub(t1),
+      b: sub(t2),
+      first: `${(literal(r, t1) as { value: bigint }).value}`,
+      second: `${(literal(r, t2) as { value: bigint }).value}`,
+      x,
+      y,
+      guard: expr(r, "bool", bound, depth - 1),
+      whenFirst: sub(ty),
+      whenSecond: sub(ty),
+      whenGuard: expr(r, ty, bound, depth - 1),
+      other: sub(ty),
+    };
+  }
   if (isFloat(ty)) {
     const other = ty === "f64" ? "f32" : "f64";
     switch (r.int(9)) {
@@ -593,6 +632,7 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
 
 function valueType(r: Random): Ty {
   if (r.chance(0.08)) return r.pick(floatTypes);
+  if (r.chance(0.05)) return "Pair";
   const n = r.next();
   if (n < 0.45) return r.pick(intTypes);
   if (n < 0.52) return "bool";
@@ -616,7 +656,7 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(26);
+    const choice = r.int(29);
     if (choice < 3 || writable.length === 0) {
       const ty = r.chance(0.08) ? "Shapes" : r.chance(0.09) ? "Shared" : valueType(r);
       const name = `v${counter.n++}`;
@@ -640,6 +680,34 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
               ? r.pick(["{}", "{:?}", "{:>3}|"])
               : "{:?}";
       stmts.push({ kind: "print", format, value: expr(r, ty, inner, 3) });
+    } else if (choice === 26) {
+      const from = r.pick(["Pair", "S"] as const);
+      const [x, y] = [`v${counter.n++}`, `v${counter.n++}`];
+      stmts.push({ kind: "let-pair", x, y, from, value: expr(r, from, inner, 2) });
+      const [tx, ty] = from === "Pair" ? pairParts : (["i32", "i64"] as [IntTy, IntTy]);
+      inner.push({ name: x, ty: tx, mutable: true }, { name: y, ty, mutable: true });
+    } else if (choice === 27 && writable.filter((v) => isInt(v.ty)).length > 1) {
+      // Two of one type, assigned at once: a swap, or what reads either.
+      const ints = writable.filter((v) => isInt(v.ty));
+      const x = r.pick(ints);
+      const others = ints.filter((v) => v.name !== x.name);
+      if (others.length > 0) {
+        const y = r.pick(others);
+        const swap = y.ty === x.ty && r.chance(0.4);
+        stmts.push({
+          kind: "assign-two",
+          x: x.name,
+          y: y.name,
+          a: swap ? { kind: "var", ty: y.ty, name: y.name } : expr(r, x.ty, inner, 2),
+          b: swap ? { kind: "var", ty: x.ty, name: x.name } : expr(r, y.ty, inner, 2),
+        });
+      }
+    } else if (choice === 28 && depth > 0 && vecs.length > 0) {
+      const v = r.pick(vecs);
+      const elem = inside(v.ty, "Vec")!;
+      const [x, y] = [`v${counter.n++}`, `v${counter.n++}`];
+      const bound = [...inner, { name: x, ty: elem, mutable: false }, { name: y, ty: elem, mutable: false }];
+      stmts.push({ kind: "slice-pat", x, y, name: v.name, then: block(r, bound, depth - 1, counter, 1 + r.int(3)), else: block(r, inner, depth - 1, counter, r.int(2)) });
     } else if (choice === 24 && writable.some((v) => v.ty === "Shared")) {
       const name = r.pick(writable.filter((v) => v.ty === "Shared")).name;
       stmts.push({ kind: "shared-write", name, op: r.pick(["=", "+=", "-=", "^="]), value: expr(r, "i64", inner, 2) });
@@ -878,6 +946,10 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "pair":
+      return `(${show(e.a)}, ${show(e.b)})`;
+    case "tmatch":
+      return `(match (${show(e.a)}, ${show(e.b)}) { (${e.first}, _) => ${show(e.whenFirst)}, (_, ${e.second}) => ${show(e.whenSecond)}, (${e.x}, ${e.y}) if ${show(e.guard)} => ${show(e.whenGuard)}, _ => ${show(e.other)} })`;
     case "shared":
       return e.of ? `Rc::clone(&${e.of})` : `Rc::new(RefCell::new(${show(e.value!)}))`;
     case "shared-read":
@@ -1114,6 +1186,16 @@ function lines(stmts: Stmt[], indent: string): string[] {
         const result = s.result === "Option" ? `Option<${s.ty}>` : `Result<${s.ty}, String>`;
         return [`${indent}fn ${s.name}(${p}: ${s.ty}, ${q}: ${s.ty}) -> ${result} {`, ...body, `${indent}    ${out(show(s.tail))}`, `${indent}}`];
       }
+      case "let-pair":
+        return [
+          s.from === "Pair"
+            ? `${indent}let (mut ${s.x}, mut ${s.y}) = ${show(s.value)};`
+            : `${indent}let S { a: mut ${s.x}, c: mut ${s.y}, .. } = ${show(s.value)};`,
+        ];
+      case "assign-two":
+        return [`${indent}(${s.x}, ${s.y}) = (${show(s.a)}, ${show(s.b)});`];
+      case "slice-pat":
+        return [`${indent}if let &[${s.x}, .., ${s.y}] = ${s.name}.as_slice() {`, ...nested(s.then), `${indent}} else {`, ...nested(s.else), `${indent}}`];
       case "shared-write":
         return [`${indent}*${s.name}.borrow_mut() ${s.op} ${show(s.value)};`];
       case "vec-sort": {
@@ -1249,6 +1331,8 @@ export function print(program: Program, seed?: number): string {
     "",
     "type Shared = Rc<RefCell<i64>>;",
     "",
+    "type Pair = (i32, u8);",
+    "",
     "struct D(u32);",
     "",
     "impl Drop for D {",
@@ -1294,7 +1378,7 @@ function* smaller(program: Program): Generator<Program> {
       const s = stmts[i];
       const put = (replacement: Stmt[]) => rebuild([...stmts.slice(0, i), ...replacement, ...stmts.slice(i + 1)]);
       yield put([]);
-      if (s.kind === "if" || s.kind === "if-let" || s.kind === "if-let-b") {
+      if (s.kind === "if" || s.kind === "if-let" || s.kind === "if-let-b" || s.kind === "slice-pat") {
         yield put(s.then);
         yield put(s.else);
         yield* inBlock(s.then, (next) => put([{ ...s, then: next }]));
@@ -1363,7 +1447,7 @@ export async function reduce(
 export function size(program: Program): number {
   return program.reduce((n, s) => {
     const inner =
-      s.kind === "if" || s.kind === "if-let" || s.kind === "if-let-b"
+      s.kind === "if" || s.kind === "if-let" || s.kind === "if-let-b" || s.kind === "slice-pat"
         ? size(s.then) + size(s.else)
         : s.kind === "for" || s.kind === "for-each" || s.kind === "for-map" || s.kind === "while" || s.kind === "labeled"
           ? size(s.body)

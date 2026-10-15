@@ -114,6 +114,14 @@ time, valid and deterministic by construction:
   JS's `sort` is: `sort_by_key(|x| *x % k)`, `sort_by` of a key then its
   reverse, `dedup_by_key`, and `retain` by a closure that may note. Not
   `sort_unstable` of ties, whose order Rust doesn't say (2026-10-15).
+- Tuples and destructuring: a `Pair`, `(i32, u8)`, made, its parts read,
+  `p.0`, shown; `let (mut x, mut y) = p;` and `let S { a: mut x, c: mut
+  y, .. } = s;`; two assigned at once, `(x, y) = (e1, e2);`, a swap or of
+  what reads and writes either, its right side all made before either is
+  written; a slice's first and last, `if let &[x, .., y] =
+  v.as_slice()`; and a `match` of two values at once, `match (a, b) {
+  (1, _) => .., (_, 2) => .., (x, y) if .. => .., _ => .. }`
+  (2026-10-15).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.
