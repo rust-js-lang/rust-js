@@ -51,8 +51,9 @@ for (const [name, source, message, crate] of [
   ["== on maps", 'pub fn f(a: &std::collections::HashMap<u32, u32>, b: &std::collections::HashMap<u32, u32>) -> bool { a == b }', "`==` on"],
   ["parse to a type without FromStr support", 'pub fn f(s: &str) -> bool { s.parse::<std::net::IpAddr>().is_ok() }', "does not support"],
   // A string's byte offsets are counted (ADR 0138), but not yet of a closure's matches.
-  // `a + b` of a `T: Add` is its dictionary's (ADR 0108); `a += b` isn't yet.
-  ["an assigning operator in generic code", 'pub fn f<T: std::ops::AddAssign>(a: &mut T, b: T) { *a += b; }', "does not support"],
+  // `a += b` of a `T: AddAssign` is its dictionary's (ADR 0396), and `*p` of
+  // a `P: Deref` (ADR 0394); a `P: DerefMut`'s isn't yet.
+  ["a DerefMut in generic code", 'pub fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }', "does not support calling `std::ops::DerefMut::deref_mut`"],
   ["an Rc's raw pointer", 'pub fn f(r: &std::rc::Rc<u32>) -> bool { std::rc::Rc::as_ptr(r).is_null() }', "does not support"],
   ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "a heap of"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],

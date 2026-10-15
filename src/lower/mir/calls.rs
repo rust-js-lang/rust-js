@@ -58,12 +58,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Value<'tcx>>> {
         let tcx = self.tcx;
+        // Of a number or a string: another's is its impl's, or its dictionary's
+        // (ADR 0396).
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && let Some(op) = crate::lower::recognition::assign_operator(tcx, trait_id)
             && let [place, rhs] = values
+            && let ty = arg_tys[0].peel_refs()
+            && (self.is_lang_adt(ty, LangItem::String) || crate::lower::representation::Num::of(ty).is_some())
             && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))
         {
-            let ty = arg_tys[0].peel_refs();
             // Through a handle a call gave, `or_insert(10)`'s: its `value`,
             // the handle held where it's made, before what's added is.
             let place = match place.clone() {

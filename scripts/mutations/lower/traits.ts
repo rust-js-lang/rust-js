@@ -850,4 +850,28 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_borrows|cows).rs$"],
   },
+  {
+    name: "number-assign-dictionary-missing",
+    breaks: "std's `AddAssign` of numbers, given to generic code, has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "            && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))\n",
+    replace: "            && (op == BinOp::Add && tr.args.types().all(text))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
+  },
+  {
+    name: "text-assign-dictionary-missing",
+    breaks: "std's `AddAssign<&str>` of a `String`, given to generic code, has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "            && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))\n",
+    replace: "            && self.primitive_operands(tr)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
+  },
+  {
+    name: "known-assign-through-dictionary",
+    breaks: "a known type's `+=` call, a `Wrapping`'s, is a dictionary's, which std's of it hasn't",
+    file: "src/lower/traits.rs",
+    find: "            || super::recognition::assign_operator(self.tcx, trait_id).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^wrapping_type.rs$"],
+  },
 ];

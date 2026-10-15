@@ -2,8 +2,6 @@
 
 import { $eq } from "@rust-js/runtime";
 
-var $flagsBitOr, $flagsBitAnd, $flagsBitXor, $flagsNot, $flagsShlU8, $flagsShrU32, $refFlagsBitOr;
-
 export function entry() {
   main();
 }
@@ -16,66 +14,24 @@ const READ = [1];
 const WRITE = [2];
 const RUN = [4];
 
-export function flagsBitOr() {
-  if ($flagsBitOr === undefined) {
-    $flagsBitOr = { bitor: flagsBitOr_bitor };
-  }
-  return $flagsBitOr;
-}
-
 function flagsBitOr_bitor(flags, other) {
   return [flags[0] | other[0]];
-}
-
-export function flagsBitAnd() {
-  if ($flagsBitAnd === undefined) {
-    $flagsBitAnd = { bitand: flagsBitAnd_bitand };
-  }
-  return $flagsBitAnd;
 }
 
 function flagsBitAnd_bitand(flags, other) {
   return [flags[0] & other[0]];
 }
 
-export function flagsBitXor() {
-  if ($flagsBitXor === undefined) {
-    $flagsBitXor = { bitxor: flagsBitXor_bitxor };
-  }
-  return $flagsBitXor;
-}
-
 function flagsBitXor_bitxor(flags, other) {
   return [flags[0] ^ other[0]];
-}
-
-export function flagsNot() {
-  if ($flagsNot === undefined) {
-    $flagsNot = { not: flagsNot_not };
-  }
-  return $flagsNot;
 }
 
 function flagsNot_not(flags) {
   return [~flags[0] & 255 & 7];
 }
 
-export function flagsShlU8() {
-  if ($flagsShlU8 === undefined) {
-    $flagsShlU8 = { shl: flagsShlU8_shl };
-  }
-  return $flagsShlU8;
-}
-
 function flagsShlU8_shl(flags, by) {
   return [(flags[0] << (by & 7)) & 255 & 7];
-}
-
-export function flagsShrU32() {
-  if ($flagsShrU32 === undefined) {
-    $flagsShrU32 = { shr: flagsShrU32_shr };
-  }
-  return $flagsShrU32;
 }
 
 function flagsShrU32_shr(flags, by) {
@@ -100,13 +56,6 @@ function flagsShlAssignU8_shl_assign(flags, by) {
 
 function flagsShrAssignU32_shr_assign(flags, by) {
   flags[0] = flags[0] >>> (by & 7);
-}
-
-export function refFlagsBitOr() {
-  if ($refFlagsBitOr === undefined) {
-    $refFlagsBitOr = { bitor: refFlagsBitOr_bitor };
-  }
-  return $refFlagsBitOr;
 }
 
 function refFlagsBitOr_bitor(flags, other) {

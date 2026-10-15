@@ -2,8 +2,6 @@
 
 import { $byteLen, $iter, $lazyRange, $nextSome } from "@rust-js/runtime";
 
-var $deltaAdd;
-
 export function entry() {
   main();
 }
@@ -14,13 +12,6 @@ function noisyDrop_drop(noisy) {
 
 function deltaDebug_fmt(delta) {
   return `Delta(${delta[0]})`;
-}
-
-export function deltaAdd() {
-  if ($deltaAdd === undefined) {
-    $deltaAdd = { add: deltaAdd_add };
-  }
-  return $deltaAdd;
 }
 
 function deltaAdd_add(delta, other) {

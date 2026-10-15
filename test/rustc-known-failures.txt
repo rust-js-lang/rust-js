@@ -108,7 +108,6 @@ dst/match-dst-struct.rs	error: rust-js does not support a `Foo<dyn Get>`, whose 
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 enum/enum-clike-ffi-as-int.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 enum/enum-univariant-repr.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
-expr/compound-assignment/eval-order.rs	error: rust-js does not support assigning to this place yet
 fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A` yet
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet

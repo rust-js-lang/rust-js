@@ -324,8 +324,8 @@ pub fn lower_crate<'tcx>(
 
     // What's written only where it's reached: derived Debug implementations,
     // a marker trait's dictionaries, which only a `dyn` reads (ADR 0307),
-    // and a `Deref`'s, which only generic code reads, its `deref` called
-    // as it is anywhere else (ADR 0394).
+    // and those only generic code reads, their methods called as they are
+    // anywhere else (`read_only_generically`).
     // Adjacency lists rather than scanning every edge again for every reached
     // function.
     let derived: HashSet<DefId> = trait_impls
@@ -345,7 +345,7 @@ pub fn lower_crate<'tcx>(
                 .instantiate_identity()
                 .skip_normalization()
                 .def_id;
-            tcx.is_lang_item(trait_id, rustc_hir::attrs::lang_items::LangItem::Deref)
+            super::traits::read_only_generically(tcx, trait_id)
         }))
         .collect();
     let edges = lowered_items

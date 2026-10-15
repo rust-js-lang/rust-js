@@ -2,21 +2,12 @@
 
 import { $debugStr, $iter } from "@rust-js/runtime";
 
-var $moneyAdd;
-
 export function entry() {
   main();
 }
 
 function moneyDebug_fmt(money) {
   return `Money { cents: ${money.cents} }`;
-}
-
-export function moneyAdd() {
-  if ($moneyAdd === undefined) {
-    $moneyAdd = { add: moneyAdd_add };
-  }
-  return $moneyAdd;
 }
 
 function moneyAdd_add(money, other) {

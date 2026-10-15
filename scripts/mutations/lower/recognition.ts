@@ -1417,4 +1417,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^str_bytes.rs$"],
   },
+  {
+    name: "assign-operator-not-operational",
+    breaks: "a `T: AddAssign` in generic code is given no dictionary, and refused",
+    file: "src/lower/recognition.rs",
+    find: "        || assign_operator(tcx, id).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
+  },
 ];

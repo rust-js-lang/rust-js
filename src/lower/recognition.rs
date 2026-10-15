@@ -3655,6 +3655,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || is_std_def(tcx, id, StdItem::IoWrite)
         // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394).
         || tcx.is_lang_item(id, LangItem::Deref)
+        // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).
+        || assign_operator(tcx, id).is_some()
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as

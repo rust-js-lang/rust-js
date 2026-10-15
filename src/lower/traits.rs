@@ -597,6 +597,16 @@ fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || any_trait(tcx) == Some(id)
 }
 
+/// Whether only generic code reads a dictionary of `trait_id`'s: an
+/// operator's, `a + b` and `a += b` (ADRs 0108, 0396), and a `Deref`'s (ADR
+/// 0394). Where the type is known, the impl's method is called as it is, so
+/// a crate's impl's dictionary is written only where it's reached.
+pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+    super::recognition::value_operator(tcx, trait_id).is_some()
+        || super::recognition::assign_operator(tcx, trait_id).is_some()
+        || tcx.is_lang_item(trait_id, LangItem::Deref)
+}
+
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
 /// name no Rust method can have, as `$drop` is (ADR 0178).
 pub(super) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
@@ -1177,6 +1187,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]),
             )]));
         }
+        // A number's `+=`, of a number on each side, and a `String`'s of
+        // text, through the box a generic `&mut` is given in (ADR 0180): its
+        // `value` assigned `a + b` (ADR 0396).
+        let text = |t: Ty<'tcx>| self.is_lang_adt(t, LangItem::String) || t.peel_refs().is_str();
+        if let Some(op) = super::recognition::assign_operator(self.tcx, tr.def_id)
+            && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))
+        {
+            let place = Expr::member(Expr::var("cell"), js::HELD);
+            let value = match self.primitive_operands(tr) {
+                true => self.number_operator(Ok(op), place.clone(), Some(Expr::var("b")), tr, span)?,
+                false => Expr::bin(Op::Add, place.clone(), Expr::var("b")),
+            };
+            return Ok(Expr::object(vec![Prop::Field(
+                self.operator_entry(tr.def_id),
+                Expr::arrow(
+                    vec!["cell".into(), "b".into()],
+                    vec![StmtKind::Assign(place, value).at(js::Span::NONE)],
+                ),
+            )]));
+        }
         // `x.into()` of a `T: Into<U>` (ADR 0108): std's conversion, of a `T`
         // to itself too (ADR 0387), or the crate's `From`.
         if is_std_def(self.tcx, tr.def_id, StdItem::Into) {
@@ -1632,6 +1662,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where the types are known, `"paren".into()` and `a.add(b)` are std's,
         // written in place, as ever: a dictionary is for generic code (ADR 0108).
         if (super::recognition::value_operator(self.tcx, trait_id).is_some()
+            || super::recognition::assign_operator(self.tcx, trait_id).is_some()
             || is_std_def(self.tcx, trait_id, StdItem::Into))
             && !tr.args.has_non_region_param()
         {

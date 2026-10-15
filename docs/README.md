@@ -463,6 +463,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0393 An enum's discriminant, `mem::discriminant` and a cast, one way](decisions/0393-an-enums-discriminant.md)
 - [0394 A `Deref` bound is given its dictionary, `{ deref }`](decisions/0394-a-deref-bound.md)
 - [0395 Function pointers compare by identity](decisions/0395-function-pointers-compare-by-identity.md)
+- [0396 A compound assignment in generic code is given its dictionary](decisions/0396-a-compound-assignment-in-generic-code.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

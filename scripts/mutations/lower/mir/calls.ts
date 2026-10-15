@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","generic_bitwise_operators"],
   },
+  {
+    name: "own-assign-through-place-refused",
+    breaks: "`a.0 += b` of the crate's own type through a place is refused, not its impl's",
+    file: "src/lower/mir/calls.rs",
+    find: "            && (self.is_lang_adt(ty, LangItem::String) || crate::lower::representation::Num::of(ty).is_some())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
+  },
 ];
