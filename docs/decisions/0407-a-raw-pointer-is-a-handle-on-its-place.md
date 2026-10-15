@@ -125,6 +125,13 @@ matters to nothing, and Rust's aliasing rules let nothing change what it
 points to till its last read. The program can't tell (case A). A pointer
 compared, `ptr::eq(a, b)` of numbers, is still refused.
 
+**Text's `as_ptr()`** is a pointer to a copy of its UTF-8 bytes,
+`$ptr(Array.from(new TextEncoder().encode(s)), 0)`, where it's only read
+through, as what a `&str` refers to may only be: given to `ptr::read`, or
+what `ptr::copy` copies from, arrayvec's `ArrayString::try_push_str`
+(`test/corpus/text_bytes_pointer.rs`). Compared or kept, it would be
+another copy's place than Rust's one: refused, `check_text_pointer`.
+
 ### Refused
 
 - **An address**: `p as usize`, `3 as *const T`, a pointer read as

@@ -60,6 +60,9 @@ pub(in crate::lower) enum TextOp {
     Lines,
     /// `s.as_bytes()` and `s.bytes()`: its UTF-8 bytes, a copy, as nothing writes through it (ADR 0126).
     Bytes,
+    /// `s.as_ptr()`: a pointer to the first of those bytes, where it's only
+    /// read through, which a copy reads the same (ADR 0407).
+    BytesPointer,
     /// `s.split(|c| ..)` and `s.contains(|c| ..)`: a closure as the pattern.
     SplitBy,
     ContainsBy,
@@ -357,10 +360,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Lines => Expr::call(Expr::helper("$lines"), vec![arg()]),
             // `Array.from(new TextEncoder().encode(s))`: an array of `u8`s, as a
             // slice of them is.
-            TextOp::Bytes => {
+            TextOp::Bytes | TextOp::BytesPointer => {
                 let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
                 let encoded = Expr::call(Expr::member(encoder, "encode"), vec![arg()]);
-                Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
+                let bytes = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded]);
+                match op {
+                    TextOp::BytesPointer => call("$ptr", vec![bytes, Expr::int(0)]),
+                    _ => bytes,
+                }
             }
             TextOp::SplitN => call("$splitN", vec![arg(), arg(), arg()]),
             TextOp::Rsplit(limited) => {

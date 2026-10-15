@@ -51,6 +51,8 @@ for (const [name, source, message, crate] of [
   // number is its value, so a place's address isn't JS's (ADR 0285).
   // A trait default's own const parameter numbered as one its impl's `Self` names (ADR 0135).
   ["a default's const parameter numbered as its impl's", "pub trait Scaled<const N: usize> { fn base(&self) -> usize; fn scaled(&self) -> usize { self.base() * N } }\npub struct S<T, const K: usize>(T);\nimpl<T, const K: usize> Scaled<3> for S<T, K> { fn base(&self) -> usize { K } }\npub fn f(s: &S<u8, 4>) -> usize { s.scaled() }", "a trait default's const parameter numbered as its impl's"],
+  // Text's `as_ptr()` is a copy's: compared, it'd be another's (ADR 0407).
+  ["text's pointer compared", "pub fn f(a: &str, b: &str) -> bool { a.as_ptr() == b.as_ptr() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).

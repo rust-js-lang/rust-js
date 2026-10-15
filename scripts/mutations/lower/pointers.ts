@@ -332,4 +332,28 @@ export const mutations: Mutation[] = [
     replace: "            let read = place.projection.is_empty();\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pointer through a &mut"],
   },
+  {
+    name: "text-pointer-compared",
+    breaks: "text's `as_ptr()` compared with another is taken, where each is a copy's, never equal",
+    file: "src/lower/pointers.rs",
+    find: "            || destination.projection.is_empty() && self.only_read_through(body, destination.local)\n",
+    replace: "            || true\n",
+    tests: ["test/diagnostics.test.ts", "-t", "text's pointer compared"],
+  },
+  {
+    name: "copy-source-not-a-read",
+    breaks: "what `ptr::copy` copies from isn't taken as a read through it, so text's `as_ptr()` copied from is refused",
+    file: "src/lower/pointers.rs",
+    find: "                    Some(Std::Pointer(PointerOp::Copy { dst_first })) => at == Some(usize::from(dst_first)),\n",
+    replace: "                    Some(Std::Pointer(PointerOp::Copy { .. })) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_bytes_pointer.rs$"],
+  },
+  {
+    name: "call-result-not-a-store",
+    breaks: "a pointer a call gives isn't taken as assigned once, so it's never only read through",
+    file: "src/lower/pointers.rs",
+    find: "                    PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)\n",
+    replace: "                    PlaceContext::MutatingUse(MutatingUseContext::Store)\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_bytes_pointer.rs$"],
+  },
 ];

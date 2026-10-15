@@ -36,6 +36,8 @@ pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
         // `s.bytes()` is `s.as_bytes()` iterated: the same array.
         // So is a `Box<str>`'s `into_boxed_bytes()`, a copy of its own.
         "as_bytes" | "bytes" | "into_boxed_bytes" if str => TextOp::Bytes,
+        // `s.as_ptr()`, a pointer to those bytes' first, only read through.
+        "as_ptr" if str => TextOp::BytesPointer,
         "parse" if str => TextOp::Parse,
         "is_ascii" if str => TextOp::Is("/^[\\0-\\x7f]*$/"),
         _ => return None,

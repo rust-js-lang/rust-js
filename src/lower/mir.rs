@@ -4446,6 +4446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
+        self.check_text_pointer(state.body, (def_id, generic_args), destination, span)?;
         // `..Default::default()` of a struct whose `Default` is derived, an
         // update's base: each default the update reads, none it replaces that
         // does nothing, a component's `children: C` among them, which needs no

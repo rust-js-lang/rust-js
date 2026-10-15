@@ -381,13 +381,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a pointer `local` is assigned once and only read through:
-    /// `*p`, given to `ptr::read`, or copied whole to a local that is.
-    fn only_read_through(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
+    /// `*p`, given to `ptr::read` or as what `ptr::copy` copies from, or
+    /// copied whole to a local that is.
+    pub(super) fn only_read_through(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
         use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
         struct Uses<'b, 'tcx> {
             local: Local,
             body: &'b mir::Body<'tcx>,
-            read: &'b dyn Fn(&mir::Operand<'tcx>) -> bool,
+            read: &'b dyn Fn(&mir::Operand<'tcx>, Option<usize>) -> bool,
             stores: usize,
             copies: Vec<Local>,
             only: bool,
@@ -400,13 +401,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let through = place.projection.first() == Some(&PlaceElem::Deref);
                 self.only &= match context {
                     PlaceContext::NonUse(_) => true,
-                    PlaceContext::MutatingUse(MutatingUseContext::Store) if place.projection.is_empty() => {
+                    // Assigned, or a call's result.
+                    PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)
+                        if place.projection.is_empty() =>
+                    {
                         self.stores += 1;
                         true
                     }
                     PlaceContext::NonMutatingUse(_) if through => true,
                     PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect) => true,
-                    // Given whole to a call, which must be `ptr::read`, or
+                    // Given whole to a call that only reads through it, or
                     // copied whole to a local.
                     PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy | NonMutatingUseContext::Move) => {
                         let block = &self.body.basic_blocks[at.block];
@@ -425,18 +429,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 true
                             }
                             Some(_) => false,
-                            None => {
-                                matches!(&block.terminator().kind, mir::TerminatorKind::Call { func, .. } if (self.read)(func))
-                            }
+                            None => match &block.terminator().kind {
+                                mir::TerminatorKind::Call { func, args, .. } => {
+                                    let given = mir::Place::from(self.local);
+                                    (self.read)(func, args.iter().position(|arg| arg.node.place() == Some(given)))
+                                }
+                                _ => false,
+                            },
                         }
                     }
                     _ => false,
                 };
             }
         }
-        let read = |func: &mir::Operand<'tcx>| {
+        let read = |func: &mir::Operand<'tcx>, at: Option<usize>| {
             crate::lower::fn_def(func.ty(body, self.tcx)).is_some_and(|(def_id, args)| {
-                self.recognition().classify(def_id, args) == Some(Std::Pointer(PointerOp::Read))
+                match self.recognition().classify(def_id, args) {
+                    Some(Std::Pointer(PointerOp::Read)) => true,
+                    Some(Std::Pointer(PointerOp::Copy { dst_first })) => at == Some(usize::from(dst_first)),
+                    _ => false,
+                }
             })
         };
         let mut uses = Uses {
@@ -450,6 +462,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         uses.visit_body(body);
         // A copy back, a cycle, would be a second store, so this ends.
         uses.only && uses.stores == 1 && uses.copies.into_iter().all(|copy| self.only_read_through(body, copy))
+    }
+
+    /// Text's `as_ptr()`, a pointer to a copy of its UTF-8 bytes, which JS
+    /// has none of, where it's only read through, as what a `&str` refers to
+    /// may only be: refused where it's compared or kept, which would see
+    /// another copy's place than Rust's one.
+    pub(super) fn check_text_pointer(
+        &self,
+        body: &mir::Body<'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        destination: mir::Place<'tcx>,
+        span: Span,
+    ) -> R<()> {
+        let text = super::std_types::text::TextOp::BytesPointer;
+        if self.recognition().classify(def_id, generic_args) != Some(Std::Text(text))
+            || destination.projection.is_empty() && self.only_read_through(body, destination.local)
+        {
+            return Ok(());
+        }
+        Err(refuse(self.tcx, span, Refused::Memory(COPIED)))
     }
 
     /// Whether a value of type `ty` is a way to change another's: a `&mut`,

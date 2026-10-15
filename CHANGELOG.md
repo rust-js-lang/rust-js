@@ -70,6 +70,8 @@ released any more: `rust-js build` is the one way to build an app.
   arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
+- **A `str`'s `as_ptr()`, only read through**, a copy's source: a pointer to
+  its UTF-8 bytes, as arrayvec's `ArrayString` copies them in (ADR 0407).
 - **`as_ref()` of text as a `Path`**, `s.as_str().as_ref()` in an
   `AsRef<Path>` impl: the text itself (ADR 0173).
 - **A zeroed `[MaybeUninit<u8>; CAP]`**, of a length generic code is given,

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "as-bytes-utf16",
     breaks: "`s.as_bytes()` is each UTF-16 unit, `é` one byte where UTF-8 has two",
     file: "src/lower/std_types/text.rs",
-    find: "                Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![encoded])\n            }",
-    replace: "                let _ = encoded;\n                Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![arg(), Expr::arrow(vec![\"c\".into()], vec![crate::js::StmtKind::Return(Some(Expr::call(Expr::member(Expr::var(\"c\"), \"charCodeAt\"), vec![Expr::int(0)]))).at(crate::js::Span::NONE)])])\n            }",
+    find: "                let bytes = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![encoded]);\n",
+    replace: "                let _ = encoded;\n                let bytes = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![arg(), Expr::arrow(vec![\"c\".into()], vec![crate::js::StmtKind::Return(Some(Expr::call(Expr::member(Expr::var(\"c\"), \"charCodeAt\"), vec![Expr::int(0)]))).at(crate::js::Span::NONE)])]);\n",
     tests: ["test/corpus.test.ts","-t","byte_strings"],
   },
   {
