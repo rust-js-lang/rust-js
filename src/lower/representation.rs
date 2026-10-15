@@ -191,12 +191,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value that a `&mut` to must be a box to change (ADR 0072): one that
     /// isn't a JS object, as a `String`, a number or a fieldless enum is.
     pub(super) fn is_boxable(&self, ty: Ty<'tcx>) -> bool {
-        // A `Pin` is its pointer (ADR 0329).
+        // A `Pin` is its pointer (ADR 0329), and a `&mut` to a pinned
+        // reference the pin, which only what it points at is changed through.
         if let Some(pointer) = self.recognition().pinned(ty) {
-            return self.is_boxable(pointer);
+            return !pointer.is_ref() && self.is_boxable(pointer);
         }
-        !matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))
-            && !self.is_unknown(ty)
+        // A `&mut` to a value JS can't change in place is a cell, which can't
+        // be changed in place either: a `&mut` to it, a cell of the cell.
+        if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
+            return self.is_cell_pointee(inner);
+        }
+        !self.is_unknown(ty)
             && !self.is_object(ty)
             // A `&mut dyn FnMut()` is the function (ADR 0099).
             && !self.is_callable(ty)

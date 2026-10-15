@@ -39,8 +39,8 @@ function main() {
       a = value;
     },
   });
-  const value = $index(kept, 0);
-  value.value = (value.value + 1) >>> 0;
+  $index(kept, 0);
+  kept[0].value = (kept[0].value + 1) >>> 0;
   let b = 20;
   const holder = {};
   Holder.hold(holder, {

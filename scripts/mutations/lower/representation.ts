@@ -252,14 +252,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
-    name: "pin-boxable-itself",
-    breaks: "a `&mut` to a pinned `&mut` is a box of the box",
-    file: "src/lower/representation.rs",
-    find: "            return self.is_boxable(pointer);",
-    replace: "            return !self.is_object(pointer);",
-    tests: ["test/corpus.test.ts", "-t", "pin_box"],
-  },
-  {
     name: "uninit-not-nullish",
     breaks: "`Some(MaybeUninit::uninit())` is `None`",
     file: "src/lower/representation.rs",
@@ -271,8 +263,8 @@ export const mutations: Mutation[] = [
     name: "ref-not-boxable",
     breaks: "a `&mut` to a shared reference isn't a cell, and is refused",
     file: "src/lower/representation.rs",
-    find: "        !matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))\n",
-    replace: "        !ty.is_ref()\n",
+    find: "        !self.is_unknown(ty)\n",
+    replace: "        !ty.is_ref() && !self.is_unknown(ty)\n",
     tests: ["test/corpus.test.ts","-t","mut_ref_to_ref"],
   },
   {
@@ -395,5 +387,21 @@ export const mutations: Mutation[] = [
     find: "        self.recognition().is_unknown_in(ty, typing_env)\n",
     replace: "        self.recognition().is_unknown_in(ty, self.typing_env)\n",
     tests: ["test/corpus.test.ts", "-t", "^deref_projection_generic.rs$"],
+  },
+  {
+    name: "mut-ref-to-mut-ref-refused",
+    breaks: "a `&mut &mut u32`, arrayvec's `ScopeExitGuard`'s, is refused, where it's a cell of the cell",
+    file: "src/lower/representation.rs",
+    find: "            return self.is_cell_pointee(inner);\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
+  },
+  {
+    name: "pinned-ref-boxable",
+    breaks: "a `&mut` to a `Pin<&mut i32>` is a cell of the pin, so `pin.as_mut()` writes the pin, not the number",
+    file: "src/lower/representation.rs",
+    find: "            return !pointer.is_ref() && self.is_boxable(pointer);\n",
+    replace: "            return self.is_boxable(pointer);\n",
+    tests: ["test/corpus.test.ts", "-t", "^pin_box.rs$"],
   },
 ];

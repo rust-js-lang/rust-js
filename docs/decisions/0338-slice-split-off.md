@@ -45,8 +45,12 @@ const word = split[1];
 | their `_mut` ones | `$sliceSplitOffMut`, `$sliceSplitOffEndMut`: views (ADR 0335), the item a handle on a number or text |
 | `&mut s` of a `&str` or a `&[T]` | a box of it given and taken back, or a handle, as of a number |
 
-- **A `&mut` reference stays what it was**: a `&mut &mut T` is still not a
-  cell; only a shared one is, which nothing writes through.
+- **A `&mut` reference stays what it was**: a `&mut &mut T` of an object,
+  whose `&mut` is the object, is that object. Of a value JS can't change
+  in place, a number or a string, whose `&mut` is a cell, it's a cell of
+  the cell, `**r` its `r.value.value`, as arrayvec's `ScopeExitGuard`
+  writes a length back through the `&mut u32` it holds
+  (`test/corpus/mut_ref_to_mut_ref.rs`).
 - **Since**: a map's `retain` of `&str` values gives the closure handles on
   them, so `*v = ".."` in it is kept.
 

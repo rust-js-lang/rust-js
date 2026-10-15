@@ -70,6 +70,9 @@ released any more: `rust-js build` is the one way to build an app.
   arrayvec's `ptr::read(elt as *const _)`, is a cell of a value with no
   place
   ([ADR 0407](docs/decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)).
+- **A `&mut &mut u32`**, a `&mut` to a `&mut` of a number or a string, is a
+  cell of the cell, as arrayvec's `ScopeExitGuard` holds one
+  ([ADR 0338](docs/decisions/0338-slice-split-off.md)).
 - **A generic function or impl that asks `size_of::<T>()` is given it** in a
   trait impl's method, through the impl's dictionary, and across crates, by
   its library's manifest ([ADR 0145](docs/decisions/0145-type-facts.md)).

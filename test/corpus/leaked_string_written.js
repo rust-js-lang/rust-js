@@ -30,8 +30,8 @@ function main() {
   other.value = $asciiCase(other.value, true);
   console.log(`${other.value}`);
   const kept = [{ value: "ef" }];
-  const part = $index(kept, 0);
-  part.value = $asciiCase(part.value, true);
+  $index(kept, 0);
+  kept[0].value = $asciiCase(kept[0].value, true);
   kept.push({ value: "gh" });
   console.log(`[${kept.map((item) => $debugStr(item.value)).join(", ")}]`);
   const read = "ij";
