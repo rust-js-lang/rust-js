@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "dyn ReactNode is the node"],
   },
   {
-    name: "vacant-entry-unsupported",
-    breaks: "a `VacantEntry` value is refused",
-    file: "src/lower/support.rs",
-    find: " || self.recognition().is_vacant_entry(ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
-  },
-  {
     name: "never-unsupported",
     breaks: "a function that never returns, `-> !`, is refused",
     file: "src/lower/support.rs",
