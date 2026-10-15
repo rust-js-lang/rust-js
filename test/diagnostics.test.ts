@@ -9,7 +9,9 @@ beforeAll(buildCompiler, 600_000);
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
-  ["unsupported type", 'pub fn f(x: *const u8) -> *const u8 { x }', "does not support"],
+  ["unsupported type", 'pub fn f(x: *const u8) -> *const u8 { x }', "does not support addressable memory yet: values of type `*const u8`"],
+  // A `const { .. }` block's type is its value's, not its placeholder's.
+  ["a const block of a static's dyn", 'trait T { fn get(&self) -> u32; }\nstruct A(u32);\nimpl T for A { fn get(&self) -> u32 { self.0 } }\nstatic S: A = A(1);\npub fn f() -> u32 { let x = [const { &S as &dyn T }; 1]; x[0].get() }', "does not support constants of type `&dyn T`"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
   // ADR 0390: addressable memory, which JavaScript has none of, says so.
   ["a transmute", "pub fn f(x: u32) -> f32 { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: calling `std::intrinsics::transmute`"],

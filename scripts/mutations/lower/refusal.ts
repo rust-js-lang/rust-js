@@ -12,11 +12,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "memory-type-unsaid",
-    breaks: "a union's constant is refused as any type is, not as addressable memory",
+    breaks: "a raw pointer's type is refused as any type is, not as addressable memory",
     file: "src/lower/refusal.rs",
     find: "        Refused::Type(_, ty) => is_memory_type(tcx, ty),\n",
     replace: "        Refused::Type(_, _) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^union_const.rs$"],
+    tests: ["test/diagnostics.test.ts", "-t", "unsupported type"],
   },
   {
     name: "memory-feature-unsaid",
