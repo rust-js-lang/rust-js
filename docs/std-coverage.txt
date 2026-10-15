@@ -580,11 +580,11 @@
 + Pin::set
 + Pin::static_mut
 + Pin::static_ref
-# str 79 of 83
+# str 80 of 83
 + str::as_bytes
 - str::as_bytes_mut
 - str::as_mut_ptr
-- str::as_ptr
++ str::as_ptr
 + str::bytes
 + str::ceil_char_boundary
 + str::char_indices
