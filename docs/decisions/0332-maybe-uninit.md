@@ -4,7 +4,11 @@ Status: Accepted. Extends [0074](0074-mut-boxes.md) and
 [0099](0099-mut-references.md); counted by
 [0314](0314-std-data-structures.md); amended by
 [0408](0408-plain-data-is-its-bytes.md): a zeroed value is plain data's
-zero, of a struct too, as `mem::zeroed()`'s is.
+zero, of a struct too, as `mem::zeroed()`'s is. And a `MaybeUninit<T>` is
+plain data as its `T` is, laid out alike, so an array of them zeroed is
+its zeros; of a length generic code is given, `[MaybeUninit<u8>; CAP]`,
+arrayvec's, `new Array(CAP).fill(0)`, as a zeroed slice is made
+(`test/corpus/zeroed_uninit_arrays.rs`).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), and D for a zeroed
 type no JS value is all zeros of.

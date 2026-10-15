@@ -2,7 +2,7 @@
 //! holds, or `undefined` before it's written, as JS has no memory that isn't
 //! a value. A `&mut` to one is a box, the place it's written to.
 
-use crate::js::{self, Expr, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -58,15 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let n = arg();
                 let zero = if zeroed { Some(self.zero(item, span)?) } else { None };
-                if let Some(zero) = zero.as_ref().filter(|zero| zero.is_constant()) {
-                    let made = Expr::new_(Expr::var("Array"), vec![n]);
-                    return Ok(Some(Expr::call(Expr::member(made, "fill"), vec![zero.clone()])));
-                }
-                let mut given = vec![Expr::object(vec![Prop::Field("length".into(), n)])];
-                given.extend(
-                    zero.map(|zero| Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(zero)).at(js::Span::NONE)])),
-                );
-                Expr::call(Expr::member(Expr::var("Array"), "from"), given)
+                crate::lower::plain::filled(n, zero)
             }
             UninitOp::BoxWrite => {
                 let boxed = arg();

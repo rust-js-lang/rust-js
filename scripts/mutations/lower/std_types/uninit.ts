@@ -30,9 +30,9 @@ export const mutations: Mutation[] = [
   {
     name: "zeroed-slice-unfilled",
     breaks: "`new_zeroed_slice` leaves its slots `undefined`",
-    file: "src/lower/std_types/uninit.rs",
-    find: "                    return Ok(Some(Expr::call(Expr::member(made, \"fill\"), vec![zero.clone()])));",
-    replace: "                    return Ok(Some(made));",
+    file: "src/lower/plain.rs",
+    find: "        return Expr::call(Expr::member(made, \"fill\"), vec![zero.clone()]);",
+    replace: "        return made;",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
 ];

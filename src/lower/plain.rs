@@ -16,7 +16,7 @@ use super::recognition::Std;
 use super::refusal::{Refused, refuse};
 use super::representation::Num;
 use super::{FnCx, R};
-use crate::js::{Expr, Op, Stmt};
+use crate::js::{self, Expr, Op, Stmt};
 
 /// A plain value's layout: a number, a `bool` or a `char`, or its parts,
 /// each at its offset in it.
@@ -133,6 +133,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if number || ty.is_bool() || ty.is_char() {
             return Some(Plain::Scalar(ty));
         }
+        // A `MaybeUninit<T>` is its `T`, laid out alike (ADR 0332).
+        if let Some(held) = self.recognition().uninit_of(ty) {
+            return self.plain(held);
+        }
         let layout = self.layout(ty)?;
         let fields: Vec<Ty<'tcx>> = match ty.kind() {
             ty::Tuple(items) => items.to_vec(),
@@ -153,6 +157,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `ty` of all zero bytes, where that's one: a number's `0`, `false`,
     /// `'\0'`, and a tuple, an array or a struct of them.
     pub(in crate::lower) fn zero(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        // An array of a length generic code is given, `[MaybeUninit<u8>;
+        // CAP]`, arrayvec's: as many zeros.
+        if let ty::Array(item, len) = *ty.kind()
+            && len.try_to_target_usize(self.tcx).is_none()
+        {
+            let n = self.const_arg(len, span)?;
+            let zero = self.zero(item, span)?;
+            return Ok(filled(n, Some(zero)));
+        }
         let Some(plain) = self.plain(ty) else {
             return Err(self.unsupported(span, &format!("a zeroed `{ty}`, which may be no value of it")));
         };
@@ -336,4 +349,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.scalar_of_bits(bits, ty, span),
         }
     }
+}
+
+/// `n` items, each `zero` or none: `new Array(n).fill(0)` of a zero that's
+/// a constant, `Array.from({ length: n }, () => zero)` of an object made for
+/// each, `Array.from({ length: n })` of none.
+pub(in crate::lower) fn filled(n: Expr, zero: Option<Expr>) -> Expr {
+    if let Some(zero) = zero.as_ref().filter(|zero| zero.is_constant()) {
+        let made = Expr::new_(Expr::var("Array"), vec![n]);
+        return Expr::call(Expr::member(made, "fill"), vec![zero.clone()]);
+    }
+    let mut given = vec![Expr::object(vec![js::Prop::Field("length".into(), n)])];
+    given.extend(zero.map(|zero| Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(zero)).at(js::Span::NONE)])));
+    Expr::call(Expr::member(Expr::var("Array"), "from"), given)
 }

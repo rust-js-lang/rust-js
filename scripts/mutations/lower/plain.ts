@@ -175,4 +175,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
     snapshots: true,
   },
+  {
+    name: "zeroed-uninit-not-plain",
+    breaks: "a `MaybeUninit<T>` isn't laid out as its `T`, so a zeroed array of them is refused",
+    file: "src/lower/plain.rs",
+    find: "        if let Some(held) = self.recognition().uninit_of(ty) {\n",
+    replace: "        if let Some(held) = self.recognition().uninit_of(ty).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
+  },
+  {
+    name: "zeroed-generic-length-refused",
+    breaks: "a zeroed array of a length generic code is given, arrayvec's `[MaybeUninit<u8>; CAP]`, is refused",
+    file: "src/lower/plain.rs",
+    find: "            && len.try_to_target_usize(self.tcx).is_none()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
+  },
 ];
