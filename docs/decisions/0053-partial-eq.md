@@ -1,6 +1,11 @@
 # 0053. `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md).
+Amended: `==` of two types, `PartialEq<Rhs>`'s, is `eq_values`': of items
+of two types, `[A::Item] == [B::Item]`, each by its own, and of two types
+a bound compares, `A::Item: PartialEq<B::Item>`, its dictionary's, as
+smallvec's `PartialEq<SmallVec<B>>` asks; a side that's a call is held,
+not called for each item (`test/corpus/eq_two_types.rs`).
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -666,6 +666,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of a hand-written `eq`, `TPartialEq.eq(a, b)` in generic code, and
     /// `$eq(a, b)` for what compares field by field. A derived `==` of a
     /// type with a custom part compares its parts one by one.
+    /// `a == b` of an `a` of `ty` and a `b` of `rhs`, `PartialEq<Rhs>`'s: of
+    /// items of two types, `[A::Item] == [B::Item]`, each by its own; of two
+    /// types a bound compares, `A::Item: PartialEq<B::Item>`, its
+    /// dictionary's; else `eq_value`'s, of `ty`.
+    pub(super) fn eq_values(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        (ty, rhs): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (x, lhs) = self.through_refs(a.clone(), ty);
+        let (y, other) = self.through_refs(b.clone(), rhs);
+        if lhs != other {
+            let items = |ty: Ty<'tcx>| match ty.kind() {
+                ty::Array(item, _) | ty::Slice(item) => Some(*item),
+                ty::Adt(_, args) if self.is_vec_like(ty) => Some(args.type_at(0)),
+                _ => None,
+            };
+            if let (Some(item), Some(other_item)) = (items(lhs), items(other))
+                && item != other_item
+            {
+                return self.eq_items(x, y, (item, other_item), span, out);
+            }
+            let tr = ty::TraitRef::new(self.tcx, self.partial_eq_trait(), [lhs, other]);
+            if (lhs.has_param() || other.has_param())
+                && let Some(dictionary) = self.evidence_for(tr)
+            {
+                return Ok(Expr::call(Expr::member(dictionary, "eq"), vec![x, y]));
+            }
+        }
+        self.eq_value(a, b, ty, span, out)
+    }
+
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
@@ -799,8 +834,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let b = if b.reads_same() { b } else { self.spill("right", b, out) };
         let std = |item: StdItem| self.is_std_type(ty, item);
         match ty.kind() {
-            ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, *item, span),
-            ty::Adt(_, args) if self.is_vec_like(ty) => self.eq_items(a, b, args.type_at(0), span),
+            ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, (*item, *item), span, out),
+            ty::Adt(_, args) if self.is_vec_like(ty) => {
+                self.eq_items(a, b, (args.type_at(0), args.type_at(0)), span, out)
+            }
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
                 self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), span, out)
             }
@@ -933,11 +970,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `a.length === b.length && a.every((x, i) => <x == b[i]>)`.
-    fn eq_items(&mut self, a: Expr, b: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// `a.length === b.length && a.every((x, i) => <x == b[i]>)`, of `a`'s
+    /// items and `b`'s, each held where it's more than a place.
+    fn eq_items(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        (item, other_item): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let a = if a.reads_same() { a } else { self.spill("items", a, out) };
+        let b = if b.reads_same() { b } else { self.spill("other", b, out) };
         let mut body = Vec::new();
         let other = Expr::index(b.clone(), Expr::var("i"));
-        let same = self.eq_value(Expr::var("x"), other, item, span, &mut body)?;
+        let same = self.eq_values(Expr::var("x"), other, (item, other_item), span, &mut body)?;
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         let every = Expr::call(
             Expr::member(a.clone(), "every"),

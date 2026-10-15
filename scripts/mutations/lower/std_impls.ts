@@ -365,4 +365,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
+  {
+    name: "eq-two-types-as-one",
+    breaks: "`==` of two types' items asks `PartialEq` of the left one's alone, and is refused",
+    file: "src/lower/std_impls.rs",
+    find: "        if lhs != other {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^eq_two_types.rs$"],
+  },
+  {
+    name: "eq-items-repeated",
+    breaks: "a side of `==` of items that's a call is called for each item",
+    file: "src/lower/std_impls.rs",
+    find: "        let b = if b.reads_same() { b } else { self.spill(\"other\", b, out) };\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^eq_two_types.rs$"],
+    snapshots: true,
+  },
 ];

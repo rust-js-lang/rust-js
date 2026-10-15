@@ -486,9 +486,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 helper("$cloneFromSlice", vec![items, source, Expr::undefined(), f])
             }
-            // Of a type parameter's, by its dictionary's `clone_from` where its
-            // impl writes one, as std's calls it, else a clone of each.
-            SliceOp::CloneFromSlice if matches!(item().kind(), ty::Param(_)) => {
+            // Of a type parameter's, or an associated type's, `A::Item`, by
+            // its dictionary's `clone_from` where its impl writes one, as
+            // std's calls it, else a clone of each.
+            SliceOp::CloneFromSlice if self.is_unknown(item()) => {
                 let (items, source) = (arg(), arg());
                 let clone = self.clone_arg(item(), span)?;
                 let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item()]), span)?;

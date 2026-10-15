@@ -683,6 +683,8 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
             let kind = if mutability.is_mut() { "RefMut" } else { "Ref" };
             format!("{kind}{first}{}", chars.as_str())
         }
+        // An associated type's, `BItem` of `<B as Array>::Item`.
+        ty::Alias(..) => evidence_word(tcx, ty),
         _ => ty.to_string(),
     }
 }
@@ -1796,11 +1798,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.cow_side(b, rhs),
                 };
                 // An `OsStr` beside a path compares as a path (ADR 0401).
-                let ty = match self.recognition().is_path(rhs) {
-                    true => rhs,
-                    false => lhs,
-                };
-                self.eq_value(a, b, ty, span, out)?
+                match self.recognition().is_path(rhs) {
+                    true => self.eq_value(a, b, rhs, span, out)?,
+                    false => self.eq_values(a, b, (lhs, rhs), span, out)?,
+                }
             };
             return Ok(Some(if negate { Expr::unary(js::UnaryOp::Not, eq) } else { eq }));
         }

@@ -967,8 +967,8 @@ export const mutations: Mutation[] = [
     name: "os-str-beside-path-as-text",
     breaks: "an `OsStr` beside a path compares as text, `a//b` not `a/b`",
     file: "src/lower/traits.rs",
-    find: "                let ty = match self.recognition().is_path(rhs) {\n                    true => rhs,\n",
-    replace: "                let ty = match self.recognition().is_path(rhs) {\n                    true => lhs,\n",
+    find: "                    true => self.eq_value(a, b, rhs, span, out)?,\n",
+    replace: "                    true => self.eq_value(a, b, lhs, span, out)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
   {

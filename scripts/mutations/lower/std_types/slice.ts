@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-generic-refused",
     breaks: "`clone_from_slice` of a type parameter's items, arrayvec's `clone_from`, is refused, where each is its dictionary's `clone_from` or a clone",
     file: "src/lower/std_types/slice.rs",
-    find: "            SliceOp::CloneFromSlice if matches!(item().kind(), ty::Param(_)) => {\n",
+    find: "            SliceOp::CloneFromSlice if self.is_unknown(item()) => {\n",
     replace: "            SliceOp::CloneFromSlice if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_generic.rs$"],
   },

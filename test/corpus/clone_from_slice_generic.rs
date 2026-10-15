@@ -24,6 +24,22 @@ fn refill<T: Clone>(into: &mut [T], from: &[T]) {
     into.clone_from_slice(from);
 }
 
+trait Array {
+    type Item;
+}
+
+impl<T, const N: usize> Array for [T; N] {
+    type Item = T;
+}
+
+/// Of an associated type's items, smallvec's `A::Item`: the same.
+fn refill_items<A: Array>(into: &mut [A::Item], from: &[A::Item])
+where
+    A::Item: Clone,
+{
+    into.clone_from_slice(from);
+}
+
 fn main() {
     let mut a = [Counted(1), Counted(2)];
     refill(&mut a, &[Counted(3), Counted(4)]);
@@ -31,5 +47,6 @@ fn main() {
     refill(&mut b, &[Plain(5)]);
     let mut n = [1, 2];
     refill(&mut n, &[7, 8]);
+    refill_items::<[Counted; 1]>(&mut a[..1], &[Counted(6)]);
     println!("{a:?} {} {n:?}", b[0].0);
 }
