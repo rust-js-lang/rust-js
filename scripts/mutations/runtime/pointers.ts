@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
+  {
+    name: "recast-whole-array-refused",
+    breaks: "a whole array's pointer cast to its items', `*const A` as `*const A::Item`, is rust-js's error",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer !== null && pointer.of === undefined && Array.isArray(pointer.value)) return $ptr(pointer.value, 0);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
+  },
 ];

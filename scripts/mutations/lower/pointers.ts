@@ -372,4 +372,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
+  {
+    name: "uninit-as-ptr-unrecognized",
+    breaks: "a `MaybeUninit`'s `as_mut_ptr()` isn't a pointer to its value, and is refused",
+    file: "src/lower/pointers.rs",
+    find: "    (\"std::mem::MaybeUninit::<T>::as_mut_ptr\", PointerOp::FromRef),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
+  },
+  {
+    name: "generic-shared-pointer-refused",
+    breaks: "a pointer of a shared reference to a type parameter's value, smallvec's `&MaybeUninit<A>`, is refused",
+    file: "src/lower/pointers.rs",
+    find: "                    (false, false) if self.is_unknown(self.recognition().uninit_of(referent).unwrap_or(referent)) => {\n",
+    replace: "                    (false, false) if false && self.is_unknown(self.recognition().uninit_of(referent).unwrap_or(referent)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
+  },
 ];

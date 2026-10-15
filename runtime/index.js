@@ -1761,6 +1761,9 @@ export function $ptr(object, key) {
 export const $objects = new WeakMap();
 
 export function $ptrTo(object) {
+  if (object === null || (typeof object !== "object" && typeof object !== "function")) {
+    throw new Error("rust-js does not support a pointer to a value JS holds as itself, a copy, which reads memory by where it is");
+  }
   let handle = $objects.get(object);
   if (handle === undefined) {
     handle = {

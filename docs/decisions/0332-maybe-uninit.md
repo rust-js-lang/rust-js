@@ -11,7 +11,11 @@ arrayvec's, `new Array(CAP).fill(0)`, as a zeroed slice is made; one not
 yet written, `uninit().assume_init()`, is as many items not yet written,
 `Array.from({ length: CAP })`, arrayvec's `ArrayVec::new`, where another
 array's, written whole, `Box::new_uninit()`'s of a `vec!`'s, is
-`undefined` still (`test/corpus/zeroed_uninit_arrays.rs`).
+`undefined` still (`test/corpus/zeroed_uninit_arrays.rs`). Its `as_ptr()`
+and `as_mut_ptr()` are a pointer to its value's place, as `&x as *const T`
+is (ADR 0407): of a shared one of a type parameter's, smallvec's inline
+`&MaybeUninit<A>`, `$ptrTo` of the object it is, an array, and of a value
+JS holds as itself, rust-js's error (`test/corpus/maybe_uninit_pointer.rs`).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), and D for a zeroed
 type no JS value is all zeros of.

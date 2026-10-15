@@ -76,6 +76,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **A `MaybeUninit`'s `as_ptr()` and `as_mut_ptr()`**, of a type parameter's
+  too (ADR 0332).
 - **The allocator**: `alloc`, `realloc`, `dealloc`, `handle_alloc_error`,
   `Layout`, a pointer cast to bytes and back, and `Vec::from_raw_parts`. An
   allocation is a JS array of slots

@@ -120,6 +120,9 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::boxed::Box::<T>::from_raw", PointerOp::FromRaw),
     ("std::boxed::Box::<T, A>::from_raw", PointerOp::FromRaw),
     ("std::ptr::drop_in_place", PointerOp::DropInPlace),
+    // A `MaybeUninit`'s, which is its value's place (ADR 0332).
+    ("std::mem::MaybeUninit::<T>::as_ptr", PointerOp::FromRef),
+    ("std::mem::MaybeUninit::<T>::as_mut_ptr", PointerOp::FromRef),
     // A pointer to a slice, of an item's pointer and a length: a view of
     // them, as `from_raw_parts_mut`'s, or the whole array, it.
     ("std::ptr::slice_from_raw_parts", PointerOp::Slice { mutable: true }),
@@ -697,6 +700,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match (self.is_object(referent) && !self.is_cell_pointee(referent), mutable) {
                     (true, _) => helper("$ptrTo", vec![reference]),
                     (false, true) => reference,
+                    // A shared reference of a type parameter's, smallvec's
+                    // `&MaybeUninit<A>`: the object it is, where it's one, an
+                    // array; of another, a copy, rust-js's error then.
+                    (false, false) if self.is_unknown(self.recognition().uninit_of(referent).unwrap_or(referent)) => {
+                        helper("$ptrTo", vec![reference])
+                    }
                     // A shared reference of what isn't an object is its
                     // value, a copy, with no place of its own.
                     (false, false) => return Err(refuse(self.tcx, span, Refused::Memory(COPIED))),
