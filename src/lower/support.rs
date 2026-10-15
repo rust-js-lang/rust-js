@@ -28,7 +28,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// inside itself (`Tree` in `Node(Box<Tree>, ..)`) is being checked
     /// already, further out.
     pub(super) fn unsupported_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> Option<Ty<'tcx>> {
-        if ty.is_bool() || ty.is_unit() || ty.is_str() || ty.is_char() || Num::of(ty).is_some() || self.is_str_split(ty)
+        if ty.is_bool()
+            || ty.is_unit()
+            || ty.is_never()
+            || ty.is_str()
+            || ty.is_char()
+            || Num::of(ty).is_some()
+            || self.is_str_split(ty)
         {
             return None;
         }

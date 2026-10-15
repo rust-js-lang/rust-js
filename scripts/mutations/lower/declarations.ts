@@ -400,4 +400,12 @@ export const mutations: Mutation[] = [
     replace: "    items.extend(out.unexported.into_values().flatten());",
     tests: ["test/declarations.test.ts", "-t", "private struct"],
   },
+  {
+    name: "declarations-never-unknown",
+    breaks: "a function that never returns is declared as returning something other than `never`",
+    file: "src/lower/declarations.rs",
+    find: "            ty::Never => keyword(\"never\"),\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what"],
+  },
 ];

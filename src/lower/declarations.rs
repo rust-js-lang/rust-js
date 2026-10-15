@@ -671,6 +671,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
             ty::Bool => keyword("boolean"),
             ty::Char | ty::Str => keyword("string"),
             ty::Ref(_, inner, _) => self.ts(*inner),
+            // What a function that never returns returns (ADR 0386).
+            ty::Never => keyword("never"),
             ty::Tuple(items) if items.is_empty() => keyword("undefined"),
             ty::Tuple(items) => {
                 let elements: Vec<Value> = items.iter().map(|t| self.ts(t)).collect();

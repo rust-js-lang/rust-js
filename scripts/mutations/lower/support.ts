@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    name: "never-unsupported",
+    breaks: "a function that never returns, `-> !`, is refused",
+    file: "src/lower/support.rs",
+    find: "            || ty.is_never()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^never_returns.rs$"],
+  },
 ];

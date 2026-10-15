@@ -19,7 +19,6 @@ async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not supp
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
 autoref-autoderef/deref-chain-method-calls-13264.rs	error: rust-js does not support values of type `*const Node` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support values of type `*const usize` yet
-binding/nested-matchs.rs	error: rust-js does not support values of type `!` yet
 binding/zero_sized_subslice_match.rs	error: rust-js does not support this expression yet
 binop/augmented-assignment.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support values of type `*const isize` yet
@@ -123,8 +122,6 @@ expr/compound-assignment/eval-order.rs	error: rust-js does not support assigning
 fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A` yet
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
-for-loop-while/loop-diverges.rs	error: rust-js does not support values of type `!` yet
-for-loop-while/loop-no-reinit-needed-post-bot.rs	error: rust-js does not support values of type `!` yet
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 function-pointer/function-pointer-comparison-54696.rs	error: rust-js does not support `==` on `fn()` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
@@ -182,7 +179,6 @@ raw-ref-op/raw-ref-op.rs	error: rust-js does not support values of type `*const 
 recursion/instantiable.rs	error: rust-js does not support values of type `*const foo` yet
 recursion/recursive-struct-with-raw-pointer-field.rs	error: rust-js does not support values of type `*mut [Loopy; 1]` yet
 regions/regions-issue-21422.rs	error: rust-js does not support values of type `*const &u8` yet
-return/ret-bang.rs	error: rust-js does not support values of type `!` yet
 rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support values of type `(*const str) is !null` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet

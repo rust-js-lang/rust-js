@@ -343,6 +343,10 @@ pub fn shelved(shelf: &Shelf, book: String) -> usize {
 pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     cell.get()
 }
+
+pub fn fail(message: &str) -> ! {
+    panic!("{message}")
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -388,6 +392,8 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     // So is a `RefCell` only ever borrowed for a moment (ADR 0362).
     "export interface Shelf {\n    books: string[];\n}",
     "export function tallied(cell: {\n    value: number;\n}): number;",
+    // A function that never returns returns `never` (ADR 0386).
+    "export function fail(message: string): never;",
   ]) {
     expect(declarations).toContain(line);
   }
