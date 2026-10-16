@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **Fixed: std's functions named through a `no_std` crate's own name for
+  `alloc`**, hashbrown's `extern crate alloc as stdalloc`, weren't known as
+  std's, `Vec::capacity`, `alloc::alloc` and the rest (ADR 0417).
 - **`[const { MaybeUninit::uninit() }; N]` of a type that isn't `Copy`**:
   `Array.from({ length: N })`, a constant with no byte written being
   `undefined` where it's used (ADRs 0127, 0332).

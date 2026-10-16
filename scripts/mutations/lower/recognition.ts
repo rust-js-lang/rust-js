@@ -1593,4 +1593,12 @@ export const mutations: Mutation[] = [
     replace: "            \"std::iter::Take\" => self.closed_on_drop(args.type_at(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
+  {
+    name: "std-path-through-alias",
+    breaks: "std's items named through a crate's own name for `alloc`, `stdalloc::alloc::alloc`, aren't std's, and are refused",
+    file: "src/lower/recognition.rs",
+    find: "        path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "crate's own name for alloc"],
+  },
 ];

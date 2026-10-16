@@ -11531,3 +11531,30 @@ pub fn mutable() -> u32 {
   expect(lib.shared()).toEqual([1, 2, 3]);
   expect(() => lib.mutable()).toThrow("rust-js does not support a mutable slice past a vector's length");
 });
+
+// A `no_std` crate that names `alloc` its own way, hashbrown's `extern crate
+// alloc as stdalloc`: rustc names std's items through it, and what rust-js
+// knows of each is still std's, `Vec::capacity` and the allocator's.
+test("std's items named through a crate's own name for alloc are std's", async () => {
+  const dir = fixture("aliased-alloc");
+  writeFileSync(join(dir, "lib.rs"), `#![no_std]
+extern crate alloc as stdalloc;
+use stdalloc::vec::Vec;
+pub fn made(n: usize) -> usize {
+    let mut v: Vec<u8> = Vec::with_capacity(n);
+    v.push(1);
+    v.capacity()
+}
+pub fn sized(n: usize) -> usize {
+    let layout = stdalloc::alloc::Layout::from_size_align(n, 8).unwrap();
+    unsafe {
+        let p = stdalloc::alloc::alloc(layout);
+        stdalloc::alloc::dealloc(p, layout);
+    }
+    layout.size()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--crate-name", "aliased"]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.made(4), lib.sized(16)]).toEqual([4, 16]);
+});

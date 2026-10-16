@@ -66,6 +66,10 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
   of slots, none written yet, `[]`, as an allocation is; of a
   `MaybeUninit<A>` too, which is `A`'s value (ADR 0332). Decided where it's
   compiled, as `$ptrFirst` is (`pointers::is_array_param`).
+- **What std's functions are is std's own path**, `recognition::std_path`,
+  of a crate that names `alloc` its own way too, hashbrown's `extern crate
+  alloc as stdalloc`, through which rustc names them, `stdalloc::alloc::
+  alloc`, refused before (`test/lowering.test.ts`).
 - **`alloc_zeroed`** is refused still: what a zero is depends on the items'
   type, which the allocation doesn't know.
 

@@ -4044,7 +4044,15 @@ pub(crate) fn is_memory_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 }
 
 fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
-    let path = tcx.def_path_str(id);
+    let mut path = tcx.def_path_str(id);
+    // Named through a crate's own name for std's, hashbrown's `extern crate
+    // alloc as stdalloc`: std's own path, `alloc::alloc::alloc`.
+    if !id.is_local()
+        && matches!(tcx.crate_name(id.krate).as_str(), "core" | "alloc" | "std")
+        && !matches!(path.split("::").next(), Some("std" | "core" | "alloc"))
+    {
+        path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));
+    }
     match path.split_once("::") {
         Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),
         _ => path,
