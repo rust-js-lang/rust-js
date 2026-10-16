@@ -686,11 +686,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         collected(it)
     }
 
-    /// Whether `ty` is an iterator: one whose `Item` is a type.
+    /// Whether `ty` is an iterator: one whose `Item` rustc says, a type or
+    /// another trait's associated type, smallvec's `A::Item`, not one of
+    /// std's iterator traits' still.
     pub(in crate::lower) fn implements_iterator(&self, ty: Ty<'tcx>) -> bool {
-        self.iterator_item(ty)
-            .is_some_and(|item| !matches!(item.kind(), ty::Alias(..)))
-            || matches!(ty.kind(), ty::Param(_))
+        let iterator_traits = [StdItem::Iterator, StdItem::IntoIterator].map(|item| std_item(self.tcx, item));
+        let said = |item: Ty<'tcx>| match item.kind() {
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) => self
+                .tcx
+                .trait_of_assoc(*def_id)
+                .is_some_and(|tr| !iterator_traits.contains(&tr)),
+            ty::Alias(..) => false,
+            _ => true,
+        };
+        self.iterator_item(ty).is_some_and(said) || matches!(ty.kind(), ty::Param(_))
     }
 
     /// A function JS's helpers give an item, and its index too, as one

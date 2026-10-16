@@ -76,6 +76,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **An iterator whose `Item` is another trait's associated type**,
+  `A::Item`, looped over by `&mut` (ADR 0364).
 - **`==` of two types' items**, `[A::Item] == [B::Item]` by `A::Item:
   PartialEq<B::Item>` (ADR 0053), and `clone_from_slice` of an associated
   type's items (ADR 0324).

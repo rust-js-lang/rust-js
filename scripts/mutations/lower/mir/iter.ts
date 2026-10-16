@@ -589,4 +589,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "an adapter of an iterator with a destructor"],
   },
+  {
+    name: "projection-item-not-an-iterator",
+    breaks: "an iterator whose `Item` is another's associated type, `A::Item`, isn't taken as one, and `for _ in &mut it` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                .is_some_and(|tr| !iterator_traits.contains(&tr)),\n",
+    replace: "                .is_some_and(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_of_projection.rs$"],
+  },
 ];
