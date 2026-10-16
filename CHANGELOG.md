@@ -78,6 +78,8 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`type_name` in generic code** of a type that holds a type parameter,
+  `Cow<'_, T>`, and of a `T: ?Sized` (ADR 0145).
 - **C-variadic functions**, `extern "C" fn f(n: i32, mut args: ...)`: a
   rest parameter, `...args`, `next_arg()` its `shift()`
   ([ADR 0428](docs/decisions/0428-c-variadic-functions.md)).

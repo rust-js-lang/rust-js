@@ -1747,7 +1747,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.krate.foreign.type_facts(id),
         };
         for (index, fact) in facts {
-            values.push(self.type_fact_value(args.type_at(index as usize), fact, span)?);
+            let of = args.type_at(index as usize);
+            // Of a `dyn`, generic code over a `T: ?Sized` resolves a blanket
+            // impl's method where rustc calls the `dyn`'s own, its value's
+            // type's (ADR 0145): refused, as its answer would be another's.
+            if matches!(of.kind(), ty::Dynamic(..)) {
+                return Err(self.unsupported(span, &format!("a type's fact of `{of}` given to generic code")));
+            }
+            values.push(self.type_fact_value(of, fact, span)?);
         }
         // Each drop function it takes: a type's with nothing to drop is none,
         // left out at the end (ADR 0098).

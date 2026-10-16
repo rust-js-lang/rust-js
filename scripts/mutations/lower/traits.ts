@@ -384,8 +384,8 @@ export const mutations: Mutation[] = [
     name: "type-facts-not-given",
     breaks: "a call of a generic function that asks `size_of::<T>()` gives it no size",
     file: "src/lower/traits.rs",
-    find: "            values.push(self.type_fact_value(args.type_at(index as usize), fact, span)?);",
-    replace: "            let _ = (index, fact);",
+    find: "            values.push(self.type_fact_value(of, fact, span)?);",
+    replace: "            let _ = (of, fact);",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
@@ -1172,5 +1172,13 @@ export const mutations: Mutation[] = [
     find: "        (*owner == self.body_owner).then(|| location.clone())\n",
     replace: "        let _ = owner;\n        Some(location.clone())\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
+  },
+  {
+    name: "dyn-fact-given",
+    breaks: "a type's fact of a `dyn` given to generic code is its own, where rustc calls the `dyn`'s value's",
+    file: "src/lower/traits.rs",
+    find: "            if matches!(of.kind(), ty::Dynamic(..)) {\n",
+    replace: "            if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a type's fact of a dyn"],
   },
 ];

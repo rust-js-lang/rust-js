@@ -260,4 +260,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
+  {
+    name: "generic-type-name-refused",
+    breaks: "`type_name` of a type that holds a type parameter is an error",
+    file: "src/lower/std_types/number.rs",
+    find: "        if fact == TypeFact::Name && of.has_param() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
+  },
 ];

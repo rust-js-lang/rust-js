@@ -112,3 +112,26 @@ what the program sees, as native Rust's. It was refused. The facts are one
 list, `TypeFact::ALL`, each named by its `word`, which the analysis that
 passes them and the parameters that take them both ask. The corpus's
 `needs_drop.rs`, and rustc's `union/union-manuallydrop-rpass.rs`, pass.
+
+## Amendment: a name of an unsized type parameter, and of a type that holds one
+
+`type_name::<T>()` of a `T: ?Sized` asked nothing of its caller, as a size
+of one isn't one size; a name is, so it's asked, and given, as of any
+(a size or an alignment, of an unsized one, still isn't). And of a type
+that holds a type parameter, `type_name::<Cow<'_, T>>()`, it's rustc's name
+with the one its caller gives of each parameter in its place:
+
+```js
+function names(TClone, TName) {
+  return [`alloc::borrow::Cow<'_, ${TName}>`, `alloc::vec::Vec<(${TName}, u8)>`];
+}
+```
+
+rustc names a parameter `_`, so each is put in as a type no program names,
+`[!; 4000000000]` and up, by its index, and its given name put where that
+is. **A type's fact of a `dyn` given to generic code is refused:** over a
+`T: ?Sized`, it resolves a blanket impl's method where rustc calls the
+`dyn`'s own, its value's type's, rustc's `dont-propagate-generic-instance`.
+The `type_names_generic` corpus case names types holding a parameter, an
+unsized one, one passed on, and a blanket impl's, directly and through a
+`dyn`, with native Rust; rustc's `type-name-basic` passes.

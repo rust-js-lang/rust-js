@@ -14,7 +14,7 @@ use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{BinOp, UnOp};
-use rustc_middle::ty::{self, Ty, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TypeFoldable, TypeVisitableExt};
 use rustc_span::Span;
 
 /// A `Duration`'s own, of its nanoseconds, a BigInt (ADR 0188): each unit
@@ -1424,6 +1424,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes((fact, false), of, span)?));
         }
+        // The name of one that holds a type parameter, `Cow<'_, T>`: rustc's,
+        // with what its caller gives of each parameter's in its place (ADR
+        // 0145).
+        if fact == TypeFact::Name && of.has_param() {
+            return self.name_of_generic(of, span);
+        }
         if of.has_param() {
             return Err(self.unsupported(span, &format!("{what} of a type with a type parameter")));
         }
@@ -1434,6 +1440,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Id => self.type_id_key(self.tcx.erase_and_anonymize_regions(of), span)?,
             _ => rustc_const_eval::util::type_name(self.tcx, of),
         }))
+    }
+
+    /// The name of `of`, a type that holds type parameters, `Cow<'_, T>`:
+    /// rustc's, which names a parameter `_`, so each is put in as a type no
+    /// program names, `[!; 4000000000]` and up, by its index, and the name
+    /// given for it, `TName`, put where its text is.
+    fn name_of_generic(&self, of: Ty<'tcx>, span: Span) -> R<Expr> {
+        const BASE: u64 = 4_000_000_000;
+        let tcx = self.tcx;
+        let marked = of.fold_with(&mut ty::BottomUpFolder {
+            tcx,
+            ty_op: |t: Ty<'tcx>| match t.kind() {
+                ty::Param(param) => Ty::new_array(tcx, tcx.types.never, BASE + u64::from(param.index)),
+                _ => t,
+            },
+            lt_op: |r| r,
+            ct_op: |c| c,
+        });
+        let marked = tcx.normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(marked));
+        let name = rustc_const_eval::util::type_name(tcx, marked);
+        let mut text = name.as_str();
+        let mut parts = Vec::new();
+        while let Some(at) = text.find("[!; ") {
+            let rest = &text[at + 4..];
+            let digits = rest.find(']').expect("an array's length");
+            let index = rest[..digits].parse::<u64>().expect("a marked parameter") - BASE;
+            parts.push(Expr::str(&text[..at]));
+            let name = self.given_type_fact(index as u32, TypeFact::Name);
+            parts.push(name.ok_or_else(|| self.unsupported(span, "`type_name` of a type parameter"))?);
+            text = &rest[digits + 1..];
+        }
+        parts.push(Expr::str(text));
+        Ok(crate::lower::display::join(parts))
     }
 
     /// The bytes `size_of`, `align_of`, `size_of_val` or `align_of_val`

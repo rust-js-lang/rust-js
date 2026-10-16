@@ -69,15 +69,28 @@ pub(super) fn type_fact_params<'tcx>(
             };
             let facts = type_facts(tcx, callee);
             for &fact in facts {
-                // `size_of_val` of an unsized `T` is the value's, not the type's.
+                // `size_of_val` of an unsized `T` is the value's, not the type's:
+                // a size or an alignment is asked of a sized one, and its name
+                // of any, a `T: ?Sized`'s too.
                 // A downcast's type is its last, after its `Box`'s allocator.
                 // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
                 if let Some(of) = args.types().last()
                     && let ty::Param(param) = of.kind()
-                    && of.is_sized(tcx, typing_env)
+                    && (of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align))
                     && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
                 {
                     asked.insert((caller, param.index, fact));
+                }
+                // Of a type that holds them, `Cow<'_, T>`: its name, each one's.
+                if fact == TypeFact::Name
+                    && let Some(of) = args.types().last()
+                    && !matches!(of.kind(), ty::Param(_))
+                {
+                    for part in of.walk().filter_map(|part| part.as_type()) {
+                        if let ty::Param(param) = part.kind() {
+                            asked.insert((caller, param.index, fact));
+                        }
+                    }
                 }
                 if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
                     carried.insert((assoc, fact));
