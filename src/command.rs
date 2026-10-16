@@ -154,11 +154,14 @@ pub(crate) struct Staged {
     pub metadata: Option<(PathBuf, PathBuf)>,
     /// `--emit=dep-info=<path>`: Cargo's record of the sources (ADR 0101).
     pub dep_info: Option<(PathBuf, PathBuf)>,
+    /// The panic runtime that unwinds a session that builds more than a
+    /// library is given, made here (`panic_runtime`, ADR 0090).
+    pub panic_runtime: Option<PathBuf>,
 }
 
 impl Staged {
     pub fn any(&self) -> bool {
-        self.metadata.is_some() || self.dep_info.is_some()
+        self.metadata.is_some() || self.dep_info.is_some() || self.panic_runtime.is_some()
     }
 }
 
@@ -172,6 +175,15 @@ pub fn flag_values<'a>(flags: &'a [String], flag: &'a str) -> impl Iterator<Item
             given.strip_prefix(flag)?.strip_prefix('=').map(str::to_string)
         }
     })
+}
+
+/// Whether a session of `args` builds more than a library, which rustc
+/// gives a panic runtime: a test harness, or a crate type that's linked.
+fn builds_more_than_a_library(args: &[String]) -> bool {
+    args.iter().any(|arg| arg == "--test")
+        || flag_values(args, "--crate-type")
+            .flat_map(|types| types.split(',').map(str::to_string).collect::<Vec<_>>())
+            .any(|kind| kind != "lib" && kind != "rlib")
 }
 
 /// What tells a program it's compiled by rust-js, `cfg(rust_js)`, declared
@@ -216,17 +228,25 @@ impl Build {
 
     /// `--emit=metadata=<path>` (ADR 0100), and Cargo's `dep-info`, written
     /// by rustc to a directory of its own beside the JS, to be published
-    /// with it, checked for collisions with the rest, or not at all.
+    /// with it, checked for collisions with the rest, or not at all; and the
+    /// panic runtime a test harness is given (ADR 0090).
     fn stage(&self, args: &mut Vec<String>) -> Result<Staged, String> {
-        // Named only when something is staged: WASI, the playground's, has no
-        // process id to name it by.
+        // Named after the JS it's beside, which no other build writes at
+        // once: WASI, the playground's, has no process id to name it by.
         let beside = crate::paths::parent_dir(&self.output);
-        let dir = || beside.join(format!(".rust-js-metadata-{}", std::process::id()));
+        let name = self.output.file_name().unwrap_or_default().to_string_lossy();
+        let dir = || beside.join(format!(".rust-js-{name}"));
         let mut staged = Staged {
             dir: PathBuf::new(),
             metadata: None,
             dep_info: None,
+            panic_runtime: None,
         };
+        if builds_more_than_a_library(args) {
+            let runtime = dir().join("libpanic_unwind.rmeta");
+            args.push(format!("--extern=panic_unwind={}", runtime.display()));
+            staged.panic_runtime = Some(runtime);
+        }
         // `--emit mir`, rustc's other spelling, as `--emit=mir`.
         while let Some(i) = args.iter().position(|arg| arg == "--emit") {
             let kinds = if i + 1 < args.len() {

@@ -1732,6 +1732,7 @@ dependencies = [
  "rustc_data_structures",
  "rustc_driver_impl",
  "rustc_expand",
+ "rustc_feature",
  "rustc_hir",
  "rustc_hir_analysis",
  "rustc_index",

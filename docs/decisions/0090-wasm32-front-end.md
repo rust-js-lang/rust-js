@@ -102,16 +102,34 @@ bytes for a future native Rust lays out in 3, as `-Cpanic=abort` would.
 It showed when the test's own `impl Future` was allowed (ADR 0425).
 
 **rust-js tells rustc a program's panics unwind**, `-Cpanic=unwind`, in
-the one session rust-js lowers from, the playground's too. Nothing is
-linked, so the target's standard library, built to abort, is never asked
-to unwind. Case C of [0262](0262-when-rust-and-js-disagree.md): the
-results would change, so they're Rust's.
+the one session rust-js lowers from, the playground's too. Case C of
+[0262](0262-when-rust-and-js-disagree.md): the results would change, so
+they're Rust's.
+
+**A session that builds more than a library, a test harness, is given a
+panic runtime that unwinds, rust-js's own.** rustc gives such a session
+one, `panic_unwind` for panics that unwind, and wasm32's, as its standard
+library ships it, is built to abort, so rustc refused it: "the crate
+`panic_unwind` does not have the panic strategy `unwind`", of every
+`--test`. Nothing is linked, so what rustc needs is a runtime's metadata
+alone: `panic_runtime.rs` compiles one, a crate of three lines that says
+it's a panic runtime, from memory, for the session's own target and
+standard library, into the build's stage, beside the JS, and the session
+is given it, `--extern panic_unwind=..`. The stage is removed when the
+build ends, as it was. It's named after the JS it's beside, no longer a
+process id, which WASI, the playground's, hasn't. A library's session,
+which rustc gives none, is given none.
 
 - A future's size is native Rust's: `future_size_unwinds` in the corpus
   prints both, and `cfg!(panic = "unwind")`, against native Rust.
 - `cfg(panic = "unwind")` holds, and `cfg(panic = "abort")` doesn't.
-- A mutation that leaves the target's abort is caught by that case.
+- A mutation that leaves the target's abort is caught by that case; one
+  that gives a test harness no runtime, or one that aborts, by the
+  manifest's tests, which build one.
 
 Rejected: refusing `size_of` of a future, as its size would be another
 program's. It refuses `future_sizes`, a program whose answer is right,
-and leaves `cfg(panic)` wrong.
+and leaves `cfg(panic)` wrong. And for the runtime: shipping its metadata
+beside the bindings', which every host would then pass in, Cargo's,
+`rust-js build`'s, the tests' and the playground's, where the compiler
+alone can make it.

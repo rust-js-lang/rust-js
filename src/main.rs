@@ -27,6 +27,7 @@ extern crate rustc_const_eval;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_expand;
+extern crate rustc_feature;
 extern crate rustc_hir;
 extern crate rustc_hir_analysis;
 extern crate rustc_index;
@@ -51,6 +52,7 @@ mod lower;
 mod manifest;
 mod names;
 mod output;
+mod panic_runtime;
 mod paths;
 mod prepare;
 mod prettier;
@@ -326,12 +328,21 @@ fn main() -> ExitCode {
 struct Stage(Option<std::path::PathBuf>);
 
 impl Stage {
-    fn create(staged: &command::Staged) -> Result<Self, String> {
+    /// With the panic runtime a session of `args` is given made in it, if
+    /// it's given one (`panic_runtime`).
+    fn create(staged: &command::Staged, args: &[String]) -> Result<Self, String> {
         if !staged.any() {
             return Ok(Stage(None));
         }
-        std::fs::create_dir_all(&staged.dir).map_err(|error| format!("cannot stage the metadata: {error}"))?;
-        Ok(Stage(Some(staged.dir.clone())))
+        std::fs::create_dir_all(&staged.dir).map_err(|error| format!("cannot stage the build: {error}"))?;
+        let stage = Stage(Some(staged.dir.clone()));
+        if let Some(runtime) = &staged.panic_runtime {
+            let session: Vec<(&str, String)> = (["--target", "--sysroot"].into_iter())
+                .filter_map(|flag| command::flag_values(args, flag).last().map(|value| (flag, value)))
+                .collect();
+            panic_runtime::make(runtime, &session)?;
+        }
+        Ok(stage)
     }
 }
 
@@ -348,7 +359,7 @@ impl Drop for Stage {
 fn compile(build: command::Build) -> Result<ExitCode, String> {
     let dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
     let (rustc_args, staged) = build.rustc_args()?;
-    let stage = Stage::create(&staged)?;
+    let stage = Stage::create(&staged, &rustc_args)?;
     let command::Build {
         input,
         output,
