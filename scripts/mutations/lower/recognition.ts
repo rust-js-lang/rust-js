@@ -1689,4 +1689,12 @@ export const mutations: Mutation[] = [
     replace: "        \"never\" | \"truncate\" | \"set_len\" | \"pop\" | \"pop_if\"",
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
   },
+  {
+    name: "empty-iter-not-an-array",
+    breaks: "a constant of `iter::Empty` is an error, as its clone isn't known",
+    file: "src/lower/recognition.rs",
+    find: "vec_into_iter || self.is_iter_empty(ty))",
+    replace: "vec_into_iter || false && self.is_iter_empty(ty))",
+    tests: ["test/corpus.test.ts", "-t", "^std_struct_const.rs$"],
+  },
 ];

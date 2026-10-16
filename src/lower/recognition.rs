@@ -2296,6 +2296,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// std's `iter::Empty<T>`: `[]`, as `iter::empty()` is (ADR 0128).
+    fn is_iter_empty(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(empty, _) if std_path(self.tcx, empty.did()) == "std::iter::Empty")
+    }
+
     /// `io::Error`, which no write of rust-js's gives (ADR 0392): a type a
     /// writer of the crate's names, `io::Result<usize>`, of no value.
     pub(super) fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
@@ -3009,7 +3014,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
-    /// and of a string's `bytes()`, an array of its bytes (ADR 0034).
+    /// of a string's `bytes()`, an array of its bytes (ADR 0034), and of
+    /// `iter::Empty`, `[]` (ADR 0128).
     pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return None };
@@ -3021,7 +3027,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let vec_into_iter =
             self.tcx.crate_name(adt.did().krate) == sym::alloc && std_path(self.tcx, adt.did()) == "std::vec::IntoIter";
-        (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
+        (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter || self.is_iter_empty(ty)).then_some(true)
     }
 
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,

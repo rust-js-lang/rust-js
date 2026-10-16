@@ -52,7 +52,6 @@ consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a 
 consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
-consts/std/iter.rs	error: rust-js does not support constants of type `std::iter::Empty<u32>` yet
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 derives/debug/derive-debug.rs	error: rust-js does not support addressable memory yet: values of type `*const (dyn std::marker::Send + 'static)`
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet

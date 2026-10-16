@@ -70,3 +70,14 @@ would never be made.
   iterators, compile, compared with native Rust by the `iterator_sources`
   corpus case.
 - `once_with`, `repeat_n` and `cycle` are still errors.
+
+## Amendment: `iter::Empty` is an iterator over an array
+
+`iter::empty()` is `[]`, and from MIR, as an iterator over an array is,
+`$iter([])` (ADR 0364): so `iter::Empty` is one of `array_source`'s, which
+own their items, here none, and what's true of one is true of it, its
+clone what it has left (ADR 0181). A constant of one, rustc's
+`consts/std/iter.rs` and the corpus's `std_struct_const`, was an error, as
+its clone wasn't known, and runs: its uses read `NOTHING.items.slice(..)`,
+what the constant has left, wordier than `[]`, as a constant iterator,
+which is rare, is held whole.
