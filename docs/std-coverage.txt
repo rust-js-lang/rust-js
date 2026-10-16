@@ -47,7 +47,7 @@
 - Vec::try_reserve
 - Vec::try_reserve_exact
 + Vec::with_capacity
-# VecDeque 49 of 55
+# VecDeque 50 of 55
 + VecDeque::append
 - VecDeque::as_mut_slices
 - VecDeque::as_slices
@@ -56,7 +56,7 @@
 + VecDeque::binary_search
 + VecDeque::binary_search_by
 + VecDeque::binary_search_by_key
-- VecDeque::capacity
++ VecDeque::capacity
 + VecDeque::clear
 + VecDeque::contains
 + VecDeque::drain
@@ -249,10 +249,10 @@
 + BTreeSet::symmetric_difference
 + BTreeSet::take
 + BTreeSet::union
-# BinaryHeap 20 of 23
+# BinaryHeap 21 of 23
 + BinaryHeap::append
 + BinaryHeap::as_slice
-- BinaryHeap::capacity
++ BinaryHeap::capacity
 + BinaryHeap::clear
 + BinaryHeap::drain
 + BinaryHeap::into_sorted_vec
