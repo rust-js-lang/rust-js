@@ -22,7 +22,7 @@ c-variadic/copy.rs	error: rust-js does not support cloning `std::ffi::VaList<'_>
 c-variadic/inherent-method.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
 c-variadic/trait-method.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
 c-variadic/valid.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
-cast/cast-rfc0401-vtable-kinds.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
+cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 cast/codegen-object-shim.rs	error: rust-js does not support `{}` of a `dyn std::string::ToString` yet
@@ -44,7 +44,6 @@ consts/const_refs_to_static.rs	error: rust-js does not support addressable memor
 consts/const-block.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
-consts/const-eval/issue-64908.rs	error: rust-js does not support `size_of` of a type parameter yet
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
 consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet

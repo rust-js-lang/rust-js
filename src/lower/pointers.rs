@@ -794,6 +794,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pointer, given to the allocator (ADR 0417).
             (_, ty::Uint(ty::UintTy::U8)) => Ok(helper("$ptrBytes", vec![pointer])),
             (ty::Uint(ty::UintTy::U8), _) => Ok(helper("$ptrTyped", vec![pointer])),
+            // A whole array's pointer as its first item's, of a type each of
+            // whose impls of the item's trait is an array of it, smallvec's
+            // `*const A` as `*const A::Item` (ADR 0417).
+            _ if self.is_array_item_of(b, a) => Ok(helper("$ptrFirst", vec![pointer])),
             _ if a.has_param() || b.has_param() => Ok(helper("$ptrRecast", vec![pointer])),
             _ => Err(refuse(
                 self.tcx,
@@ -801,6 +805,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Refused::Memory("a pointer read as another type's"),
             )),
         }
+    }
+
+    /// Whether `item` is `<of as Tr>::X`, and each impl of `Tr` is of an array
+    /// whose item is its `X`: `A::Item` of smallvec's `A: Array`.
+    fn is_array_item_of(&self, item: Ty<'tcx>, of: Ty<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *item.kind()
+        else {
+            return false;
+        };
+        let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
+            return false;
+        };
+        let erased = |t: Ty<'tcx>| tcx.erase_and_anonymize_regions(t);
+        let mut impls = tcx.all_impls(trait_id).peekable();
+        erased(alias.self_ty()) == erased(of)
+            && impls.peek().is_some()
+            && impls.all(|imp| {
+                let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+                let item = tcx
+                    .impl_item_implementor_ids(imp)
+                    .get(&def_id)
+                    .map(|&x| tcx.type_of(x).instantiate_identity().skip_normalization());
+                matches!(self_ty.kind(), ty::Array(element, _) if Some(*element) == item)
+            })
     }
 
     /// Whether what an `a` and a `b` are is one value in JS: the same type,

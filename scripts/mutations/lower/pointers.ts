@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "            _ if a.has_param() || b.has_param() => Ok(helper(\"$ptrRecast\", vec![pointer])),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
   },
   {
     name: "copy-from-backwards",
@@ -386,6 +386,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "                    (false, false) if self.is_unknown(self.recognition().uninit_of(referent).unwrap_or(referent)) => {\n",
     replace: "                    (false, false) if false && self.is_unknown(self.recognition().uninit_of(referent).unwrap_or(referent)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
+  },
+  {
+    name: "array-item-pointer-recast",
+    breaks: "smallvec's `*const A` as `*const A::Item`, a whole array's pointer as its first item's, is rust-js's error where it's made",
+    file: "src/lower/pointers.rs",
+    find: "            _ if self.is_array_item_of(b, a) => Ok(helper(\"$ptrFirst\", vec![pointer])),\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
   },
 ];

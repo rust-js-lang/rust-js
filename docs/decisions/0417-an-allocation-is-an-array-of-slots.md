@@ -56,8 +56,11 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
 - **A cast to bytes or from them is always the view's**, in generic code or
   not: a pointer an allocation gives, `*mut u8`, is the program's to cast.
   Another cast between two types' pointers is still a compile error, or,
-  in generic code, `$ptrRecast`, which takes a pointer to a whole array as
-  one to its first item, `*const A` as `*const A::Item`, smallvec's.
+  in generic code, `$ptrRecast`, rust-js's error where it's made. But a
+  whole array's pointer as its first item's, of a type each of whose impls
+  of the item's trait is an array of it, smallvec's `*const A` as
+  `*const A::Item`, is `$ptrFirst`: decided where it's compiled, as a tuple
+  struct is a JS array too, which the runtime can't tell apart.
 - **`alloc_zeroed`** is refused still: what a zero is depends on the items'
   type, which the allocation doesn't know.
 

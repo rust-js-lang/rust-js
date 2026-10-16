@@ -1,4 +1,4 @@
-# Vec 39 of 48
+# Vec 40 of 48
 + Vec::append
 + Vec::as_mut_ptr
 + Vec::as_mut_slice
@@ -14,7 +14,7 @@
 + Vec::extend_from_within
 + Vec::extract_if
 - Vec::from_parts
-- Vec::from_raw_parts
++ Vec::from_raw_parts
 + Vec::insert
 + Vec::insert_mut
 + Vec::into_boxed_slice

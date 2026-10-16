@@ -138,12 +138,16 @@ function $ptrWhole(pointer, length) {
 }
 
 // A pointer as one to another type, in generic code where whether JS has it
-// at the same place depends on the type: of a whole array, as one to its
-// first item, smallvec's `*const A` as `*const A::Item`; of another, which
-// reads memory by where it is, rust-js's error.
+// at the same place depends on the type, which reads memory by where it is.
 function $ptrRecast(pointer) {
-  if (pointer !== null && pointer.of === undefined && Array.isArray(pointer.value)) return $ptr(pointer.value, 0);
   throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+}
+
+// A whole array's pointer as one to its first item, of a type parameter's
+// every impl of its trait is an array of the item, smallvec's `*const A` as
+// `*const A::Item` (ADR 0417).
+function $ptrFirst(pointer) {
+  return pointer === null ? null : $ptr(pointer.value, 0);
 }
 
 // A pointer as one to bytes, `p.cast::<u8>()`, which JS has none of (ADR
