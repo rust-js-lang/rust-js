@@ -159,6 +159,9 @@ pub(in crate::lower) enum SliceOp {
         circumfix: bool,
     },
     Repeat,
+    /// `array::from_fn(f)`: `Array.from({ length: N }, (_, i) => ..)`, `f`
+    /// given each index.
+    FromFn,
     /// A `VecDeque`'s `swap_remove_back(i)` or `swap_remove_front(i)`.
     DequeSwapRemove {
         front: bool,
@@ -756,6 +759,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper(name, list)
             }
             SliceOp::Repeat => helper("$repeatItems", vec![arg(), arg()]),
+            SliceOp::FromFn => {
+                // `from_fn::<T, N, F>`: its length, the second.
+                let n = generic_args.const_at(1);
+                let length = match n.try_to_target_usize(self.tcx) {
+                    Some(n) => Expr::int(i128::from(n)),
+                    None => self.const_arg(n, span)?,
+                };
+                // Given the index, second, as `Array.from` gives it: an arrow
+                // of one parameter takes it after `_`.
+                let made = match arg() {
+                    Expr {
+                        kind: js::ExprKind::Arrow(mut params, body),
+                        ..
+                    } if params.len() == 1 => {
+                        params.insert(0, "_".into());
+                        Expr::arrow(params, body)
+                    }
+                    f => {
+                        let i = self.fresh("i");
+                        let call = Expr::call(f, vec![Expr::var(&i)]);
+                        Expr::arrow(
+                            vec!["_".into(), i.into()],
+                            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+                        )
+                    }
+                };
+                let length = Expr::object(vec![js::Prop::Field("length".into(), length)]);
+                Expr::call(Expr::member(Expr::var("Array"), "from"), vec![length, made])
+            }
             SliceOp::PushMut { at } => {
                 let mut given = vec![arg(), arg()];
                 if at {

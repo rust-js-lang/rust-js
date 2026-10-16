@@ -620,6 +620,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Some(Std::Transmute));
             }
             "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
+            "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),
             _ => {}
         }
         // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to

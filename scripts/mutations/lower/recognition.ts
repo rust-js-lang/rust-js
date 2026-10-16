@@ -1609,4 +1609,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
   },
+  {
+    name: "array-from-fn-unrecognized",
+    breaks: "`array::from_fn(f)` isn't known, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::array::from_fn\" => return Some(Some(Std::Slice(SliceOp::FromFn))),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
+  },
 ];

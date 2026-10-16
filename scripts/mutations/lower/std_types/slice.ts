@@ -315,4 +315,12 @@ export const mutations: Mutation[] = [
     replace: "            SliceOp::CloneFromSlice if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_generic.rs$"],
   },
+  {
+    name: "array-from-fn-index-first",
+    breaks: "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
+    file: "src/lower/std_types/slice.rs",
+    find: "                        params.insert(0, \"_\".into());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
+  },
 ];

@@ -2,7 +2,10 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md) and
 [0315](0315-vec-capacity-and-edits.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended: `array::from_fn(f)`, an
+array of what `f` gives each index, is `Array.from({ length: N }, (_, i)
+=> ..)`, `f`'s arrow given the index after `_`, of a caller's `N` too
+(`test/corpus/array_from_fn.rs`), hashbrown's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), A where JS's own is
 the same.
