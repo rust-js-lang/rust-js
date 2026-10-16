@@ -44,8 +44,16 @@ pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 const TRYING: &str = "RUST_JS_TRYING";
 
 /// The crates of crates.io's rust-js reads as rustc builds them, never
-/// compiled by it: serde's (ADR 0077).
-const READ_AS_RUSTC_BUILDS_THEM: [&str; 3] = ["serde", "serde_core", "serde_json"];
+/// compiled by it: serde's (ADR 0077), and hashbrown, whose maps are std's,
+/// with what it alone uses (ADR 0423).
+const READ_AS_RUSTC_BUILDS_THEM: [&str; 6] = [
+    "serde",
+    "serde_core",
+    "serde_json",
+    "hashbrown",
+    "foldhash",
+    "allocator-api2",
+];
 
 pub fn translate(args: Vec<String>) -> Invocation {
     let Some(rustc) = args
@@ -120,11 +128,14 @@ fn whose() -> Result<Whose, String> {
     };
     let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
     let dir = std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))?;
+    // One rust-js reads as rustc builds it is rustc's, wherever it is.
+    if std::env::var("CARGO_PKG_NAME").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str())) {
+        return Ok(Whose::Rustc);
+    }
     if listed(CRATES)?.contains(&dir) {
         return Ok(Whose::Own);
     }
-    let known = std::env::var("CARGO_PKG_NAME").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str()));
-    Ok(match listed(DEPENDENCIES)?.contains(&dir) && !known {
+    Ok(match listed(DEPENDENCIES)?.contains(&dir) {
         true => Whose::Dependency,
         false => Whose::Rustc,
     })

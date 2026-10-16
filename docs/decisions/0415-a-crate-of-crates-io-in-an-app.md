@@ -2,7 +2,10 @@
 
 Status: Accepted. Amends [0101](0101-cargo-workspace-wrapper.md), which
 left a registry's crate to rustc, and [0414](0414-a-library-on-npm-as-rescripts-are.md),
-whose crates rust-js compiles are a path's.
+whose crates rust-js compiles are a path's. Amended by
+[0423](0423-hashbrowns-maps-are-stds.md): the crates rust-js reads as rustc
+builds them, serde's and hashbrown's, are rustc's wherever they are, the
+app's own by their path too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): which crates are
 compiled, and where their JS goes, not what a program means.

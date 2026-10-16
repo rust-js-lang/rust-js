@@ -1057,8 +1057,8 @@ export const mutations: Mutation[] = [
     name: "occupied-entry-unknown",
     breaks: "an `OccupiedEntry` is refused",
     file: "src/lower/recognition.rs",
-    find: "            && self.tcx.item_name(adt.did()).as_str() == \"OccupiedEntry\")",
-    replace: "            && self.tcx.item_name(adt.did()).as_str() == \"NotOccupiedEntry\")",
+    find: "        matches!(ty.kind(), ty::Adt(adt, _) if map_entry_item(self.tcx, adt.did(), \"OccupiedEntry\"))",
+    replace: "        matches!(ty.kind(), ty::Adt(adt, _) if map_entry_item(self.tcx, adt.did(), \"NotOccupiedEntry\"))",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
   },
   {
@@ -1616,5 +1616,21 @@ export const mutations: Mutation[] = [
     find: "            \"std::array::from_fn\" => return Some(Some(Std::Slice(SliceOp::FromFn))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
+  },
+  {
+    name: "hashbrown-maps-unknown",
+    breaks: "hashbrown's `HashMap` and `HashSet` aren't std's, and rust-js walks into its table",
+    file: "src/lower/recognition.rs",
+    find: "if let Some(path) = hashbrown_path(tcx, id) => {",
+    replace: "if let Some(path) = hashbrown_path(tcx, id).filter(|_| false) => {",
+    tests: ["test/hashbrown.test.ts"],
+  },
+  {
+    name: "hashbrown-entries-unknown",
+    breaks: "hashbrown's map's `VacantEntry` isn't std's `[m, key]`",
+    file: "src/lower/recognition.rs",
+    find: "        Some(path) => path == format!(\"hashbrown::map::{name}\"),\n",
+    replace: "        Some(_) => false,\n",
+    tests: ["test/hashbrown.test.ts"],
   },
 ];

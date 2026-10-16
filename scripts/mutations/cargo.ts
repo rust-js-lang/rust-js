@@ -118,9 +118,25 @@ export const mutations: Mutation[] = [
     name: "cargo-serde-compiled",
     breaks: "serde's crates, which rust-js reads as rustc builds them (ADR 0077), are compiled by it",
     file: "src/cargo.rs",
-    find: "    Ok(match listed(DEPENDENCIES)?.contains(&dir) && !known {\n",
-    replace: "    Ok(match listed(DEPENDENCIES)?.contains(&dir) {\n",
+    find: "    \"serde_json\",\n",
+    replace: "    \"serde_json_not\",\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "prints what native Rust does"],
   },
 
+  {
+    name: "hashbrown-compiled",
+    breaks: "hashbrown is compiled by rust-js, whose maps are std's, as rustc builds them",
+    file: "src/cargo.rs",
+    find: "    \"hashbrown\",\n",
+    replace: "    \"hashbrown-not\",\n",
+    tests: ["test/registry-crates.test.ts", "-t", "reads as rustc builds it"],
+  },
+  {
+    name: "read-as-rustc-after-own",
+    breaks: "a crate rust-js reads as rustc builds it, one of the app's own by its path, is compiled by rust-js",
+    file: "src/cargo.rs",
+    find: "    if std::env::var(\"CARGO_PKG_NAME\").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str())) {\n        return Ok(Whose::Rustc);\n    }\n    if listed(CRATES)?.contains(&dir) {\n        return Ok(Whose::Own);\n    }\n",
+    replace: "    if listed(CRATES)?.contains(&dir) {\n        return Ok(Whose::Own);\n    }\n    if std::env::var(\"CARGO_PKG_NAME\").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str())) {\n        return Ok(Whose::Rustc);\n    }\n",
+    tests: ["test/registry-crates.test.ts", "-t", "reads as rustc builds it"],
+  },
 ];

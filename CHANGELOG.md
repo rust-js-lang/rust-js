@@ -78,6 +78,10 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **hashbrown's `HashMap` and `HashSet` are std's**, a `Map` and a `Set`:
+  rustc builds hashbrown, never rust-js, and what std's maps haven't is
+  refused where it's called
+  ([ADR 0423](docs/decisions/0423-hashbrowns-maps-are-stds.md)).
 - **`array::from_fn(f)`**: `Array.from({ length: N }, (_, i) => ..)`
   (ADR 0324).
 - **`Layout::new::<T>()`**, of a type parameter too, its size and alignment

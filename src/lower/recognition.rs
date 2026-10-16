@@ -4187,20 +4187,32 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.bounded_by(ty, sym::Iterator)
     }
 
-    /// A map's `VacantEntry`, `[m, key]` (ADR 0345).
+    /// A map's `VacantEntry`, `[m, key]` (ADR 0345), hashbrown's too (ADR 0423).
     pub(super) fn is_vacant_entry(&self, ty: ty::Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
-            && self.tcx.item_name(adt.did()).as_str() == "VacantEntry")
+        matches!(ty.kind(), ty::Adt(adt, _) if map_entry_item(self.tcx, adt.did(), "VacantEntry"))
     }
 
-    /// A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
+    /// A map's `OccupiedEntry`, `[m, key]` (ADR 0345), hashbrown's too (ADR 0423).
     pub(super) fn is_occupied_entry(&self, ty: ty::Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
-            && self.tcx.item_name(adt.did()).as_str() == "OccupiedEntry")
+        matches!(ty.kind(), ty::Adt(adt, _) if map_entry_item(self.tcx, adt.did(), "OccupiedEntry"))
     }
 }
 
 /// Is `id` std's, core's or alloc's?
+/// std's map entry `name`, or hashbrown's map's (ADR 0423).
+fn map_entry_item(tcx: TyCtxt<'_>, id: DefId, name: &str) -> bool {
+    match hashbrown_path(tcx, id) {
+        Some(path) => path == format!("hashbrown::map::{name}"),
+        None => is_std_item(tcx, id) && tcx.item_name(id).as_str() == name,
+    }
+}
+
+/// An item of hashbrown's, by its own path, `hashbrown::map::HashMap`: whose
+/// maps, what std's are made of, are std's (ADR 0423).
+fn hashbrown_path(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
+    (tcx.crate_name(id.krate).as_str() == "hashbrown").then(|| ty::print::with_no_visible_paths!(tcx.def_path_str(id)))
+}
+
 pub(super) fn is_std_item(tcx: TyCtxt<'_>, id: DefId) -> bool {
     [sym::core, sym::alloc, sym::std].contains(&tcx.crate_name(id.krate))
 }
@@ -5037,6 +5049,15 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         }
         // A lang item, which has no diagnostic item.
         StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
+        // hashbrown's, std's (ADR 0423).
+        StdItem::HashMap | StdItem::HashSet | StdItem::HashMapEntry if let Some(path) = hashbrown_path(tcx, id) => {
+            let name = match item {
+                StdItem::HashMap => "hashbrown::map::HashMap",
+                StdItem::HashSet => "hashbrown::set::HashSet",
+                _ => "hashbrown::map::Entry",
+            };
+            path == name
+        }
         _ => tcx.is_diagnostic_item(item.name(), id),
     }
 }

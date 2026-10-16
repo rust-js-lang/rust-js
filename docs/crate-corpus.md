@@ -25,6 +25,7 @@ newest release its requirement allows.
 | bitflags 2.13 | runs | |
 | smallvec 1.16 | runs | |
 | arrayvec 0.7 | runs | |
+| hashbrown 0.17 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a pointer tested for null |
 | once_cell 1.21 | refused | `std::thread::current` called |
@@ -36,7 +37,10 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-6 of 17 compile, and each of the 5 with a probe runs as natively.
+7 of 18 compile, and each of the 6 with a probe runs as natively.
+hashbrown, measured 2026-10-16, runs: rustc builds it, and its `HashMap`
+and `HashSet` are std's (ADR 0423). indexmap uses its `HashTable`, which
+isn't.
 smallvec, measured 2026-10-16, after ADRs 0417 to 0422, runs whole: its
 `SmallVec` inline and spilled to the heap, from a `Vec` and back, and what
 it drops, and when, of items with a destructor: a `Drain` taken in part,
