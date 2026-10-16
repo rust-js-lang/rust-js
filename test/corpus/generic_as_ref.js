@@ -2,7 +2,7 @@
 
 import { $byteLen, $max } from "@rust-js/runtime";
 
-var $nameAsRefStr, $scoresAsRef_i32_;
+var $nameAsRefStr, $scoresAsRefI32Slice;
 
 export function entry() {
   main();
@@ -12,8 +12,8 @@ function shout(s, SAsRefStr) {
   return SAsRefStr.as_ref(s).toUpperCase();
 }
 
-function total(values, VAsRef_i32_) {
-  return VAsRef_i32_.as_ref(values).reduce((a, b) => (a + b) | 0, 0);
+function total(values, VAsRefI32Slice) {
+  return VAsRefI32Slice.as_ref(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
 function longest(words, SAsRefStr) {
@@ -31,14 +31,14 @@ function nameAsRefStr_as_ref(name) {
   return name.first;
 }
 
-export function scoresAsRef_i32_() {
-  if ($scoresAsRef_i32_ === undefined) {
-    $scoresAsRef_i32_ = { as_ref: scoresAsRef_i32__as_ref };
+export function scoresAsRefI32Slice() {
+  if ($scoresAsRefI32Slice === undefined) {
+    $scoresAsRefI32Slice = { as_ref: scoresAsRefI32Slice_as_ref };
   }
-  return $scoresAsRef_i32_;
+  return $scoresAsRefI32Slice;
 }
 
-function scoresAsRef_i32__as_ref(scores) {
+function scoresAsRefI32Slice_as_ref(scores) {
   return scores[0];
 }
 
@@ -50,13 +50,13 @@ function main() {
   console.log(
     `${total([1, 2, 3], {
       as_ref: (value) => value,
-    })} ${total([4, 5], { as_ref: (value) => value })} ${total([6], { as_ref: (value) => value })} ${total([[7, 8]], scoresAsRef_i32_())}`,
+    })} ${total([4, 5], { as_ref: (value) => value })} ${total([6], { as_ref: (value) => value })} ${total([[7, 8]], scoresAsRefI32Slice())}`,
   );
   console.log(
     `${longest(["a", "abc"], { as_ref: (value) => value })} ${longest(["four"], { as_ref: (value) => value })}`,
   );
   const name = { first: "lin" };
   const direct = nameAsRefStr_as_ref(name);
-  console.log(`${direct} ${scoresAsRef_i32__as_ref([[1, 2]]).length}`);
+  console.log(`${direct} ${scoresAsRefI32Slice_as_ref([[1, 2]]).length}`);
 }
 //# sourceMappingURL=case.js.map

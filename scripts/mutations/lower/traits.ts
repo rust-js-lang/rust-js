@@ -1108,4 +1108,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
+  {
+    name: "slice-index-inclusive-as-exclusive",
+    breaks: "`..=end`'s dictionary is `..end`'s, one item short",
+    file: "src/lower/traits.rs",
+    find: "                    Some((Unbounded, Field(\"Included\", _))) => Some(\"toInclusive\"),\n",
+    replace: "                    Some((Unbounded, Field(\"Included\", _))) => Some(\"to\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
+  },
 ];

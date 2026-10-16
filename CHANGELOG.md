@@ -76,6 +76,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **`v[i]` of an index of a type parameter's**, `I: SliceIndex<[T]>`, an
+  `Index<I>` of the crate's: its dictionary's, the runtime's for `usize` and
+  each kind of range
+  ([ADR 0418](docs/decisions/0418-a-generic-slice-index-is-a-dictionary.md)).
 - **An iterator whose `Item` is another trait's associated type**,
   `A::Item`, looped over by `&mut` (ADR 0364).
 - **`==` of two types' items**, `[A::Item] == [B::Item]` by `A::Item:

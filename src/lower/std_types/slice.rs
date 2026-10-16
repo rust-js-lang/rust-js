@@ -23,6 +23,11 @@ pub(in crate::lower) enum SortWith {
 /// A slice's own methods, of those ADR 0324 takes.
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceOp {
+    /// `v[i]` or `&mut v[i]` of a type parameter's index, `I: SliceIndex<[T]>`:
+    /// its dictionary's `index(i, v)` or `index_mut(i, v)` (ADR 0418).
+    GenericIndex {
+        mutable: bool,
+    },
     Fill,
     FillWith,
     CopyFromSlice,
@@ -455,6 +460,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(match op {
+            SliceOp::GenericIndex { mutable } => {
+                let (items, index) = (arg(), arg());
+                let item = match item().kind() {
+                    ty::Slice(item) | ty::Array(item, _) => *item,
+                    ty::Adt(_, args) => args.type_at(0),
+                    _ => return Err(self.unsupported(span, "this index")),
+                };
+                let slice = ty::Ty::new_slice(self.tcx, item);
+                let slice_index =
+                    crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::SliceIndex);
+                let tr = ty::TraitRef::new(self.tcx, slice_index, [generic_args.type_at(1), slice]);
+                let dictionary = self.dictionary(tr, span)?;
+                let method = if mutable { "index_mut" } else { "index" };
+                Expr::call(Expr::member(dictionary, method), vec![index, items])
+            }
             // A clone of the value in each but the last, as std's is.
             SliceOp::Fill => {
                 let (items, value) = (arg(), arg());

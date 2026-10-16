@@ -685,6 +685,13 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         }
         // An associated type's, `BItem` of `<B as Array>::Item`.
         ty::Alias(..) => evidence_word(tcx, ty),
+        // A slice's, its item's, `U32Slice` of `[u32]`.
+        ty::Slice(item) => {
+            let item = js_word(&type_word(tcx, *item));
+            let mut chars = item.chars();
+            let first = chars.next().map(|c| c.to_ascii_uppercase()).unwrap_or_default();
+            format!("{first}{}Slice", chars.as_str())
+        }
         _ => ty.to_string(),
     }
 }
@@ -1070,6 +1077,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body)));
             }
             return Ok(Expr::object(props));
+        }
+        // `usize`'s or a range's `SliceIndex` of a slice (ADR 0418): the
+        // runtime's, of each kind, `$sliceIndexes.range`.
+        if is_std_def(self.tcx, tr.def_id, StdItem::SliceIndex) {
+            use super::recognition::RangeBound::{Field, Unbounded};
+            let kind = match ty.is_usize() {
+                true => Some("item"),
+                false => match super::recognition::range_bounds(self.tcx, ty) {
+                    Some((Field("Included", _), Field("Excluded", _))) => Some("range"),
+                    Some((Field("Included", _), Unbounded)) => Some("from"),
+                    Some((Unbounded, Field("Excluded", _))) => Some("to"),
+                    Some((Field("Included", _), Field("Included", _))) => Some("inclusive"),
+                    Some((Unbounded, Field("Included", _))) => Some("toInclusive"),
+                    Some((Unbounded, Unbounded)) => Some("full"),
+                    _ => None,
+                },
+            };
+            let kind = kind.ok_or_else(|| self.no_evidence(span, tr))?;
+            return Ok(Expr::member(Expr::helper("$sliceIndexes"), kind));
         }
         // std's `Error` of one of its parse errors: its `Display` and `Debug`, as
         // a crate's impl's dictionary has them, and no `source`, which none of

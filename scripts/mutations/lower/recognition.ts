@@ -1545,4 +1545,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
+  {
+    name: "generic-index-unrecognized",
+    breaks: "`v[i]` of an `I: SliceIndex<[T]>` isn't its dictionary's, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && args.types().nth(1).is_some_and(|index| self.is_unknown(index))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
+  },
+  {
+    name: "generic-index-mut-not-a-cell",
+    breaks: "`&mut v[i]` of an `I: SliceIndex<[T]>`, its dictionary's handle, is taken as no cell, and refused",
+    file: "src/lower/recognition.rs",
+    find: "                | Std::Slice(SliceOp::GenericIndex { mutable: true })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
+  },
 ];

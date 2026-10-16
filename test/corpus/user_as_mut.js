@@ -2,55 +2,55 @@
 
 import { $at, $mutItems, $swap } from "@rust-js/runtime";
 
-var $stackBorrow_i32_;
+var $stackBorrowI32Slice;
 
 export function entry() {
   main();
 }
 
-function stackAsMut_i32__as_mut(stack) {
+function stackAsMutI32Slice_as_mut(stack) {
   return stack.items;
 }
 
-function stackBorrowMut_i32__borrow_mut(stack) {
+function stackBorrowMutI32Slice_borrow_mut(stack) {
   return stack.items;
 }
 
-export function stackBorrow_i32_() {
-  if ($stackBorrow_i32_ === undefined) {
-    $stackBorrow_i32_ = { borrow: stackBorrow_i32__borrow };
+export function stackBorrowI32Slice() {
+  if ($stackBorrowI32Slice === undefined) {
+    $stackBorrowI32Slice = { borrow: stackBorrowI32Slice_borrow };
   }
-  return $stackBorrow_i32_;
+  return $stackBorrowI32Slice;
 }
 
-function stackBorrow_i32__borrow(stack) {
+function stackBorrowI32Slice_borrow(stack) {
   return stack.items;
 }
 
-function gridAsMut_u8__as_mut(grid) {
+function gridAsMutU8Slice_as_mut(grid) {
   return grid[0];
 }
 
 function main() {
   const stack = { items: [3, 1, 2] };
-  const value$1 = stackAsMut_i32__as_mut(stack);
+  const value$1 = stackAsMutI32Slice_as_mut(stack);
   value$1[$at(value$1, 0)] = 9;
   console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
-  const slice = stackBorrowMut_i32__borrow_mut(stack);
+  const slice = stackBorrowMutI32Slice_borrow_mut(stack);
   slice.sort((a, b) => a - b);
   const value = (slice[$at(slice, 2)] + 1) | 0;
   slice[2] = value;
   console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
-  const all = stackAsMut_i32__as_mut(stack);
+  const all = stackAsMutI32Slice_as_mut(stack);
   all.reverse();
   console.log(
-    `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrow_i32__borrow(stack).length}`,
+    `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrowI32Slice_borrow(stack).length}`,
   );
   const grid = [[0, 0, 0, 0]];
-  for (const [i, cell] of $mutItems(gridAsMut_u8__as_mut(grid)).entries()) {
+  for (const [i, cell] of $mutItems(gridAsMutU8Slice_as_mut(grid)).entries()) {
     cell.value = ((i & 255) * 2) & 255;
   }
-  const result = gridAsMut_u8__as_mut(grid);
+  const result = gridAsMutU8Slice_as_mut(grid);
   $swap(result, 0, 3);
   console.log(`[${grid[0].map((item) => String(item)).join(", ")}]`);
 }

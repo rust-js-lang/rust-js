@@ -17,8 +17,8 @@ function contains(keys, wanted, KBorrowQ, QPartialEq) {
   return keys.some((key) => QPartialEq.eq(KBorrowQ.borrow(key), wanted));
 }
 
-function total(values, VBorrow_i32_) {
-  return VBorrow_i32_.borrow(values).reduce((a, b) => (a + b) | 0, 0);
+function total(values, VBorrowI32Slice) {
+  return VBorrowI32Slice.borrow(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
 function qEquivalentK(QPartialEq, KBorrowQ) {

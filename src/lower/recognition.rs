@@ -480,6 +480,8 @@ impl Std {
                     MapOp::EntryGet { mutable: true } | MapOp::VacantInsert | MapOp::TreeRange { mutable: true }
                 )
                 | Std::Slice(SliceOp::DequeRangeMut)
+                // A generic index's `index_mut`, its dictionary's handle (ADR 0418).
+                | Std::Slice(SliceOp::GenericIndex { mutable: true })
                 | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
@@ -874,6 +876,68 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         None
     }
 
+    /// `v[i]`, `&v[a..b]` or `&mut v[a..b]`, of a map, a slice, an array, a
+    /// `Vec` or text: `Index::index` or `IndexMut::index_mut` of `ty`.
+    fn classify_index(&self, trait_: DefId, ty: Ty<'tcx>, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        let tcx = self.tcx;
+        let items =
+            |ty: Ty<'tcx>| ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs());
+        // `m[k]` of a map: its value, or a panic, as `get(k).expect(..)`.
+        if tcx.is_lang_item(trait_, LangItem::Index) && self.is_map(ty) && !self.is_set(ty) {
+            return Some(Std::Map(MapOp::Index));
+        }
+        // `&v[a..b]` of a slice, an array or a `Vec` (ADR 0063).
+        if tcx.is_lang_item(trait_, LangItem::Index)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && items(ty)
+        {
+            return Some(Std::Text(TextOp::Slice));
+        }
+        // `&mut v[a..b]` of a slice, an array or a `Vec`: a view of those
+        // items (ADR 0335).
+        if tcx.is_lang_item(trait_, LangItem::IndexMut)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && items(ty)
+        {
+            return Some(Std::Slice(SliceOp::View { checked: false }));
+        }
+        // `&s[a..b]` of a string: by its UTF-8 bytes (ADR 0138).
+        if tcx.is_lang_item(trait_, LangItem::Index)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && self.is_string_like(ty)
+        {
+            return Some(Std::Text(TextOp::StrSlice));
+        }
+        // `&mut s[a..b]` of a string: that part of it (ADR 0334).
+        if tcx.is_lang_item(trait_, LangItem::IndexMut)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && self.is_string_like(ty)
+        {
+            return Some(Std::Text(TextOp::StrPart { bounds: false }));
+        }
+        // `v[i]` of a `Vec` is a slice's, checked the same way.
+        if (tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))
+            && self.is_vec_like(ty.peel_refs())
+            && args.types().nth(1).is_some_and(|i| i.is_usize())
+        {
+            return Some(Std::Index);
+        }
+        // Of a type parameter's index, `I: SliceIndex<[T]>`, smallvec's
+        // `Index<I>`: its dictionary's (ADR 0418).
+        let mutable = tcx.is_lang_item(trait_, LangItem::IndexMut);
+        if (tcx.is_lang_item(trait_, LangItem::Index) || mutable)
+            && args.types().nth(1).is_some_and(|index| self.is_unknown(index))
+            && items(ty)
+        {
+            return Some(Std::Slice(SliceOp::GenericIndex { mutable }));
+        }
+        None
+    }
+
     /// A trait's method: an operator's, a comparison's, an iterator's, a
     /// conversion's.
     fn classify_trait_method(&self, def_id: DefId, trait_: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
@@ -972,49 +1036,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }));
             }
         }
-        // `m[k]` of a map: its value, or a panic, as `get(k).expect(..)`.
-        if tcx.is_lang_item(trait_, LangItem::Index) && self.is_map(ty) && !self.is_set(ty) {
-            return Some(Std::Map(MapOp::Index));
-        }
-        // `&v[a..b]` of a slice, an array or a `Vec` (ADR 0063).
-        if tcx.is_lang_item(trait_, LangItem::Index)
-            && let Some(range) = args.types().nth(1)
-            && self.range_kind(range).is_some()
-            && (ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs()))
-        {
-            return Some(Std::Text(TextOp::Slice));
-        }
-        // `&mut v[a..b]` of a slice, an array or a `Vec`: a view of those
-        // items (ADR 0335).
-        if tcx.is_lang_item(trait_, LangItem::IndexMut)
-            && let Some(range) = args.types().nth(1)
-            && self.range_kind(range).is_some()
-            && (ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs()))
-        {
-            return Some(Std::Slice(SliceOp::View { checked: false }));
-        }
-        // `&s[a..b]` of a string: by its UTF-8 bytes (ADR 0138).
-        if tcx.is_lang_item(trait_, LangItem::Index)
-            && let Some(range) = args.types().nth(1)
-            && self.range_kind(range).is_some()
-            && self.is_string_like(ty)
-        {
-            return Some(Std::Text(TextOp::StrSlice));
-        }
-        // `&mut s[a..b]` of a string: that part of it (ADR 0334).
-        if tcx.is_lang_item(trait_, LangItem::IndexMut)
-            && let Some(range) = args.types().nth(1)
-            && self.range_kind(range).is_some()
-            && self.is_string_like(ty)
-        {
-            return Some(Std::Text(TextOp::StrPart { bounds: false }));
-        }
-        // `v[i]` of a `Vec` is a slice's, checked the same way.
-        if (tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))
-            && self.is_vec_like(ty.peel_refs())
-            && args.types().nth(1).is_some_and(|i| i.is_usize())
-        {
-            return Some(Std::Index);
+        if let Some(index) = self.classify_index(trait_, ty, args) {
+            return Some(index);
         }
         if tcx.is_lang_item(trait_, LangItem::Add) {
             return self.is_lang_adt(ty, LangItem::String).then_some(Std::Concat);
@@ -3765,6 +3788,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // `range.start_bound()` of an `R: RangeBounds<usize>`, arrayvec's
         // `drain`: its dictionary's, a range's bounds as `Bound`s.
         || is_std_def(tcx, id, StdItem::RangeBounds)
+        // `v[i]` of an `I: SliceIndex<[T]>`: its dictionary's (ADR 0418).
+        || is_std_def(tcx, id, StdItem::SliceIndex)
         // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394).
         || tcx.is_lang_item(id, LangItem::Deref)
         // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).
@@ -4705,6 +4730,7 @@ pub(crate) enum StdItem {
     NonNull,
     /// `std::ops::RangeBounds`, a range's bounds, which generic code asks.
     RangeBounds,
+    SliceIndex,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
     Ord,
@@ -4765,6 +4791,7 @@ impl StdItem {
             StdItem::MutexGuard => Symbol::intern("MutexGuard"),
             StdItem::NonNull => Symbol::intern("NonNull"),
             StdItem::RangeBounds => Symbol::intern("RangeBounds"),
+            StdItem::SliceIndex => Symbol::intern("SliceIndex"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),
