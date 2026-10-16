@@ -257,3 +257,14 @@ or a box (ADR 0074). ADR 0099's handles have the same `value`.
 ## Amended by
 
 - [0360](0360-the-app-is-a-program.md): The app's crate is a program: `RUST_JS_APP`, recorded for Cargo
+
+## Amendment: a library's function as a value
+
+A library's function as a value, `.map(dep::duplicate)`, was its import,
+or an arrow calling it of numbered parameters, `(arg0) => duplicate(arg0,
+..)`, a second way to make what the arrow of its call as MIR's makes,
+which since ADR 0099's amendment boxes a `&mut` and names its parameters
+by their types, `(n) => duplicate(n, ..)`. It's that arrow now, and its
+import by name where that's all it is: the crate's own functions keep
+theirs. Found by the check's mutations, two of which no longer told the
+two ways apart.

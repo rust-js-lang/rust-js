@@ -549,9 +549,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A function as a value: a constructor's, `.map(Some)`, an arrow making
     /// what its call makes (ADR 0125); the crate's, `component(Card, props)`,
-    /// its JS name, or a library's import of it (ADR 0100), given its
-    /// dictionaries; a std one's, `.map(str::trim)`, `(s) => s.trim()`; a
-    /// binding's. `None` for any other, which an arrow calls.
+    /// its JS name, given its dictionaries; a std one's, `.map(str::trim)`,
+    /// `(s) => s.trim()`; a binding's. `None` for any other, a library's
+    /// among them, which the arrow of its call as MIR's is, its import by
+    /// name where that's all it is (ADR 0100).
     fn fn_item_value(
         &mut self,
         def_id: DefId,
@@ -567,7 +568,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {
             return self.constructor_value(def_id, args, span).map(Some);
         }
-        if self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args) {
+        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) {
             if self.tcx.trait_of_assoc(def_id).is_some() {
                 if self.takes_caller_location(def_id) {
                     return Err(self.unsupported(

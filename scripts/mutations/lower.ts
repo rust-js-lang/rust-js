@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
   },
   {
-    name: "library-fn-value-bare",
-    breaks: "a library's function as a value is an arrow calling it, as one rust-js doesn't know is, so `dep::add_to::<u8>`, taking a `&mut`, is refused",
-    file: "src/lower.rs",
-    find: "        if self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args) {\n",
-    replace: "        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: fnvalue"],
-  },
-  {
     name: "trait-const-generic-unread",
     breaks: "`S::SIDES` in generic code isn't read from `S`'s dictionary, so it's refused",
     file: "src/lower.rs",
@@ -88,9 +80,9 @@ export const mutations: Mutation[] = [
     snapshots: true,
     breaks: "`.map(Area::area)`, a trait's function as a value, is an arrow calling it, `(x) => shapeArea_area(x)`, where it's the function itself",
     file: "src/lower.rs",
-    find: "        if self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args) {\n",
-    replace: "        if self.is_rust_fn(def_id) {\n",
-    tests: ["test/corpus.test.ts","-t","expression_values"],
+    find: "        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) {\n",
+    replace: "        if self.krate.fns.contains_key(&def_id) {\n",
+    tests: ["test/corpus.test.ts","-t","^std_function_values.rs$"],
   },
   {
     name: "trait-fn-value-arrow-kept",
