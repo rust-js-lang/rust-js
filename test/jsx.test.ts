@@ -855,6 +855,37 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
   expect(renderToStaticMarkup(createElement(List, null, "a", createElement("b", null, "x")))).toBe("<ul><li><button>a</button></li><li><button><b>x</b></button></li></ul>");
 });
 
+// What a closure took, read where it's inlined, leaves nothing behind: no
+// `const captured = child.type`, as react.dev's prepareMDX tests each
+// child's type against a thread-local's set.
+test("a capture of an inlined closure leaves no const behind", async () => {
+  const { dir, args } = compile(`use std::collections::HashSet;
+use react::children::{self, Child};
+use react::js::{self, Kind, Unknown, classify};
+thread_local! {
+    static TYPES: HashSet<&'static str> = HashSet::from(["h1", "Recap"]);
+}
+pub fn kinds(children: &'static Unknown) -> Vec<String> {
+    let mut out = Vec::new();
+    for child in children::to_array(children) {
+        if let Child::Element(element) = child
+            && let Kind::String(r#type) = classify(element.r#type())
+            && TYPES.with(|types| types.contains(r#type))
+        {
+            out.push(if r#type == "Recap" { "recap".to_string() } else { r#type.to_uppercase() });
+        }
+    }
+    out
+}
+`);
+  run(args);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("captured");
+  const { kinds } = await import(join(dir, "lib.js"));
+  const { createElement } = await import("react");
+  expect(kinds([createElement("h1", { key: "a" }), createElement("Recap", { key: "b" }), "text"])).toEqual(["H1", "recap"]);
+});
+
 // Each child with its index, `Children.forEach(children, (child, i) => ..)`,
 // as ReScript's `forEachWithIndex`, `None` of an empty one, `null`, which
 // `forEach` gives where `toArray` leaves it out: react.dev's MDX keys its

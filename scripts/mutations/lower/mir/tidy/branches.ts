@@ -438,4 +438,16 @@ export const mutations: Mutation[] = [
     replace: "    let text = |_: &Expr| false;\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
   },
+  {
+    "name": "and-test-bound-kept",
+    "breaks": "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
+    "file": "src/lower/mir/tidy/branches.rs",
+    "find": "                && js::mentions_in(&then[at + 1..], name) == 0\n",
+    "replace": "                && false\n",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "capture of an inlined closure"
+    ]
+  },
 ];

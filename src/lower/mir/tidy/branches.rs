@@ -6,7 +6,8 @@ use super::*;
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
 /// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
 /// does nothing, comes first in `s`, and `b` reads its value, as
-/// `if let`s chained with `&&` read.
+/// `if let`s chained with `&&` read; one only `b` read, `const captured =
+/// child.type` a closure took, is gone: `b` reads it, once.
 pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for stmt in stmts.iter_mut() {
@@ -33,6 +34,7 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
                 _ => None,
             });
         let Some(second) = second else { continue };
+        let bound = bound.len();
         let Some(Stmt {
             kind: StmtKind::If(_, body, None),
             ..
@@ -43,6 +45,13 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
         let first = std::mem::replace(test, Expr::undefined());
         *test = Expr::bin(Op::And, first, second);
         then.extend(body);
+        for at in (0..bound).rev() {
+            if let StmtKind::Const(name, _) = &then[at].kind
+                && js::mentions_in(&then[at + 1..], name) == 0
+            {
+                then.remove(at);
+            }
+        }
     }
 }
 
