@@ -17,6 +17,10 @@ is (ADR 0407): of a shared one of a type parameter's, smallvec's inline
 `&MaybeUninit<A>`, `$ptrTo` of the object it is, an array, and of a value
 JS holds as itself, rust-js's error (`test/corpus/maybe_uninit_pointer.rs`).
 
+Amended: `[x; N]` of what's nothing yet, `undefined`, is so many slots,
+`Array.from({ length: N })`, as an array of uninit items is (ADR 0127's
+amendment).
+
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), and D for a zeroed
 type no JS value is all zeros of.
 

@@ -62,7 +62,7 @@ const Stack = {
     return array;
   },
   new(CAP) {
-    return { xs: Array.from({ length: CAP }, () => undefined), len: 0 };
+    return { xs: Array.from({ length: CAP }), len: 0 };
   },
   as_ptr(stack, CAP) {
     return $ptr(stack.xs, 0);

@@ -24,10 +24,8 @@ function noisyClone_clone(noisy) {
   return [(noisy[0] + 10) | 0];
 }
 
-const mainConst = undefined;
-
 function main() {
-  const buf = [undefined, undefined, undefined];
+  const buf = Array.from({ length: 3 });
   $copyFromSlice(buf, [1, 2, 3]);
   const written = buf;
   written[$at(written, 0)] = 9;
@@ -35,7 +33,7 @@ function main() {
   buf[$at(buf, 2)] = 7;
   console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
   const src = [[1], [2]];
-  const slots = new Array(2).fill(mainConst);
+  const slots = Array.from({ length: 2 });
   let cloned;
   try {
     cloned = $writeCloneOfSlice(slots, src, (value) => noisyClone_clone(value));

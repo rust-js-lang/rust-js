@@ -8,7 +8,7 @@ export function entry() {
 
 const Text = {
   new(CAP) {
-    return { xs: Array.from({ length: CAP }, () => undefined), len: 0 };
+    return { xs: Array.from({ length: CAP }), len: 0 };
   },
   push_str(text, s, CAP) {
     if ($byteLen(s) > (CAP - text.len) >>> 0) {

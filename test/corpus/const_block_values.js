@@ -9,7 +9,6 @@ export function entry() {
 const GREETING = "";
 const mainConst = "";
 const mainConst$1 = "";
-const mainConst$2 = undefined;
 
 function main() {
   let s = mainConst;

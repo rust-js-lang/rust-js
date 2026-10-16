@@ -626,6 +626,52 @@ pub(super) fn valtree<'tcx>(
     tcx.at(span).eval_to_valtree(inputs).ok()
 }
 
+/// Whether rustc's value of a `const` has no byte written, a
+/// `MaybeUninit::uninit()`'s: JS's `undefined` (ADR 0332), which a use
+/// needn't copy. Value trees hold no such value, so it's read from the
+/// memory rustc made of it.
+fn const_uninit<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    span: Span,
+) -> bool {
+    let Ok(Some(instance)) = super::items::resolve_instance_in(tcx, typing_env, def_id, args) else {
+        return false;
+    };
+    let cid = GlobalId {
+        instance,
+        promoted: None,
+    };
+    let inputs = tcx.erase_and_anonymize_regions(typing_env.with_post_analysis_normalized(tcx).as_query_input(cid));
+    let Ok(alloc) = tcx.at(span).eval_to_allocation_raw(inputs) else {
+        return false;
+    };
+    let memory = tcx.global_alloc(alloc.alloc_id).unwrap_memory();
+    let whole = alloc_range(rustc_abi::Size::ZERO, memory.inner().size());
+    whole.size.bytes() > 0
+        && memory
+            .inner()
+            .init_mask()
+            .is_range_initialized(whole)
+            .is_err_and(|uninit| uninit.start == whole.start && uninit.size == whole.size)
+}
+
+/// A `const`'s value as JS writes it, where it can: what rustc computed
+/// (ADRs 0031, 0127), or `undefined` of one with no byte written.
+pub(super) fn const_value_js<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    span: Span,
+) -> Option<Expr> {
+    eval_const(tcx, typing_env, def_id, args, span)
+        .and_then(|value| const_js(tcx, value))
+        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::undefined))
+}
+
 /// What rustc computed for a `const`, as a value tree (ADR 0031).
 pub(super) fn eval_const<'tcx>(
     tcx: TyCtxt<'tcx>,

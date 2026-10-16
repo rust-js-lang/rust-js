@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`[const { MaybeUninit::uninit() }; N]` of a type that isn't `Copy`**:
+  `Array.from({ length: N })`, a constant with no byte written being
+  `undefined` where it's used (ADRs 0127, 0332).
 - **smallvec 1.16 runs as natively** (`docs/crate-corpus.md`): its
   `SmallVec` inline and spilled to the heap, and what it drops, and when.
 - **`iter::repeat(value)` of a value with a destructor**, and `take` and

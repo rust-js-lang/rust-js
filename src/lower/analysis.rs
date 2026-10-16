@@ -193,7 +193,7 @@ fn inline_consts(tcx: TyCtxt<'_>) -> impl Iterator<Item = LocalDefId> {
 }
 
 /// A `const { .. }` block whose value rustc's can't say as JS's,
-/// `MaybeUninit::uninit()` or `String::new()`: lowered as code, a constant
+/// `String::new()`: lowered as code, a constant
 /// of its module, as a named one is (ADR 0127). Its value is the one where
 /// it's used, of that use's types.
 fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<LocalDefId> {
@@ -205,14 +205,13 @@ fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<L
                 && let Some(local) = did.as_local()
                 && inline.contains(&local)
                 && !coded.contains(&local)
-                && super::eval_const(
+                && super::representation::const_value_js(
                     tcx,
                     ty::TypingEnv::post_analysis(tcx, body.def_id),
                     did,
                     args,
                     expr.span,
                 )
-                .and_then(|value| super::const_js(tcx, value))
                 .is_none()
             {
                 coded.push(local);

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function main() {
-  const slots = [undefined, undefined];
+  const slots = Array.from({ length: 2 });
   $writeCloneOfSlice(slots, [1, 2, 3]);
 }
 //# sourceMappingURL=case.js.map

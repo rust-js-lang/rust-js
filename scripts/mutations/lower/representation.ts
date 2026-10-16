@@ -404,4 +404,20 @@ export const mutations: Mutation[] = [
     replace: "            return self.is_boxable(pointer);\n",
     tests: ["test/corpus.test.ts", "-t", "^pin_box.rs$"],
   },
+  {
+    name: "const-uninit-unseen",
+    breaks: "a constant with no byte written isn't seen as one, and a use of it that may change is a clone, refused",
+    file: "src/lower/representation.rs",
+    find: "    whole.size.bytes() > 0\n",
+    replace: "    false && whole.size.bytes() > 0\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
+  },
+  {
+    name: "const-value-uninit-unsaid",
+    breaks: "a constant with no byte written has no JS value, so a use of it that may change is a clone, refused",
+    file: "src/lower/representation.rs",
+    find: "        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::undefined))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
+  },
 ];

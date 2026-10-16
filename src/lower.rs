@@ -494,14 +494,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
             let place = self.fn_ref(def_id);
-            return match self.const_use_copied(ty) {
+            let copied = self.const_use_copied(ty)
+                // One whose value JS holds as itself, `undefined` of one with
+                // no byte written, `MaybeUninit::uninit()`'s, which nothing
+                // changes (ADR 0332).
+                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span)
+                    .is_some_and(|value| value.is_constant());
+            return match copied {
                 true => self.const_copy(place, ty, span),
                 false => Ok(place),
             };
         }
-        if let Some(value) =
-            eval_const(self.tcx, self.typing_env, def_id, args, span).and_then(|value| const_js(self.tcx, value))
-        {
+        if let Some(value) = representation::const_value_js(self.tcx, self.typing_env, def_id, args, span) {
             return Ok(value);
         }
         match self.tcx.trait_of_assoc(def_id) {
@@ -631,6 +635,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(n) => Expr::int(n as i128),
             None => self.const_arg(count, span)?,
         };
+        // Nothing yet, `MaybeUninit::uninit()`'s: so many slots, as an
+        // array of uninit items is (ADR 0332).
+        if matches!(item.kind, js::ExprKind::Undefined) {
+            return Ok(crate::lower::plain::filled(length, None));
+        }
         // A `Copy` value's copies are copies of its bits, which a
         // value that nothing changes needs none of; one that isn't
         // `Copy` is a constant's, made again for each, as each use of

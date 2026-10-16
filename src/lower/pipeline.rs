@@ -2,7 +2,7 @@
 
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, eval_const, module_file, module_symbol, static_value};
+use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{ImportRequest, LoweredImport, LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir as hir;
@@ -121,8 +121,7 @@ pub fn lower_crate<'tcx>(
                 "statics",
             ),
             _ => (
-                eval_const(tcx, typing_env, def_id.to_def_id(), args, span)
-                    .and_then(|v| const_js(tcx, v))
+                super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
                     .map(|v| super::const_lines(tcx, def_id, v)),
                 "constants",
             ),

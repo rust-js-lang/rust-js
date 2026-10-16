@@ -1,6 +1,13 @@
 # 0127. An inline `const` is its value, and an `if let` guard binds for its arm
 
 Status: Accepted. Extends [0124](0124-or-pattern-bindings.md).
+Amended: a constant with no byte written, `const { MaybeUninit::uninit() }`,
+has a value JS says, `undefined` (`representation::const_value_js`, the
+one answer of what a constant is in JS): a block of it is that, where it's
+used, not a constant of its module, and a use of a named one isn't copied,
+as nothing changes it. `[const { MaybeUninit::uninit() }; N]` of a type
+that isn't `Copy` was refused, a clone of each
+(`test/corpus/const_block_uninit_array.rs`).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -138,8 +138,8 @@ export const mutations: Mutation[] = [
     name: "const-use-shared",
     breaks: "each use of a `const` of a struct something changes is the one object, so `p.x += dx` on `let mut p = ORIGIN` changes `ORIGIN` for its next use",
     file: "src/lower.rs",
-    find: "            return match self.const_use_copied(ty) {\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
-    replace: "            return Ok(place);",
+    find: "            return match copied {\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
+    replace: "            let _ = copied;\n            return Ok(place);",
     tests: ["test/compiler.test.ts", "-t", "constants are the values rustc computed, by name"],
   },
   {
@@ -229,5 +229,22 @@ export const mutations: Mutation[] = [
     find: "            _ if def_id.is_local() && self.tcx.generics_of(def_id).count() > 0 => {\n                self.crate_const_as_code(def_id, args)\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
+  },
+  {
+    name: "uninit-repeat-copied",
+    breaks: "`[uninit; N]` is an arrow made for each slot, not so many slots",
+    file: "src/lower.rs",
+    find: "        if matches!(item.kind, js::ExprKind::Undefined) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "primitive-const-use-copied",
+    breaks: "a use of a named constant whose value is `undefined`, which nothing changes, is copied, a clone, refused",
+    file: "src/lower.rs",
+    find: "                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span)\n",
+    replace: "                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
 ];
