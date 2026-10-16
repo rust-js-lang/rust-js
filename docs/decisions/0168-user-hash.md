@@ -1,6 +1,8 @@
 # 0168. A type's own `Hash` is allowed, and never lowered
 
-Status: Accepted. Extends [0121](0121-value-keys.md).
+Status: Accepted. Extends [0121](0121-value-keys.md). Extended by
+[0425](0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md):
+`Future`, `io::Read`, `BufRead` and `Seek` are allowed and never lowered too.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

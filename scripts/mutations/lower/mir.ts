@@ -2473,4 +2473,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
+  {
+    name: "crate-future-awaited",
+    breaks: "a call that asks a `Future` of a future of the crate's, `.await` of it, is made: `await [1]`",
+    file: "src/lower/mir.rs",
+    find: "                    return Err(self.unlowered_future_awaited(future, *fn_span));\n",
+    replace: "                    let _ = future;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an await of a crate's future"],
+  },
+  {
+    name: "crate-future-made-dyn",
+    breaks: "a future of the crate's made a `dyn Future`, a promise, is the value itself",
+    file: "src/lower/mir.rs",
+    find: "                    return Err(self.unlowered_future_awaited(future, span));\n",
+    replace: "                    let _ = future;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "as a dyn Future"],
+  },
 ];

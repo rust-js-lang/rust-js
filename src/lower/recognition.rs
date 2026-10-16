@@ -3347,6 +3347,64 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// A `dyn Future`: a JS promise (ADR 0029).
+    pub(super) fn is_dyn_future(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Future)))
+    }
+
+    /// A future whose `Future` is the crate's own, or a reference, `Box` or
+    /// `Pin` of one: an impl rust-js never lowers (ADR 0425), so no JS
+    /// promise is a value of it, and what would await one is refused.
+    pub(super) fn unlowered_future(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.future_pointee(ty);
+        let Some(poll) = self.tcx.lang_items().get(LangItem::FuturePoll) else {
+            return false;
+        };
+        let args = self.tcx.mk_args(&[ty.into()]);
+        matches!(super::items::resolve_instance_in(self.tcx, self.typing_env, poll, args),
+            Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| self.is_rust_trait(imp)))
+    }
+
+    /// What a future, or a reference, `Box` or `Pin` of one, is of.
+    fn future_pointee(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+        while let Some(inner) = self.pinned(ty).or_else(|| ty.builtin_deref(true)) {
+            ty = inner;
+        }
+        ty
+    }
+
+    /// The `unlowered_future` that unsizing `from` to `to` makes a `dyn
+    /// Future` of, as `Box::pin(f)` as a `Pin<Box<dyn Future>>` does.
+    pub(super) fn unsized_unlowered_future(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        (self.is_dyn_future(self.future_pointee(to)) && self.unlowered_future(from)).then(|| self.future_pointee(from))
+    }
+
+    /// The `unlowered_future` that calling `def_id` of `args` asks a
+    /// `Future` or an `IntoFuture` of, among its bounds: `.await`'s
+    /// `into_future(x)`, or a generic function's `F: Future`.
+    pub(super) fn awaited_unlowered_future(
+        &self,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    ) -> Option<Ty<'tcx>> {
+        self.tcx
+            .clauses_of(def_id)
+            .instantiate(self.tcx, args)
+            .into_iter()
+            .find_map(|(clause, _)| match clause.skip_normalization().kind().skip_binder() {
+                ty::ClauseKind::Trait(bound)
+                    if self.tcx.is_lang_item(bound.def_id(), LangItem::Future)
+                        || self
+                            .tcx
+                            .is_diagnostic_item(Symbol::intern("IntoFuture"), bound.def_id()) =>
+                {
+                    let ty = bound.self_ty();
+                    self.unlowered_future(ty).then(|| self.future_pointee(ty))
+                }
+                _ => None,
+            })
+    }
+
     pub(super) fn is_std_wrapper(&self, ty: Ty<'tcx>) -> bool {
         ty.is_box()
             || self.pinned(ty).is_some()
@@ -3826,8 +3884,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         // A `&mut` to what a type keeps, called on the type itself (ADR 0169).
         || tcx.is_diagnostic_item(Symbol::intern("AsMut"), id)
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
-        // Never called: a map keys by value (ADR 0168).
-        || is_std_def(tcx, id, StdItem::Hash)
+        // Never lowered (ADRs 0168, 0425).
+        || unlowered_trait(tcx, id)
         // A collection of the crate's: what `for`, `collect()`, `extend`,
         // `sum()` and `product()` call (ADR 0160).
         || tcx.is_diagnostic_item(sym::IntoIterator, id)
@@ -3852,17 +3910,29 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_lang_item(id, LangItem::Drop)
 }
 
-/// An impl of `Hash`, derived or the crate's own: never lowered, as a map
-/// keys by value and never calls `hash` (ADRs 0121, 0168).
-pub(crate) fn is_hash_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// A std trait whose impls, the crate's own, rust-js allows and never
+/// lowers: what would call one is refused where it would. `Hash`, as a
+/// map keys by value and never calls `hash` (ADRs 0121, 0168); `Future`,
+/// as `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead`
+/// and `Seek`, which JS has no stream of (ADR 0425). The one list.
+pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_def(tcx, id, StdItem::Hash)
+        || tcx.is_lang_item(id, LangItem::Future)
+        || matches!(
+            std_path(tcx, id).as_str(),
+            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"
+        )
+}
+
+/// An impl of one of `unlowered_trait`'s, derived or the crate's own.
+pub(crate) fn is_unlowered_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
-        && is_std_def(
+        && unlowered_trait(
             tcx,
             tcx.impl_trait_ref(id)
                 .instantiate_identity()
                 .skip_normalization()
                 .def_id,
-            StdItem::Hash,
         )
 }
 

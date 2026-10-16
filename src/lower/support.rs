@@ -85,13 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ..
                 },
             ) if self.reveal(ty) != ty => return self.unsupported_in(self.reveal(ty), seen),
-            ty::Dynamic(traits, ..)
-                if traits
-                    .principal_def_id()
-                    .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Future)) =>
-            {
-                return None;
-            }
+            ty::Dynamic(..) if self.recognition().is_dyn_future(ty) => return None,
             // `&dyn Any` is any JS value, as the webapi crate's `object`
             // parameters take: a struct, say, which is a JS object already.
             ty::Dynamic(traits, ..)

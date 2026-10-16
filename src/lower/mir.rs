@@ -1808,6 +1808,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, &mut out)?;
                 }
                 state.unwind = None;
+                if let Some(future) = fn_def(func.ty(&state.body.local_decls, self.tcx))
+                    .and_then(|call| self.recognition().awaited_unlowered_future(call))
+                {
+                    return Err(self.unlowered_future_awaited(future, *fn_span));
+                }
                 let mut called = Vec::new();
                 let value = match state.awaits.contains(&block) {
                     true => self.mir_await(state, args, *fn_span, &mut called),
@@ -3932,6 +3937,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the JS iterator, another its `{ value, impl }`.
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
+                // A `dyn Future` is a promise, which a future of the crate's
+                // own isn't (ADR 0425).
+                if let Some(future) = self.recognition().unsized_unlowered_future(operand.ty(decls, tcx), *to) {
+                    return Err(self.unlowered_future_awaited(future, span));
+                }
                 // Through a reference, a `Box` or an `Rc`, as `unsize_trait` sees it.
                 // To a `dyn`, or a `RefCell<dyn T>`, a pair too (ADR 0397), or
                 // a struct whose last field is one (ADR 0409).
@@ -4819,6 +4829,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         let call = calls.next()?;
         calls.next().is_none().then_some(call)
+    }
+
+    /// A future whose `Future` is the crate's own made a JS promise: by a
+    /// call that asks a `Future` or an `IntoFuture` of it, `.await`'s
+    /// `into_future` or a generic function's `F: Future`, or as a `dyn
+    /// Future`. No promise is one (ADR 0425).
+    fn unlowered_future_awaited(&self, future: Ty<'tcx>, span: Span) -> rustc_span::ErrorGuaranteed {
+        let what = format!("`{future}` as a promise");
+        let why = "its `Future` is the crate's own, which rust-js never compiles (ADR 0425)";
+        refuse(self.tcx, span, Refused::Because(&what, why))
     }
 
     /// `.await` of what's given, `into_future(x)`'s (`awaits.rs`).

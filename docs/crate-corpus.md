@@ -19,7 +19,7 @@ newest release its requirement allows.
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.19 | refused | a user `Future` |
+| either 1.19 | refused | `Extend::extend` of an `L: Extend<A>` |
 | itertools 0.14 | blocked | either's |
 | indexmap 2.14 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.13 | runs | |
@@ -44,6 +44,10 @@ smallvec, measured 2026-10-16, after ADRs 0417 to 0422, runs whole: its
 `SmallVec` inline and spilled to the heap, from a `Vec` and back, and what
 it drops, and when, of items with a destructor: a `Drain` taken in part,
 `truncate`'s, `resize`'s value.
+either, measured 2026-10-16, after ADR 0425, compiles past its `Future`,
+`io::Read`, `BufRead` and `Seek` impls, now allowed and never lowered, and
+stops at generic code that calls `Extend::extend` on an `L: Extend<A>`;
+itertools stops there too.
 arrayvec, measured 2026-10-16, after ADRs 0407 and 0392's amendments, runs
 whole: its `ArrayVec` and `ArrayString`, of raw pointers into an array of
 `MaybeUninit`s, and its `io::Write`. Earlier, 4 of 16 compiled, and each of
@@ -57,7 +61,7 @@ it stops:
 1. **Raw memory,** a pointer tested for null, read as another type, into
    what JS may hold a copy of, `copy_nonoverlapping`: 7, though a raw
    pointer to a place is one now (ADR 0407).
-2. **`handle_alloc_error`**, and a user `Future`: 2 each.
+2. **`handle_alloc_error`**, and `Extend::extend` of an `L: Extend<A>`: 2 each.
 3. **One each:** a `Formatter` handed to a closure, semver's,
    `thread::current`,
    `assert_unchecked`, `size_of` of a type parameter, `Ref`'s `Deref`,

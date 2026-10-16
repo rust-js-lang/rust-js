@@ -78,6 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A type's own `impl Future`, `io::Read`, `BufRead` and `Seek`**, as
+  either's `Either` has, are allowed and never lowered, as its `Hash` is:
+  what would call one is refused where it's called, and so is what would
+  take a future of the crate's own for a JS promise, its `.await` among them
+  ([ADR 0425](docs/decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md)).
 - **indexmap's `IndexMap` and `IndexSet` are a `Map` and a `Set`**, which
   keep the order they're added in, as indexmap's do; `get_index`,
   `swap_remove`, `insert_full` and the rest are the runtime's

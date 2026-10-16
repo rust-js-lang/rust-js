@@ -28,11 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "user-hash-lowered",
-    breaks: "a type's own `Hash`'s `hash` is lowered, and its `Hasher` calls refused, though nothing calls it",
+    breaks: "a type's own `Hash`'s `hash`, and its `Future`'s `poll`, are lowered, and what they call refused, though nothing calls them",
     file: "src/lower/analysis.rs",
-    find: "                    && !is_hash_impl(tcx, parent)\n",
+    find: "                    && !is_unlowered_impl(tcx, parent)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_hash"],
+    tests: ["test/corpus.test.ts", "-t", "^(user_hash|unlowered_impls).rs$"],
   },
   {
     name: "generic-impl-const-bodies-uncollected",

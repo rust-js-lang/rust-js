@@ -116,7 +116,8 @@ still runs. `test/async.rs` and the countdown example pin this down.
   `js::promise(f())`: in JS the call's promise itself, as an `async fn`'s
   call is one already.
 - Not yet: `async` functions in traits, `IntoFuture` for your own types,
-  and streams. Several futures are joined by the js crate's
+  and streams. A type's own `impl Future` is allowed and never lowered,
+  and awaiting one, as no JS promise is one, is refused (ADR 0425). Several futures are joined by the js crate's
   `promise::all` (ADR 0283), `Promise.all`.
 - A pattern parameter, `(a, b)` or `Context { params, .. }`, Rust gives
   the future as `__arg0`, taken apart in its body. Its JS takes it apart
