@@ -184,6 +184,7 @@ helpers! {
     Process,
     Alloc,
     SliceIndex,
+    Capacity,
     EmptyPattern,
     ToJson,
     FromJson,
@@ -636,6 +637,7 @@ impl Helper {
             Helper::Process => include_str!("runtime/process.js"),
             Helper::Alloc => include_str!("runtime/alloc.js"),
             Helper::SliceIndex => include_str!("runtime/slice_index.js"),
+            Helper::Capacity => include_str!("runtime/capacity.js"),
             // `s.replace(p, r)` and `s.split(p)` of a pattern that may be empty,
             // which Rust matches at each char's boundary, both ends too, and JS
             // between UTF-16 units, splitting an emoji (ADR 0063).

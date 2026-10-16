@@ -76,6 +76,8 @@ pub(super) enum ChannelError {
 /// The std functions whose JS meaning rust-js knows (ADRs 0023, 0025).
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Std {
+    /// A `Vec`'s capacity's (ADR 0419).
+    Capacity(CapacityOp),
     /// The allocator's, or a `Layout`'s (ADR 0417).
     Alloc(super::std_types::alloc::AllocOp),
     /// The argument itself: `Box::new(x)`, `Rc::new(x)`,
@@ -448,6 +450,46 @@ pub(super) enum Std {
     Reverse,
 }
 
+/// A `Vec`'s capacity's (ADR 0419).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) enum CapacityOp {
+    /// `Vec::with_capacity(n)`.
+    WithCapacity,
+    /// `v.capacity()`.
+    Of,
+    /// `v.reserve(n)`, `reserve_exact(n)`.
+    Reserve,
+    /// `v.shrink_to(n)`, or `shrink_to_fit()`.
+    ShrinkTo { fit: bool },
+}
+
+/// Which of a `Vec`'s capacity's functions `def_id` is.
+pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> {
+    Some(match std_path(tcx, def_id).as_str() {
+        "std::vec::Vec::<T>::with_capacity" => CapacityOp::WithCapacity,
+        "std::vec::Vec::<T, A>::capacity" => CapacityOp::Of,
+        "std::vec::Vec::<T, A>::reserve" | "std::vec::Vec::<T, A>::reserve_exact" => CapacityOp::Reserve,
+        "std::vec::Vec::<T, A>::shrink_to_fit" => CapacityOp::ShrinkTo { fit: true },
+        "std::vec::Vec::<T, A>::shrink_to" => CapacityOp::ShrinkTo { fit: false },
+        _ => return None,
+    })
+}
+
+/// Whether `def_id`, a `Vec`'s, may shorten it, which keeps its capacity
+/// (ADR 0419): the vector it's given first, or its second, `append`'s.
+pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
+    let path = std_path(tcx, def_id);
+    let name = path.strip_prefix("std::vec::Vec::<T, A>::")?;
+    match name {
+        "append" => Some(1),
+        "clear" | "truncate" | "pop" | "pop_if" | "remove" | "swap_remove" | "drain" | "retain" | "retain_mut"
+        | "dedup" | "dedup_by" | "dedup_by_key" | "split_off" | "resize" | "resize_with" | "extract_if" | "splice" => {
+            Some(0)
+        }
+        _ => None,
+    }
+}
+
 /// What a call does with a standard stream (ADR 0132).
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) enum StreamOp {
@@ -593,6 +635,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // A raw pointer's, a handle on its place (ADR 0407).
         if let Some(op) = super::pointers::pointer_op(&std_path(tcx, def_id)) {
             return Some(Some(Std::Pointer(op)));
+        }
+        // A `Vec`'s capacity's, kept where it's asked (ADR 0419).
+        if let Some(op) = capacity_op(tcx, def_id) {
+            return Some(Some(Std::Capacity(op)));
         }
         // The allocator's, an array of slots (ADR 0417).
         if let Some(op) = super::std_types::alloc::alloc_op(&std_path(tcx, def_id)) {

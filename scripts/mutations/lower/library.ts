@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "            type_facts: (None::<&Vec<(u32, super::recognition::TypeFact)>>.into_iter().flatten())\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
+  {
+    name: "manifest-capacity-unsaid",
+    breaks: "a library's manifest doesn't say it keeps capacity, so its consumers don't",
+    file: "src/lower/library.rs",
+    find: "        keeps_capacity: *keeps_capacity,\n",
+    replace: "        keeps_capacity: false,\n",
+    tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
+  },
 ];

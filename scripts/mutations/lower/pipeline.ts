@@ -327,4 +327,12 @@ export const mutations: Mutation[] = [
     replace: "        let Some(owner) = None::<&String> else { continue };\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
   },
+  {
+    name: "consumer-keeps-no-capacity",
+    breaks: "a consumer of a library that asks capacity keeps none, so what it gives the library has its length's",
+    file: "src/lower/pipeline.rs",
+    find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
+    replace: "    let keeps_capacity = asks_capacity;\n",
+    tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
+  },
 ];

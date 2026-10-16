@@ -36,7 +36,9 @@ has none.**
   back, as std's are: `$dedupByCells`, `$popIfCell`.
 - `VecDeque`'s and `BinaryHeap`'s `reserve` and the rest are the same.
 - `capacity()` and `try_reserve` stay refused: JS keeps no capacity to
-  say, and a number made up would break what std promises of it.
+  say, and a number made up would break what std promises of it. (Amended
+  by [0419](0419-a-vecs-capacity-kept-where-asked.md): a `Vec`'s is kept
+  where it's asked.)
 
 ## Why
 

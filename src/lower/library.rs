@@ -30,6 +30,9 @@ pub(super) struct Contracts<'a> {
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    /// Whether it keeps a `Vec`'s capacity, which its consumers then do
+    /// too, as what they give it may be asked (ADR 0419).
+    pub(super) keeps_capacity: bool,
 }
 
 /// The items another crate can reach, and the impls it calls through them.
@@ -45,6 +48,7 @@ pub(super) fn exports(
         failing,
         no_drops,
         type_facts,
+        keeps_capacity,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -86,6 +90,7 @@ pub(super) fn exports(
             names
         },
         inputs: Vec::new(),
+        keeps_capacity: *keeps_capacity,
     }
 }
 
@@ -163,6 +168,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
     pub(super) fn fails(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.fails)
+    }
+
+    /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?
+    pub(super) fn keeps_capacity(&self) -> bool {
+        self.dependencies
+            .libraries
+            .values()
+            .any(|library| library.keeps_capacity)
     }
 
     /// May any of the libraries' items?

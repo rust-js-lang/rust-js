@@ -1561,4 +1561,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
   },
+  {
+    name: "capacity-unrecognized",
+    breaks: "`v.capacity()` isn't a `Vec`'s capacity, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"std::vec::Vec::<T, A>::capacity\" => CapacityOp::Of,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
+  {
+    name: "truncate-keeps-no-capacity",
+    breaks: "`truncate` shortens a `Vec` without keeping its capacity",
+    file: "src/lower/recognition.rs",
+    find: "        \"clear\" | \"truncate\" | \"pop\" | \"pop_if\" | \"remove\" | \"swap_remove\" | \"drain\" | \"retain\" | \"retain_mut\"\n",
+    replace: "        \"clear\" | \"pop\" | \"pop_if\" | \"remove\" | \"swap_remove\" | \"drain\" | \"retain\" | \"retain_mut\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
 ];

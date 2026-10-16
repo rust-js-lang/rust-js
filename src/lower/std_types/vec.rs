@@ -46,6 +46,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
+            // A `Vec`'s capacity, kept where the crate or a library it uses
+            // asks it (ADR 0419); else none, `with_capacity` an empty array,
+            // and asking for room nothing (ADR 0315).
+            Std::Capacity(op) => {
+                use crate::lower::recognition::CapacityOp;
+                let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+                match (op, self.krate.keeps_capacity) {
+                    (CapacityOp::Of, _) => helper("$capacity", vec![arg()]),
+                    (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),
+                    (CapacityOp::Reserve, true) => helper("$reserve", vec![arg(), arg()]),
+                    (CapacityOp::ShrinkTo { fit: true }, true) => helper("$shrinkTo", vec![arg(), Expr::int(0)]),
+                    (CapacityOp::ShrinkTo { fit: false }, true) => helper("$shrinkTo", vec![arg(), arg()]),
+                    // As ADR 0315's: a new array, or nothing.
+                    (_, false) => {
+                        let known = match op {
+                            CapacityOp::WithCapacity => Std::VecNew,
+                            _ => Std::Nothing,
+                        };
+                        return self.vec_call(known, call, values, boxed, out);
+                    }
+                }
+            }
             // The separator `&T` between each two, or `&[T]`'s items; each
             // item cloned, as `Join`'s are.
             Std::JoinItems => {

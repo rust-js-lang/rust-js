@@ -263,6 +263,9 @@ struct CrateFacts<'a, 'tcx> {
     /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
     failing: &'a HashSet<DefId>,
     any_failing: bool,
+    /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
+    /// asks it (ADR 0419).
+    keeps_capacity: bool,
     /// The type parameters each of the crate's functions takes no destructor
     /// of, and the calls of them to check once all are lowered (ADR 0190).
     no_drops: &'a RefCell<HashMap<DefId, BTreeSet<u32>>>,

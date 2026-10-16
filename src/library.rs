@@ -57,6 +57,11 @@ pub struct Library {
     /// is decided by which crates are rust-js's.
     pub libraries: Vec<String>,
     pub inputs: Vec<crate::manifest::Artifact>,
+    /// Whether it keeps a `Vec`'s capacity, as it or a library it uses asks
+    /// it (ADR 0419): its consumers keep theirs too. A library a compiler
+    /// wrote before kept none.
+    #[serde(default)]
+    pub keeps_capacity: bool,
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
@@ -75,6 +80,7 @@ pub struct Imported {
 #[derive(Default)]
 pub struct Exports {
     pub crate_hash: String,
+    pub keeps_capacity: bool,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
 }
@@ -124,6 +130,7 @@ impl Dependencies {
             }
             let mut exports = Exports {
                 crate_hash: library.crate_hash,
+                keeps_capacity: library.keeps_capacity,
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };

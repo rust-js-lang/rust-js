@@ -289,6 +289,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: HashSet<DefId>,
+    /// Whether the crate asks a `Vec` its capacity (ADR 0419).
+    pub asks_capacity: bool,
     pub generic_consts: HashSet<DefId>,
     /// Whether the crate shows anything with `{:#?}`, or asks a `Formatter`
     /// if it's alternate: then its `Debug` functions take whether (ADR 0137).
@@ -533,6 +535,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, (given, &trait_impls));
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
+    let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
     let pretty_debug = uses_pretty_debug(tcx, all_bodies);
     let format_options = uses_format_options(tcx, all_bodies);
@@ -563,6 +566,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         stepped,
         type_facts,
         failing,
+        asks_capacity,
         generic_consts,
         pretty_debug,
         format_options,
@@ -657,4 +661,16 @@ fn changed_vecs<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<
         }
     }
     changed
+}
+
+/// Whether any body asks a `Vec` its capacity, `v.capacity()` (ADR 0419).
+fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
+    bodies.iter().any(|body| {
+        body.thir.exprs.iter().any(|expr| {
+            matches!(expr.kind, rustc_middle::thir::ExprKind::ZstLiteral { .. })
+                && super::fn_def(expr.ty).is_some_and(|(id, _)| {
+                    super::recognition::capacity_op(tcx, id) == Some(super::recognition::CapacityOp::Of)
+                })
+        })
+    })
 }

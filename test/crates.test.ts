@@ -267,6 +267,22 @@ test("a library's generic function is given the size of its consumer's type", ()
   expect(printed(join(dir, "app.js"))).toBe("24 20 8 1\n");
 }, 300_000);
 
+// A library that asks a `Vec` its capacity keeps each's, and so does its
+// consumer, whose vectors it may be given (ADR 0419): one made with room,
+// or shortened, keeps it in the library's eyes.
+test("a library that asks a Vec its capacity has its consumer keep each's", () => {
+  const dir = fixture("library-capacity");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub fn room(v: &Vec<u32>) -> usize {\n    v.capacity() - v.len()\n}\n");
+  writeFileSync(join(dir, "app.rs"), "pub fn main() {\n    let mut v: Vec<u32> = Vec::with_capacity(8);\n    v.push(1);\n    let mut w = vec![1, 2, 3];\n    w.clear();\n    println!(\"{} {}\", dep::room(&v) >= 7, dep::room(&w) >= 3);\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("true true\n");
+}, 300_000);
+
 // A library's trait's default is the library's (ADR 0185): a consumer's impl
 // that doesn't write it calls the library's, which calls the impl's methods,
 // and its overrides, through its dictionary.

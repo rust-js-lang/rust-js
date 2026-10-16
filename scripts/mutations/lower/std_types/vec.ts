@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "                    if false && value.has_effects() {\n",
     tests: ["test/corpus.test.ts","-t","vec_edits"],
   },
+  {
+    name: "with-capacity-untracked",
+    breaks: "`Vec::with_capacity(n)` keeps no capacity, so it's asked less than `n`",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    (CapacityOp::WithCapacity, true) => helper(\"$withCapacity\", vec![arg()]),\n",
+    replace: "                    (CapacityOp::WithCapacity, true) => Expr::array(vec![arg()].into_iter().take(0).collect()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
+  {
+    name: "reserve-untracked",
+    breaks: "`v.reserve(n)` keeps no room",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    (CapacityOp::Reserve, true) => helper(\"$reserve\", vec![arg(), arg()]),\n",
+    replace: "                    (CapacityOp::Reserve, true) => { let _ = (arg(), arg()); Expr::undefined() }\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
 ];

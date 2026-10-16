@@ -2464,4 +2464,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_reborrow_reassigned.rs$"],
   },
+  {
+    name: "capacity-not-kept",
+    breaks: "a `Vec` shortened, `clear()`, has the capacity of its length",
+    file: "src/lower/mir.rs",
+    find: "            out.push(StmtKind::Expr(kept).at(self.js_span(span)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
 ];

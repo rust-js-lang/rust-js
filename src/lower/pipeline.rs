@@ -72,6 +72,7 @@ pub fn lower_crate<'tcx>(
         stepped,
         type_facts,
         failing,
+        asks_capacity,
         generic_consts,
         pretty_debug,
         format_options,
@@ -184,6 +185,9 @@ pub fn lower_crate<'tcx>(
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items: Vec<(DefId, super::LoweredFn)> = Vec::new();
     let foreign = super::library::Foreign::new(tcx, dependencies);
+    // A `Vec`'s capacity is kept where the crate or a library it uses asks
+    // it, as what it gives that library may be asked (ADR 0419).
+    let keeps_capacity = asks_capacity || foreign.keeps_capacity();
     let no_drops = RefCell::new(HashMap::new());
     let drop_checks = RefCell::new(Vec::new());
     let drop_uses = RefCell::new(super::drops::DropUses::new(tcx, &drop_params));
@@ -204,6 +208,7 @@ pub fn lower_crate<'tcx>(
         type_facts: &type_facts,
         failing: &failing,
         any_failing: !failing.is_empty() || foreign.any_fails(),
+        keeps_capacity,
         no_drops: &no_drops,
         drop_checks: &drop_checks,
         drop_uses: &drop_uses,
@@ -731,6 +736,7 @@ pub fn lower_crate<'tcx>(
                     failing: &failing,
                     no_drops: &no_drops.borrow(),
                     type_facts: &type_facts,
+                    keeps_capacity,
                 },
                 &trait_impls,
                 dependencies,

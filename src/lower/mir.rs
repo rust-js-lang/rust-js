@@ -5291,6 +5291,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.std_values(known, call, values, boxed, output, out)
     }
 
+    /// A `Vec` the call of `def_id` may shorten, where capacity's kept (ADR
+    /// 0419): what it has kept first, as Rust's shortening leaves its
+    /// capacity, `$keepCapacity(v)`.
+    fn keep_capacity(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        values: &mut [Value<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        if self.krate.keeps_capacity
+            && let Some(at) = super::recognition::shortens_vec(self.tcx, def_id)
+            && let Some(vector) = values.get(at).cloned()
+        {
+            let vector = self.value_expr(vector, span)?;
+            self.flush(state, out)?;
+            let vector = match vector.reads_same() {
+                true => vector,
+                false => self.spill("items", vector, out),
+            };
+            let kept = Expr::call(Expr::helper("$keepCapacity"), vec![vector.clone()]);
+            out.push(StmtKind::Expr(kept).at(self.js_span(span)));
+            values[at] = Value::Expr(vector);
+        }
+        Ok(())
+    }
+
     /// A std function rust-js knows, given what MIR made of its arguments.
     #[allow(clippy::too_many_arguments)]
     fn mir_std_call(
@@ -5299,7 +5327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (known, def_id): (Std, rustc_span::def_id::DefId),
         generic_args: ty::GenericArgsRef<'tcx>,
         arg_tys: &[Ty<'tcx>],
-        values: Vec<Value<'tcx>>,
+        mut values: Vec<Value<'tcx>>,
         output: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -5337,6 +5365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // undrained, is refused where it's dropped.
         let drained = known == Std::IterComb(IterComb::SkipWhile);
         self.check_takes_drops(known, def_id, arg_tys, drained, span)?;
+        self.keep_capacity(state, def_id, &mut values, span, out)?;
         // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
         // fails: unchecked.
         if known == Std::Index

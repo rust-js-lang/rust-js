@@ -399,6 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
             Std::Alloc(_) => unreachable!("lowered by alloc_call"),
+            Std::Capacity(_) => unreachable!("lowered by vec_call"),
             Std::Path(_) => unreachable!("lowered by path_call"),
             Std::Pointer(_) => unreachable!("lowered by pointer_call"),
             Std::Uninit(_) => unreachable!("lowered by uninit_call"),
