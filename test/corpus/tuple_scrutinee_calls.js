@@ -53,13 +53,10 @@ function guarded(v) {
   const b = v.pop();
   const a = x;
   x = (x + 10) >>> 0;
-  if (!false) {
-    if (b != null) {
-      return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
-    }
-    return (a + x) >>> 0;
+  if (b != null) {
+    return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
   }
-  return 0;
+  return (a + x) >>> 0;
 }
 
 function bumped(v) {
@@ -84,13 +81,10 @@ function guarded_param(v, x) {
   const b = v.pop();
   const a = x;
   x = (x + 10) >>> 0;
-  if (!false) {
-    if (b != null) {
-      return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
-    }
-    return (a + x) >>> 0;
+  if (b != null) {
+    return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
   }
-  return 0;
+  return (a + x) >>> 0;
 }
 
 function bump(n) {

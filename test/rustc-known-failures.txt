@@ -133,7 +133,5 @@ union/union-overwrite.rs	node: ended {"panic":"rust-js does not support reading 
 union/union-transmute.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
 unsafe/new-unsafe-pointers.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone
-where-clauses/obligation-error-propagation.rs	error: rust-js does not support comparing `main::X`s yet
 zero-sized/write-volatile-zst.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 zero-sized/zero-sized-binary-heap-push.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::capacity` yet
-zero-sized/zero-sized-btreemap-insert.rs	error: rust-js does not support values of type `Zst` yet

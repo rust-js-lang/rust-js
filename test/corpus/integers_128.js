@@ -82,10 +82,9 @@ function main() {
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$4 = 130 < 128 ? BigInt.asUintN(128, big << 2n) : undefined;
-  const value$5 = 100 < 128 ? BigInt.asUintN(128, 1n << 100n) : undefined;
+  const value$4 = BigInt.asUintN(128, 1n << 100n);
   console.log(
-    `(${value$3[0]}, ${value$3[1]}) ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `(${value$3[0]}, ${value$3[1]}) None ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   console.log(
     `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
@@ -116,40 +115,40 @@ function main() {
   );
   console.log(`${small} ${wide}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const value$6 = result.TAG === "Ok" ? result._0 : undefined;
+  const value$5 = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$7 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const value$6 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
-  const value$8 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+  const value$7 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
-  const value$9 = $parseBig(
+  const value$8 = $parseBig(
     "340282366920938463463374607431768211455",
     0n,
     340282366920938463463374607431768211455n,
   );
   console.log(
-    `${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugParseError(value$9._0, "ParseIntError")})`}`,
+    `${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugParseError(value$8._0, "ParseIntError")})`}`,
   );
   console.log(
     `${$parseBig("340282366920938463463374607431768211456", 0n, 340282366920938463463374607431768211455n).TAG === "Err"}`,
   );
-  const value$10 = $parseBig(
+  const value$9 = $parseBig(
     "-170141183460469231731687303715884105728",
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
   console.log(
-    `${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${$debugParseError(value$10._0, "ParseIntError")})`}`,
+    `${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugParseError(value$9._0, "ParseIntError")})`}`,
   );
-  const value$11 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
+  const value$10 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
   console.log(
-    `${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${$debugParseError(value$11._0, "ParseIntError")})`}`,
+    `${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${$debugParseError(value$10._0, "ParseIntError")})`}`,
   );
   let size;
   if (big === 0n) {

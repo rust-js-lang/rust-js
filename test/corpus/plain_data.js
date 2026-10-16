@@ -63,7 +63,7 @@ function main() {
   console.log(`${$displayF64($floatFromBits(4611686018427387904n, 8))}`);
   const value$1 = { low: 1, high: 2 };
   console.log(`[${[value$1.low, value$1.high].map((item) => String(item)).join(", ")}]`);
-  console.log(`${1 !== 0}`);
+  console.log("true");
   console.log(`${$debugStr(String.fromCodePoint(65), "'")}`);
   console.log(`${nothingDebug_fmt(undefined)}`);
   const value$2 = [120, 86, 52, 18];

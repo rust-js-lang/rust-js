@@ -70,9 +70,6 @@ function guarded(n) {
     },
   };
   const r = z.value;
-  if (!true) {
-    return 1;
-  }
   return r;
 }
 

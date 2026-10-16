@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathCmp\"), vec![a, b]));\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
+  {
+    name: "unit-struct-unordered",
+    breaks: "a struct of no fields, `struct Zst;`, isn't compared, and a map keyed by one is an error",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Adt(adt, _) if adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {\n",
+    replace: "            ty::Adt(adt, _) if false && adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_struct_order.rs$"],
+  },
 ];

@@ -223,6 +223,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Another crate's struct orders as its impl says, which may not be
             // field by field.
             ty::Adt(adt, _) if !adt.did().is_local() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
+            // A struct of no fields, `struct Zst;`: one value, `Equal` to
+            // itself, as its derive has it.
+            ty::Adt(adt, _) if adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {
+                Ok(Expr::int(0))
+            }
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
                     Shape::Object(fields) => fields

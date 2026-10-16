@@ -34,6 +34,6 @@ function main() {
   const a = 2;
   single_with_noop();
   const b = 3;
-  console.log(`${a} ${b} ${true}`);
+  console.log(`${a} ${b} true`);
 }
 //# sourceMappingURL=case.js.map

@@ -11,7 +11,7 @@ function generic(TNeedsDrop) {
 }
 
 function main() {
-  console.log(`${false} ${true} ${false} ${true}`);
+  console.log("false true false true");
   console.log(`${generic(true)} ${generic(false)} ${generic(true)}`);
 }
 //# sourceMappingURL=case.js.map

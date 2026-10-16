@@ -1049,7 +1049,34 @@ impl Expr {
 
     pub fn template(texts: Vec<String>, values: Vec<Expr>) -> Expr {
         debug_assert_eq!(texts.len(), values.len() + 1);
-        Expr::new(ExprKind::Template(texts, values, false))
+        // `${false}` is `false`, and `${3}` is `3`: a literal the template
+        // would show is written in its text, as JS shows it.
+        let mut texts = texts.into_iter();
+        let mut folded = vec![texts.next().expect("a text before each value")];
+        let mut kept = Vec::new();
+        for (value, text) in values.into_iter().zip(texts) {
+            let shown = match value.kind {
+                ExprKind::Bool(b) => Some(b.to_string()),
+                ExprKind::Num(n) if n.fract() == 0.0 && n.abs() < 1e21 => Some((n as i128).to_string()),
+                _ => None,
+            };
+            match shown {
+                Some(shown) => {
+                    let last = folded.last_mut().expect("a text");
+                    last.push_str(&shown);
+                    last.push_str(&text);
+                }
+                None => {
+                    kept.push(value);
+                    folded.push(text);
+                }
+            }
+        }
+        // All of it written so, it's a string.
+        if kept.is_empty() {
+            return Expr::str(folded.pop().expect("a text"));
+        }
+        Expr::new(ExprKind::Template(folded, kept, false))
     }
 
     /// A template written across `lines`: its line breaks written as they are.
@@ -1208,6 +1235,10 @@ impl Expr {
     }
 
     pub fn unary(op: UnaryOp, arg: Expr) -> Expr {
+        // `!false` is `true`.
+        if let (UnaryOp::Not, ExprKind::Bool(b)) = (op, &arg.kind) {
+            return Expr::bool(!b);
+        }
         // `!!!a` is `!a`, for every `a`: the inner two make a `bool` of it.
         if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)
             && let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind
@@ -1234,6 +1265,35 @@ impl Expr {
     }
 
     pub fn bin(op: Op, lhs: Expr, rhs: Expr) -> Expr {
+        // `0 < 0` is `false`: a comparison of two numbers written out is its
+        // answer, as a person writes it.
+        if let (ExprKind::Num(a), ExprKind::Num(b)) = (&lhs.kind, &rhs.kind) {
+            let answer = match op {
+                Op::Eq | Op::LooseEq => Some(a == b),
+                Op::Ne | Op::LooseNe => Some(a != b),
+                Op::Lt => Some(a < b),
+                Op::Le => Some(a <= b),
+                Op::Gt => Some(a > b),
+                Op::Ge => Some(a >= b),
+                _ => None,
+            };
+            if let Some(answer) = answer {
+                return Expr::bool(answer);
+            }
+        }
+        // `0 || x` is `x`: `||` gives what's after a falsy number, an
+        // ordering's `Equal` before the next part's. And of `true` or
+        // `false` first, `&&` and `||` are what JS gives, never running
+        // what's after where it wouldn't.
+        if op == Op::Or && matches!(lhs.kind, ExprKind::Num(n) if n == 0.0) {
+            return rhs;
+        }
+        if let (Op::And | Op::Or, ExprKind::Bool(first)) = (op, &lhs.kind) {
+            return match (op, *first) {
+                (Op::And, true) | (Op::Or, false) => rhs,
+                _ => lhs,
+            };
+        }
         // `a != null && !!a` is `!!a`: neither is truthy.
         if op == Op::And
             && let Some(tested) = null_test(&lhs, true)
@@ -1292,6 +1352,10 @@ impl Expr {
     }
 
     pub fn cond(test: Expr, then: Expr, els: Expr) -> Expr {
+        // `true ? a : b` is `a`: the branch that runs.
+        if let ExprKind::Bool(b) = test.kind {
+            return if b { then } else { els };
+        }
         // `a != null ? a.b : undefined` is `a?.b`, as a person writes it. One
         // property only: `a?.b.c` would end the chain at `.c` too. Not of
         // `!!a`, which an empty string fails, `!s.is_empty()`'s: an

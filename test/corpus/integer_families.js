@@ -17,7 +17,7 @@ export function entry() {
 }
 
 function main() {
-  console.log(`${5 > 0} ${0 > 0} ${-3n < 0n} ${0 < 0}`);
+  console.log(`true false ${-3n < 0n} false`);
   for (const x of [5, 0, -2147483648]) {
     const value = $checked(-x, -2147483648, 2147483647);
     const value$1 = $checked(Math.abs(x), -2147483648, 2147483647);
@@ -79,15 +79,14 @@ function main() {
     `${$wrappingDiv(0, -5, -2147483648)} ${$wrappingRem(9n, 4n)} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
   );
   const by = 33;
-  const value$13 = 4 < 32 ? (1 << 4) | 0 : undefined;
+  const value$13 = (1 << 4) | 0;
   const value$14 = by < 32 ? (1 << by) | 0 : undefined;
   console.log(
     `${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
   );
-  const value$15 = 2 < 32 ? -16 >> 2 : undefined;
-  const value$16 = 64 < 64 ? BigInt.asUintN(64, 1n << 0n) : undefined;
+  const value$15 = -16 >> 2;
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15})`} ${value$16 == null ? "None" : `Some(${value$16})`} ${BigInt.asUintN(64, 1n << 1n)}`,
+    `${value$15 == null ? "None" : `Some(${value$15})`} None ${BigInt.asUintN(64, 1n << 1n)}`,
   );
   console.log(
     `${$pow(3, 21)} ${$pow(2, 9) & 255} ${$saturatingPow(-2, 31, -2147483648, 2147483647)} ${$saturatingPow(-2, 32, -2147483648, 2147483647)}`,

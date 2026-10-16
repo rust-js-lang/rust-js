@@ -64,7 +64,7 @@ function main() {
     throw error;
   }
   $unborrow(value);
-  console.log(`${false} ${false}`);
+  console.log("false false");
   const deque = $range(1, 7);
   const value$1 = deque[1];
   console.log(

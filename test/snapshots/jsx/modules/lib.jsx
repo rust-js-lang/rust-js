@@ -11,7 +11,7 @@ export function App() {
       <Panel title="Numbers">
         <ul {...attrs}>{items}</ul>
       </Panel>
-      {true && <p data-state="ready">done</p>}
+      <p data-state="ready">done</p>
     </>
   );
 }

@@ -154,7 +154,7 @@ function main() {
       ? typeof right === "number" && left === right
       : false;
   const other = 1 === ["1"];
-  console.log(`${same} ${other} ${2 === 2}`);
+  console.log(`${same} ${other} true`);
   const lone = ["b"];
   if (typeof lone === "number") {
     try {

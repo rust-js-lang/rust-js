@@ -493,6 +493,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0423 hashbrown's maps are std's](decisions/0423-hashbrowns-maps-are-stds.md)
 - [0424 indexmap's maps are JS's `Map` and `Set`](decisions/0424-indexmaps-maps-are-js-maps.md)
 - [0425 A type's own `Future`, `io::Read`, `BufRead` and `Seek` are allowed, and never lowered](decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md)
+- [0426 A test or a value written out of literals is its answer](decisions/0426-a-literal-test-is-its-answer.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

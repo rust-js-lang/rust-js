@@ -75,3 +75,13 @@ tuple key it silently didn't sort.
   struct with many fields is compared often, and it could come later.
 - **Always `$thenCmp`.** It's correct everywhere, but it evaluates every
   part when `||` stops at the first difference, and it reads worse.
+
+## Amendment: a struct of no fields
+
+`struct Zst;` has one value, `Equal` to itself, as its derive has it: its
+comparison is `0`, which, as a part of a struct ordered field by field,
+drops out (ADR 0426). It was an error, as a struct whose shape had no
+parts, and stopped rustc's `zero-sized-btreemap-insert`, a `BTreeMap` keyed
+by one, and `obligation-error-propagation`. The `unit_struct_order` corpus
+case orders one as a map's and a set's key, compared, and as a field, with
+native Rust.

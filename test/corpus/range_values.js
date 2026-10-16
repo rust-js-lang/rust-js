@@ -77,7 +77,7 @@ function main() {
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end);
   console.log(
-    `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} ${5 >= 5} ${Math.max(2 - 5, 0)}`,
+    `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true ${Math.max(2 - 5, 0)}`,
   );
   const steps = { start: 0, end: 4 };
   const first = $rangeNext(steps);
@@ -96,7 +96,7 @@ function main() {
   );
   const low = 3;
   const high = 9;
-  console.log(`${low} ${high} ${2 > 1}`);
+  console.log(`${low} ${high} true`);
   console.log(
     `${total({ start: 1, end: 5 })} ${$lazyRange(0, 5)
       .map((x) => Math.imul(x, 2))
@@ -146,7 +146,7 @@ function main() {
             `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
           );
           console.log(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}`);
-          console.log(`${1 === 1 && 4 === 4} ${!(1 === 1 && 4 === 5)} ${2 === 2}`);
+          console.log("true true true");
           const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
             (a, b) => BigInt.asUintN(64, a + b),
             0n,
