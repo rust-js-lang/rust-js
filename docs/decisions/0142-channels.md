@@ -68,3 +68,18 @@ destructors (ADR 0098), which keep the count:
   0262). It's std's `Nothing`, as a `Vec`'s `reserve` is (ADR 0315); the
   corpus's `thread_yield.rs`, and rustc's `threads-sendsync/yield2.rs`,
   which was refused, pass.
+
+## Amendment: a channel of values with a destructor
+
+A channel of a value with a destructor was an error, as the queue would
+drop what's still in it. It drops it as Rust's does: **what's still queued
+is dropped with the receiver, in the order it was sent,**
+`$dropReceiver(rx, drop)`, the item's drop function given where the
+receiver's dropped. What's received is the receiver's caller's to drop, as
+any value is; a send after the receiver's gone gives its value back, in
+its `Err`, to the caller's; and a sender's drop drops nothing queued, which
+the receiver may still take. So `send` of one is no error, the queue its
+owner. A channel of senders, rustc's `task-comm-16` and
+`send-type-inference`, which pass: a queued sender dropped with the
+receiver is one sender fewer of its own channel. The `channel_of_droppers`
+corpus case runs each, with native Rust.

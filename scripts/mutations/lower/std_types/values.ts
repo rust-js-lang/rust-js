@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
   },
+  {
+    name: "send-of-dropper-refused",
+    breaks: "a send of a value with a destructor is an error, though the channel's queue owns it",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Channel(ChannelOp::Send)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
+  },
 ];

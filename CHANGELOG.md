@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A channel of values with a destructor**, a channel of senders among
+  them: what's still queued is dropped with the receiver, as Rust's is
+  (ADR 0142).
 - **A struct of no fields, and `()`, are ordered**, `Equal` to themselves,
   as their derives have it: a `BTreeMap` keyed by one (ADR 0057).
 - **A `BinaryHeap`'s and a `VecDeque`'s capacity** is its array's, as a

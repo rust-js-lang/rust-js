@@ -394,13 +394,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {
                 out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
             }
-            // A channel's end (ADR 0142).
-            ty::Adt(..) if let Some(end) = self.recognition().channel_end(ty) => {
-                let drop = match end {
-                    ChannelEnd::Sender => "$dropSender",
-                    ChannelEnd::Receiver => "$dropReceiver",
+            // A channel's end (ADR 0142): a receiver's drops what's still in
+            // its queue, as Rust's does.
+            ty::Adt(_, args) if let Some(end) = self.recognition().channel_end(ty) => {
+                let call = match end {
+                    ChannelEnd::Sender => Expr::call_helper("$dropSender", vec![value]),
+                    ChannelEnd::Receiver => {
+                        let mut values = vec![value];
+                        values.extend(self.drop_function(args.type_at(0), span)?);
+                        Expr::call_helper("$dropReceiver", values)
+                    }
                 };
-                out.push(StmtKind::Expr(Expr::call(Expr::var(drop), vec![value])).at(js_span));
+                out.push(StmtKind::Expr(call).at(js_span));
             }
             // A map's values, a `BTreeMap`'s in its keys' order (ADR 0321).
             ty::Adt(_, args) if self.is_map(ty) => {

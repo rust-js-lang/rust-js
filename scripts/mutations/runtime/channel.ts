@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "channels"],
   },
+  {
+    name: "queued-items-undropped",
+    breaks: "a channel's receiver, dropped, drops none of what's still queued",
+    file: "src/runtime/channel.js",
+    find: "  if (drop !== undefined) for (const item of channel.queue) drop(item);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
+  },
 ];

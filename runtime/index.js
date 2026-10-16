@@ -6622,8 +6622,11 @@ export function $dropSender(channel) {
   channel.senders -= 1;
 }
 
-export function $dropReceiver(channel) {
+// What's still in its queue is dropped with it, `drop` of each, as Rust's
+// receiver drops it (ADR 0142).
+export function $dropReceiver(channel, drop) {
   channel.receiving = false;
+  if (drop !== undefined) for (const item of channel.queue) drop(item);
   channel.queue.length = 0;
 }
 

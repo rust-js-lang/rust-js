@@ -294,4 +294,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
+  {
+    name: "receiver-drops-no-items",
+    breaks: "a channel's receiver dropped leaves what's still queued undropped",
+    file: "src/lower/drops.rs",
+    find: "                        values.extend(self.drop_function(args.type_at(0), span)?);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
+  },
 ];

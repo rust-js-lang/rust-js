@@ -317,12 +317,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 }
                 _ => Drops::Nothing,
             },
-            // A channel's end: one sender fewer, or no receiver (ADR 0142). The
-            // queue would drop what's still in it, its own way.
+            // A channel's end: one sender fewer, or no receiver, which drops
+            // what's still in its queue (ADR 0142).
             ty::Adt(_, args) if self.recognition.channel_end(ty).is_some() => {
                 match self.drops_in(args.type_at(0), walk) {
-                    Drops::Nothing => Drops::Runs,
-                    _ => Drops::Unsupported(ty, "a channel of a value with a destructor"),
+                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
+                    _ => Drops::Runs,
                 }
             }
             // A map's values (ADR 0321). A key with a destructor is refused: a

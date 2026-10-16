@@ -7,7 +7,7 @@ use crate::lower::combinators::IterSource;
 use crate::lower::combinators::{Comb, StepOp};
 use crate::lower::drops::Drops;
 use crate::lower::pointers::PointerOp;
-use crate::lower::recognition::Std;
+use crate::lower::recognition::{ChannelOp, Std};
 use crate::lower::std_types::any::AnyOp;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::lazy::LazyOp;
@@ -140,6 +140,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::SliceGet
                     | Std::Slice(SliceOp::GenericIndex { mutable: true })
                     | Std::Alloc(_)
+                    // A channel's queue, which its receiver's drop drops what's
+                    // left of, and a failed send gives back (ADR 0142).
+                    | Std::Channel(ChannelOp::Send)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

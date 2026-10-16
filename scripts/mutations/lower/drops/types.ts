@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "channel-ends-drop-nothing",
     breaks: "a channel's ends have no destructor, so a sender dropped still counts",
     file: "src/lower/drops/types.rs",
-    find: "                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Nothing => Drops::Runs,\n                    _ => Drops::Unsupported(ty, \"a channel of a value with a destructor\"),",
-    replace: "                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Nothing => Drops::Nothing,\n                    _ => Drops::Unsupported(ty, \"a channel of a value with a destructor\"),",
+    find: "            ty::Adt(_, args) if self.recognition.channel_end(ty).is_some() => {\n                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),\n                    _ => Drops::Runs,\n",
+    replace: "            ty::Adt(_, args) if self.recognition.channel_end(ty).is_some() => {\n                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),\n                    _ => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "channels"],
   },
   {
