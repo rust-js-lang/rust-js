@@ -118,7 +118,10 @@ standard library, into the build's stage, beside the JS, and the session
 is given it, `--extern panic_unwind=..`. The stage is removed when the
 build ends, as it was. It's named after the JS it's beside, no longer a
 process id, which WASI, the playground's, hasn't. A library's session,
-which rustc gives none, is given none.
+which rustc gives none, is given none. The playground's rustc, which runs
+each session on its one thread, keeps the thread's first registry for the
+second session, the program's, where it would panic that the thread has
+one (`wasm/patches/0007`).
 
 - A future's size is native Rust's: `future_size_unwinds` in the corpus
   prints both, and `cfg!(panic = "unwind")`, against native Rust.

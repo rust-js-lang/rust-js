@@ -1,0 +1,18 @@
+diff --git a/compiler/rustc_data_structures/src/sync/worker_local.rs b/compiler/rustc_data_structures/src/sync/worker_local.rs
+index d75af00..44d2422 100644
+--- a/compiler/rustc_data_structures/src/sync/worker_local.rs
++++ b/compiler/rustc_data_structures/src/sync/worker_local.rs
+@@ -76,6 +76,13 @@ impl Registry {
+         if *threads < self.0.thread_limit.get() {
+             REGISTRY.with(|registry| {
+                 if registry.get().is_some() {
++                    // WebAssembly without threads runs each session on its one
++                    // thread, which keeps the first's registry, of one thread
++                    // as each's is: a second session, in the same process,
++                    // uses it. (Patched in by rust-js.)
++                    if cfg!(all(target_family = "wasm", not(target_feature = "atomics"))) {
++                        return;
++                    }
+                     drop(threads);
+                     panic!("Thread already has a registry");
+                 }
