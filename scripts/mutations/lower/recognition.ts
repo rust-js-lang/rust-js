@@ -1697,4 +1697,20 @@ export const mutations: Mutation[] = [
     replace: "vec_into_iter || false && self.is_iter_empty(ty))",
     tests: ["test/corpus.test.ts", "-t", "^std_struct_const.rs$"],
   },
+  {
+    name: "var-os-unknown",
+    breaks: "`env::var_os(key)` is an error, where it's the variable or `None`",
+    file: "src/lower/recognition.rs",
+    find: "    (\"std::env::var_os\", ProcessOp::VarOs),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
+  {
+    name: "vars-os-unknown",
+    breaks: "`env::vars_os()` is an error, where it's `vars()`'s pairs",
+    file: "src/lower/recognition.rs",
+    find: "    (\"std::env::vars_os\", ProcessOp::VarsOs),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+  },
 ];

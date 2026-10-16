@@ -4054,9 +4054,17 @@ export function $var(key) {
   const value = $process("`std::env::var`").env[key];
   return value === undefined ? { TAG: "Err", _0: "NotPresent" } : { TAG: "Ok", _0: value };
 }
+// `env::var_os(key)`: the variable, or `None`, `undefined`.
+export function $varOs(key) {
+  return $process("`std::env::var_os`").env[key];
+}
 // `env::vars()`: each variable's name and value.
 export function $vars() {
   return Object.entries($process("`std::env::vars`").env);
+}
+// `env::vars_os()`: the same, an `OsString` its text (ADR 0173).
+export function $varsOs() {
+  return Object.entries($process("`std::env::vars_os`").env);
 }
 // `process::exit(code)`.
 export function $exit(code) {

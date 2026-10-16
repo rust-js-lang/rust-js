@@ -90,3 +90,12 @@ Error: `std::env::args` needs Node's process, which a browser hasn't (ADR 0391)
 
 - What's next of Node's, `env::current_dir` say, is one more `NODE_ONLY`
   entry and helper.
+
+## Amendment: `env::var_os` and `env::vars_os`
+
+An `OsString` is its text (ADR 0173), so `env::var_os(key)` is the
+variable or `None`, `$varOs(key)`, and `env::vars_os()` the pairs
+`env::vars()` gives, `$varsOs()`: each its own helper of `process.js`, so a
+browser's panic names it. rustc's `process/env-vars.rs` passes, and
+`env_vars` in the corpus compares each with its plain form, with native
+Rust.

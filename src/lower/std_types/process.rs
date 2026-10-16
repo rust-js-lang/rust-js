@@ -1,5 +1,6 @@
 //! The process a program runs in (ADR 0391): its arguments, `env::args()`,
-//! its environment, `env::var(key)` and `env::vars()`, and its end,
+//! its environment, `env::var(key)`, `env::vars()` and their `_os`
+//! forms, and its end,
 //! `process::exit(code)`. Node has one, and a browser hasn't:
 //! each is a helper of the runtime's `process.js`, which in a browser
 //! panics, saying which, and recognition's `NODE_ONLY` is the one list of
@@ -17,8 +18,13 @@ pub(in crate::lower) enum ProcessOp {
     /// `env::var(key)`: `Ok` of its environment's variable, or `Err` of
     /// `VarError::NotPresent`. JS's are text, so never `NotUnicode`.
     Var,
+    /// `env::var_os(key)`: its environment's variable, or `None`. An
+    /// `OsString` is its text (ADR 0173).
+    VarOs,
     /// `env::vars()`: its environment's pairs, an array.
     Vars,
+    /// `env::vars_os()`: the same pairs, an `OsString` its text (ADR 0173).
+    VarsOs,
     /// `process::exit(code)`: it ends, with that code.
     Exit,
 }
@@ -29,7 +35,9 @@ impl ProcessOp {
         match self {
             ProcessOp::Args => "$args",
             ProcessOp::Var => "$var",
+            ProcessOp::VarOs => "$varOs",
             ProcessOp::Vars => "$vars",
+            ProcessOp::VarsOs => "$varsOs",
             ProcessOp::Exit => "$exit",
         }
     }

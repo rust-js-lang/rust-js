@@ -89,7 +89,6 @@ packed/misaligned-reference-drop-field-99838.rs	error: rust-js does not support 
 packed/packed-struct-address-of-element.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::const_ptr::<impl *const T>::read_unaligned`
 packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a pointer's address
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
-process/env-vars.rs	error: rust-js does not support iterating over `std::env::VarsOs` yet
 rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::caller` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet

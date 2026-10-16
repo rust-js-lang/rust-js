@@ -4050,7 +4050,9 @@ pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 const NODE_ONLY: &[(&str, ProcessOp)] = &[
     ("std::env::args", ProcessOp::Args),
     ("std::env::var", ProcessOp::Var),
+    ("std::env::var_os", ProcessOp::VarOs),
     ("std::env::vars", ProcessOp::Vars),
+    ("std::env::vars_os", ProcessOp::VarsOs),
     ("std::process::exit", ProcessOp::Exit),
 ];
 
