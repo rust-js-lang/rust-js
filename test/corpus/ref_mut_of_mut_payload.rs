@@ -29,6 +29,14 @@ fn unit<'a>(o: &'a mut Option<&'a mut Unit>) -> &'a mut Unit {
     }
 }
 
+/// Used twice: the payload where each is, `$someValue(o.value)`.
+fn unit_twice<'a>(o: &'a mut Option<&'a mut Unit>) -> String {
+    match o {
+        &mut Some(ref mut u) => format!("{} {}", u.name(), u.name()),
+        &mut None => String::new(),
+    }
+}
+
 fn main() {
     let mut foo = Foo { x: 1 };
     let mut o = Some(&mut foo);
@@ -39,4 +47,6 @@ fn main() {
     let mut u = Unit;
     let mut p = Some(&mut u);
     println!("{} {} {}", a, foo.x, unit(&mut p).name());
+    let mut v = Unit;
+    println!("{}", unit_twice(&mut Some(&mut v)));
 }

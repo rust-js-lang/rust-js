@@ -27,6 +27,13 @@ function unit(o) {
   return $someValue(o.value);
 }
 
+function unit_twice(o) {
+  if (o.value != null) {
+    return `${Unit.name($someValue(o.value).value)} ${Unit.name($someValue(o.value).value)}`;
+  }
+  return "";
+}
+
 function main() {
   const foo = { x: 1 };
   let o = foo;
@@ -57,5 +64,18 @@ function main() {
       }).value,
     )}`,
   );
+  let v;
+  let tmp = $some({
+    get value() {
+      return v;
+    },
+    set value(value) {
+      v = value;
+    },
+  });
+  const o$2 = { value: tmp };
+  const value = unit_twice(o$2);
+  tmp = o$2.value;
+  console.log(`${value}`);
 }
 //# sourceMappingURL=case.js.map

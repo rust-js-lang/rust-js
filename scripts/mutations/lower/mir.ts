@@ -2186,6 +2186,7 @@ export const mutations: Mutation[] = [
     find: "        js::ExprKind::Call(..) => super::std_types::option::some_value_of(place).is_some_and(steady_place),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
+    snapshots: true,
   },
   {
     name: "mir-unread-ref-handled",
