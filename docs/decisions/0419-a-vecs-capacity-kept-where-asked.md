@@ -55,3 +55,18 @@ library it uses does: at least its length, what `with_capacity` and
   capacity is at least what's needed, not which it is: a program that
   prints one sees a different number (case B).
 - `VecDeque`'s, `String`'s and a map's capacity stay refused.
+
+## Amendment: a `VecDeque`'s and a `BinaryHeap`'s
+
+A `VecDeque` and a `BinaryHeap` are JS arrays too (ADR 0068), and their
+capacity is their array's. Which collections are so is
+`recognition::ARRAY_COLLECTIONS`, the one list: `with_capacity`,
+`capacity()`, `reserve`, `reserve_exact`, `shrink_to` and `shrink_to_fit`
+of each are `capacity_op`'s, and what shortens each, `pop_front`,
+`pop_back`, a heap's `pop`, `clear`, `drain`, `retain` and the rest, and
+`append`'s other, `shortens_vec`'s, keeping what it had. Their
+`with_capacity` was their `new`, a second answer to what it is, and is
+`capacity_op`'s alone. The `collection_capacity` corpus case asks a heap
+made with room, reserved, popped and cleared, one grown by pushes and
+cleared, and a deque so, with native Rust; rustc's
+`zero-sized-binary-heap-push` passes.

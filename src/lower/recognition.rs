@@ -463,30 +463,51 @@ pub(crate) enum CapacityOp {
     ShrinkTo { fit: bool },
 }
 
-/// Which of a `Vec`'s capacity's functions `def_id` is.
+/// std's collections that are a JS array, whose capacity is the array's
+/// (ADRs 0068, 0419): the paths of their methods, of `T` and an allocator.
+const ARRAY_COLLECTIONS: [&str; 3] = [
+    "std::vec::Vec::<T, A>::",
+    "std::collections::VecDeque::<T, A>::",
+    "std::collections::BinaryHeap::<T, A>::",
+];
+
+/// Which of a `Vec`'s capacity's functions `def_id` is, or a `VecDeque`'s
+/// or a `BinaryHeap`'s, one of `ARRAY_COLLECTIONS`.
 pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> {
-    Some(match std_path(tcx, def_id).as_str() {
-        "std::vec::Vec::<T>::with_capacity" => CapacityOp::WithCapacity,
-        "std::vec::Vec::<T, A>::capacity" => CapacityOp::Of,
-        "std::vec::Vec::<T, A>::reserve" | "std::vec::Vec::<T, A>::reserve_exact" => CapacityOp::Reserve,
-        "std::vec::Vec::<T, A>::shrink_to_fit" => CapacityOp::ShrinkTo { fit: true },
-        "std::vec::Vec::<T, A>::shrink_to" => CapacityOp::ShrinkTo { fit: false },
+    let path = std_path(tcx, def_id);
+    if matches!(
+        path.as_str(),
+        "std::vec::Vec::<T>::with_capacity"
+            | "std::collections::VecDeque::<T>::with_capacity"
+            | "std::collections::BinaryHeap::<T>::with_capacity"
+    ) {
+        return Some(CapacityOp::WithCapacity);
+    }
+    Some(match array_collection_method(&path)? {
+        "capacity" => CapacityOp::Of,
+        "reserve" | "reserve_exact" => CapacityOp::Reserve,
+        "shrink_to_fit" => CapacityOp::ShrinkTo { fit: true },
+        "shrink_to" => CapacityOp::ShrinkTo { fit: false },
         _ => return None,
     })
 }
 
-/// Whether `def_id`, a `Vec`'s, may shorten it, which keeps its capacity
-/// (ADR 0419): the vector it's given first, or its second, `append`'s.
+/// Whether `def_id`, of one of `ARRAY_COLLECTIONS`, may shorten it, which
+/// keeps its capacity (ADR 0419): the array it's given first, or its
+/// second, `append`'s.
 pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
-    let path = std_path(tcx, def_id);
-    let name = path.strip_prefix("std::vec::Vec::<T, A>::")?;
-    match name {
+    match array_collection_method(&std_path(tcx, def_id))? {
         "append" => Some(1),
-        "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "remove" | "swap_remove" | "drain" | "retain"
-        | "retain_mut" | "dedup" | "dedup_by" | "dedup_by_key" | "split_off" | "resize" | "resize_with"
-        | "extract_if" | "splice" => Some(0),
+        "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "pop_front" | "pop_back" | "pop_front_if"
+        | "pop_back_if" | "remove" | "swap_remove" | "drain" | "retain" | "retain_mut" | "dedup" | "dedup_by"
+        | "dedup_by_key" | "split_off" | "resize" | "resize_with" | "extract_if" | "splice" => Some(0),
         _ => None,
     }
+}
+
+/// The method of one of `ARRAY_COLLECTIONS` that `path` names.
+fn array_collection_method(path: &str) -> Option<&str> {
+    ARRAY_COLLECTIONS.iter().find_map(|prefix| path.strip_prefix(prefix))
 }
 
 /// What a call does with a standard stream (ADR 0132).
@@ -1558,7 +1579,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_slice" | "as_mut_slice" if adt(StdItem::Vec) || owner.is_array() => Some(Std::Same),
             "drain" if adt(StdItem::Vec) || deque => Some(Std::Text(TextOp::Drain)),
             "iter" | "iter_mut" if deque || heap => Some(Std::Same),
-            "new" | "with_capacity" if deque || heap => Some(Std::VecNew),
+            "new" if deque || heap => Some(Std::VecNew),
             "len" if deque || heap => Some(Std::Len),
             "is_empty" if deque || heap => Some(Std::IsEmpty),
             "clear" if deque || heap => Some(Std::Clear),

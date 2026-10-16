@@ -78,8 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
-- **A struct of no fields is ordered**, `Equal` to itself, as its derive
-  has it: a `BTreeMap` keyed by one (ADR 0057).
+- **A struct of no fields, and `()`, are ordered**, `Equal` to themselves,
+  as their derives have it: a `BTreeMap` keyed by one (ADR 0057).
+- **A `BinaryHeap`'s and a `VecDeque`'s capacity** is its array's, as a
+  `Vec`'s is, and a heap
+  of `()` is an error only where it's popped (ADRs 0419, 0068).
 - **A test or value of literals is its answer**: `0 < 0` is `false`,
   `true ? a : b` is `a`, and a template's `${false}` its text
   ([ADR 0426](docs/decisions/0426-a-literal-test-is-its-answer.md)).

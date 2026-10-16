@@ -94,8 +94,16 @@ export const mutations: Mutation[] = [
     name: "unit-struct-unordered",
     breaks: "a struct of no fields, `struct Zst;`, isn't compared, and a map keyed by one is an error",
     file: "src/lower/ordering.rs",
-    find: "            ty::Adt(adt, _) if adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {\n",
-    replace: "            ty::Adt(adt, _) if false && adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {\n",
+    find: "            _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
+    replace: "            _ if false && self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_struct_order.rs$"],
+  },
+  {
+    name: "unit-unordered",
+    breaks: "`()`s aren't compared, and a heap of them is an error",
+    file: "src/lower/ordering.rs",
+    find: "        ty.is_unit()\n            || matches!",
+    replace: "        false\n            || matches!",
+    tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
   },
 ];

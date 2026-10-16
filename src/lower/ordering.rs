@@ -223,11 +223,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Another crate's struct orders as its impl says, which may not be
             // field by field.
             ty::Adt(adt, _) if !adt.did().is_local() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
-            // A struct of no fields, `struct Zst;`: one value, `Equal` to
-            // itself, as its derive has it.
-            ty::Adt(adt, _) if adt.non_enum_variant().fields.is_empty() && !a.has_effects() && !b.has_effects() => {
-                Ok(Expr::int(0))
-            }
+            // A type of one value, `()` or a struct of no fields, `struct
+            // Zst;`: `Equal` to itself, as its derive has it.
+            _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
                     Shape::Object(fields) => fields
@@ -264,6 +262,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call(Expr::helper("$thenCmp"), orders))
             }
         }
+    }
+
+    /// Whether `ty` has one value, `()` or a struct of no fields, which is
+    /// `Equal` to itself.
+    fn one_value(&self, ty: Ty<'tcx>) -> bool {
+        ty.is_unit()
+            || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
     }
 
     /// Two sequences, item by item, then by length: `$cmpItems(a, b, $cmp)`.

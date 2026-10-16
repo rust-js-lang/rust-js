@@ -134,4 +134,3 @@ union/union-transmute.rs	node: ended {"panic":"rust-js does not support reading 
 unsafe/new-unsafe-pointers.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone
 zero-sized/write-volatile-zst.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
-zero-sized/zero-sized-binary-heap-push.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::capacity` yet

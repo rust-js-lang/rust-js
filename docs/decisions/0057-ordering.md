@@ -78,7 +78,8 @@ tuple key it silently didn't sort.
 
 ## Amendment: a struct of no fields
 
-`struct Zst;` has one value, `Equal` to itself, as its derive has it: its
+`struct Zst;` has one value, `Equal` to itself, as its derive has it, and
+so has `()`, a heap of which is compared so (ADR 0068): its
 comparison is `0`, which, as a part of a struct ordered field by field,
 drops out (ADR 0426). It was an error, as a struct whose shape had no
 parts, and stopped rustc's `zero-sized-btreemap-insert`, a `BTreeMap` keyed

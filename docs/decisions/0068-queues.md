@@ -82,3 +82,11 @@ orders (`Option`, `Result`, `Reverse`).
 ## Consequences
 
 - A long queue drained with `pop_front` costs O(n²) in JS.
+
+## Amendment: a heap of `()` is refused where it's popped
+
+A heap whose items could look like `None`, `()`'s, was an error wherever it
+was used. Only its `pop` is an `Option` of an item, `undefined` for `None`:
+`peek` boxes a `Some` that would look like it, as a slice's `first` does, so
+a heap of `()` is an error where it's popped alone, and pushed, counted and
+peeked as any is. Its items, all `Equal`, compare as `()` does (ADR 0057).
