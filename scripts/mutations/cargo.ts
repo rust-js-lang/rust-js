@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "    if listed(CRATES)?.contains(&dir) {\n        return Ok(Whose::Own);\n    }\n    if std::env::var(\"CARGO_PKG_NAME\").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str())) {\n        return Ok(Whose::Rustc);\n    }\n",
     tests: ["test/registry-crates.test.ts", "-t", "reads as rustc builds it"],
   },
+  {
+    name: "indexmap-compiled",
+    breaks: "indexmap is compiled by rust-js, whose maps are std's, as rustc builds them",
+    file: "src/cargo.rs",
+    find: "    \"indexmap\",\n",
+    replace: "    \"indexmap-not\",\n",
+    tests: ["test/registry-crates.test.ts", "-t", "reads as rustc builds it"],
+  },
 ];

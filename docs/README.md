@@ -491,6 +491,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0421 A std trait's associated type's drop is its caller's to give](decisions/0421-std-associated-type-drops-are-given.md)
 - [0422 An iterator that holds a value is closed to drop it](decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
 - [0423 hashbrown's maps are std's](decisions/0423-hashbrowns-maps-are-stds.md)
+- [0424 indexmap's maps are JS's `Map` and `Set`](decisions/0424-indexmaps-maps-are-js-maps.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

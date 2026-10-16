@@ -32,6 +32,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexmap"
+version = "2.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
+dependencies = [
+ "equivalent",
+ "hashbrown",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -66,6 +76,7 @@ name = "rust-js-serde"
 version = "0.0.0"
 dependencies = [
  "hashbrown",
+ "indexmap",
  "serde",
  "serde_json",
 ]

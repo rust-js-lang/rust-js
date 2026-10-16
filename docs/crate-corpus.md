@@ -21,7 +21,7 @@ newest release its requirement allows.
 | strum 0.27 (`derive`) | runs | |
 | either 1.19 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
-| indexmap 2.11 | blocked | hashbrown: a `transmute` of a `usize` as a pointer, a dangling one; its table's control bytes and items in one allocation |
+| indexmap 2.14 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.13 | runs | |
 | smallvec 1.16 | runs | |
 | arrayvec 0.7 | runs | |
@@ -37,10 +37,9 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-7 of 18 compile, and each of the 6 with a probe runs as natively.
-hashbrown, measured 2026-10-16, runs: rustc builds it, and its `HashMap`
-and `HashSet` are std's (ADR 0423). indexmap uses its `HashTable`, which
-isn't.
+8 of 18 compile, and each of the 7 with a probe runs as natively.
+hashbrown and indexmap, measured 2026-10-16, run: rustc builds them, and
+their maps are a `Map` and a `Set` (ADRs 0423, 0424).
 smallvec, measured 2026-10-16, after ADRs 0417 to 0422, runs whole: its
 `SmallVec` inline and spilled to the heap, from a `Vec` and back, and what
 it drops, and when, of items with a destructor: a `Drain` taken in part,

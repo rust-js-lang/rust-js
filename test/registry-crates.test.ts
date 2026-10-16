@@ -95,20 +95,23 @@ test("a crate of crates.io's rust-js can't compile is its types alone, and a cal
   expect(called.stderr).toContain("addressable memory");
 }, 600_000);
 
-// One rust-js reads as rustc builds it, by its name, hashbrown, whose maps
-// are std's (ADR 0423): never compiled by rust-js, even where it could be,
-// so its own functions are refused where they're called.
+// One rust-js reads as rustc builds it, by its name, hashbrown and indexmap,
+// whose maps are std's (ADRs 0423, 0424): never compiled by rust-js, even
+// where it could be, so its own functions are refused where they're called.
 test("a crate rust-js reads as rustc builds it isn't compiled, though it could be", () => {
   const dir = fixture("registry-read-as-rustc");
-  const crate = gitCrate(dir, "hashbrown", "0.17.1", "pub fn one() -> u32 {\n    1\n}\n");
-  const at = app(dir, { hashbrown: crate }, "pub fn uses() -> u32 {\n    hashbrown::one()\n}\n");
+  const one = "pub fn one() -> u32 {\n    1\n}\n";
+  const crates = { hashbrown: gitCrate(dir, "hashbrown", "0.17.1", one), indexmap: gitCrate(dir, "indexmap", "2.14.2", one) };
+  const at = app(dir, crates, "pub fn maps() -> u32 {\n    hashbrown::one()\n}\n\npub fn ordered() -> u32 {\n    indexmap::one()\n}\n");
   const built = build(at);
   expect(built.code).not.toBe(0);
-  expect(built.stderr).toContain("hashbrown::one");
+  expect(built.stderr).toContain("`hashbrown::one`");
+  expect(built.stderr).toContain("`indexmap::one`");
   expect(existsSync(join(at, "rust-js", "crates"))).toBe(false);
   // Or one of the app's own, by its path.
-  writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace(`git = ${JSON.stringify(`file://${crate}`)}`, `path = ${JSON.stringify(crate)}`));
+  const manifest = readFileSync(join(at, "Cargo.toml"), "utf8");
+  writeFileSync(join(at, "Cargo.toml"), manifest.replace(`git = ${JSON.stringify(`file://${crates.hashbrown}`)}`, `path = ${JSON.stringify(crates.hashbrown)}`));
   const own = build(at);
   expect(own.code).not.toBe(0);
-  expect(own.stderr).toContain("hashbrown::one");
+  expect(own.stderr).toContain("`hashbrown::one`");
 }, 600_000);

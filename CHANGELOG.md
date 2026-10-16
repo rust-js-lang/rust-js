@@ -78,6 +78,10 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **indexmap's `IndexMap` and `IndexSet` are a `Map` and a `Set`**, which
+  keep the order they're added in, as indexmap's do; `get_index`,
+  `swap_remove`, `insert_full` and the rest are the runtime's
+  ([ADR 0424](docs/decisions/0424-indexmaps-maps-are-js-maps.md)).
 - **hashbrown's `HashMap` and `HashSet` are std's**, a `Map` and a `Set`:
   rustc builds hashbrown, never rust-js, and what std's maps haven't is
   refused where it's called

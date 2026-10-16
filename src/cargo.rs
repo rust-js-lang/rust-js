@@ -44,15 +44,16 @@ pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 const TRYING: &str = "RUST_JS_TRYING";
 
 /// The crates of crates.io's rust-js reads as rustc builds them, never
-/// compiled by it: serde's (ADR 0077), and hashbrown, whose maps are std's,
-/// with what it alone uses (ADR 0423).
-const READ_AS_RUSTC_BUILDS_THEM: [&str; 6] = [
+/// compiled by it: serde's (ADR 0077), and hashbrown, with what it alone
+/// uses, and indexmap, whose maps are std's (ADRs 0423, 0424).
+const READ_AS_RUSTC_BUILDS_THEM: [&str; 7] = [
     "serde",
     "serde_core",
     "serde_json",
     "hashbrown",
     "foldhash",
     "allocator-api2",
+    "indexmap",
 ];
 
 pub fn translate(args: Vec<String>) -> Invocation {

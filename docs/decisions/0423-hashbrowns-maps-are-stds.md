@@ -39,7 +39,7 @@ counts.set(word, (current + 1) >>> 0);
   `cargo::READ_AS_RUSTC_BUILDS_THEM`'s**: serde's, and hashbrown, with
   foldhash and allocator-api2, which it alone uses. Such a crate is
   rustc's wherever it is, a registry's or the app's own by its path.
-- **Which of hashbrown's items are std's is `recognition::hashbrown_path`'s
+- **Which of hashbrown's items are std's is `recognition::bound_map_item`'s
   to say**, by its own path, `hashbrown::map::HashMap`: `is_std_def` of
   `HashMap`, `HashSet` and `HashMapEntry` asks it, and the map entries'
   `map_entry_item`.
@@ -49,7 +49,7 @@ counts.set(word, (current + 1) >>> 0);
 
 ## Why
 
-- **It's the program Rust runs**: `test/hashbrown.test.ts` runs
+- **It's the program Rust runs**: `test/bound-maps.test.ts` runs
   `scripts/crate-corpus/hashbrown.rs`, counting with an entry, getting,
   changing and removing, a map's iterator held in a struct, and a set's
   inserts and intersection, against native hashbrown; and refuses a method
@@ -60,7 +60,7 @@ counts.set(word, (current + 1) >>> 0);
 ## Consequences
 
 - hashbrown's `HashTable` and raw-table APIs, and its own methods std's
-  maps haven't, are refused, where they're called. indexmap uses
-  `HashTable`.
+  maps haven't, are refused, where they're called. indexmap, which uses
+  `HashTable`, is a `Map` itself (ADR 0424).
 - A map's iterator's `len()` or `size_hint()`, held and stepped, is
   refused, as std's is.

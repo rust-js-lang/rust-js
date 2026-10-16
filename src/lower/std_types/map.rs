@@ -15,6 +15,8 @@ use rustc_span::Span;
 /// A `HashMap` or `HashSet` method rust-js knows.
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum MapOp {
+    /// indexmap's, by an entry's place (ADR 0424).
+    ByPlace(PlaceOp),
     /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`.
     New {
         set: bool,
@@ -98,6 +100,129 @@ pub(in crate::lower) enum MapOp {
     TreeSplitOff,
     TreeAppend,
     Extend,
+}
+
+/// What indexmap's `IndexMap` and `IndexSet` do by an entry's place, which
+/// std's maps haven't (ADR 0424).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(in crate::lower) enum PlaceOp {
+    /// `get_index_of(key)`: `$indexOf(m, key)`.
+    Of,
+    /// `get_index(i)`: `$atIndex(m, i)`.
+    At,
+    /// `first()`, `last()`.
+    End { last: bool },
+    /// `insert_full`: where it is, and the old value, or whether it's new.
+    InsertFull,
+    /// `swap_remove(key)`, and `remove(key)`, which is it: the last in its place.
+    SwapRemove,
+    /// `pop()`: the last entry.
+    Pop,
+    /// `sort_keys()`, and a set's `sort()`.
+    SortKeys,
+}
+
+/// What a method's owner is of std's maps: a map, serde_json's too, or a
+/// set; std's own map, a B-tree's, or indexmap's, which keeps the order
+/// it's added to in (ADR 0424); or a map's entry, an occupied one or a
+/// vacant one (ADR 0345).
+#[derive(Clone, Copy)]
+pub(in crate::lower) struct MapOwner {
+    pub(in crate::lower) map: bool,
+    pub(in crate::lower) set: bool,
+    pub(in crate::lower) std_map: bool,
+    pub(in crate::lower) btree_map: bool,
+    pub(in crate::lower) placed: bool,
+    pub(in crate::lower) entry: bool,
+    pub(in crate::lower) occupied: bool,
+    pub(in crate::lower) vacant: bool,
+}
+
+/// Which of a map's, a set's or an entry's methods `name` is, of `of`
+/// (ADRs 0059, 0325, 0345, 0424).
+pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
+    let MapOwner {
+        map,
+        set,
+        std_map,
+        btree_map,
+        placed,
+        entry,
+        occupied,
+        vacant,
+    } = of;
+    Some(match name {
+        "get_index_of" if placed => MapOp::ByPlace(PlaceOp::Of),
+        "get_index" if placed => MapOp::ByPlace(PlaceOp::At),
+        "first" | "last" if placed => MapOp::ByPlace(PlaceOp::End { last: name == "last" }),
+        "insert_full" if placed => MapOp::ByPlace(PlaceOp::InsertFull),
+        // indexmap's `remove` is its `swap_remove`.
+        "swap_remove" | "remove" if placed => MapOp::ByPlace(PlaceOp::SwapRemove),
+        "shift_remove" if placed && map => MapOp::Remove,
+        "shift_remove" if placed => MapOp::Delete,
+        "pop" if placed => MapOp::ByPlace(PlaceOp::Pop),
+        "sort_keys" if placed && map => MapOp::ByPlace(PlaceOp::SortKeys),
+        "sort" if placed && set => MapOp::ByPlace(PlaceOp::SortKeys),
+        "new" | "with_capacity" if map || set => MapOp::New { set },
+        "insert" if map => MapOp::Insert,
+        "insert" if set => MapOp::Add,
+        "get" | "get_mut" if map => MapOp::Get,
+        "contains_key" if map => MapOp::Has,
+        "contains" if set => MapOp::Has,
+        "remove" if map => MapOp::Remove,
+        "remove" if set => MapOp::Delete,
+        "len" if map || set => MapOp::Len,
+        "clear" if std_map || set => MapOp::Clear,
+        "retain" if std_map || set => MapOp::Retain,
+        "drain" if std_map || set => MapOp::DrainAll,
+        "get_key_value" if std_map => MapOp::GetKeyValue,
+        "remove_entry" if std_map => MapOp::RemoveEntry,
+        "into_keys" if std_map => MapOp::Iter(Part::Keys),
+        "into_values" if std_map => MapOp::Iter(Part::Values),
+        "get" if set => MapOp::SetGet,
+        "take" if set => MapOp::SetTake,
+        "replace" if set => MapOp::SetReplace,
+        "union" if set => MapOp::Algebra("union"),
+        "intersection" if set => MapOp::Algebra("intersection"),
+        "difference" if set => MapOp::Algebra("difference"),
+        "symmetric_difference" if set => MapOp::Algebra("symmetric"),
+        "is_subset" if set => MapOp::Subset { superset: false },
+        "is_superset" if set => MapOp::Subset { superset: true },
+        "is_disjoint" if set => MapOp::Disjoint,
+        "first_key_value" | "first" if std_map || set => MapOp::TreeEnd {
+            last: false,
+            pop: false,
+        },
+        "last_key_value" | "last" if std_map || set => MapOp::TreeEnd { last: true, pop: false },
+        "pop_first" if std_map || set => MapOp::TreeEnd { last: false, pop: true },
+        "pop_last" if std_map || set => MapOp::TreeEnd { last: true, pop: true },
+        "range" if std_map || set => MapOp::TreeRange { mutable: false },
+        "range_mut" if std_map => MapOp::TreeRange { mutable: true },
+        // Lazy, as each is asked for (ADR 0344).
+        "extract_if" if std_map || set => MapOp::ExtractIf,
+        "split_off" if std_map || set => MapOp::TreeSplitOff,
+        "append" if std_map || set => MapOp::TreeAppend,
+        "is_empty" if map || set => MapOp::IsEmpty,
+        "iter" | "iter_mut" if map || set => MapOp::Iter(Part::Entries),
+        "keys" if map => MapOp::Iter(Part::Keys),
+        "values" | "values_mut" if map => MapOp::Iter(Part::Values),
+        "entry" if map => MapOp::Entry,
+        "first_entry" | "last_entry" if btree_map => MapOp::EndEntry {
+            last: name == "last_entry",
+        },
+        "key" if occupied || vacant => MapOp::EntryKey,
+        "into_key" if vacant => MapOp::EntryKey,
+        "insert" if vacant => MapOp::VacantInsert,
+        "get" | "get_mut" | "into_mut" if occupied => MapOp::EntryGet { mutable: name != "get" },
+        "insert" if occupied => MapOp::EntryInsert,
+        "remove" | "remove_entry" if occupied => MapOp::EntryRemove {
+            entry: name == "remove_entry",
+        },
+        "or_insert" if entry => MapOp::OrInsert,
+        "or_insert_with" if entry => MapOp::OrInsertWith,
+        "or_default" if entry => MapOp::OrDefault,
+        _ => return None,
+    })
 }
 
 /// What an iterator of a map goes over.
@@ -300,6 +425,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.items_of(items, tys[0], span, out)?;
                 self.made_of(set, generic_args, items)
             }
+            MapOp::ByPlace(op) => match op {
+                PlaceOp::Of => helper("$indexOf", vec![arg(), arg()]),
+                PlaceOp::At => helper("$atIndex", vec![arg(), arg()]),
+                PlaceOp::End { last: false } => helper("$atIndex", vec![arg(), Expr::int(0)]),
+                PlaceOp::End { last: true } => {
+                    let m = arg();
+                    let m = match m.reads_same() {
+                        true => m,
+                        false => self.spill("m", m, out),
+                    };
+                    let last = Expr::bin(Op::Sub, Expr::member(m.clone(), "size"), Expr::int(1));
+                    helper("$atIndex", vec![m, last])
+                }
+                PlaceOp::InsertFull if set => helper("$addFull", vec![arg(), arg()]),
+                PlaceOp::InsertFull => helper("$insertFull", vec![arg(), arg(), arg()]),
+                PlaceOp::SwapRemove => helper("$swapRemoveKey", vec![arg(), arg()]),
+                PlaceOp::Pop => helper("$popLast", vec![arg()]),
+                PlaceOp::SortKeys => {
+                    let key = types.first().copied().expect("a key's type");
+                    let cmp = self.cmp_fn(key, false, span)?;
+                    helper("$sortKeys", vec![arg(), cmp])
+                }
+            },
             MapOp::Insert => {
                 let list = vec![arg(), arg(), arg()];
                 helper("$insert", list)

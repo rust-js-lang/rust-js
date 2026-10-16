@@ -12,7 +12,7 @@ use super::std_types::any::AnyOp;
 use super::std_types::cow::CowOp;
 use super::std_types::heap::HeapOp;
 use super::std_types::lazy::LazyOp;
-use super::std_types::map::{MapOp, Part};
+use super::std_types::map::{MapOp, MapOwner, Part, map_method};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::option::OptionPlaceOp;
@@ -1451,14 +1451,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let cow = self.is_cow(owner);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
-        let map = adt(StdItem::HashMap) || adt(StdItem::BTreeMap) || self.is_json_map(owner);
-        let set = adt(StdItem::HashSet) || adt(StdItem::BTreeSet);
-        // std's own maps, not serde_json's (ADR 0325).
-        let std_map = adt(StdItem::HashMap) || adt(StdItem::BTreeMap);
-        let entry = adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry);
-        // A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
-        let occupied = self.is_occupied_entry(owner);
-        let vacant = self.is_vacant_entry(owner);
+        let of = MapOwner {
+            map: adt(StdItem::HashMap) || adt(StdItem::BTreeMap) || self.is_json_map(owner),
+            set: adt(StdItem::HashSet) || adt(StdItem::BTreeSet),
+            std_map: adt(StdItem::HashMap) || adt(StdItem::BTreeMap),
+            btree_map: adt(StdItem::BTreeMap),
+            placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),
+            entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry),
+            occupied: self.is_occupied_entry(owner),
+            vacant: self.is_vacant_entry(owner),
+        };
         let name = tcx.item_name(def_id);
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
@@ -1536,7 +1538,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A JS array has no capacity: asking for some does nothing (ADR 0315).
             "with_capacity" if adt(StdItem::Vec) => Some(Std::VecNew),
             "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit"
-                if adt(StdItem::Vec) || deque || heap || map || set =>
+                if adt(StdItem::Vec) || deque || heap || of.map || of.set =>
             {
                 Some(Std::Nothing)
             }
@@ -1592,66 +1594,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Std::Comb(comb));
         }
         Some(match tcx.item_name(def_id).as_str() {
-            "new" | "with_capacity" if map || set => Std::Map(MapOp::New { set }),
-            "insert" if map => Std::Map(MapOp::Insert),
-            "insert" if set => Std::Map(MapOp::Add),
-            "get" | "get_mut" if map => Std::Map(MapOp::Get),
-            "contains_key" if map => Std::Map(MapOp::Has),
-            "contains" if set => Std::Map(MapOp::Has),
-            "remove" if map => Std::Map(MapOp::Remove),
-            "remove" if set => Std::Map(MapOp::Delete),
-            "len" if map || set => Std::Map(MapOp::Len),
-            "clear" if std_map || set => Std::Map(MapOp::Clear),
-            "retain" if std_map || set => Std::Map(MapOp::Retain),
-            "drain" if std_map || set => Std::Map(MapOp::DrainAll),
-            "get_key_value" if std_map => Std::Map(MapOp::GetKeyValue),
-            "remove_entry" if std_map => Std::Map(MapOp::RemoveEntry),
-            "into_keys" if std_map => Std::Map(MapOp::Iter(Part::Keys)),
-            "into_values" if std_map => Std::Map(MapOp::Iter(Part::Values)),
-            "get" if set => Std::Map(MapOp::SetGet),
-            "take" if set => Std::Map(MapOp::SetTake),
-            "replace" if set => Std::Map(MapOp::SetReplace),
-            "union" if set => Std::Map(MapOp::Algebra("union")),
-            "intersection" if set => Std::Map(MapOp::Algebra("intersection")),
-            "difference" if set => Std::Map(MapOp::Algebra("difference")),
-            "symmetric_difference" if set => Std::Map(MapOp::Algebra("symmetric")),
-            "is_subset" if set => Std::Map(MapOp::Subset { superset: false }),
-            "is_superset" if set => Std::Map(MapOp::Subset { superset: true }),
-            "is_disjoint" if set => Std::Map(MapOp::Disjoint),
-            "first_key_value" | "first" if std_map || set => Std::Map(MapOp::TreeEnd {
-                last: false,
-                pop: false,
-            }),
-            "last_key_value" | "last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: false }),
-            "pop_first" if std_map || set => Std::Map(MapOp::TreeEnd { last: false, pop: true }),
-            "pop_last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: true }),
-            "range" if std_map || set => Std::Map(MapOp::TreeRange { mutable: false }),
-            "range_mut" if std_map => Std::Map(MapOp::TreeRange { mutable: true }),
-            // Lazy, as each is asked for (ADR 0344).
-            "extract_if" if std_map || set => Std::Map(MapOp::ExtractIf),
-            "split_off" if std_map || set => Std::Map(MapOp::TreeSplitOff),
-            "append" if std_map || set => Std::Map(MapOp::TreeAppend),
-            "is_empty" if map || set => Std::Map(MapOp::IsEmpty),
-            "iter" | "iter_mut" if map || set => Std::Map(MapOp::Iter(Part::Entries)),
-            "keys" if map => Std::Map(MapOp::Iter(Part::Keys)),
-            "values" | "values_mut" if map => Std::Map(MapOp::Iter(Part::Values)),
-            "entry" if map => Std::Map(MapOp::Entry),
-            "first_entry" | "last_entry" if adt(StdItem::BTreeMap) => Std::Map(MapOp::EndEntry {
-                last: name.as_str() == "last_entry",
-            }),
-            "key" if occupied || vacant => Std::Map(MapOp::EntryKey),
-            "into_key" if vacant => Std::Map(MapOp::EntryKey),
-            "insert" if vacant => Std::Map(MapOp::VacantInsert),
-            "get" | "get_mut" | "into_mut" if occupied => Std::Map(MapOp::EntryGet {
-                mutable: name.as_str() != "get",
-            }),
-            "insert" if occupied => Std::Map(MapOp::EntryInsert),
-            "remove" | "remove_entry" if occupied => Std::Map(MapOp::EntryRemove {
-                entry: name.as_str() == "remove_entry",
-            }),
-            "or_insert" if entry => Std::Map(MapOp::OrInsert),
-            "or_insert_with" if entry => Std::Map(MapOp::OrInsertWith),
-            "or_default" if entry => Std::Map(MapOp::OrDefault),
+            // A map's, a set's or an entry's (ADRs 0059, 0325, 0345).
+            name if let Some(op) = map_method(name, of) => Std::Map(op),
             "from_str" | "from_str_nonconst" if arguments => Std::FmtStr,
             "new" if arguments => Std::FmtNew,
             "new_display" if argument => Std::FmtDisplay,
@@ -4199,18 +4143,47 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 /// Is `id` std's, core's or alloc's?
-/// std's map entry `name`, or hashbrown's map's (ADR 0423).
+/// Is `id` indexmap's `IndexMap` or `IndexSet`, std's maps that keep the
+/// order they're added in (ADR 0424)?
+fn is_index_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate).as_str() == "indexmap" && matches!(bound_map_item(tcx, id), Some("HashMap" | "HashSet"))
+}
+
+/// std's map entry `name`, or that of a crate's map that's std's (ADRs
+/// 0423, 0424).
 fn map_entry_item(tcx: TyCtxt<'_>, id: DefId, name: &str) -> bool {
-    match hashbrown_path(tcx, id) {
-        Some(path) => path == format!("hashbrown::map::{name}"),
+    match bound_map_item(tcx, id) {
+        Some(item) => item == name,
         None => is_std_item(tcx, id) && tcx.item_name(id).as_str() == name,
     }
 }
 
-/// An item of hashbrown's, by its own path, `hashbrown::map::HashMap`: whose
-/// maps, what std's are made of, are std's (ADR 0423).
-fn hashbrown_path(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
-    (tcx.crate_name(id.krate).as_str() == "hashbrown").then(|| ty::print::with_no_visible_paths!(tcx.def_path_str(id)))
+/// Which of std's map items an item of a crate whose maps are std's is:
+/// hashbrown's, what std's are made of (ADR 0423), and indexmap's, kept in
+/// the order they're added, as a JS `Map` is (ADR 0424). `HashMap`,
+/// `HashSet`, or its map's `Entry`, `OccupiedEntry` or `VacantEntry`.
+fn bound_map_item(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
+    match tcx.crate_name(id.krate).as_str() {
+        // By its own path: its set's and its table's have entries too.
+        "hashbrown" => Some(match ty::print::with_no_visible_paths!(tcx.def_path_str(id)).as_str() {
+            "hashbrown::map::HashMap" => "HashMap",
+            "hashbrown::set::HashSet" => "HashSet",
+            "hashbrown::map::Entry" => "Entry",
+            "hashbrown::map::OccupiedEntry" => "OccupiedEntry",
+            "hashbrown::map::VacantEntry" => "VacantEntry",
+            _ => return None,
+        }),
+        // By its name: its entries are its map's alone.
+        "indexmap" => Some(match tcx.item_name(id).as_str() {
+            "IndexMap" => "HashMap",
+            "IndexSet" => "HashSet",
+            "Entry" => "Entry",
+            "OccupiedEntry" => "OccupiedEntry",
+            "VacantEntry" => "VacantEntry",
+            _ => return None,
+        }),
+        _ => None,
+    }
 }
 
 pub(super) fn is_std_item(tcx: TyCtxt<'_>, id: DefId) -> bool {
@@ -5049,14 +5022,14 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         }
         // A lang item, which has no diagnostic item.
         StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
-        // hashbrown's, std's (ADR 0423).
-        StdItem::HashMap | StdItem::HashSet | StdItem::HashMapEntry if let Some(path) = hashbrown_path(tcx, id) => {
+        // A crate's whose maps are std's (ADRs 0423, 0424).
+        StdItem::HashMap | StdItem::HashSet | StdItem::HashMapEntry if let Some(bound) = bound_map_item(tcx, id) => {
             let name = match item {
-                StdItem::HashMap => "hashbrown::map::HashMap",
-                StdItem::HashSet => "hashbrown::set::HashSet",
-                _ => "hashbrown::map::Entry",
+                StdItem::HashMap => "HashMap",
+                StdItem::HashSet => "HashSet",
+                _ => "Entry",
             };
-            path == name
+            bound == name
         }
         _ => tcx.is_diagnostic_item(item.name(), id),
     }
