@@ -1279,6 +1279,15 @@ impl Expr {
         {
             return Expr::bin(Op::Add, (**x).clone(), rhs);
         }
+        // `"#" + (x + "")` is `"#" + x`: text joined to `x` makes text of it
+        // as `+ ""` does.
+        if op == Op::Add
+            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
+            && let ExprKind::Binary(Op::Add, x, empty) = &rhs.kind
+            && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
+        {
+            return Expr::bin(Op::Add, lhs, (**x).clone());
+        }
         Expr::new(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)))
     }
 

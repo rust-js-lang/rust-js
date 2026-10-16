@@ -422,4 +422,16 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
+  {
+    "name": "text-joined-to-text",
+    "breaks": "`\"#\" + (id + \"\")` keeps its `+ \"\"`",
+    "file": "src/js.rs",
+    "find": "            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
+    "replace": "            && false\n",
+    "tests": [
+      "test/bindings.test.ts",
+      "-t",
+      "as react.dev's Console does"
+    ]
+  },
 ];
