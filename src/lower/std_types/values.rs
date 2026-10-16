@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.process_call(known, &mut values) {
             return Ok(js);
         }
-        if let Some(js) = self.alloc_call(known, &mut values, call.span, out) {
+        if let Some(js) = self.alloc_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.path_call(known, &mut values) {

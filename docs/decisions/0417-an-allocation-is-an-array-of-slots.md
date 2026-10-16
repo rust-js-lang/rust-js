@@ -45,6 +45,8 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
 | a view as `*mut T` | `$ptrTyped(view)`: the pointer it was a view of |
 | `Vec::from_raw_parts(p, len, cap)` | `$vecFromRaw(p, len)`: the array `p` is the first slot of, `len` long, what's past it left there as `set_len` leaves it ([0420](0420-what-set-len-leaves-stays.md)) |
 | `Layout::from_size_align(s, a)` | `$layout(s, a)`: `Ok` of `{ size, align }`, or `Err` as Rust's |
+| `Layout::new::<T>()` | `{ size, align }` of `T`'s, a type parameter's given by its caller (ADR 0145) |
+| `Layout::from_size_align_unchecked(s, a)` | `{ size: s, align: a }` |
 | `layout.size()`, `layout.align()` | `layout.size`, `layout.align` |
 | `{:?}` of a `Layout`, a `LayoutError` | Rust's: `Layout { size: 24, align: 8 (1 << 3) }`, `LayoutError` |
 

@@ -6,9 +6,10 @@
 //! `p` points to the first of, `len` long, and `v.set_len(n)` leaves what's
 //! past `n` where it was (ADR 0420).
 
-use crate::js::{Expr, Stmt, StmtKind};
-use crate::lower::FnCx;
-use crate::lower::recognition::Std;
+use crate::js::{Expr, Prop, Stmt, StmtKind};
+use crate::lower::calls::Call;
+use crate::lower::recognition::{Std, TypeFact};
+use crate::lower::{FnCx, R};
 
 /// What's asked of the allocator, or of a `Layout`.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -24,6 +25,10 @@ pub(in crate::lower) enum AllocOp {
     /// `Layout::from_size_align(size, align)`: `Ok` of one, or `Err` where
     /// `align` isn't a power of two or `size` too big.
     Layout,
+    /// `Layout::new::<T>()`: `T`'s size and alignment (ADR 0145).
+    New,
+    /// `Layout::from_size_align_unchecked(size, align)`: one, unchecked.
+    Unchecked,
     /// `layout.size()`, `layout.align()`.
     Size,
     Align,
@@ -42,6 +47,8 @@ pub(in crate::lower) fn alloc_op(path: &str) -> Option<AllocOp> {
         "std::alloc::dealloc" => AllocOp::Dealloc,
         "std::alloc::handle_alloc_error" => AllocOp::Error,
         "std::alloc::Layout::from_size_align" => AllocOp::Layout,
+        "std::alloc::Layout::new" => AllocOp::New,
+        "std::alloc::Layout::from_size_align_unchecked" => AllocOp::Unchecked,
         "std::alloc::Layout::size" => AllocOp::Size,
         "std::alloc::Layout::align" => AllocOp::Align,
         "std::vec::Vec::<T>::from_raw_parts" => AllocOp::VecFromRaw,
@@ -56,21 +63,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn alloc_call(
         &mut self,
         known: Std,
+        call: Call<'_, 'tcx>,
         values: &mut std::vec::IntoIter<Expr>,
-        span: rustc_span::Span,
         out: &mut Vec<Stmt>,
-    ) -> Option<Expr> {
+    ) -> R<Option<Expr>> {
         let Std::Alloc(op) = known else {
-            return None;
+            return Ok(None);
         };
+        let span = call.span;
         let helper = |name: &'static str, values: Vec<Expr>| Expr::call(Expr::helper(name), values);
-        Some(match op {
+        let layout = |size: Expr, align: Expr| {
+            Expr::object(vec![
+                Prop::Field("size".into(), size),
+                Prop::Field("align".into(), align),
+            ])
+        };
+        Ok(Some(match op {
             AllocOp::Alloc => helper("$alloc", values.collect()),
             AllocOp::Realloc => helper("$realloc", values.collect()),
             AllocOp::Error => helper("$allocError", values.collect()),
             AllocOp::Layout => helper("$layout", values.collect()),
             AllocOp::VecFromRaw => helper("$vecFromRaw", values.collect()),
             AllocOp::SetLen => helper("$setLen", values.collect()),
+            AllocOp::New => {
+                let of = call.generic_args.type_at(0);
+                layout(
+                    self.type_fact_value(of, TypeFact::Size, span)?,
+                    self.type_fact_value(of, TypeFact::Align, span)?,
+                )
+            }
+            AllocOp::Unchecked => {
+                let size = values.next().expect("a size");
+                layout(size, values.next().expect("an alignment"))
+            }
             AllocOp::Size => Expr::member(values.next().expect("a layout"), "size"),
             AllocOp::Align => Expr::member(values.next().expect("a layout"), "align"),
             AllocOp::Dealloc => {
@@ -81,6 +106,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::undefined()
             }
-        })
+        }))
     }
 }

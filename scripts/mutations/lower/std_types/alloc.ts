@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
   },
+  {
+    name: "layout-new-unrecognized",
+    breaks: "`Layout::new::<T>()` isn't the allocator's, and is refused",
+    file: "src/lower/std_types/alloc.rs",
+    find: "        \"std::alloc::Layout::new\" => AllocOp::New,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
+  },
+  {
+    name: "layout-unchecked-unrecognized",
+    breaks: "`Layout::from_size_align_unchecked` isn't the allocator's, and is refused",
+    file: "src/lower/std_types/alloc.rs",
+    find: "        \"std::alloc::Layout::from_size_align_unchecked\" => AllocOp::Unchecked,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
+  },
 ];

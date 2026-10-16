@@ -1349,7 +1349,7 @@ export const mutations: Mutation[] = [
     name: "needs-drop-unknown",
     breaks: "`mem::needs_drop::<T>()` is refused, not rustc's answer",
     file: "src/lower/recognition.rs",
-    find: "        \"std::mem::needs_drop\" => return Some(TypeFact::NeedsDrop),\n",
+    find: "        \"std::mem::needs_drop\" => return &[TypeFact::NeedsDrop],\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
   },
@@ -1600,5 +1600,13 @@ export const mutations: Mutation[] = [
     find: "        path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "crate's own name for alloc"],
+  },
+  {
+    name: "layout-new-asks-nothing",
+    breaks: "`Layout::new::<T>()` of a type parameter asks no size or alignment of its caller, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"std::alloc::Layout::new\" => return &[TypeFact::Size, TypeFact::Align],\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
   },
 ];

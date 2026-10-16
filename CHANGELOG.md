@@ -78,6 +78,8 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`Layout::new::<T>()`**, of a type parameter too, its size and alignment
+  given by its caller, and `Layout::from_size_align_unchecked` (ADR 0417).
 - **Fixed: std's functions named through a `no_std` crate's own name for
   `alloc`**, hashbrown's `extern crate alloc as stdalloc`, weren't known as
   std's, `Vec::capacity`, `alloc::alloc` and the rest (ADR 0417).

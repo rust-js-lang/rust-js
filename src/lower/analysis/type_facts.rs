@@ -2,7 +2,7 @@
 //! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, which a
 //! caller's type answers.
 
-use crate::lower::recognition::{Recognition, TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_fact};
+use crate::lower::recognition::{Recognition, TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_facts};
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -67,7 +67,8 @@ pub(super) fn type_fact_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
-            if let Some(fact) = type_fact(tcx, callee) {
+            let facts = type_facts(tcx, callee);
+            for &fact in facts {
                 // `size_of_val` of an unsized `T` is the value's, not the type's.
                 // A downcast's type is its last, after its `Box`'s allocator.
                 // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
@@ -81,6 +82,8 @@ pub(super) fn type_fact_params<'tcx>(
                 if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
                     carried.insert((assoc, fact));
                 }
+            }
+            if !facts.is_empty() {
                 continue;
             }
             // A std method that only calls its bound's, `collect()` that's

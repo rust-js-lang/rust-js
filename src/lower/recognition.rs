@@ -597,7 +597,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some((fact, of_val)) = layout_query(tcx, def_id) {
             return Some(Some(Std::Layout { fact, of_val }));
         }
-        if type_fact(tcx, def_id) == Some(TypeFact::NeedsDrop) {
+        if type_facts(tcx, def_id) == [TypeFact::NeedsDrop] {
             return Some(Some(Std::NeedsDrop));
         }
         // An enum's variant's discriminant (ADR 0393).
@@ -4449,26 +4449,33 @@ fn layout_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<(TypeFact, bool)> {
     })
 }
 
-/// The fact `def_id` asks of its type argument: `size_of` and `size_of_val`
-/// its size, `align_of` its alignment, `type_name` and `type_name_of_val`
-/// its name. None of any other function.
-pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
+/// The facts `def_id` asks of its type argument: `size_of` and
+/// `size_of_val` its size, `align_of` its alignment, `Layout::new` both,
+/// `type_name` and `type_name_of_val` its name. None of any other function.
+pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] {
     if let Some((fact, _)) = layout_query(tcx, def_id) {
-        return Some(fact);
+        return match fact {
+            TypeFact::Align => &[TypeFact::Align],
+            _ => &[TypeFact::Size],
+        };
     }
     match std_path(tcx, def_id).as_str() {
-        "std::any::type_name" | "std::any::type_name_of_val" => return Some(TypeFact::Name),
-        "std::any::TypeId::of" => return Some(TypeFact::Id),
-        "std::mem::needs_drop" => return Some(TypeFact::NeedsDrop),
+        "std::any::type_name" | "std::any::type_name_of_val" => return &[TypeFact::Name],
+        "std::any::TypeId::of" => return &[TypeFact::Id],
+        "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
+        // Its size and its alignment (ADR 0417).
+        "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],
         _ => {}
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).
     let any = tcx.get_diagnostic_item(Symbol::intern("Any"));
     let name = tcx.item_name(def_id);
     if tcx.trait_of_assoc(def_id) == any && name.as_str() == "type_id" {
-        return Some(TypeFact::Id);
+        return &[TypeFact::Id];
     }
-    let owner = tcx.inherent_impl_of_assoc(def_id)?;
+    let Some(owner) = tcx.inherent_impl_of_assoc(def_id) else {
+        return &[];
+    };
     let owner = tcx.type_of(owner).instantiate_identity().skip_normalization();
     let of_any = owner.walk().any(|part| {
         part.as_type().is_some_and(|t| {
@@ -4476,7 +4483,10 @@ pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
             if traits.principal_def_id().is_some() && traits.principal_def_id() == any)
         })
     });
-    (of_any && matches!(name.as_str(), "is" | "downcast_ref" | "downcast_mut" | "downcast")).then_some(TypeFact::Id)
+    match of_any && matches!(name.as_str(), "is" | "downcast_ref" | "downcast_mut" | "downcast") {
+        true => &[TypeFact::Id],
+        false => &[],
+    }
 }
 
 /// Is `id` of a crate linked at two versions, whose paths alone don't tell
