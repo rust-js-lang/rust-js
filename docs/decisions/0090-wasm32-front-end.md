@@ -89,3 +89,29 @@ cfg!(target_pointer_width = "32")// true
   (Amended: a sized value's `align_of_val` is too, the same question of its
   alignment, so the four are one std function rust-js knows, `Std::Layout`,
   of a size or an alignment, and of a type or a value's.)
+
+## Amendment: panics unwind, as rust-js's do
+
+wasm32-unknown-unknown's panics abort, and rustc answered for that: a
+future's state is laid out for its panic strategy, a local that lives
+across a call that may panic, and has a destructor, kept in it only where a
+panic unwinds; and `cfg(panic = "abort")` held. But rust-js's panics
+unwind, as native Rust's do: a JS exception, what's held dropped in its
+`catch` (ADR 0098). So rustc's `async-fn-size-uninit-locals` was given 2
+bytes for a future native Rust lays out in 3, as `-Cpanic=abort` would.
+It showed when the test's own `impl Future` was allowed (ADR 0425).
+
+**rust-js tells rustc a program's panics unwind**, `-Cpanic=unwind`, in
+the one session rust-js lowers from, the playground's too. Nothing is
+linked, so the target's standard library, built to abort, is never asked
+to unwind. Case C of [0262](0262-when-rust-and-js-disagree.md): the
+results would change, so they're Rust's.
+
+- A future's size is native Rust's: `future_size_unwinds` in the corpus
+  prints both, and `cfg!(panic = "unwind")`, against native Rust.
+- `cfg(panic = "unwind")` holds, and `cfg(panic = "abort")` doesn't.
+- A mutation that leaves the target's abort is caught by that case.
+
+Rejected: refusing `size_of` of a future, as its size would be another
+program's. It refuses `future_sizes`, a program whose answer is right,
+and leaves `cfg(panic)` wrong.

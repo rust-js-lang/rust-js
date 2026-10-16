@@ -37,6 +37,7 @@ extern crate rustc_mir_dataflow;
 extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
+extern crate rustc_target;
 
 mod cargo;
 mod command;
@@ -156,6 +157,10 @@ impl Callbacks for RustJs {
         // Integers wrap, as the release profile has them: MIR read for what
         // runs says so, where it would check each operation (ADR 0364).
         config.opts.cg.overflow_checks = Some(false);
+        // Panics unwind, as a JS exception does, what's held dropped in its
+        // `catch`: wasm32's abort would lay out a future, and answer
+        // `cfg(panic)`, for another program (ADR 0090).
+        config.opts.cg.panic = Some(rustc_target::spec::PanicStrategy::Unwind);
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {

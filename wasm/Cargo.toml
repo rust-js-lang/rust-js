@@ -41,6 +41,7 @@ rustc_mir_dataflow = { path = "rustc/compiler/rustc_mir_dataflow" }
 rustc_parse = { path = "rustc/compiler/rustc_parse" }
 rustc_session = { path = "rustc/compiler/rustc_session" }
 rustc_span = { path = "rustc/compiler/rustc_span" }
+rustc_target = { path = "rustc/compiler/rustc_target" }
 # The same oxc release as ../Cargo.toml, from its tag (see there).
 oxc_allocator = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_ast = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }

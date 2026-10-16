@@ -78,6 +78,10 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **Fixed: rustc took a program's panics to abort, wasm32's, where
+  rust-js's unwind**: a future's size, `size_of_val`, is native Rust's now,
+  and `cfg(panic = "unwind")` holds
+  ([ADR 0090](docs/decisions/0090-wasm32-front-end.md)).
 - **A type's own `impl Future`, `io::Read`, `BufRead` and `Seek`**, as
   either's `Either` has, are allowed and never lowered, as its `Hash` is:
   what would call one is refused where it's called, and so is what would

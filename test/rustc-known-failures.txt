@@ -7,8 +7,7 @@ associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js does not su
 associated-types/associated-item-long-paths.rs	error: rust-js does not support `size_of` of a type parameter yet
 associated-types/associated-types-doubleendediterator-object.rs	error: rust-js does not support values of type `dyn std::iter::DoubleEndedIterator<Item = isize>` yet
 associated-types/associated-types-iterator-binding.rs	error: rust-js does not support calling `std::iter::DoubleEndedIterator::next_back` yet
-async-await/async-fn-size-moved-locals.rs	error: rust-js does not support user implementations of `std::future::Future` yet
-async-await/async-fn-size-uninit-locals.rs	error: rust-js does not support user implementations of `std::future::Future` yet
+async-await/async-fn-size-moved-locals.rs	error: rust-js does not support `BigFut` as a promise yet: its `Future` is the crate's own, which rust-js never compiles (ADR 0425)
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::pin_new_unchecked_in_helper` yet
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place

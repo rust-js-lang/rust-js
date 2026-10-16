@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = &self.0;\n",
     tests: ["test/crates.test.ts", "-t", "settings refuse|can't be published publishes nothing"],
   },
+  {
+    name: "panics-abort",
+    breaks: "rustc takes wasm32's panics to abort, where rust-js's unwind: a future's size and `cfg(panic)` are another program's",
+    file: "src/main.rs",
+    find: "        config.opts.cg.panic = Some(rustc_target::spec::PanicStrategy::Unwind);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
+  },
 ];
