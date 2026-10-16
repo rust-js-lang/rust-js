@@ -63,7 +63,15 @@ test.skipIf(!existsSync(wasm))("the playground loads, compiles, runs tests and s
     await status.filter({ hasText: "Failed" }).waitFor({ timeout: 60_000 });
     await page.locator(".cm-content[aria-label='Generated JavaScript']", { hasText: "Compilation cancelled" }).waitFor();
     await page.locator("#test").click();
-    await status.filter({ hasText: "Tests: 5 passed, 0 failed." }).waitFor({ timeout: 60_000 });
+    // Where they don't pass, what the page says instead: the compiler's
+    // error is in its output.
+    await status
+      .filter({ hasText: "Tests: 5 passed, 0 failed." })
+      .waitFor({ timeout: 60_000 })
+      .catch(async (error) => {
+        const output = await page.locator(".cm-content[aria-label='Generated JavaScript']").innerText();
+        throw new Error(`${error}\nstatus: ${await status.innerText()}\noutput:\n${output.slice(0, 4000)}`);
+      });
     expect(workers.some(url => url.includes("compiler-worker"))).toBe(true);
     expect(await page.locator("#result").getAttribute("sandbox")).toBe("allow-scripts");
     const preview = await page.locator("#result").elementHandle();
