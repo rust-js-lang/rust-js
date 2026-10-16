@@ -83,7 +83,8 @@ its type (ADR 0054):
 
 - A `dyn ToString`, `dyn Any` and `dyn DoubleEndedIterator` are still
   errors. (Amended by ADR 0331: a `dyn Any` is a pair too, of `Any`'s
-  dictionary, its type's `TypeId`.)
+  dictionary, its type's `TypeId`. Amended by ADR 0429: a `dyn
+  DoubleEndedIterator` is a JS iterator that knows its back.)
 - Of rustc's tests, 8 more pass: `dyn Display` in its forms, `Box<dyn
   Error>` from a string, and three of trait upcasting's.
 

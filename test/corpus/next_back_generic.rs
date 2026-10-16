@@ -1,10 +1,16 @@
 //@ compile-fail: `next_back()` of
-// A generic iterator is a JS iterator, which gives its items from the
-// front only: its `next_back()` is refused.
-fn ends<T: DoubleEndedIterator<Item = i32>>(mut t: T) -> (Option<i32>, Option<i32>) {
-    (t.next(), t.next_back())
+// A generic iterator given as it is, which a type holds, is stepped by its
+// `Iterator` dictionary (ADR 0411), from the front only: its `next_back()`
+// is refused. One given only itself knows its back (ADR 0429).
+struct Ends<I> {
+    inner: I,
+}
+
+fn back<I: Iterator<Item = i32> + DoubleEndedIterator>(ends: &mut Ends<I>) -> Option<i32> {
+    ends.inner.next_back()
 }
 
 fn main() {
-    println!("{:?}", ends(vec![1, 2, 3].into_iter()));
+    let mut ends = Ends { inner: vec![1, 2, 3].into_iter() };
+    println!("{:?}", back(&mut ends));
 }

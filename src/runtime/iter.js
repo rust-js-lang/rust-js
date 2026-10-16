@@ -10,5 +10,9 @@ function $iter(items) {
   it.next = function () {
     return this.at < this.end ? { value: this.items[this.at++], done: false } : { value: undefined, done: true };
   };
+  // Its last item, as `next()` gives its first: what `$nextBack` steps.
+  it.back = function () {
+    return this.at < this.end ? { value: this.items[--this.end], done: false } : { value: undefined, done: true };
+  };
   return it;
 }

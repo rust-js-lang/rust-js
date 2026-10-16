@@ -2461,13 +2461,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    /// A `dyn Iterator`, boxed or lent: a JS iterator, whatever made it.
+    /// A `dyn Iterator`, boxed or lent: a JS iterator, whatever made it; of
+    /// a `dyn DoubleEndedIterator`, one that knows its back (ADR 0429).
     pub(super) fn is_dyn_iter(&self, ty: Ty<'tcx>) -> bool {
         is_dyn_iter(self.tcx, ty)
     }
 
-    /// core's `DoubleEndedIterator`, found among the traits, as it has no
-    /// diagnostic item.
     /// The `fmt` trait a placeholder of `kind` calls, `{:x}`'s `LowerHex`,
     /// where it's one of `OTHER_FMT_TRAITS`.
     pub(super) fn other_fmt_trait(&self, kind: Std) -> Option<DefId> {
@@ -2501,10 +2500,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// core's `DoubleEndedIterator`, found among the traits, as it has no
+    /// diagnostic item.
     pub(super) fn double_ended_iterator(&self) -> Option<DefId> {
         self.tcx
             .all_traits_including_private()
-            .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "DoubleEndedIterator")
+            .find(|&id| is_double_ended(self.tcx, id))
     }
 
     pub(super) fn exact_size_iterator(&self) -> Option<DefId> {
@@ -3762,6 +3763,11 @@ pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && std_path(tcx, id).contains("fmt::")
 }
 
+/// Is `id` core's `DoubleEndedIterator`?
+pub(crate) fn is_double_ended(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "DoubleEndedIterator"
+}
+
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
 /// no diagnostic items?
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
@@ -4519,12 +4525,23 @@ pub(super) fn ordering_value(tcx: TyCtxt<'_>, enum_def: DefId, variant: Symbol) 
     })
 }
 
-/// `dyn Iterator`, behind a reference or a `Box`, or not.
+/// `dyn Iterator`, or `dyn DoubleEndedIterator` (ADR 0429), behind a
+/// reference or a `Box`, or not.
 pub(super) fn is_dyn_iter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    dyn_iter_trait(tcx, ty).is_some()
+}
+
+/// The trait of a `dyn Iterator` or a `dyn DoubleEndedIterator`, behind a
+/// reference or a `Box`, or not.
+pub(super) fn dyn_iter_trait<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
     let ty = ty.peel_refs();
     let ty = ty.boxed_ty().unwrap_or(ty);
-    matches!(ty.kind(), ty::Dynamic(traits, ..)
-        if traits.principal_def_id().is_some_and(|id| tcx.is_diagnostic_item(sym::Iterator, id)))
+    let ty::Dynamic(traits, ..) = ty.kind() else {
+        return None;
+    };
+    traits
+        .principal_def_id()
+        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id) || is_double_ended(tcx, id))
 }
 
 /// Whether `ty` is a React context's `Provider` or `Consumer`, which

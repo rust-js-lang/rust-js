@@ -399,8 +399,8 @@ export const mutations: Mutation[] = [
     name: "mir-next-back-peekable",
     breaks: "MIR's `next_back()` of a `Peekable` of an array's is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                || (self.recognition().is_peekable(iter_ty)\n",
-    replace: "                || (false\n",
+    find: "            || (self.recognition().is_peekable(iter_ty)\n",
+    replace: "            || (false\n",
     tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },
   {
@@ -612,5 +612,21 @@ export const mutations: Mutation[] = [
     find: "        if keeps_each || self.recognition().closed_on_drop(iter_ty).is_some() {\n",
     replace: "        if keeps_each {\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
+  {
+    name: "double-ended-next-back-refused",
+    breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "            || self.knows_its_back(iter_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
+  {
+    name: "double-ended-rev-refused",
+    breaks: "`rev()` of a generic `T: DoubleEndedIterator` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "            if std_method == Some(IterMethod::Rev) && self.knows_its_back(iter_ty) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
 ];

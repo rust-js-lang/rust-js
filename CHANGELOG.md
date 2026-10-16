@@ -78,6 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`next_back()` and `rev()` of a generic `T: DoubleEndedIterator`, and
+  of a `dyn DoubleEndedIterator`**: a JS iterator that knows its back,
+  an array's `$iter`, or `$iterator(it, next, false, nextBack)` of a range
+  or of the crate's own
+  ([ADR 0429](docs/decisions/0429-a-double-ended-iterator-knows-its-back.md)).
 - **`type_name` in generic code** of a type that holds a type parameter,
   `Cow<'_, T>`, and of a `T: ?Sized` (ADR 0145).
 - **C-variadic functions**, `extern "C" fn f(n: i32, mut args: ...)`: a

@@ -148,11 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let it = values.into_iter().next().expect("the receiver");
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
-            let array = self.steps_an_array(iter_ty)
-                // A `Peekable` of an array's, the same `$iter`.
-                || (self.recognition().is_peekable(iter_ty)
-                    && matches!(iter_ty.kind(), ty::Adt(_, args)
-                        if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())));
+            let array = self.has_a_back(iter_ty);
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
                 (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
                     Expr::call_helper(step, vec![it])
@@ -213,6 +209,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(Some),
                     _ => Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"))),
                 };
+            }
+            if std_method == Some(IterMethod::Rev) && self.knows_its_back(iter_ty) {
+                return Ok(Some(self.reversed(receiver, iter_ty)));
             }
             let range = self.range_kind(iter_ty);
             return Ok(Some(match (std_method, range) {
@@ -506,6 +505,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
+    /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
+    /// a `$iter`, of an array's iterator or a `Peekable` of one, or a generic
+    /// or a `dyn` one that knows its back (ADR 0429).
+    fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
+        self.steps_an_array(iter_ty)
+            || self.knows_its_back(iter_ty)
+            || (self.recognition().is_peekable(iter_ty)
+                && matches!(iter_ty.kind(), ty::Adt(_, args)
+                    if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())))
+    }
+
+    /// `rev()` of `it`, a generic or a `dyn` iterator of type `iter_ty` that
+    /// knows its back (ADR 0429): a JS iterator stepped by `$nextBack`, its
+    /// `Some` boxed where it may look like `None` (ADR 0051).
+    fn reversed(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
+        let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
+        let back = Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" });
+        crate::lower::iterators::stepped(it, back, boxed, None)
+    }
+
     /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
     /// to it, it itself, which its own `next` steps; and of a type parameter
     /// given as it is, with its `Iterator` dictionary (ADR 0411), `by_ref()`
@@ -577,6 +596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     value,
                     Expr::member(dictionary, "next"),
                     boxed,
+                    None,
                 ))
             }
             // A generic one, which may be given an array (ADR 0061): JS's
@@ -607,7 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a
     /// `BTreeMap`'s, its `range()`'s too: one that steps from its back and
     /// knows its length. The one list.
-    pub(super) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
         self.array_source(ty).is_some()
             || self.recognition().is_str_chars(ty)
             || self.is_str_split(ty)
@@ -620,7 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std iterator of type `ty` made of `value`, an array or a text, as
     /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
     /// clone of it does (ADR 0181); another, the JS iterator of `value`.
-    pub(super) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+    pub(in crate::lower) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         if is_js_iterator(&value) {
             value
         } else if made_array(&value) || self.steps_an_array(ty) {

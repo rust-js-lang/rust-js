@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
+  {
+    name: "iterator-back-forgotten",
+    breaks: "a range or the crate's iterator given as a double-ended one has no `back()`",
+    file: "src/runtime/iterator.js",
+    find: "    it.back = () => step(nextBack(iterator));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
 ];

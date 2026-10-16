@@ -175,7 +175,7 @@ pub(super) fn for_of(
             label: label.clone(),
             pattern,
             mutable,
-            iterable: crate::lower::iterators::stepped(source.clone(), (**callee).clone(), boxed),
+            iterable: crate::lower::iterators::stepped(source.clone(), (**callee).clone(), boxed, None),
             body,
         },
         "$next" | "$nextSome" => StmtKind::ForOf {

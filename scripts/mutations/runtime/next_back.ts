@@ -1,21 +1,13 @@
-// Mutations of src/runtime/next_back.js (ADR 0071).
+// Mutations of src/runtime/next_back.js (ADRs 0071, 0429).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "next-back-from-front",
+    name: "next-back-steps-front",
     breaks: "`next_back()` takes the first item",
     file: "src/runtime/next_back.js",
-    find: "it.items[--it.end]",
-    replace: "it.items[it.at++]",
-    tests: ["test/corpus.test.ts","-t","iter_next_back"],
-  },
-  {
-    name: "next-back-past-front",
-    breaks: "`next_back()` takes items `next()` took",
-    file: "src/runtime/next_back.js",
-    find: "it.at < it.end ?",
-    replace: "it.end > 0 ?",
+    find: "  const step = it.back();\n",
+    replace: "  const step = it.next();\n",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
 ];

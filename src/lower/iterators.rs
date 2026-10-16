@@ -19,12 +19,15 @@ use rustc_span::def_id::DefId;
 
 /// `$iterator(value, next)`: a JS iterator of `value`, a Rust iterator,
 /// stepped by `next`, which gives its `Option`; of one whose `Some` may be
-/// boxed (ADR 0051), `boxed`, unboxed. The one JS form of it.
-pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool) -> Expr {
+/// boxed (ADR 0051), `boxed`, unboxed; given `back`, its `next_back`, one
+/// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
+/// of it.
+pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
     let mut list = vec![value, next];
-    if boxed {
-        list.push(Expr::bool(true));
+    if boxed || back.is_some() {
+        list.push(Expr::bool(boxed));
     }
+    list.extend(back);
     Expr::call(Expr::helper("$iterator"), list)
 }
 
@@ -161,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
     /// a range's by its `$rangeNext`.
     pub(super) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
-        stepped(value, next, false)
+        stepped(value, next, false, None)
     }
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
@@ -232,7 +235,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
                 _ => (input, given),
             };
-            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
+            // One that steps it from its back, a JS iterator that knows it
+            // (ADR 0429).
+            if self.double_ended_param(callee, input) {
+                let held = std::mem::replace(value, Expr::undefined());
+                *value = self.as_double_ended(held, given, span)?;
+            } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_js_iterator(held, given, span)?;
             }
@@ -303,6 +311,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(own.then_some(double_ended))
     }
 
+    /// Whether `ty`'s JS iterator knows its back, which `$nextBack` steps
+    /// (ADR 0429): a `dyn DoubleEndedIterator`'s, or a type parameter's
+    /// bound by one, given a JS iterator (ADR 0061), not as it is (ADR 0411).
+    /// The one answer, of what generic code steps from its back and of what
+    /// its callers give it.
+    pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
+            return super::recognition::is_double_ended(self.tcx, id);
+        }
+        self.double_ended_param(self.tcx.typeck_root_def_id(self.item), ty)
+    }
+
+    /// Whether `ty` is `id`'s type parameter bound by `DoubleEndedIterator`,
+    /// given a JS iterator that knows its back (`knows_its_back`).
+    fn double_ended_param(&self, id: DefId, ty: ty::Ty<'tcx>) -> bool {
+        let ty::Param(param) = ty.kind() else {
+            return false;
+        };
+        let env = ty::TypingEnv::post_analysis(self.tcx, id);
+        !given_as_it_is(self.tcx, id, *param)
+            && (self.declared_bounds(ty, env.param_env).into_iter())
+                .any(|bound| super::recognition::is_double_ended(self.tcx, bound))
+    }
+
+    /// `value`, a double-ended iterator of type `ty`, as a JS iterator that
+    /// knows its back (ADR 0429): an array's, its `$iter`; a range's,
+    /// `$iterator(range, $rangeNext, false, $rangeNextBack)`; the crate's
+    /// own, stepped by its impls' `next` and `next_back`; one already, a
+    /// `dyn`'s or a type parameter's, itself.
+    pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        if self.knows_its_back(ty) {
+            return Ok(value);
+        }
+        if let Some(kind) = self.range_kind(ty)
+            && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
+        {
+            return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
+        }
+        if self.steps_an_array(ty) {
+            return Ok(self.std_iterator(value, ty));
+        }
+        if let Some(double_ended) = self.own_next_back(ty)? {
+            let iterator = std_item(self.tcx, StdItem::Iterator);
+            let (next, boxed) = self.user_next(ty, iterator, "next", span)?;
+            let (back, _) = self.user_next(ty, double_ended, "next_back", span)?;
+            return Ok(stepped(value, next, boxed, Some(back)));
+        }
+        Err(self.unsupported(
+            span,
+            &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back"),
+        ))
+    }
+
     /// `exact_len`'s, of the iterator's value and its type `ty`.
     pub(in crate::lower) fn exact_len_of(
         &mut self,
@@ -337,7 +400,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
-        Ok(stepped(value, next, boxed))
+        Ok(stepped(value, next, boxed, None))
     }
 
     /// The function that steps the crate's iterator of type `ty`, its impl's

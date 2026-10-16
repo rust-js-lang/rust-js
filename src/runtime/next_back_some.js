@@ -1,3 +1,4 @@
 function $nextBackSome(it) {
-  return it.at < it.end ? $some(it.items[--it.end]) : undefined;
+  const step = it.back();
+  return step.done ? undefined : $some(step.value);
 }

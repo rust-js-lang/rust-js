@@ -1,6 +1,7 @@
 # 0140. An iterator trait object is a JS iterator
 
 Status: Accepted. Extends [0055](0055-iterator.md), [0061](0061-generic-iterators.md), [0071](0071-stepping-iterators.md) and [0139](0139-lazy-chains.md).
+Amended by [0429](0429-a-double-ended-iterator-knows-its-back.md).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -51,6 +52,8 @@ helpers**, made where the value becomes one:
   is the object.
 - **A `dyn DoubleEndedIterator` is an error:** a JS iterator only steps
   from the front, so `next_back()` has nothing to call.
+  (Amended by [0429](0429-a-double-ended-iterator-knows-its-back.md): it's
+  a JS iterator that knows its back, `back()`, which `$nextBack` steps.)
 
 ## Why
 

@@ -2530,4 +2530,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
   },
+  {
+    name: "dyn-double-ended-made-forgetting-its-back",
+    breaks: "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
+    file: "src/lower/mir.rs",
+    find: "                                true => self.as_double_ended(value, iterator, span)?,\n",
+    replace: "                                true => self.as_js_iterator(value, iterator, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
 ];

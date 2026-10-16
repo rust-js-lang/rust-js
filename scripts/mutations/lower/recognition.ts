@@ -1729,4 +1729,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
+  {
+    name: "dyn-double-ended-not-an-iterator",
+    breaks: "a `dyn DoubleEndedIterator` isn't a JS iterator, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id) || is_double_ended(tcx, id))\n",
+    replace: "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
 ];

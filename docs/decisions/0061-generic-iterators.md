@@ -8,6 +8,8 @@ a function is.
 Amended by [0411](0411-an-iterator-given-as-it-is-has-its-dictionary.md):
 a parameter an impl's type holds, or a signature has in anything but
 itself, is given as it is, and stepped by its `Iterator` dictionary.
+Amended by [0429](0429-a-double-ended-iterator-knows-its-back.md): one
+bound by `DoubleEndedIterator` is a JS iterator that knows its back.
 
 Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
 

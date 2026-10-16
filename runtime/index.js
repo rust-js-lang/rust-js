@@ -440,18 +440,19 @@ export function $pop(items) {
 // item, or `None` at the end. JS's iterator helpers are lazy, like Rust's
 // adapters, so an endless one is fine until something wants all of it. A
 // generic `next` may box its `Some` (ADR 0051): `boxed` unboxes it. `of`
-// is what it's of, which its drop drops (ADR 0421).
-export function $iterator(iterator, next, boxed = false) {
+// is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
+// it knows its back, which `$nextBack` steps.
+export function $iterator(iterator, next, boxed = false, nextBack) {
+  const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = Iterator.from({
     next() {
-      const item = next(iterator);
-      if (item == null) {
-        return { done: true, value: undefined };
-      }
-      return { done: false, value: boxed ? $someValue(item) : item };
+      return step(next(iterator));
     }
   });
   it.of = iterator;
+  if (nextBack !== undefined) {
+    it.back = () => step(nextBack(iterator));
+  }
   return it;
 }
 
@@ -797,6 +798,10 @@ export function $iter(items) {
   it.next = function () {
     return this.at < this.end ? { value: this.items[this.at++], done: false } : { value: undefined, done: true };
   };
+  // Its last item, as `next()` gives its first: what `$nextBack` steps.
+  it.back = function () {
+    return this.at < this.end ? { value: this.items[--this.end], done: false } : { value: undefined, done: true };
+  };
   return it;
 }
 
@@ -810,12 +815,16 @@ export function $nextSome(it) {
   return step.done ? undefined : $some(step.value);
 }
 
+// `next_back()` of a JS iterator that knows its back, a `$iter` or a
+// `$iterator` given its `nextBack`: Rust's `Option` of its last item.
 export function $nextBack(it) {
-  return it.at < it.end ? it.items[--it.end] : undefined;
+  const step = it.back();
+  return step.done ? undefined : step.value;
 }
 
 export function $nextBackSome(it) {
-  return it.at < it.end ? $some(it.items[--it.end]) : undefined;
+  const step = it.back();
+  return step.done ? undefined : $some(step.value);
 }
 
 export function $peekSome(it) {
