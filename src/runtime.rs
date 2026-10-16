@@ -261,6 +261,7 @@ helpers! {
     LazySkipWhile,
     Repeating,
     RepeatingWith,
+    Cycle,
     Successors,
     FromFn,
     Unzip,
@@ -709,6 +710,7 @@ impl Helper {
             // value for each item, as Rust's does.
             Helper::Repeating => include_str!("runtime/repeating.js"),
             Helper::RepeatingWith => include_str!("runtime/repeating_with.js"),
+            Helper::Cycle => include_str!("runtime/cycle.js"),
             // The next item is found before this one is given, as Rust's is. A
             // generic `Some` may be boxed (ADR 0051): `boxed` unboxes it.
             Helper::Successors => include_str!("runtime/successors.js"),

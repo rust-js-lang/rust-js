@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`it.cycle()` of std's iterator over an array**: `$cycle(items)`, a
+  generator over what it has left, again and again (ADR 0181).
+- **`convert::identity(x)`** is `x`.
 - **Fixed: rustc took a program's panics to abort, wasm32's, where
   rust-js's unwind**: a future's size, `size_of_val`, is native Rust's now,
   and `cfg(panic = "unwind")` holds

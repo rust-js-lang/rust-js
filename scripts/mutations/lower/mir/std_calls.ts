@@ -194,8 +194,8 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-as-str-refused",
     "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
     "file": "src/lower/mir/std_calls.rs",
-    "find": "                if op == StepOp::AsStr\n",
-    "replace": "                if false\n",
+    "find": "            ) if op == StepOp::AsStr\n",
+    "replace": "            ) if false\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -585,5 +585,13 @@ export const mutations: Mutation[] = [
     find: "            formatted |= part.runs_program_code();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
+  },
+  {
+    name: "cycle-owned-items-shared",
+    breaks: "`cycle()` of an iterator that owns its items gives the same one each time round, where Rust's clones them",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        if owns && self.needs_clone(item) {\n                            args.push(self.clone_fn(\"item\", item, span)?);\n",
+    replace: "                        if false && owns && self.needs_clone(item) {\n                            args.push(self.clone_fn(\"item\", item, span)?);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
 ];

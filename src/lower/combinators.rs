@@ -158,6 +158,9 @@ pub(super) enum StepOp {
     AsStr,
     /// A slice's or a `Vec`'s iterator's `as_slice`: the rest.
     AsSlice,
+    /// `cycle()` of std's iterator over an array: the rest, gone over
+    /// again and again, as a clone of it is the rest (ADR 0181).
+    Cycle,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

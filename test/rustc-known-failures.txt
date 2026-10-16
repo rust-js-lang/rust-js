@@ -76,7 +76,6 @@ indexing/indexing-spans-caller-location.rs	error: rust-js does not support calli
 intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 layout/null-pointer-optimization.rs	error: rust-js does not support `{:?}` of a `fn()` yet
-let-else/let-else-drop-order.rs	error: rust-js does not support a `&mut` of this in a variable yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support addressable memory yet: values of type `(*const core::io::error::Custom) is !null`
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<Element>` as `usize`, which aren't numbers alone
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
@@ -114,7 +113,6 @@ structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support addressa
 structs-enums/tag-align-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag` as `usize`, which aren't numbers alone
 threads-sendsync/send-type-inference.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<Command<K, V>>>`, yet
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
-threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `std::iter::Iterator::cycle` yet
 threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
 traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet

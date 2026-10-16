@@ -166,12 +166,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
     /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
-    /// `owns` that need one (ADR 0181).
+    /// `owns` that need one (ADR 0181). Of one just made, `$iter(items)`,
+    /// nothing's stepped: `items`, which Rust lends it or it owns.
     pub(super) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
-        let left = Expr::call(
-            Expr::member(Expr::member(it.clone(), "items"), "slice"),
-            vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
-        );
+        let left = match it.kind {
+            js::ExprKind::Call(callee, mut args) if callee.helper_name() == Some("$iter") && args.len() == 1 => {
+                args.pop().expect("one")
+            }
+            kind => {
+                let it = Expr { kind, ..it };
+                Expr::call(
+                    Expr::member(Expr::member(it.clone(), "items"), "slice"),
+                    vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
+                )
+            }
+        };
         let item = self.iterator_item(ty).expect("an iterator's item");
         Ok(match owns && self.needs_clone(item) {
             true => {
@@ -1244,14 +1253,15 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 }
 
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
-/// `$iter` or a range's `$iterator`, a collection's `values()`, `keys()`
-/// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
+/// `$iter` or a range's `$iterator`, a `$cycle`'s generator, a
+/// collection's `values()`, `keys()` or `entries()`, or an iterator
+/// helper's of one, `.map(f)` of a range's.
 pub(super) fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };
     if callee.helper_name().is_some() {
-        return callee.helper_name() == Some("$iterator") || is_stepped_items(e);
+        return matches!(callee.helper_name(), Some("$iterator" | "$cycle")) || is_stepped_items(e);
     }
     match &callee.kind {
         // Not `Object.keys(o)`'s, an array.

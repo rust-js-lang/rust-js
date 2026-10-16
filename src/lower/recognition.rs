@@ -785,7 +785,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(Std::Same));
         }
-        if diagnostic("box_new") {
+        // `convert::identity(x)` is `x`, as its name says.
+        if diagnostic("box_new") || diagnostic("convert_identity") {
             return Some(Some(Std::Same));
         }
         if diagnostic("box_assume_init_into_vec_unsafe") {
@@ -1121,7 +1122,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "next" if !self.is_user_iterator(ty) => Std::Step(StepOp::Next),
                 // The iterator itself, which knows where it is (ADR 0071).
                 "by_ref" if !self.is_user_iterator(ty) => Std::IterByRef,
-                "peekable" => Std::Step(StepOp::Peekable),
+                name if let Some(step) = self.iterator_step(name, ty) => Std::Step(step),
                 "map" => Std::ArrayMethod("map"),
                 "filter" => Std::ArrayMethod("filter"),
                 "any" => Std::ArrayMethod("some"),
@@ -2971,6 +2972,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_reverse(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
             && self.tcx.item_name(adt.did()).as_str() == "Reverse")
+    }
+
+    /// Which `StepOp` an `Iterator` method of `ty` is, one that steps a
+    /// `$iter` (ADR 0071): `peekable()`, and `cycle()` of one over an array,
+    /// whose clone is what it has left (ADR 0181).
+    fn iterator_step(&self, name: &str, ty: Ty<'tcx>) -> Option<StepOp> {
+        match name {
+            "peekable" => Some(StepOp::Peekable),
+            "cycle" if self.array_source(ty.peel_refs()).is_some() => Some(StepOp::Cycle),
+            _ => None,
+        }
     }
 
     /// std's iterator over an array's items, whose JS value is the array

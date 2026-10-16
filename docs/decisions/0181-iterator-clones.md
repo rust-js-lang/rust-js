@@ -51,3 +51,31 @@ its clone is the array, or, of one stepped through, what's left of it:**
   clone of owned items, one of them changed after, with native Rust.
 - **It's the JS a person writes:** an array is gone over as often as it's
   wanted, and what's left of one is `slice(at)`.
+
+## Amendment: `cycle()` of one over an array
+
+`it.cycle()` goes over `it` and, each time it ends, over a clone of `it` as
+it was when `cycle` was called. Of std's iterator over an array that clone
+is what it had left, so **`cycle()` of one is `$cycle(left)`**, a generator
+that goes over `left` again and again, cloning each item it owns that needs
+a copy, as each round's clone does, and giving none at all where `left` is
+empty, as Rust's does:
+
+```rust
+let seven: Vec<i32> = a.iter().cycle().take(7).cloned().collect();
+```
+
+```js
+const seven = $cycle(a).take(7).toArray();
+```
+
+- **What a just-made `$iter(items)` has left is `items`,** as nothing's
+  stepped: `stepped_left` says so, for a clone as for `cycle`.
+- **A `$cycle`'s generator is a JS iterator already,** so what's chained on
+  it isn't `Iterator.from(..)` first: `is_js_iterator` knows it.
+- **`cycle()` of any other iterator is still an error,** a lazy one or one
+  of std's adapters, as its clone is.
+
+The `iter_cycle` corpus case runs one chained and held, of borrowed and of
+owned items, one changed after, of one stepped first and of an empty one,
+with native Rust; rustc's `sync-send-iterators-in-libcore` passes.

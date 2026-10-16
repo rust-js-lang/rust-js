@@ -713,11 +713,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `Peekable`'s or a slice's or string's iterator's own: of a `$iter`, which
             // knows where it is (ADR 0071).
-            Std::Step(op @ (StepOp::Peek | StepOp::NextIf | StepOp::NextIfEq | StepOp::AsSlice | StepOp::AsStr))
-                if op == StepOp::AsStr
-                    || arg_tys.first().is_some_and(|t| {
-                        self.array_source(t.peel_refs()).is_some() || self.is_peekable(t.peel_refs())
-                    }) =>
+            Std::Step(
+                op @ (StepOp::Peek
+                | StepOp::NextIf
+                | StepOp::NextIfEq
+                | StepOp::AsSlice
+                | StepOp::AsStr
+                | StepOp::Cycle),
+            ) if op == StepOp::AsStr
+                || arg_tys
+                    .first()
+                    .is_some_and(|t| self.array_source(t.peel_refs()).is_some() || self.is_peekable(t.peel_refs())) =>
             {
                 let mut exprs = values
                     .map(|v| self.value_expr(v, span))
@@ -730,6 +736,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A string's `chars()`' rest, as a string.
                     StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
                     StepOp::Peek => Expr::call_helper("$peek", vec![it]),
+                    StepOp::Cycle => {
+                        let iter_ty = arg_tys[0].peel_refs();
+                        let owns = self.array_source(iter_ty).expect("matched");
+                        let it = match it.reads_same() || is_stepped_items(&it) {
+                            true => it,
+                            false => self.spill("it", it, out),
+                        };
+                        let mut args = vec![self.stepped_left(it, iter_ty, false, span)?];
+                        let item = self.iterator_item(iter_ty).expect("an iterator's item");
+                        if owns && self.needs_clone(item) {
+                            args.push(self.clone_fn("item", item, span)?);
+                        }
+                        Expr::call_helper("$cycle", args)
+                    }
                     StepOp::NextIf => {
                         let f = exprs.next().expect("a test");
                         Expr::call_helper("$nextIf", vec![it, f])

@@ -527,4 +527,22 @@ export const mutations: Mutation[] = [
     replace: "                let _ = drop;\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
+  {
+    name: "fresh-iter-sliced",
+    breaks: "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
+    file: "src/lower/iterators.rs",
+    find: "            js::ExprKind::Call(callee, mut args) if callee.helper_name() == Some(\"$iter\") && args.len() == 1 => {\n",
+    replace: "            js::ExprKind::Call(callee, mut args) if false && callee.helper_name() == Some(\"$iter\") && args.len() == 1 => {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
+  },
+  {
+    name: "cycle-wrapped",
+    breaks: "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
+    file: "src/lower/iterators.rs",
+    find: "        return matches!(callee.helper_name(), Some(\"$iterator\" | \"$cycle\")) || is_stepped_items(e);\n",
+    replace: "        return matches!(callee.helper_name(), Some(\"$iterator\")) || is_stepped_items(e);\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
+  },
 ];

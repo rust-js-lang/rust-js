@@ -1657,4 +1657,20 @@ export const mutations: Mutation[] = [
     replace: "                    if false\n",
     tests: ["test/diagnostics.test.ts", "-t", "given as an F: Future"],
   },
+  {
+    name: "cycle-unknown",
+    breaks: "`cycle()` of std's iterator over an array is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"cycle\" if self.array_source(ty.peel_refs()).is_some() => Some(StepOp::Cycle),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
+  },
+  {
+    name: "identity-unknown",
+    breaks: "`convert::identity(x)` is an error, where it's `x`",
+    file: "src/lower/recognition.rs",
+    find: "        if diagnostic(\"box_new\") || diagnostic(\"convert_identity\") {\n",
+    replace: "        if diagnostic(\"box_new\") {\n",
+    tests: ["test/corpus.test.ts", "-t", "^convert_identity.rs$"],
+  },
 ];
