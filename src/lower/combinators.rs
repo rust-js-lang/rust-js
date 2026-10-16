@@ -863,11 +863,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     helper("$rotateRight", list)
                 }
             }
-            // At the front, which no length refuses: `unshift`.
-            Comb::Insert => match (next(), next()) {
-                (at, value) if at.as_int() == Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
-                (at, value) => helper("$insertAt", vec![subject, at, value]),
-            },
+            Comb::Insert => inserted(subject, next(), next()),
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", vec![subject, next(), next()]),
             Comb::Truncate => helper("$truncate", vec![subject, next()]),
@@ -1186,5 +1182,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$unzip"), vec![items])
             }
         })
+    }
+}
+
+/// `v.insert(at, value)`: `$insertAt`, which refuses an index past the end;
+/// at the front, which no length refuses, `v.unshift(value)`.
+fn inserted(subject: Expr, at: Expr, value: Expr) -> Expr {
+    match at.as_int() {
+        Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
+        _ => Expr::call(Expr::helper("$insertAt"), vec![subject, at, value]),
     }
 }

@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     "name": "insert-front-helper",
     "breaks": "`anchors.insert(0, x)` stays `$insertAt(anchors, 0, x)`, not `anchors.unshift(x)`",
     "file": "src/lower/combinators.rs",
-    "find": "                (at, value) if at.as_int() == Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
+    "find": "        Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
