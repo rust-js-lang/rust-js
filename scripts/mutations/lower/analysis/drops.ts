@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     name: "trait-method-own-drops-not-taken",
     breaks: "an impl's generic method takes no drop for its own type parameters, so what it's given is never dropped",
     file: "src/lower/analysis/drops.rs",
-    find: "        for index in crate::lower::traits::own_drop_params(tcx, id) {\n            given.insert((id, index));\n",
-    replace: "        for index in crate::lower::traits::own_drop_params(tcx, id) {\n            let _ = (id, index);\n",
+    find: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            given.insert((id, index));\n",
+    replace: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
@@ -66,5 +66,13 @@ export const mutations: Mutation[] = [
     find: "            if crate::lower::bindings::is_component(tcx, callee) {",
     replace: "            if false && crate::lower::bindings::is_component(tcx, callee) {",
     tests: ["test/jsx.test.ts", "-t", "take no drop of their type parameters"],
+  },
+  {
+    name: "item-drops-not-given",
+    breaks: "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
+    file: "src/lower/analysis/drops.rs",
+    find: "                given.insert((id, count + at as u32));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
 ];

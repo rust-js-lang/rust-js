@@ -64,7 +64,7 @@ pub(super) fn drop_params<'tcx>(
     // each of its own type parameters the trait declares that isn't `Copy`:
     // a caller through a dictionary knows only the trait (ADR 0163).
     for &id in fns.keys() {
-        for index in crate::lower::traits::own_drop_params(tcx, id) {
+        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {
             given.insert((id, index));
         }
     }
@@ -158,6 +158,23 @@ pub(super) fn drop_params<'tcx>(
         for &(from, to) in &passed {
             if given.contains(&from) && given.insert(to) {
                 changed = true;
+            }
+        }
+    }
+    // A std trait's associated type of a type parameter given a drop,
+    // `<I as IntoIterator>::IntoIter`, holds what it does: given one too
+    // (ADR 0421).
+    let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
+    for (id, index) in given.clone() {
+        let count = tcx.generics_of(id).count() as u32;
+        let held = items
+            .entry(id)
+            .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, id));
+        for (at, &item) in held.iter().enumerate() {
+            if crate::lower::traits::alias_of(item)
+                .is_some_and(|alias| matches!(alias.self_ty().kind(), ty::Param(p) if p.index == index))
+            {
+                given.insert((id, count + at as u32));
             }
         }
     }

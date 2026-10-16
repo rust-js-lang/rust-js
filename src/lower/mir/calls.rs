@@ -219,21 +219,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let tcx = self.tcx;
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
-        // An iterator of the crate's, or a range, where a generic iterator
-        // goes: a JS iterator (ADR 0061).
-        let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_binder().inputs();
-        for ((expr, &input), &given) in exprs.iter_mut().zip(inputs).zip(arg_tys) {
-            let (input, given) = match *input.kind() {
-                ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
-                _ => (input, given),
-            };
-            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {
-                let value = std::mem::replace(expr, Expr::undefined());
-                *expr = self.as_js_iterator(value, given, span)?;
-            }
-        }
+        self.given_iterators(def_id, &mut exprs, arg_tys, span)?;
         exprs.extend(self.evidence_args(def_id, generic_args, span)?);
         let called = Expr::call(self.fn_ref(def_id), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.

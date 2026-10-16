@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "generic-drop-not-passed-on",
     breaks: "a generic function that passes its `T` to another doesn't pass its drop on",
     file: "src/lower/drops.rs",
-    find: "            return Ok(drop);\n",
+    find: "            return Ok(index.map(|index| Expr::var(&self.drop_state.param_drops[&index])));\n",
     replace: "            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },
@@ -269,5 +269,13 @@ export const mutations: Mutation[] = [
     find: "                } else if !adt.is_union() {\n",
     replace: "                } else {\n",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
+  {
+    name: "given-item-drop-unfound",
+    breaks: "a std trait's associated type's drop, given, isn't found by its type, and isn't called",
+    file: "src/lower/drops.rs",
+    find: "            ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,\n",
+    replace: "            ty::Alias(..) => return None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
 ];

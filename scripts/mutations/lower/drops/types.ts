@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "adapter of items with a destructor"],
   },
+  {
+    name: "given-item-drop-unknown",
+    breaks: "a std trait's associated type whose drop the function is given is refused",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Alias(_, alias) if self.state.items.contains_key(alias) => Drops::Runs,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+  },
 ];

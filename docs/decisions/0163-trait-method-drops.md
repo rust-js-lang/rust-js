@@ -1,6 +1,8 @@
 # 0163. A trait's generic method is given drops for its own type parameters, as its trait declares them
 
-Status: Accepted. Amends [0098](0098-destructors.md) and
+Status: Accepted. Amended by [0421](0421-std-associated-type-drops-are-given.md):
+a generic method's own drops include a std trait's associated type of
+each, `dropIIntoIter`, as its declaration bounds it. Amends [0098](0098-destructors.md) and
 [0106](0106-generic-traits.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)).

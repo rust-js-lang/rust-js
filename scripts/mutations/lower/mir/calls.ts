@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "prepared_places"],
   },
   {
-    name: "mir-user-iterator-arg-unwrapped",
-    breaks: "an iterator of the crate's given where a generic iterator goes is its struct, which JS can't step",
-    file: "src/lower/mir/calls.rs",
-    find: "            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
-    replace: "            if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
-    tests: ["test/corpus.test.ts","-t","generic_iterator_rest_lazy"],
-  },
-  {
     name: "mir-binding-component-called",
     breaks: "a component a JS module exports is its binding's value, not the tag JSX imports",
     file: "src/lower/mir/calls.rs",

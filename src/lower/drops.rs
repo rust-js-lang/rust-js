@@ -91,10 +91,19 @@ pub(super) struct EnclosingDrops<'tcx> {
 struct SwappedDrops<'tcx> {
     params: HashMap<u32, String>,
     given: HashSet<u32>,
+    items: HashMap<ty::AliasTy<'tcx>, u32>,
     used: HashSet<u32>,
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
     sizes: HashMap<Ty<'tcx>, (usize, bool)>,
+}
+
+/// A drop `lend_drop_param` lent: under which index, of which associated
+/// type, if it's one's, and what it hid.
+pub(super) struct LentDrop<'tcx> {
+    index: u32,
+    alias: Option<ty::AliasTy<'tcx>>,
+    before: Option<String>,
 }
 
 /// A function's drops, as its bodies are lowered.
@@ -479,10 +488,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .at(js_span),
                 );
             }
-            // `dropT?.(value)`: the caller's drop, if its `T` has one.
-            ty::Param(param) => {
-                self.drop_state.used_drops.insert(param.index);
-                let drop = Expr::var(&self.drop_state.param_drops[&param.index]);
+            // `dropT?.(value)`: the caller's drop, if its `T` has one; of a
+            // std trait's associated type of one, `dropIIntoIter` (ADR 0421).
+            _ if let Some(index) = self.given_drop(ty) => {
+                self.drop_state.used_drops.insert(index);
+                let drop = Expr::var(&self.drop_state.param_drops[&index]);
                 let js_span = self.js_span(span);
                 out.push(
                     StmtKind::Expr(Expr {
@@ -784,28 +794,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The function being lowered is given a drop for its type parameter
-    /// `index`, named `name` (ADR 0098).
-    pub(super) fn give_drop_param(&mut self, index: u32, name: String) {
-        self.drop_state.types.given.insert(index);
+    /// The function being lowered is given a drop `index`, named `name`, of
+    /// `ty`: its type parameter's (ADR 0098), or a std trait's associated
+    /// type of one (ADR 0421).
+    pub(super) fn give_drop_param(&mut self, index: u32, name: String, ty: Ty<'tcx>) {
+        match ty.kind() {
+            ty::Alias(_, alias) => {
+                self.drop_state.types.items.insert(*alias, index);
+            }
+            _ => {
+                self.drop_state.types.given.insert(index);
+            }
+        }
         self.drop_state.param_drops.insert(index, name);
     }
 
+    /// The index of the drop this function is given for a `ty`, a type
+    /// parameter or an associated type of one, if it's given one.
+    fn given_drop(&self, ty: Ty<'tcx>) -> Option<u32> {
+        let index = match ty.kind() {
+            ty::Param(param) => param.index,
+            ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,
+            _ => return None,
+        };
+        self.drop_state.param_drops.contains_key(&index).then_some(index)
+    }
+
     /// A drop given for a while, a dictionary entry's for its method's own
-    /// type parameter (ADR 0163): what was given before, to put back.
-    pub(super) fn lend_drop_param(&mut self, index: u32, name: String) -> Option<String> {
-        self.drop_state.types.given.insert(index);
-        self.drop_state.param_drops.insert(index, name)
+    /// type parameter (ADR 0163), `index`, of `ty`: what was given before,
+    /// to put back. An associated type's, found by its type (ADR 0421), is
+    /// lent under an index no type parameter has, so it hides none's.
+    pub(super) fn lend_drop_param(&mut self, index: u32, name: String, ty: Ty<'tcx>) -> LentDrop<'tcx> {
+        let alias = match *ty.kind() {
+            ty::Alias(_, alias) => Some(alias),
+            _ => None,
+        };
+        let index = match alias {
+            Some(alias) => {
+                let index = u32::MAX - self.drop_state.types.items.len() as u32;
+                self.drop_state.types.items.insert(alias, index);
+                index
+            }
+            None => {
+                self.drop_state.types.given.insert(index);
+                index
+            }
+        };
+        let before = self.drop_state.param_drops.insert(index, name);
+        LentDrop { index, alias, before }
     }
 
     /// Put back what `lend_drop_param` replaced.
-    pub(super) fn return_drop_param(&mut self, index: u32, before: Option<String>) {
-        if before.is_none() {
-            self.drop_state.types.given.remove(&index);
+    pub(super) fn return_drop_param(&mut self, lent: LentDrop<'tcx>) {
+        if let Some(alias) = lent.alias {
+            self.drop_state.types.items.remove(&alias);
+        } else if lent.before.is_none() {
+            self.drop_state.types.given.remove(&lent.index);
         }
-        match before {
-            Some(name) => self.drop_state.param_drops.insert(index, name),
-            None => self.drop_state.param_drops.remove(&index),
+        match lent.before {
+            Some(name) => self.drop_state.param_drops.insert(lent.index, name),
+            None => self.drop_state.param_drops.remove(&lent.index),
         };
     }
 
@@ -824,6 +872,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         SwappedDrops {
             params: std::mem::replace(&mut self.drop_state.param_drops, drops),
             given: std::mem::replace(&mut self.drop_state.types.given, given),
+            items: std::mem::take(&mut self.drop_state.types.items),
             used: std::mem::take(&mut self.drop_state.used_drops),
             unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,
@@ -839,6 +888,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn restore_drops(&mut self, swapped: SwappedDrops<'tcx>) {
         self.drop_state.param_drops = swapped.params;
         self.drop_state.types.given = swapped.given;
+        self.drop_state.types.items = swapped.items;
         self.drop_state.used_drops = swapped.used;
         self.drop_state.types.unsupported = swapped.unsupported;
         *self.drop_state.types.cache.borrow_mut() = swapped.cache;
@@ -866,16 +916,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
     /// function was given. None for a type with nothing to drop.
     pub(super) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        if let ty::Param(param) = ty.kind() {
-            let drop = self
-                .drop_state
-                .param_drops
-                .get(&param.index)
-                .map(|name| Expr::var(name));
-            if drop.is_some() {
-                self.drop_state.used_drops.insert(param.index);
+        if let ty::Param(_) = ty.kind() {
+            let index = self.given_drop(ty);
+            if let Some(index) = index {
+                self.drop_state.used_drops.insert(index);
             }
-            return Ok(drop);
+            return Ok(index.map(|index| Expr::var(&self.drop_state.param_drops[&index])));
+        }
+        if let Some(index) = self.given_drop(ty) {
+            self.drop_state.used_drops.insert(index);
+            return Ok(Some(Expr::var(&self.drop_state.param_drops[&index])));
         }
         match self.drops(ty) {
             Drops::Nothing => return Ok(None),
@@ -909,14 +959,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::arrow(vec![param.into()], body)))
     }
 
+    /// The function that drops what generic code holds of a `ty`: `ty`'s
+    /// drop function, or where its caller made it a JS iterator, `iterated`,
+    /// `$iterator(value, next)`, one that drops `value`, its `of` (ADR 0421).
+    pub(super) fn held_drop_function(&mut self, ty: Ty<'tcx>, iterated: bool, span: Span) -> R<Option<Expr>> {
+        if !iterated || !self.has_drops(ty) {
+            return self.drop_function(ty, span);
+        }
+        let param = self.fresh("it");
+        let mut body = Vec::new();
+        self.drop_value(Expr::member(Expr::var(&param), "of"), ty, span, &mut body)?;
+        Ok(Some(Expr::arrow(vec![param.into()], body)))
+    }
+
     /// The drop function for a `ty` that `callee`, which takes only the
     /// drops it uses, is given for its type parameter `index`: an argument
     /// the pipeline keeps where `callee` uses it (ADR 0300). The drops of
     /// this function's that it's made of are passed on, not used, where
     /// this function takes only those it uses too.
-    pub(super) fn drop_argument(&mut self, callee: DefId, index: u32, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn drop_argument(
+        &mut self,
+        callee: DefId,
+        index: u32,
+        (ty, iterated): (Ty<'tcx>, bool),
+        span: Span,
+    ) -> R<Expr> {
         let before = std::mem::take(&mut self.drop_state.used_drops);
-        let drop = self.drop_function(ty, span);
+        let drop = self.held_drop_function(ty, iterated, span);
         let through = std::mem::replace(&mut self.drop_state.used_drops, before);
         if !self.in_copied_default() && self.krate.drop_uses.borrow().takes_used(self.item) {
             let mut uses = self.krate.drop_uses.borrow_mut();

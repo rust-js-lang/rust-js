@@ -503,4 +503,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
+  {
+    name: "user-iterator-arg-unwrapped",
+    breaks: "an iterator of the crate's given where a generic iterator goes is its struct, which JS can't step",
+    file: "src/lower/iterators.rs",
+    find: "            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {\n",
+    replace: "            if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {\n",
+    tests: ["test/corpus.test.ts","-t","generic_iterator_rest_lazy"],
+  },
+  {
+    name: "iterated-slot-unwrapped",
+    breaks: "a crate's iterator given as a JS iterator is dropped as the JS iterator, not what it's of",
+    file: "src/lower/iterators.rs",
+    find: "            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+  },
 ];

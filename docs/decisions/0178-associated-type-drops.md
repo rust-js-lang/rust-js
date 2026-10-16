@@ -44,9 +44,10 @@ $loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDr
 - **A library's generic code calls it though the library has no
   destructor:** its consumers may, as a generic method's drops are given
   (ADR 0163).
-- **Still an error:** a value of a std trait's associated type, an
-  iterator's `Item`, where a type may have a destructor: no dictionary is
-  given for one.
+- **A std trait's associated type, an iterator's `Item`,** has no
+  dictionary: its drop is its caller's to give, as a type parameter's is
+  ([ADR 0421](0421-std-associated-type-drops-are-given.md)). (Amended: it
+  was an error where a type may have a destructor.)
 
 ## Why
 

@@ -78,6 +78,13 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A std trait's associated type dropped in generic code**, an
+  `I: IntoIterator`'s `I::IntoIter`, an `I::Item`: its caller gives its
+  drop, `dropIIntoIter`, as it gives a type parameter's
+  ([ADR 0421](docs/decisions/0421-std-associated-type-drops-are-given.md)).
+- **Fixed: an iterator of the crate's with a `Drop`, given where a generic
+  iterator goes**, was dropped as the JS iterator made of it, which its
+  `drop` read as its own (ADR 0421).
 - **`Vec::set_len`**: what it shortens a vector by stays where it was, read
   through a pointer as smallvec's `from_vec` does, and what it lengthens it
   over is what was written there

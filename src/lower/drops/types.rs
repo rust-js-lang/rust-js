@@ -47,6 +47,9 @@ struct Walk<'tcx> {
 pub(in crate::lower) struct TypeDrops<'tcx> {
     pub(super) cache: RefCell<HashMap<Ty<'tcx>, Drops<'tcx>>>,
     pub(super) given: HashSet<u32>,
+    /// The std traits' associated types a caller gives a drop for,
+    /// `<I as IntoIterator>::IntoIter`, and each one's index (ADR 0421).
+    pub(super) items: HashMap<ty::AliasTy<'tcx>, u32>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -298,6 +301,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     ..
                 },
             ) if walk.params_none && self.recognition.is_unknown(ty) => Drops::Nothing,
+            // A std trait's, `<I as IntoIterator>::IntoIter`, whose drop a
+            // caller gives (ADR 0421).
+            ty::Alias(_, alias) if self.state.items.contains_key(alias) => Drops::Runs,
             ty::Alias(
                 _,
                 ty::AliasTy {

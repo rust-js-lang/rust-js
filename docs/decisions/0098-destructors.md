@@ -6,6 +6,10 @@ Amended: an iterator of the crate's with a destructor consumed by value,
 arrayvec's `Drain`; one an adapter holds, `map(f)`, is an error still
 (`test/corpus/iterator_drop_consumed.rs`).
 
+Amended by [0421](0421-std-associated-type-drops-are-given.md): a std
+trait's associated type of a type parameter, `I::IntoIter`, is given a
+drop by its caller too, `dropIIntoIter`.
+
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 
 ## Context

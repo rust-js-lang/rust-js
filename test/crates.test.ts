@@ -198,6 +198,29 @@ test("a library's generic trait method drops a consumer's value where Rust does"
   expect(printed(join(dir, "app.js"))).toBe("dropped\n1\ndropped\n1\nafter\n");
 }, 300_000);
 
+// A library's generic function that drops a std trait's associated type of
+// its type parameter, `I::IntoIter`, is given its drop by a consumer, which
+// knows what it is (ADR 0421): its manifest lists the drop, and the
+// consumer's what's left of a `Vec`'s, and its own iterator's, given as a JS
+// iterator, dropped where Rust drops them. A trait's of the library's has its
+// drop in its dictionary instead.
+test("a library's generic function drops a consumer's iterator where Rust does", () => {
+  const dir = fixture("library-item-drops");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub fn first<I: IntoIterator>(items: I) -> Option<I::Item> {\n    let mut it = items.into_iter();\n    it.next()\n}\npub trait Zone {\n    type Offset;\n    fn offset(&self) -> Self::Offset;\n}\npub fn hold<Z: Zone>(zone: &Z) {\n    let _offset = zone.offset();\n}\n");
+  writeFileSync(join(dir, "app.rs"), "struct Loud(&'static str);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Count(u32);\nimpl Iterator for Count {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> {\n        self.0 += 1;\n        Some(self.0)\n    }\n}\nimpl Drop for Count {\n    fn drop(&mut self) {\n        println!(\"count dropped at {}\", self.0);\n    }\n}\npub fn main() {\n    let found = dep::first(vec![Loud(\"a\"), Loud(\"b\")]);\n    println!(\"{}\", found.map_or(\"none\", |l| l.0));\n    println!(\"{:?}\", dep::first(Count(4)));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  const js = readFileSync(join(lib, "lib.js"), "utf8");
+  expect(js).toContain("export function first(items, dropIIntoIter) {");
+  // A trait's of the crate's, whose dictionary has its drop (ADR 0178), takes none.
+  expect(js).toContain("export function hold(zone, ZZone) {");
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("drop b\ndrop a\na\ncount dropped at 5\nSome(5)\n");
+}, 300_000);
+
 // A library's generic fold takes no destructor of its iterator (ADR 0190):
 // its manifest says so, and a consumer's call that gives one is refused there.
 test("a library's generic fold is given no destructor by its consumers", () => {

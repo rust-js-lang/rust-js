@@ -181,11 +181,17 @@ pub(super) fn given_a_drop<'tcx>(
 }
 
 /// A generic trait method's own type parameters its caller gives a drop for
-/// (ADR 0163): each one the trait declares that isn't `Copy`. Decided by the
-/// trait's declaration, which a caller through a dictionary knows, so it and
-/// each impl agree; of an impl's method, its own type parameters at those
-/// places, as their indices are its.
-pub(super) fn own_drop_params(tcx: TyCtxt<'_>, method: DefId) -> Vec<u32> {
+/// (ADR 0163): each one the trait declares that isn't `Copy`, and each std
+/// trait's associated type of one its declaration bounds it by,
+/// `<I as IntoIterator>::IntoIter` (ADR 0421). Decided by the trait's
+/// declaration, which a caller through a dictionary knows, so it and each
+/// impl agree; of an impl's method, its own at those places, as their
+/// indices are its.
+pub(super) fn own_drop_params<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    method: DefId,
+) -> Vec<u32> {
     let declared = tcx.trait_item_of(method).unwrap_or(method);
     if tcx.trait_of_assoc(declared).is_none() {
         return Vec::new();
@@ -198,13 +204,120 @@ pub(super) fn own_drop_params(tcx: TyCtxt<'_>, method: DefId) -> Vec<u32> {
             .collect()
     };
     let typing_env = ty::TypingEnv::non_body_analysis(tcx, declared);
-    let own = types(method);
-    types(declared)
-        .into_iter()
-        .enumerate()
-        .filter(|(_, p)| given_a_drop(tcx, typing_env, p))
-        .filter_map(|(at, _)| own.get(at).map(|p| p.index))
-        .collect()
+    let (own, theirs) = (types(method), types(declared));
+    let given: Vec<usize> = (0..theirs.len())
+        .filter(|&at| given_a_drop(tcx, typing_env, theirs[at]) && at < own.len())
+        .collect();
+    let mut indices: Vec<u32> = given.iter().map(|&at| own[at].index).collect();
+    // Each associated type of one, at the place the method's own bounds have
+    // it, the declaration's own parameter as the method's.
+    let items = drop_items(tcx, foreign, method);
+    let count = tcx.generics_of(method).count() as u32;
+    for item in drop_items(tcx, foreign, declared) {
+        let Some(alias) = alias_of(item) else { continue };
+        let ty::Param(param) = *alias.self_ty().kind() else {
+            continue;
+        };
+        let Some(&at) = given.iter().find(|&&at| theirs[at].index == param.index) else {
+            continue;
+        };
+        let place = items.iter().position(|&t| {
+            alias_of(t).is_some_and(|a| {
+                a.kind == alias.kind && matches!(*a.self_ty().kind(), ty::Param(p) if p.index == own[at].index)
+            })
+        });
+        indices.extend(place.map(|place| count + place as u32));
+    }
+    indices
+}
+
+/// The type a function's drop `index` drops, in its own terms: its type
+/// parameter's, `T`, below its generics' count, and from there each
+/// associated type of a type parameter's bound by a trait no dictionary
+/// carries, a std trait's, `<I as IntoIterator>::IntoIter`, in its bounds'
+/// order (ADR 0421). Its callers know its bounds, so they and it agree, a
+/// library's consumers too. One a bound names, `IntoIterator<Item = T>`,
+/// is that type's, and isn't one.
+pub(super) fn drop_slot<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    id: DefId,
+    index: u32,
+) -> Ty<'tcx> {
+    let generics = tcx.generics_of(id);
+    match index.checked_sub(generics.count() as u32) {
+        None => {
+            let param = generics.param_at(index as usize, tcx);
+            Ty::new_param(tcx, param.index, param.name)
+        }
+        Some(at) => drop_items(tcx, foreign, id)[at as usize],
+    }
+}
+
+/// The associated types of a function's type parameters it may be given a
+/// drop for, after its type parameters' (`drop_slot`).
+pub(super) fn drop_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    id: DefId,
+) -> Vec<Ty<'tcx>> {
+    let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
+    let mut items: Vec<Ty<'tcx>> = Vec::new();
+    for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
+        let Some(bound) = clause
+            .skip_normalization()
+            .as_trait_clause()
+            .and_then(|b| b.no_bound_vars())
+        else {
+            continue;
+        };
+        let self_ty = bound.self_ty();
+        if !matches!(self_ty.kind(), ty::Param(_)) || operational(tcx, foreign, bound.def_id()) {
+            continue;
+        }
+        for tr in supertrait_def_ids(tcx, bound.def_id()) {
+            // A supertrait's of no parameter but `Self`, whose arguments are its.
+            let args = match tr == bound.def_id() {
+                true => bound.trait_ref.args,
+                false if tcx.generics_of(tr).count() == 1 => tcx.mk_args(&[self_ty.into()]),
+                false => continue,
+            };
+            for item in tcx.associated_items(tr).in_definition_order() {
+                if !matches!(item.kind, ty::AssocKind::Type { .. })
+                    || tcx.is_impl_trait_in_trait(item.def_id)
+                    || !tcx.generics_of(item.def_id).own_params.is_empty()
+                {
+                    continue;
+                }
+                let projection = Ty::new_projection(tcx, ty::IsRigid::No, item.def_id, args);
+                let named = tcx
+                    .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
+                    .is_ok_and(|t| alias_of(t) != alias_of(projection));
+                if !named && !items.iter().any(|&t| alias_of(t) == alias_of(projection)) {
+                    items.push(projection);
+                }
+            }
+        }
+    }
+    items
+}
+
+/// A drop's type as a word of its name: a type parameter's, `T` of
+/// `dropT`, or an associated type's, `IIntoIter` of `dropIIntoIter`.
+pub(super) fn drop_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
+    match ty.kind() {
+        ty::Param(param) => param_word(param.name),
+        _ => evidence_word(tcx, ty),
+    }
+}
+
+/// An associated type's alias, whether rustc has found it rigid or not: what
+/// two of them are the same type by.
+pub(super) fn alias_of(ty: Ty<'_>) -> Option<ty::AliasTy<'_>> {
+    match *ty.kind() {
+        ty::Alias(_, alias) => Some(alias),
+        _ => None,
+    }
 }
 
 /// Might any value have a destructor: has the crate a `Drop` impl of its own,
@@ -890,13 +1003,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Then a drop function for each type parameter a caller gives a value
         // with a destructor, `dropT` (ADR 0098).
+        // And one for each std trait's associated type of one, `dropIIntoIter`
+        // (ADR 0421).
         for &index in self.krate.drop_params.get(&id).into_iter().flatten() {
-            let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
-            let name = self.fresh(&format!("drop{}", param_word(param.name)));
-            self.give_drop_param(index, name.clone());
+            let ty = drop_slot(self.tcx, self.krate.foreign, id, index);
+            let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+            self.give_drop_param(index, name.clone(), ty);
             params.push(name.into());
         }
         params
+    }
+
+    /// The type `id`'s drop `index` drops, of the arguments it's called with
+    /// here: the one given for its type parameter, or that type's associated
+    /// type, as it's known here (ADR 0421).
+    pub(super) fn drop_slot_of(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
+        let ty = ty::EarlyBinder::bind(self.tcx, drop_slot(self.tcx, self.krate.foreign, id, index))
+            .instantiate(self.tcx, args)
+            .skip_normalization();
+        self.tcx
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty)
     }
 
     /// A const argument's value (ADR 0107): `3`, or the caller's own `N`.
@@ -1615,10 +1742,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the pipeline keeps or leaves out (ADR 0300).
         let takes_used = self.krate.drop_uses.borrow().takes_used(id);
         for &index in given {
-            let ty = args.type_at(index as usize);
+            let ty = self.drop_slot_of(id, index, args);
+            let iterated = self.iterated_slot(id, index, args, ty);
             drops.push(match takes_used {
-                true => Some(self.drop_argument(id, index, ty, span)?),
-                false => self.drop_function(ty, span)?,
+                true => Some(self.drop_argument(id, index, (ty, iterated), span)?),
+                false => self.held_drop_function(ty, iterated, span)?,
             });
         }
         while matches!(drops.last(), Some(None)) {
@@ -1791,6 +1919,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.tcx.trait_of_assoc(instance.def_id()).is_none()
         {
             let mut values = values;
+            let given = self
+                .tcx
+                .fn_sig(instance.def_id())
+                .instantiate(self.tcx, instance.args)
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .to_vec();
+            self.given_iterators(instance.def_id(), &mut values, &given, span)?;
             values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
             let called = Expr::call(self.fn_ref(instance.def_id()), values);
             return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
@@ -1920,8 +2057,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // one for, of the type given for it: none, left out at the end, for
         // one with nothing to drop (ADR 0163).
         let mut drops = Vec::new();
-        for index in own_drop_params(self.tcx, id) {
-            drops.push(self.drop_function(generic_args.type_at(index as usize), span)?);
+        for index in own_drop_params(self.tcx, self.krate.foreign, id) {
+            let ty = self.drop_slot_of(id, index, generic_args);
+            drops.push(self.drop_function(ty, span)?);
         }
         while matches!(drops.last(), Some(None)) {
             drops.pop();
@@ -1969,7 +2107,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // caller through a dictionary gives none of, are refused (`validate`).
         let mut drops = Vec::new();
         for &index in self.krate.drop_params.get(&method).map_or(&[][..], Vec::as_slice) {
-            drops.push(self.drop_function(args.type_at(index as usize), span)?);
+            let ty = self.drop_slot_of(method, index, args);
+            drops.push(self.drop_function(ty, span)?);
         }
         while matches!(drops.last(), Some(None)) {
             drops.pop();
@@ -2633,18 +2772,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // The drops its caller gives for its own type parameters, which it
             // passes on as the method's, where the method takes them (ADR 0163).
+            let foreign = self.krate.foreign;
             let own_drops: Vec<u32> = match self.krate.drop_params.get(&method) {
-                Some(taken) if own_drop_params(self.tcx, method).iter().any(|i| taken.contains(i)) => {
-                    own_drop_params(self.tcx, item.def_id)
+                Some(taken)
+                    if own_drop_params(self.tcx, foreign, method)
+                        .iter()
+                        .any(|i| taken.contains(i)) =>
+                {
+                    own_drop_params(self.tcx, foreign, item.def_id)
                 }
                 _ => Vec::new(),
             };
             let mut drop_names = Vec::new();
             let mut replaced = Vec::new();
             for &index in &own_drops {
-                let param = self.tcx.generics_of(item.def_id).param_at(index as usize, self.tcx);
-                let name = self.fresh(&format!("drop{}", param_word(param.name)));
-                replaced.push((index, self.lend_drop_param(index, name.clone())));
+                let ty = drop_slot(self.tcx, foreign, item.def_id, index);
+                let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+                replaced.push(self.lend_drop_param(index, name.clone(), ty));
                 drop_names.push(name);
             }
             // Everything the method takes that its caller through the dictionary
@@ -2655,8 +2799,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.method_evidence(method, instance.args, &declared, &names, span),
             };
             self.given.const_params.truncate(mark);
-            for (index, before) in replaced {
-                self.return_drop_param(index, before);
+            for lent in replaced {
+                self.return_drop_param(lent);
             }
             let evidence = evidence?;
             params.extend(names);

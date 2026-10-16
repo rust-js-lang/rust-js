@@ -57,7 +57,9 @@ error: rust-js does not support giving `total`'s `I` a type with a destructor, w
 
 ## Alternatives
 
-- **Drop what's left of a generic iterator:** the iterator's drop, a
+- **Drop what's left of a generic iterator:** (Amended: a std trait's
+  associated type's, an `I::IntoIter`, is its caller's drop, ADR 0421; a
+  loop over a type parameter itself still takes none.) the iterator's drop, a
   caller's, of the JS iterator it's been made, and that of what it holds,
   for std's `vec::IntoIter` of them too, which rust-js can't follow (ADR
   0098). The whole design, for callers chrono doesn't have.

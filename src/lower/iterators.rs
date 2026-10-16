@@ -206,6 +206,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .any(|id| std_item(self.tcx, StdItem::Iterator) == id || std_item(self.tcx, StdItem::IntoIterator) == id)
     }
 
+    /// The arguments of a call of the crate's `callee`, of types `given`:
+    /// each iterator of the crate's, or range, where a generic iterator goes
+    /// a JS iterator (ADR 0061), a function's and a trait impl's method's
+    /// alike.
+    pub(in crate::lower) fn given_iterators(
+        &mut self,
+        callee: DefId,
+        values: &mut [Expr],
+        given: &[ty::Ty<'tcx>],
+        span: Span,
+    ) -> R<()> {
+        let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
+            let (input, given) = match *input.kind() {
+                ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
+                _ => (input, given),
+            };
+            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
+                let held = std::mem::replace(value, Expr::undefined());
+                *value = self.as_js_iterator(held, given, span)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Whether what `callee` holds for its drop `index`, of the type `ty`
+    /// given for it, is a JS iterator its caller made of an iterator of the
+    /// crate's, `$iterator(value, next)`, whose drop drops `value`, its `of`
+    /// (ADR 0421): its type parameter's, or that one's `IntoIter`, the
+    /// iterator itself.
+    pub(in crate::lower) fn iterated_slot(
+        &self,
+        callee: DefId,
+        index: u32,
+        args: ty::GenericArgsRef<'tcx>,
+        ty: ty::Ty<'tcx>,
+    ) -> bool {
+        let slot = super::traits::drop_slot(self.tcx, self.krate.foreign, callee, index);
+        let param = match *slot.kind() {
+            ty::Param(param) => param,
+            ty::Alias(_, alias) => match *alias.self_ty().kind() {
+                ty::Param(param) => param,
+                _ => return false,
+            },
+            _ => return false,
+        };
+        let given = args.type_at(param.index as usize);
+        self.is_user_iterator(self.reveal(given))
+            && self.reveal(ty) == self.reveal(given)
+            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
+    }
+
     /// An iterator of the crate's own as a JS one, `$iterator(it,
     /// countdownIterator_next)`. Anything else is `value` itself.
     pub(super) fn iter_source(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
