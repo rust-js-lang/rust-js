@@ -863,7 +863,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     helper("$rotateRight", list)
                 }
             }
-            Comb::Insert => helper("$insertAt", vec![subject, next(), next()]),
+            // At the front, which no length refuses: `unshift`.
+            Comb::Insert => match (next(), next()) {
+                (at, value) if at.as_int() == Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
+                (at, value) => helper("$insertAt", vec![subject, at, value]),
+            },
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", vec![subject, next(), next()]),
             Comb::Truncate => helper("$truncate", vec![subject, next()]),

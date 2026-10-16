@@ -366,4 +366,16 @@ export const mutations: Mutation[] = [
     replace: "                if !(Num::of(item).is_some_and(|n| !n.float()) || item.is_bool()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
   },
+  {
+    "name": "insert-front-helper",
+    "breaks": "`anchors.insert(0, x)` stays `$insertAt(anchors, 0, x)`, not `anchors.unshift(x)`",
+    "file": "src/lower/combinators.rs",
+    "find": "                (at, value) if at.as_int() == Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an insert at the front is unshift"
+    ]
+  },
 ];

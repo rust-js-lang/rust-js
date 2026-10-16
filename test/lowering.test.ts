@@ -2010,6 +2010,30 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// An insert at the front, which no length refuses, is `unshift`, as
+// react.dev's prepareMDX puts its Overview first.
+test("an insert at the front is unshift", async () => {
+  const dir = fixture("insert-front");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(mut anchors: Vec<String>) -> Vec<String> {
+    if !anchors.is_empty() {
+        anchors.insert(0, "Overview".to_string());
+    }
+    anchors
+}
+pub fn at(mut v: Vec<u32>, i: usize) -> Vec<u32> {
+    v.insert(i, 9);
+    v
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('anchors.unshift("Overview");');
+  expect(js).toContain("$insertAt(v, i, 9);");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.first(["a"]), lib.first([]), lib.at([1, 2], 1)]).toEqual([["Overview", "a"], [], [1, 9, 2]]);
+  expect(() => lib.at([1], 3)).toThrow();
+});
+
 // Arrays of arrays flattened are `flat()`, as react.dev's page route gathers
 // each directory's Markdown, `files.flat().filter(..)`; of sets, whose items
 // `flat()` wouldn't take apart, or in Rust's order, each item stepped.
