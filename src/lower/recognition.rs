@@ -3054,6 +3054,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()).starts_with("std::iter::"))
     }
 
+    /// An iterator of std's whose drop is closing it, JS's `return()`, and
+    /// what it holds that its closing drops (ADR 0422): `iter::repeat`'s
+    /// value, and that of a `take` or a `skip` of one, JS's helpers, which
+    /// close what they step.
+    pub(super) fn closed_on_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Repeat" => Some(args.type_at(0)),
+            "std::iter::Take" | "std::iter::Skip" => self.closed_on_drop(args.type_at(0)),
+            _ => None,
+        }
+    }
+
     /// An iterator that owns the one item it may give, `Some(x).into_iter()`
     /// or `iter::once(x)`: the array of none or one (ADR 0128).
     pub(super) fn owns_one_item(&self, ty: Ty<'tcx>) -> bool {

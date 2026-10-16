@@ -224,6 +224,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         true
     }
 
+    /// A generic iterator taken by value, `items.fold(..)`, which drops it as
+    /// it's done, which JS doesn't: one its callers give none with a
+    /// destructor (ADR 0190). Not one what it makes, `output`, holds, and is
+    /// closed to drop, `take(n)` of a `repeat`, whose drop it is (ADR 0422).
+    pub(in crate::lower) fn require_consumed_drops_none(&self, receiver: Ty<'tcx>, output: Ty<'tcx>) {
+        if self.recognition().closed_on_drop(output).is_none() {
+            self.require_no_drops(receiver);
+        }
+    }
+
     /// Is `drop`, a type's `Drop::drop`, one rust-js runs (ADR 0100)?
     pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
         self.drop_query().runs_drop(drop)
@@ -379,6 +389,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An iterator owning an array's items: each it hasn't given yet.
             ty::Adt(_, args) if self.array_source(ty) == Some(true) || self.recognition().owns_one_item(ty) => {
                 self.drop_items(value, args.type_at(0), span, made, out)?
+            }
+            // Closed, `it.return()`, which drops what it holds (ADR 0422).
+            ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {
+                out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
             }
             // A channel's end (ADR 0142).
             ty::Adt(..) if let Some(end) = self.recognition().channel_end(ty) => {

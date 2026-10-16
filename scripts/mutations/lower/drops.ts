@@ -278,4 +278,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Alias(..) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
+  {
+    name: "consumed-closed-required",
+    breaks: "a generic `repeat(t).take(n)` takes no destructor of `T`, though `take`'s drop drops it",
+    file: "src/lower/drops.rs",
+    find: "        if self.recognition().closed_on_drop(output).is_none() {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
+  {
+    name: "closed-iterator-unclosed",
+    breaks: "a `repeat`'s iterator dropped is walked as a struct, not closed",
+    file: "src/lower/drops.rs",
+    find: "            ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {\n",
+    replace: "            ty::Adt(..) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
 ];

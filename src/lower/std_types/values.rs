@@ -13,6 +13,7 @@ use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::lazy::LazyOp;
 use crate::lower::std_types::map::MapOp;
 use crate::lower::std_types::once::OnceOp;
+use crate::lower::std_types::slice::SliceOp;
 use crate::lower::{FnCx, R};
 use rustc_ast::Mutability;
 use rustc_middle::ty::{self, Ty};
@@ -42,9 +43,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its value moves into the `Ok`; its function, run only for a `None`,
         // would be dropped unrun, so it mustn't hold one.
         let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(tys[1]);
+        // `v.extend(items)` moves each into `v`, and drops `items` once it's
+        // given them all: that, of what holds nothing then, is nothing.
+        let moves_all = known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]);
         if takes_drops
             && !drained
             && !keeps_value
+            && !moves_all
             && !matches!(
                 known,
                 Std::Drop
@@ -57,6 +62,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Moves it into its iterator, whose drop is its item's.
                     | Std::OptionIter
                     | Std::IterSource(IterSource::Once)
+                    // Holds it, a clone each step, and drops it when it's
+                    // closed (ADR 0422).
+                    | Std::IterSource(IterSource::Repeat)
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
                     // A map keeps what it takes, and gives back what it replaces or
@@ -124,6 +132,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // writes to and doesn't drop (ADRs 0166, 0392).
                     | Std::UserWrite
                     | Std::UserIoWrite
+                    // What moves or lends items in place, or adds clones, and
+                    // drops none: `swap`, a slice's item or a generic index's
+                    // as a place, `extend_from_slice`; and the allocator's,
+                    // `set_len` leaving what's past it (ADRs 0417, 0420).
+                    | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)
+                    | Std::SliceGet
+                    | Std::Slice(SliceOp::GenericIndex { mutable: true })
+                    | Std::Alloc(_)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:
@@ -149,6 +165,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(())
+    }
+
+    /// Whether what `ty`, an iterator or what makes one, drops once it's
+    /// given all its items is nothing: an array's, a `Vec`'s, an `Option`'s,
+    /// their iterators', or one closed as it ends, `repeat(x).take(n)`, whose
+    /// end drops what it holds (ADR 0422). Not the crate's, whose `Drop` runs.
+    fn ends_holding_nothing(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        let recognition = self.recognition();
+        matches!(ty.kind(), ty::Array(..))
+            || self.is_vec_like(ty)
+            || self.option_of(ty).is_some()
+            || recognition.array_source(ty) == Some(true)
+            || recognition.owns_one_item(ty)
+            || recognition.closed_on_drop(ty).is_some()
     }
 
     /// Whether `known` gives an `Option` whose `Some` is boxed where it looks

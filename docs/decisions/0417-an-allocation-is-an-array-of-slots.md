@@ -61,6 +61,11 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
   of the item's trait is an array of it, smallvec's `*const A` as
   `*const A::Item`, is `$ptrFirst`: decided where it's compiled, as a tuple
   struct is a JS array too, which the runtime can't tell apart.
+- **`MaybeUninit::<A>::uninit()` of a type parameter that's an array**,
+  each of whose trait's impls is one, smallvec's `A: Array`, is an array
+  of slots, none written yet, `[]`, as an allocation is; of a
+  `MaybeUninit<A>` too, which is `A`'s value (ADR 0332). Decided where it's
+  compiled, as `$ptrFirst` is (`pointers::is_array_param`).
 - **`alloc_zeroed`** is refused still: what a zero is depends on the items'
   type, which the allocation doesn't know.
 

@@ -821,20 +821,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return false;
         };
-        let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
-            return false;
-        };
         let erased = |t: Ty<'tcx>| tcx.erase_and_anonymize_regions(t);
-        let mut impls = tcx.all_impls(trait_id).peekable();
-        erased(alias.self_ty()) == erased(of)
-            && impls.peek().is_some()
-            && impls.all(|imp| {
-                let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
-                let item = tcx
-                    .impl_item_implementor_ids(imp)
-                    .get(&def_id)
-                    .map(|&x| tcx.type_of(x).instantiate_identity().skip_normalization());
-                matches!(self_ty.kind(), ty::Array(element, _) if Some(*element) == item)
+        tcx.trait_of_assoc(def_id).is_some_and(|trait_id| {
+            erased(alias.self_ty()) == erased(of) && impls_are_arrays(tcx, trait_id, Some(def_id))
+        })
+    }
+
+    /// Whether `ty` is a type parameter bound by a trait each impl of which
+    /// is of an array, smallvec's `A: Array`: what it is is an array, whose
+    /// slots, uninit, are written an item at a time (ADR 0417).
+    pub(in crate::lower) fn is_array_param(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Param(_))
+            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+                clause.as_trait_clause().is_some_and(|bound| {
+                    bound.self_ty().skip_binder() == ty && impls_are_arrays(self.tcx, bound.def_id(), None)
+                })
             })
     }
 
@@ -896,4 +897,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(())
     }
+}
+
+/// Whether each impl of `trait_id`, of which there's one at least, is of an
+/// array, whose item is its associated type `item`'s, where one is named.
+fn impls_are_arrays(
+    tcx: ty::TyCtxt<'_>,
+    trait_id: rustc_span::def_id::DefId,
+    item: Option<rustc_span::def_id::DefId>,
+) -> bool {
+    let mut impls = tcx.all_impls(trait_id).peekable();
+    impls.peek().is_some()
+        && impls.all(|imp| {
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            let ty::Array(element, _) = self_ty.kind() else {
+                return false;
+            };
+            item.is_none_or(|item| {
+                tcx.impl_item_implementor_ids(imp)
+                    .get(&item)
+                    .is_some_and(|&x| tcx.type_of(x).instantiate_identity().skip_normalization() == *element)
+            })
+        })
 }

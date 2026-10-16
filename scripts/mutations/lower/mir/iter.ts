@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
     name: "mir-fold-drops-unrequired",
     breaks: "MIR's generic `fold` of an iterator its callers give a destructor drops it never",
     file: "src/lower/mir/iter.rs",
-    find: "                self.require_no_drops(receiver_ty);\n",
+    find: "                self.require_consumed_drops_none(receiver_ty, output);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic fold"],
   },
@@ -604,5 +604,13 @@ export const mutations: Mutation[] = [
     find: "                false => self.array_source(iter_ty).is_some() || self.is_unknown(iter_ty),\n",
     replace: "                false => self.array_source(iter_ty).is_some() || matches!(iter_ty.kind(), ty::Param(_)),\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
+  },
+  {
+    name: "take-of-repeat-refused",
+    breaks: "`take(n)` of a `repeat` of a value with a destructor is refused, as if it left items behind",
+    file: "src/lower/mir/iter.rs",
+    find: "        if keeps_each || self.recognition().closed_on_drop(iter_ty).is_some() {\n",
+    replace: "        if keeps_each {\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
 ];

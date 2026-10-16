@@ -23,20 +23,24 @@ newest release its requirement allows.
 | itertools 0.14 | blocked | either's |
 | indexmap 2.11 | blocked | hashbrown: a `transmute` of a `usize` as a pointer, a dangling one; its table's control bytes and items in one allocation |
 | bitflags 2.13 | runs | |
-| smallvec 1.16 | refused | `handle_alloc_error` called |
+| smallvec 1.16 | runs | |
 | arrayvec 0.7 | runs | |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a pointer tested for null |
 | once_cell 1.21 | refused | `std::thread::current` called |
 | semver 1.0 | refused | `this Formatter` |
 | uuid 1.28 | refused | a pointer into what JS may hold a copy of |
-| url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; smallvec's; percent-encoding: `String::from_utf8_lossy` called |
+| url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; percent-encoding: `String::from_utf8_lossy` called |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
 | rust_decimal 1.38 | blocked | serde_core: `size_of` of a type parameter |
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-5 of 17 compile, and each of the 4 with a probe runs as natively.
+6 of 17 compile, and each of the 5 with a probe runs as natively.
+smallvec, measured 2026-10-16, after ADRs 0417 to 0422, runs whole: its
+`SmallVec` inline and spilled to the heap, from a `Vec` and back, and what
+it drops, and when, of items with a destructor: a `Drain` taken in part,
+`truncate`'s, `resize`'s value.
 arrayvec, measured 2026-10-16, after ADRs 0407 and 0392's amendments, runs
 whole: its `ArrayVec` and `ArrayString`, of raw pointers into an array of
 `MaybeUninit`s, and its `io::Write`. Earlier, 4 of 16 compiled, and each of

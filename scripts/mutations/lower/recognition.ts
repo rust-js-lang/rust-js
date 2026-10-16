@@ -1585,4 +1585,12 @@ export const mutations: Mutation[] = [
     replace: "        \"clear\" | \"truncate\" | \"pop\"",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
   },
+  {
+    name: "skip-of-repeat-unclosed",
+    breaks: "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::iter::Take\" | \"std::iter::Skip\" => self.closed_on_drop(args.type_at(0)),\n",
+    replace: "            \"std::iter::Take\" => self.closed_on_drop(args.type_at(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
 ];

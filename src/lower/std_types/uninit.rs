@@ -49,8 +49,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match op {
             // An array of `MaybeUninit`s, written an item at a time, is its
             // items, each not yet written: arrayvec's `MaybeUninit::uninit()
-            // .assume_init()` of `[MaybeUninit<T>; CAP]`. Another's is written
-            // whole.
+            // .assume_init()` of `[MaybeUninit<T>; CAP]`; a type parameter
+            // that's an array, smallvec's `A: Array`, its slots, none yet
+            // (ADR 0417). Another's is written whole.
             UninitOp::Uninit => match *item.kind() {
                 ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {
                     let n = match len.try_to_target_usize(self.tcx) {
@@ -58,6 +59,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => self.const_arg(len, span)?,
                     };
                     crate::lower::plain::filled(n, None)
+                }
+                // Of a `MaybeUninit` of it, smallvec's `uninit().assume_init()`
+                // of a `MaybeUninit<A>`, too: that's its value (ADR 0332).
+                _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))
+                    .any(|t| self.is_array_param(t)) =>
+                {
+                    Expr::array(Vec::new())
                 }
                 _ => Expr::undefined(),
             },

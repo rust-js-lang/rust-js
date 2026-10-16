@@ -78,6 +78,18 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **smallvec 1.16 runs as natively** (`docs/crate-corpus.md`): its
+  `SmallVec` inline and spilled to the heap, and what it drops, and when.
+- **`iter::repeat(value)` of a value with a destructor**, and `take` and
+  `skip` of it: `value` is dropped when the iterator is closed, JS's
+  `return()`; and `v.extend(items)` of items with a destructor
+  ([ADR 0422](docs/decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)).
+- **Generic code given a `T` with a destructor** that swaps its items, lends
+  one, or extends from a slice, or `set_len`s its vector: it drops none,
+  so it takes one (ADR 0422).
+- **`MaybeUninit::<A>::uninit()` of a type parameter that's an array**,
+  smallvec's `A: Array`: an array of slots, written an item at a time
+  (ADR 0417).
 - **A std trait's associated type dropped in generic code**, an
   `I: IntoIterator`'s `I::IntoIter`, an `I::Item`: its caller gives its
   drop, `dropIIntoIter`, as it gives a type parameter's

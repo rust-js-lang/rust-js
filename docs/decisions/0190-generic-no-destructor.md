@@ -30,7 +30,10 @@ error: rust-js does not support giving `total`'s `I` a type with a destructor, w
 ```
 
 - **Only where it would be an error:** a loop over a generic iterator, a
-  std call that would drop what it's given, and only where what it would
+  std call that would drop what it's given (amended by
+  [ADR 0422](0422-an-iterator-holding-a-value-is-closed-to-drop-it.md):
+  not one that drops none of it, `swap`, `get_mut`, `index_mut`,
+  `extend_from_slice`, `set_len`, nor `take` of a `repeat`), and only where what it would
   drop is the type parameters' alone, `I` or a `Vec<T>`, not a type's of
   its own.
 - **A caller that gives its own type parameter takes none of it too,**

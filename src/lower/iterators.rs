@@ -575,13 +575,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             Std::IterSource(IterSource::Once) => Expr::array(vec![arg()]),
             Std::IterSource(IterSource::Empty) => Expr::array(vec![]),
+            // Its value's drop too, which it runs when it's closed (ADR 0422).
             Std::IterSource(IterSource::Repeat) => {
                 let value = arg();
                 let item = generic_args.type_at(0);
                 let mut list = vec![value];
+                let drop = self.drop_function(item, span)?;
                 if self.needs_clone(item) {
                     list.push(self.clone_fn("value", item, span)?);
+                } else if drop.is_some() {
+                    list.push(Expr::undefined());
                 }
+                list.extend(drop);
                 Expr::call(Expr::helper("$repeating"), list)
             }
             Std::IterSource(IterSource::RepeatWith) => Expr::call(Expr::helper("$repeatingWith"), vec![arg()]),

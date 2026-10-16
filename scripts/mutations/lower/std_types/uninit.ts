@@ -35,4 +35,20 @@ export const mutations: Mutation[] = [
     replace: "                ty::Array(each, len) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
   },
+  {
+    name: "uninit-array-param-undefined",
+    breaks: "`MaybeUninit::<A>::uninit()` of an array type parameter is nothing, which a pointer can't step into",
+    file: "src/lower/std_types/uninit.rs",
+    find: "                _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))\n                    .any(|t| self.is_array_param(t)) =>\n",
+    replace: "                _ if false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^uninit_array_param.rs$"],
+  },
+  {
+    name: "uninit-of-uninit-array-param-undefined",
+    breaks: "an uninit `MaybeUninit<A>` of an array type parameter is nothing, which a pointer can't step into",
+    file: "src/lower/std_types/uninit.rs",
+    find: "                _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))\n                    .any(|t| self.is_array_param(t)) =>\n",
+    replace: "                _ if self.is_array_param(item) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^uninit_array_param.rs$"],
+  },
 ];

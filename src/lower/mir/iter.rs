@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
         {
             if self.drop_query().drops_but_params(receiver_ty) == crate::lower::drops::Drops::Nothing {
-                self.require_no_drops(receiver_ty);
+                self.require_consumed_drops_none(receiver_ty, output);
             } else if self.is_user_iterator(receiver_ty) && !values.is_empty() {
                 if output.walk().any(|part| part.as_type() == Some(receiver_ty)) {
                     let name = tcx.item_name(def_id);
@@ -342,31 +342,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => it,
         };
         let item = self.iterator_item(iter_ty);
-        // An item with a destructor a method may leave undropped, `filter`'s
-        // or `count`'s: what std drops, refused till it's dropped here.
-        let keeps_each = matches!(
-            std_method,
-            Some(
-                IterMethod::Map
-                    | IterMethod::ForEach
-                    | IterMethod::Fold
-                    | IterMethod::Collect
-                    | IterMethod::Any
-                    | IterMethod::All
-                    | IterMethod::Position
-                    | IterMethod::Enumerate
-                    | IterMethod::ByRef
-                    | IterMethod::Fuse
-                    | IterMethod::Sum
-                    | IterMethod::Product
-                    | IterMethod::Count
-            )
-        );
         let dropping = item.filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-        // `filter` and `skip_while` drop each they discard, below.
-        if !keeps_each && !matches!(std_method, Some(IterMethod::Filter | IterMethod::SkipWhile)) && dropping.is_some()
-        {
-            return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
+        if dropping.is_some() {
+            self.check_leaves_none(std_method, iter_ty, name, span)?;
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
         // A function of the crate given as the callback, `filter(is_rule)`:
@@ -543,6 +521,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterMethod::ByRef | IterMethod::IntoIter => Some(receiver),
             _ => None,
         }
+    }
+
+    /// An item with a destructor a method may leave undropped, `take`'s or
+    /// `count`'s: what std drops, refused till it's dropped here. Not of one
+    /// that drops or keeps each, nor `filter`'s and `skip_while`'s, which drop
+    /// each they discard, nor of one that makes each as it's stepped,
+    /// `repeat`, which leaves none behind but what its drop drops (ADR 0422).
+    fn check_leaves_none(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, name: &str, span: Span) -> R<()> {
+        let keeps_each = matches!(
+            method,
+            Some(
+                IterMethod::Map
+                    | IterMethod::ForEach
+                    | IterMethod::Fold
+                    | IterMethod::Collect
+                    | IterMethod::Any
+                    | IterMethod::All
+                    | IterMethod::Position
+                    | IterMethod::Enumerate
+                    | IterMethod::ByRef
+                    | IterMethod::Fuse
+                    | IterMethod::Sum
+                    | IterMethod::Product
+                    | IterMethod::Count
+                    | IterMethod::Filter
+                    | IterMethod::SkipWhile
+            )
+        );
+        if keeps_each || self.recognition().closed_on_drop(iter_ty).is_some() {
+            return Ok(());
+        }
+        Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))
     }
 
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped

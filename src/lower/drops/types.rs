@@ -361,6 +361,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             {
                 self.drops_in(args.type_at(0), walk)
             }
+            // One closed to drop what it holds, `repeat`'s value (ADR 0422).
+            ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),
             // A heap's `PeekMut`: its top sifted down, if it changed (ADR 0333).
             ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,
             // Never dropped, or dropped by hand.

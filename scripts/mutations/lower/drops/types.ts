@@ -147,4 +147,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
+  {
+    name: "closed-iterator-drops-unknown",
+    breaks: "a `repeat` of a value with a destructor is a std type holding one, refused",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
 ];

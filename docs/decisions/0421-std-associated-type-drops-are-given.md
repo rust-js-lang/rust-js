@@ -81,7 +81,7 @@ first(loud, (intoIter) => { for (const item of intoIter) loudDrop_drop(item); })
   its associated types either: one with none whose iterator has one, a
   `Copy` type's, is an error still.
 - An adapter of std's holding an item with a destructor, `take`'s of a
-  `repeat`, is still an error, its drop JS's iterator's.
+  `repeat`, is closed to drop it (ADR 0422).
 - Before, a crate's iterator given as a JS iterator was dropped as the JS
   iterator, which its `Drop` read as its own: a silent difference, now the
   value's.

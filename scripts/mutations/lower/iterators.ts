@@ -519,4 +519,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
+  {
+    name: "repeat-drop-ungiven",
+    breaks: "`repeat`'s value is never dropped, as its iterator isn't given its drop",
+    file: "src/lower/iterators.rs",
+    find: "                list.extend(drop);\n",
+    replace: "                let _ = drop;\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
 ];
