@@ -382,4 +382,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^eq_two_types.rs$"],
     snapshots: true,
   },
+  {
+    name: "va-list-clone-unknown",
+    breaks: "a clone of a `VaList` is an error, where it's a copy of what's left",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {\n",
+    replace: "            ty::Adt(..) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
+  },
 ];

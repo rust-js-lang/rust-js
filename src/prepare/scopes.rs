@@ -154,7 +154,7 @@ impl Walk {
 
     fn pattern(&mut self, pattern: &Pattern) {
         match pattern {
-            Pattern::Name(name) => self.declare(name),
+            Pattern::Name(name) | Pattern::Rest(name) => self.declare(name),
             Pattern::Array(items) => items.iter().flatten().for_each(|item| self.pattern(item)),
             Pattern::Object(fields, rest) => {
                 // A default is read where the field is missing, before the

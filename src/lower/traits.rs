@@ -3040,6 +3040,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 consts.push((param.index, self.const_arg(args.const_at(index), span)?));
             }
         }
+        // A C-variadic default's own, which can't come after what it's given
+        // past the rest (ADR 0428).
+        if super::recognition::is_c_variadic(self.tcx, id)
+            && (!own_params.is_empty() || !own_const_params(self.tcx, id).is_empty())
+        {
+            return Err(self.unsupported(span, "a C-variadic default given a dictionary or a const"));
+        }
         let mut const_names = Vec::new();
         for index in own_const_params(self.tcx, id) {
             let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());

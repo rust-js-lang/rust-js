@@ -78,6 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **C-variadic functions**, `extern "C" fn f(n: i32, mut args: ...)`: a
+  rest parameter, `...args`, `next_arg()` its `shift()`
+  ([ADR 0428](docs/decisions/0428-c-variadic-functions.md)).
+- **Fixed: a trait's `&mut self` method as a function pointer** gave the
+  method the object unboxed, and crashed (ADR 0099).
 - **`#[track_caller]` and `Location::caller()`**: a function that reads
   where it was called takes it, `{ file, line, column }`, and each call
   gives it; one that reads nothing of it, an `Index` of the crate's among

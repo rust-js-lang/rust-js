@@ -25,8 +25,8 @@ use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
     BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
     ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration, Expression, ForStatementInit,
-    ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameters, FunctionBody, FunctionType,
-    IdentifierName, ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
+    ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameterRest, FormalParameters, FunctionBody,
+    FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
     JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject,
     JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
     SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, TemplateElement, TemplateElementValue,
@@ -249,6 +249,24 @@ struct Cx<'a> {
 impl<'a> Cx<'a> {
     fn params(&self, kind: FormalParameterKind, patterns: &[js::Pattern]) -> FormalParameters<'a> {
         let b = &self.b;
+        // The last, `...args`, gathers the rest (ADR 0428).
+        let (rest, patterns) = match patterns.split_last() {
+            Some((js::Pattern::Rest(name), before)) => (Some(name), before),
+            _ => (None, patterns),
+        };
+        let rest = rest.map(|name| {
+            let binding = BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
+            ArenaBox::new_in(
+                FormalParameterRest::new(
+                    SPAN,
+                    ArenaVec::new_in(b),
+                    BindingRestElement::new(SPAN, binding, b),
+                    None,
+                    b,
+                ),
+                b,
+            )
+        });
         let params = patterns.iter().map(|pattern| {
             FormalParameter::new(
                 SPAN,
@@ -263,7 +281,7 @@ impl<'a> Cx<'a> {
                 b,
             )
         });
-        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), None, b)
+        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest, b)
     }
 
     /// A function's or an arrow's body: its directives, `"use cache";`, in
@@ -584,6 +602,7 @@ impl<'a> Cx<'a> {
         let name = |name: &str| BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
         match pattern {
             js::Pattern::Name(n) => name(n),
+            js::Pattern::Rest(_) => unreachable!("a rest is a function's parameter, `params`'"),
             js::Pattern::Array(items) => {
                 let items = items.iter().map(|item| item.as_ref().map(|item| self.pattern(item)));
                 BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)

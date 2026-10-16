@@ -17,10 +17,7 @@ borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support addr
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
 borrowck/call-and-ref-option-mutate.rs	error: rust-js does not support a `&mut` of this in a variable yet
 borrowck/two-phase-multiple-activations.rs	error: rust-js does not support `{:?}` of a `std::io::Error` yet
-c-variadic/copy.rs	error: rust-js does not support cloning `std::ffi::VaList<'_>` yet
-c-variadic/inherent-method.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
-c-variadic/trait-method.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
-c-variadic/valid.rs	error: rust-js does not support calling `std::ffi::VaList::<'f>::next_arg` yet
+c-variadic/trait-method.rs	error: rust-js does not support a C-variadic trait method of a `&mut`, as a value yet
 cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place

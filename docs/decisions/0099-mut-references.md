@@ -322,3 +322,21 @@ pointers, and a `&mut` in a `static`.
   where the place reads `value` (`handle_named_value`); the printer prints
   the object. (Amended: the printer wrote it, choosing that name.)
 
+
+## Amendment: a trait's `&mut self` method as a value
+
+A trait's method of a `&mut` to an object, `Tally::bump` as a `fn(&mut
+Tally, i32) -> i32`, was an arrow that gave the method the object as it
+is, `(arg0, arg1) => tallyCounter().bump(arg0, arg1)`, where the method
+takes a box of it, `{ value }`: a default's `self.value` read `undefined`,
+and crashed. Such a method as a value is now the arrow of its call as MIR's
+lowers it, which boxes the object, and copies the box back in the arrow
+once the call returns, as a call's are after it: a default that replaces
+the whole of `*self` replaces the object's contents. One of a `&mut` to a
+number, a cell already, a box, is the direct arrow, given as it is. An
+arrow that only calls a function of the crate's by name, given its
+parameters as they are, is that function, wherever it's made, as
+`called_by_name` says: not a runtime helper's, whose arrow names what it's
+given by its type. The `mut_method_pointer` corpus case calls a default's
+and an impl's, of an object changed in place, replaced, and of a number,
+with native Rust.

@@ -671,6 +671,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = node_only(tcx, def_id) {
             return Some(Some(Std::Process(op)));
         }
+        // A C-variadic function's next argument, the first of what's left of
+        // its array (ADR 0428).
+        if std_path(tcx, def_id) == "std::ffi::VaList::<'f>::next_arg" {
+            return Some(Some(Std::Method("shift")));
+        }
         // Where a call is, `Location::caller()`, and its parts (ADR 0427).
         if let Some(op) = location_of(tcx, def_id) {
             return Some(Some(Std::Location(op)));
@@ -4076,6 +4081,20 @@ pub(crate) fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             .codegen_fn_attrs(def_id)
             .flags
             .contains(rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags::TRACK_CALLER)
+}
+
+/// Whether `def_id` is a C-variadic function, `extern "C" fn f(mut args:
+/// ...)`, whose last parameter gathers what it's given past the rest
+/// (ADR 0428).
+pub(crate) fn is_c_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        && tcx.fn_sig(def_id).skip_binder().skip_binder().c_variadic()
+}
+
+/// A C-variadic function's `VaList`, the arguments it hasn't read yet: an
+/// array of them (ADR 0428).
+pub(crate) fn is_va_list(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(list, _) if std_path(tcx, list.did()) == "std::ffi::VaList")
 }
 
 /// Which of `panic::Location`'s functions `id` is, if it's one (ADR 0427).

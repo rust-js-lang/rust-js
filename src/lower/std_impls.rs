@@ -384,6 +384,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
+            // A C-variadic function's `VaList`, the array of what it hasn't
+            // read: a copy, read on its own (ADR 0428).
+            ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {
+                Ok(Expr::call(Expr::member(place, "slice"), Vec::new()))
+            }
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left.
             ty::Adt(..) if let Some(owns) = self.array_source(ty) => {

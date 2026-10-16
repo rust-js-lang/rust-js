@@ -290,4 +290,12 @@ export const mutations: Mutation[] = [
     replace: "        let constants = n.constants.iter().take(0).map(|c| {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
   },
+  {
+    name: "rest-param-dropped",
+    breaks: "a function's `...args` isn't written, and it gathers nothing",
+    file: "src/to_oxc.rs",
+    find: "        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest, b)\n",
+    replace: "        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest.filter(|_| false), b)\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
+  },
 ];

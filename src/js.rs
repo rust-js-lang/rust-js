@@ -675,6 +675,9 @@ pub enum Pattern {
     /// its default where it's missing, `{ size = "md" }` (ADR 0212), a
     /// literal; and the variable the rest go in, `...rest` (ADR 0195).
     Object(Vec<(String, Pattern, Option<Expr>)>, Option<String>),
+    /// A function's last parameter that gathers what it's given past the
+    /// rest, `...args`: a C-variadic function's (ADR 0428).
+    Rest(String),
 }
 
 impl Pattern {
@@ -686,7 +689,7 @@ impl Pattern {
     /// The variables it binds.
     pub fn names(&self) -> Vec<&str> {
         match self {
-            Pattern::Name(name) => vec![name.as_str()],
+            Pattern::Name(name) | Pattern::Rest(name) => vec![name.as_str()],
             Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::names).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter()
@@ -699,7 +702,7 @@ impl Pattern {
     /// The variables it binds, to rename.
     pub fn names_mut(&mut self) -> Vec<&mut String> {
         match self {
-            Pattern::Name(name) => vec![name],
+            Pattern::Name(name) | Pattern::Rest(name) => vec![name],
             Pattern::Array(items) => items.iter_mut().flatten().flat_map(Pattern::names_mut).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter_mut()
@@ -712,7 +715,7 @@ impl Pattern {
     /// Its defaults, `"md"` of `{ size = "md" }`, in order.
     pub fn defaults(&self) -> Vec<&Expr> {
         match self {
-            Pattern::Name(_) => Vec::new(),
+            Pattern::Name(_) | Pattern::Rest(_) => Vec::new(),
             Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::defaults).collect(),
             Pattern::Object(fields, _) => fields
                 .iter()

@@ -351,6 +351,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let evidence = self.evidence_params(def_id);
         let mut out = Vec::new();
         let (mut params, is_async) = self.mir_signature(body, mir, &mut out)?;
+        // A C-variadic one's last parameter gathers the rest, which nothing
+        // can come after (ADR 0428).
+        if super::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {
+            return Err(self.unsupported(span, "a C-variadic function given a dictionary, a fact or a drop"));
+        }
         params.extend(evidence);
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
@@ -449,6 +454,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A body's parameters and statements. A closure's, given what it
     /// captured, reads them in place of its environment's fields.
+    /// A parameter or a result of a type JS can't hold, a `&mut` to a
+    /// `&mut [i32]` whose place it can't share: refused, of a body whose
+    /// parameters are past its first `skip` and aren't its `formatter`.
+    fn check_signature_types(
+        &self,
+        mir_body: &mir::Body<'tcx>,
+        (skip, formatter): (usize, Option<Local>),
+        def_span: Span,
+    ) -> R<()> {
+        for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
+            self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
+        }
+        if mir_body.coroutine.is_none() && formatter.is_none() {
+            self.check_value_ty(mir_body.return_ty(), def_span)?;
+        }
+        Ok(())
+    }
+
+    /// A C-variadic function's last parameter, its `VaList`, gathers what it's
+    /// given past the rest, `...args`: the array of them (ADR 0428).
+    fn gather_rest(&self, mir_body: &mir::Body<'tcx>, params: &mut Vec<js::Pattern>) {
+        if super::recognition::is_c_variadic(self.tcx, mir_body.source.def_id())
+            && let Some(js::Pattern::Name(name)) = params.pop()
+        {
+            params.push(js::Pattern::Rest(name));
+        }
+    }
+
     fn mir_function(
         &mut self,
         mir: &Mir<'tcx>,
@@ -580,15 +613,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, false) => 1,
             (false, false) => 0,
         };
-        // A parameter or a result of a type JS can't hold, a `&mut` to a
-        // `&mut [i32]` whose place it can't share: refused.
         let def_span = self.tcx.def_span(mir_body.source.def_id());
-        for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
-            self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
-        }
-        if mir_body.coroutine.is_none() && formatter.is_none() {
-            self.check_value_ty(mir_body.return_ty(), def_span)?;
-        }
+        self.check_signature_types(mir_body, (skip, formatter), def_span)?;
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -754,6 +780,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.locals.declared[local] = true;
             }
         }
+        self.gather_rest(mir_body, &mut params);
         let start = BasicBlock::from_usize(0);
         let given = options.as_deref().map(Expr::var);
         out.extend(self.with_given(given, |cx| cx.mir_tree(&mut state, start))?);
@@ -4877,15 +4904,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
         };
         let values = params.iter().map(|p| Value::Expr(Expr::var(p))).collect();
-        // What's made for the call is the arrow's, not what's around it.
+        // What's made for the call is the arrow's, not what's around it: the
+        // boxes it gives a `&mut` too, copied back in it once the call returns,
+        // as a call's are after it (ADR 0099).
         let (pending, unwind) = (std::mem::take(&mut state.pending), state.unwind.take());
+        let outer_copy_backs = std::mem::take(&mut state.copy_backs);
         let mut body = Vec::new();
         let called = self.mir_call_values(state, (def_id, args), (values, &inputs), sig.output(), span, &mut body);
         let value = called.and_then(|value| self.value_expr(value, span));
         let flushed = self.flush(state, &mut body);
         (state.pending, state.unwind) = (pending, unwind);
-        let value = value?;
+        let copy_backs = std::mem::replace(&mut state.copy_backs, outer_copy_backs);
+        let mut value = value?;
         flushed?;
+        if !copy_backs.is_empty() {
+            value = self.spill("value", value, &mut body);
+            for (place, boxed, object) in copy_backs {
+                let js_span = self.js_span(span);
+                body.push(self.copied_back(place, &boxed, object, js_span));
+            }
+        }
+        if body.is_empty()
+            && let Some(callee) = super::called_by_name(&params, &value)
+        {
+            return Ok(callee);
+        }
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))
     }

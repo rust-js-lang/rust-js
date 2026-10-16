@@ -495,6 +495,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0425 A type's own `Future`, `io::Read`, `BufRead` and `Seek` are allowed, and never lowered](decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md)
 - [0426 A test or a value written out of literals is its answer](decisions/0426-a-literal-test-is-its-answer.md)
 - [0427 `#[track_caller]`: a function that reads where it was called is given it](decisions/0427-track-caller.md)
+- [0428 A C-variadic function's `...` is JS's rest parameter](decisions/0428-c-variadic-functions.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

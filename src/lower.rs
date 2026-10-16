@@ -399,6 +399,23 @@ impl Default for TypeWalks<'_> {
     }
 }
 
+/// What an arrow of `params` that returns `call` is, if it's a function of
+/// the crate's by name given them as they are: `(arg0) => shapeArea_area(arg0)`
+/// is `shapeArea_area`, not a dictionary's method, read off it. Not a
+/// runtime helper, whose arrow names what it's given by its type, `(s) =>
+/// $byteLen(s)`, where it's written in place.
+fn called_by_name(params: &[String], call: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, list) = &call.kind else {
+        return None;
+    };
+    let by_name = matches!(callee.kind, js::ExprKind::Var(_))
+        && callee.helper_name().is_none()
+        && list.len() == params.len()
+        && (list.iter().zip(params)).all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
+        && params.iter().all(|name| !callee.mentions_var(name));
+    by_name.then(|| (**callee).clone())
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What walks of types found under the typing environment in force.
     fn walks(&self) -> Rc<TypeWalks<'tcx>> {
@@ -558,36 +575,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         "a `#[track_caller]` trait method that reads its caller, as a value",
                     ));
                 }
-                let count = self
+                let inputs = self
                     .tcx
                     .fn_sig(def_id)
                     .instantiate(self.tcx, args)
                     .skip_normalization()
                     .skip_binder()
                     .inputs()
-                    .len();
-                let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
-                let values = params.iter().map(|name| Expr::var(name)).collect();
+                    .to_vec();
+                let variadic = recognition::is_c_variadic(self.tcx, def_id);
+                // A `&mut` to an object it's given, the object itself, is a box,
+                // `{ value }`, to the method, as a call lowered as MIR's makes
+                // it (ADR 0099): that call's arrow, which has no rest yet for
+                // a C-variadic one's (ADR 0428). One to anything else is a
+                // cell, a box already, given as it is.
+                if inputs.iter().any(
+                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),
+                ) {
+                    if variadic {
+                        return Err(self.unsupported(span, "a C-variadic trait method of a `&mut`, as a value"));
+                    }
+                    return Ok(None);
+                }
+                let params: Vec<String> = (0..inputs.len()).map(|i| self.fresh(&format!("arg{i}"))).collect();
+                let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
+                // A C-variadic one's, given on what it's given past the rest,
+                // `(...args) => f(...args)` (ADR 0428).
+                let variadic = variadic.then(|| self.fresh("args"));
+                if let Some(rest) = &variadic {
+                    values.push(Expr::spread(Expr::var(rest)));
+                }
                 // A std trait's, `ToString::to_string` or `i32::max`: what
                 // its call is.
                 let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
                     return Ok(None);
                 };
-                // `(arg0) => shapeArea_area(arg0)` is `shapeArea_area`: a
-                // function by name, not a dictionary's method, read off it.
-                if let js::ExprKind::Call(callee, list) = &call.kind
-                    && matches!(callee.kind, js::ExprKind::Var(_))
-                    && list.len() == params.len()
-                    && list
-                        .iter()
-                        .zip(&params)
-                        .all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
-                    && params.iter().all(|name| !callee.mentions_var(name))
-                {
-                    return Ok(Some((**callee).clone()));
+                if let Some(callee) = called_by_name(&params, &call) {
+                    return Ok(Some(callee));
                 }
+                let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
+                patterns.extend(variadic.map(js::Pattern::Rest));
                 return Ok(Some(Expr::arrow(
-                    params.into_iter().map(Into::into).collect(),
+                    patterns,
                     vec![StmtKind::Return(Some(call)).at(js_span)],
                 )));
             }

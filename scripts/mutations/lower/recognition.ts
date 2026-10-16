@@ -1713,4 +1713,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
+  {
+    name: "c-variadic-unseen",
+    breaks: "a C-variadic function's last parameter is one value, not what it's given past the rest",
+    file: "src/lower/recognition.rs",
+    find: "        && tcx.fn_sig(def_id).skip_binder().skip_binder().c_variadic()\n",
+    replace: "        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
+  },
+  {
+    name: "next-arg-unknown",
+    breaks: "`next_arg()` of a `VaList` is an error, where it's the first of what's left",
+    file: "src/lower/recognition.rs",
+    find: "        if std_path(tcx, def_id) == \"std::ffi::VaList::<'f>::next_arg\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
+  },
 ];
