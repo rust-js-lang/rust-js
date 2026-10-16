@@ -288,7 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let known = match mapped {
                 true => crate::lower::iterators::is_stepped_items(&it),
-                false => self.array_source(iter_ty).is_some() || matches!(iter_ty.kind(), ty::Param(_)),
+                false => self.array_source(iter_ty).is_some() || self.is_unknown(iter_ty),
             };
             if !known {
                 return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));

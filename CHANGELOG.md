@@ -76,6 +76,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **arrayvec 0.7 runs as natively**, `ArrayVec` and `ArrayString` alike
   (`docs/crate-corpus.md`): a crate built on raw pointers into an array of
   `MaybeUninit`s.
+- **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
+  (ADR 0170).
 - **A `Vec`'s `capacity()`**, kept where the crate or a library it uses
   asks it, as std promises it
   ([ADR 0419](docs/decisions/0419-a-vecs-capacity-kept-where-asked.md)).

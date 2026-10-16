@@ -597,4 +597,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|_| false),\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_of_projection.rs$"],
   },
+  {
+    name: "size-hint-of-projection-refused",
+    breaks: "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",
+    file: "src/lower/mir/iter.rs",
+    find: "                false => self.array_source(iter_ty).is_some() || self.is_unknown(iter_ty),\n",
+    replace: "                false => self.array_source(iter_ty).is_some() || matches!(iter_ty.kind(), ty::Param(_)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
+  },
 ];
