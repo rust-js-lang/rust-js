@@ -3,7 +3,8 @@
 //! as an array grows, and `dealloc` leaves it to JS's collector. A
 //! `Layout` is `{ size, align }`, and `handle_alloc_error` ends the
 //! program, as Rust's does. `Vec::from_raw_parts(p, len, cap)` is the array
-//! `p` points to the first of, `len` long.
+//! `p` points to the first of, `len` long, and `v.set_len(n)` leaves what's
+//! past `n` where it was (ADR 0420).
 
 use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::FnCx;
@@ -29,6 +30,8 @@ pub(in crate::lower) enum AllocOp {
     /// `Vec::from_raw_parts(p, len, cap)`: the array `p` is into the first
     /// of, `len` long.
     VecFromRaw,
+    /// `v.set_len(n)`: `n` long, what's past it left where it was.
+    SetLen,
 }
 
 /// Which of the allocator's functions `path` is.
@@ -42,6 +45,7 @@ pub(in crate::lower) fn alloc_op(path: &str) -> Option<AllocOp> {
         "std::alloc::Layout::size" => AllocOp::Size,
         "std::alloc::Layout::align" => AllocOp::Align,
         "std::vec::Vec::<T>::from_raw_parts" => AllocOp::VecFromRaw,
+        "std::vec::Vec::<T, A>::set_len" => AllocOp::SetLen,
         _ => return None,
     })
 }
@@ -66,6 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             AllocOp::Error => helper("$allocError", values.collect()),
             AllocOp::Layout => helper("$layout", values.collect()),
             AllocOp::VecFromRaw => helper("$vecFromRaw", values.collect()),
+            AllocOp::SetLen => helper("$setLen", values.collect()),
             AllocOp::Size => Expr::member(values.next().expect("a layout"), "size"),
             AllocOp::Align => Expr::member(values.next().expect("a layout"), "align"),
             AllocOp::Dealloc => {

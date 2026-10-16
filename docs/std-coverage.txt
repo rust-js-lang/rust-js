@@ -1,10 +1,10 @@
-# Vec 40 of 48
+# Vec 42 of 48
 + Vec::append
 + Vec::as_mut_ptr
 + Vec::as_mut_slice
 + Vec::as_ptr
 + Vec::as_slice
-- Vec::capacity
++ Vec::capacity
 + Vec::clear
 + Vec::dedup
 + Vec::dedup_by
@@ -36,7 +36,7 @@
 + Vec::resize_with
 + Vec::retain
 + Vec::retain_mut
-- Vec::set_len
++ Vec::set_len
 + Vec::shrink_to
 + Vec::shrink_to_fit
 - Vec::spare_capacity_mut

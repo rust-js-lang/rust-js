@@ -78,6 +78,10 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`Vec::set_len`**: what it shortens a vector by stays where it was, read
+  through a pointer as smallvec's `from_vec` does, and what it lengthens it
+  over is what was written there
+  ([ADR 0420](docs/decisions/0420-what-set-len-leaves-stays.md)).
 - **A `Vec`'s `capacity()`**, kept where the crate or a library it uses
   asks it, as std promises it
   ([ADR 0419](docs/decisions/0419-a-vecs-capacity-kept-where-asked.md)).

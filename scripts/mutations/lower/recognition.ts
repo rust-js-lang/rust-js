@@ -1573,8 +1573,16 @@ export const mutations: Mutation[] = [
     name: "truncate-keeps-no-capacity",
     breaks: "`truncate` shortens a `Vec` without keeping its capacity",
     file: "src/lower/recognition.rs",
-    find: "        \"clear\" | \"truncate\" | \"pop\" | \"pop_if\" | \"remove\" | \"swap_remove\" | \"drain\" | \"retain\" | \"retain_mut\"\n",
-    replace: "        \"clear\" | \"pop\" | \"pop_if\" | \"remove\" | \"swap_remove\" | \"drain\" | \"retain\" | \"retain_mut\"\n",
+    find: "        \"clear\" | \"truncate\" | \"set_len\" | \"pop\"",
+    replace: "        \"clear\" | \"set_len\" | \"pop\"",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
+  },
+  {
+    name: "set-len-loses-capacity",
+    breaks: "`set_len` shortens a `Vec` without keeping its capacity",
+    file: "src/lower/recognition.rs",
+    find: "        \"clear\" | \"truncate\" | \"set_len\" | \"pop\"",
+    replace: "        \"clear\" | \"truncate\" | \"pop\"",
+    tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
   },
 ];

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            AllocOp::Size => values.next().expect(\"a layout\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
+  {
+    name: "set-len-unrecognized",
+    breaks: "`Vec::set_len` isn't the allocator's, and is refused",
+    file: "src/lower/std_types/alloc.rs",
+    find: "        \"std::vec::Vec::<T, A>::set_len\" => AllocOp::SetLen,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
+  },
 ];

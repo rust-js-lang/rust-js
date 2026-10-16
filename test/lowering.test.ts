@@ -11505,3 +11505,29 @@ pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.plain_mut([[1], [2, 3]]), lib.rest_mut([[1], [2, 3], [4]])]).toEqual([5, 5]);
 });
+
+// ADR 0420: what `Vec::set_len` leaves past a vector's length is read
+// through a pointer, or a shared slice, a copy; a mutable slice over it,
+// which would be a view of the array, isn't, rust-js's error where it's made.
+test("a mutable slice over what set_len left is an error where it's made", async () => {
+  const dir = fixture("set-len-spare");
+  writeFileSync(join(dir, "lib.rs"), `pub fn shared() -> Vec<u32> {
+    let mut v = vec![1, 2, 3];
+    unsafe {
+        v.set_len(1);
+        std::slice::from_raw_parts(v.as_ptr(), 3).to_vec()
+    }
+}
+pub fn mutable() -> u32 {
+    let mut v = vec![1, 2, 3];
+    unsafe {
+        v.set_len(1);
+        std::slice::from_raw_parts_mut(v.as_mut_ptr(), 3)[2]
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shared()).toEqual([1, 2, 3]);
+  expect(() => lib.mutable()).toThrow("rust-js does not support a mutable slice past a vector's length");
+});

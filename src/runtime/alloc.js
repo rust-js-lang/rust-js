@@ -32,6 +32,6 @@ function $vecFromRaw(pointer, length) {
   if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
     throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
-  pointer.of.length = length;
+  $setLen(pointer.of, length);
   return pointer.of;
 }

@@ -482,10 +482,9 @@ pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
     let name = path.strip_prefix("std::vec::Vec::<T, A>::")?;
     match name {
         "append" => Some(1),
-        "clear" | "truncate" | "pop" | "pop_if" | "remove" | "swap_remove" | "drain" | "retain" | "retain_mut"
-        | "dedup" | "dedup_by" | "dedup_by_key" | "split_off" | "resize" | "resize_with" | "extract_if" | "splice" => {
-            Some(0)
-        }
+        "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "remove" | "swap_remove" | "drain" | "retain"
+        | "retain_mut" | "dedup" | "dedup_by" | "dedup_by_key" | "split_off" | "resize" | "resize_with"
+        | "extract_if" | "splice" => Some(0),
         _ => None,
     }
 }

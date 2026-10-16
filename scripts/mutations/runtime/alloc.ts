@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "vec-from-raw-untruncated",
     breaks: "`Vec::from_raw_parts(p, len, cap)` keeps the allocation's slots past `len`",
     file: "src/runtime/alloc.js",
-    find: "  pointer.of.length = length;\n",
+    find: "  $setLen(pointer.of, length);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },

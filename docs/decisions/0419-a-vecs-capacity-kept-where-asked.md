@@ -26,7 +26,7 @@ library it uses does: at least its length, what `with_capacity` and
 | `v.capacity()` | `$capacity(v)`: its kept room, or its length, the more | (it's kept, as it's asked) |
 | `v.reserve(n)`, `reserve_exact(n)` | `$reserve(v, n)` | nothing |
 | `v.shrink_to(n)`, `shrink_to_fit()` | `$shrinkTo(v, n)`, of `0` | nothing |
-| `clear()`, `truncate`, `pop`, `drain`, … | `$keepCapacity(v)` first | as before |
+| `clear()`, `truncate`, `set_len`, `pop`, `drain`, … | `$keepCapacity(v)` first | as before |
 
 - **Which `Vec` methods shorten it is `recognition::shortens_vec`'s**,
   asked once, before any std call is lowered: what it has kept first.

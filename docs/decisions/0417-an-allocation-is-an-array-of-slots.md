@@ -43,7 +43,7 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
 | `handle_alloc_error(layout)` | `memory allocation of N bytes failed`, the end, as Rust's |
 | `p as *mut u8`, `p.cast::<u8>()` | `$ptrBytes(p)`: a view of its bytes, one for each |
 | a view as `*mut T` | `$ptrTyped(view)`: the pointer it was a view of |
-| `Vec::from_raw_parts(p, len, cap)` | `$vecFromRaw(p, len)`: the array `p` is the first slot of, `len` long |
+| `Vec::from_raw_parts(p, len, cap)` | `$vecFromRaw(p, len)`: the array `p` is the first slot of, `len` long, what's past it left there as `set_len` leaves it ([0420](0420-what-set-len-leaves-stays.md)) |
 | `Layout::from_size_align(s, a)` | `$layout(s, a)`: `Ok` of `{ size, align }`, or `Err` as Rust's |
 | `layout.size()`, `layout.align()` | `layout.size`, `layout.align` |
 | `{:?}` of a `Layout`, a `LayoutError` | Rust's: `Layout { size: 24, align: 8 (1 << 3) }`, `LayoutError` |

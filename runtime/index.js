@@ -1745,7 +1745,7 @@ export function $ptr(object, key) {
       of: object,
       at: key,
       get value() {
-        return object[key];
+        return $slot(object, key);
       },
       set value(value) {
         object[key] = value;
@@ -1754,6 +1754,37 @@ export function $ptr(object, key) {
     handles.set(key, handle);
   }
   return handle;
+}
+
+// An array's slots past its length that `Vec::set_len` shortened it by
+// (ADR 0420): they stay where they were, as Rust's memory does, read
+// through a pointer until they're written again.
+export const $spares = new WeakMap();
+
+// What's at `object[key]`: of an array past its length, what's left there.
+export function $slot(object, key) {
+  return key >= object.length ? $spares.get(object)?.[key] : object[key];
+}
+
+// The `count` items of an array from `start`, a copy, past its length what's
+// left there.
+export function $slots(items, start, count) {
+  if (start + count <= items.length) return items.slice(start, start + count);
+  return Array.from({ length: count }, (_, i) => $slot(items, start + i));
+}
+
+// `v.set_len(n)`, `n` long: what's past it is left where it was, and what
+// it's lengthened over is what was written there, or left.
+export function $setLen(v, n) {
+  let spare = $spares.get(v);
+  if (n < v.length) {
+    if (spare === undefined) $spares.set(v, (spare = []));
+    for (let i = n; i < v.length; i++) spare[i] = v[i];
+  }
+  v.length = n;
+  spare?.forEach((item, i) => {
+    if (i < n && !(i in v)) v[i] = item;
+  });
 }
 
 // A pointer to an object a `&mut` is, whose place JS doesn't name: one for
@@ -1832,11 +1863,11 @@ export function $ptrCopy(src, dst, count, copy) {
   if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
     throw new Error("rust-js does not support copying items but between arrays, which reads memory by where it is");
   }
-  if (src.of === dst.of && copy === undefined) {
+  if (src.of === dst.of && copy === undefined && Math.max(src.at, dst.at) + count <= src.of.length) {
     src.of.copyWithin(dst.at, src.at, src.at + count);
     return;
   }
-  const items = src.of.slice(src.at, src.at + count);
+  const items = $slots(src.of, src.at, count);
   for (let i = 0; i < count; i++) dst.of[dst.at + i] = copy === undefined ? items[i] : copy(items[i]);
 }
 
@@ -1844,13 +1875,16 @@ export function $ptrCopy(src, dst, count, copy) {
 // copy, as a shared subslice is, or all of an array, the array itself.
 export function $ptrSlice(pointer, count) {
   const [items, start] = $ptrItems(pointer, count);
-  return start === 0 && count === items.length ? items : items.slice(start, start + count);
+  return start === 0 && count === items.length ? items : $slots(items, start, count);
 }
 
 // `slice::from_raw_parts_mut(p, n)`: a view of the `n` items from where `p`
 // points (ADR 0335), or all of an array, the array itself.
 export function $ptrSliceMut(pointer, count) {
   const [items, start] = $ptrItems(pointer, count);
+  if (start + count > items.length && $spares.has(items)) {
+    throw new Error("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
+  }
   return start === 0 && count === items.length ? items : $view(items, start, start + count);
 }
 
@@ -4060,7 +4094,7 @@ export function $vecFromRaw(pointer, length) {
   if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
     throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
-  pointer.of.length = length;
+  $setLen(pointer.of, length);
   return pointer.of;
 }
 

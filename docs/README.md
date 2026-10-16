@@ -487,6 +487,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0417 An allocation is an array of slots](decisions/0417-an-allocation-is-an-array-of-slots.md)
 - [0418 A slice's index of a type parameter's is a dictionary](decisions/0418-a-generic-slice-index-is-a-dictionary.md)
 - [0419 A `Vec`'s capacity is kept where it's asked](decisions/0419-a-vecs-capacity-kept-where-asked.md)
+- [0420 What `Vec::set_len` leaves past a vector's length stays where it was](decisions/0420-what-set-len-leaves-stays.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
