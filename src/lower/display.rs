@@ -754,6 +754,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper("$displayF32"), vec![value]));
         }
         let display = self.display_trait();
+        // A `dyn ToString`'s text, what `to_string()` of it gives, is its
+        // dictionary's `to_string` of its value (ADR 0141).
+        if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {
+            if !value.reads_same() {
+                return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));
+            }
+            let dictionary = Expr::member(value.clone(), js::DICTIONARY);
+            return Ok(Expr::call(
+                Expr::member(dictionary, "to_string"),
+                vec![Expr::held(value)],
+            ));
+        }
         let options = self.options_arg(pretty);
         if let Some(shown) = self.dyn_written(value.clone(), (ty, display), options, span)? {
             return Ok(shown);

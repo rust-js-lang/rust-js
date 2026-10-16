@@ -86,7 +86,9 @@ orders (`Option`, `Result`, `Reverse`).
 ## Amendment: a heap of `()` is refused where it's popped
 
 A heap whose items could look like `None`, `()`'s, was an error wherever it
-was used. Only its `pop` is an `Option` of an item, `undefined` for `None`:
-`peek` boxes a `Some` that would look like it, as a slice's `first` does, so
-a heap of `()` is an error where it's popped alone, and pushed, counted and
-peeked as any is. Its items, all `Equal`, compare as `()` does (ADR 0057).
+was used, its own check, `heap_of`. Only its `pop` is an `Option` of an
+item, `undefined` for `None`, which is refused as any such `Option` is
+(ADR 0051), the one check that answers it: `heap_of` is gone. `peek` boxes
+a `Some` that would look like it, as a slice's `first` does, so a heap of
+`()` is pushed, counted and peeked as any is. Its items, all `Equal`,
+compare as `()` does (ADR 0057).

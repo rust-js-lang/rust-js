@@ -452,4 +452,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
+  {
+    name: "dyn-to-string-unshown",
+    breaks: "`to_string()` of a `dyn ToString` is a `{}` of it, which it has none of",
+    file: "src/lower/display.rs",
+    find: "        if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
+  },
 ];

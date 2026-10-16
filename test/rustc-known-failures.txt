@@ -24,7 +24,6 @@ c-variadic/valid.rs	error: rust-js does not support calling `std::ffi::VaList::<
 cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
-cast/codegen-object-shim.rs	error: rust-js does not support `{}` of a `dyn std::string::ToString` yet
 cast/coercion-as-explicit-cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/supported-cast.rs	error: rust-js does not support addressable memory yet: a pointer made of an address

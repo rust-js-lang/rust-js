@@ -86,3 +86,16 @@ its type (ADR 0054):
   dictionary, its type's `TypeId`.)
 - Of rustc's tests, 8 more pass: `dyn Display` in its forms, `Box<dyn
   Error>` from a string, and three of trait upcasting's.
+
+## Amendment: a `dyn ToString`
+
+A `dyn ToString` is a pair too, of its value and its type's `ToString`
+dictionary, `{ to_string }`, which rust-js makes for generic code
+already: `&7u8 as &dyn ToString` is `{ value: 7, impl: { to_string: String
+} }`, and its `to_string()`, `x.impl.to_string(x.value)`. It has no
+`Display` to show it through, so its text is its dictionary's own, asked
+where a `to_string()` of it asks a `{}`. `ToString` is among
+`is_std_pair_trait`'s, as `Display` is. The `dyn_to_string` corpus case
+shows numbers, text and the crate's own `Display` so, boxed in a list,
+borrowed, and through `ToString::to_string` as a function pointer, with
+native Rust; rustc's `codegen-object-shim` passes.

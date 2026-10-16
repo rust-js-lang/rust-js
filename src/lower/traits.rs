@@ -735,7 +735,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 /// `Display`, `Error` or `Any`: a std trait whose `dyn` is a pair (ADRs
 /// 0141, 0331).
 fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    [StdItem::Display, StdItem::Error, StdItem::IoWrite]
+    [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]
         .into_iter()
         .any(|item| is_std_def(tcx, id, item))
         || any_trait(tcx) == Some(id)

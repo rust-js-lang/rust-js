@@ -100,7 +100,8 @@ for (const [name, source, message, crate] of [
   // a `P: Deref` (ADR 0394); a `P: DerefMut`'s isn't yet.
   ["a DerefMut in generic code", 'pub fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }', "does not support calling `std::ops::DerefMut::deref_mut`"],
   ["an Rc's raw pointer", 'pub fn f(r: &std::rc::Rc<u32>) -> bool { std::rc::Rc::as_ptr(r).is_null() }', "does not support"],
-  ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "a heap of"],
+  // A heap's `pop` of an item that could look like `None`, as any such `Option` (ADR 0051).
+  ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "this call, for an `Option` of what could look like `None`"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["a Box<dyn Send> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: Box<dyn Send> = Box::new(D); }', "a `dyn` of a value with a destructor"],
@@ -115,8 +116,6 @@ for (const [name, source, message, crate] of [
   ["ok_or_else whose function holds a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(o: Option<D>, held: D) -> Result<D, u32> { o.ok_or_else(move || { let h = held; h.0 }) }', "`std::option::Option::<T>::ok_or_else` of a value with a destructor"],
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
-  // `ToString` is a dictionary of a generic `T`'s, but a `dyn ToString` has no pair to call through.
-  ["to_string of a dyn ToString", 'pub fn f(x: &dyn ToString) -> String { x.to_string() }', "dyn std::string::ToString"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
   ["collecting into a Result of a String", 'pub fn f(v: Vec<Result<char, ()>>) -> Result<String, ()> { v.into_iter().collect() }', "collecting into a"],
   // `len()` takes no item, so it runs none of a chain's closures (ADR 0036).

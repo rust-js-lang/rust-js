@@ -78,6 +78,8 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A `dyn ToString`**, a value and its `to_string`, as a `dyn Display` is
+  (ADR 0141).
 - **A constant of `iter::Empty`**, an iterator over an empty array, as
   `iter::empty()` is (ADR 0128).
 - **A channel of values with a destructor**, a channel of senders among

@@ -63,11 +63,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = self
             .slice_item(heap_ty)
             .ok_or_else(|| self.unsupported(span, "this heap"))?;
-        // Its `pop`'s `None`, the one of its own that's an `Option`: `peek`
-        // boxes a `Some` that would look like it, as a slice's `first` does.
-        if op == HeapOp::Pop {
-            self.heap_of(item, span)?;
-        }
         if op == HeapOp::Drain {
             let heap = values.remove(0);
             return Ok(Expr::call(Expr::member(heap, "splice"), vec![Expr::int(0)]));
@@ -85,17 +80,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HeapOp::Drain | HeapOp::PeekTop { .. } | HeapOp::PeekPop => unreachable!("lowered above"),
         };
         Ok(Expr::call(Expr::helper(name), values))
-    }
-
-    /// A heap of `item`s that's popped: `pop` gives `undefined` for `None`,
-    /// so an item that could look like it is an error, as for a map's values.
-    pub(in crate::lower) fn heap_of(&self, item: Ty<'tcx>, span: Span) -> R<()> {
-        if self.can_be_nullish(item) {
-            return Err(self.unsupported(
-                span,
-                &format!("a heap of `{item}`, whose `pop` would look like `None` in JS"),
-            ));
-        }
-        Ok(())
     }
 }

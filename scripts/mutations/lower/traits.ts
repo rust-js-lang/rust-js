@@ -262,8 +262,8 @@ export const mutations: Mutation[] = [
     name: "dyn-display-refused",
     breaks: "a `dyn Display` isn't a pair, and is refused",
     file: "src/lower/traits.rs",
-    find: "    [StdItem::Display, StdItem::Error, StdItem::IoWrite]\n        .into_iter()",
-    replace: "    [StdItem::Error, StdItem::IoWrite]\n        .into_iter()",
+    find: "    [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n        .into_iter()",
+    replace: "    [StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n        .into_iter()",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
@@ -1148,5 +1148,13 @@ export const mutations: Mutation[] = [
     find: "        if !matches!(self_ty.kind(), ty::Param(_)) || operational(tcx, foreign, bound.def_id()) {\n",
     replace: "        if !matches!(self_ty.kind(), ty::Param(_)) {\n",
     tests: ["test/crates.test.ts", "-t", "consumer's iterator"],
+  },
+  {
+    name: "dyn-to-string-refused",
+    breaks: "a `dyn ToString` is no value rust-js makes",
+    file: "src/lower/traits.rs",
+    find: "    [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n",
+    replace: "    [StdItem::Display, StdItem::Error, StdItem::IoWrite]\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
   },
 ];
