@@ -653,14 +653,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
   {
-    name: "vec-with-capacity-unknown",
-    breaks: "`Vec::with_capacity(n)` is refused, not `[]`",
-    file: "src/lower/recognition.rs",
-    find: "            \"with_capacity\" if adt(StdItem::Vec) => Some(Std::VecNew),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts","-t","vec_edits"],
-  },
-  {
     name: "linked-list-not-array",
     breaks: "a `LinkedList` is its nodes' raw pointers, refused, not an array",
     file: "src/lower/recognition.rs",

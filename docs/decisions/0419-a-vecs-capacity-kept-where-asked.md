@@ -28,6 +28,10 @@ library it uses does: at least its length, what `with_capacity` and
 | `v.shrink_to(n)`, `shrink_to_fit()` | `$shrinkTo(v, n)`, of `0` | nothing |
 | `clear()`, `truncate`, `set_len`, `pop`, `drain`, … | `$keepCapacity(v)` first | as before |
 
+- **Which `Vec` methods ask or change its capacity is
+  `recognition::capacity_op`'s**: `with_capacity`, `reserve` and the rest
+  are its alone, where it isn't kept too, which ADR 0315's arms of them
+  answered a second time, unreached, and are gone.
 - **Which `Vec` methods shorten it is `recognition::shortens_vec`'s**,
   asked once, before any std call is lowered: what it has kept first.
 - **Where it's kept is the crate's, `asks_capacity`, or a library's**: a

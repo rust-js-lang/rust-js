@@ -1535,11 +1535,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "front" | "front_mut" if deque => Some(Std::First),
             "back" | "back_mut" if deque => Some(Std::SliceLast),
             "make_contiguous" if deque => Some(Std::Same),
-            // A JS array has no capacity: asking for some does nothing (ADR 0315).
-            "with_capacity" if adt(StdItem::Vec) => Some(Std::VecNew),
-            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit"
-                if adt(StdItem::Vec) || deque || heap || of.map || of.set =>
-            {
+            // A JS array has no capacity: asking for some does nothing (ADR
+            // 0315). A `Vec`'s is `capacity_op`'s (ADR 0419).
+            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if deque || heap || of.map || of.set => {
                 Some(Std::Nothing)
             }
             "into_boxed_slice" if adt(StdItem::Vec) => Some(Std::Same),
