@@ -115,6 +115,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `{ message, line, column }` (ADR 0077), and `{ kind, value }` (ADR 0083).
             ty::Adt(..) if self.is_json_error(ty) || self.is_json_number(ty) => return None,
+            // `{ file, line, column }` (ADR 0427).
+            ty::Adt(..) if self.recognition().is_location(ty) => return None,
             // `dyn Debug` is the string it shows (ADR 0060).
             ty::Dynamic(..) if self.is_dyn_debug(ty) => return None,
             // A `HashMap` or `HashSet` (ADR 0059): keys JS compares by value.

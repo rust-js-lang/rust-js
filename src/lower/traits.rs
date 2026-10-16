@@ -969,10 +969,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, _, value)| value.clone())
     }
 
+    /// The caller's location this body was given, of a function that takes
+    /// one, in its own body, not a closure in it (ADR 0427).
+    pub(super) fn given_location(&self) -> Option<Expr> {
+        let (owner, location) = self.given.caller_location.as_ref()?;
+        (*owner == self.body_owner).then(|| location.clone())
+    }
+
     pub(super) fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
-        // Each const parameter's value first, `N`, in the order they're
-        // declared, the impl's before the method's (ADR 0107).
         let mut params: Vec<js::Pattern> = Vec::new();
+        // Its caller's location first, of a function that tracks it (ADR 0427).
+        if self.takes_caller_location(id) {
+            let name = self.fresh("location");
+            self.given.caller_location = Some((id, Expr::var(&name)));
+            params.push(name.into());
+        }
+        // Then each const parameter's value, `N`, in the order they're
+        // declared, the impl's before the method's (ADR 0107).
         for param in const_params(self.tcx, id) {
             let name = self.fresh(param.name.as_str());
             self.given.const_params.push((param.index, Expr::var(&name)));
@@ -1712,10 +1725,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(super) fn evidence_args(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Vec<Expr>> {
         self.check_drops_given(id, args, span)?;
-        let mut values = const_params(self.tcx, id)
+        // Where it's called first, of a function that tracks its caller, as
+        // `evidence_params` takes it (ADR 0427).
+        let mut values: Vec<Expr> = (self.takes_caller_location(id))
+            .then(|| self.caller_location(span))
             .into_iter()
-            .map(|param| self.const_arg(args.const_at(param.index as usize), span))
-            .collect::<R<Vec<_>>>()?;
+            .collect();
+        for param in const_params(self.tcx, id) {
+            values.push(self.const_arg(args.const_at(param.index as usize), span)?);
+        }
         for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
             let bound = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
@@ -2663,6 +2681,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .or_else(own)
                 .ok_or_else(|| self.unsupported(span, "this trait implementation"))?;
             let method = instance.def_id();
+            // One given its caller's location isn't, called through a
+            // dictionary, which knows neither the call nor the impl (ADR 0427).
+            if self.takes_caller_location(method) {
+                return Err(self.unsupported(
+                    span,
+                    "a `#[track_caller]` method that reads its caller, in a trait's dictionary",
+                ));
+            }
             // std's own `source`: `None`.
             if source && !self.krate.fns.contains_key(&method) {
                 let none = Expr::arrow(

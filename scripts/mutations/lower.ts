@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: "                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
+  {
+    name: "tracked-value-called-where-used",
+    breaks: "a tracked function as a value is called where it's used, not where it's defined, as rustc's shim calls it",
+    file: "src/lower.rs",
+    find: "                true => self.tcx.def_span(def_id),\n",
+    replace: "                true => span,\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
+  },
 ];

@@ -259,6 +259,8 @@ struct CrateFacts<'a, 'tcx> {
     given: traits::Given<'a>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
     type_facts: &'a HashMap<DefId, Vec<(u32, TypeFact)>>,
+    /// The functions that take their caller's location (ADR 0427).
+    caller_locations: &'a HashSet<DefId>,
     /// The functions that may return `Err(fmt::Error)`, and whether any of
     /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
     failing: &'a HashSet<DefId>,
@@ -364,6 +366,9 @@ struct Given<'tcx> {
     /// And the impl's typing environment, where what its arguments name
     /// resolves: the body's own is its trait's.
     self_env: Option<ty::TypingEnv<'tcx>>,
+    /// Of a function that tracks its caller (ADR 0427): the location it's
+    /// given, and the function, whose own body reads it.
+    caller_location: Option<(DefId, Expr)>,
 }
 
 /// What walks of types found, kept so a type met again, along another path
@@ -547,6 +552,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args) {
             if self.tcx.trait_of_assoc(def_id).is_some() {
+                if self.takes_caller_location(def_id) {
+                    return Err(self.unsupported(
+                        span,
+                        "a `#[track_caller]` trait method that reads its caller, as a value",
+                    ));
+                }
                 let count = self
                     .tcx
                     .fn_sig(def_id)
@@ -581,7 +592,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )));
             }
             let callee = self.fn_ref(def_id);
-            let evidence = self.evidence_args(def_id, args, span)?;
+            // One given its caller's location is called where it's defined,
+            // as rustc's shim of it calls it (ADR 0427).
+            let call_at = match self.takes_caller_location(def_id) {
+                true => self.tcx.def_span(def_id),
+                false => span,
+            };
+            let evidence = self.evidence_args(def_id, args, call_at)?;
             return Ok(Some(if evidence.is_empty() {
                 callee
             } else {

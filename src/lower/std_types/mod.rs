@@ -22,6 +22,7 @@
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
+//! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |
 //! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
 //!
 //! Which std type each is, and how much of each is known, is
@@ -34,6 +35,7 @@ pub(super) mod channel;
 pub(super) mod cow;
 pub(super) mod heap;
 pub(super) mod lazy;
+pub(super) mod location;
 pub(super) mod map;
 pub(super) mod number;
 pub(super) mod once;

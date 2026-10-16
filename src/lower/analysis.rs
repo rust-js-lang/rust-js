@@ -10,6 +10,7 @@ mod plain_locals;
 mod rc_counts;
 
 pub(super) use naming::renamed_in;
+mod caller_locations;
 mod type_facts;
 mod validation;
 
@@ -290,6 +291,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: HashSet<DefId>,
+    /// The functions that take their caller's location (ADR 0427).
+    pub caller_locations: HashSet<DefId>,
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
     pub asks_capacity: bool,
     pub generic_consts: HashSet<DefId>,
@@ -536,6 +539,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, (given, &trait_impls));
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
+    let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
     let pretty_debug = uses_pretty_debug(tcx, all_bodies);
@@ -567,6 +571,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         stepped,
         type_facts,
         failing,
+        caller_locations,
         asks_capacity,
         generic_consts,
         pretty_debug,

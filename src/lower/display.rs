@@ -740,6 +740,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
         }
+        // `file:line:column` (ADR 0427).
+        if self.recognition().is_location(ty) {
+            return self.location_shown(value, false, span);
+        }
         // A `Value`'s JSON, or a `Number`'s (ADR 0083).
         if let Some(shown) = self.json_value_display(value.clone(), ty, false) {
             return Ok(shown);
@@ -884,6 +888,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.recognition().is_type_id(ty) {
             return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
+        }
+        // `Location { file, line, column }`, as std's shows it (ADR 0427).
+        if self.recognition().is_location(ty) {
+            return self.location_shown(value, true, span);
         }
         // A `Discriminant` shows its number, as std's does (ADR 0393).
         if self.recognition().is_discriminant(ty) {

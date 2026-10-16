@@ -2489,4 +2489,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = future;\n",
     tests: ["test/diagnostics.test.ts", "-t", "as a dyn Future"],
   },
+  {
+    name: "closure-owned-by-parent",
+    breaks: "a closure's body is its parent's, so `Location::caller()` in it is the parent's caller's",
+    file: "src/lower/mir.rs",
+    find: "        let outer_owner = std::mem::replace(&mut self.body_owner, def_id);\n",
+    replace: "        let outer_owner = self.body_owner;\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
+  },
 ];

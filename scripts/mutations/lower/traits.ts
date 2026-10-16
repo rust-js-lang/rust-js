@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "const-args-unpassed",
     breaks: "`sum([1, 2, 3])` isn't given its `N`, and the loop runs to `undefined`",
     file: "src/lower/traits.rs",
-    find: "        let mut values = const_params(self.tcx, id)\n            .into_iter()\n            .map(|param| self.const_arg(args.const_at(param.index as usize), span))\n",
-    replace: "        let mut values = const_params(self.tcx, id)\n            .into_iter()\n            .filter(|_| false)\n            .map(|param| self.const_arg(args.const_at(param.index as usize), span))\n",
+    find: "            values.push(self.const_arg(args.const_at(param.index as usize), span)?);\n",
+    replace: "            let _ = param;\n",
     tests: ["test/corpus.test.ts","-t","const_generics"],
   },
   {
@@ -1156,5 +1156,21 @@ export const mutations: Mutation[] = [
     find: "    [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n",
     replace: "    [StdItem::Display, StdItem::Error, StdItem::IoWrite]\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
+  },
+  {
+    name: "location-param-unnamed",
+    breaks: "a function that takes its caller's location reads none it was given",
+    file: "src/lower/traits.rs",
+    find: "            self.given.caller_location = Some((id, Expr::var(&name)));\n",
+    replace: "            let _ = &name;\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
+  },
+  {
+    name: "closure-reads-given-location",
+    breaks: "`Location::caller()` in a closure in a tracked function is the function's caller's, not where it's written",
+    file: "src/lower/traits.rs",
+    find: "        (*owner == self.body_owner).then(|| location.clone())\n",
+    replace: "        let _ = owner;\n        Some(location.clone())\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
 ];

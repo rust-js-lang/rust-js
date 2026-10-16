@@ -78,6 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`#[track_caller]` and `Location::caller()`**: a function that reads
+  where it was called takes it, `{ file, line, column }`, and each call
+  gives it; one that reads nothing of it, an `Index` of the crate's among
+  them, is as it was
+  ([ADR 0427](docs/decisions/0427-track-caller.md)).
 - **`env::var_os(key)` and `env::vars_os()`**, in Node, an `OsString`
   being its text (ADR 0391).
 - **A `dyn ToString`**, a value and its `to_string`, as a `dyn Display` is

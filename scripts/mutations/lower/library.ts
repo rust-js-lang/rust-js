@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "        keeps_capacity: false,\n",
     tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
   },
+  {
+    name: "library-location-unexported",
+    breaks: "a library's function that takes its caller's location says it doesn't, and its consumers give it none",
+    file: "src/lower/library.rs",
+    find: "            takes_location: caller_locations.contains(&id),\n",
+    replace: "            takes_location: false && caller_locations.contains(&id),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
+  },
+  {
+    name: "library-location-unread",
+    breaks: "a consumer reads no library function as taking its caller's location, and gives it none",
+    file: "src/lower/library.rs",
+    find: "        self.item(id).is_some_and(|item| item.takes_location)\n",
+    replace: "        self.item(id).is_some_and(|item| false && item.takes_location)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
+  },
 ];

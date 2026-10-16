@@ -154,6 +154,8 @@ pub(super) enum Std {
     Any(AnyOp),
     /// The process a program runs in, Node's (ADR 0391): `env::args()`.
     Process(ProcessOp),
+    /// `panic::Location`'s (ADR 0427).
+    Location(super::std_types::location::LocationOp),
     /// A path's own method (ADR 0405).
     Path(PathOp),
     /// std's of a raw pointer, a handle on its place (ADR 0407).
@@ -668,6 +670,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // The process a program runs in, Node's (ADR 0391).
         if let Some(op) = node_only(tcx, def_id) {
             return Some(Some(Std::Process(op)));
+        }
+        // Where a call is, `Location::caller()`, and its parts (ADR 0427).
+        if let Some(op) = location_of(tcx, def_id) {
+            return Some(Some(Std::Location(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
         let utf8 = match std_path(tcx, def_id).as_str() {
@@ -2294,6 +2300,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::alloc::LayoutError" => Some(false),
             _ => None,
         }
+    }
+
+    /// `panic::Location`: `{ file, line, column }` (ADR 0427).
+    pub(super) fn is_location(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(location, _) if std_path(self.tcx, location.did()) == "std::panic::Location")
     }
 
     /// std's `iter::Empty<T>`: `[]`, as `iter::empty()` is (ADR 0128).
@@ -4055,6 +4066,22 @@ const NODE_ONLY: &[(&str, ProcessOp)] = &[
     ("std::env::vars_os", ProcessOp::VarsOs),
     ("std::process::exit", ProcessOp::Exit),
 ];
+
+/// Whether `def_id`, a function, is given its caller's location: its own
+/// `#[track_caller]`, or its trait's declaration's, which rustc's
+/// `codegen_fn_attrs` says of both (ADR 0427).
+pub(crate) fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        && tcx
+            .codegen_fn_attrs(def_id)
+            .flags
+            .contains(rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags::TRACK_CALLER)
+}
+
+/// Which of `panic::Location`'s functions `id` is, if it's one (ADR 0427).
+pub(crate) fn location_of(tcx: TyCtxt<'_>, id: DefId) -> Option<super::std_types::location::LocationOp> {
+    super::std_types::location::location_op(&std_path(tcx, id))
+}
 
 /// Which of std's functions that work in Node only `id` is, if it's one.
 pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {

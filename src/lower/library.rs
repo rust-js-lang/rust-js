@@ -30,6 +30,8 @@ pub(super) struct Contracts<'a> {
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    /// Those that take their caller's location (ADR 0427).
+    pub(super) caller_locations: &'a HashSet<DefId>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
@@ -48,6 +50,7 @@ pub(super) fn exports(
         failing,
         no_drops,
         type_facts,
+        caller_locations,
         keeps_capacity,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
@@ -69,6 +72,7 @@ pub(super) fn exports(
             type_facts: (type_facts.get(&id).into_iter().flatten())
                 .map(|&(index, fact)| (index, fact.word().to_string()))
                 .collect(),
+            takes_location: caller_locations.contains(&id),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -168,6 +172,11 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
     pub(super) fn fails(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.fails)
+    }
+
+    /// Does a library's `id` take its caller's location (ADR 0427)?
+    pub(super) fn takes_location(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| item.takes_location)
     }
 
     /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?

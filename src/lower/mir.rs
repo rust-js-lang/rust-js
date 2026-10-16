@@ -1168,12 +1168,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         self.closure_made(def_id, held);
         // Its own THIR's shape hints, and what's known of it, where its body
-        // is written.
+        // is written; and whose body it is, its own, as `enter_body` has it:
+        // `Location::caller()` in it is where it's written (ADR 0427).
         let outer = std::mem::replace(&mut self.thir, &body.thir);
         let outer_facts = std::mem::replace(&mut self.body_facts, &body.facts);
+        let outer_owner = std::mem::replace(&mut self.body_owner, def_id);
         let lowered = self.mir_function(mir, Some(captures));
         self.thir = outer;
         self.body_facts = outer_facts;
+        self.body_owner = outer_owner;
         let (mut params, mut stmts) = lowered?;
         // The functions written in it, in its body (ADR 0308).
         let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())

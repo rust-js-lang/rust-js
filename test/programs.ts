@@ -96,7 +96,7 @@ fn main() {
     std::fs::write(std::env::args().nth(1).expect("an outcome file"), outcome).expect("the outcome is written");
 }
 `;
-  const built = nativeBinary(source, contentDirectory(source), [`--edition=${edition}`, "-Coverflow-checks=off", "-Awarnings"], compileTimeout);
+  const built = nativeBinary(source, contentDirectory(source), [`--edition=${edition}`, "-Coverflow-checks=off", "-Awarnings", remapRoot], compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
   return execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
@@ -114,7 +114,7 @@ fn main() {
     case::entry();
 }
 `;
-  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Awarnings"];
+  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Awarnings", remapRoot];
   const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
@@ -125,6 +125,11 @@ fn main() {
 /** A compile that failed: rust-js's clear rejection, or a crash, however
  * it began (`compileFailure`), with everything it said. */
 export type CompileError = { kind: "rejected" | "crashed"; reason: string; error: string };
+
+// Where the repository is, left out of the files either names, so a case's
+// `file!()` and `Location::file()` are `test/corpus/<case>.rs`, on any
+// machine, natively and as JS (ADR 0427).
+const remapRoot = `--remap-path-prefix=${root}/=`;
 
 // As JS, the case is the crate's root, with `entry` exported to call `main`.
 export function compileJs(
@@ -139,7 +144,7 @@ export function compileJs(
   // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
   const js = library ? join(dir, "library", "case.js") : join(dir, "case.js");
   const mode = library ? ["--library", "--manifest", join(dir, "library", "case.manifest.json")] : [];
-  const p = runSync([compiler, wrapper, "-o", js, ...mode, "--", `--edition=${edition}`, "-Awarnings"], root, compileTimeout, env);
+  const p = runSync([compiler, wrapper, "-o", js, ...mode, "--", `--edition=${edition}`, "-Awarnings", remapRoot], root, compileTimeout, env);
   if (p.code === 0 && !stopped(p, compileTimeout)) return { js };
   const { kind, reason } = compileFailure(p, compileTimeout);
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };

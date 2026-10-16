@@ -39,6 +39,11 @@ pub struct Item {
     /// wrote before had none, as it refused what asks one.
     #[serde(default)]
     pub type_facts: Vec<(u32, String)>,
+    /// Whether it takes its caller's location, `#[track_caller]` (ADR
+    /// 0427), which its consumers' calls give it. A library a compiler wrote
+    /// before had none, as it refused what reads one.
+    #[serde(default)]
+    pub takes_location: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -74,6 +79,7 @@ pub struct Imported {
     pub fails: bool,
     pub no_drops: Vec<u32>,
     pub type_facts: Vec<(u32, String)>,
+    pub takes_location: bool,
 }
 
 /// What one library gives its consumers.
@@ -151,6 +157,7 @@ impl Dependencies {
                     fails: item.fails,
                     no_drops: item.no_drops,
                     type_facts: item.type_facts,
+                    takes_location: item.takes_location,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());
