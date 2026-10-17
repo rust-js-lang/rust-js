@@ -155,6 +155,11 @@ impl Walk {
     fn pattern(&mut self, pattern: &Pattern) {
         match pattern {
             Pattern::Name(name) | Pattern::Rest(name) => self.declare(name),
+            // Its default is read where it's given none, before it's made.
+            Pattern::Defaulted(name, default) => {
+                self.expr(default);
+                self.declare(name);
+            }
             Pattern::Array(items) => items.iter().flatten().for_each(|item| self.pattern(item)),
             Pattern::Object(fields, rest) => {
                 // A default is read where the field is missing, before the

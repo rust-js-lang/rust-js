@@ -243,8 +243,8 @@ export const mutations: Mutation[] = [
     name: "tracked-value-called-where-used",
     breaks: "a tracked function as a value is called where it's used, not where it's defined, as rustc's shim calls it",
     file: "src/lower.rs",
-    find: "                true => self.tcx.def_span(def_id),\n",
-    replace: "                true => span,\n",
+    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n",
+    replace: "            let location = self.location_at(span);\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
   {
@@ -279,5 +279,13 @@ export const mutations: Mutation[] = [
     find: "                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),\n",
     replace: "                    |t| matches!(*t.kind(), ty::Ref(_, _, ty::Mutability::Mut)),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
+  },
+  {
+    name: "pointer-shim-given-location",
+    breaks: "a tracked function as a value taken inside another that tracks its caller is given that one's location, not its own definition's",
+    file: "src/lower.rs",
+    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
+    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
 ];

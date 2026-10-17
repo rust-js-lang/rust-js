@@ -335,4 +335,12 @@ export const mutations: Mutation[] = [
     replace: "    let keeps_capacity = asks_capacity;\n",
     tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
   },
+  {
+    name: "library-tracked-method-unrefused",
+    breaks: "a library's trait method without a default whose entries take its caller's location is exported, which its manifest can't say",
+    file: "src/lower/pipeline.rs",
+    find: "            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
+    replace: "            .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
+    tests: ["test/crates.test.ts", "-t", "tracked trait method without a default"],
+  },
 ];

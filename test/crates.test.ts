@@ -482,3 +482,16 @@ test("a #![no_std] crate's std items are std's, though core names them", async (
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shift("héllo"), lib.left([1, 2, 3]), lib.taken()]).toEqual([5, 2, 7]);
 }, 300_000);
+
+// A library's trait method without a default whose entries take their
+// caller's location: its manifest, of functions, can't say so to its
+// consumers' calls through its dictionary, so it's refused (ADR 0427).
+test("a library's tracked trait method without a default is refused", () => {
+  const dir = fixture("library-tracked-method");
+  writeFileSync(join(dir, "dep.rs"), "pub trait Tracked {\n    #[track_caller]\n    fn at(&self) -> u32;\n}\n\npub struct Here;\n\nimpl Tracked for Here {\n    fn at(&self) -> u32 {\n        std::panic::Location::caller().line()\n    }\n}\n");
+  const refused = Bun.spawnSync([compiler, join(dir, "dep.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`]);
+  expect(refused.exitCode).not.toBe(0);
+  expect(refused.stderr.toString()).toContain("a library's trait method without a default that's given its caller's location through its dictionary");
+  expect(refused.stderr.toString()).toContain("dep.rs:3:5");
+}, 300_000);

@@ -298,4 +298,12 @@ export const mutations: Mutation[] = [
     replace: "        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest.filter(|_| false), b)\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
+  {
+    name: "defaulted-param-default-lost",
+    breaks: "a parameter with a default, a `dyn`'s shim's `location = { .. }`, is written without it",
+    file: "src/to_oxc.rs",
+    find: "                    Some(ArenaBox::new_in(self.expr(default), b)),\n",
+    replace: "                    None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
+  },
 ];

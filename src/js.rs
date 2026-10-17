@@ -678,6 +678,10 @@ pub enum Pattern {
     /// A function's last parameter that gathers what it's given past the
     /// rest, `...args`: a C-variadic function's (ADR 0428).
     Rest(String),
+    /// A function's parameter and what it is where it's given none,
+    /// `location = { file, line, column }`: a dictionary's entry's of an impl
+    /// that tracks its caller, which a `dyn`'s call gives none (ADR 0427).
+    Defaulted(String, Expr),
 }
 
 impl Pattern {
@@ -689,7 +693,7 @@ impl Pattern {
     /// The variables it binds.
     pub fn names(&self) -> Vec<&str> {
         match self {
-            Pattern::Name(name) | Pattern::Rest(name) => vec![name.as_str()],
+            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name.as_str()],
             Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::names).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter()
@@ -702,7 +706,7 @@ impl Pattern {
     /// The variables it binds, to rename.
     pub fn names_mut(&mut self) -> Vec<&mut String> {
         match self {
-            Pattern::Name(name) | Pattern::Rest(name) => vec![name],
+            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name],
             Pattern::Array(items) => items.iter_mut().flatten().flat_map(Pattern::names_mut).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter_mut()
@@ -716,6 +720,7 @@ impl Pattern {
     pub fn defaults(&self) -> Vec<&Expr> {
         match self {
             Pattern::Name(_) | Pattern::Rest(_) => Vec::new(),
+            Pattern::Defaulted(_, default) => vec![default],
             Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::defaults).collect(),
             Pattern::Object(fields, _) => fields
                 .iter()

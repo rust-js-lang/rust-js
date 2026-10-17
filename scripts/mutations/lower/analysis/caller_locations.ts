@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "            if false && taking.insert(caller) {\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
+  {
+    name: "dictionary-location-untaken",
+    breaks: "a trait method one of whose impls reads its caller's location is called through a dictionary without it",
+    file: "src/lower/analysis/caller_locations.rs",
+    find: "            if takes {\n                changed |= taking.insert(declared);\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
+  },
+  {
+    name: "dictionary-call-not-passed-on",
+    breaks: "a tracked function calling a trait method through a dictionary passes on no location",
+    file: "src/lower/analysis/caller_locations.rs",
+    find: "                _ => calls.push((owner, callee)),\n",
+    replace: "                _ => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
+  },
 ];

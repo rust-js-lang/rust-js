@@ -6,7 +6,7 @@ use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
     Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, io_write_default, is_clone_from,
-    is_std_def, is_std_method, is_writer_default, known_derive, std_item,
+    is_std_def, is_std_method, is_writer_default, known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -1705,13 +1705,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn evidence_args(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Vec<Expr>> {
+        let location = self.caller_location(span);
+        self.evidence_args_with(id, args, location, span)
+    }
+
+    /// `evidence_args`, `location` the one it's given where it takes one: its
+    /// caller's, or, called by a shim of it, a function pointer or a
+    /// dictionary's entry, its definition's, as rustc's shim gives it (ADR
+    /// 0427).
+    pub(super) fn evidence_args_with(
+        &mut self,
+        id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        location: Expr,
+        span: Span,
+    ) -> R<Vec<Expr>> {
         self.check_drops_given(id, args, span)?;
         // Where it's called first, of a function that tracks its caller, as
         // `evidence_params` takes it (ADR 0427).
-        let mut values: Vec<Expr> = (self.takes_caller_location(id))
-            .then(|| self.caller_location(span))
-            .into_iter()
-            .collect();
+        let mut values: Vec<Expr> = self.takes_caller_location(id).then_some(location).into_iter().collect();
         for param in const_params(self.tcx, id) {
             values.push(self.const_arg(args.const_at(param.index as usize), span)?);
         }
@@ -1919,7 +1931,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .super_evidence(principal, tr, impl_of)
                 .ok_or_else(|| self.unsupported(span, "this trait object supertrait"))?;
             values.insert(0, this);
-            values.extend(self.own_evidence(id, generic_args, span)?);
+            // Where it's called, where its declaration tracks its caller; where
+            // only an impl does, none, which its entry has as its definition's,
+            // as rustc's shim gives it, and nothing comes after: a `dyn`'s
+            // method has no type parameters of its own (ADR 0427).
+            let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));
+            values.extend(self.own_evidence(id, generic_args, location, span)?);
             let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
@@ -2034,7 +2051,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if operational(self.tcx, self.krate.foreign, trait_id) {
             let dictionary = self.dictionary(tr, span)?;
             let mut values = values;
-            values.extend(self.own_evidence(id, generic_args, span)?);
+            let location = self.caller_location(span);
+            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
             return Ok(Some(Expr::call(
                 Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
                 values,
@@ -2046,12 +2064,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a trait's generic method is given where it's called through a
     /// dictionary, after its arguments: its own bounds' evidence, for this call
     /// (ADR 0106). None for one that isn't generic.
-    fn own_evidence(&mut self, id: DefId, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Vec<Expr>> {
-        // Its own const parameters' values first, `repeat::<3>`'s `3` (ADR 0135).
-        let mut values = own_const_params(self.tcx, id)
-            .into_iter()
-            .map(|index| self.const_arg(generic_args.const_at(index as usize), span))
-            .collect::<R<Vec<_>>>()?;
+    fn own_evidence(
+        &mut self,
+        id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        location: Option<Expr>,
+        span: Span,
+    ) -> R<Vec<Expr>> {
+        // Where it's called first, `location`, of a method whose entries take
+        // it, unless it's given none (ADR 0427).
+        let mut values: Vec<Expr> = match self.takes_caller_location(id) {
+            true => location.into_iter().collect(),
+            false => Vec::new(),
+        };
+        // Its own const parameters' values, `repeat::<3>`'s `3` (ADR 0135).
+        for index in own_const_params(self.tcx, id) {
+            values.push(self.const_arg(generic_args.const_at(index as usize), span)?);
+        }
         for bound in own_bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
             values.push(
                 self.dictionary(
@@ -2087,14 +2116,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
         declared: &[ty::TraitRef<'tcx>],
         names: &[String],
+        location: Expr,
         span: Span,
     ) -> R<Vec<Expr>> {
         let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, method);
-        // Its const parameters' values first, the impl's and its own (ADR 0135).
-        let mut values = const_params(self.tcx, method)
+        // Where it's called first, of one that takes it, as `evidence_args`
+        // gives it (ADR 0427).
+        let mut values: Vec<Expr> = self
+            .takes_caller_location(method)
+            .then_some(location)
             .into_iter()
-            .map(|param| self.const_arg(args.const_at(param.index as usize), span))
-            .collect::<R<Vec<_>>>()?;
+            .collect();
+        // Its const parameters' values, the impl's and its own (ADR 0135).
+        for param in const_params(self.tcx, method) {
+            values.push(self.const_arg(args.const_at(param.index as usize), span)?);
+        }
         for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {
             let here = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
@@ -2679,14 +2715,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .or_else(own)
                 .ok_or_else(|| self.unsupported(span, "this trait implementation"))?;
             let method = instance.def_id();
-            // One given its caller's location isn't, called through a
-            // dictionary, which knows neither the call nor the impl (ADR 0427).
-            if self.takes_caller_location(method) {
-                return Err(self.unsupported(
-                    span,
-                    "a `#[track_caller]` method that reads its caller, in a trait's dictionary",
-                ));
-            }
             // std's own `source`: `None`.
             if source && !self.krate.fns.contains_key(&method) {
                 let none = Expr::arrow(
@@ -2753,6 +2781,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 + usize::from(self.writers_take_options() && self.formatter_param(method).is_some());
             let mut params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
             let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
+            // Where it's called, after its arguments, of one whose entries take
+            // it (ADR 0427): its caller's, generic code's or a `dyn`'s where
+            // its declaration tracks its caller, and generic code's alone
+            // where only an impl does, whose entry's is its own definition's
+            // where a `dyn`'s call gives none, as rustc's shim gives it.
+            let at_definition = self.location_at(self.tcx.def_span(method));
+            let mut defaulted = None;
+            let location = match self.takes_caller_location(item.def_id) {
+                true => {
+                    let name = self.fresh("location");
+                    params.push(name.clone());
+                    if !tracks_caller(self.tcx, item.def_id) && self.takes_caller_location(method) {
+                        defaulted = Some((name.clone(), at_definition));
+                    }
+                    Expr::var(&name)
+                }
+                false => at_definition,
+            };
             // Its own const parameters' values, given after its arguments
             // (ADR 0135), for the method, as the trait method's are named.
             let mark = self.given.const_params.len();
@@ -2819,8 +2865,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // doesn't give: its dictionaries, then its drops (ADR 0098), which
             // are this impl's own, and its own type parameters' it's given.
             let evidence = match declared.is_empty() {
-                true => self.evidence_args(method, instance.args, span),
-                false => self.method_evidence(method, instance.args, &declared, &names, span),
+                true => self.evidence_args_with(method, instance.args, location, span),
+                false => self.method_evidence(method, instance.args, &declared, &names, location, span),
             };
             self.given.const_params.truncate(mark);
             for lent in replaced {
@@ -2855,6 +2901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // One that passes on just what it's given, in order, is the method.
             let passed = call.is_none()
+                && defaulted.is_none()
                 && values.len() == params.len()
                 && values
                     .iter()
@@ -2863,8 +2910,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = if passed {
                 callee
             } else {
+                let patterns = params.into_iter().map(|name| match &defaulted {
+                    Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
+                    _ => name.into(),
+                });
                 Expr::arrow(
-                    params.into_iter().map(Into::into).collect(),
+                    patterns.collect(),
                     vec![StmtKind::Return(Some(call.unwrap_or_else(|| Expr::call(callee, values)))).at(js::Span::NONE)],
                 )
             };
@@ -3085,7 +3136,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             drops,
             unsupported,
         };
-        let enclosing = self.enter_body(body, id, nested)?;
+        // Where it's called, after its arguments, of one that takes it, which
+        // `Location::caller()` in it reads (ADR 0427).
+        let location = self.takes_caller_location(id).then(|| self.fresh("location"));
+        let outer_location = std::mem::replace(
+            &mut self.given.caller_location,
+            location.as_ref().map(|name| (id, Expr::var(name))),
+        );
+        let enclosing = match self.enter_body(body, id, nested) {
+            Ok(enclosing) => enclosing,
+            Err(error) => {
+                self.given.caller_location = outer_location;
+                return Err(error);
+            }
+        };
         let mut rest = Vec::new();
         // From its MIR (ADR 0364), a constant's initializer of nothing, its
         // value given back.
@@ -3096,7 +3160,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Err(self.unsupported(span, "this default, without its MIR")),
         };
         self.given.const_params = outer_consts;
+        self.given.caller_location = outer_location;
         let (mut params, is_async) = signature?;
+        params.extend(location.map(Into::into));
         params.extend(const_names.into_iter().map(Into::into));
         params.extend(own_params.into_iter().map(Into::into));
         // Only the drops it uses: most defaults drop nothing of their `Self`.

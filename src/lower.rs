@@ -624,11 +624,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let callee = self.fn_ref(def_id);
             // One given its caller's location is called where it's defined,
             // as rustc's shim of it calls it (ADR 0427).
-            let call_at = match self.takes_caller_location(def_id) {
-                true => self.tcx.def_span(def_id),
-                false => span,
-            };
-            let evidence = self.evidence_args(def_id, args, call_at)?;
+            let location = self.location_at(self.tcx.def_span(def_id));
+            let evidence = self.evidence_args_with(def_id, args, location, span)?;
             return Ok(Some(if evidence.is_empty() {
                 callee
             } else {

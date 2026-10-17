@@ -85,8 +85,6 @@ privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory
 rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
-rfcs/rfc-2091-track-caller/tracked-trait-impls.rs	error: rust-js does not support a `#[track_caller]` method that reads its caller, in a trait's dictionary yet
-rfcs/rfc-2091-track-caller/tracked-trait-obj.rs	error: rust-js does not support a `#[track_caller]` method that reads its caller, in a trait's dictionary yet
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet

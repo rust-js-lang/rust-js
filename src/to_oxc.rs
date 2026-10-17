@@ -268,12 +268,20 @@ impl<'a> Cx<'a> {
             )
         });
         let params = patterns.iter().map(|pattern| {
+            // `location = { .. }`, where it's given none (ADR 0427).
+            let (pattern, default) = match pattern {
+                js::Pattern::Defaulted(name, default) => (
+                    BindingPattern::new_binding_identifier(SPAN, self.name(name), b),
+                    Some(ArenaBox::new_in(self.expr(default), b)),
+                ),
+                pattern => (self.pattern(pattern), None),
+            };
             FormalParameter::new(
                 SPAN,
                 ArenaVec::new_in(b),
-                self.pattern(pattern),
+                pattern,
                 None,
-                None,
+                default,
                 false,
                 None,
                 false,
@@ -602,7 +610,9 @@ impl<'a> Cx<'a> {
         let name = |name: &str| BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
         match pattern {
             js::Pattern::Name(n) => name(n),
-            js::Pattern::Rest(_) => unreachable!("a rest is a function's parameter, `params`'"),
+            js::Pattern::Rest(_) | js::Pattern::Defaulted(..) => {
+                unreachable!("a rest or a default is a function's parameter, `params`'")
+            }
             js::Pattern::Array(items) => {
                 let items = items.iter().map(|item| item.as_ref().map(|item| self.pattern(item)));
                 BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)

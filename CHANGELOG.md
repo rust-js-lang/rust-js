@@ -78,6 +78,11 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`#[track_caller]` through a trait's dictionary**, generic code's or a
+  `dyn`'s: each entry of a method one of whose impls reads its caller's
+  location takes it, and each call gives it, as rustc's does; an impl
+  that tracks its caller where its declaration doesn't is given its own
+  definition's through a `dyn`, as rustc's shim gives it (ADR 0427).
 - **A B-tree's range of a pair of `Bound`s**, `m.range((Excluded(&2),
   Unbounded))`: `$treeRange` takes each end's `Bound`, of any range alike
   (ADR 0325).

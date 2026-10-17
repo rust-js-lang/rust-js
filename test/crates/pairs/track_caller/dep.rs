@@ -17,3 +17,22 @@ pub fn column_here() -> u32 {
 pub fn quiet(x: u32) -> u32 {
     x + 1
 }
+
+// A trait whose tracked default reads where it was called: each entry of it
+// takes the location, as the manifest says of the default, which its
+// consumer's calls through a dictionary give, and its impls take.
+pub trait Tracked {
+    #[track_caller]
+    fn line(&self) -> u32 {
+        Location::caller().line()
+    }
+}
+
+pub struct Here;
+
+impl Tracked for Here {}
+
+pub fn lines() -> Vec<u32> {
+    let items: [&dyn Tracked; 1] = [&Here];
+    items.iter().map(|item| item.line()).collect()
+}

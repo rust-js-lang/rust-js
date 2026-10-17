@@ -236,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => None,
                         Some(js::Pattern::Name(p)) => (p == name).then(|| option.clone()),
                         // A closure's parameter is never a function's rest.
-                        Some(js::Pattern::Rest(_)) => None,
+                        Some(js::Pattern::Rest(_) | js::Pattern::Defaulted(..)) => None,
                         Some(js::Pattern::Array(items)) => items
                             .iter()
                             .position(|item| item.as_ref().and_then(js::Pattern::name) == Some(name))

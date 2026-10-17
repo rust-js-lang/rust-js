@@ -727,6 +727,26 @@ pub fn lower_crate<'tcx>(
             }
         })
         .collect();
+    // A library's trait method without a default whose entries take its
+    // caller's location, which its manifest, of functions, can't say to its
+    // consumers' calls through them (ADR 0427).
+    if export_library {
+        let mut unsaid: Vec<DefId> = (caller_locations.iter())
+            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
+            .filter(|&&id| super::library::reachable(tcx, id))
+            .copied()
+            .collect();
+        unsaid.sort_by_key(|&id| tcx.def_span(id));
+        for id in unsaid {
+            super::refusal::refuse(
+                tcx,
+                tcx.def_span(id),
+                super::refusal::Refused::Feature(
+                    "a library's trait method without a default that's given its caller's location through its dictionary",
+                ),
+            );
+        }
+    }
     tcx.dcx().has_errors().is_none().then_some(Unlinked {
         library: export_library.then(|| {
             super::library::exports(

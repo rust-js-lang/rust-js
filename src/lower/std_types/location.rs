@@ -63,12 +63,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The location a call at `span` gives, or `Location::caller()` there
     /// is: in the body of a function that tracks its caller, the one it was
-    /// given; anywhere else, `span`'s own, as rustc places it, at the
-    /// outermost macro's call, its file as rustc names it.
+    /// given; anywhere else, `span`'s own (`location_at`).
     pub(in crate::lower) fn caller_location(&self, span: Span) -> Expr {
-        if let Some(given) = self.given_location() {
-            return given;
-        }
+        self.given_location().unwrap_or_else(|| self.location_at(span))
+    }
+
+    /// Where `span` is, as rustc places a call, at the outermost macro's
+    /// call, its file as rustc names it: a call's, or a definition's, which
+    /// a shim of a function that takes its caller's location gives it, a
+    /// function pointer's or a dictionary's entry's, as rustc's does.
+    pub(in crate::lower) fn location_at(&self, span: Span) -> Expr {
         let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
         let at = self.tcx.sess.source_map().lookup_char_pos(topmost.lo());
         let file = at
@@ -89,9 +93,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{}` of a `Location`, `file:line:column`, or `{:?}`, `Location {
     /// file: "..", line: .., column: .. }`, as std shows it: of one written
     /// where it's shown, `Location::caller()`'s, the text itself; of one
-    /// read again, its parts; of one made where it's shown, an error, as a
-    /// `dyn` made so is.
-    pub(in crate::lower) fn location_shown(&self, value: Expr, debug: bool, span: Span) -> R<Expr> {
+    /// read again, its parts; of one made where it's shown, a call's, its
+    /// parts of it given a name, `((location) => ..)(at())`.
+    pub(in crate::lower) fn location_shown(&mut self, value: Expr, debug: bool, span: Span) -> R<Expr> {
+        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(_)) {
+            let shown = self.location_shown(Expr::var("location"), debug, span)?;
+            let shown = Expr::arrow(
+                vec!["location".into()],
+                vec![crate::js::StmtKind::Return(Some(shown)).at(crate::js::Span::NONE)],
+            );
+            return Ok(self.applied(shown, value));
+        }
         let part = |name: &str| match &value.kind {
             ExprKind::Object(props) => props.iter().find_map(|prop| match prop {
                 Prop::Field(field, part) if field == name => Some(part.clone()),
@@ -101,7 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         let (Some(file), Some(line), Some(column)) = (part("file"), part("line"), part("column")) else {
-            return Err(self.unsupported(span, "showing a `Location` made where it's shown"));
+            return Err(self.unsupported(span, "showing this `Location`"));
         };
         Ok(match debug {
             false => join(vec![file, Expr::str(":"), line, Expr::str(":"), column]),

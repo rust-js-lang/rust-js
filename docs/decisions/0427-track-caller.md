@@ -59,9 +59,27 @@ const at = here({ file: "test/corpus/track_caller.rs", line: 41, column: 14 });
 - **A tracked function as a value**, `.map(here)` or `here as fn()`, is an
   arrow that calls it with its definition's location, as rustc's shim of
   it does.
-- **Not yet:** a method that takes its caller's location in a trait's
-  dictionary, generic code's or a `dyn`'s, and a tracked trait method as a
-  value, which are errors.
+- **Through a dictionary, generic code's or a `dyn`'s** (amended), a
+  method one of whose impls, or its default, takes its caller's location
+  takes it in each entry of it, after its arguments, and each call through
+  one gives it, as rustc's calls through a vtable and monomorphized generic
+  code do. Where its declaration tracks its caller, every call gives it;
+  where only an impl does, generic code's gives it, as rustc's direct call
+  of the impl does, and a `dyn`'s none, which that impl's entry has as its
+  own definition's, `location = { .. }`, as rustc's shim gives it. An entry
+  passes it on where its impl takes it.
+
+  ```js
+  only_impl: (arg0, location = { file: "src/lib.rs", line: 35, column: 5 }) =>
+    unitTracked_only_impl(arg0, location),
+  ```
+- **A shim gives its definition's location** even inside a function that
+  tracks its caller: a function pointer's arrow and a dictionary's entry,
+  `location_at` of its definition, where `caller_location` would be what
+  that function was given.
+- **Not yet:** a tracked trait method as a value, and a library's trait
+  method without a default whose entries take the location, which its
+  manifest, of functions, can't say: errors.
 
 ## Why
 
@@ -85,6 +103,9 @@ const at = here({ file: "test/corpus/track_caller.rs", line: 41, column: 14 });
 ## Consequences
 
 - rustc's `tracked-trait-impls` and `tracked-trait-obj`, of tracked trait
-  methods called through a dictionary, are refused with a clear error, the
-  next step. `file-is-nul-terminated` reads a file's C string, which is
+  methods called through a dictionary, pass (amended); the
+  `track_caller_traits` corpus case runs each kind of call through a `dyn`,
+  generic code and a copied default against native Rust, and the
+  `track_caller` pair a library's tracked default through its consumer's
+  generic code. `file-is-nul-terminated` reads a file's C string, which is
   addressable memory, and `track-caller-ffi` calls through FFI.
