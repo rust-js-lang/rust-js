@@ -405,6 +405,13 @@ pub fn ends(stmt: &Stmt) -> bool {
     }
 }
 
+/// A `dyn`'s pair, `{ value, impl }`, made of what does nothing: a shared
+/// reference's, which nothing assigns through, so its parts read alike.
+pub fn is_read_pair(props: &[Prop]) -> bool {
+    matches!(props, [Prop::Field(value, held), Prop::Field(dictionary, given)]
+        if value == HELD && dictionary == DICTIONARY && !held.has_effects() && !given.has_effects())
+}
+
 /// Whether `a` and `b` are the same JS, part by part, wherever each was
 /// written and whatever it names what it declares: the drops a panic runs
 /// and the scope's end runs, `for (const item$1 of v)` and `for (const item
@@ -1295,13 +1302,14 @@ impl Expr {
 
     pub fn member(object: Expr, property: impl Into<String>) -> Expr {
         let property = property.into();
-        // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; of
-        // any object made of what does nothing, its field, `{ value: f.last,
-        // impl: f.impl }.impl` of a `dyn` field's pair (ADR 0409).
+        // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; and a
+        // `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
+        // f.impl }.impl`, a shared reference nothing assigns through (ADR 0409).
         if let ExprKind::Object(props) = &object.kind
-            && props
+            && (props
                 .iter()
-                .all(|p| matches!(p, Prop::Field(_, value) if !value.has_effects()))
+                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))
+                || is_read_pair(props))
             && let Some(Prop::Field(_, value)) = props
                 .iter()
                 .find(|p| matches!(p, Prop::Field(name, _) if *name == property))

@@ -89,3 +89,11 @@ const n = items[0].impl.type_id() === "i32" ? items[0].value : undefined;
   `closure_type_ids` corpus case against native Rust. One made of a type
   parameter, in generic code, is still refused, as any type made of one is.
 - rustc's `unboxed-closures/type-id-higher-rank.rs` passes.
+
+## Amendment: a `TypeId` in a static
+
+A `static` of a `TypeId`, whose value rustc keeps as its hash, is its
+initializer's, as a `String`'s is: its type's key, a string, which every
+use shares (`copies::shareable`). A constant of one, a tuple of them too,
+was already. The `type_id_statics` corpus case compares them; rustc's
+`consts/const-typeid-of-rpass.rs` passes.

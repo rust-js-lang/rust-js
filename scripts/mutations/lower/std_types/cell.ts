@@ -122,4 +122,21 @@ export const mutations: Mutation[] = [
     replace: "                match mutable && self.is_boxable(guarded) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
+  {
+    name: "cell-from-mut-of-object-unwrapped",
+    breaks: "`Cell::from_mut` of a `&mut` to an array is the array, so `set` writes a `value` property on it, not the array",
+    file: "src/lower/std_types/cell.rs",
+    find: "                false => Expr::call(Expr::helper(\"$cellOf\"), vec![arg()]),\n",
+    replace: "                false => arg(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
+  },
+  {
+    name: "cell-items-through-cell-of",
+    breaks: "`as_slice_of_cells()` of a `Cell::from_mut` reads the object back through its cell, `$mutItems($cellOf(slice).value)`",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellItems => Expr::call(Expr::helper(\"$mutItems\"), vec![cell_contents(arg())]),\n",
+    replace: "            Std::CellItems => Expr::call(Expr::helper(\"$mutItems\"), vec![Expr::held(arg())]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
+    snapshots: true,
+  },
 ];

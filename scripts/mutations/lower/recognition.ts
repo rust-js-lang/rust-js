@@ -1873,4 +1873,12 @@ export const mutations: Mutation[] = [
     replace: "        predicates.principal_def_id().is_some_and(|id| self.is_pair_trait(id))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
   },
+  {
+    name: "cell-items-unknown",
+    breaks: "`as_slice_of_cells()` and `as_array_of_cells()` are refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"as_slice_of_cells\" | \"as_array_of_cells\" => Std::CellItems,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
+  },
 ];

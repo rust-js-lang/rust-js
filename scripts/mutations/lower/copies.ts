@@ -184,4 +184,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
   },
+  {
+    name: "type-id-static-unshared",
+    breaks: "a `static` of a `TypeId`, its type's key, a string, isn't shareable, and is refused",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::TypeId) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^type_id_statics.rs$"],
+  },
 ];

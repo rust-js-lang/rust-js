@@ -37,7 +37,6 @@ consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory 
 consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
-consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support calling `std::slice::from_raw_parts` yet
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
@@ -77,7 +76,6 @@ packed/misaligned-reference-drop-field-99838.rs	error: rust-js does not support 
 packed/packed-struct-address-of-element.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::const_ptr::<impl *const T>::read_unaligned`
 packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a pointer's address
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
-rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet

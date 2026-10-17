@@ -742,8 +742,8 @@ export const mutations: Mutation[] = [
     name: "member-read-in-place-unfolded",
     breaks: "a field of an object read in place, a `dyn` field's pair, stays `{ value: f.inner, impl: f.impl }.impl`",
     file: "src/lower/mir/tidy.rs",
-    find: "            && let ExprKind::Object(_) = object.kind\n",
-    replace: "            && let ExprKind::Object(_) = object.kind\n            && false\n",
+    find: "            && js::is_read_pair(props)\n",
+    replace: "            && js::is_read_pair(props)\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
@@ -767,5 +767,13 @@ export const mutations: Mutation[] = [
       "-t",
       "held temporary is named"
     ]
+  },
+  {
+    name: "member-of-any-object-read-in-place",
+    breaks: "a field of any object read in place is folded, a temporary's box on the left of `=` too, `42 = ..`, which the printer can't write",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && js::is_read_pair(props)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_borrows.rs$"],
   },
 ];

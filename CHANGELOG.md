@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`Cell::from_mut`, `as_slice_of_cells` and `as_array_of_cells`** (ADR 0153), and
+  a `static` of a `TypeId` (ADR 0331).
 - **A scope's drops on a panic are one `try { .. } finally { .. }`**, not a
   `try` and `catch` around each statement: about 6,300 lines fewer across the
   corpus (ADR 0437).

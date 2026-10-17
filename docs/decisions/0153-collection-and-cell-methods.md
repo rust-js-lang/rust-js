@@ -70,3 +70,16 @@ copied[0].x = 9; // `origin[0].x` was 9 too
 - `to_vec()` of structs that are changed somewhere copies each one, as
   `clone()` of the `Vec` does.
 - `Cell::swap` is still an error.
+
+## Amendment: `Cell::from_mut`, and a cell of each item
+
+`Cell::from_mut(r)` sees a `&mut` as a `&Cell`, `get_mut`'s inverse: of a
+number or text, the cell the `&mut` already is, `{ value }`; of an object,
+an array or a struct, `$cellOf(object)`, a cell whose `value` is the object
+and whose write changes it in place, as writing through the `&mut` does,
+`$assign`. A `&Cell<[T]>`'s `as_slice_of_cells()`, and a `&Cell<[T; N]>`'s
+`as_array_of_cells()`, are a handle on each item, `$mutItems`, of what the
+cell holds, read straight through a `$cellOf`. The `cell_from_mut` corpus
+case writes a number, a slice's items, an array's, a whole array through a
+parameter and strings, against native Rust; rustc's
+`rfcs/rfc-1789-as-cell/from-mut.rs` passes.

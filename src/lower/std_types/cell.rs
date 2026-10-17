@@ -67,6 +67,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => arg(),
                 false => Expr::held(arg()),
             },
+            // Its inverse, `Cell::from_mut(r)`: of a number or text, the cell
+            // the `&mut` is; of an object, the object, a cell that writes it
+            // in place, as writing through the `&mut` does.
+            Std::CellFromMut => match self.is_boxable(generic_args.type_at(0)) {
+                true => arg(),
+                false => Expr::call(Expr::helper("$cellOf"), vec![arg()]),
+            },
+            // A cell of each item, a handle on it (ADR 0152).
+            Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 Expr::call(Expr::helper("$refCellSwap"), vec![arg(), arg()])
             }
@@ -464,4 +473,15 @@ pub(in crate::lower) fn unguarded(body: &mut Vec<Stmt>) {
             };
         }
     });
+}
+
+/// What a cell holds, `cell.value`: of one `Cell::from_mut` made of an
+/// object, `$cellOf(object)`, the object.
+fn cell_contents(cell: Expr) -> Expr {
+    match &cell.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$cellOf") && args.len() == 1 => {
+            args[0].clone()
+        }
+        _ => Expr::held(cell),
+    }
 }

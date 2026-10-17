@@ -3100,6 +3100,20 @@ export function $typeIdShown() {
   throw new Error("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
 }
 
+// `Cell::from_mut` of a `&mut` to an object, an array's or a struct's: a
+// cell whose `value` is the object, which a write changes in place, as
+// writing through the `&mut` does (ADR 0153).
+export function $cellOf(object) {
+  return {
+    get value() {
+      return object;
+    },
+    set value(value) {
+      $assign(object, value);
+    },
+  };
+}
+
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
 // time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
 export function $getOrInitLock(cell, f) {

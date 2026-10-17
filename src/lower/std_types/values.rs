@@ -480,6 +480,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::CellGetMut
             | Std::CellSwap
             | Std::CellUpdate
+            | Std::CellFromMut
+            | Std::CellItems
             | Std::NotPoisoned => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),

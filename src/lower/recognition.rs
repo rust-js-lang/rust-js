@@ -128,6 +128,10 @@ pub(super) enum Std {
     CellGetMut,
     CellSwap,
     CellUpdate,
+    /// `Cell::from_mut(r)`, a `&mut` as a `&Cell` (ADR 0153).
+    CellFromMut,
+    /// `as_slice_of_cells()` and `as_array_of_cells()`: a cell of each item.
+    CellItems,
     /// A lock's `is_poisoned()`: `false`, as nothing can catch a panic that
     /// holds it (ADR 0327).
     NotPoisoned,
@@ -1495,6 +1499,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             vacant: self.is_vacant_entry(owner),
         };
         let name = tcx.item_name(def_id);
+        if (adt(StdItem::Cell) || adt(StdItem::RefCell))
+            && let Some(cell) = cell_method(name.as_str(), adt(StdItem::RefCell))
+        {
+            return Some(cell);
+        }
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
             const SECOND: i64 = 1_000_000_000;
@@ -1721,10 +1730,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 lock: true,
             },
             "into_inner" | "get_mut" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Lock,
-            "get" if adt(StdItem::Cell) => Std::CellGet,
-            "get_mut" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellGetMut,
-            "swap" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellSwap,
-            "update" if adt(StdItem::Cell) => Std::CellUpdate,
             "is_poisoned" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::NotPoisoned,
             "clear_poison" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Nothing,
             "each_ref" | "each_mut" if owner.is_array() => Std::Same,
@@ -1753,10 +1758,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     upper: name.as_str() == "make_ascii_uppercase",
                 })
             }
-            "set" if adt(StdItem::Cell) => Std::CellSet,
-            "replace" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellReplace,
-            "take" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellTake,
-            "replace_with" if adt(StdItem::RefCell) => Std::CellReplaceWith,
             "borrow" | "borrow_mut" if adt(StdItem::RefCell) => Std::Borrow {
                 mutable: name.as_str() == "borrow_mut",
                 lock: false,
@@ -2011,7 +2012,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_deref" if option || result => Std::Comb(Comb::AsDeref),
             // A reference is the value (ADR 0023): what's in the `Result` is.
             "as_ref" if result => Std::Same,
-            "into_inner" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellGet,
             "to_ascii_lowercase" if owner.is_str() => Std::AsciiCase { upper: false },
             "to_ascii_uppercase" if owner.is_str() => Std::AsciiCase { upper: true },
             "eq_ignore_ascii_case" if owner.is_str() || owner.is_char() => Std::AsciiEq,
@@ -5457,4 +5457,25 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
         _ if is_std_def(tcx, id, StdItem::BoxNew) => Some(PureStd::BoxNew),
         _ => None,
     }
+}
+
+/// A `Cell`'s or a `RefCell`'s method that reads, writes or lends what it
+/// holds, of its name (ADRs 0025, 0074, 0153): `None` of another, `new` and
+/// a `RefCell`'s borrows, which are their kinds'.
+fn cell_method(name: &str, refcell: bool) -> Option<Std> {
+    Some(match name {
+        "get" | "set" | "update" | "from_mut" | "as_slice_of_cells" | "as_array_of_cells" if refcell => return None,
+        "get" | "into_inner" => Std::CellGet,
+        "set" => Std::CellSet,
+        "update" => Std::CellUpdate,
+        // A `&mut` as a `&Cell`, and a cell of each item.
+        "from_mut" => Std::CellFromMut,
+        "as_slice_of_cells" | "as_array_of_cells" => Std::CellItems,
+        "get_mut" => Std::CellGetMut,
+        "swap" => Std::CellSwap,
+        "replace" => Std::CellReplace,
+        "take" => Std::CellTake,
+        "replace_with" if refcell => Std::CellReplaceWith,
+        _ => return None,
+    })
 }

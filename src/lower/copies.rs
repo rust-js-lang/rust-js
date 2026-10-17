@@ -383,6 +383,8 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
                 walk(tcx, args.type_at(0), seen)
             }
             ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,
+            // A `TypeId`, its type's key, a string (ADR 0331).
+            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::TypeId) => true,
             // A JS value that's `Copy`, react's `ElementType`, nothing changes
             // through (ADR 0234).
             ty::Adt(adt, args) if super::representation::marks_js_object(tcx, *adt, args) => {

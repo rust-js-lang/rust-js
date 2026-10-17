@@ -335,11 +335,12 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             };
         }
     });
-    // A field of an object read in place now, a `dyn` field's pair, `{
-    // value: f.last, impl: f.impl }.impl`: as `Expr::member` makes it.
+    // A field of a `dyn` field's pair read in place now, `{ value: f.last,
+    // impl: f.impl }.impl`: as `Expr::member` makes it.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(object, field) = &e.kind
-            && let ExprKind::Object(_) = object.kind
+            && let ExprKind::Object(props) = &object.kind
+            && js::is_read_pair(props)
         {
             *e = Expr {
                 span: e.span,
