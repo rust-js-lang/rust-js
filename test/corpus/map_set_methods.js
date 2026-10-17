@@ -68,7 +68,7 @@ function main() {
   const value$1 = $removeEntry(scores, "c");
   console.log(`${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`}`);
   const drained = sorted(
-    Iterator.from($drainAll(scores)),
+    $iter($drainAll(scores)),
     { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
     { clone: (value) => value },
   );

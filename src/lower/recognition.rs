@@ -3050,13 +3050,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_str_bytes(ty) {
             return Some(true);
         }
-        let owning = self.tcx.crate_name(adt.did().krate) == sym::alloc
+        let owning = [sym::alloc, sym::std].contains(&self.tcx.crate_name(adt.did().krate))
             && matches!(
                 std_path(self.tcx, adt.did()).as_str(),
                 "std::vec::IntoIter"
                     | "std::vec::Drain"
                     | "std::collections::vec_deque::Drain"
                     | "std::collections::binary_heap::Drain"
+                    | "std::collections::hash_map::Drain"
+                    | "std::collections::hash_set::Drain"
             );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
@@ -3091,13 +3093,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// What an iterator that owns its items gives, `vec::IntoIter`'s,
-    /// `drain(..)`'s or `option::IntoIter`'s, each of which it drops with it.
+    /// `drain(..)`'s, a map's `(K, V)`, or `option::IntoIter`'s, each of which
+    /// it drops with it.
     pub(super) fn owned_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
-        let ty::Adt(_, args) = ty.kind() else { return None };
-        (self.array_source(ty) == Some(true) || self.owns_one_item(ty))
-            .then(|| args.types().next())
-            .flatten()
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        if !(self.array_source(ty) == Some(true) || self.owns_one_item(ty)) {
+            return None;
+        }
+        // A map's `drain()`'s, its entries, `(K, V)`.
+        if std_path(self.tcx, adt.did()) == "std::collections::hash_map::Drain" {
+            let mut types = args.types();
+            return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
+        }
+        args.types().next()
     }
 
     /// An iterator that owns the one item it may give, `Some(x).into_iter()`

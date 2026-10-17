@@ -1749,8 +1749,8 @@ export const mutations: Mutation[] = [
     name: "owned-iterator-item-first-arg",
     breaks: "a `Drain`'s items' type is read as its lifetime, and crashes",
     file: "src/lower/recognition.rs",
-    find: "            .then(|| args.types().next())\n",
-    replace: "            .then(|| Some(args.type_at(0)))\n",
+    find: "            return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));\n        }\n        args.types().next()\n",
+    replace: "            return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));\n        }\n        Some(args.type_at(0))\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -1832,5 +1832,13 @@ export const mutations: Mutation[] = [
     find: "                    | \"std::collections::binary_heap::Drain\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
+  },
+  {
+    name: "map-drain-items-keys",
+    breaks: "a map's `drain()` is taken to own its keys alone, and drops none of its values",
+    file: "src/lower/recognition.rs",
+    find: "        if std_path(self.tcx, adt.did()) == \"std::collections::hash_map::Drain\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
 ];

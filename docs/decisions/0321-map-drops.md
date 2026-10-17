@@ -63,4 +63,6 @@ the map's order, a B-tree's its keys', as dropping the map does, and
 `or_insert` the value it's given where the key's there. The
 `map_value_destructors` corpus case runs each with native Rust, of a
 `BTreeMap` and of a `HashMap` of one entry, whose order Rust doesn't say.
-A map's `drain` of them is still refused.
+Its `drain()` of them is an iterator that owns its entries, the array
+`$drainAll` makes, whose drop drops what it hasn't given, as a vector's
+`drain(..)` is (ADR 0098).

@@ -1,7 +1,8 @@
 // A map of values with destructors: `retain` drops each it doesn't keep
 // before the next is asked, `extend` each value it replaces, `clear` each
 // in the map's order, a B-tree's its keys', and `entry(k).or_insert(v)`
-// the value it's given where the key's there, as Rust's do (ADR 0321).
+// the value it's given where the key's there, as Rust's do, and `drain()`
+// owns what it takes out (ADR 0321).
 use std::collections::{BTreeMap, HashMap};
 
 struct Noisy(u32);
@@ -36,5 +37,15 @@ fn main() {
     println!("hash {}", hash.len());
     hash.insert("b", Noisy(4));
     hash.clear();
+
+    // `drain()`: an iterator that owns its entries, whose drop drops what
+    // it hasn't given.
+    let mut drained: HashMap<u32, Noisy> = HashMap::new();
+    drained.insert(1, Noisy(5));
+    let taken: Vec<(u32, Noisy)> = drained.drain().collect();
+    println!("taken {} left {}", taken.len(), drained.len());
+    drop(taken);
+    drained.insert(2, Noisy(6));
+    drained.drain();
     println!("end");
 }

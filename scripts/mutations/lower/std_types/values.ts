@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
     name: "map-drops-refused",
     breaks: "`retain`, `extend`, `clear` and `or_insert` of a map of values with destructors are refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert)\n",
+    find: "                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert | MapOp::DrainAll)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
