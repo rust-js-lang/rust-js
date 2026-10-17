@@ -299,4 +299,12 @@ export const mutations: Mutation[] = [
     replace: "        \"shift_remove\" if placed && map => MapOp::ByPlace(PlaceOp::SwapRemove),\n",
     tests: ["test/bound-maps.test.ts", "-t", "indexmap"],
   },
+  {
+    name: "map-clear-drops-none",
+    breaks: "`clear` of a map of values with a destructor drops none of them",
+    file: "src/lower/std_types/map.rs",
+    find: "            MapOp::Clear if values_drop.is_some() => {\n",
+    replace: "            MapOp::Clear if false && values_drop.is_some() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
+  },
 ];

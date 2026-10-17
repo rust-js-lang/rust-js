@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "                        OptionPlaceOp::TakeIf\n",
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
   },
+  {
+    name: "map-drops-refused",
+    breaks: "`retain`, `extend`, `clear` and `or_insert` of a map of values with destructors are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
+  },
 ];

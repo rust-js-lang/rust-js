@@ -165,6 +165,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::OptionTake
                     | Std::OptionReplace
                     | Std::OptionPlace(OptionPlaceOp::TakeIf)
+                    // A map's that drop the values they take out (ADR 0321).
+                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert)
                     // And what drops what it doesn't keep, `insert`'s old value
                     // or `get_or_insert`'s given one.
                     | Std::OptionPlace(

@@ -5546,7 +5546,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 MapOp::OrInsert => "$orInsert",
                 _ => "$orInsertWith",
             };
-            let inserted = Expr::call(Expr::helper(name), vec![map.clone(), key.clone(), default]);
+            let mut list = vec![map.clone(), key.clone(), default];
+            // The value given dropped where the key's there (ADR 0321).
+            if op == MapOp::OrInsert
+                && let Some(value) = generic_args.types().nth(1)
+            {
+                list.extend(self.std_drop_function(value, span)?);
+            }
+            let inserted = Expr::call(Expr::helper(name), list);
             if !self.is_cell(output) {
                 return Ok(Value::Expr(inserted));
             }

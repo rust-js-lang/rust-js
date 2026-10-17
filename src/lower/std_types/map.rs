@@ -361,7 +361,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let map_ops = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        // A map's values' drop, where they have a destructor: what `retain`,
+        // `extend` and `clear` drop what they take out with (ADR 0321).
+        let values_drop = match (set, types.get(1)) {
+            (false, Some(&value)) if matches!(op, MapOp::Retain | MapOp::Extend | MapOp::Clear) => {
+                self.std_drop_function(value, span)?
+            }
+            _ => None,
+        };
         Ok(match op {
+            // Each value dropped first, in its order, as dropping the map does.
+            MapOp::Clear if values_drop.is_some() => {
+                let m = arg();
+                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                self.drop_value(m.clone(), receiver, span, out)?;
+                method(m, "clear", Vec::new())
+            }
             MapOp::Clear => method(arg(), "clear", Vec::new()),
             // Each entry in its order, a B-tree's its keys', `f` given a handle on
             // a value that's a number or a string (ADR 0152).
@@ -373,7 +388,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => map_ops("$retainSet", vec![m, f, entries]),
                     false => {
                         let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));
-                        map_ops("$retainMap", vec![m, f, entries, Expr::bool(handles)])
+                        let mut list = vec![m, f, entries, Expr::bool(handles)];
+                        list.extend(values_drop);
+                        map_ops("$retainMap", list)
                     }
                 }
             }
@@ -413,7 +430,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
                 let items = self.items_of(items, tys[1], span, out)?;
-                map_ops("$extendMap", vec![m, items, Expr::bool(set)])
+                let mut list = vec![m, items, Expr::bool(set)];
+                list.extend(values_drop);
+                map_ops("$extendMap", list)
             }
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));

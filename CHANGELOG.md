@@ -83,6 +83,9 @@ released any more: `rust-js build` is the one way to build an app.
   `mem::take` move its items and drop none; `retain`, `dedup_by`,
   `truncate`, `clear` and `resize_with` drop what they take out, as std
   does, in its order; each was refused (ADR 0098).
+- **A map's `retain`, `extend`, `clear` and `entry(k).or_insert(v)` of
+  values with destructors**: each drops what it takes out, as Rust's does
+  (ADR 0321).
 - **`take`, `replace` and `take_if` of an `Option` of a value with a
   destructor**, and a `VecDeque`'s `push_front`, `pop_front`, `insert` and
   `remove` of one: each moves it and drops none; and the `Option`'s

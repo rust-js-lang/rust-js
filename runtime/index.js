@@ -494,9 +494,14 @@ export function $repeat(item, count, clone) {
   return result;
 }
 
-export function $orInsert(map, key, value) {
+// `m.entry(key).or_insert(value)`: the value put in if the key's missing;
+// of a value with a destructor, the one given dropped by `drop` where the
+// key's there, as Rust's is (ADR 0321).
+export function $orInsert(map, key, value, drop) {
   if (!map.has(key)) {
     map.set(key, value);
+  } else if (drop !== undefined) {
+    drop(value);
   }
   return map.get(key);
 }
@@ -2616,10 +2621,15 @@ export function $insertMut(v, i, x, handle) {
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
-// B-tree's sorted, `f` given a handle on a number's or a string's value.
-export function $retainMap(m, f, entries, handles) {
+// B-tree's sorted, `f` given a handle on a number's or a string's value; of
+// values with a destructor, each it doesn't keep dropped by `drop` before
+// the next is asked (ADR 0321).
+export function $retainMap(m, f, entries, handles, drop) {
   for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
-    if (!f(key, value)) m.delete(key);
+    if (!f(key, value)) {
+      m.delete(key);
+      if (drop !== undefined) drop(value);
+    }
   }
 }
 
@@ -2754,11 +2764,18 @@ export function $isDisjoint(a, b) {
 }
 
 // `m.extend(items)`: each pair set, a later one's value over an earlier's,
-// or each item added.
-export function $extendMap(m, items, set) {
+// or each item added; of values with a destructor, the one replaced dropped
+// by `drop`, as `insert` gives it back (ADR 0321).
+export function $extendMap(m, items, set, drop) {
   for (const item of items) {
-    if (set) m.add(item);
-    else m.set(item[0], item[1]);
+    if (set) {
+      m.add(item);
+      continue;
+    }
+    const replaced = drop !== undefined && m.has(item[0]);
+    const old = m.get(item[0]);
+    m.set(item[0], item[1]);
+    if (replaced) drop(old);
   }
 }
 

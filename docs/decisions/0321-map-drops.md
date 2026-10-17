@@ -52,3 +52,15 @@ for (const item of handles.values()) {
   cases pin the refusals of a map made of pairs and of a key with a
   destructor. Mutations drop no values, drop a `BTreeMap`'s unsorted,
   take a key with a destructor, and refuse `remove`.
+
+## Amendment: what a map's methods drop
+
+A map's `retain`, `extend`, `clear` and `entry(k).or_insert(v)` of values
+with a destructor were refused. Each is given the values' drop, last, and
+drops what it takes out as Rust's does: `retain` each it doesn't keep
+before the next is asked, `extend` each value it replaces, `clear` each in
+the map's order, a B-tree's its keys', as dropping the map does, and
+`or_insert` the value it's given where the key's there. The
+`map_value_destructors` corpus case runs each with native Rust, of a
+`BTreeMap` and of a `HashMap` of one entry, whose order Rust doesn't say.
+A map's `drain` of them is still refused.

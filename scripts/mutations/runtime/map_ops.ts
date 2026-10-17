@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "retain-map-keeps-all",
     breaks: "a map's `retain` keeps what `f` rejects",
     file: "src/runtime/map_ops.js",
-    find: "    if (!f(key, value)) m.delete(key);\n",
-    replace: "    f(key, value);\n",
+    find: "    if (!f(key, value)) {\n      m.delete(key);\n",
+    replace: "    if (!f(key, value) && false) {\n      m.delete(key);\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
   {
@@ -153,5 +153,21 @@ export const mutations: Mutation[] = [
     find: "    if (order === 0 && start.TAG === \"Excluded\" && end.TAG === \"Excluded\") {\n",
     replace: "    if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_range_excluded_panic.rs$"],
+  },
+  {
+    name: "retain-map-drops-none",
+    breaks: "a map's `retain` of values with a destructor drops none it doesn't keep",
+    file: "src/runtime/map_ops.js",
+    find: "      if (drop !== undefined) drop(value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
+  },
+  {
+    name: "extend-map-drops-none",
+    breaks: "a map's `extend` drops none of the values it replaces",
+    file: "src/runtime/map_ops.js",
+    find: "    if (replaced) drop(old);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
 ];

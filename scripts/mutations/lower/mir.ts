@@ -2546,4 +2546,12 @@ export const mutations: Mutation[] = [
     replace: "                    self.is_object(inner) || (false && generic && !self.is_generic_boxed(inner, typing_env.param_env))\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
   },
+  {
+    name: "or-insert-given-no-drop",
+    breaks: "`or_insert` of a value with a destructor is given no drop",
+    file: "src/lower/mir.rs",
+    find: "                list.extend(self.std_drop_function(value, span)?);\n",
+    replace: "                let _ = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
+  },
 ];
