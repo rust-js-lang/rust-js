@@ -91,6 +91,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::CellReplace
                     | Std::CellTake
                     | Std::CellReplaceWith
+                    // A lock's `into_inner` gives its value back, `get_mut` a
+                    // `&mut` to it (ADR 0144).
+                    | Std::Lock
                     // Moves its value into the function, which owns it then, and
                     // drops the other variant's, or passes it on (ADR 0179).
                     | Std::OptionMap

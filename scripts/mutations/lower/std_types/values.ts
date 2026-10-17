@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
   },
+  {
+    name: "lock-into-inner-refused",
+    breaks: "a lock's `into_inner` of a value with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Lock\n                    // Moves its value",
+    replace: "                    // Moves its value",
+    tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
+  },
 ];

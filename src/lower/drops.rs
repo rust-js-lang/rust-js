@@ -450,9 +450,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.drop_items(values, value_ty, span, made, out)?;
                 }
             }
-            // A `RefCell`'s value (ADR 0320); of a `RefCell<dyn T>`, the cell
-            // is the pair, `{ value, impl }` (ADR 0397).
-            ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => {
+            // A `RefCell`'s value (ADR 0320), and a `Mutex`'s or an
+            // `RwLock`'s, each `{ value }` as it is (ADR 0144); of a
+            // `RefCell<dyn T>`, the cell is the pair, `{ value, impl }` (ADR 0397).
+            ty::Adt(_, args)
+                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]
+                    .into_iter()
+                    .any(|cell| self.is_std_type(ty, cell)) =>
+            {
                 let inner = args.type_at(0);
                 let value = match self.cell_dyn_trait(inner) {
                     Some(_) => value,

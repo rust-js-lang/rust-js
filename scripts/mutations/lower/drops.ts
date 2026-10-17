@@ -302,4 +302,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
   },
+  {
+    name: "lock-value-undropped",
+    breaks: "a `Mutex` or an `RwLock` holding a value with a destructor crashes the compiler, its fields asked of a cell",
+    file: "src/lower/drops.rs",
+    find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]\n",
+    replace: "                if [StdItem::RefCell]\n",
+    tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
+  },
 ];

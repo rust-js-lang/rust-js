@@ -81,3 +81,14 @@ rust-js's error, where Rust deadlocks.)
   `m` is alive, hangs natively and doesn't in JS: nothing checks the lock,
   as nothing checks a `RefCell`'s borrows.
 - `drop(guard)` of a guard, which has no destructor in JS, is nothing.
+
+## Amendment: a lock holding a value with a destructor
+
+A `Mutex` or an `RwLock` of a value with a destructor crashed the compiler:
+its drop asked a cell, `{ value }`, for the fields of a struct. It drops
+what it holds as a `RefCell` does (ADR 0320): when it's dropped, shared by
+an `Arc` and dropped by its last, in a `Vec` or a struct; a write through
+its guard drops the old value; and `into_inner` gives the value back,
+dropped then by whoever has it. The `lock_destructors` corpus case runs
+each against native Rust; mutations of the drop and of `into_inner` are
+caught.

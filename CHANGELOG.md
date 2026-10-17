@@ -322,6 +322,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A `Mutex` or an `RwLock` holding a value with a destructor** no longer
+  crashes the compiler: it drops what it holds as a `RefCell` does, and its
+  `into_inner` gives the value back (ADR 0144).
 - **rustc no longer crashes** where a generic function calls another whose
   parameter is a projection, `<T as Deref>::Target`: whether the callee's
   value is boxed is asked in the callee's environment, not its caller's.
