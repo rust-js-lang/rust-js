@@ -3038,8 +3038,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
-    /// of a vector's `drain(..)`, the array of what it took out, which owns
-    /// them too (ADR 0098), of a string's `bytes()`, an array of its bytes
+    /// of a vector's or a heap's `drain(..)`, the array of what it took out,
+    /// which owns them too (ADR 0098), of a string's `bytes()`, an array of its bytes
     /// (ADR 0034), and of `iter::Empty`, `[]` (ADR 0128).
     pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty = self.reveal(ty);
@@ -3053,7 +3053,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let owning = self.tcx.crate_name(adt.did().krate) == sym::alloc
             && matches!(
                 std_path(self.tcx, adt.did()).as_str(),
-                "std::vec::IntoIter" | "std::vec::Drain" | "std::collections::vec_deque::Drain"
+                "std::vec::IntoIter"
+                    | "std::vec::Drain"
+                    | "std::collections::vec_deque::Drain"
+                    | "std::collections::binary_heap::Drain"
             );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }

@@ -487,8 +487,8 @@ export const mutations: Mutation[] = [
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition.rs",
-    find: "\"std::vec::IntoIter\" | \"std::vec::Drain\"",
-    replace: "\"std::vec::Nothing\" | \"std::vec::Drain\"",
+    find: "                \"std::vec::IntoIter\"\n                    | \"std::vec::Drain\"\n",
+    replace: "                \"std::vec::Nothing\"\n                    | \"std::vec::Drain\"\n",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
   {
@@ -1741,8 +1741,8 @@ export const mutations: Mutation[] = [
     name: "drain-not-owning",
     breaks: "a vector's `drain` isn't an iterator that owns what it took out, so one of values with destructors is refused",
     file: "src/lower/recognition.rs",
-    find: "                \"std::vec::IntoIter\" | \"std::vec::Drain\" | \"std::collections::vec_deque::Drain\"\n",
-    replace: "                \"std::vec::IntoIter\"\n",
+    find: "                    | \"std::vec::Drain\"\n                    | \"std::collections::vec_deque::Drain\"\n",
+    replace: "                    | \"std::collections::vec_deque::Drain\"\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -1824,5 +1824,13 @@ export const mutations: Mutation[] = [
     find: "            if of_owned || lent {\n",
     replace: "            if false && (of_owned || lent) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
+  },
+  {
+    name: "heap-drain-not-owning",
+    breaks: "a heap's `drain()` isn't an iterator that owns what it took out, so one of values with destructors is refused",
+    file: "src/lower/recognition.rs",
+    find: "                    | \"std::collections::binary_heap::Drain\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
   },
 ];

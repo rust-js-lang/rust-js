@@ -158,6 +158,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::SortByKey
                     // A `VecDeque`'s at its front, and `insert` and `remove`.
                     | Std::Method("unshift" | "shift")
+                    // A heap's that move its items, in it, out or in.
+                    | Std::Heap(HeapOp::Push | HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From | HeapOp::Append)
+                    | Std::Heap(HeapOp::Drain)
                     | Std::Slice(SliceOp::DequeInsert { .. })
                     | Std::DequeRemove
                     // An `Option`'s that moves what it holds out, or in, its

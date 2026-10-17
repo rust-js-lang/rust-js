@@ -55,7 +55,7 @@ function main() {
   const late = $heapFrom([7, 72, 137, 202, 56, 121, 186, 40], $cmp);
   $heapRetain(late, (x) => x !== 40 && x !== 56, $cmp);
   console.log(`[${late.map((item) => String(item)).join(", ")}]`);
-  const drained = Array.from(small.splice(0));
+  const drained = small.splice(0);
   console.log(`[${drained.map((item) => String(item)).join(", ")}] ${small.length === 0}`);
   const words = $heapFrom(["pear", "fig", "apple"], $cmp);
   console.log(

@@ -86,6 +86,8 @@ released any more: `rust-js build` is the one way to build an app.
   destructors**, `v.into_iter().take(2)`: what it hasn't given is dropped
   when it ends or is dropped, and what `skip` passes over as it's first
   stepped (ADR 0422).
+- **A `BinaryHeap` of values with destructors**: `push`, `pop`, `append`,
+  `from`, `into_sorted_vec` and `drain` move them and drop none (ADR 0098).
 - **`last()` of an iterator of values with destructors**: each before it
   dropped as the next comes (ADR 0098).
 - **A vector of values with destructors**: `insert`, `remove`,

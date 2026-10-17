@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
+  {
+    name: "heap-moves-refused",
+    breaks: "`push` and `pop` of a heap of values with destructors are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Heap(HeapOp::Push | HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From | HeapOp::Append)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
+  },
 ];

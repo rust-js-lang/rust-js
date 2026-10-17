@@ -842,6 +842,8 @@ fn fresh(items: &Expr) -> bool {
                 "flatMap",
                 "flat",
                 "concat",
+                // What it takes out, a heap's `drain()`'s.
+                "splice",
             ]
             .contains(&name.as_str()),
             js::ExprKind::Var(name) => [

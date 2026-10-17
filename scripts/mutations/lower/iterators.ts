@@ -602,4 +602,13 @@ export const mutations: Mutation[] = [
     replace: "                true => eager_items(chain, true, Some(f)),\n                false => eager_items(chain, true, Some(f)),\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_chains.rs$"],
   },
+  {
+    name: "splice-not-fresh",
+    breaks: "what a heap's `drain()` takes out, collected, is copied, `heap.splice(0).slice()`, where it's a new array already",
+    file: "src/lower/iterators.rs",
+    find: "                // What it takes out, a heap's `drain()`'s.\n                \"splice\",\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^heap_methods.rs$"],
+  },
 ];
