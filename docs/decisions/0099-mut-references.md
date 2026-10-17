@@ -340,3 +340,19 @@ parameters as they are, is that function, wherever it's made, as
 given by its type. The `mut_method_pointer` corpus case calls a default's
 and an impl's, of an object changed in place, replaced, and of a number,
 with native Rust.
+
+## Amendment: a `&mut` of one value, and a cell a place holds
+
+- **A `&mut` to a type of one value**, a zero-sized type's (`()`, a unit
+  struct, `[S; 1]` of one, `has_one_value`), given where its place isn't
+  fixed, an item of what a call gave, `call_and_ref(..)[0].mutate()`, was
+  refused, as a box of it couldn't be copied back. None needs to be: no
+  write changes one. It's a box of the value, evaluated once, not copied
+  back. This replaces the test of a `()`'s place, which it covers.
+- **A reborrow of a cell a place holds**, `&mut **u` of a `ref mut u` into
+  an `Option<&mut T>`, is that cell, as a variable's is: `return o.value`,
+  not a new handle on `o.value.value`. Which places hold a cell, a
+  variable's or one a reborrow found, is one list, `cells`, which
+  `value_expr` asks.
+- The `option_as_mut_generic` corpus case gives a unit struct's `&mut`;
+  `ref_mut_of_mut_payload` returns a reborrowed cell.

@@ -50,17 +50,7 @@ function retarget(r, other) {
 }
 
 function each(held, all) {
-  const r =
-    held.value == null
-      ? undefined
-      : {
-          get value() {
-            return held.value;
-          },
-          set value(value) {
-            held.value = value;
-          },
-        };
+  const r = held.value == null ? undefined : held;
   if (r != null) {
     r.value.value = (r.value.value + 100) >>> 0;
   }

@@ -41,25 +41,22 @@ function main() {
   console.log(
     `${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`}`,
   );
-  const value$8 = $mutGet(opts, 1);
-  if (value$8 != null) {
-    const v = $someValue(value$8);
+  const v = $mutGet(opts, 1);
+  if (v != null) {
     v.value = undefined;
   }
-  const value$9 = $someGet(opts, 1);
+  const value$8 = $someGet(opts, 1);
   console.log(
-    `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`}`,
+    `${value$8 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$8))})`}`,
   );
-  const value$10 = $mutGet(units, "zz");
-  if (value$10 != null) {
-    const v = $someValue(value$10);
-    v.value = undefined;
+  const v$1 = $mutGet(units, "zz");
+  if (v$1 != null) {
+    v$1.value = undefined;
   }
   units.set("q");
-  const value$11 = $mutGet(units, "q");
-  if (value$11 != null) {
-    const v = $someValue(value$11);
-    v.value = undefined;
+  const v$2 = $mutGet(units, "q");
+  if (v$2 != null) {
+    v$2.value = undefined;
     console.log("got q");
   }
 }

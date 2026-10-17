@@ -139,3 +139,20 @@ holds it, a `Some(None)` written a `Some(Some(5))` and a `Some(Some(1))` a
   only by modules that use them.
 - A last `match` arm that does nothing (`None => {}`) no longer prints an
   empty `else {}`, which this change's example first showed.
+
+## Amendment: `as_mut()` of one, and an `Option` of a `&mut`
+
+- **`o.as_mut()` of an `Option<T>` of a generic `T`**, through a `&mut`,
+  was refused, so rustc's `borrowck/call-and-ref-option-mutate.rs`,
+  `x.as_mut().unwrap()` of a `&mut Option<T>`, didn't compile. It's
+  `$someMut(o)` where it's `Some`, the handle a `&mut` to what a `Some`
+  holds already is: it reads `$someValue` of the `Option` and writes it a
+  `$some` of what it's given, so a `T` that looks like `None`, `()` or an
+  `Option`, stays boxed.
+- **An `Option` of a `&mut` that's a cell**, `Option<&mut T>`, is never
+  boxed, even of a generic `T`: a cell is a handle object, never `null`, so
+  `$some` of one was always the handle itself, and `$someValue` of it a
+  read that did nothing. Generic code's is now concrete code's, `r == null
+  ? .. : r`, with the same values.
+- The `option_as_mut_generic` corpus case writes through it, of numbers,
+  arrays, `()` and `Option`s, against native Rust.

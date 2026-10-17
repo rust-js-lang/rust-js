@@ -8,7 +8,6 @@ import {
   $setLen,
   $sliceIndexes,
   $some,
-  $someValue,
   $swap,
 } from "@rust-js/runtime";
 
@@ -26,9 +25,8 @@ function shuffle(v, extra, TClone) {
     v,
     extra.map((item) => TClone.clone(item)),
   );
-  const value = $mutAt(v, 0);
-  if (value != null) {
-    $someValue(value);
+  const first = $mutAt(v, 0);
+  if (first != null) {
   }
   const item = $mutAt(v, 1);
   return v.length;

@@ -134,10 +134,11 @@ pub(super) struct Found {
     /// And of the others' arrays, their items, `...items`.
     pub(super) alike: HashSet<String>,
     pub(super) plain: HashSet<String>,
-    /// And the names of its cells, `&mut`s to what JS can't change in
-    /// place: a box or a handle, whose `value` is what it points at, unlike
-    /// a struct's field of that name.
-    pub(super) cells: HashSet<String>,
+    /// And the places that hold its cells, `&mut`s to what JS can't change
+    /// in place: a box or a handle, whose `value` is what it points at,
+    /// unlike a struct's field of that name. Its locals', by name, and a
+    /// place a reborrow found one at, `o.value` of `&mut **u`.
+    pub(super) cells: Vec<Expr>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
@@ -661,7 +662,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
         for (local, name) in state.locals.names.iter_enumerated() {
             if !name.is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
-                self.locals.mir.cells.insert(name.clone());
+                self.locals.mir.cells.push(Expr::var(name));
             }
         }
         // What reads the same wherever it's read.
@@ -2216,9 +2217,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == js::HELD
                     && match &holder.kind {
-                        js::ExprKind::Var(name) => self.locals.mir.cells.contains(name),
                         js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
-                        _ => false,
+                        _ => self.locals.mir.cells.iter().any(|cell| cell.written_alike(holder)),
                     } =>
             {
                 (**holder).clone()
@@ -2837,10 +2837,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push((**boxed).clone());
                 continue;
             }
+            let param = self
+                .tcx
+                .fn_sig(def_id)
+                .instantiate(self.tcx, generic_args)
+                .skip_binder()
+                .inputs()[i];
             // A handle a call made, `first_mut().unwrap()`'s: given as it is,
             // its `value` the place (ADR 0099). A box of another place that
-            // isn't fixed couldn't be copied back; a `()`'s needn't be.
-            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {
+            // isn't fixed couldn't be copied back; one of a type of one value,
+            // `()`'s, a unit struct's, needn't be: no write changes it.
+            let one_value = param
+                .builtin_deref(true)
+                .is_some_and(|pointee| self.has_one_value(pointee));
+            if !fixed_place(&place) && !one_value {
                 let js::ExprKind::Member(handle, field) = &place.kind else {
                     return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
                 };
@@ -2862,12 +2872,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `dyn`'s, or a slice's, the callee can't replace whole: its box
             // is never written, so it isn't copied back. A `str`'s is: its
             // text is written whole, `make_ascii_uppercase`'s.
-            let param = self
-                .tcx
-                .fn_sig(def_id)
-                .instantiate(self.tcx, generic_args)
-                .skip_binder()
-                .inputs()[i];
             if param
                 .builtin_deref(true)
                 .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env) && !pointee.is_str())
@@ -3832,6 +3836,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         false => target,
                     };
+                    // `&mut **u`, a reborrow of a cell a place holds, an
+                    // `Option`'s `&mut` through a `ref mut`: that cell's
+                    // `value`, the place kept as one that holds a cell, as a
+                    // variable is, so a handle on it is the cell.
+                    if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
+                        && self.is_cell(base.ty(decls, tcx).ty)
+                        && let js::ExprKind::Member(cell, field) = &target.kind
+                        && field == js::HELD
+                        && fixed_place(cell)
+                    {
+                        self.locals.mir.cells.push((**cell).clone());
+                    }
                     return Ok(Value::Ref(target));
                 }
                 // `&error.title` of a `Cell` a field holds, a handle on it,
@@ -5600,19 +5616,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }));
             }
             // `o.as_mut()` of an `Option` of what a `&mut` to is a cell, a
-            // number or a `Box`: a handle on its place where it's `Some`.
+            // number or a `Box`: a handle on its place where it's `Some`; of
+            // a generic `T`'s, on what its `Some` holds (ADR 0051).
             if known == Std::Pointee
                 && let Some(item) = self.option_of(receiver)
-                && !self.boxed_payload(item)
                 && let [Value::Ref(place)] = values.as_slice()
                 && fixed_place(place)
             {
                 let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
-                return Ok(Value::Expr(Expr::cond(
-                    none,
-                    Expr::undefined(),
-                    Expr::handle(place.clone()),
-                )));
+                let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
+                let some = self.value_expr(Value::Ref(held.unwrap_or_else(|| place.clone())), span)?;
+                return Ok(Value::Expr(Expr::cond(none, Expr::undefined(), some)));
             }
             if !known.gives_its_cell() {
                 let path = tcx.def_path_str(def_id);

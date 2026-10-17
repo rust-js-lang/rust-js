@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`as_mut()` of an `Option` of a generic `T`**, through a `&mut`, and a
+  `&mut` to a unit struct in what a call gave (ADRs 0051, 0099).
 - **A closure's `TypeId`**, its own, and `assert_eq!` of two function
   pointers or two `TypeId`s: showing one's address or hash is rust-js's error
   where it's shown, not where it's written (ADRs 0331, 0407).

@@ -155,10 +155,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
     /// which are the value itself (ADR 0023), but for a counted `Rc`, an
-    /// object of its own (ADR 0320).
+    /// object of its own (ADR 0320), and a `&mut` that's a cell, a handle
+    /// on its place (ADR 0099), even of a generic `T`.
     fn payload(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
         loop {
             ty = match ty.kind() {
+                _ if self.is_cell(ty) => return ty,
                 ty::Ref(_, inner, _) => *inner,
                 ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => args.type_at(0),
                 ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => args.type_at(0),
@@ -184,6 +186,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `undefined` before it's written (ADR 0332).
             || self.recognition().uninit_of(ty).is_some()
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
+    }
+
+    /// Does a `ty` have one value, as a zero-sized type does: `()`, a unit
+    /// struct, `[S; 1]` of one? Then no write to one changes what a program
+    /// sees.
+    pub(super) fn has_one_value(&self, ty: Ty<'tcx>) -> bool {
+        self.layout(ty).is_some_and(|layout| layout.is_zst())
     }
 
     /// Is a `ty` value a JS object? Then a reference to it, even `&mut`, can

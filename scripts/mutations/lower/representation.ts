@@ -420,4 +420,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
+  {
+    name: "option-of-cell-payload-boxed",
+    breaks: "an `Option<&mut T>` of a generic `T` is boxed as a `T`'s is, `$someValue(value)` read of its handle, which is never `None`",
+    file: "src/lower/representation.rs",
+    find: "                _ if self.is_cell(ty) => return ty,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(map_values_like_none|ref_mut_of_mut_payload).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "one-value-never",
+    breaks: "a `&mut` to a unit struct in what a call gave, `f()[0].touch()`, is refused as a number's is, though no write changes it",
+    file: "src/lower/representation.rs",
+    find: "        self.layout(ty).is_some_and(|layout| layout.is_zst())\n",
+    replace: "        self.layout(ty).is_some_and(|layout| layout.is_zst() && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_as_mut_generic.rs$"],
+  },
 ];

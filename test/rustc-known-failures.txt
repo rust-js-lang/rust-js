@@ -13,7 +13,6 @@ binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable
 binop/augmented-assignment.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
-borrowck/call-and-ref-option-mutate.rs	error: rust-js does not support a `&mut` of this in a variable yet
 borrowck/two-phase-multiple-activations.rs	error: rust-js does not support `{:?}` of a `std::io::Error` yet
 cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
