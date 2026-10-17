@@ -813,6 +813,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             known,
             def_id,
             arg_tys,
+            output,
             span,
             ..
         } = call;
@@ -858,7 +859,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (_, value) => self.value_expr(value, span)?,
                 };
                 self.flush(state, out)?;
-                self.cow_values(op, cow, arg_tys[0].peel_refs(), span, out)?
+                let cow_ty = match op {
+                    CowOp::From { .. } => output,
+                    _ => arg_tys[0].peel_refs(),
+                };
+                self.cow_values(op, cow, cow_ty, span, out)?
             }
             // `o.get_or_insert(x)` and the like: the `Option`'s place given its
             // value where it has none, and a `&mut` to what it holds.

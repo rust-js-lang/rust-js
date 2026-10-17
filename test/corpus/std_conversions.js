@@ -36,5 +36,15 @@ function main() {
   console.log(
     `${rc} ${text} ${owned} [${items.map((item) => String(item)).join(", ")}] [${boxed.map((item) => String(item)).join(", ")}]`,
   );
+  const lent = { TAG: "Borrowed", _0: "lent" };
+  const made = { TAG: "Owned", _0: "made" };
+  const name = "named";
+  const ofRef = { TAG: "Borrowed", _0: name };
+  const slice = { TAG: "Borrowed", _0: [1, 2] };
+  const vec = { TAG: "Owned", _0: [3] };
+  const kinds = [lent, made, ofRef].map((c) => c.TAG === "Borrowed");
+  console.log(
+    `${lent._0} ${made._0} ${ofRef._0} [${slice._0.map((item) => String(item)).join(", ")}] [${vec._0.map((item) => String(item)).join(", ")}] [${kinds.map((item) => String(item)).join(", ")}] ${vec.TAG === "Owned"}`,
+  );
 }
 //# sourceMappingURL=case.js.map

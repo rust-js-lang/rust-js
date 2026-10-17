@@ -32,6 +32,9 @@ and std's `From`s are one list of rules over the two sides, which the
   `Vec<T>`'s or a `Box<[T]>`'s items, moved. Which is
   `recognition::rc_made_of`, which `rc_same`, what says an `Rc` is made,
   asks too.
+- **A `Cow`** of a reference to what it borrows, or to what owns it, is
+  `Borrowed`, `{ TAG: "Borrowed", _0: s }`, and of what owns, `Owned`,
+  `CowOp::From` (ADR 0319).
 
 ## Why
 
@@ -41,4 +44,4 @@ and std's `From`s are one list of rules over the two sides, which the
 
 ## Consequences
 
-- A `Cow` from text, `Cow::from("x")`, is still refused.
+- A conversion this list doesn't have is still refused, as it was.

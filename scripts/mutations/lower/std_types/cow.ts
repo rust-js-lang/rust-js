@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "        let (inner, inner_ty) = (value.clone(), ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
   },
+  {
+    name: "cow-from-variant-swapped",
+    breaks: "`Cow::from` of a reference is `Owned`, and of what owns `Borrowed`",
+    file: "src/lower/std_types/cow.rs",
+    find: "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(owned));\n",
+    replace: "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(!owned));\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
+  },
 ];

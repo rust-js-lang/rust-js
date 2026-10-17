@@ -78,8 +78,8 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
-- **`Option::from(x)`, `Vec::from([..])`, `Rc::from(x)`, `Rc<str>::from(s)`
-  and `Arc<[T]>::from(v)`**, and the `into()` of each: std's conversions
+- **`Option::from(x)`, `Vec::from([..])`, `Rc::from(x)`, `Rc<str>::from(s)`,
+  `Arc<[T]>::from(v)` and `Cow::from(x)`**, and the `into()` of each: std's conversions
   are one list of what's converted into what, either way it's asked
   ([ADR 0431](docs/decisions/0431-std-conversions-are-one-list.md)).
 - **`take(n)` and `skip(n)` of an iterator that owns values with

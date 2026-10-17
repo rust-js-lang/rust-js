@@ -1817,4 +1817,12 @@ export const mutations: Mutation[] = [
     replace: "        ty::Slice(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
   },
+  {
+    name: "cow-from-unknown",
+    breaks: "`Cow::from(x)` and `x.into()` of one are refused",
+    file: "src/lower/recognition.rs",
+    find: "            if of_owned || lent {\n",
+    replace: "            if false && (of_owned || lent) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
+  },
 ];

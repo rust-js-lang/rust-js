@@ -1409,6 +1409,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.option_of(to_ty) == Some(from_ty) {
             return Some(Std::OptionFrom);
         }
+        // A `Cow` of a reference to what it borrows, or to what owns it,
+        // `Borrowed`, or of what owns, `Owned`.
+        if let Some((borrowed, owned)) = self.cow_parts(to_ty) {
+            let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
+            let of_owned = erased(from_ty) == erased(owned);
+            let lent = matches!(from_ty.kind(), ty::Ref(_, to, Mutability::Not)
+                if erased(*to) == erased(borrowed) || erased(*to) == erased(owned));
+            if of_owned || lent {
+                return Some(Std::Cow(CowOp::From { owned: of_owned }));
+            }
+        }
         // An `Rc` or an `Arc` of the value, which `rc_same` says it makes, as
         // `Rc::new(x)`: of a `str` its text, of a `[T]` a `Vec<T>`'s items.
         if rc_made_of(tcx, from_ty, to_ty).is_some() {

@@ -15,11 +15,16 @@ pub(in crate::lower) enum CowOp {
     Deref,
     IntoOwned,
     ToMut,
+    /// `Cow::from(x)`, or `x.into()` of one: `Owned` of what owns, `Borrowed`
+    /// of a reference (ADR 0431).
+    From {
+        owned: bool,
+    },
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Cow`'s method, of the `Cow`'s value, its place for `to_mut()`,
-    /// and its type.
+    /// and its type; or of what `Cow::from` is given, and the `Cow`'s type.
     pub(in crate::lower) fn cow_values(
         &mut self,
         op: CowOp,
@@ -34,6 +39,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, _) = *cow_ty.kind() else {
             unreachable!("a `Cow`'s method is given a `Cow`")
         };
+        if let CowOp::From { owned } = op {
+            let variant = rustc_abi::VariantIdx::from_usize(usize::from(owned));
+            return self.adt_value(cow_ty, variant, vec![cow], &[], span);
+        }
         let mut variants = adt.variants().iter();
         let (borrowed_variant, owned_variant) =
             (variants.next().expect("`Borrowed`"), variants.next().expect("`Owned`"));
