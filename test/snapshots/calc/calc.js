@@ -70,33 +70,27 @@ export function to_rpn(tokens) {
     bb49: {
       if (t.TAG === "Num") {
         out.push(t);
+      } else if (t.TAG === "Op") {
+        while (true) {
+          const value = stack.at(-1);
+          if (value == null || value.TAG !== "Op" || !(prec(value._0) >= prec(t._0))) {
+            break;
+          }
+          out.push($unwrap(stack.pop()));
+        }
+        stack.push(t);
+      } else if (t === "LParen") {
+        stack.push("LParen");
       } else {
-        if (t.TAG === "Op") {
-          while (true) {
-            const value = stack.at(-1);
-            if (value != null && value.TAG === "Op") {
-              if (prec(value._0) >= prec(t._0)) {
-                out.push($unwrap(stack.pop()));
-                continue;
-              }
-            }
-            stack.push(t);
+        while (true) {
+          const top = stack.pop();
+          if (top == null) {
             break bb49;
           }
-        }
-        if (t === "LParen") {
-          stack.push("LParen");
-        } else {
-          while (true) {
-            const top = stack.pop();
-            if (top == null) {
-              break bb49;
-            }
-            if (top === "LParen") {
-              break bb49;
-            }
-            out.push(top);
+          if (top === "LParen") {
+            break bb49;
           }
+          out.push(top);
         }
       }
     }

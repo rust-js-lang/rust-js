@@ -37,19 +37,18 @@ function sum_rows(rows) {
   for (const [i, row] of rows.entries()) {
     let seen = 0;
     for (const cell of row) {
-      if (cell !== "stop") {
-        const result = parse(cell);
-        if (result.TAG === "Err") {
-          return result;
-        }
-        const n = result._0;
-        if (n > 100) {
-          return { TAG: "Err", _0: { TAG: "TooBig", at: i, value: n } };
-        }
-        seen = (seen + n) | 0;
-        continue;
+      if (cell === "stop") {
+        break;
       }
-      break;
+      const result = parse(cell);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const n = result._0;
+      if (n > 100) {
+        return { TAG: "Err", _0: { TAG: "TooBig", at: i, value: n } };
+      }
+      seen = (seen + n) | 0;
     }
     total = (total + seen) | 0;
   }

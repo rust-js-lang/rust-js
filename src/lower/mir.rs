@@ -845,7 +845,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 tested: &tested,
                 conditions: &written.conditions,
                 loops: &written.loops,
-                valued: &written.valued,
                 continues: &written.continues,
                 logicals: &written.logicals,
                 callbacks: &callbacks,

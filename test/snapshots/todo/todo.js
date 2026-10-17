@@ -105,10 +105,7 @@ function render(state, view) {
       throw error;
     }
     if (!tmp) {
-      const noun = left === 1 ? " item left" : " items left";
-      view.left.textContent = String(left) + noun;
-      $unborrow(s);
-      return;
+      break;
     }
     const todo = tmp;
     if (!todo.done) {
@@ -130,6 +127,9 @@ function render(state, view) {
       }
     }
   }
+  const noun = left === 1 ? " item left" : " items left";
+  view.left.textContent = String(left) + noun;
+  $unborrow(s);
 }
 
 export function main() {

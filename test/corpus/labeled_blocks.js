@@ -82,8 +82,8 @@ function main() {
       }
       total = sum;
     }
-    console.log(`${total}`);
-    return;
+    break;
   }
+  console.log(`${total}`);
 }
 //# sourceMappingURL=case.js.map

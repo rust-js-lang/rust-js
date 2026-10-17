@@ -55,38 +55,36 @@ export function calcErrorDisplay() {
 }
 
 function calcErrorDisplay_fmt(calcError) {
-  if (calcError.TAG !== "Unexpected") {
-    if (calcError === "UnexpectedEnd") {
-      return "unexpected end of input";
-    }
-    if (calcError.TAG === "Expected") {
-      return `expected ${calcError._0}`;
-    }
-    if (calcError.TAG === "Unknown") {
-      return `unknown name \`${calcError._0}\``;
-    }
-    if (calcError === "DivideByZero") {
-      return "division by zero";
-    }
-    return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
+  if (calcError.TAG === "Unexpected") {
+    return `unexpected '${calcError._0}'`;
   }
-  return `unexpected '${calcError._0}'`;
+  if (calcError === "UnexpectedEnd") {
+    return "unexpected end of input";
+  }
+  if (calcError.TAG === "Expected") {
+    return `expected ${calcError._0}`;
+  }
+  if (calcError.TAG === "Unknown") {
+    return `unknown name \`${calcError._0}\``;
+  }
+  if (calcError === "DivideByZero") {
+    return "division by zero";
+  }
+  return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
 }
 
 function number(chars) {
   let text = "";
   while (true) {
     const c = $peek(chars);
-    if (c != null) {
-      if (/^[0-9]$/.test(c) || c === ".") {
-        text += c;
-        $next(chars);
-        continue;
-      }
+    if (c == null || (!/^[0-9]$/.test(c) && c !== ".")) {
+      break;
     }
-    const result = $parseF64(text);
-    return result.TAG === "Ok" ? result._0 : 0;
+    text += c;
+    $next(chars);
   }
+  const result = $parseF64(text);
+  return result.TAG === "Ok" ? result._0 : 0;
 }
 
 function tokenize(source) {
@@ -95,7 +93,7 @@ function tokenize(source) {
   while (true) {
     const c = $peek(chars);
     if (c == null) {
-      return { TAG: "Ok", _0: tokens };
+      break;
     }
     if (c === " ") {
       $next(chars);
@@ -131,6 +129,7 @@ function tokenize(source) {
       return { TAG: "Err", _0: { TAG: "Unexpected", _0: c } };
     }
   }
+  return { TAG: "Ok", _0: tokens };
 }
 
 const Parser = {

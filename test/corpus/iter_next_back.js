@@ -63,7 +63,6 @@ function main() {
     `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
   const both = $iter($range(1, 5));
-  let chars;
   while (true) {
     const a = $next(both);
     const b = $nextBack(both);
@@ -126,7 +125,7 @@ function main() {
     console.log(
       `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
     );
-    chars = $iter(Array.from("xyz"));
+    const chars = $iter(Array.from("xyz"));
     $nextBack(chars);
     console.log(`${$debugStr($restStr(chars))}`);
     return;

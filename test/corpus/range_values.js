@@ -65,12 +65,13 @@ function first_square_over(limit) {
   while (true) {
     const n = $rangeFromNext(iter);
     if (n == null) {
-      throw new Error("internal error: entered unreachable code");
+      break;
     }
     if (Math.imul(n, n) >>> 0 > limit) {
       return n;
     }
   }
+  throw new Error("internal error: entered unreachable code");
 }
 
 function main() {
@@ -210,13 +211,14 @@ function main() {
           while (true) {
             const c = $rangeInclusiveNext(iter$1);
             if (c == null) {
-              console.log(
-                ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
-              );
-              return;
+              break;
             }
             $print(c);
           }
+          console.log(
+            ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
+          );
+          return;
         }
         $print(`${n} `);
       }

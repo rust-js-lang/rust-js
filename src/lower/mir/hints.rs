@@ -18,8 +18,6 @@ pub(super) struct Written {
     pub continues: Vec<js::Span>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
-    /// Each `loop` a `break` gives a value.
-    pub valued: Vec<js::Span>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -143,17 +141,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let valued: Vec<js::Span> = (self.thir.exprs.iter())
-            .filter(|e| matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never())
-            .map(|e| self.js_span(e.span.source_callsite()))
-            .collect();
         Written {
             tables,
             conditions,
             logicals,
             continues,
             loops,
-            valued,
         }
     }
 

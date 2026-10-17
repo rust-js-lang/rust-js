@@ -15,13 +15,13 @@ function table(rows) {
   const iter = { start: 0, end: rows };
   while (true) {
     const row = $rangeNext(iter);
-    if (row != null) {
-      $print(`${Math.imul(row, row) >>> 0} `);
-    } else {
-      console.log("");
-      return;
+    if (row == null) {
+      break;
     }
+    $print(`${Math.imul(row, row) >>> 0} `);
   }
+  console.log("");
+  return;
 }
 
 function main() {

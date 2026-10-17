@@ -37,8 +37,6 @@ pub(super) struct Hints<'h> {
     pub(super) conditions: &'h [(js::Span, js::Span)],
     /// Where each loop is written, whether as a `while`, and its label.
     pub(super) loops: &'h [(js::Span, bool, Option<String>)],
-    /// Where each `loop` a `break` gives a value is written, `break a`.
-    pub(super) valued: &'h [js::Span],
     /// Where each `if` the program wrote of a `continue` tests: one alone,
     /// or one that ends what it does.
     pub(super) continues: &'h [js::Span],
@@ -82,7 +80,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         tested,
         conditions,
         loops: written,
-        valued,
         continues,
         logicals,
         callbacks,
@@ -142,8 +139,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A match's tree of tests, its arms reached through a block MIR made:
     // the chain of its arms, now that the loops are made.
     bottom_up(body, &mut decisions::decisions);
+    // What the program wrote after a loop, MIR moved into its way out.
+    js::statement_lists(body, &mut exits_after);
     js::statement_lists(body, &mut early_returns);
-    js::statement_lists(body, &mut |stmts| early_breaks(stmts));
+    js::statement_lists(body, &mut |stmts| early_breaks(stmts, false));
     settle_jumps(body);
     // A `let` declared first, its one write now beside it, what a loop
     // held: a `const` there.
@@ -257,6 +256,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     declarations(body);
     // `x != null && typeof x === "string"`: the `typeof` test, which says it.
     js::each_expr_mut(body, &mut typeof_tests);
+    // A loop's early `break`s, its tests read in place now, and its test.
+    js::statement_lists(body, &mut |stmts| early_breaks(stmts, true));
     // A loop's test those read in place now, `while (true) { if (!(m.length
     // > n)) { .. } }`'s of `const _7 = m.length;`.
     js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
@@ -312,7 +313,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
-    loop_exits(body, returns, written, valued);
     js::statement_lists(body, &mut crate::lower::std_types::map::counted_entries);
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.

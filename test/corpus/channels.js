@@ -28,8 +28,7 @@ function produce(tx) {
       throw error;
     }
     if (tmp == null) {
-      $dropSender(tx);
-      return;
+      break;
     }
     const id = tmp;
     let tmp$1;
@@ -46,6 +45,7 @@ function produce(tx) {
       throw error;
     }
   }
+  $dropSender(tx);
 }
 
 function drain(rx) {

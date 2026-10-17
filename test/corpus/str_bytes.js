@@ -20,14 +20,11 @@ function leading_number(line) {
   let value;
   while (true) {
     const b = $peek(bytes);
-    if (b != null) {
-      if (48 <= b && b <= 57) {
-        value = ((Math.imul(value ?? 0, 10) >>> 0) + ((b - 48) & 255)) >>> 0;
-        $next(bytes);
-        continue;
-      }
+    if (b == null || 48 > b || b > 57) {
+      break;
     }
-    break;
+    value = ((Math.imul(value ?? 0, 10) >>> 0) + ((b - 48) & 255)) >>> 0;
+    $next(bytes);
   }
   return value;
 }

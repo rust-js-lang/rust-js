@@ -110,21 +110,21 @@ function flagsDisplay_fmt(flags, options) {
   ]);
   while (true) {
     const value = $next(iter);
-    if (value) {
-      const bit = value[0];
-      const name = value[1];
-      if ((flags[0] & bit) !== 0) {
-        if (!first) {
-          f += " | ";
-        }
-        f += name;
-        first = false;
+    if (!value) {
+      break;
+    }
+    const bit = value[0];
+    const name = value[1];
+    if ((flags[0] & bit) !== 0) {
+      if (!first) {
+        f += " | ";
       }
-    } else {
-      f += ".";
-      return f;
+      f += name;
+      first = false;
     }
   }
+  f += ".";
+  return f;
 }
 
 export function bitsLowerHex(TLowerHex) {

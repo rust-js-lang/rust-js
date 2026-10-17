@@ -133,17 +133,18 @@ export function inclusive(n) {
   while (true) {
     const i = $rangeInclusiveNext(iter);
     if (i == null) {
-      const down = $range(0, n + 1).toReversed();
-      return [
-        total,
-        down,
-        $lazyRange(1, n + 1)
-          .map((x) => Math.imul(x, x) >>> 0)
-          .reduce((a, b) => (a + b) >>> 0, 0),
-      ];
+      break;
     }
     total = (total + i) >>> 0;
   }
+  const down = $range(0, n + 1).toReversed();
+  return [
+    total,
+    down,
+    $lazyRange(1, n + 1)
+      .map((x) => Math.imul(x, x) >>> 0)
+      .reduce((a, b) => (a + b) >>> 0, 0),
+  ];
 }
 
 export function order_number(a, b) {

@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a let-else's written continue"],
   },
   {
-    name: "mir-every-loop-valued",
-    breaks: "every MIR loop counts as one a `break` gives a value",
-    file: "src/lower/mir/hints.rs",
-    find: "matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never()",
-    replace: "matches!(e.kind, thir::ExprKind::Loop { .. })",
-    tests: ["test/lowering.test.ts"],
-  },
-  {
     name: "mir-label-of-scope",
     breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
     file: "src/lower/mir/hints.rs",

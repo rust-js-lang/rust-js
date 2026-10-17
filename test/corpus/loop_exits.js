@@ -12,7 +12,7 @@ function text_in(root, path) {
   while (true) {
     const part = $next(parts);
     if (part == null) {
-      return;
+      break;
     }
     const value = dir.get(part);
     if (!value) {
@@ -31,13 +31,14 @@ function text_in(root, path) {
     }
     return;
   }
+  return;
 }
 
 function first_big(v) {
   while (true) {
     const x = v.pop();
     if (x == null) {
-      return 0;
+      break;
     }
     const y = Math.imul(x, 2) >>> 0;
     if (y < 10) {
@@ -45,6 +46,7 @@ function first_big(v) {
     }
     return y;
   }
+  return 0;
 }
 
 function small_sum(v, flag) {
@@ -69,7 +71,7 @@ function once(v) {
   while (true) {
     const x = v.pop();
     if (x == null) {
-      return (n + 100) >>> 0;
+      break;
     }
     if (x === 0) {
       continue;
@@ -79,6 +81,7 @@ function once(v) {
     }
     return n;
   }
+  return (n + 100) >>> 0;
 }
 
 function shadowed(v) {
@@ -86,7 +89,7 @@ function shadowed(v) {
   while (true) {
     const x = v.pop();
     if (x == null) {
-      return n;
+      break;
     }
     const y = (x + 1) >>> 0;
     if (y === 1) {
@@ -98,6 +101,7 @@ function shadowed(v) {
     }
     return (n + y) >>> 0;
   }
+  return n;
 }
 
 function first_large(v) {
@@ -117,7 +121,7 @@ function stopped(v) {
     const t = v.pop();
     if (t != null) {
       if (t === 0) {
-        return (n + 100) >>> 0;
+        break;
       }
       if (t < 5) {
         n = (n + t) >>> 0;
@@ -126,6 +130,7 @@ function stopped(v) {
     }
     return n;
   }
+  return (n + 100) >>> 0;
 }
 
 function float_sum(v) {
@@ -133,13 +138,14 @@ function float_sum(v) {
   while (true) {
     const x = v.pop();
     if (x == null) {
-      return total;
+      break;
     }
     if (!(x < 50)) {
       return -1;
     }
     total += x;
   }
+  return total;
 }
 
 function main() {

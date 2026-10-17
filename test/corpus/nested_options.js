@@ -137,33 +137,33 @@ function main() {
   while (true) {
     const value = $pop(stack);
     if (value == null) {
-      const value = $nextSome($lent($iter(table)).filter((x) => x == null));
-      const value$1 = $nextSome($lent($iter(table)).filter((x) => x === 2));
-      console.log(
-        `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
-      );
-      const nested = [1, $some(undefined), undefined];
-      console.log(
-        `[${nested
-          .map((o) => $someValue(o))
-          .map((item) => (item == null ? "None" : `Some(${item})`))
-          .join(", ")}]`,
-      );
-      const value$2 = $someValue($some($some(undefined)));
-      const value$3 = $someValue($some($some($some(undefined))));
-      console.log(
-        `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`} ${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value$3))})`}`,
-      );
-      const value$4 = flat($some($some(undefined)));
-      const value$5 = flat($some(undefined));
-      console.log(
-        `${value$4 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$4))})`} ${value$5 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$5))})`}`,
-      );
-      return;
+      break;
     }
     const top = $someValue(value);
     console.log(`${top == null ? "None" : `Some(${unitDebug_fmt($someValue(top))})`}`);
   }
+  const value$16 = $nextSome($lent($iter(table)).filter((x) => x == null));
+  const value$17 = $nextSome($lent($iter(table)).filter((x) => x === 2));
+  console.log(
+    `${value$16 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$16))})`} ${value$17 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$17))})`}`,
+  );
+  const nested = [1, $some(undefined), undefined];
+  console.log(
+    `[${nested
+      .map((o) => $someValue(o))
+      .map((item) => (item == null ? "None" : `Some(${item})`))
+      .join(", ")}]`,
+  );
+  const value$18 = $someValue($some($some(undefined)));
+  const value$19 = $someValue($some($some($some(undefined))));
+  console.log(
+    `${value$18 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$18))})`} ${value$19 == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value$19))})`}`,
+  );
+  const value$20 = flat($some($some(undefined)));
+  const value$21 = flat($some(undefined));
+  console.log(
+    `${value$20 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$20))})`} ${value$21 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$21))})`}`,
+  );
 }
 
 function flat(o) {

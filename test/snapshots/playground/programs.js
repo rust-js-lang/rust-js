@@ -113,37 +113,55 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const css = [];
   const iter = $iter(sources);
   let tmp;
-  let tmp$1;
   while (true) {
     const value$1 = $next(iter);
     if (!value$1) {
-      const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
-      const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
-      const external = [];
-      for (const [path, code] of sources) {
-        for (const [, specifier] of Array.from(code.matchAll(imports))) {
-          const target = resolve(path, specifier);
-          tmp = $iter(sources);
-          if (!$lent(tmp).some(([p]) => p === target) && !external.includes(specifier)) {
-            external.push(specifier);
-          }
-        }
+      break;
+    }
+    for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
+      tmp = $iter(styles);
+      const value = $lent(tmp).find(([name]) => name === specifier);
+      if (value && !css.includes(value[1])) {
+        css.push(value[1]);
       }
-      if (external.length !== 0) {
-        return { TAG: "Blocked", _0: external };
+    }
+    const known = styles.map(([name]) => name);
+    const value = value$1[1].replace(cssImports, (whole, specifier) => {
+      if (known.includes(specifier)) {
+        return "";
       }
-      const report = (message) => `parent.postMessage({ run: ${run}, ${message} }, "*")`;
-      const linked = link(sources);
-      const entry = JSON.stringify(`rust-js:${runnable}`);
-      const start = test
-        ? `await import(${entry});\n${TEST_RUNNER}`
-        : `const root = await import(${entry});\nawait root.main();`;
-      const finished = test
-        ? report('tested: { passed: count("pass"), failed: count("fail"), ignored: count("skip") }')
-        : report("ran: true");
-      return {
-        TAG: "Page",
-        _0: `${FRAME_HEAD}
+      return whole;
+    });
+    value$1[1] = value;
+  }
+  const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
+  const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
+  const external = [];
+  let tmp$1;
+  for (const [path, code] of sources) {
+    for (const [, specifier] of Array.from(code.matchAll(imports))) {
+      const target = resolve(path, specifier);
+      tmp$1 = $iter(sources);
+      if (!$lent(tmp$1).some(([p]) => p === target) && !external.includes(specifier)) {
+        external.push(specifier);
+      }
+    }
+  }
+  if (external.length !== 0) {
+    return { TAG: "Blocked", _0: external };
+  }
+  const report = (message) => `parent.postMessage({ run: ${run}, ${message} }, "*")`;
+  const linked = link(sources);
+  const entry = JSON.stringify(`rust-js:${runnable}`);
+  const start = test
+    ? `await import(${entry});\n${TEST_RUNNER}`
+    : `const root = await import(${entry});\nawait root.main();`;
+  const finished = test
+    ? report('tested: { passed: count("pass"), failed: count("fail"), ignored: count("skip") }')
+    : report("ran: true");
+  return {
+    TAG: "Page",
+    _0: `${FRAME_HEAD}
 ${look}
 <div id="app"></div>
 ${linked}
@@ -167,24 +185,7 @@ ${start}
     ${report("error: String(e)")};
   }
 <\/script>`,
-      };
-    }
-    for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
-      tmp$1 = $iter(styles);
-      const value = $lent(tmp$1).find(([name]) => name === specifier);
-      if (value && !css.includes(value[1])) {
-        css.push(value[1]);
-      }
-    }
-    const known = styles.map(([name]) => name);
-    const value = value$1[1].replace(cssImports, (whole, specifier) => {
-      if (known.includes(specifier)) {
-        return "";
-      }
-      return whole;
-    });
-    value$1[1] = value;
-  }
+  };
 }
 
 export function outcome(report) {

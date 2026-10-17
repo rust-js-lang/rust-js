@@ -51,7 +51,7 @@ function equalNamesIterator_next(equalNames) {
   while (true) {
     const value = namesIterator_next(iter);
     if (!value) {
-      return;
+      break;
     }
     const n = value[0];
     const bits = value[1];
@@ -59,6 +59,7 @@ function equalNamesIterator_next(equalNames) {
       return n;
     }
   }
+  return;
 }
 
 function main() {
@@ -78,17 +79,17 @@ function main() {
   const iter = all;
   while (true) {
     const value = namesIterator_next(iter);
-    if (value) {
-      const n = value[0];
-      if (n !== "B") {
-        continue;
-      }
+    if (!value) {
+      break;
     }
-    const value$1 = namesIterator_next(all);
-    console.log(
-      `${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} ${all.at}`,
-    );
-    return;
+    const n = value[0];
+    if (n === "B") {
+      break;
+    }
   }
+  const value$4 = namesIterator_next(all);
+  console.log(
+    `${value$4 == null ? "None" : `Some((${$debugStr(value$4[0])}, ${value$4[1]}))`} ${all.at}`,
+  );
 }
 //# sourceMappingURL=case.js.map

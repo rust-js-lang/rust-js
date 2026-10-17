@@ -73,56 +73,55 @@ function main() {
     const word = take_word(input);
     text = input.value;
     if (!word) {
-      console.log("");
-      const w = [1, 2, 3, 4, 5, 6];
-      let rest = w;
-      const split = $sliceSplitOffMut(rest, 2);
-      rest = split[0];
-      const head = split[1];
-      if (head) {
-        head[$at(head, 0)] = 10;
-      }
-      const split$1 = $sliceSplitOffEndMut(rest, false, true);
-      rest = split$1[0];
-      const first = split$1[1];
-      if (first != null) {
-        first.value = Math.imul(first.value, 100);
-      }
-      const split$2 = $sliceSplitOffEndMut(rest, true, true);
-      rest = split$2[0];
-      const last = split$2[1];
-      if (last != null) {
-        last.value = -1;
-      }
-      rest.reverse();
-      console.log(`[${w.map((item) => String(item)).join(", ")}]`);
-      const names = ["a", "b"];
-      let all = names;
-      const split$3 = $sliceSplitOffEndMut(all, true, true);
-      all = split$3[0];
-      const name = split$3[1];
-      if (name != null) {
-        name.value += "!";
-      }
-      const length = all.length;
-      if (0 >= length) {
-        throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
-      }
-      const all$1 = all;
-      all$1[0] += "?";
-      console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-      let none = [];
-      const split$4 = $sliceSplitOffEndMut(none, false, true);
-      none = split$4[0];
-      const value = split$4[1];
-      const split$5 = $sliceSplitOffMut(none, 1, true);
-      none = split$5[0];
-      console.log(
-        `${value == null ? "None" : `Some(${value.value})`} ${split$5[1] == null ? "None" : `Some([${split$5[1].map((item) => String(item)).join(", ")}])`}`,
-      );
-      return;
+      break;
     }
     $print(`${word.length} `);
   }
+  console.log("");
+  const w = [1, 2, 3, 4, 5, 6];
+  let rest = w;
+  const split$7 = $sliceSplitOffMut(rest, 2);
+  rest = split$7[0];
+  const head = split$7[1];
+  if (head) {
+    head[$at(head, 0)] = 10;
+  }
+  const split$8 = $sliceSplitOffEndMut(rest, false, true);
+  rest = split$8[0];
+  const first = split$8[1];
+  if (first != null) {
+    first.value = Math.imul(first.value, 100);
+  }
+  const split$9 = $sliceSplitOffEndMut(rest, true, true);
+  rest = split$9[0];
+  const last = split$9[1];
+  if (last != null) {
+    last.value = -1;
+  }
+  rest.reverse();
+  console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+  const names = ["a", "b"];
+  let all = names;
+  const split$10 = $sliceSplitOffEndMut(all, true, true);
+  all = split$10[0];
+  const name = split$10[1];
+  if (name != null) {
+    name.value += "!";
+  }
+  const length = all.length;
+  if (0 >= length) {
+    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+  }
+  all[0] += "?";
+  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+  let none = [];
+  const split$11 = $sliceSplitOffEndMut(none, false, true);
+  none = split$11[0];
+  const value$1 = split$11[1];
+  const split$12 = $sliceSplitOffMut(none, 1, true);
+  none = split$12[0];
+  console.log(
+    `${value$1 == null ? "None" : `Some(${value$1.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].map((item) => String(item)).join(", ")}])`}`,
+  );
 }
 //# sourceMappingURL=case.js.map

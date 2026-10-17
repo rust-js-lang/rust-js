@@ -298,6 +298,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **`[package.metadata.rust-js.format]` is gone**: the app's Prettier lays
   out what rust-js writes; move its options to `.prettierrc`
   ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
+- **What's written after a loop is after it**: what MIR moved into a
+  loop's one way out is a `break` there and the statements after the loop,
+  and a `while let`'s exit is its first test, `if (c == null || ..) {
+  break; }` ([ADR 0433](docs/decisions/0433-whats-written-after-a-loop-is-after-it.md)).
 - **A `return` is written where its value is made**: a `?` or a `return
   Err(..)` inside a loop or a `match`, which went through a variable, a
   labeled block and a `return` after it, is `return v;` where it's made,

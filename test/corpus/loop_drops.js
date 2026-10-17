@@ -35,7 +35,7 @@ function first_long(items) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
-      return;
+      break;
     }
     const item = tmp;
     if ($byteLen(item[0]) > 2) {
@@ -71,6 +71,7 @@ function first_long(items) {
       throw error;
     }
   }
+  return;
 }
 
 function main() {
@@ -402,15 +403,16 @@ function main() {
                                     continue;
                                   }
                                 }
-                                tmp$13 = undefined;
-                                tmp$13 = [["s"], ["long"], ["rest"]];
-                                const value = first_long(tmp$13);
-                                console.log(
-                                  `${value == null ? "None" : `Some(${$debugStr(value)})`}`,
-                                );
-                                console.log("end");
-                                return;
+                                break;
                               }
+                              tmp$13 = undefined;
+                              tmp$13 = [["s"], ["long"], ["rest"]];
+                              const value = first_long(tmp$13);
+                              console.log(
+                                `${value == null ? "None" : `Some(${$debugStr(value)})`}`,
+                              );
+                              console.log("end");
+                              return;
                             }
                           }
                           n = tmp$7;

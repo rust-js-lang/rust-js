@@ -72,15 +72,15 @@ function storeDisplay_fmt(store) {
   const iter = $iter(items);
   while (true) {
     const value = $next(iter);
-    if (value) {
-      const name = value[0];
-      const qty = value[1];
-      f += `${name}=${qty} `;
-    } else {
-      f += `| ${$toFixed(store.revenue, 2)}`;
-      return f;
+    if (!value) {
+      break;
     }
+    const name = value[0];
+    const qty = value[1];
+    f += `${name}=${qty} `;
   }
+  f += `| ${$toFixed(store.revenue, 2)}`;
+  return f;
 }
 
 export const Store = {
@@ -201,12 +201,6 @@ export function report() {
   while (true) {
     const top = stack.pop();
     if (top == null) {
-      out += `[${popped.map((item) => String(item)).join(", ")}]\n`;
-      out += `[${tallies(["a", "b", "a", "b", "c"])
-        .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
-        .join(", ")}] [${bands([0, 3, 42, 150, 250])
-        .map((item) => $debugStr(item))
-        .join(", ")}]\n`;
       break;
     }
     if (top === 2) {
@@ -214,6 +208,12 @@ export function report() {
     }
     popped.push(top);
   }
+  out += `[${popped.map((item) => String(item)).join(", ")}]\n`;
+  out += `[${tallies(["a", "b", "a", "b", "c"])
+    .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
+    .join(", ")}] [${bands([0, 3, 42, 150, 250])
+    .map((item) => $debugStr(item))
+    .join(", ")}]\n`;
   return out;
 }
 

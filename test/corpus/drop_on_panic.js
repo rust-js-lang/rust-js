@@ -26,15 +26,7 @@ function count(to) {
       throw error;
     }
     if (tmp == null) {
-      const _never = [200];
-      try {
-        noisyDrop_drop(_never);
-      } catch (error) {
-        noisyDrop_drop(_outer);
-        throw error;
-      }
-      noisyDrop_drop(_outer);
-      return;
+      break;
     }
     const i = tmp;
     const _step = [i];
@@ -54,6 +46,14 @@ function count(to) {
       throw error;
     }
   }
+  const _never = [200];
+  try {
+    noisyDrop_drop(_never);
+  } catch (error) {
+    noisyDrop_drop(_outer);
+    throw error;
+  }
+  noisyDrop_drop(_outer);
 }
 
 function main() {

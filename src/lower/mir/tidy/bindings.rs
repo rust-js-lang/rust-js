@@ -1024,10 +1024,12 @@ pub(super) fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
     assigned
 }
 
-/// The names `stmts` declare, not in blocks inside them.
+/// The names `stmts` declare, a destructuring's too, not in blocks inside
+/// them.
 pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
-    stmts.iter().filter_map(|s| match &s.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => Some(name.as_str()),
-        _ => None,
+    stmts.iter().flat_map(|s| match &s.kind {
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
+        StmtKind::Destructure { pattern, .. } => pattern.names(),
+        _ => Vec::new(),
     })
 }

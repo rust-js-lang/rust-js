@@ -113,8 +113,7 @@ function publish(bus, msg) {
       throw error;
     }
     if (tmp == null) {
-      $unborrow(b);
-      return;
+      break;
     }
     const id = tmp;
     try {
@@ -124,6 +123,7 @@ function publish(bus, msg) {
       throw error;
     }
   }
+  $unborrow(b);
 }
 
 const Component = {

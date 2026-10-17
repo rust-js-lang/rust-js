@@ -41,34 +41,33 @@ function main() {
   const part = $iter($mutItems($view(v, 2)));
   while (true) {
     const x = $next(part);
-    if (x != null) {
-      x.value = -x.value | 0;
-    } else {
-      console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-      const names = ["a", "b", "c"];
-      const each = $iter($mutItems(names));
-      const value = $unwrap($next(each));
-      value.value += "!";
-      const rest = each.toArray();
-      for (const name of rest) {
-        name.value = $insertStr(name.value, 0, ">");
-      }
-      console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-      const points = [{ x: 1 }, { x: 2 }];
-      const walk = $iter(points);
-      $unwrap($nextBack(walk)).x = 9;
-      console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
-      const queue = [1, 2, 3];
-      queue.unshift(0);
-      const q = Iterator.from($mutItems(queue));
-      const value$1 = $unwrap($next(q));
-      value$1.value = (value$1.value + 10) & 255;
-      for (const x of q) {
-        x.value = (x.value * 2) & 255;
-      }
-      console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
-      return;
+    if (x == null) {
+      break;
     }
+    x.value = -x.value | 0;
   }
+  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  const names = ["a", "b", "c"];
+  const each = $iter($mutItems(names));
+  const value = $unwrap($next(each));
+  value.value += "!";
+  const rest = each.toArray();
+  for (const name of rest) {
+    name.value = $insertStr(name.value, 0, ">");
+  }
+  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+  const points = [{ x: 1 }, { x: 2 }];
+  const walk = $iter(points);
+  $unwrap($nextBack(walk)).x = 9;
+  console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
+  const queue = [1, 2, 3];
+  queue.unshift(0);
+  const q = Iterator.from($mutItems(queue));
+  const value$1 = $unwrap($next(q));
+  value$1.value = (value$1.value + 10) & 255;
+  for (const x of q) {
+    x.value = (x.value * 2) & 255;
+  }
+  console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -76,8 +76,8 @@ function main() {
         continue;
       }
     }
-    console.log(`${y} ${n}`);
-    return;
+    break;
   }
+  console.log(`${y} ${n}`);
 }
 //# sourceMappingURL=case.js.map

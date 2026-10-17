@@ -394,22 +394,23 @@ export function iterations() {
   while (true) {
     const x = countdownIterator_next(iter);
     if (x == null) {
-      const c = { n: 2 };
-      const first = countdownIterator_next(c) ?? 0;
-      return [
-        total,
-        first,
-        $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
-        $iterator(fibonacci(), fibonacciIterator_next)
-          .take(5)
-          .map((x) => Math.imul(x, 2) >>> 0)
-          .reduce((a, b) => (a + b) >>> 0, 0),
-        $iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0),
-        $lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50),
-      ];
+      break;
     }
     total = (total + x) >>> 0;
   }
+  const c = { n: 2 };
+  const first = countdownIterator_next(c) ?? 0;
+  return [
+    total,
+    first,
+    $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
+    $iterator(fibonacci(), fibonacciIterator_next)
+      .take(5)
+      .map((x) => Math.imul(x, 2) >>> 0)
+      .reduce((a, b) => (a + b) >>> 0, 0),
+    $iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0),
+    $lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50),
+  ];
 }
 
 export function generic_iterations() {

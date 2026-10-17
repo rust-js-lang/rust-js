@@ -107,36 +107,34 @@ function main() {
   while (true) {
     const x = $rangeInclusiveNext(iter);
     if (x == null) {
-      console.log(
-        `[${ring.items.map((item) => String(item)).join(", ")}] ${Ring.capacity(ring, 2)}`,
-      );
-      console.log(`${flag(true, "x")} ${flag(false, "y")}`);
-      console.log(
-        `[${scaled([1, 2], 3)
-          .map((item) => String(item))
-          .join(", ")}]`,
-      );
-      const big = Ring.new(5);
-      console.log(
-        `${shown(ring, ringShow(2))} ${shown(big, ringShow(5))} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`,
-      );
-      const all = [
-        { value: ring, impl: ringShow(2) },
-        { value: big, impl: ringShow(5) },
-      ];
-      console.log(
-        `[${all
-          .map((s) => s.impl.show(s.value))
-          .map((item) => $debugStr(item))
-          .join(", ")}]`,
-      );
-      console.log(
-        `${shown(undefined, gridShow(2, 3))} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, gridShow(2, 3))}`,
-      );
-      console.log(`${count(4)}`);
-      return;
+      break;
     }
     Ring.push(ring, x, 2);
   }
+  console.log(`[${ring.items.map((item) => String(item)).join(", ")}] ${Ring.capacity(ring, 2)}`);
+  console.log(`${flag(true, "x")} ${flag(false, "y")}`);
+  console.log(
+    `[${scaled([1, 2], 3)
+      .map((item) => String(item))
+      .join(", ")}]`,
+  );
+  const big = Ring.new(5);
+  console.log(
+    `${shown(ring, ringShow(2))} ${shown(big, ringShow(5))} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`,
+  );
+  const all = [
+    { value: ring, impl: ringShow(2) },
+    { value: big, impl: ringShow(5) },
+  ];
+  console.log(
+    `[${all
+      .map((s) => s.impl.show(s.value))
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `${shown(undefined, gridShow(2, 3))} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, gridShow(2, 3))}`,
+  );
+  console.log(`${count(4)}`);
 }
 //# sourceMappingURL=case.js.map

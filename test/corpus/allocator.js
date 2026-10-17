@@ -91,38 +91,7 @@ function main() {
       throw error;
     }
     if (tmp == null) {
-      let last;
-      try {
-        last = Buf.pop(b);
-      } catch (error) {
-        if (b$live) {
-          bufDrop_drop(b, 12, 4);
-        }
-        throw error;
-      }
-      try {
-        console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
-      } catch (error) {
-        if (b$live) {
-          bufDrop_drop(b, 12, 4);
-        }
-        throw error;
-      }
-      b$live = false;
-      const v = Buf.into_vec(b);
-      console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
-      const n = Buf.with_capacity(2, 4, 4);
-      try {
-        Buf.push(n, 7, 4, 4);
-      } catch (error) {
-        bufDrop_drop(n, 4, 4);
-        throw error;
-      }
-      bufDrop_drop(n, 4, 4);
-      const l = layout_array(3, 8, 8);
-      const value = $layout(8, 3);
-      console.log(`${$debugLayout(l)} ${l.size} ${value.TAG === "Err"}`);
-      return;
+      break;
     }
     const w = tmp;
     let tmp$1;
@@ -145,5 +114,36 @@ function main() {
       throw error;
     }
   }
+  let last;
+  try {
+    last = Buf.pop(b);
+  } catch (error) {
+    if (b$live) {
+      bufDrop_drop(b, 12, 4);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
+  } catch (error) {
+    if (b$live) {
+      bufDrop_drop(b, 12, 4);
+    }
+    throw error;
+  }
+  b$live = false;
+  const v = Buf.into_vec(b);
+  console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
+  const n = Buf.with_capacity(2, 4, 4);
+  try {
+    Buf.push(n, 7, 4, 4);
+  } catch (error) {
+    bufDrop_drop(n, 4, 4);
+    throw error;
+  }
+  bufDrop_drop(n, 4, 4);
+  const l = layout_array(3, 8, 8);
+  const value = $layout(8, 3);
+  console.log(`${$debugLayout(l)} ${l.size} ${value.TAG === "Err"}`);
 }
 //# sourceMappingURL=case.js.map

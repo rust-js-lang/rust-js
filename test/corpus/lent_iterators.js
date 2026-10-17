@@ -41,13 +41,10 @@ function word(it) {
   let s = "";
   while (true) {
     const c = $next(it);
-    if (c != null) {
-      if (c !== " ") {
-        s += c;
-        continue;
-      }
+    if (c == null || c === " ") {
+      break;
     }
-    break;
+    s += c;
   }
   return s;
 }

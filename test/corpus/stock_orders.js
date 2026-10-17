@@ -73,13 +73,13 @@ export function stockErrorDisplay() {
 }
 
 function stockErrorDisplay_fmt(stockError, options) {
-  if (stockError.TAG !== "UnknownSku") {
-    if (stockError.TAG === "OutOfStock") {
-      return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
-    }
-    return "an order needs a line";
+  if (stockError.TAG === "UnknownSku") {
+    return `no item ${stockError._0}`;
   }
-  return `no item ${stockError._0}`;
+  if (stockError.TAG === "OutOfStock") {
+    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
+  }
+  return "an order needs a line";
 }
 
 function linePriced() {
@@ -244,80 +244,79 @@ function main() {
   while (true) {
     const text = queue.shift();
     if (text == null) {
-      console.log(
-        `low stock: [${Inventory.low_stock(inventory, 3)
-          .map((item) => $debugStr(item))
-          .join(", ")}]`,
-      );
-      console.log(`log: ${inventory.log.join("; ")}`);
-      const mean =
-        Number(totals.reduce((a, b) => BigInt.asUintN(64, a + b), 0n)) / totals.length / 100;
-      const length = totals.length;
-      const c = $max(totals);
-      console.log(
-        `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(c != null ? money(c) : undefined)}`,
-      );
-      const seen = new Set();
-      const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
-      const key = (name) => [$byteLen(name), name];
-      names.sort((a, b) => {
-        const left = key(a);
-        const right = key(b);
-        return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
-      });
-      $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
-      console.log(`first letters: ${names.join(",")}`);
-      const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
-      prices.sort((a, b) => a - b);
-      $dedup(prices);
-      const value = $binarySearch(prices, 1899);
-      const value$1 = $binarySearch(prices, 2000);
-      console.log(
-        `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}, 2000 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`,
-      );
-      const restock = new Map([
-        ["KNF-4", 6],
-        ["SAW-2", 2],
-      ]);
-      const restocked = Array.from(inventory.items)
-        .map(([sku, item]) => {
-          const value = restock.get(sku);
-          if (value == null) {
-            return;
-          }
-          item.stock = (item.stock + value) >>> 0;
-          return [sku, item.stock];
-        })
-        .filter(Boolean);
-      restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-      const arg = money(Inventory.value_cents(inventory));
-      console.log(
-        `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg}`,
-      );
-      return;
+      break;
     }
-    const value$1 = parse_order(text);
-    if (value$1.TAG === "Ok") {
-      const parsed = value$1._0;
+    const value = parse_order(text);
+    if (value.TAG === "Ok") {
+      const parsed = value._0;
       const order = parsed.map(([sku, n]) => [sku, n]);
-      const value = Inventory.place(inventory, order);
-      if (value.TAG === "Ok") {
-        const total = value._0
+      const value$1 = Inventory.place(inventory, order);
+      if (value$1.TAG === "Ok") {
+        const total = value$1._0
           .map((arg0) => linePriced().total_cents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
-        const skus = value._0.map((line) => line.sku);
+        const skus = value$1._0.map((line) => line.sku);
         console.log(
           `placed [${skus.map((item) => $debugStr(item)).join(", ")}] for ${money(total)}`,
         );
       } else {
         console.log(
-          `refused: ${stockErrorDisplay_fmt(value._0)} (${stockErrorDebug_fmt(value._0)})`,
+          `refused: ${stockErrorDisplay_fmt(value$1._0)} (${stockErrorDebug_fmt(value$1._0)})`,
         );
       }
     } else {
-      console.log(`bad order: ${value$1._0}`);
+      console.log(`bad order: ${value._0}`);
     }
   }
+  console.log(
+    `low stock: [${Inventory.low_stock(inventory, 3)
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  console.log(`log: ${inventory.log.join("; ")}`);
+  const mean = Number(totals.reduce((a, b) => BigInt.asUintN(64, a + b), 0n)) / totals.length / 100;
+  const length = totals.length;
+  const c = $max(totals);
+  console.log(
+    `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(c != null ? money(c) : undefined)}`,
+  );
+  const seen = new Set();
+  const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
+  const key = (name) => [$byteLen(name), name];
+  names.sort((a, b) => {
+    const left = key(a);
+    const right = key(b);
+    return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
+  });
+  $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
+  console.log(`first letters: ${names.join(",")}`);
+  const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
+  prices.sort((a, b) => a - b);
+  $dedup(prices);
+  const value$1 = $binarySearch(prices, 1899);
+  const value = $binarySearch(prices, 2000);
+  console.log(
+    `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
+  );
+  const restock = new Map([
+    ["KNF-4", 6],
+    ["SAW-2", 2],
+  ]);
+  const restocked = Array.from(inventory.items)
+    .map(([sku, item]) => {
+      const value = restock.get(sku);
+      if (value == null) {
+        return;
+      }
+      item.stock = (item.stock + value) >>> 0;
+      return [sku, item.stock];
+    })
+    .filter(Boolean);
+  restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
+  const arg = money(Inventory.value_cents(inventory));
+  console.log(
+    `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg}`,
+  );
 }
 //# sourceMappingURL=case.js.map

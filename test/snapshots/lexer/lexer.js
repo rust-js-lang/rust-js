@@ -36,15 +36,15 @@ export const Lexer = {
     let n = $unwrap($toDigit(first, 10));
     while (true) {
       const c = $peek(lexer.chars);
-      if (c != null) {
-        const d = $toDigit(c, 10);
-        if (d != null) {
-          n = ((Math.imul(n, 10) >>> 0) + d) >>> 0;
-          $next(lexer.chars);
-          continue;
-        }
+      if (c == null) {
+        break;
       }
-      break;
+      const d = $toDigit(c, 10);
+      if (d == null) {
+        break;
+      }
+      n = ((Math.imul(n, 10) >>> 0) + d) >>> 0;
+      $next(lexer.chars);
     }
     return n;
   },
@@ -65,7 +65,7 @@ export const Lexer = {
     while (true) {
       const c = $next(lexer.chars);
       if (c == null) {
-        return { TAG: "Ok", _0: out };
+        break;
       }
       bb67: {
         if (c === "\n") {
@@ -89,11 +89,12 @@ export const Lexer = {
                         return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
                       }
                       if (ch === '"') {
-                        out.push({ TAG: "Str", _0: s });
-                        break bb67;
+                        break;
                       }
                       s += ch;
                     }
+                    out.push({ TAG: "Str", _0: s });
+                    break bb67;
                   }
                   if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
                     while (true) {
@@ -113,6 +114,7 @@ export const Lexer = {
         }
       }
     }
+    return { TAG: "Ok", _0: out };
   },
 };
 
@@ -122,13 +124,13 @@ export function pairs(v) {
   while (true) {
     const a = $next(it);
     const b = $next(it);
-    if (a != null && b != null) {
-      out.push([a, b]);
-      continue;
+    if (a == null || b == null) {
+      break;
     }
-    const rest = it.toArray();
-    return [out, rest];
+    out.push([a, b]);
   }
+  const rest = it.toArray();
+  return [out, rest];
 }
 
 export function capitalize(s) {

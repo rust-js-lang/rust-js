@@ -170,18 +170,7 @@ function main() {
       throw error;
     }
     if (!tmp) {
-      try {
-        console.log("end");
-      } catch (error) {
-        for (const item of all) {
-          item.impl.$drop?.(item.value);
-        }
-        throw error;
-      }
-      for (const item of all) {
-        item.impl.$drop?.(item.value);
-      }
-      return;
+      break;
     }
     const i = tmp[0];
     const t = tmp[1];
@@ -202,6 +191,17 @@ function main() {
       }
       throw error;
     }
+  }
+  try {
+    console.log("end");
+  } catch (error) {
+    for (const item of all) {
+      item.impl.$drop?.(item.value);
+    }
+    throw error;
+  }
+  for (const item of all) {
+    item.impl.$drop?.(item.value);
   }
 }
 //# sourceMappingURL=case.js.map

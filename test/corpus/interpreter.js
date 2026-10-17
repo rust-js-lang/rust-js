@@ -96,12 +96,11 @@ const Lexer = {
   },
   tokens(lexer) {
     const out = [];
-    let tmp;
     let token;
-    bb2: while (true) {
+    while (true) {
       const c = $peek(lexer.chars);
       if (c == null) {
-        return { TAG: "Ok", _0: out };
+        break;
       }
       if (/^\p{White_Space}$/u.test(c)) {
         Lexer.bump(lexer);
@@ -111,38 +110,31 @@ const Lexer = {
         let text = "";
         while (true) {
           const d = $peek(lexer.chars);
-          if (d != null) {
-            if (/^[0-9]$/.test(d) || d === ".") {
-              text += d;
-              Lexer.bump(lexer);
-              continue;
-            }
+          if (d == null || (!/^[0-9]$/.test(d) && d !== ".")) {
+            break;
           }
-          out.push({
-            TAG: "Num",
-            _0: $unwrapOk($parseF64(text), undefined, (e) =>
-              $debugParseError(e, "ParseFloatError"),
-            ),
-          });
-          continue bb2;
+          text += d;
+          Lexer.bump(lexer);
         }
+        out.push({
+          TAG: "Num",
+          _0: $unwrapOk($parseF64(text), undefined, (e) => $debugParseError(e, "ParseFloatError")),
+        });
+        continue;
       }
       if (/^\p{Alphabetic}$/u.test(c) || c === "_") {
         let name = "";
         while (true) {
           const d = $peek(lexer.chars);
-          if (d != null) {
-            if (/^[\p{Alphabetic}\p{N}]$/u.test(d) || d === "_") {
-              name += d;
-              Lexer.bump(lexer);
-              continue;
-            }
+          if (d == null || (!/^[\p{Alphabetic}\p{N}]$/u.test(d) && d !== "_")) {
+            break;
           }
-          const value = name;
-          tmp = value === "let" ? "Let" : value === "fn" ? "Fn" : { TAG: "Ident", _0: name };
-          out.push(tmp);
-          continue bb2;
+          name += d;
+          Lexer.bump(lexer);
         }
+        const value = name;
+        out.push(value === "let" ? "Let" : value === "fn" ? "Fn" : { TAG: "Ident", _0: name });
+        continue;
       }
       const at = lexer.pos;
       Lexer.bump(lexer);
@@ -181,6 +173,7 @@ const Lexer = {
       }
       out.push(token);
     }
+    return { TAG: "Ok", _0: out };
   },
 };
 
@@ -235,11 +228,11 @@ const Parser = {
           if (result.TAG === "Err") {
             return result;
           }
-          const result$1 = Parser.expr(parser);
-          if (result$1.TAG === "Err") {
-            return result$1;
+          const result$2 = Parser.expr(parser);
+          if (result$2.TAG === "Err") {
+            return result$2;
           }
-          stmt = { TAG: "Let", _0: name, _1: result$1._0 };
+          stmt = { TAG: "Let", _0: name, _1: result$2._0 };
         } else {
           return {
             TAG: "Err",
@@ -255,9 +248,9 @@ const Parser = {
       }
       stmts.push(stmt);
       if (Parser.peek(parser) != null) {
-        const result$2 = Parser.expect(parser, "Semi");
-        if (result$2.TAG === "Err") {
-          return result$2;
+        const result$3 = Parser.expect(parser, "Semi");
+        if (result$3.TAG === "Err") {
+          return result$3;
         }
       }
     }
@@ -283,21 +276,22 @@ const Parser = {
     let left = result$1._0;
     while (true) {
       const value = Parser.peek(parser);
-      if (value != null && value.TAG === "Op") {
-        const p = Parser.precedence(value._0);
-        if (p > min) {
-          Parser.next(parser);
-          const result = Parser.binary(parser, p);
-          if (result.TAG === "Err") {
-            return result;
-          }
-          const right = result._0;
-          left = { TAG: "Binary", _0: value._0, _1: left, _2: right };
-          continue;
-        }
+      if (value == null || value.TAG !== "Op") {
+        break;
       }
-      return { TAG: "Ok", _0: left };
+      const p = Parser.precedence(value._0);
+      if (p <= min) {
+        break;
+      }
+      Parser.next(parser);
+      const result = Parser.binary(parser, p);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const right = result._0;
+      left = { TAG: "Binary", _0: value._0, _1: left, _2: right };
     }
+    return { TAG: "Ok", _0: left };
   },
   call(parser) {
     const result$1 = Parser.atom(parser);
@@ -324,9 +318,9 @@ const Parser = {
           }
         }
       }
-      const result$1 = Parser.expect(parser, "RParen");
-      if (result$1.TAG === "Err") {
-        return result$1;
+      const result$2 = Parser.expect(parser, "RParen");
+      if (result$2.TAG === "Err") {
+        return result$2;
       }
       e = { TAG: "Call", _0: e, _1: args };
     }
@@ -364,29 +358,29 @@ const Parser = {
         const params = [];
         while (true) {
           const value = Parser.peek(parser);
-          if (value != null && value.TAG === "Ident") {
-            params.push(value._0);
+          if (value == null || value.TAG !== "Ident") {
+            break;
+          }
+          params.push(value._0);
+          Parser.next(parser);
+          if (Parser.peek(parser) === "Comma") {
             Parser.next(parser);
-            if (Parser.peek(parser) === "Comma") {
-              Parser.next(parser);
-            }
-            continue;
           }
-          const result = Parser.expect(parser, "RParen");
-          if (result.TAG === "Err") {
-            return result;
-          }
-          const result$1 = Parser.expect(parser, "Arrow");
-          if (result$1.TAG === "Err") {
-            return result$1;
-          }
-          const result$2 = Parser.expr(parser);
-          if (result$2.TAG === "Err") {
-            return result$2;
-          }
-          const body = result$2._0;
-          return { TAG: "Ok", _0: { TAG: "Lambda", _0: params, _1: body } };
         }
+        const result = Parser.expect(parser, "RParen");
+        if (result.TAG === "Err") {
+          return result;
+        }
+        const result$2 = Parser.expect(parser, "Arrow");
+        if (result$2.TAG === "Err") {
+          return result$2;
+        }
+        const result$3 = Parser.expr(parser);
+        if (result$3.TAG === "Err") {
+          return result$3;
+        }
+        const body = result$3._0;
+        return { TAG: "Ok", _0: { TAG: "Lambda", _0: params, _1: body } };
       }
     }
     return { TAG: "Err", _0: `unexpected ${t == null ? "None" : `Some(${tokenDebug_fmt(t)})`}` };
@@ -401,19 +395,19 @@ export function valueDisplay() {
 }
 
 function valueDisplay_fmt(value) {
-  if (value.TAG !== "Num") {
-    if (value.TAG === "Str") {
-      return value._0;
-    }
-    if (value.TAG === "Bool") {
-      return String(value._0);
-    }
-    if (value.TAG === "Closure") {
-      return `<fn(${value._0.join(", ")})>`;
-    }
-    return `<builtin ${value._0}>`;
+  if (value.TAG === "Num") {
+    return $displayF64(value._0);
   }
-  return $displayF64(value._0);
+  if (value.TAG === "Str") {
+    return value._0;
+  }
+  if (value.TAG === "Bool") {
+    return String(value._0);
+  }
+  if (value.TAG === "Closure") {
+    return `<fn(${value._0.join(", ")})>`;
+  }
+  return `<builtin ${value._0}>`;
 }
 
 const Env = {

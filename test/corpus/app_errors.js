@@ -40,13 +40,13 @@ export function appErrorDisplay() {
 }
 
 function appErrorDisplay_fmt(appError) {
-  if (appError.TAG !== "Parse") {
-    if (appError.TAG === "Missing") {
-      return `missing ${appError._0}`;
-    }
-    return `${appError.field} = ${appError.value} is invalid`;
+  if (appError.TAG === "Parse") {
+    return `parse: ${appError._0}`;
   }
-  return `parse: ${appError._0}`;
+  if (appError.TAG === "Missing") {
+    return `missing ${appError._0}`;
+  }
+  return `${appError.field} = ${appError.value} is invalid`;
 }
 
 export function appErrorError() {

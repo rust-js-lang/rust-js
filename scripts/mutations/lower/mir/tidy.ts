@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     "name": "mir-loop-exit-returned-inside",
     "breaks": "a loop left by `break` before the function's value from MIR returns the value inside the loop",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    loop_exits(body, returns, written, valued);\n",
+    "find": "    js::statement_lists(body, &mut exits_after);\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",

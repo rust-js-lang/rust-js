@@ -19,14 +19,14 @@ function table(out, rows) {
   const iter = { start: 0, end: rows };
   while (true) {
     const i = $rangeNext(iter);
-    if (i != null) {
-      out.value += `row ${i}\n`;
-    } else {
-      out.value += "end";
-      out.value += ".";
-      return;
+    if (i == null) {
+      break;
     }
+    out.value += `row ${i}\n`;
   }
+  out.value += "end";
+  out.value += ".";
+  return;
 }
 
 function main() {

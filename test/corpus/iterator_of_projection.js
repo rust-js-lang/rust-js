@@ -35,14 +35,14 @@ function genDrop_drop(gen, AArray, dropA) {
       if (value != null) {
         AArray.$dropItem?.($someValue(value));
       }
-      console.log(`drained ${n}`);
-      return;
+      break;
     }
     n = (n + 1) | 0;
     if (value != null) {
       AArray.$dropItem?.($someValue(value));
     }
   }
+  console.log(`drained ${n}`);
 }
 
 function main() {

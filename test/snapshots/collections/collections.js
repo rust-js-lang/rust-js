@@ -195,13 +195,14 @@ export function shared(times) {
       throw error;
     }
     if (tmp == null) {
-      const result = [total, v.value.length];
-      $unborrow(v);
-      return result;
+      break;
     }
     const x = tmp;
     total = (total + x) | 0;
   }
+  const result = [total, v.value.length];
+  $unborrow(v);
+  return result;
 }
 
 export function words(s) {
