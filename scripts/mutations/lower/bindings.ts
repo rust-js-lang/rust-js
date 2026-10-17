@@ -294,4 +294,12 @@ export const mutations: Mutation[] = [
     replace: "                true\n",
     tests: ["test/react.test.ts", "-t", "React's names are camelCase"],
   },
+  {
+    name: "props-cache-by-hir-hash",
+    breaks: "this crate found again by rustc's hash of its HIR, which a test build has none of: rustc panics",
+    file: "src/lower/bindings.rs",
+    find: "    let content = match krate == LOCAL_CRATE {\n",
+    replace: "    let content = match false {\n",
+    tests: ["test/manifest.test.ts", "-t", "exports"],
+  },
 ];

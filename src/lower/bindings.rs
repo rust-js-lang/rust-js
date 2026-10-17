@@ -2,7 +2,6 @@
 
 use crate::js;
 use rustc_ast::LitKind;
-use rustc_data_structures::svh::Svh;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
@@ -743,9 +742,9 @@ pub(super) fn is_props(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     of_crate(&FOUND, tcx, adt.krate, || props_structs(tcx, adt.krate)).contains(&adt.index)
 }
 
-/// What's found of a crate, by its crate's identity and hash, so a crate
-/// compiled again, the playground's, is found again.
-type Found = Mutex<Vec<((StableCrateId, Svh), Arc<HashSet<DefIndex>>)>>;
+/// What's found of a crate, by its crate's identity and content, so a
+/// crate compiled again, the playground's, is found again.
+type Found = Mutex<Vec<((StableCrateId, String), Arc<HashSet<DefIndex>>)>>;
 
 /// `found`'s answer of crate `krate`, found once by `find`.
 fn of_crate(
@@ -754,7 +753,16 @@ fn of_crate(
     krate: CrateNum,
     find: impl FnOnce() -> HashSet<DefIndex>,
 ) -> Arc<HashSet<DefIndex>> {
-    let key = (tcx.stable_crate_id(krate), tcx.crate_hash(krate));
+    // Another crate's hash, its metadata's; this one's sources', as rustc
+    // hashes HIR only for what needs it, metadata, and a test build doesn't.
+    let content = match krate == LOCAL_CRATE {
+        true => (tcx.sess.source_map().files().iter())
+            .map(|file| format!("{:?}", file.src_hash))
+            .collect::<Vec<_>>()
+            .concat(),
+        false => tcx.crate_hash(krate).to_string(),
+    };
+    let key = (tcx.stable_crate_id(krate), content);
     let known = (found.lock().expect("not poisoned").iter())
         .find(|(k, _)| *k == key)
         .map(|(_, s)| s.clone());

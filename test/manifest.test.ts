@@ -36,10 +36,12 @@ test("a manifest says what each module exports, and where its tests' runner is",
 }
 pub use util::helper;
 pub const LIMIT: u32 = 3;
+// A field, whose JS name a test build, which rustc hashes nothing of, asks.
+pub struct Total { pub first_part: u32 }
 pub async fn main() {}
 fn private() {}
 #[test]
-fn adds() { assert_eq!(util::helper() + 1, 2); }
+fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); }
 `);
   const out = join(dir, "out");
   run([compiler, "--test", join(dir, "lib.rs"), "-o", join(out, "lib.js"), "--manifest", join(out, "manifest.json")]);
