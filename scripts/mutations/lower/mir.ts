@@ -236,11 +236,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-takes-drops-unchecked",
-    breaks: "`clear` of a generic `Vec` drops its items unrun",
+    breaks: "`ok_or_else` of a function that holds a value with a destructor, which it may never call, is lowered, and drops it unrun",
     file: "src/lower/mir.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, drained, span)?;\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","drop_impl_clear"],
+    tests: ["test/diagnostics.test.ts","-t","ok_or_else whose function holds a value with a destructor"],
   },
   {
     name: "mir-mut-borrowed-unchanged",
