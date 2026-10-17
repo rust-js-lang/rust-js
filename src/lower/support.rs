@@ -46,9 +46,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             _ if self.is_unknown(ty) => return None,
             ty::Dynamic(predicates, ..)
-                if predicates
-                    .principal_def_id()
-                    .is_some_and(|id| id.is_local() && self.dyn_supported(id) || self.is_std_pair_trait(id)) =>
+                if predicates.principal_def_id().is_none_or(|id| {
+                    id.is_local() && self.dyn_supported(id) || self.recognition().is_std_pair_trait(id)
+                }) =>
             {
                 return None;
             }

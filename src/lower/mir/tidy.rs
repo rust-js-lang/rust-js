@@ -324,6 +324,18 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             };
         }
     });
+    // A field of an object read in place now, a `dyn` field's pair, `{
+    // value: f.last, impl: f.impl }.impl`: as `Expr::member` makes it.
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(object, field) = &e.kind
+            && let ExprKind::Object(_) = object.kind
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::member((**object).clone(), field.clone())
+            };
+        }
+    });
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind

@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::lower::analysis::Counted;
 use crate::lower::recognition::{Recognition, StdItem, rc_pointee, weak_pointee};
-use crate::lower::traits::{EvidenceQuery, is_std_pair_trait, may_have_destructors};
+use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::{LocalVarId, Pat, PatKind};
@@ -74,16 +74,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         drop.is_local() || self.recognition.foreign.item(drop).is_some()
     }
 
-    /// Does a `dyn` of `predicates` keep its value's drop, its dictionary's
-    /// `$drop`, as Rust's vtable has it (ADR 0098)? A pair's does: a `dyn` of
-    /// the crate's trait, a library's, or one of std's that's a value and its
-    /// dictionary, `dyn Any`, `dyn Display`, `dyn Error` (ADR 0141).
-    pub(in crate::lower) fn dyn_keeps_drop(&self, predicates: &ty::List<ty::PolyExistentialPredicate<'tcx>>) -> bool {
-        predicates
-            .principal_def_id()
-            .is_some_and(|id| self.recognition.is_rust_trait(id) || is_std_pair_trait(self.recognition.tcx, id))
-    }
-
     /// Does making a `from` a `to` lose a drop: what owns it, `target`, a
     /// `dyn` of it that keeps none, or of what rust-js can't drop?
     pub(in crate::lower) fn dyn_drop_lost(&self, target: Ty<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
@@ -93,7 +83,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         !target.is_ref()
             && match self.drops(from) {
                 Drops::Nothing => false,
-                Drops::Runs => !self.dyn_keeps_drop(predicates),
+                Drops::Runs => !self.recognition.is_pair_dyn(predicates),
                 Drops::Unsupported(..) => true,
             }
     }
@@ -426,12 +416,14 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => parts(walk),
                 }
             }
-            // A trait object that keeps its value's drop: whatever it holds,
-            // whose dictionary has its drop, where a type may have one.
-            ty::Dynamic(predicates, ..) if self.dyn_keeps_drop(predicates) => match self.may_have_destructors() {
-                true => Drops::Runs,
-                false => Drops::Nothing,
-            },
+            // A trait object that's a pair: whatever it holds, whose
+            // dictionary has its drop, where a type may have one.
+            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {
+                match self.may_have_destructors() {
+                    true => Drops::Runs,
+                    false => Drops::Nothing,
+                }
+            }
             _ => Drops::Nothing,
         };
         walk.seen.pop();

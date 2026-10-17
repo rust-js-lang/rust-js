@@ -3348,6 +3348,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         id.is_local() || self.foreign.in_library(id)
     }
 
+    /// A trait whose `dyn` is a pair, its value and its dictionary (ADR
+    /// 0049): one rust-js compiled, or std's `Display`, `ToString`, `Error`,
+    /// `io::Write` or `Any` (ADRs 0141, 0331).
+    pub(super) fn is_pair_trait(&self, id: DefId) -> bool {
+        self.is_rust_trait(id) || self.is_std_pair_trait(id)
+    }
+
+    /// Of those, std's.
+    pub(super) fn is_std_pair_trait(&self, id: DefId) -> bool {
+        [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]
+            .into_iter()
+            .any(|item| is_std_def(self.tcx, id, item))
+            || any_trait(self.tcx) == Some(id)
+    }
+
+    /// A `dyn` of `predicates` that's a pair: of a pair trait, or of no
+    /// trait but auto traits, `dyn Send`, whose dictionary is its drop alone.
+    /// Each keeps its value's drop, its dictionary's `$drop`, as Rust's
+    /// vtable does (ADR 0098).
+    pub(super) fn is_pair_dyn(&self, predicates: &ty::List<ty::PolyExistentialPredicate<'tcx>>) -> bool {
+        predicates.principal_def_id().is_none_or(|id| self.is_pair_trait(id))
+    }
+
     pub(super) fn reveal(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         if !rustc_middle::ty::TypeVisitableExt::has_opaque_types(&ty) {
             return ty;

@@ -738,4 +738,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,
   },
+  {
+    name: "member-read-in-place-unfolded",
+    breaks: "a field of an object read in place, a `dyn` field's pair, stays `{ value: f.inner, impl: f.impl }.impl`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && let ExprKind::Object(_) = object.kind\n",
+    replace: "            && let ExprKind::Object(_) = object.kind\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
+    snapshots: true,
+  },
 ];

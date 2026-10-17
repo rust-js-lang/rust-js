@@ -60,3 +60,10 @@ foo($dynCell(f1, bar1ToBar()));
   which would drop its last field through its `impl`, is still refused,
   as is a `dyn Debug` last field, which would be the string it shows (ADR
   0060), and a `&Fat<dyn Sub>` made a `&Fat<dyn Super>`.
+
+## Amendment: a `Box` of one
+
+A `Box<Fat<dyn T>>` is the struct given its `impl`, as a reference's is,
+and drops its last field through it, `fat.impl.$drop?.(fat.inner)`, where
+Rust drops it; so is one of a `dyn` of std's or of no trait (ADR 0436).
+An `Rc` of one, which may be counted, is still refused.

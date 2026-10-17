@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `dyn` of no trait but auto traits**, `Box<dyn Send>`, `Rc<dyn Send + Sync>`,
+  its value dropped where Rust drops it; and a `Box` of a struct whose last
+  field is a `dyn`, `Box<Fat<dyn Show>>`, which drops that field (ADRs 0409, 0436).
 - **A `Box<dyn Any>`, `Box<dyn Display>` or `Box<dyn Error>` of a value with a
   destructor**, dropped where Rust drops it (ADR 0141).
 - **`as_mut()` of an `Option` of a generic `T`**, through a `&mut`, and a

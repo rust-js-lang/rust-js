@@ -522,15 +522,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
             ty::Dynamic(..) => {
-                let drop = Expr::member(Expr::member(value.clone(), js::DICTIONARY), js::DICTIONARY_DROP);
-                out.push(
-                    StmtKind::Expr(Expr {
-                        reads: false,
-                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![Expr::held(value)]),
-                        span: js_span,
-                    })
-                    .at(js_span),
-                );
+                let dictionary = Expr::member(value.clone(), js::DICTIONARY);
+                out.push(dyn_dropped(dictionary, Expr::held(value), js_span));
             }
             // `dropT?.(value)`: the caller's drop, if its `T` has one; of a
             // std trait's associated type of one, `dropIIntoIter` (ADR 0421).
@@ -599,7 +592,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if adt.is_struct() {
                     for (i, field) in adt.non_enum_variant().fields.iter().enumerate() {
                         let part = self.project(value.clone(), ty, i);
-                        self.drop_in(part, self.field_ty(field, args), span, made, out)?;
+                        let field = self.field_ty(field, args);
+                        // A `dyn` last field: through the `impl` its struct
+                        // was given (ADRs 0409, 0436).
+                        if let ty::Dynamic(..) = field.kind() {
+                            let dictionary = Expr::member(value.clone(), js::DICTIONARY);
+                            out.push(dyn_dropped(dictionary, part, js_span));
+                            continue;
+                        }
+                        self.drop_in(part, field, span, made, out)?;
                     }
                 } else if adt.is_enum() {
                     for variant in adt.variants() {
@@ -1311,4 +1312,16 @@ fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
 /// The name of `callee`'s type parameter `index`, `I`.
 fn param_name(tcx: TyCtxt<'_>, callee: DefId, index: u32) -> String {
     tcx.generics_of(callee).param_at(index as usize, tcx).name.to_string()
+}
+
+/// `impl.$drop?.(value)`: a `dyn`'s value dropped through its dictionary,
+/// if what it holds has a drop.
+fn dyn_dropped(dictionary: Expr, value: Expr, js_span: js::Span) -> Stmt {
+    let drop = Expr::member(dictionary, js::DICTIONARY_DROP);
+    StmtKind::Expr(Expr {
+        reads: false,
+        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
+        span: js_span,
+    })
+    .at(js_span)
 }

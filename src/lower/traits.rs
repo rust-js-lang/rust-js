@@ -680,7 +680,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
         }
         // A std trait's dictionary, like `Copy`'s, has no supertraits in it,
         // but `Error`'s has its `Display` and `Debug` (ADR 0141).
-        if !self.recognition.is_rust_trait(from.def_id) && !is_std_pair_trait(self.recognition.tcx, from.def_id) {
+        if !self.recognition.is_pair_trait(from.def_id) {
             return None;
         }
         supertraits(self.recognition.tcx, from.def_id, from.args)
@@ -739,15 +739,6 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
     pub(in crate::lower) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
         self.evidence_route(tr).is_some()
     }
-}
-
-/// `Display`, `Error` or `Any`: a std trait whose `dyn` is a pair (ADRs
-/// 0141, 0331).
-pub(super) fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]
-        .into_iter()
-        .any(|item| is_std_def(tcx, id, item))
-        || any_trait(tcx) == Some(id)
 }
 
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
@@ -2225,12 +2216,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The trait a `dyn` of `ty` is a pair of, `{ value, impl }` (ADR 0049):
     /// one rust-js compiled, or std's `Display` or `Error`, whose
     /// dictionaries it makes (ADR 0141). A `dyn Debug` is a string instead.
+    /// Is `ty`, through its pointer, a `dyn` that's a pair, its value and
+    /// its dictionary: of a pair trait, or of none, `dyn Send`.
+    pub(super) fn is_pair_dyn(&self, ty: Ty<'tcx>) -> bool {
+        matches!(self.pointee(ty).kind(), ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates))
+    }
+
     pub(super) fn dynamic_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
         let inner = self.pointee(ty);
         match inner.kind() {
             ty::Dynamic(predicates, ..) => predicates
                 .principal_def_id()
-                .filter(|&id| self.is_rust_trait(id) || self.is_std_pair_trait(id)),
+                .filter(|&id| self.recognition().is_pair_trait(id)),
             _ => None,
         }
     }
@@ -2315,11 +2312,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         is_std_method(self.tcx, id, StdItem::Error, "source")
     }
 
-    /// `Display` or `Error`: a std trait whose `dyn` is a pair (ADR 0141).
-    pub(super) fn is_std_pair_trait(&self, id: DefId) -> bool {
-        is_std_pair_trait(self.tcx, id)
-    }
-
     fn dyn_trait_ref(&self, ty: Ty<'tcx>, self_ty: Ty<'tcx>) -> Option<ty::TraitRef<'tcx>> {
         match self.pointee(ty).kind() {
             // `dyn for<'a> AsStr<'a, 'a>`: its lifetimes erased, as a
@@ -2348,7 +2340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn given_impl(
         &self,
         holder: Expr,
-        (held, trait_id): (Ty<'tcx>, DefId),
+        (held, trait_id): (Ty<'tcx>, Option<DefId>),
         dictionary: Expr,
         target: Ty<'tcx>,
         span: Span,
@@ -2360,7 +2352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
             return Ok(Expr::object(props));
         }
-        if let Some(other) = self.dyn_cell_clash(held, trait_id) {
+        if let Some(other) = trait_id.and_then(|trait_id| self.dyn_cell_clash(held, trait_id)) {
             return Err(self.unsupported(
                 span,
                 &format!(
@@ -2372,35 +2364,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::helper("$dynCell"), vec![holder, dictionary]))
     }
 
-    /// Of `source` unsized as `target`, a reference to a struct of the
-    /// crate's whose last field, or its last field's, is a `dyn` of the
-    /// crate's trait: the type that field is in `source`, and the `dyn` (ADR
-    /// 0409). Not one of no trait to call, a `dyn Send`, or a `dyn FnMut`, the
-    /// JS function: the same struct either way.
+    /// Of `source` unsized as `target`, a reference to, or a `Box` of, a
+    /// struct of the crate's whose last field, or its last field's, is a
+    /// `dyn` that's a pair: the type that field is in `source`, and the `dyn`
+    /// (ADRs 0409, 0436). Not a `dyn FnMut`, the JS function: the same struct
+    /// either way.
     pub(super) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
         let (from, to) = (self.pointee(source), self.pointee(target));
-        if !target.is_ref() || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did())) {
+        if !(target.is_ref() || target.is_box())
+            || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did()))
+        {
             return None;
         }
         let (concrete, tail) = self.tcx.struct_lockstep_tails_for_codegen(from, to, self.typing_env);
-        matches!(tail.kind(), ty::Dynamic(traits, ..)
-            if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)))
-        .then_some((concrete, tail))
+        matches!(tail.kind(), ty::Dynamic(traits, ..) if self.recognition().is_pair_dyn(traits))
+            .then_some((concrete, tail))
     }
 
-    /// The struct a `ty`'s last `dyn` field is in, of `value`, a `ty`:
-    /// `value` itself, or its last field's, `fat.inner`.
-    pub(super) fn tail_parent(&self, mut value: Expr, mut ty: Ty<'tcx>) -> Expr {
+    /// The fields from a `ty` to the struct its last `dyn` field is in, each
+    /// a struct and its index: none where it's `ty`'s own, or its last
+    /// field's, `fat.inner`.
+    pub(super) fn tail_path(&self, mut ty: Ty<'tcx>) -> Vec<(Ty<'tcx>, usize)> {
+        let mut path = Vec::new();
         loop {
-            let ty::Adt(adt, args) = ty.kind() else { return value };
+            let ty::Adt(adt, args) = ty.kind() else { return path };
             let Some(last) = adt.non_enum_variant().fields.iter().last() else {
-                return value;
+                return path;
             };
             let field = self.field_ty(last, args);
             if matches!(field.kind(), ty::Dynamic(..)) || !matches!(field.kind(), ty::Adt(..)) {
-                return value;
+                return path;
             }
-            value = self.project(value, ty, adt.non_enum_variant().fields.len() - 1);
+            path.push((ty, adt.non_enum_variant().fields.len() - 1));
             ty = field;
         }
     }
@@ -2420,16 +2415,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         // `&Fat<Bar>` to `&Fat<dyn ToBar>`: the struct given its last field's
-        // `impl` (ADR 0409), behind a reference; what owns one would drop its
-        // last field through it, not yet. A `dyn Debug`'s would be the string
-        // it shows, which the field isn't. One ending in a slice, or a `dyn
-        // FnMut`, the JS function, is the same value either way.
+        // `impl` (ADR 0409), behind a reference or a `Box`, which drops its
+        // last field through it (ADR 0436); an `Rc`'s, which may be counted,
+        // not yet. A `dyn Debug`'s would be the string it shows, which the
+        // field isn't. One ending in a slice, or a `dyn FnMut`, the JS
+        // function, is the same value either way.
         let pointee = self.pointee(target);
         let tail = self.tcx.struct_tail_for_codegen(pointee, self.typing_env);
         if pointee.is_adt()
             && matches!(tail.kind(), ty::Dynamic(traits, ..)
-                if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))
-            && (!target.is_ref() || self.is_dyn_debug(tail))
+                if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))
+            && (!(target.is_ref() || target.is_box()) || self.is_dyn_debug(tail))
         {
             return Err(self.unsupported(span, &format!("a `{pointee}`, whose last field is a `dyn`")));
         }
@@ -2468,7 +2464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.counted_rc(target).is_some() || self.weak_of(target).is_some() {
                 return Err(self.unsupported(span, &format!("a counted `{target}`")));
             }
-            return self.given_impl(value, (from.type_at(0), tr.def_id), dictionary, target, span);
+            return self.given_impl(value, (from.type_at(0), Some(tr.def_id)), dictionary, target, span);
         }
         // `&Fat<Bar>` as a `&Fat<dyn ToBar>`: the same struct, the one its
         // last field is in given `Bar`'s `ToBar` as its `impl`, as a
@@ -2483,21 +2479,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 return Err(self.unsupported(span, &format!("a `{source}` as a `{target}`")));
             }
-            let tr = self.dyn_trait_ref(tail, concrete).expect("a `dyn` of a trait");
-            let dictionary = self.dictionary(tr, span)?;
+            let trait_id = self.dyn_trait_ref(tail, concrete).map(|tr| tr.def_id);
+            let dictionary = self.dyn_dictionary(tail, concrete, span)?;
+            // The struct itself holds it: given its `impl` as it's made.
+            let path = self.tail_path(self.pointee(target));
+            if path.is_empty() {
+                return self.given_impl(value, (concrete, trait_id), dictionary, target, span);
+            }
             let value = match value.reads_same() {
                 true => value,
                 false => self.spill("value", value, out),
             };
-            let parent = self.tail_parent(value.clone(), self.pointee(target));
-            let given = self.given_impl(parent.clone(), (concrete, tr.def_id), dictionary, target, span)?;
-            if js::same_path(&parent, &value) {
-                return Ok(given);
-            }
+            let parent = (path.into_iter()).fold(value.clone(), |parent, (ty, i)| self.project(parent, ty, i));
+            let given = self.given_impl(parent, (concrete, trait_id), dictionary, target, span)?;
             out.push(StmtKind::Expr(given).at(js::Span::NONE));
             return Ok(value);
         }
-        if self.dynamic_trait(target).is_none() {
+        if !self.is_pair_dyn(target) {
             return Ok(value);
         }
         self.check_value_ty(target, span)?;
@@ -2507,11 +2505,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {
             return self.counted_unsized(source, target, value, span);
         }
-        if self.dynamic_trait(source).is_some() {
+        if self.is_pair_dyn(source) {
             let self_ty = self.pointee(source);
-            let from = self.dyn_trait_ref(source, self_ty).unwrap();
-            let to = self.dyn_trait_ref(target, self_ty).unwrap();
-            // The same trait (a `Box<dyn T>` to a `Box<dyn T>`): the same pair.
+            let from = self.dyn_trait_ref(source, self_ty);
+            // The same trait (a `Box<dyn T>` to a `Box<dyn T>`), or none, a
+            // `dyn T + Send` as a `dyn Send`, whose dictionary is its drop,
+            // which the first's has: the same pair.
+            let Some(to) = self.dyn_trait_ref(target, self_ty) else {
+                return Ok(value);
+            };
+            let from = from.expect("a `dyn` of no trait made one of a trait");
             if self.tcx.erase_and_anonymize_regions(from) == self.tcx.erase_and_anonymize_regions(to) {
                 return Ok(value);
             }
@@ -2534,8 +2537,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field(js::DICTIONARY.into(), dictionary),
             ]));
         }
-        let tr = self.dyn_trait_ref(target, self.pointee(source)).unwrap();
-        let dictionary = self.dictionary(tr, span)?;
+        let dictionary = self.dyn_dictionary(target, self.pointee(source), span)?;
         // `&mut n as &mut dyn Trait` of a number: the pair reads and writes
         // the place the cell does (ADR 0099). A temporary's box is the pair's.
         if self.is_cell(source) {
@@ -2562,6 +2564,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ]))
     }
 
+    /// The dictionary a `self_ty` made a `target`, a `dyn`, is given: its
+    /// trait's, or of a `dyn` of no trait, `dyn Send`, its drop alone,
+    /// `{ $drop }`, or nothing, `{}`.
+    fn dyn_dictionary(&mut self, target: Ty<'tcx>, self_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.dyn_trait_ref(target, self_ty) {
+            Some(tr) => self.dictionary(tr, span),
+            None => Ok(Expr::object(self.dictionary_drop(self_ty, span)?.into_iter().collect())),
+        }
+    }
+
     /// A counted `Rc` made here, `{ value: x, strong: 1, weak: 0 }`, as an
     /// `Rc<dyn T>`: its value made the pair, `{ value: x, impl }`, as every
     /// use of one reads it (ADR 0320); one of the same `dyn` already, itself.
@@ -2574,16 +2586,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let what = format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
-            (Some(pointee), js::ExprKind::Object(props)) if self.dynamic_trait(pointee).is_none() => {
-                Some((pointee, props))
-            }
+            (Some(pointee), js::ExprKind::Object(props)) if !self.is_pair_dyn(pointee) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {
             return Err(self.unsupported(span, &what));
         };
-        let tr = self.dyn_trait_ref(target, pointee).expect("a `dyn` of a trait");
-        let dictionary = self.dictionary(tr, span)?;
+        let dictionary = self.dyn_dictionary(target, pointee, span)?;
         let Some(Prop::Field(_, held)) = props
             .iter_mut()
             .find(|p| matches!(p, Prop::Field(name, _) if name == js::HELD))

@@ -329,9 +329,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_map(ty)
             // A union, the object of the field it holds (ADR 0406).
             || self.is_union(ty)
-            // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to
-            // one is the pair, whose `value` its `&mut self` methods write.
-            || matches!(ty.kind(), ty::Dynamic(..)) && self.dynamic_trait(ty).is_some()
+            // A `dyn` that's a pair is an object (ADR 0049): a `&mut` to one
+            // is the pair, whose `value` its `&mut self` methods write.
+            || matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)
             // An enum each of whose variants has fields: each is an object
             // (ADR 0033). A crate's own with a fieldless variant isn't: that
             // variant is a string, which can't become another in place, so

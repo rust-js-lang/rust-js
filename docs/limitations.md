@@ -52,8 +52,8 @@ depends on what the program does:
 ## Types
 
 - A `dyn Debug` of a value with a destructor, which the string it shows can't keep: `struct D; impl Drop for D { fn drop(&mut self) {} } impl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } } let b: Box<dyn std::fmt::Debug> = Box::new(D); println!("{b:?}");`
-- A trait object of no trait but auto traits, `dyn Send`: `let b: Box<dyn Send> = Box::new(1u32); drop(b);`
-- A struct whose last field is a `dyn`: `struct W<T: ?Sized> { n: u32, v: T } let w: Box<W<dyn std::fmt::Debug>> = Box::new(W { n: 1, v: 5u8 }); println!("{:?}", &w.v);`
+- A struct whose last field is a `dyn Debug`, the string it shows: `struct W<T: ?Sized> { n: u32, v: T } let w: Box<W<dyn std::fmt::Debug>> = Box::new(W { n: 1, v: 5u8 }); println!("{:?}", &w.v);`
+- An `Rc` of a struct whose last field is a `dyn`: `struct W<T: ?Sized> { n: u32, v: T } let w: std::rc::Rc<W<dyn Send>> = std::rc::Rc::new(W { n: 1, v: 5u8 }); println!("{}", w.n);`
 - The `TypeId` of a type made of a type parameter, a closure's in generic code: `fn make<T: 'static>(t: T) -> std::any::TypeId { fn id<C: 'static>(_: &C) -> std::any::TypeId { std::any::TypeId::of::<C>() } let c = move || drop(t); id(&c) } println!("{:?}", make(1u8) == make(2u8));`
 - `size_of_val` of a value without one size, a `dyn`'s: `let b: Box<dyn std::fmt::Debug> = Box::new(5u64); println!("{}", std::mem::size_of_val(&*b));`
 - `type_name` of a type parameter where it's a trait method's own: `trait T { fn n<U>() -> &'static str; } struct S; impl T for S { fn n<U>() -> &'static str { std::any::type_name::<U>() } } fn g<X: T>() -> &'static str { X::n::<u8>() } println!("{}", g::<S>());`

@@ -497,4 +497,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^integer_families.rs$"],
   },
+  {
+    name: "member-of-plain-object-kept",
+    breaks: "a field of an object made of what does nothing but isn't constant stays, `{ value: f.inner, impl: f.impl }.impl`",
+    file: "src/js.rs",
+    find: "                .all(|p| matches!(p, Prop::Field(_, value) if !value.has_effects()))\n",
+    replace: "                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
+    snapshots: true,
+  },
 ];

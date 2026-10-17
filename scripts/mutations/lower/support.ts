@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "                    || false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
+  {
+    name: "auto-trait-dyn-unsupported",
+    breaks: "a value of a `dyn` of no trait but auto traits, `dyn Send`, is refused",
+    file: "src/lower/support.rs",
+    find: "                if predicates.principal_def_id().is_none_or(|id| {\n",
+    replace: "                if predicates.principal_def_id().is_some_and(|id| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
+  },
 ];

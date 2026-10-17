@@ -1153,11 +1153,13 @@ impl Expr {
 
     pub fn member(object: Expr, property: impl Into<String>) -> Expr {
         let property = property.into();
-        // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`.
+        // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; of
+        // any object made of what does nothing, its field, `{ value: f.last,
+        // impl: f.impl }.impl` of a `dyn` field's pair (ADR 0409).
         if let ExprKind::Object(props) = &object.kind
             && props
                 .iter()
-                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))
+                .all(|p| matches!(p, Prop::Field(_, value) if !value.has_effects()))
             && let Some(Prop::Field(_, value)) = props
                 .iter()
                 .find(|p| matches!(p, Prop::Field(name, _) if *name == property))

@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     name: "dyn-not-object",
     breaks: "a `&mut dyn Counter` is taken for a cell, and its pair read as `pair.value`",
     file: "src/lower/representation.rs",
-    find: "            || matches!(ty.kind(), ty::Dynamic(..)) && self.dynamic_trait(ty).is_some()\n",
-    replace: "            || false && matches!(ty.kind(), ty::Dynamic(..)) && self.dynamic_trait(ty).is_some()\n",
+    find: "            || matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)\n",
+    replace: "            || false && matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
   },
   {

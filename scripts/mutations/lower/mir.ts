@@ -1949,11 +1949,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-dyn-drops-lost",
-    breaks: "MIR's `Box<dyn Send>` of a value with a destructor never drops it",
+    breaks: "MIR's `Box<dyn Debug>` of a value with a destructor, the string it shows, never drops it",
     file: "src/lower/mir.rs",
     find: "                        if self\n                            .drop_query()\n                            .dyn_drop_lost(",
     replace: "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Send>"],
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Debug>"],
   },
   {
     name: "mir-whole-assign-through-mut",

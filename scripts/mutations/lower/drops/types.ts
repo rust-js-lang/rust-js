@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "dyn-drops-nothing",
     breaks: "a `dyn` of the crate's trait is taken to drop nothing, and what it holds is never dropped",
     file: "src/lower/drops/types.rs",
-    find: "            ty::Dynamic(predicates, ..) if self.dyn_keeps_drop(predicates) => match self.may_have_destructors() {\n                true => Drops::Runs,",
-    replace: "            ty::Dynamic(predicates, ..) if self.dyn_keeps_drop(predicates) => match self.may_have_destructors() {\n                true => Drops::Nothing,",
+    find: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n                match self.may_have_destructors() {\n                    true => Drops::Runs,",
+    replace: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n                match self.may_have_destructors() {\n                    true => Drops::Nothing,",
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
@@ -156,12 +156,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
-    name: "std-pair-dyn-keeps-no-drop",
-    breaks: "a `Box<dyn Display>` or `Box<dyn Any>` of a value with a destructor is refused, as a `dyn Send`'s is, though its dictionary keeps the drop",
+    name: "dyn-drop-kept-of-rust-traits-only",
+    breaks: "a `dyn` keeps its value's drop only of a trait rust-js compiled, so a `Box<dyn Any>` or a `Box<dyn Send>` of a value with a destructor drops nothing",
     file: "src/lower/drops/types.rs",
-    find: "            .is_some_and(|id| self.recognition.is_rust_trait(id) || is_std_pair_trait(self.recognition.tcx, id))\n",
-    replace: "            .is_some_and(|id| self.recognition.is_rust_trait(id))\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_std_destructors.rs$"],
+    find: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n",
+    replace: "            ty::Dynamic(predicates, ..)\n                if predicates.principal_def_id().is_some_and(|id| self.recognition.is_rust_trait(id)) =>\n            {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_std_destructors|dyn_auto_traits).rs$"],
   },
   {
     name: "unsize-array-as-dyn",

@@ -310,4 +310,12 @@ export const mutations: Mutation[] = [
     replace: "                if [StdItem::RefCell]\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
   },
+  {
+    name: "dyn-tail-dropped-as-pair",
+    breaks: "a struct's `dyn` last field is dropped as a pair, `fat.inner.impl.$drop`, not through the struct's `impl`, and throws",
+    file: "src/lower/drops.rs",
+    find: "                        if let ty::Dynamic(..) = field.kind() {\n",
+    replace: "                        if false && let ty::Dynamic(..) = field.kind() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
+  },
 ];

@@ -504,6 +504,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0433 What's written after a loop is after it](decisions/0433-whats-written-after-a-loop-is-after-it.md)
 - [0434 A temporary of a variable is the variable, until it changes](decisions/0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0435 Rust's world and React's: each its own names, JSX the boundary](decisions/0435-rust-and-react-two-worlds.md)
+- [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
