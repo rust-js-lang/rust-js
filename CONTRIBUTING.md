@@ -122,8 +122,11 @@ library behavior from local source.
    [the semantics](docs/semantics.md), with its section's other differences
    and in the list at its end.
 6. **Track progress.** Update [roadmap](ROADMAP.md) items when their
-   acceptance criteria are met, with evidence, and
-   [the crate corpus](docs/crate-corpus.md) when a change moves it.
+   acceptance criteria are met, with evidence;
+   [the crate corpus](docs/crate-corpus.md) when a change moves it; and
+   [the known limitations](docs/limitations.md) when a change lifts a
+   refusal a person can meet, or adds one: `test/limitations.test.ts`
+   fails on an example there that compiles.
 
 Keep native and browser compiler behavior consistent, and check real
 examples or the playground when the change affects integration.

@@ -89,8 +89,7 @@ table](../ROADMAP.md) lists the larger missing pieces.
   ([0156](decisions/0156-integer-bits-and-bytes.md)). A NaN's sign and
   payload aren't kept, so `is_sign_negative` of one is `false`.
 
-Refused: an `i128` or a `u128` in JSON; `mul_add`; a float's `midpoint`; and some
-integer and float methods, among them `copysign`.
+What's refused of numbers is in [the limitations](limitations.md#numbers-and-text).
 
 ## Text
 
@@ -137,7 +136,7 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   its dictionary's, std's or the crate's ([0161](decisions/0161-generic-from-str.md)).
 
 - **A `Path` or a `PathBuf` is its text,** made from text and shown by
-  `display()`; its `==`, which compares components, is refused
+  `display()`; its `==` compares components, as Rust's does
   ([0173](decisions/0173-paths-as-text.md)). A parse error's `kind()` is
   its kind, and `{:?}` of std's `IntErrorKind` its name.
 - **Bytes become text as Rust checks UTF-8:** `str::from_utf8`'s
@@ -145,8 +144,7 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   and `from_utf8_lossy` gives a U+FFFD for each
   ([0172](decisions/0172-utf8-decoding.md)).
 
-Refused, among others: `make_ascii_uppercase` of a `String`, and a C
-string, `c"..."`.
+What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 
 ## Formatting and printing
 
@@ -187,9 +185,7 @@ string, `c"..."`.
   dictionary of its `write_str`, `write_char` and `write_fmt`
   ([0180](decisions/0180-generic-writers.md)).
 
-Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
-`f.sign_minus()` and `f.pad_integral(..)`; a writer that fails; `{:p}` of
-a reference; `LowerHex::fmt(&n, f)` of a number.
+What's refused of formatting is in [the limitations](limitations.md#formatting).
 
 ## Values, copying and mutation
 
@@ -238,10 +234,7 @@ Differences:
 - **Locks aren't checked:** a `Mutex` locked twice on one thread doesn't
   hang, and a lock is never poisoned ([0144](decisions/0144-locks.md)).
 
-Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
-`try_unwrap`; `Weak`; `Cell::swap`; `RefCell::try_borrow_mut`; `OnceCell`,
-`OnceLock` and `LazyLock`; `Mutex::try_lock`; a map's `get_mut` bound by a
-`match` and kept past it.
+What's refused is in [the limitations](limitations.md).
 
 ## Collections and iterators
 
@@ -292,10 +285,8 @@ Differences:
 - **A chain a function returns or passes on is an array:** each of its
   closures runs over every item, though the caller takes only the first.
 
-Refused: a `BTreeMap` keyed by a struct; a map key with a custom
-`PartialEq`; looking a key up, or joining items, by what the crate's own
-`Borrow` gives; `==` of two maps; `peekable` or `rev` of a lazy iterator;
-a clone of a lazy iterator, or of one of std's adapters.
+What's refused of collections and iterators is in
+[the limitations](limitations.md#iterators-and-collections).
 
 ## Destructors
 
@@ -319,10 +310,7 @@ An or-pattern moves what each alternative moves, where a variant tells
 them apart, and a temporary in an arm's body ends with the arm
 ([0191](decisions/0191-or-patterns-arm-temporaries-boxed-str.md)).
 
-Refused: an `Rc` or an `Arc` of a value with a destructor; a lock or
-`async` code owning one; a value of a std trait's associated type, an
-iterator's `Item`, where a type may have a destructor; an or-pattern
-whose alternatives move parts no variant tells apart.
+What's refused of destructors is in [the limitations](limitations.md#types).
 
 ## Panics and errors
 
@@ -350,8 +338,8 @@ Differences:
 - **JS can catch a panic,** an ordinary `Error`; Rust code can't
   (`catch_unwind` is refused).
 
-Refused: `catch_unwind`, `panic::set_hook`, `process::exit`,
-`process::abort`; `pin!`, which is `Pin::new_unchecked`.
+What's refused of panics and processes is in
+[the limitations](limitations.md#panics-processes-and-io).
 
 ## Async, threads and time
 
@@ -371,9 +359,8 @@ block or an `async` closure is an async arrow
   alive panics, where Rust's would wait forever
   ([0142](decisions/0142-channels.md)).
 
-Refused: `Box::pin`, so a recursive `async fn`; `future::ready`, `poll_fn`;
-a user `IntoFuture`; joining futures, `Promise.all`; `Duration`, `Instant`,
-`SystemTime` and `thread::sleep`.
+What's refused of async, threads and time is in
+[the limitations](limitations.md#async-threads-and-time).
 
 ## Tests
 
@@ -444,8 +431,8 @@ JSON through serde_json writes and reads as serde_json does, a 64-bit
 integer to the digit; `rename`, `tag`, `untagged`, `flatten`, `default`,
 `skip` and the other common attributes are supported
 ([0077](decisions/0077-serde-json.md)–[0083](decisions/0083-serde-json-value.md)).
-Refused: `#[serde(with)]`, `serialize_with`, `deserialize_with`, a struct as
-a map key. React and JSX are [their own page](jsx.md).
+What's refused of serde is in [the limitations](limitations.md#serde).
+React and JSX are [their own page](jsx.md).
 
 ## Differences from native Rust, in one list
 

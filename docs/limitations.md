@@ -1,0 +1,140 @@
+# Known limitations
+
+What rust-js doesn't do yet. It never writes JS that runs differently from
+Rust by accident: what it can't compile as Rust runs, it refuses, with an
+error that names it, `rust-js does not support .. yet`
+([ADR 0006](decisions/0006-errors-and-unsupported-features.md)). This page
+lists what's refused. How a program that compiles behaves is
+[the semantics](semantics.md), area by area, and where it deliberately
+differs from native Rust, [its one list](semantics.md#differences-from-native-rust-in-one-list).
+
+Many of these will go; this page goes with them. Each item that's refused
+at compile time ends with an example, which `test/limitations.test.ts`
+compiles: one that compiles fails the test, so the page is kept true. A
+change that lifts a refusal removes its line here; one that adds a refusal
+a person can meet adds one.
+
+Where to see more:
+
+- **rustc's own run-pass tests**: each in scope that fails is in
+  [`test/rustc-known-failures.txt`](../test/rustc-known-failures.txt), with
+  its first error ([ADR 0089](decisions/0089-rustc-tests.md)). Most need
+  addressable memory, below.
+- **Crates from crates.io**: which compile and run, and what stops the rest,
+  in [the crate corpus](crate-corpus.md).
+- **React and JSX**: [their own page](jsx.md).
+
+## Memory and unsafe code
+
+JS has no addressable memory: a value is an object or a number, not bytes
+at an address. rust-js gives raw pointers, `transmute` and the like the
+meaning Rust's have where it can model them: a raw pointer to a local or
+into an array, its `add` and `offset_from`, a `transmute` between types of
+numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
+`slice::from_raw_parts` of an array's pointer. What reads memory by where
+it is, it refuses:
+
+- A pointer's address as a number: `let x = 1; let a = &x as *const i32 as usize;`
+- A raw address of a `static`, or a `&mut` to a `static mut`: `static mut N: u32 = 0; let r = unsafe { &mut *std::ptr::addr_of_mut!(N) }; *r += 1;`
+- A pointer's address shown, `{:p}`: `let x = 5; println!("{:p}", &x);`
+
+And refused when it runs, as a panic that says so, since which it is
+depends on what the program does:
+
+- A union's field read while it holds another, its bytes read as another
+  type's.
+- A pointer read as another type's, bytes read as another type's, a pointer
+  stepped outside an array or into what JS holds as a copy.
+
+## Types
+
+- A trait object of no trait but auto traits, `dyn Send`: `let b: Box<dyn Send> = Box::new(1u32); drop(b);`
+- A struct whose last field is a `dyn`: `struct W<T: ?Sized> { n: u32, v: T } let w: Box<W<dyn std::fmt::Debug>> = Box::new(W { n: 1, v: 5u8 }); println!("{:?}", &w.v);`
+- `size_of_val` of a value without one size, a `dyn`'s: `let b: Box<dyn std::fmt::Debug> = Box::new(5u64); println!("{}", std::mem::size_of_val(&*b));`
+- `type_name` of a type parameter where it's a trait method's own: `trait T { fn n<U>() -> &'static str; } struct S; impl T for S { fn n<U>() -> &'static str { std::any::type_name::<U>() } } fn g<X: T>() -> &'static str { X::n::<u8>() } println!("{}", g::<S>());`
+- A map key whose `PartialEq` is the crate's own: `use std::collections::HashMap; #[derive(Hash)] struct K(u32); impl PartialEq for K { fn eq(&self, o: &K) -> bool { self.0 % 10 == o.0 % 10 } } impl Eq for K {} let mut m = HashMap::new(); m.insert(K(1), 1); println!("{}", m.contains_key(&K(11)));`
+- Generic code given a type with a destructor where it takes none, looping over or folding an iterator of it: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } fn count<I: Iterator>(it: I) -> usize { it.count() } println!("{}", count(vec![D(1), D(2)].into_iter()));`
+
+## Closures
+
+- A clone of a closure that changes what it captured: `let mut n = 0; let mut f = move || { n += 1; n }; let mut g = f.clone(); println!("{} {}", f(), g());`
+
+## Iterators and collections
+
+- `peekable` of a lazy iterator, a chain of `map` or `filter`: `let mut it = (1..4).map(|x| x * 2).peekable(); let p = it.peek().copied(); println!("{p:?}");`
+- `rev` of a lazy iterator: `let v: Vec<_> = (1..4).map(|x| x * 2).rev().collect(); println!("{v:?}");`
+- A clone of a lazy iterator: `let it = (1..4).map(|x| x * 2); let v: Vec<_> = it.clone().collect(); println!("{v:?} {}", it.count());`
+- Looking a key up by what the crate's own `Borrow` gives: `use std::borrow::Borrow; use std::collections::HashMap; #[derive(PartialEq, Eq, Hash)] struct K(String); impl Borrow<str> for K { fn borrow(&self) -> &str { &self.0 } } let mut m = HashMap::new(); m.insert(K("a".into()), 1); println!("{:?}", m.get("a"));`
+- `==` of two maps: `use std::collections::HashMap; let a: HashMap<u32, u32> = [(1, 2)].into(); let b = a.clone(); println!("{}", a == b);`
+
+## Numbers and text
+
+- A float's `midpoint`: `println!("{}", 1.0f64.midpoint(3.0));`
+- A float's `copysign`: `println!("{}", 1.5f64.copysign(-2.0));`
+- A C string, a `c"..."` literal: `let c = c"hi"; println!("{:?}", c);`
+- `CString` and `CStr`: `let c = std::ffi::CString::new("hi").unwrap(); println!("{:?}", c);`
+
+## Formatting
+
+- `{:x?}`, a `Debug` in hex: `println!("{:x?}", vec![10, 11]);`
+- An exponent with a precision, `{:.2e}`: `println!("{:.2e}", 1234.5f64);`
+- `{:?}` of a function pointer, its address: `fn f() {} let p: fn() = f; println!("{:?}", p);`
+- `{:?}` of a `TypeId`, its hash: `println!("{:?}", std::any::TypeId::of::<u32>());`
+- A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
+- `Formatter::pad_integral`: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.pad_integral(true, "", "5") } } println!("{:>4}", X);`
+
+## Hashing
+
+A `HashMap` or a `HashSet` keys by value and never hashes
+([ADR 0168](decisions/0168-user-hash.md)), so there's no `Hasher` in JS.
+
+- `DefaultHasher`, so calling `hash`: `use std::hash::{Hash, Hasher}; let mut h = std::collections::hash_map::DefaultHasher::new(); 1u32.hash(&mut h); println!("{}", h.finish());`
+- `SipHasher`: `#[allow(deprecated)] let h = std::hash::SipHasher::new(); drop(h);`
+- A `Hasher` of the crate's: `struct H(u64); impl std::hash::Hasher for H { fn finish(&self) -> u64 { self.0 } fn write(&mut self, b: &[u8]) { self.0 += b.len() as u64; } } use std::hash::Hash; let mut h = H(0); 5u32.hash(&mut h);`
+
+## Panics, processes and I/O
+
+- `catch_unwind`: `let r = std::panic::catch_unwind(|| 1); println!("{}", r.is_ok());`
+- `panic::set_hook`: `std::panic::set_hook(Box::new(|_| {}));`
+- `process::abort`: `std::process::abort();`
+- Standard input: `let mut s = String::new(); let _ = std::io::stdin().read_line(&mut s);`
+- The file system: `let _ = std::fs::read_to_string("x");`
+- An `io::Error`'s value: `let e = std::io::Error::other("x"); println!("{:?}", e);`
+
+## Async, threads and time
+
+There's one thread ([the semantics](semantics.md#async-threads-and-time)).
+
+- Spawning a thread: `let h = std::thread::spawn(|| 1); println!("{}", h.join().unwrap());`
+- Sleeping: `std::thread::sleep(std::time::Duration::from_millis(1));`
+- The time now, `Instant`: `let i = std::time::Instant::now(); let _ = i.elapsed();`
+- The time now, `SystemTime`: `let t = std::time::SystemTime::now(); let _ = t;`
+- `pin!`, which is `Pin::new_unchecked`: `let p = std::pin::pin!(async { 1 }); let _ = p;`
+- `future::ready`: `let f = std::future::ready(1); let _ = f;`
+- `future::poll_fn`: `let f = std::future::poll_fn(|_| std::task::Poll::Ready(1)); let _ = f;`
+- An `IntoFuture` of the crate's: `struct F; impl std::future::IntoFuture for F { type Output = u32; type IntoFuture = std::future::Ready<u32>; fn into_future(self) -> Self::IntoFuture { std::future::ready(1) } } async fn g() -> u32 { F.await } let _ = g();`
+- A `Wake` of the crate's: `struct W; impl std::task::Wake for W { fn wake(self: std::sync::Arc<Self>) {} } let w = std::task::Waker::from(std::sync::Arc::new(W)); drop(w);`
+
+## serde
+
+serde_json's common attributes work ([the semantics](semantics.md#the-javascript-boundary)).
+Refused, each held by `test/diagnostics.test.ts`, which compiles them with
+serde: `#[serde(with)]`, `serialize_with` and `deserialize_with`; a `u128`
+in JSON; reading a `BinaryHeap`; a map keyed by a struct;
+`Value::pointer`, and assigning to a `Value`'s key.
+
+## React and JSX
+
+- A struct used as props only in another crate's JSX, spread there, keeps
+  its Rust names in JS; it names its fields with `#[rust_js::name]`
+  ([ADR 0435](decisions/0435-rust-and-react-two-worlds.md)).
+- An optional prop is given as `Some(..)`, `maxWidth={Some("450px")}`,
+  where TSX writes `maxWidth="450px"`.
+- A component is a function; a namespace of them, `<AlertDialog.Root>`, is
+  a module of them.
+
+## Platforms and builds
+
+- Releases are for macOS on Apple silicon ([the changelog](../CHANGELOG.md)).
+- What else isn't built yet is in [the architecture's "Not yet"](architecture.md#not-yet)
+  and [the roadmap](../ROADMAP.md).

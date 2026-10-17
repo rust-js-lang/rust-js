@@ -162,10 +162,11 @@ Rust.js supports a growing subset of Rust aimed at JavaScript applications:
 - serde-compatible JSON writing and reading, `serde_json::Value` and `json!`
   included (see the [design decisions](docs/README.md))
 
-Support is specific to each feature. For example, `i128` is refused, a
-`HashMap` iterates in insertion order, and `#[serde(with)]` is refused.
+Support is specific to each feature. For example, a `HashMap` iterates in
+insertion order, and `std::thread::spawn` and `#[serde(with)]` are refused.
 [How Rust behaves in Rust.js](docs/semantics.md) says what each part of Rust
-does today, how it differs from native Rust, and what's refused.
+does today and how it differs from native Rust, and
+[the known limitations](docs/limitations.md) what's refused.
 
 ## Get started
 
