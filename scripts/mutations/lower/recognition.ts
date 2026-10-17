@@ -1541,8 +1541,8 @@ export const mutations: Mutation[] = [
     name: "skip-of-repeat-unclosed",
     breaks: "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
     file: "src/lower/recognition.rs",
-    find: "            \"std::iter::Take\" | \"std::iter::Skip\" => self.closed_on_drop(args.type_at(0)),\n",
-    replace: "            \"std::iter::Take\" => self.closed_on_drop(args.type_at(0)),\n",
+    find: "            \"std::iter::Take\" | \"std::iter::Skip\" => self.closed_on_drop(inner?),\n",
+    replace: "            \"std::iter::Take\" => self.closed_on_drop(inner?),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
@@ -1744,5 +1744,21 @@ export const mutations: Mutation[] = [
     find: "                \"std::vec::IntoIter\" | \"std::vec::Drain\" | \"std::collections::vec_deque::Drain\"\n",
     replace: "                \"std::vec::IntoIter\"\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
+  },
+  {
+    name: "owned-iterator-item-first-arg",
+    breaks: "a `Drain`'s items' type is read as its lifetime, and crashes",
+    file: "src/lower/recognition.rs",
+    find: "            .then(|| args.types().next())\n",
+    replace: "            .then(|| Some(args.type_at(0)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
+  },
+  {
+    name: "take-of-owned-unclosed",
+    breaks: "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::iter::Take\" if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) => Some(item),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
 ];

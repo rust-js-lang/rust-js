@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`take(n)` of an iterator that owns values with destructors**,
+  `v.into_iter().take(2)`: what it hasn't given is dropped when the `take`
+  ends or is dropped (ADR 0422).
 - **`last()` of an iterator of values with destructors**: each before it
   dropped as the next comes (ADR 0098).
 - **A vector of values with destructors**: `insert`, `remove`,

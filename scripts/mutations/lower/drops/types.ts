@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "owned-iter-drops-unsupported",
     breaks: "a `vec::IntoIter` of what has a destructor is refused, as a std type holding one",
     file: "src/lower/drops/types.rs",
-    find: "                if self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty) =>\n",
-    replace: "                if false =>\n",
+    find: "            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty) => self.drops_in(item, walk),\n",
+    replace: "            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty).filter(|_| false) => self.drops_in(item, walk),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {

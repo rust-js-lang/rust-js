@@ -242,8 +242,8 @@ export const mutations: Mutation[] = [
     name: "owned-iter-left-undropped",
     breaks: "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
     file: "src/lower/drops.rs",
-    find: "            ty::Adt(_, args) if self.array_source(ty) == Some(true) || self.recognition().owns_one_item(ty) => {\n",
-    replace: "            ty::Adt(_, args) if false => {\n",
+    find: "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {\n",
+    replace: "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {
@@ -301,13 +301,5 @@ export const mutations: Mutation[] = [
     find: "                        values.extend(self.drop_function(args.type_at(0), span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
-  },
-  {
-    name: "owned-iterator-item-first-arg",
-    breaks: "a `Drain`'s drop reads its lifetime for its items' type, and crashes",
-    file: "src/lower/drops.rs",
-    find: "                let item = args.types().next().expect(\"an item type\");\n",
-    replace: "                let item = args.type_at(0);\n",
-    tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
 ];

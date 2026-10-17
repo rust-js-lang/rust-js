@@ -77,3 +77,17 @@ index's `index_mut`, `extend_from_slice`, and the allocator's, `set_len`
   close what they step.
 - `vec![value; n]` of a value with a destructor is refused still: of
   `n == 0` it drops `value`.
+
+## Amendment: a `take` of an iterator that owns its items
+
+`take(n)` of an iterator that owns items with a destructor, moved into it,
+`v.into_iter().take(2)`, `drain(..)`'s or `Some(x).into_iter()`'s, was
+refused. Its source is `$closing(it, drop)` now, whose `return()` drops
+each item it hasn't given, which JS's `take` calls as it ends, and a loop
+that leaves early, or dropping the `take`, calls: what Rust drops with the
+`take`, dropped where Rust does, within a loop's last step (case B, as
+above). Which iterators own their items is `recognition::owned_items`, the
+one question their own drop asks too. A `take` of one that's lent,
+`it.by_ref().take(n)`, is still refused: it would close what its lender
+still has; and `skip` of one, which JS's `drop` steps past without
+dropping. The `take_destructors` corpus case runs each with native Rust.

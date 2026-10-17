@@ -637,4 +637,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => self.last_of(method(\"toArray\", it, Vec::new()), item, made),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "take-of-owned-refused",
+    breaks: "`take` of an iterator that owns items with a destructor is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "        if method == Some(IterMethod::Take) && !lent && owned {\n",
+    replace: "        if false && method == Some(IterMethod::Take) && !lent && owned {\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+  },
+  {
+    name: "take-of-lent-closing",
+    breaks: "a `take` of a lent iterator that owns items with a destructor drops what's left when it ends, which its lender still has",
+    file: "src/lower/mir/iter.rs",
+    find: "        if method == Some(IterMethod::Take) && !lent && owned {\n",
+    replace: "        if method == Some(IterMethod::Take) && owned {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "take of a lent iterator of owned items"],
+  },
 ];

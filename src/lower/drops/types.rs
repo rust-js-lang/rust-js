@@ -356,12 +356,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // An iterator that owns an array's items, `vec::IntoIter`: what it
             // hasn't given yet, each dropped in order, as a loop that leaves
             // early drops them (ADR 0098). MIR drops it as one value.
-            ty::Adt(_, args)
-                if self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty) =>
-            {
-                // Its items' type, its first, after a `Drain`'s lifetime.
-                self.drops_in(args.types().next().expect("an item type"), walk)
-            }
+            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty) => self.drops_in(item, walk),
             // One closed to drop what it holds, `repeat`'s value (ADR 0422).
             ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),
             // A heap's `PeekMut`: its top sifted down, if it changed (ADR 0333).

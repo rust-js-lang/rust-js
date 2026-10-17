@@ -342,9 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let item = self.iterator_item(iter_ty);
         let dropping = item.filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-        if dropping.is_some() {
-            self.check_leaves_none(std_method, iter_ty, name, span)?;
-        }
+        let it = self.dropping_source(it, (std_method, iter_ty, lent), dropping, name, span)?;
         let mut arg = || values.next().expect("rustc checked the arguments");
         // A function of the crate given as the callback, `filter(is_rule)`:
         // itself, which takes no more than it's given (ADR 0279).
@@ -549,6 +547,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterMethod::ByRef | IterMethod::IntoIter => Some(receiver),
             _ => None,
         }
+    }
+
+    /// The iterator `it`, of type `iter_ty`, a method of items with a
+    /// destructor, `dropping`, is called on, `lent` or not: of a `take` of
+    /// one that owns them, moved into it, `$closing`, whose closing drops
+    /// what it hasn't given, as the `take` closes it when it ends or is
+    /// dropped (ADR 0422); else one that may leave some is refused.
+    fn dropping_source(
+        &mut self,
+        it: Expr,
+        (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
+        dropping: Option<Ty<'tcx>>,
+        name: &str,
+        span: Span,
+    ) -> R<Expr> {
+        let Some(item) = dropping else {
+            return Ok(it);
+        };
+        let owned = self.recognition().owned_items(iter_ty).is_some();
+        if method == Some(IterMethod::Take) && !lent && owned {
+            let drop = self.std_drop_function(item, span)?.expect("a destructor");
+            return Ok(Expr::call_helper("$closing", vec![it, drop]));
+        }
+        self.check_leaves_none(method, iter_ty, name, span)?;
+        Ok(it)
     }
 
     /// An item with a destructor a method may leave undropped, `take`'s or
