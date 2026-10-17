@@ -1757,8 +1757,8 @@ export const mutations: Mutation[] = [
     name: "take-of-owned-unclosed",
     breaks: "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped",
     file: "src/lower/recognition.rs",
-    find: "            \"std::iter::Take\" if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) => Some(item),\n",
-    replace: "",
+    find: "                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) =>\n",
+    replace: "                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)).filter(|_| false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
 ];

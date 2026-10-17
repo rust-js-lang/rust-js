@@ -89,5 +89,7 @@ that leaves early, or dropping the `take`, calls: what Rust drops with the
 above). Which iterators own their items is `recognition::owned_items`, the
 one question their own drop asks too. A `take` of one that's lent,
 `it.by_ref().take(n)`, is still refused: it would close what its lender
-still has; and `skip` of one, which JS's `drop` steps past without
-dropping. The `take_destructors` corpus case runs each with native Rust.
+still has. `skip(n)` of one is `$skipDropping(it, n, drop)`, which drops
+what it passes over as it's first stepped, as Rust's `nth` does, and what
+it hasn't given when it's closed, where JS's `drop` would pass over them
+undropped. The `take_destructors` corpus case runs each with native Rust.

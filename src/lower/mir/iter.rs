@@ -367,7 +367,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::FlatMap) => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Take) => method("take", it, vec![arg()]),
-            Some(IterMethod::Skip) => method("drop", it, vec![arg()]),
+            // Of `$closing`'s, its items with a destructor: each it skips
+            // dropped, `$skipDropping` (ADR 0422).
+            Some(IterMethod::Skip) => match it.kind {
+                js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some("$closing") => {
+                    let drop = list.pop().expect("its drop");
+                    let source = list.pop().expect("its source");
+                    Expr::call_helper("$skipDropping", vec![source, arg(), drop])
+                }
+                kind => method("drop", Expr { kind, ..it }, vec![arg()]),
+            },
             Some(IterMethod::ForEach) => method("forEach", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Any) => method("some", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::All) => method("every", it, vec![self.unary_callback(arg(), own)]),
@@ -566,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         };
         let owned = self.recognition().owned_items(iter_ty).is_some();
-        if method == Some(IterMethod::Take) && !lent && owned {
+        if matches!(method, Some(IterMethod::Take | IterMethod::Skip)) && !lent && owned {
             let drop = self.std_drop_function(item, span)?.expect("a destructor");
             return Ok(Expr::call_helper("$closing", vec![it, drop]));
         }

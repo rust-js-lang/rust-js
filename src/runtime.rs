@@ -66,6 +66,7 @@ helpers! {
     MulAddF32,
     LastDropping,
     Closing,
+    SkipDropping,
     Round,
     Checked,
     CheckedDiv,
@@ -745,6 +746,7 @@ impl Helper {
             Helper::MulAddF32 => include_str!("runtime/mul_add_f32.js"),
             Helper::LastDropping => include_str!("runtime/last_dropping.js"),
             Helper::Closing => include_str!("runtime/closing.js"),
+            Helper::SkipDropping => include_str!("runtime/skip_dropping.js"),
             // `x.round()`: a half away from zero, where `Math.round` goes up.
             Helper::Round => include_str!("runtime/round.js"),
             // `a.checked_add(b)`: the exact result, or `None` out of range. An

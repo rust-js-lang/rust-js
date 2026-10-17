@@ -1,6 +1,8 @@
-// `take(n)` of an iterator that owns items with destructors, moved into it:
-// what it hasn't given is dropped when the `take` ends or is dropped, as
-// Rust's is: its source is `$closing`, which JS's `take` closes (ADR 0422).
+// `take(n)` or `skip(n)` of an iterator that owns items with destructors,
+// moved into it: what it hasn't given is dropped when it ends or is dropped,
+// as Rust's is, and what `skip` passes over as it's first stepped. Its
+// source is `$closing`, which JS's `take` closes, or `$skipDropping`
+// (ADR 0422).
 struct N(u32);
 impl Drop for N {
     fn drop(&mut self) {
@@ -35,5 +37,19 @@ fn main() {
     let z: Vec<N> = (30..=31).map(N).collect();
     let all: Vec<N> = z.into_iter().take(5).collect();
     println!("all {}", all.len());
+    let s: Vec<N> = (40..=44).map(N).collect();
+    for n in s.into_iter().skip(2) {
+        println!("after skip {}", n.0);
+        if n.0 == 43 {
+            break;
+        }
+    }
+    let unstepped: Vec<N> = (50..=52).map(N).collect();
+    let skipped = unstepped.into_iter().skip(1);
+    println!("made skip");
+    drop(skipped);
+    let both: Vec<N> = (60..=64).map(N).collect();
+    let kept: Vec<N> = both.into_iter().skip(1).take(2).collect();
+    println!("kept {}", kept.len());
     println!("end");
 }

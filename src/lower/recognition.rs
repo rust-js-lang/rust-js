@@ -3061,9 +3061,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADR 0422): `iter::repeat`'s
     /// value, and that of a `take` or a `skip` of one, JS's helpers, which
-    /// close what they step; and a `take` of an iterator that owns its
-    /// items, given it as `$closing`, whose closing drops what it hasn't
-    /// given.
+    /// close what they step; and a `take` or a `skip` of an iterator that
+    /// owns its items, given it as `$closing` or `$skipDropping`, whose
+    /// closing drops what it hasn't given.
     pub(super) fn closed_on_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
@@ -3071,7 +3071,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let inner = args.types().next();
         match path.as_str() {
             "std::iter::Repeat" => inner,
-            "std::iter::Take" if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) => Some(item),
+            "std::iter::Take" | "std::iter::Skip"
+                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) =>
+            {
+                Some(item)
+            }
             "std::iter::Take" | "std::iter::Skip" => self.closed_on_drop(inner?),
             _ => None,
         }
