@@ -145,13 +145,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Len => Expr::member(arg(), "length"),
             Std::Index => Expr::call(Expr::helper("$index"), vec![arg(), arg()]),
-            Std::Clear => {
-                out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
-                Expr::undefined()
-            }
+            // Of items with a destructor, each dropped once it's out, as
+            // `truncate` drops them (ADR 0098).
+            Std::Clear => match self.items_drop(tys[0], span)? {
+                Some(drop) => Expr::call(Expr::helper("$truncate"), vec![arg(), Expr::int(0), drop]),
+                None => {
+                    out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
+                    Expr::undefined()
+                }
+            },
             Std::Retain => {
                 let (v, keep) = (arg(), arg());
-                Expr::call(Expr::helper("$retain"), vec![v, keep])
+                Expr::call(Expr::helper("$retain"), self.dropping(vec![v, keep], tys[0], span)?)
             }
             _ => return Ok(None),
         }))

@@ -1,8 +1,6 @@
-//@ compile-fail: rust-js does not support giving `<Wrap<T> as Empty>::empty`'s `T` a type with a destructor, where it takes none
-// A generic impl's `T` may have a destructor (ADR 0098), and `clear` would
-// empty the `Vec` without running it: the impl takes none of one, and a
-// call that gives one is refused (ADR 0190), as `clear` of a `Vec` of a
-// type with one is.
+// A generic impl's `T` may have a destructor (ADR 0098): `clear` of its
+// `Vec<T>` drops each item with the drop the impl is given for `T`, as std's
+// does, where it was refused (ADR 0190).
 trait Empty {
     fn empty(&mut self);
 }

@@ -287,11 +287,16 @@ export function $rem(a, b, min) {
   return a % b;
 }
 
-export function $retain(v, keep) {
+// `v.retain(keep)`: the items `keep` keeps, in order; of items with a
+// destructor, each it doesn't dropped by `drop` before the next is asked,
+// as std's are (ADR 0098).
+export function $retain(v, keep, drop) {
   let n = 0;
   for (const x of v) {
     if (keep(x)) {
       v[n++] = x;
+    } else if (drop !== undefined) {
+      drop(x);
     }
   }
   v.length = n;
@@ -7501,9 +7506,14 @@ export function $swap(v, a, b) {
   [v[a], v[b]] = [v[b], v[a]];
 }
 
-export function $truncate(v, length) {
+// `v.truncate(length)`: what's past it gone, and of items with a destructor,
+// each dropped by `drop`, in order, once it's out, as std's are (ADR 0098).
+export function $truncate(v, length, drop) {
   if (length < v.length) {
-    v.length = length;
+    const gone = v.splice(length);
+    if (drop !== undefined) {
+      for (const item of gone) drop(item);
+    }
   }
 }
 
@@ -7517,11 +7527,16 @@ export function $dedup(v) {
   v.length = n;
 }
 
-export function $dedupBy(v, same) {
+// `v.dedup_by(same)`: each item `same` says is the one before it gone; of
+// items with a destructor, dropped by `drop` before the next is compared,
+// as std's are (ADR 0098).
+export function $dedupBy(v, same, drop) {
   let n = 0;
   for (const item of v) {
     if (n === 0 || !same(item, v[n - 1])) {
       v[n++] = item;
+    } else if (drop !== undefined) {
+      drop(item);
     }
   }
   v.length = n;
@@ -7546,9 +7561,11 @@ export function $resize(v, length, item, clone) {
   v.push(item);
 }
 
-export function $resizeWith(v, length, make) {
+// `v.resize_with(length, make)`: shortened, as `truncate` drops what's past
+// it, or lengthened with what `make` makes.
+export function $resizeWith(v, length, make, drop) {
   if (length <= v.length) {
-    v.length = length;
+    $truncate(v, length, drop);
     return;
   }
   while (v.length < length) v.push(make());

@@ -143,6 +143,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A channel's queue, which its receiver's drop drops what's
                     // left of, and a failed send gives back (ADR 0142).
                     | Std::Channel(ChannelOp::Send)
+                    // What moves a vector's items, in it, out or in, and drops
+                    // none: what it takes out it gives back, `remove`'s item,
+                    // `split_off`'s vector, `mem::take`'s old value (ADR 0098).
+                    | Std::Comb(
+                        Comb::Insert | Comb::Remove | Comb::SwapRemove | Comb::SplitOff | Comb::Rotate { .. }
+                    )
+                    | Std::Append
+                    | Std::Method("reverse")
+                    | Std::Sort
+                    | Std::SortBy
+                    | Std::SortByKey
+                    | Std::Slice(
+                        SliceOp::SortUnstable { .. } | SliceOp::SelectNth { .. } | SliceOp::SortByCachedKey
+                    )
+                    | Std::MemTake
+                    // What drops what it takes out of a vector, given its
+                    // items' drop, as std drops each (ADR 0098).
+                    | Std::Comb(Comb::Truncate | Comb::DedupBy | Comb::DedupByKey | Comb::ResizeWith)
+                    | Std::Clear
+                    | Std::Retain
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

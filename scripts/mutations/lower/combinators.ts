@@ -378,4 +378,28 @@ export const mutations: Mutation[] = [
       "an insert at the front is unshift"
     ]
   },
+  {
+    name: "truncate-given-no-drop",
+    breaks: "`truncate` of items with a destructor is given no drop",
+    file: "src/lower/combinators.rs",
+    find: "            Comb::Truncate => helper(\"$truncate\", self.dropping(vec![subject, next()], subject_ty, span)?),\n",
+    replace: "            Comb::Truncate => helper(\"$truncate\", vec![subject, next()]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
+  {
+    name: "dedup-by-key-given-no-drop",
+    breaks: "`dedup_by_key` of items with a destructor is given no drop",
+    file: "src/lower/combinators.rs",
+    find: "                helper(name, self.dropping(vec![subject, same], subject_ty, span)?)\n",
+    replace: "                helper(name, vec![subject, same])\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
+  {
+    name: "resize-with-given-no-drop",
+    breaks: "`resize_with` of items with a destructor is given no drop",
+    file: "src/lower/combinators.rs",
+    find: "                self.dropping(vec![subject, next(), next()], subject_ty, span)?,\n",
+    replace: "                vec![subject, next(), next()],\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
 ];

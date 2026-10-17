@@ -475,6 +475,25 @@ or reads. (Amended: preparation took apart an expression statement of
 one too, which MIR's lowering never writes: a `const` nothing reads is
 tidy's, `unread_made`'s, alone.)
 
+## Amendment: a vector of values with destructors
+
+A `Vec`'s or a `VecDeque`'s methods of values with destructors were
+refused but for `push`, `pop` and the like. What moves its items, in it,
+out or in, drops none, and what it takes out it gives back, which its
+holder drops where Rust's does: `insert`, `remove`, `swap_remove`,
+`split_off`, `append`, `reverse`, the sorts, `rotate_left` and
+`rotate_right`, and `mem::take` of one. What drops what it takes out is
+given its items' drop, last, and drops each as std does: `retain` and
+`dedup_by` and `dedup_by_key` each it takes out before the next is asked,
+`truncate`, `clear` and a shortening `resize_with` each once it's out, in
+order, `$truncate(v, 0, noisyDrop_drop)`; a generic `Vec<T>`'s, with the
+drop the function is given for `T`, or, given none, one its callers give
+none with a destructor (ADR 0190), so `drop_impl_clear` runs where it was
+refused. The `vec_destructors` corpus case
+runs each with native Rust, drop for drop. A drop that panics stops the
+rest of `truncate`'s, which Rust's would still drop as it unwinds; `resize`
+of one, `drain` and `dedup` are still refused.
+
 ## Amended by
 
 - [0364](0364-mir-lowering.md): Bodies are lowered from their MIR, where

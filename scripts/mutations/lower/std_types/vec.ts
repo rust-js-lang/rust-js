@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "                    (CapacityOp::Reserve, true) => { let _ = (arg(), arg()); Expr::undefined() }\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
+  {
+    name: "clear-given-no-drop",
+    breaks: "`clear` of items with a destructor drops none",
+    file: "src/lower/std_types/vec.rs",
+    find: "            Std::Clear => match self.items_drop(tys[0], span)? {\n",
+    replace: "            Std::Clear => match self.items_drop(tys[0], span)?.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
+  {
+    name: "retain-given-no-drop",
+    breaks: "`retain` of items with a destructor is given no drop",
+    file: "src/lower/std_types/vec.rs",
+    find: "                Expr::call(Expr::helper(\"$retain\"), self.dropping(vec![v, keep], tys[0], span)?)\n",
+    replace: "                Expr::call(Expr::helper(\"$retain\"), vec![v, keep])\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
 ];

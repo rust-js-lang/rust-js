@@ -859,17 +859,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$binarySearchBy", vec![subject, by])
             }
             Comb::Rotate { left, count } => {
-                let list = vec![subject, next(), Expr::str(count)];
-                if left {
-                    helper("$rotateLeft", list)
-                } else {
-                    helper("$rotateRight", list)
-                }
+                let name = if left { "$rotateLeft" } else { "$rotateRight" };
+                helper(name, vec![subject, next(), Expr::str(count)])
             }
             Comb::Insert => inserted(subject, next(), next()),
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", vec![subject, next(), next()]),
-            Comb::Truncate => helper("$truncate", vec![subject, next()]),
+            Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),
             Comb::Dedup => {
                 let item = self
                     .slice_item(subject_ty)
@@ -890,7 +886,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::DedupBy => {
                 let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
-                helper(name, vec![subject, next()])
+                helper(name, self.dropping(vec![subject, next()], subject_ty, span)?)
             }
             // Its key's `==`, of what `===` compares, each item's key made once a
             // comparison, the later item's first, as std's are.
@@ -916,7 +912,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(same)).at(js::Span::NONE)],
                 );
                 let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
-                helper(name, vec![subject, same])
+                helper(name, self.dropping(vec![subject, same], subject_ty, span)?)
             }
             Comb::SwapRemove => helper("$swapRemove", vec![subject, next()]),
             // Each new item its own, a clone, but the last, which is the value
@@ -936,7 +932,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 helper("$resize", list)
             }
-            Comb::ResizeWith => helper("$resizeWith", vec![subject, next(), next()]),
+            Comb::ResizeWith => helper(
+                "$resizeWith",
+                self.dropping(vec![subject, next(), next()], subject_ty, span)?,
+            ),
             Comb::PopIf => {
                 let name = self.by_cells(subject_ty, "$popIf", "$popIfCell");
                 helper(name, vec![subject, next()])
@@ -962,6 +961,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => objects,
             false => cells,
         }
+    }
+
+    /// The function that drops each item a slice, an array or a `Vec` of
+    /// type `ty` holds, where they have a destructor: what `truncate`,
+    /// `retain`, `dedup_by` and `resize_with` drop what they remove with,
+    /// last (ADR 0098).
+    pub(super) fn items_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let item = self.slice_item(ty).expect("a slice's, an array's or a `Vec`'s items");
+        let drop = self.drop_function(item, span)?;
+        // Of a type parameter whose drop this function isn't given, none: one
+        // its callers give none with a destructor (ADR 0190).
+        if drop.is_none() {
+            self.require_no_drops(item);
+        }
+        Ok(drop)
+    }
+
+    /// `list`, a call's arguments, and last, `items_drop` of `ty`, where it
+    /// has one.
+    pub(super) fn dropping(&mut self, mut list: Vec<Expr>, ty: Ty<'tcx>, span: Span) -> R<Vec<Expr>> {
+        list.extend(self.items_drop(ty, span)?);
+        Ok(list)
     }
 
     /// What a slice, an array or a `Vec` holds.
