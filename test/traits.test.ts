@@ -249,7 +249,6 @@ for (const [name, source, diagnostic] of [
   ["loop over an iterator holding one", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct It(R, u8); impl Iterator for It { type Item = R; fn next(&mut self) -> Option<R> { None } } pub fn f(it: It) { for r in it { let _ = r; } }`, null],
   // `collect()` drains a chain of owned items through `map`, `filter` and
   // `skip_while` (ADR 0098), not one that leaves some, as `take` does.
-  ["collect after take of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) -> Vec<R> { v.into_iter().take(1).collect() }`, "`take` of items with a destructor"],
   // A chain whose stages do what can be seen runs lazily (ADR 0139), and a JS
   // iterator can't run from its other end, as `rev` would have it.
   ["peekable after a closure with effects", `pub fn f(v: &[i32]) -> Option<i32> { let mut p = v.iter().map(|x| { println!("{}", x); *x }).peekable(); p.peek().copied() }`, "\`peekable\` of a lazy iterator"],

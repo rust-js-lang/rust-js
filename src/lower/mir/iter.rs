@@ -367,16 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::FlatMap) => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Take) => method("take", it, vec![arg()]),
-            // Of `$closing`'s, its items with a destructor: each it skips
-            // dropped, `$skipDropping` (ADR 0422).
-            Some(IterMethod::Skip) => match it.kind {
-                js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some("$closing") => {
-                    let drop = list.pop().expect("its drop");
-                    let source = list.pop().expect("its source");
-                    Expr::call_helper("$skipDropping", vec![source, arg(), drop])
-                }
-                kind => method("drop", Expr { kind, ..it }, vec![arg()]),
-            },
+            Some(IterMethod::Skip) => skipped(it, arg()),
             Some(IterMethod::ForEach) => method("forEach", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Any) => method("some", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::All) => method("every", it, vec![self.unary_callback(arg(), own)]),
@@ -476,19 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = method("toArray", it, Vec::new());
                 self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
             }
-            // Of items with a destructor, each before the last dropped as the
-            // next comes, as std's are (ADR 0098).
-            Some(IterMethod::Last) => match item
-                .map(|item| self.std_drop_function(item, span))
-                .transpose()?
-                .flatten()
-            {
-                Some(drop) => Expr::call_helper("$lastDropping", vec![it, drop]),
-                None => {
-                    let items = method("toArray", it, Vec::new());
-                    self.last_of(items, item, made)
-                }
-            },
+            Some(IterMethod::Last) => self.last_value(it, item, span, made)?,
             Some(IterMethod::ByRef) => it,
             Some(IterMethod::Fuse) => it,
             Some(IterMethod::Collect) => {
@@ -581,6 +560,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.check_leaves_none(method, iter_ty, name, span)?;
         Ok(it)
+    }
+
+    /// `last()` of `it`, of items of type `item`: of ones with a destructor,
+    /// `$lastDropping`, each before the last dropped as the next comes, as
+    /// std's are (ADR 0098); else the last of its array.
+    fn last_value(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+        match item
+            .map(|item| self.std_drop_function(item, span))
+            .transpose()?
+            .flatten()
+        {
+            Some(drop) => Ok(Expr::call_helper("$lastDropping", vec![it, drop])),
+            None => {
+                let items = Expr::call(Expr::member(it, "toArray"), Vec::new());
+                Ok(self.last_of(items, item, made))
+            }
+        }
     }
 
     /// An item with a destructor a method may leave undropped, `take`'s or
@@ -860,4 +856,18 @@ fn counted_chain(e: &Expr) -> bool {
         at = source;
     }
     stages > 0 && crate::lower::iterators::is_stepped_items(at)
+}
+
+/// `skip(n)` of `it`: JS's `drop(n)`; of `$closing`'s, an iterator that owns
+/// items with a destructor, `$skipDropping`, which drops each it skips
+/// (ADR 0422).
+fn skipped(it: Expr, n: Expr) -> Expr {
+    match it.kind {
+        js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some("$closing") => {
+            let drop = list.pop().expect("its drop");
+            let source = list.pop().expect("its source");
+            Expr::call_helper("$skipDropping", vec![source, n, drop])
+        }
+        kind => Expr::call(Expr::member(Expr { kind, ..it }, "drop"), vec![n]),
+    }
 }

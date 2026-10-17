@@ -633,8 +633,8 @@ export const mutations: Mutation[] = [
     name: "last-of-destructors-uncounted",
     breaks: "`last()` of items with a destructor collects them, and drops none it passes",
     file: "src/lower/mir/iter.rs",
-    find: "                Some(drop) => Expr::call_helper(\"$lastDropping\", vec![it, drop]),\n",
-    replace: "                Some(_) => self.last_of(method(\"toArray\", it, Vec::new()), item, made),\n",
+    find: "            Some(drop) => Ok(Expr::call_helper(\"$lastDropping\", vec![it, drop])),\n",
+    replace: "            Some(_) => Ok(self.last_of(Expr::call(Expr::member(it, \"toArray\"), Vec::new()), item, made)),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
@@ -657,8 +657,8 @@ export const mutations: Mutation[] = [
     name: "skip-of-owned-unskipped",
     breaks: "`skip` of an iterator that owns items with a destructor is JS's `drop`, which drops none it skips",
     file: "src/lower/mir/iter.rs",
-    find: "                js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some(\"$closing\") => {\n",
-    replace: "                js::ExprKind::Call(callee, mut list) if false && callee.helper_name() == Some(\"$closing\") => {\n",
+    find: "        js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some(\"$closing\") => {\n",
+    replace: "        js::ExprKind::Call(callee, mut list) if false && callee.helper_name() == Some(\"$closing\") => {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
 ];
