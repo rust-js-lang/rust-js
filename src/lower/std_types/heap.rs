@@ -69,6 +69,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let compare = self.cmp_fn(item, false, span)?;
         values.push(compare);
+        // What `retain` takes out, dropped as it's met (ADR 0098).
+        if op == HeapOp::Retain {
+            values.extend(self.std_drop_function(item, span)?);
+        }
         let name = match op {
             HeapOp::Push => "$heapPush",
             HeapOp::Pop => "$heapPop",

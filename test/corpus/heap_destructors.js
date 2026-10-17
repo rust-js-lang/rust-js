@@ -6,6 +6,7 @@ import {
   $heapFrom,
   $heapPop,
   $heapPush,
+  $heapRetain,
   $heapSorted,
   $iter,
 } from "@rust-js/runtime";
@@ -215,10 +216,83 @@ function main() {
     }
     throw error;
   }
-  const value$3 = [[11], [12]];
+  const value$3 = [[20], [25], [21], [30]];
+  let r;
+  try {
+    r = $heapFrom(value$3, (a, b) => $cmp(a[0], b[0]));
+  } catch (error) {
+    for (const item of sorted) {
+      oDrop_drop(item);
+    }
+    for (const item of other) {
+      oDrop_drop(item);
+    }
+    for (const item of h) {
+      oDrop_drop(item);
+    }
+    throw error;
+  }
+  const value$4 = r;
+  const value$5 = (o) => {
+    console.log(`keep ${o[0]}?`);
+    return o[0] % 5 === 0;
+  };
+  try {
+    $heapRetain(value$4, value$5, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+  } catch (error) {
+    for (const item of r) {
+      oDrop_drop(item);
+    }
+    for (const item of sorted) {
+      oDrop_drop(item);
+    }
+    for (const item of other) {
+      oDrop_drop(item);
+    }
+    for (const item of h) {
+      oDrop_drop(item);
+    }
+    throw error;
+  }
+  const o = r[0];
+  try {
+    const value = o ? o[0] : undefined;
+    console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    for (const item of r) {
+      oDrop_drop(item);
+    }
+    for (const item of sorted) {
+      oDrop_drop(item);
+    }
+    for (const item of other) {
+      oDrop_drop(item);
+    }
+    for (const item of h) {
+      oDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    for (const item of r) {
+      oDrop_drop(item);
+    }
+  } catch (error) {
+    for (const item of sorted) {
+      oDrop_drop(item);
+    }
+    for (const item of other) {
+      oDrop_drop(item);
+    }
+    for (const item of h) {
+      oDrop_drop(item);
+    }
+    throw error;
+  }
+  const value$6 = [[11], [12]];
   let k;
   try {
-    k = $heapFrom(value$3, (a, b) => $cmp(a[0], b[0]));
+    k = $heapFrom(value$6, (a, b) => $cmp(a[0], b[0]));
   } catch (error) {
     for (const item of sorted) {
       oDrop_drop(item);

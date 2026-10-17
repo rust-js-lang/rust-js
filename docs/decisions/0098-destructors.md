@@ -503,8 +503,9 @@ iterator of them drops each before the last as the next comes,
 its old value given back (`option_destructors`); `insert` drops the old
 one before it puts the new one in, and `get_or_insert` the one it's given
 where it holds one, as Rust's does. A `BinaryHeap`'s `push`, `pop`,
-`append`, `from`, `into_sorted_vec` and `drain` move its items too, its
-`retain` of them still refused (`heap_destructors`).
+`append`, `from`, `into_sorted_vec` and `drain` move its items too, and
+its `retain` drops each it doesn't keep as it's met, as std's `Vec::retain`
+of them does (`heap_destructors`).
 
 ## Amended by
 

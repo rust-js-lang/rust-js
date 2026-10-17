@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Method("unshift" | "shift")
                     // A heap's that move its items, in it, out or in.
                     | Std::Heap(HeapOp::Push | HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From | HeapOp::Append)
-                    | Std::Heap(HeapOp::Drain)
+                    | Std::Heap(HeapOp::Drain | HeapOp::Retain)
                     | Std::Slice(SliceOp::DequeInsert { .. })
                     | Std::DequeRemove
                     // An `Option`'s that moves what it holds out, or in, its

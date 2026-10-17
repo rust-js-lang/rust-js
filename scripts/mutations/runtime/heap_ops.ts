@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "  return heap[0];",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
   },
+  {
+    name: "heap-retain-drops-none",
+    breaks: "a heap's `retain` of items with a destructor drops none it doesn't keep",
+    file: "src/runtime/heap_ops.js",
+    find: "    if (drop !== undefined) drop(heap[i]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
+  },
 ];
