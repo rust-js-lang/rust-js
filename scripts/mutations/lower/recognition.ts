@@ -487,8 +487,8 @@ export const mutations: Mutation[] = [
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition.rs",
-    find: "== \"std::vec::IntoIter\";",
-    replace: "== \"std::vec::Nothing\";",
+    find: "\"std::vec::IntoIter\" | \"std::vec::Drain\"",
+    replace: "\"std::vec::Nothing\" | \"std::vec::Drain\"",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
   {
@@ -1693,8 +1693,8 @@ export const mutations: Mutation[] = [
     name: "empty-iter-not-an-array",
     breaks: "a constant of `iter::Empty` is an error, as its clone isn't known",
     file: "src/lower/recognition.rs",
-    find: "vec_into_iter || self.is_iter_empty(ty))",
-    replace: "vec_into_iter || false && self.is_iter_empty(ty))",
+    find: "owning || self.is_iter_empty(ty))",
+    replace: "owning || false && self.is_iter_empty(ty))",
     tests: ["test/corpus.test.ts", "-t", "^std_struct_const.rs$"],
   },
   {
@@ -1736,5 +1736,13 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id) || is_double_ended(tcx, id))\n",
     replace: "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
+  {
+    name: "drain-not-owning",
+    breaks: "a vector's `drain` isn't an iterator that owns what it took out, so one of values with destructors is refused",
+    file: "src/lower/recognition.rs",
+    find: "                \"std::vec::IntoIter\" | \"std::vec::Drain\" | \"std::collections::vec_deque::Drain\"\n",
+    replace: "                \"std::vec::IntoIter\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
 ];

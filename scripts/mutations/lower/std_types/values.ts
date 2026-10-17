@@ -290,4 +290,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "drain-of-destructors-refused",
+    breaks: "`drain` of a vector of values with destructors is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Text(TextOp::Drain)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
+  },
 ];

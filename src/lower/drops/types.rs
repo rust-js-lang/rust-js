@@ -359,7 +359,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(_, args)
                 if self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty) =>
             {
-                self.drops_in(args.type_at(0), walk)
+                // Its items' type, its first, after a `Drain`'s lifetime.
+                self.drops_in(args.types().next().expect("an item type"), walk)
             }
             // One closed to drop what it holds, `repeat`'s value (ADR 0422).
             ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),

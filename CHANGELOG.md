@@ -83,6 +83,9 @@ released any more: `rust-js build` is the one way to build an app.
   `mem::take` move its items and drop none; `retain`, `dedup_by`,
   `truncate`, `clear` and `resize_with` drop what they take out, as std
   does, in its order; each was refused (ADR 0098).
+- **`drain(..)` of a vector of values with destructors**: an iterator
+  that owns what it took out, whose drop drops what it hasn't given yet,
+  as `into_iter()`'s does (ADR 0098).
 - **An `Rc` or `Arc` of a value with a destructor**, which was refused: it's
   counted, `{ value, strong, weak }`, and the last of it drops what it
   points at, where Rust's does (ADR 0320).

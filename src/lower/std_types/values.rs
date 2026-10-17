@@ -14,6 +14,7 @@ use crate::lower::std_types::lazy::LazyOp;
 use crate::lower::std_types::map::MapOp;
 use crate::lower::std_types::once::OnceOp;
 use crate::lower::std_types::slice::SliceOp;
+use crate::lower::std_types::text::TextOp;
 use crate::lower::{FnCx, R};
 use rustc_ast::Mutability;
 use rustc_middle::ty::{self, Ty};
@@ -163,6 +164,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Comb(Comb::Truncate | Comb::DedupBy | Comb::DedupByKey | Comb::ResizeWith)
                     | Std::Clear
                     | Std::Retain
+                    // What it takes out, given back as what's drained, which
+                    // drops what's left of it as an `IntoIter` does.
+                    | Std::Text(TextOp::Drain)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

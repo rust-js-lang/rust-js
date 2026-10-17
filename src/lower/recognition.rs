@@ -3032,8 +3032,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
-    /// of a string's `bytes()`, an array of its bytes (ADR 0034), and of
-    /// `iter::Empty`, `[]` (ADR 0128).
+    /// of a vector's `drain(..)`, the array of what it took out, which owns
+    /// them too (ADR 0098), of a string's `bytes()`, an array of its bytes
+    /// (ADR 0034), and of `iter::Empty`, `[]` (ADR 0128).
     pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return None };
@@ -3043,9 +3044,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_str_bytes(ty) {
             return Some(true);
         }
-        let vec_into_iter =
-            self.tcx.crate_name(adt.did().krate) == sym::alloc && std_path(self.tcx, adt.did()) == "std::vec::IntoIter";
-        (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter || self.is_iter_empty(ty)).then_some(true)
+        let owning = self.tcx.crate_name(adt.did().krate) == sym::alloc
+            && matches!(
+                std_path(self.tcx, adt.did()).as_str(),
+                "std::vec::IntoIter" | "std::vec::Drain" | "std::collections::vec_deque::Drain"
+            );
+        (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
 
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,

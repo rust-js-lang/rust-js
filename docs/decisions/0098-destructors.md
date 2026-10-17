@@ -490,9 +490,12 @@ order, `$truncate(v, 0, noisyDrop_drop)`; a generic `Vec<T>`'s, with the
 drop the function is given for `T`, or, given none, one its callers give
 none with a destructor (ADR 0190), so `drop_impl_clear` runs where it was
 refused. The `vec_destructors` corpus case
-runs each with native Rust, drop for drop. A drop that panics stops the
-rest of `truncate`'s, which Rust's would still drop as it unwinds; `resize`
-of one, `drain` and `dedup` are still refused.
+runs each with native Rust, drop for drop. `drain(..)` of one is what it
+took out, an iterator that owns it, as `into_iter()`'s is, whose drop
+drops what it hasn't given yet, in order: all of it, of one dropped where
+it's made, none of one collected (`drain_destructors`). A drop that panics
+stops the rest of `truncate`'s, which Rust's would still drop as it
+unwinds; `resize` of one and `dedup` are still refused.
 
 ## Amended by
 

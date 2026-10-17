@@ -408,7 +408,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
             // An iterator owning an array's items: each it hasn't given yet.
             ty::Adt(_, args) if self.array_source(ty) == Some(true) || self.recognition().owns_one_item(ty) => {
-                self.drop_items(value, args.type_at(0), span, made, out)?
+                let item = args.types().next().expect("an item type");
+                self.drop_items(value, item, span, made, out)?
             }
             // Closed, `it.return()`, which drops what it holds (ADR 0422).
             ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {

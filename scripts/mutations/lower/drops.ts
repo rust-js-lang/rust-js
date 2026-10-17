@@ -302,4 +302,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
   },
+  {
+    name: "owned-iterator-item-first-arg",
+    breaks: "a `Drain`'s drop reads its lifetime for its items' type, and crashes",
+    file: "src/lower/drops.rs",
+    find: "                let item = args.types().next().expect(\"an item type\");\n",
+    replace: "                let item = args.type_at(0);\n",
+    tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
+  },
 ];
