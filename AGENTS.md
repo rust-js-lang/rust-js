@@ -79,6 +79,29 @@ didn't.
   job: stop, give the question its one place, route every path through it,
   hold it with a test, then go on.
 
+## Least surprise
+
+A design is right when it's the one a person, or an agent, would guess.
+Each form follows the rule it looks like it follows, everywhere it can
+appear, with nothing to learn on the side: what looks the same means the
+same, and what works in one place works the same way in the next.
+
+- **Guessable from one example.** Having seen one prop, binding, attribute,
+  flag or diagnostic, you can write the next without looking it up.
+- **No exceptions, no anomalies.** "Except when", a special case, a form
+  that works here but not there: each is a cost every reader pays, and a
+  place an agent goes wrong. Before adding one, find the rule that covers
+  the case and extend it. If none can, ask the user; an exception that
+  stays is documented where it's met, and breaking it is a compiler error
+  that says what to write.
+- **The conventions people already know.** Rust's where Rust is written,
+  JavaScript's, React's and TypeScript's where JS is read or written. Where
+  the two meet, one rule maps one to the other, the same for every case.
+- **Spot the red flag**: a rule with a list of cases it doesn't cover, two
+  spellings of one thing that differ only by where they're written, output
+  that follows one convention for some values and another for the rest.
+  Treat it as two ways to do one job, above.
+
 ## Principles
 
 - **Each piece understood on its own.** A module owns one responsibility
