@@ -1872,6 +1872,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if Some(trait_id) == self.to_string_trait() {
             return Ok(None);
         }
+        // Whether the call's types are known where it's written, as MIR's
+        // recognition reads them: not a copied default's `Self::Item`.
+        let known_here = !generic_args.has_non_region_param();
         // In a copied default, `Self` is the impl's type: a call on it
         // resolves to the impl's method, called directly.
         let generic_args = self.in_impl_terms(generic_args);
@@ -2030,7 +2033,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite)
             || is_std_def(self.tcx, trait_id, StdItem::IoWrite)
             || self.tcx.is_lang_item(trait_id, LangItem::Deref))
-            && !tr.args.has_non_region_param()
+            && known_here
         {
             return Ok(None);
         }
@@ -2672,6 +2675,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
                 _ => self.tcx.mk_param_from_def(param),
             });
+            // One whose `where` clauses this impl's type can't meet, a
+            // default's `where Self::Item: Deref` of an `Item` that isn't,
+            // nothing can call: it isn't in it, as rustc leaves it out of a
+            // vtable.
+            if self.tcx.instantiate_and_check_impossible_clauses((item.def_id, args)) {
+                continue;
+            }
             // rustc won't resolve one of a blanket impl over a `?Sized` type,
             // `impl<Q: ?Sized> Equivalent<K> for Q`, as a `dyn` might be that
             // type too: in the impl's own dictionary it's the impl's item.

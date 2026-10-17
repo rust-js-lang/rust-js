@@ -7,7 +7,14 @@ whose `PartialEq` a bound gives is that dictionary's, as num-traits'
 Self::zero()`, are JS's; what a copied default finds of a type is its own
 bounds', not a sibling's; a generic function's own `Holder<T>` is any
 `Holder<..>` changed in place; a dictionary's cache is named apart from
-the runtime's helpers.) Extends [0047](0047-methods.md),
+the runtime's helpers; a method whose `where` clauses an impl's type can't
+meet, a default's `where Self::Item: Deref` of an `Item` that isn't, isn't
+in its dictionary, as rustc leaves it out of a vtable, and nothing can call
+it; and a std trait's call in a copied default on a type its body knows
+only as its trait's, `x.deref()` of a `Self::Item`, is its dictionary's,
+as generic code's is, not std's of the impl's type, which MIR's
+recognition, reading the body, can't see: `default_method_where` in the
+corpus.) Extends [0047](0047-methods.md),
 [0023](0023-strings-references-shared-state.md), and
 [0039](0039-generic-bindings.md). Replaces 0047's rejection of trait methods
 for the supported subset below. Amended by

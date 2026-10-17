@@ -1181,4 +1181,21 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a type's fact of a dyn"],
   },
+  {
+    name: "impossible-method-in-dictionary",
+    breaks: "a default whose `where` clauses an impl can't meet is copied into its dictionary, and refused",
+    file: "src/lower/traits.rs",
+    find: "            if self.tcx.instantiate_and_check_impossible_clauses((item.def_id, args)) {\n",
+    replace: "            if false {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^default_method_where.rs$"],
+  },
+  {
+    name: "copied-default-deref-known",
+    breaks: "`x.deref()` of a copied default's `Self::Item` is left to std's recognition, which can't see the impl's type, and refused",
+    file: "src/lower/traits.rs",
+    find: "        let known_here = !generic_args.has_non_region_param();\n",
+    replace: "        let known_here = !self.in_impl_terms(generic_args).has_non_region_param();\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_method_where.rs$"],
+  },
 ];

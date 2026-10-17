@@ -78,6 +78,10 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A trait's default method whose `where` clauses an impl can't meet**,
+  `where Self::Item: Deref`, is left out of that impl's dictionary, as
+  rustc leaves it out of a vtable; one that meets them derefs through its
+  dictionary (ADR 0049).
 - **`next_back()` and `rev()` of a generic `T: DoubleEndedIterator`, and
   of a `dyn DoubleEndedIterator`**: a JS iterator that knows its back,
   an array's `$iter`, or `$iterator(it, next, false, nextBack)` of a range
