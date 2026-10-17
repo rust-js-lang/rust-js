@@ -91,3 +91,11 @@ clones):
     objects (ADR 0020, 0052).
 - An arm that does nothing, before others, is the negated test:
   `if (f !== "Dot") { .. }`, not an empty `if` with an `else`.
+
+## Amendment: `{:?}` of std's enums like it
+
+`{:?}` of one of std's enums whose variants hold what they hold by place,
+and whose `Debug` is derived, `Bound` and `ControlFlow`, was refused. It's
+each variant's name and what it holds, as a derived `Debug` shows it,
+`Included(3)`, `Unbounded`, `{:#?}` too, of its value as any enum's is
+(`std_enum_debug`).

@@ -199,8 +199,8 @@ export const mutations: Mutation[] = [
     name: "fieldless-std-enum-debug-refused",
     breaks: "`{:?}` of std's `IntErrorKind`, a name, is an error",
     file: "src/lower/display.rs",
-    find: "                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>",
-    replace: "                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) && false =>",
+    find: "                if representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
+    replace: "                if false && representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
   },
   {
@@ -459,5 +459,21 @@ export const mutations: Mutation[] = [
     find: "        if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
+  },
+  {
+    name: "std-tuple-enum-debug-refused",
+    breaks: "`{:?}` of std's `Bound` and `ControlFlow` is refused",
+    file: "src/lower/display.rs",
+    find: "                    && adt.variants().iter().all(|v| v.ctor_kind().is_some())\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
+  },
+  {
+    name: "std-tuple-enum-debug-tagless",
+    breaks: "`{:?}` of `Bound::Included(3)` reads its variant as the value, a fieldless one's",
+    file: "src/lower/display.rs",
+    find: "                    (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)\n",
+    replace: "                    (Expr::bin(Op::Eq, Expr::var(\"value\"), Expr::str(&js_name)), this)\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
   },
 ];

@@ -1304,8 +1304,75 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(self.variant_debug(*adt, value))
             }
+            // Another of std's enums whose variants hold what they hold by
+            // place, `Bound`'s `Included(3)`, and whose `Debug` is derived:
+            // each variant's name and what it holds, as a derived `Debug`
+            // shows them, of its value as any enum's is (ADR 0033).
+            ty::Adt(adt, args)
+                if adt.is_enum()
+                    && !representation::is_fieldless_enum(*adt)
+                    && !adt.did().is_local()
+                    && !self.krate.foreign.in_library(adt.did())
+                    && adt.variants().iter().all(|v| v.ctor_kind().is_some())
+                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>
+            {
+                self.tuple_variants_debug(*adt, args, value, span, pretty)
+            }
             _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
         }
+    }
+
+    /// `{:?}` of another crate's enum whose variants hold what they hold by
+    /// place, as a derived `Debug` shows it: `Unbounded`, a fieldless one's
+    /// name, the string it is; `Included(3)` of `{ TAG: "Included", _0: 3 }`.
+    fn tuple_variants_debug(
+        &mut self,
+        adt: ty::AdtDef<'tcx>,
+        args: ty::GenericArgsRef<'tcx>,
+        value: Expr,
+        span: Span,
+        pretty: &Pretty,
+    ) -> R<Expr> {
+        let tag = Expr::member(Expr::var("value"), bindings::tag_key(self.tcx, adt.did()));
+        let mut shown: Option<Expr> = None;
+        for variant in adt.variants().iter().rev() {
+            let name = variant.name.to_string();
+            let js_name = bindings::variant_name(self.tcx, variant);
+            let (test, this) = match variant.fields.is_empty() {
+                true => (
+                    Expr::bin(Op::Eq, Expr::var("value"), Expr::str(&js_name)),
+                    Expr::str(&name),
+                ),
+                false => {
+                    let mut parts = Vec::new();
+                    for (i, field) in variant.fields.iter().enumerate() {
+                        let held =
+                            Expr::member(Expr::var("value"), representation::variant_field(self.tcx, variant, i));
+                        parts.push(self.debug_string_with(held, self.field_ty(field, args), span, pretty)?);
+                    }
+                    let mut plain = vec![Expr::str(format!("{name}("))];
+                    for (i, part) in parts.iter().enumerate() {
+                        if i > 0 {
+                            plain.push(Expr::str(", "));
+                        }
+                        plain.push(part.clone());
+                    }
+                    plain.push(Expr::str(")"));
+                    let this = self.pretty_or(pretty, join(plain), &format!("{name}("), Expr::array(parts), ")");
+                    (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)
+                }
+            };
+            shown = Some(match shown {
+                None => this,
+                Some(rest) => Expr::cond(test, this, rest),
+            });
+        }
+        let shown = shown.ok_or_else(|| self.unsupported(span, "`{:?}` of an enum of no variants"))?;
+        let f = Expr::arrow(
+            vec!["value".into()],
+            vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+        );
+        Ok(self.applied(f, value))
     }
 
     /// A fieldless enum's derived `{:?}`, its variant's Rust name: the value
