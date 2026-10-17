@@ -34,6 +34,26 @@ use facts::{Facts, find_facts};
 pub(super) use types::Drops;
 use types::{DropQuery, TypeDrops, describe};
 
+/// Whether dropping `ty`, a type the crate knows, runs a destructor, of the
+/// `Rc`s `counted` and no dictionaries (ADR 0320): an `Rc` of one is
+/// counted, as its last drops it.
+pub(super) fn drop_runs<'tcx>(
+    recognition: super::recognition::Recognition<'_, 'tcx>,
+    library: bool,
+    counted: &super::analysis::Counted<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    let state = TypeDrops::default();
+    let query = DropQuery {
+        recognition,
+        evidence: super::traits::EvidenceQuery::without_evidence(recognition),
+        library,
+        counted,
+        state: &state,
+    };
+    query.drops(ty) == Drops::Runs
+}
+
 /// The drop functions one drop makes, which come before its code: a call
 /// to one may be in a branch, as an `Option`'s, that another isn't in.
 #[derive(Default)]

@@ -62,7 +62,13 @@ found.)
 
 - **Which are counted**: an analysis finds each `T` whose `Rc` or `Arc`
   the crate reads a count of, `ptr_eq`s, or makes a `Weak` of, in a body
-  or a field. If one is a generic function's `T`, or a generic function
+  or a field. (Amended: and each whose drop runs a destructor, which the
+  last `Rc` of it drops where Rust's does; an `Rc` of one was refused.
+  What a type drops depends on which `Rc`s are counted, a value holding a
+  counted `Rc` drops it, so it's found to a fixed point, by the drops'
+  own question, `drop_runs`. The `rc_destructors` corpus case drops
+  through clones, a `Vec` of them, a `RefCell` in one, one a function
+  gives back, and one of a value holding another, with native Rust.) If one is a generic function's `T`, or a generic function
   holds an `Rc` while any is counted, every `Rc` is: the two must agree on
   what an `Rc` is.
 - **Drops are ADR 0098's**: a counted `Rc` and a `Weak` are values with a

@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **An `Rc` or `Arc` of a value with a destructor**, which was refused: it's
+  counted, `{ value, strong, weak }`, and the last of it drops what it
+  points at, where Rust's does (ADR 0320).
 - **Fixed: `fold` of a chain whose stage does something, given a start
   that does too,** ran the stage first; a generated program found it
   (ADR 0139).

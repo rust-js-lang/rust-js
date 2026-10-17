@@ -655,6 +655,15 @@ pub(in crate::lower) struct EvidenceQuery<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
+    /// A query given no dictionaries: of a body's own types, whose type
+    /// parameters are then of no dictionary known (ADR 0362).
+    pub(in crate::lower) fn without_evidence(recognition: Recognition<'a, 'tcx>) -> Self {
+        EvidenceQuery {
+            recognition,
+            given: &[],
+        }
+    }
+
     /// The supertraits' accessors that lead from `from`'s dictionary to
     /// `to`'s, none if they're one.
     pub(super) fn super_route(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>) -> Option<Vec<String>> {
@@ -1067,10 +1076,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A query given no dictionaries: another body's, asked of its own types,
     /// whose type parameters are then of no dictionary known (ADR 0362).
     pub(super) fn no_evidence_query(&self) -> EvidenceQuery<'_, 'tcx> {
-        EvidenceQuery {
-            recognition: self.recognition(),
-            given: &[],
-        }
+        EvidenceQuery::without_evidence(self.recognition())
     }
 
     /// Is a dictionary for `tr` given? Without building it.

@@ -38,6 +38,7 @@ use rustc_span::{Symbol, sym};
 
 /// Only immutable analysis inputs: recognition cannot record dependencies,
 /// allocate names, register helpers, or lower an expression.
+#[derive(Clone, Copy)]
 pub(super) struct Recognition<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub typing_env: ty::TypingEnv<'tcx>,

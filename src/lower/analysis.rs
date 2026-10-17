@@ -460,7 +460,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A thread-local is a cell, its module's own made plain after
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
-    let counted = counted_rcs(tcx, all_bodies);
+    // Each `Rc` whose counts are read, or whose pointee's drop runs a
+    // destructor.
+    let counted = counted_rcs(tcx, all_bodies, |counted, pointee| {
+        let recognition = Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        };
+        super::drops::drop_runs(recognition, library, counted, pointee)
+    });
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
