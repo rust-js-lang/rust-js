@@ -500,18 +500,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-pattern-tests-kept",
-    "breaks": "a range arm from MIR is `if (true) { \u2026 }`, or two `if`s one inside the other",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    bottom_up(body, &mut pattern_tests);\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range pattern's tests from MIR"
-    ]
-  },
-  {
     "name": "mir-or-tests-nested",
     "breaks": "`\"a\" | \"e\" => \u2026` from MIR is a test failing for each, one inside another, the arm after them",
     "file": "src/lower/mir/tidy.rs",

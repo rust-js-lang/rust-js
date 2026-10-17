@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **Fixed: `fold` of a chain whose stage does something, given a start
+  that does too,** ran the stage first; a generated program found it
+  (ADR 0139).
 - **A blanket impl over every iterator**, `impl<I: Iterator> Trait for
   I`, whose `&mut self` method steps it, through a dictionary and a
   copied default, which was refused (ADR 0411).

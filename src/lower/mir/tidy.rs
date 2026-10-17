@@ -118,7 +118,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
         js::statement_lists(body, &mut unlabeled);
     }
-    bottom_up(body, &mut pattern_tests);
     bottom_up(body, &mut or_tests);
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     let mut read = HashSet::new();

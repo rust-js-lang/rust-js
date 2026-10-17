@@ -1179,36 +1179,3 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
         i += 1;
     }
 }
-
-/// A pattern's test as MIR makes it of a bound a type has anyway, a
-/// constant, `if (true) { s }`: its branch, `s`.
-pub(super) fn pattern_tests(stmts: &mut Vec<Stmt>) {
-    let mut i = 0;
-    while i < stmts.len() {
-        // A constant's branch, which declares nothing its neighbors do.
-        let constant = match &stmts[i].kind {
-            StmtKind::If(test, then, otherwise) if let ExprKind::Bool(holds) = test.kind => {
-                let mut neighbors = declared(&stmts[..i]).chain(declared(&stmts[i + 1..]));
-                let ours: Vec<&str> = declared(then)
-                    .chain(otherwise.iter().flat_map(|o| declared(o)))
-                    .collect();
-                (!neighbors.any(|n| ours.contains(&n))).then_some(holds)
-            }
-            _ => None,
-        };
-        if let Some(holds) = constant {
-            let StmtKind::If(_, then, otherwise) = stmts.remove(i).kind else {
-                unreachable!("matched")
-            };
-            let kept = match holds {
-                true => then,
-                false => otherwise.unwrap_or_default(),
-            };
-            let n = kept.len();
-            stmts.splice(i..i, kept);
-            i += n;
-            continue;
-        }
-        i += 1;
-    }
-}

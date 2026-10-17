@@ -108,6 +108,10 @@ const kept = v
   array. (Amended: a chain kept in a variable, and the other side of a
   `zip` or a `chain`, were arrays; and `next()` and `peekable()` of a
   chain took all of it.)
+- `fold`'s start is made before any item is stepped, as Rust gives it:
+  one that does something keeps a stage that does something lazy, which as
+  an array's would run first, `xs.filter(f).reduce(g, start())`. (Amended:
+  a generated program found it.)
 
 ## Amended by
 

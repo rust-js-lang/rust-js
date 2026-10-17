@@ -963,8 +963,14 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             ("reduce", [f, init]) if init.as_int() == Some(0) && counts(f) => {
                 eager_items(chain, true, None).map(|(items, _)| Expr::member(items, "length"))
             }
-            ("reduce", [f, init]) => eager_items(chain, true, Some(f))
-                .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
+            // Its start is made before any item is stepped, as Rust's `fold`
+            // is given it: one that does something, before no stage that
+            // does, which an array's would run first.
+            ("reduce", [f, init]) => match init.has_effects() {
+                true => eager_items(chain, false, None),
+                false => eager_items(chain, true, Some(f)),
+            }
+            .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
             // Whether any item is a literal, which `===` and `includes` agree
             // of whatever the items are: `includes`.
             ("some", [f])

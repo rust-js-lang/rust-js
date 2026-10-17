@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
+  {
+    name: "reduce-start-after-stages",
+    breaks: "`fold` of a chain whose stage does something, given a start that does too, runs the stage first, an array's",
+    file: "src/lower/iterators.rs",
+    find: "                true => eager_items(chain, false, None),\n                false => eager_items(chain, true, Some(f)),\n",
+    replace: "                true => eager_items(chain, true, Some(f)),\n                false => eager_items(chain, true, Some(f)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_chains.rs$"],
+  },
 ];

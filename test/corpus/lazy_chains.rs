@@ -18,6 +18,11 @@ fn main() {
     let kept: Vec<i32> = v.iter().map(|&x| noisy("map", x * 2)).filter(|&x| noisy("filter", x) > 2).collect();
     println!("{:?}", kept);
 
+    // `fold`'s start is made before any item is stepped: a stage that does
+    // something runs after it.
+    let total = v.iter().filter(|&&x| noisy("kept", x) % 2 == 0).fold(noisy("start", 100), |acc, &x| acc + x);
+    println!("{}", total);
+
     let first: Vec<i32> = v.iter().map(|&x| noisy("take", x)).take(2).collect();
     println!("{:?}", first);
 

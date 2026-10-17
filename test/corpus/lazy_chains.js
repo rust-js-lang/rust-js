@@ -35,6 +35,11 @@ function main() {
     .filter((x) => noisy("filter", x) > 2)
     .toArray();
   console.log(`[${kept.map((item) => String(item)).join(", ")}]`);
+  const total = v
+    .values()
+    .filter((x) => noisy("kept", x) % 2 === 0)
+    .reduce((acc, x) => (acc + x) | 0, noisy("start", 100));
+  console.log(`${total}`);
   const first = v
     .values()
     .map((x) => noisy("take", x))
@@ -83,7 +88,7 @@ function main() {
     .map((x, i) => [i, x])) {
     console.log(`${i} ${x}`);
   }
-  const total = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
+  const total$1 = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
   const inspect = (x) => {
     console.log(`saw ${x}`);
   };
@@ -93,7 +98,7 @@ function main() {
       return item;
     })
     .filter((x) => x > 2).length;
-  console.log(`${total} ${count}`);
+  console.log(`${total$1} ${count}`);
   const kept$1 = v.values().map((x) => noisy("kept", x));
   for (const x of kept$1) {
     console.log(`kept body ${x}`);
