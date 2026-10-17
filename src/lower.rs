@@ -50,6 +50,7 @@ mod iterators;
 mod jsx;
 mod jsx_api;
 mod library;
+pub(crate) mod liveness;
 mod loops;
 mod mir;
 mod mut_refs;

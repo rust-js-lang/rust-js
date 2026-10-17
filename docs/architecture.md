@@ -248,7 +248,7 @@ and answer. Each is checked to stay that way.
 | `mir/writer.rs` | A writer's `Formatter` from MIR, and its body's end (`writer_epilogue`): which locals are it, its `Debug` builders, what's refused of it, and a call that writes to it, whose JS `display.rs` writes |
 | `mir/calls.rs` | A call of what isn't std's: a closure's, a binding's, the crate's own function's, and an operator's that assigns through a `&mut` |
 | `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
-| `mir/tidy.rs`, `mir/tidy/` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs. `tidy.rs` is the order of the passes, what they're told (`Hints`), and the facts they share; each concept's passes are a module of `tidy/`: `jumps.rs` (exits, labels), `loops.rs`, `branches.rs` (tests, chains, a value each branch gives), `bindings.rs` (declarations, aliases, temporaries and their names), `destructuring.rs`, `values.rs` (arrays, handles, callbacks, cells), `decisions.rs` (a match MIR tests as a tree, an `if` chain of its arms), and `flags.rs` (drop flags where they're known, and their names) |
+| `mir/tidy.rs`, `mir/tidy/` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs. `tidy.rs` is the order of the passes, what they're told (`Hints`), and the facts they share; each concept's passes are a module of `tidy/`: `jumps.rs` (exits, labels), `loops.rs`, `branches.rs` (tests, chains, a value each branch gives), `bindings.rs` (declarations, aliases, temporaries and their names), `destructuring.rs`, `values.rs` (arrays, handles, callbacks, cells), `decisions.rs` (a match MIR tests as a tree, an `if` chain of its arms), `flags.rs` (drop flags where they're known, and their names), and `unwinds.rs` (a scope's drops on a panic, one `try { .. } finally { .. }`) |
 | `lower.rs` | `FnCx` and its state, and what every module shares: diagnostics, names, constants |
 | `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
 | `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
@@ -270,7 +270,7 @@ and answer. Each is checked to stay that way.
 | `traits.rs`, `std_impls.rs`, `ordering.rs` | Traits: dictionaries, evidence, `dyn`, calls of an impl's method; `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
 | `serde.rs`, `serde/` | serde's derives and serde_json |
-| `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214) |
+| `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214); and what JS reads, the fields of a struct given a binding, which rustc's dead-code lint can't see (ADR 0440) |
 | `declarations.rs` | A module's TypeScript declarations, what it exports as Rust types it (ADR 0196) |
 | `library.rs`, `sources.rs`, `pipeline.rs` | Libraries' contracts, source files, and the crate as a whole |
 

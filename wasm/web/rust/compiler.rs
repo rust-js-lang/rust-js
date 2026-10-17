@@ -45,155 +45,129 @@ pub struct Wasi(PhantomData<JsObject>);
 // for each file it reads, `new Directory` for what it holds): rustc warns
 // that native code would see one symbol. A directory's contents are a JS
 // `Map`, which a `HashMap` is.
-#[allow(clashing_extern_declarations)]
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
-#[allow(unused_variables)]
 fn new_file(data: &Uint8Array, options: &dyn std::any::Any) -> &'static WasiFile {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get data")]
-#[allow(unused_variables)]
 fn file_data(this: &WasiFile) -> &'static Uint8Array {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
-#[allow(unused_variables)]
 fn names_json(this: &Response) -> Promise<Vec<String>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
-#[allow(unused_variables)]
 fn examples_json(this: &Response) -> Promise<Vec<Example>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
-#[allow(unused_variables)]
 fn packages_json(this: &Response) -> Promise<Packages> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
-#[allow(unused_variables)]
 fn manifest_of(text: &str) -> Manifest {
     unreachable!()
 }
 
 /// An object's fields, as `(name, text)`: `packages.json`'s modules.
 #[cfg_attr(rust_js, rust_js::link_name = "Object.entries")]
-#[allow(unused_variables)]
 fn text_fields(object: &JsObject) -> Vec<(String, String)> {
     unreachable!()
 }
 
 // The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
-#[allow(unused_variables)]
 fn new_empty_file(data: Vec<u8>) -> &'static WasiFile {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#File")]
-#[allow(unused_variables)]
 fn new_plain_file(data: &Uint8Array) -> &'static WasiFile {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#Directory")]
-#[allow(unused_variables)]
 fn new_directory(contents: &HashMap<String, &'static Inode>) -> &'static WasiDirectory {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#Directory")]
-#[allow(unused_variables)]
 fn new_file_directory(contents: &HashMap<String, &'static WasiFile>) -> &'static WasiDirectory {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get contents")]
-#[allow(unused_variables)]
 fn contents(this: &WasiDirectory) -> &'static mut HashMap<String, &'static Inode> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 fn file_inode(this: &WasiFile) -> &'static Inode {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 fn directory_inode(this: &WasiDirectory) -> &'static Inode {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "instanceof @bjorn3/browser_wasi_shim#Directory")]
-#[allow(unused_variables)]
 fn is_directory(this: &Inode) -> bool {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "instanceof @bjorn3/browser_wasi_shim#File")]
-#[allow(unused_variables)]
 fn is_file(this: &Inode) -> bool {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 fn as_directory(this: &Inode) -> &'static WasiDirectory {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 fn as_file(this: &Inode) -> &'static WasiFile {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#OpenFile")]
-#[allow(unused_variables)]
 fn new_open_file(file: &WasiFile) -> &'static Fd {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "@bjorn3/browser_wasi_shim#ConsoleStdout.lineBuffered")]
-#[allow(unused_variables)]
 fn line_buffered(write: Box<dyn FnMut(String)>) -> &'static Fd {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#PreopenDirectory")]
-#[allow(unused_variables)]
 fn new_preopen(name: &str, contents: &HashMap<String, &'static Inode>) -> &'static PreopenDirectory {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 fn preopen_fd(this: &PreopenDirectory) -> &'static Fd {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get dir")]
-#[allow(unused_variables)]
 fn preopen_dir(this: &PreopenDirectory) -> &'static WasiDirectory {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new @bjorn3/browser_wasi_shim#WASI")]
-#[allow(unused_variables)]
 fn new_wasi(args: Vec<String>, env: Vec<String>, fds: Vec<&'static Fd>, options: &dyn std::any::Any) -> &'static Wasi {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get wasiImport")]
-#[allow(unused_variables)]
 fn wasi_import(this: &Wasi) -> &'static JsObject {
     unreachable!()
 }
@@ -201,20 +175,17 @@ fn wasi_import(this: &Wasi) -> &'static JsObject {
 /// Runs the program. A failed compile ends in a trap: panics can't unwind
 /// on wasm32-wasip1.
 #[cfg_attr(rust_js, rust_js::link_name = "start")]
-#[allow(unused_variables)]
 fn run_wasi(this: &Wasi, instance: &WebAssemblyInstance) -> Result<i32, &'static JsError> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get memory")]
-#[allow(unused_variables)]
 fn exported_memory(this: &JsObject) -> &'static WebAssemblyMemory {
     unreachable!()
 }
 
 /// The last compile, for automated checks.
 #[cfg_attr(rust_js, rust_js::link_name = "set lastResult")]
-#[allow(unused_variables)]
 pub fn set_last_result(this: &webapi::Window, result: &Compiled) {
     unreachable!()
 }
@@ -264,7 +235,6 @@ pub struct Loaded {
 pub type Stat = Rc<dyn Fn(String, String)>;
 
 /// The WASI shim's file options. Only the shim reads them.
-#[allow(dead_code)]
 struct FileOptions {
     readonly: bool,
 }
@@ -418,12 +388,10 @@ pub struct Compiled {
 }
 
 /// The WASI shim's options, and the module's imports. Only JS reads them.
-#[allow(dead_code)]
 struct WasiOptions {
     debug: bool,
 }
 
-#[allow(dead_code)]
 struct Imports {
     /// WASI's own name for its imports.
     #[cfg_attr(rust_js, rust_js::name = "wasi_snapshot_preview1")]

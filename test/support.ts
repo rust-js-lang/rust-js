@@ -9,7 +9,9 @@ import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 
 export const root = join(import.meta.dir, "..");
-export const target = join(root, "target");
+// With `RUST_JS_TARGET`, another: a mutant's tests', which build the
+// crates with its compiler where no other test reads them (ADR 0093).
+export const target = process.env.RUST_JS_TARGET ? resolve(process.env.RUST_JS_TARGET) : join(root, "target");
 // This checkout's debug build, or with `RUST_JS_COMPILER`, another, as the
 // rustc tests workflow's build job makes one for its machines to share.
 const given = process.env.RUST_JS_COMPILER;
@@ -387,3 +389,16 @@ export function caseShard<T extends string>(cases: T[]): T[] {
 
 /** What isn't a case runs in the first part alone. */
 export const firstPart = (process.env.RUST_JS_CASES ?? "1/1").startsWith("1/") ? test : test.skip;
+
+/** What a plain `cargo check` of an app warns of past what it can't see,
+ * running no rust-js: one line each. It doesn't expand `jsx!`, so what only
+ * JSX uses is unused to it (ADR 0113); nor run rust-js's pass, so a
+ * component's capitalized name is flagged (ADR 0439). Its crates' own
+ * warnings, which Cargo sums up, aren't the app's. */
+export function plainCheckWarnings(stderr: string): string[] {
+  const unseen = /^warning: (unused variable: |unused import: |static `\w+` is never used|function `[A-Z]\w*` should have a snake case name)/;
+  return stderr
+    .split("\n")
+    .filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line))
+    .filter((line) => !unseen.test(line));
+}

@@ -129,6 +129,7 @@ fn register_tool(config: &mut rustc_interface::interface::Config) {
             tools.insert(Ident::with_dummy_span(Symbol::intern("rust_js")));
             tools
         };
+        lower::liveness::provide(providers);
     });
 }
 

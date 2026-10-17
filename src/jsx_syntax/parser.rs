@@ -992,13 +992,7 @@ pub(super) fn props_companion(
     if !derives_default && !props.contains(&name) {
         return None;
     }
-    let tool = |attrs: &ast::AttrVec, wanted: &str| {
-        attrs.iter().any(|attr| match &attr.kind {
-            ast::AttrKind::Normal(normal) => matches!(&normal.item.path.segments[..],
-                [tool, item] if tool.ident.as_str() == "rust_js" && item.ident.as_str() == wanted),
-            _ => false,
-        })
-    };
+    let tool = |attrs: &ast::AttrVec, wanted: &str| attrs.iter().any(|attr| super::is_rust_js_attr(attr, wanted));
     // Each own field, how a slot of it left empty is filled, and whether it
     // has a default; and the flattened one, its name and its type's path.
     let mut own = Vec::new();

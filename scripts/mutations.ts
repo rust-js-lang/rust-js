@@ -17,7 +17,7 @@
 import { createHash } from "node:crypto";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { shard, shardArg } from "./shard";
@@ -333,9 +333,15 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   // What the JS does is what's checked: a corpus snapshot differs with
   // nearly any change to the compiler, a mutation's or not. One that only
   // changes how the JS reads is checked by its snapshots.
+  // Its own target, where the crates it builds with `compiler` are no other
+  // test's: run beside the suite, `check:fast`'s, the react crate it built
+  // was read half written, and the suite's tests failed.
+  const own = join(work, "tests", basename(compiler));
+  rmSync(own, { recursive: true, force: true });
   const p = await withRuntime(compiler, () =>
     run([process.execPath, "test", ...tests], root, testTimeout, {
       RUST_JS_COMPILER: compiler,
+      RUST_JS_TARGET: own,
       // A compile that takes long, as an exponential one, is stopped, and
       // its test fails, before the runner runs out of time on it, which
       // would say nothing: a corpus case compiles in a second or two.
@@ -348,6 +354,7 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
       GITHUB_ACTIONS: undefined,
     }),
   );
+  rmSync(own, { recursive: true, force: true });
   const output = p.stdout + p.stderr;
   const { pass, fail } = summary(output);
   return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };

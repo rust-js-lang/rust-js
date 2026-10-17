@@ -9,10 +9,10 @@ use std::rc::Rc;
 // and event's name a type whose value is its string (ADR 0223):
 // `document.create_element(Button)` is `document.createElement("button")`,
 // an `HTMLButtonElement`.
-use webapi::{document};
+use webapi::document;
 use webapi::events::Click;
-use webapi::tags::{Button, Div, Output};
-use webapi::{Element, EventTargetExt, HTMLButtonElement, HTMLOutputElement};
+use webapi::tags::{Button, Output};
+use webapi::{EventTargetExt, HTMLButtonElement, HTMLOutputElement};
 
 fn button(label: &str) -> &'static HTMLButtonElement {
     let b = document.create_element(Button);
@@ -49,7 +49,8 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webapi::{HTMLElement, html_element};
+    use webapi::tags::Div;
+    use webapi::{Element, HTMLElement, html_element};
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {

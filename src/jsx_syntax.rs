@@ -258,14 +258,7 @@ impl Expand<'_> {
             if let ItemKind::Fn(function) = &item.kind
                 && exported.contains(&function.ident.name)
             {
-                let allow = attr::mk_attr_nested_word(
-                    &self.sess.psess.attr_id_generator,
-                    ast::AttrStyle::Outer,
-                    sym::allow,
-                    sym::dead_code,
-                    item.span,
-                );
-                item.attrs.push(allow);
+                item.attrs.push(self.allow(sym::dead_code, item.span));
             }
         }
         // The props structs the components here take, and their companions,
@@ -328,18 +321,32 @@ impl Expand<'_> {
                 // rustc's lint would flag: rust-js allows it, so no crate
                 // writes `#![allow(non_snake_case)]` for it (ADR 0439).
                 if let ItemKind::Fn(_) = item.kind {
-                    let allow = attr::mk_attr_nested_word(
-                        &self.sess.psess.attr_id_generator,
-                        ast::AttrStyle::Outer,
-                        sym::allow,
-                        Symbol::intern("non_snake_case"),
-                        item.span,
-                    );
-                    item.attrs.push(allow);
+                    item.attrs.push(self.allow(Symbol::intern("non_snake_case"), item.span));
                 }
+            }
+            // A binding's body never runs, JS's function is called: its
+            // parameters unread, `unreachable!()`'s, which isn't the crate's
+            // to allow (ADR 0440).
+            if let ItemKind::Fn(_) = item.kind
+                && attrs.iter().any(|a| is_rust_js_attr(a, "link_name"))
+            {
+                item.attrs
+                    .push(self.allow(Symbol::intern("unused_variables"), item.span));
             }
         }
         items.extend(companions);
+    }
+
+    /// `#[allow(lint)]`, which the pass gives an item rust-js makes a lint
+    /// of no concern of the crate's.
+    fn allow(&self, lint: Symbol, span: Span) -> ast::Attribute {
+        attr::mk_attr_nested_word(
+            &self.sess.psess.attr_id_generator,
+            ast::AttrStyle::Outer,
+            sym::allow,
+            lint,
+            span,
+        )
     }
 
     fn item(&mut self, item: &mut ast::Item, attrs: &[ast::Attribute]) {
@@ -712,4 +719,13 @@ fn template(sess: &Session, source: String, span: Span) -> rustc_ast::tokenstrea
         }
         Default::default()
     })
+}
+
+/// Whether `attr` is rust-js's `#[rust_js::name]`, as its cfg_attr gives it.
+pub(crate) fn is_rust_js_attr(attr: &ast::Attribute, name: &str) -> bool {
+    match &attr.kind {
+        ast::AttrKind::Normal(normal) => matches!(&normal.item.path.segments[..],
+            [tool, item] if tool.ident.as_str() == "rust_js" && item.ident.as_str() == name),
+        _ => false,
+    }
 }

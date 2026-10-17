@@ -95,25 +95,21 @@ const KEY: &str = "todos-rust-js";
 // `localStorage` itself does: an `Err` (ADR 0035), and the todos are
 // the page's only.
 #[cfg_attr(rust_js, rust_js::link_name = "localStorage.getItem")]
-#[allow(unused_variables)]
 fn stored(key: &str) -> Result<Option<String>, &'static JsError> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "localStorage.setItem")]
-#[allow(unused_variables)]
 fn store(key: &str, value: &str) -> Result<(), &'static JsError> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
-#[allow(unused_variables)]
 fn parse(json: &str) -> Result<Vec<Todo>, &'static JsError> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
-#[allow(unused_variables)]
 fn stringify(todos: &Vec<Todo>) -> String {
     unreachable!()
 }

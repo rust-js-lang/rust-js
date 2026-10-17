@@ -4,27 +4,17 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use js::{Promise, spawn};
-use webapi::{document};
+use js::{Promise, set_timeout, spawn};
+use webapi::document;
 use webapi::events::Click;
-use webapi::tags::{Button, Div, Output};
+use webapi::tags::{Button, Output};
 use webapi::{EventTargetExt, Element};
-
-#[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
-#[allow(unused_variables)]
-fn set_timeout(callback: Box<dyn FnOnce()>, ms: u32) {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "new Promise")]
-#[allow(unused_variables)]
-fn new_promise(executor: Box<dyn FnOnce(Box<dyn FnOnce()>)>) -> Promise<()> {
-    unreachable!()
-}
 
 /// A promise that resolves after `ms` milliseconds.
 fn sleep(ms: u32) -> Promise<()> {
-    new_promise(Box::new(move |resolve| set_timeout(resolve, ms)))
+    js::promise::new(move |resolve, _| {
+        set_timeout(Box::new(move || resolve(())), f64::from(ms));
+    })
 }
 
 async fn count_down(output: &'static Element, from: u32) {
@@ -63,6 +53,7 @@ pub fn main() {
 mod tests {
     use super::*;
     use webapi::html_element;
+    use webapi::tags::Div;
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {

@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A binding needs no `#[allow]`**: its parameters, which its body never reads,
+  and the fields of a struct given one, which JS reads, aren't flagged; the
+  playground and examples drop about sixty `#[allow]`s and their stand-in
+  bindings of what the crates bind (ADR 0440).
 - **A component needs no `#![allow(non_snake_case)]`**: rust-js allows the lint for
   each component it recognizes; the examples and READMEs drop the line (ADR 0439).
 - **An optional prop is given `Some(..)`, or left out** (ADR 0438): decided, as

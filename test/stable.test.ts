@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, plainCheckWarnings, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -54,10 +54,8 @@ test("a plain `cargo check` checks the vite-react example", () => {
   const dir = join(fixture("cargo-check-example"), "target");
   const example = join(root, "examples", "vite-react");
   const p = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(example, "Cargo.toml"), "--target-dir", dir], example, 300_000, { RUSTC_BOOTSTRAP: undefined });
-  // No error, and no warning of the crates it uses: the app's are of what's
-  // used only in JSX, which react's placeholder `jsx!` doesn't look inside.
-  const warnings = p.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
-  expect(warnings.filter((line) => !/^warning: (unused variable: |static `\w+` is never used)/.test(line))).toEqual([]);
+  // No error, and no warning but what a plain rustc can't see.
+  expect(plainCheckWarnings(p.stderr)).toEqual([]);
   expect(p.stderr).not.toMatch(/`rust-js-\w+` \(lib\) generated/);
   expect(p.code).toBe(0);
 }, 300_000);

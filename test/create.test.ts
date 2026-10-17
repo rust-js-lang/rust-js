@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { runSync } from "./child";
-import { fixture, root, run } from "./support";
+import { fixture, plainCheckWarnings, root, run } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 import { writePatch } from "../tooling/patch.js";
 
@@ -126,12 +126,8 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   }
   writePatch(app);
   const check = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(app, "Cargo.toml")], app, 300_000, { RUSTC_BOOTSTRAP: undefined });
-  // No error, and no warning of the crates it uses: the app's are of what's
-  // used only in JSX, which react's placeholder `jsx!` doesn't look inside,
-  // and of its component's capitalized name, which rust-js's own pass allows
-  // and a plain rustc doesn't run (ADR 0439).
-  const warnings = check.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
-  expect(warnings.filter((line) => !/^warning: (unused variable: |static `\w+` is never used|function `App` should have a snake case name)/.test(line))).toEqual([]);
+  // No error, and no warning but what a plain rustc can't see.
+  expect(plainCheckWarnings(check.stderr)).toEqual([]);
   expect(check.stderr).not.toMatch(/`rust-js-\w+` \(lib\) generated/);
   expect(check.code).toBe(0);
 
@@ -145,10 +141,8 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   }
   writePatch(site);
   const next = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(site, "Cargo.toml")], site, 300_000, { RUSTC_BOOTSTRAP: undefined });
-  // What's used only in JSX, `Image`, which react's placeholder `jsx!` doesn't look inside,
-  // and the page's component's capitalized name, which only rust-js's pass allows (ADR 0439).
-  const nextWarnings = next.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
-  expect(nextWarnings.filter((line) => !/^warning: (unused import: |function `Home` should have a snake case name)/.test(line))).toEqual([]);
+  // What's used only in JSX, `Image`, and the page's component's name.
+  expect(plainCheckWarnings(next.stderr)).toEqual([]);
   expect(next.code).toBe(0);
 }, 900_000);
 

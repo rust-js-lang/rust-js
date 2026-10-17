@@ -93,4 +93,7 @@ test("the playground's own Rust is stable Rust", () => {
   const p = Bun.spawnSync([compiler, "wasm/web/rust/lib.rs", "-o", join(out, "lib.js"), "--", ...flags], { cwd: root, env });
   expect(p.stderr.toString()).not.toContain("error");
   expect(p.exitCode).toBe(0);
+  // And it's clean under rustc's defaults, no `#[allow]` written for
+  // rust-js's sake (AGENTS.md, ADRs 0439, 0440).
+  expect(p.stderr.toString()).not.toContain("warning");
 });

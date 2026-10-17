@@ -6875,3 +6875,41 @@ pub fn NotComponent() -> u32 { 1 }
   const warned = [...built.stderr.toString().matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
   expect([built.exitCode, warned]).toEqual([0, ["NotComponent"]]);
 });
+
+// ADR 0440: a binding's body never runs, so its parameters are unread,
+// which rust-js allows; two modules' bindings of one JS name, each of its
+// own Rust type, are no clash rustc flags; and a struct given a binding,
+// here as a `&dyn Any`, has its fields read by JS, a struct in it too.
+// Another function's unread parameter, and a struct JS isn't given, are
+// still flagged.
+test("a binding needs no allow", () => {
+  const { dir, args } = compile(`mod a {
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+    pub fn max(a: f64, b: f64) -> f64 { unreachable!() }
+    unsafe extern "Rust" {
+        #[link_name = "globalThis.scale"]
+        pub safe static scale: &'static f64;
+    }
+}
+mod b {
+    unsafe extern "Rust" {
+        #[link_name = "globalThis.scale"]
+        pub safe static scale: &'static u32;
+    }
+}
+pub fn unread(x: u32) -> u32 { 1 }
+pub fn run() -> f64 { a::max(1.0, 2.0) + *a::scale + f64::from(*b::scale) }
+struct Options { readonly: bool, inner: Inner }
+struct Inner { depth: u32 }
+struct Kept { unread: u32 }
+#[cfg_attr(rust_js, rust_js::link_name = "configure")]
+fn configure(options: &dyn std::any::Any) -> u32 { unreachable!() }
+fn keep(_: &Kept) -> u32 { 0 }
+pub fn configured() -> u32 {
+    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } })
+}
+`);
+  const built = Bun.spawnSync(args, { cwd: dir });
+  const warned = built.stderr.toString().split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
+  expect([built.exitCode, warned]).toEqual([0, ["warning: unused variable: `x`", "warning: field `unread` is never read"]]);
+});

@@ -15,7 +15,6 @@ use crate::styles::HEADING;
 
 // The frame's report, which frame-report.js reads.
 #[cfg_attr(rust_js, rust_js::link_name = "../frame-report.js#readReport")]
-#[allow(unused_variables)]
 fn message_data(event: &Event) -> Option<Report> {
     unreachable!()
 }

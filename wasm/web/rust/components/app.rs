@@ -28,7 +28,6 @@ use crate::projects::{Project, js_name};
 use crate::tree::build_tree;
 
 #[cfg_attr(rust_js, rust_js::link_name = "../compiler-client.js#compileInWorker")]
-#[allow(unused_variables)]
 fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root: &str, test: bool) -> Promise<Compiled> {
     unreachable!()
 }

@@ -15,20 +15,17 @@ use js::{JsObject, RegExp, encode_uri_component, json, reg_exp};
 // given the match, then each group, so its type is its pattern's (js::RegExp).
 /// `text.replace(pattern, (match, a, b) => ..)`: a closure for each match.
 #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-#[allow(unused_variables)]
 fn replace_matches(this: &str, pattern: &RegExp, with: Box<dyn Fn(String, String, String) -> String>) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
-#[allow(unused_variables)]
 fn match_all(this: &str, pattern: &RegExp) -> &'static JsObject {
     unreachable!()
 }
 
 /// Each match of a pattern with one group, as `(match, group)`.
 #[cfg_attr(rust_js, rust_js::link_name = "Array.from")]
-#[allow(unused_variables)]
 fn matches_of(matches: &JsObject) -> Vec<(String, String)> {
     unreachable!()
 }
@@ -48,7 +45,6 @@ pub struct Transformed {
 /// [Sucrase](https://github.com/alangpierce/sucrase): the JSX rust-js writes,
 /// as the JS the frame can run, which has no bundler.
 #[cfg_attr(rust_js, rust_js::link_name = "sucrase#transform")]
-#[allow(unused_variables)]
 fn transform(code: &str, options: TransformOptions) -> Transformed {
     unreachable!()
 }

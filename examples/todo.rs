@@ -161,21 +161,7 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webapi::{Event, HTMLInputElement};
-
-    /// `new KeyboardEvent(type, { key })`. The webapi crate can't take
-    /// dictionaries yet, but a struct is a JS object with the same fields
-    /// (ADR 0020), so it can be declared here (ADR 0021).
-    #[allow(dead_code)] // `key` is read by JS, not by Rust.
-    struct KeyboardEventInit {
-        key: String,
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
-    #[allow(unused_variables)]
-    fn keyboard_event(r#type: &str, init: &KeyboardEventInit) -> &'static Event {
-        unreachable!()
-    }
+    use webapi::{HTMLInputElement, KeyboardEventInit, keyboard_event};
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
@@ -196,7 +182,8 @@ mod tests {
     fn type_in(app: &Element, title: &str, key: &str) {
         let field = input(app);
         field.set_value(title);
-        field.dispatch_event(keyboard_event("keydown", &KeyboardEventInit { key: key.to_string() }));
+        let init = KeyboardEventInit { key: Some(key), ..Default::default() };
+        field.dispatch_event(keyboard_event::new_with_event_init_dict("keydown", init));
     }
 
     fn titles(app: &Element) -> Vec<String> {
