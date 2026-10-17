@@ -13,6 +13,7 @@ use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::lazy::LazyOp;
 use crate::lower::std_types::map::MapOp;
 use crate::lower::std_types::once::OnceOp;
+use crate::lower::std_types::option::OptionPlaceOp;
 use crate::lower::std_types::slice::SliceOp;
 use crate::lower::std_types::text::TextOp;
 use crate::lower::{FnCx, R};
@@ -155,6 +156,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Sort
                     | Std::SortBy
                     | Std::SortByKey
+                    // A `VecDeque`'s at its front, and `insert` and `remove`.
+                    | Std::Method("unshift" | "shift")
+                    | Std::Slice(SliceOp::DequeInsert { .. })
+                    | Std::DequeRemove
+                    // An `Option`'s that moves what it holds out, or in, its
+                    // old value given back (ADR 0098).
+                    | Std::OptionTake
+                    | Std::OptionReplace
+                    | Std::OptionPlace(OptionPlaceOp::TakeIf)
                     | Std::Slice(
                         SliceOp::SortUnstable { .. } | SliceOp::SelectNth { .. } | SliceOp::SortByCachedKey
                     )

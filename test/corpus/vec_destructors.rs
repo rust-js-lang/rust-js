@@ -68,6 +68,12 @@ fn main() {
     deque.push_back(Noisy(40));
     deque.push_back(Noisy(41));
     deque.push_back(Noisy(42));
+    deque.push_front(Noisy(39));
+    deque.insert(1, Noisy(38));
+    let front = deque.pop_front();
+    let second = deque.remove(1);
+    println!("{:?} {:?}", front.as_ref().map(|n| n.0), second.as_ref().map(|n| n.0));
+    drop(front);
     deque.retain(|n| n.0 != 41);
     deque.truncate(1);
     println!("deque {}", deque.len());

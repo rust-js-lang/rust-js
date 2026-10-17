@@ -495,7 +495,11 @@ took out, an iterator that owns it, as `into_iter()`'s is, whose drop
 drops what it hasn't given yet, in order: all of it, of one dropped where
 it's made, none of one collected (`drain_destructors`). A drop that panics
 stops the rest of `truncate`'s, which Rust's would still drop as it
-unwinds; `resize` of one and `dedup` are still refused.
+unwinds; `resize` of one and `dedup` are still refused. A `VecDeque`'s
+`push_front`, `pop_front`, `insert` and `remove` move its items too; and an
+`Option`'s `take`, `replace` and `take_if` move what it holds out, or in,
+its old value given back (`option_destructors`), where `insert` and
+`get_or_insert`, which may drop one, are still refused.
 
 ## Amended by
 

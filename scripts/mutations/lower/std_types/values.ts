@@ -298,4 +298,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
+  {
+    name: "option-take-of-destructors-refused",
+    breaks: "`take` of an `Option` of a value with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::OptionTake\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
+  },
+  {
+    name: "option-take-if-of-destructors-refused",
+    breaks: "`take_if` of an `Option` of a value with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::OptionPlace(OptionPlaceOp::TakeIf)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
+  },
+  {
+    name: "deque-front-of-destructors-refused",
+    breaks: "`push_front` and `pop_front` of a `VecDeque` of values with destructors are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Method(\"unshift\" | \"shift\")\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
 ];
