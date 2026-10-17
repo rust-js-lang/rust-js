@@ -36,6 +36,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
+        if let ty::Tuple(tys) = arg_tys[1].kind() {
+            crate::lower::calls::units_left_out(&mut exprs, tys);
+        }
         // Not a closure of the crate's: a `dyn Fn`, a generic one or a
         // pointer, which may be JS's (ADR 0330).
         if !matches!(

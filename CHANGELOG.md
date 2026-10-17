@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `()` given a function value is no argument**: `resolve()` of `resolve(())`,
+  `f()` of a `dyn Fn(())`'s call (ADR 0441).
 - **A binding needs no `#[allow]`**: its parameters, which its body never reads,
   and the fields of a struct given one, which JS reads, aren't flagged; the
   playground and examples drop about sixty `#[allow]`s and their stand-in

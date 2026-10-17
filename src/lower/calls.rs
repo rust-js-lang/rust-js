@@ -37,6 +37,20 @@ pub(super) fn given_to_js(args: &mut [Expr]) {
     }
 }
 
+/// A call's arguments, each of type `tys`: a trailing `()`, which is no value,
+/// is no argument, `resolve()` of `resolve(())`, as JS leaves one out; only
+/// `arguments.length` tells (ADR 0441). One that does something to make is
+/// kept, so it's still made.
+pub(super) fn units_left_out(args: &mut Vec<Expr>, tys: &[ty::Ty<'_>]) {
+    while args.len() <= tys.len()
+        && let Some(last) = args.last()
+        && tys[args.len() - 1].is_unit()
+        && !last.has_effects()
+    {
+        args.pop();
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A JS call that says, in Rust, that it may throw (ADR 0035): one
     /// returning a `Result` runs in a `try`, `$try(() => f(x))`, and one

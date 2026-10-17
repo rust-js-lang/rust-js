@@ -8,7 +8,7 @@ import { $unwrap } from "@rust-js/runtime";
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(undefined);
+      resolve();
     }, ms);
   });
 }

@@ -347,7 +347,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");
 
   const countdown = await Bun.file(join(target, "countdown.js")).text();
-  expect(countdown).toContain("return new Promise((resolve) => {\n    setTimeout(() => {\n      resolve(undefined);\n    }, ms);\n  });");
+  expect(countdown).toContain("return new Promise((resolve) => {\n    setTimeout(() => {\n      resolve();\n    }, ms);\n  });");
   expect(countdown).toContain("    await sleep(500);\n");
   const fetchJs = await Bun.file(join(target, "fetch.js")).text();
   expect(fetchJs).toContain("  const response = await window.fetch(url);\n  const text = await response.text();\n");

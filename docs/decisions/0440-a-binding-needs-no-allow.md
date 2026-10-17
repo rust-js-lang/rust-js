@@ -61,6 +61,7 @@ no binding rust-js takes.
   `localStorage` throws as a panic, not an `Err`, where a sandboxed frame
   forbids it, and the playground has no serde to write JSON with. Each is
   a gap of its own.
-- The countdown's JS is `setTimeout(() => { resolve(undefined); }, ms)`
-  where its own binding's was `setTimeout(resolve, ms)`: `js`'s `Promise`
-  `resolve` takes the value, here a `()`.
+- The countdown's JS is `setTimeout(() => { resolve(); }, ms)` where its
+  own binding's was `setTimeout(resolve, ms)`: `js`'s `Promise` `resolve`
+  takes the value, here a `()`, which is no argument (ADR 0441); the
+  arrow stays, as what `setTimeout` gives its callback isn't Rust's to say.

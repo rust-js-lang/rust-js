@@ -58,4 +58,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
   },
+  {
+    name: "unit-argument-given",
+    breaks: "a `()` given a function value is an argument, `resolve(undefined)` of `resolve(())`",
+    file: "src/lower/mir/calls.rs",
+    find: "            crate::lower::calls::units_left_out(&mut exprs, tys);\n",
+    replace: "            let _ = tys;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_arguments.rs$"],
+    snapshots: true,
+  },
 ];
