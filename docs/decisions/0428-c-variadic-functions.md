@@ -69,4 +69,6 @@ function sum(count, ...args) {
 ## Consequences
 
 - rustc's `c-variadic/trait-method` takes a trait's C-variadic `&mut self`
-  method as a function pointer, refused.
+  method as a function pointer, refused. (Amended: the arrow that boxes
+  its `&mut` gathers the rest too, `(x, ...args) => ..`, and passes it on,
+  as a call's operands past its signature are passed; it passes.)

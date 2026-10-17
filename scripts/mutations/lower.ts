@@ -256,14 +256,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
   },
   {
-    name: "variadic-mut-value-allowed",
-    breaks: "a C-variadic trait method of a `&mut` as a value is the arrow of its call, which drops what it's given past the rest",
-    file: "src/lower.rs",
-    find: "                    if variadic {\n                        return Err(",
-    replace: "                    if false {\n                        return Err(",
-    tests: ["test/diagnostics.test.ts", "-t", "a C-variadic trait method of a &mut"],
-  },
-  {
     name: "helper-called-by-name",
     breaks: "a std helper as a value is it by name, not the arrow that names what it's given by its type",
     file: "src/lower.rs",

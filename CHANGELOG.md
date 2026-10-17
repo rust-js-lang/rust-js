@@ -78,6 +78,8 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A trait's C-variadic `&mut self` method as a function pointer**: its
+  arrow gathers the rest and passes it on (ADR 0428).
 - **`#[track_caller]` through a trait's dictionary**, generic code's or a
   `dyn`'s: each entry of a method one of whose impls reads its caller's
   location takes it, and each call gives it, as rustc's does; an impl

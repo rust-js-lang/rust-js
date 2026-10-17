@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "mir-called-value-returns-nothing",
     breaks: "the arrow that calls a std function as a value returns nothing",
     file: "src/lower/mir.rs",
-    find: "        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
-    replace: "        let _ = value;\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
+    find: "        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));\n        let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();\n",
+    replace: "        let _ = value;\n        let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();\n",
     tests: ["test/corpus.test.ts","-t","as_deref|str_circumfix|std_function_value_panic"],
   },
   {
@@ -2537,5 +2537,13 @@ export const mutations: Mutation[] = [
     find: "                                true => self.as_double_ended(value, iterator, span)?,\n",
     replace: "                                true => self.as_js_iterator(value, iterator, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+  },
+  {
+    name: "variadic-value-rest-unpassed",
+    breaks: "a trait's `&mut self` C-variadic method as a value gives the method none of what it's given past the rest",
+    file: "src/lower/mir.rs",
+    find: "            values.push(Value::Expr(Expr::spread(Expr::var(rest))));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
 ];

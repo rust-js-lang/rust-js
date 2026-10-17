@@ -587,15 +587,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let variadic = recognition::is_c_variadic(self.tcx, def_id);
                 // A `&mut` to an object it's given, the object itself, is a box,
                 // `{ value }`, to the method, as a call lowered as MIR's makes
-                // it (ADR 0099): that call's arrow, which has no rest yet for
-                // a C-variadic one's (ADR 0428). One to anything else is a
+                // it (ADR 0099): that call's arrow. One to anything else is a
                 // cell, a box already, given as it is.
                 if inputs.iter().any(
                     |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),
                 ) {
-                    if variadic {
-                        return Err(self.unsupported(span, "a C-variadic trait method of a `&mut`, as a value"));
-                    }
                     return Ok(None);
                 }
                 let params: Vec<String> = (0..inputs.len()).map(|i| self.fresh(&format!("arg{i}"))).collect();

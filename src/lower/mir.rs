@@ -4898,7 +4898,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
-        let inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
+        let mut inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
         let params: Vec<String> = match inputs.len() {
             // Named by its type: `(s) => ..` of a string.
             1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
@@ -4906,7 +4906,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
                 .collect(),
         };
-        let values = params.iter().map(|p| Value::Expr(Expr::var(p))).collect();
+        let mut values: Vec<Value> = params.iter().map(|p| Value::Expr(Expr::var(p))).collect();
+        // A C-variadic one's, given on what it's given past the rest, `(a,
+        // ...args) => f(a, ...args)` (ADR 0428): C's numbers and pointers,
+        // passed as they are.
+        let variadic = super::recognition::is_c_variadic(tcx, def_id).then(|| self.fresh("args"));
+        if let Some(rest) = &variadic {
+            values.push(Value::Expr(Expr::spread(Expr::var(rest))));
+            inputs.push(tcx.types.i32);
+        }
         // What's made for the call is the arrow's, not what's around it: the
         // boxes it gives a `&mut` too, copied back in it once the call returns,
         // as a call's are after it (ADR 0099).
@@ -4933,7 +4941,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(callee);
         }
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
-        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))
+        let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
+        patterns.extend(variadic.map(js::Pattern::Rest));
+        Ok(Expr::arrow(patterns, body))
     }
 
     /// A call of `def_id`, of its arguments' values, `arg_tys` their types.
