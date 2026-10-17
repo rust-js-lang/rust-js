@@ -5,7 +5,7 @@ use react::JSX;
 use react::attributes::ImgHTMLAttributes;
 use react::webapi::HTMLImageElement;
 
-/// `<Image src="/next.svg" alt="Next.js logo" width={Some(100)} height={Some(20)} {..Default::default()} />`.
+/// `<Image src="/next.svg" alt="Next.js logo" width={Some(100)} height={Some(20)} />`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/image#default")]
 pub fn Image<S: IntoImageSrc>(props: ImageProps<'_, S>) -> JSX::Element {
     unreachable!()
@@ -84,8 +84,8 @@ pub struct ImageProps<'a, S = &'a str> {
     /// The `<img>`'s `title`, its tooltip.
     pub title: Option<&'a str>,
     /// The `<img>`'s other attributes, as React's `ImgHTMLAttributes`:
-    /// `style`, `onLoad`, `decoding`. Those named here are these, which a
-    /// `{..Default::default()}` gives too.
+    /// `style`, `onLoad`, `decoding`. Those named here are these, each
+    /// `None` but what's given.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub img: ImgHTMLAttributes<'a>,
 }

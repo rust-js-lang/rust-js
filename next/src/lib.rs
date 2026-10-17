@@ -7,13 +7,13 @@
 //! use react::{JSX, jsx};
 //!
 //! pub fn Home() -> JSX::Element {
-//!     jsx! { <Image src="/next.svg" alt="Next.js logo" width={Some(100)} {..Default::default()} /> }
+//!     jsx! { <Image src="/next.svg" alt="Next.js logo" width={Some(100)} /> }
 //! }
 //! js::export_default!(Home);
 //! ```
 //!
-//! A component's optional props are `None` unless they're given, which
-//! Next.js takes as its default: the rest from `{..Default::default()}`.
+//! A component's optional props are `None` unless they're given, as
+//! `Some(..)`, which Next.js takes as its default (ADR 0438).
 
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(non_snake_case, unused_variables)]

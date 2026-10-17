@@ -131,8 +131,6 @@ in JSON; reading a `BinaryHeap`; a map keyed by a struct;
 - A struct used as props only in another crate's JSX, spread there, keeps
   its Rust names in JS; it names its fields with `#[rust_js::name]`
   ([ADR 0435](decisions/0435-rust-and-react-two-worlds.md)).
-- An optional prop is given as `Some(..)`, `maxWidth={Some("450px")}`,
-  where TSX writes `maxWidth="450px"`.
 - A component is a function; a namespace of them, `<AlertDialog.Root>`, is
   a module of them.
 

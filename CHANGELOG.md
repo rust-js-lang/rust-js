@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An optional prop is given `Some(..)`, or left out** (ADR 0438): decided, as
+  Rust can't take a value bare and still coerce it; no `{..Default::default()}`
+  is needed for `None`s, and the next.js example writes none.
 - **`Cell::from_mut`, `as_slice_of_cells` and `as_array_of_cells`** (ADR 0153), and
   a `static` of a `TypeId` (ADR 0331).
 - **A scope's drops on a panic are one `try { .. } finally { .. }`**, not a

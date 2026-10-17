@@ -20,7 +20,6 @@ pub fn Home() -> JSX::Element {
                     width={Some(100)}
                     height={Some(20)}
                     priority={Some(true)}
-                    {..Default::default()}
                 />
                 <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
                     <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
@@ -61,7 +60,6 @@ pub fn Home() -> JSX::Element {
                             alt="Vercel logomark"
                             width={Some(16)}
                             height={Some(14)}
-                            {..Default::default()}
                         />
                         {"Deploy Now"}
                     </a>
