@@ -441,8 +441,6 @@ function main() {
       console.log(`ok ${value$4._0[0][0]}`);
     } catch (error) {
       dDrop_drop(value$4._0[0]);
-      if (value$4.TAG === "Ok") {
-      }
       if (ok.TAG === "Ok") {
         dDrop_drop(ok._0[0]);
       }
@@ -462,8 +460,6 @@ function main() {
     try {
       dDrop_drop(value$4._0[0]);
     } catch (error) {
-      if (value$4.TAG === "Ok") {
-      }
       if (ok.TAG === "Ok") {
         dDrop_drop(ok._0[0]);
       }

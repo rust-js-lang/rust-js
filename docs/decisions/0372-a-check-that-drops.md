@@ -69,3 +69,11 @@ one left the other counting reads of a check no longer made.
   by its field, `pair$a$live`. Thirty-two corpus programs lost about 3,300
   lines; `drop_update_panics` and `drop_flag_loops` hold the two places a
   flag isn't known.
+
+## Amendment: a test with nothing left to do
+
+Where a known flag's test went, the variant's test around it could be
+left with nothing in it, `if (tmp.TAG === "Err") {}`, and its `try` with
+it, of a `catch` that then only threw on. A test that does nothing whose
+branches settled to nothing goes too, so the `try` does. Six corpus
+programs lost 60 lines; `drop_partial` and `question_drops` hold it.

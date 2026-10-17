@@ -1022,8 +1022,6 @@ function main() {
       console.log(`parsed ${tmp$24._0[0]}`);
     } catch (error) {
       dDrop_drop(tmp$24._0);
-      if (tmp$24.TAG === "Ok") {
-      }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
       }
@@ -1051,8 +1049,6 @@ function main() {
     try {
       dDrop_drop(tmp$24._0);
     } catch (error) {
-      if (tmp$24.TAG === "Ok") {
-      }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
       }
@@ -1176,8 +1172,6 @@ function main() {
       console.log(`parsed ${tmp$25._0[0]}`);
     } catch (error) {
       dDrop_drop(tmp$25._0);
-      if (tmp$25.TAG === "Ok") {
-      }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
       }
@@ -1205,8 +1199,6 @@ function main() {
     try {
       dDrop_drop(tmp$25._0);
     } catch (error) {
-      if (tmp$25.TAG === "Ok") {
-      }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
       }
@@ -1466,8 +1458,6 @@ function main() {
             tmp = [undefined, e != null ? value(e) : 0];
           } catch (error) {
             dDrop_drop(d);
-            if (tmp$27.TAG === "Ok") {
-            }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
             }
@@ -1496,8 +1486,6 @@ function main() {
             console.log(`pair ${d[0]} ${tmp[1]}`);
           } catch (error) {
             dDrop_drop(d);
-            if (tmp$27.TAG === "Ok") {
-            }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
             }
@@ -1525,8 +1513,6 @@ function main() {
           try {
             dDrop_drop(d);
           } catch (error) {
-            if (tmp$27.TAG === "Ok") {
-            }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
             }
@@ -1819,8 +1805,6 @@ function main() {
         console.log(`flag ${tmp$26._0[0]}`);
       } catch (error) {
         dDrop_drop(tmp$26._0);
-        if (tmp$26.TAG === "Ok") {
-        }
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
         }
@@ -1848,8 +1832,6 @@ function main() {
       try {
         dDrop_drop(tmp$26._0);
       } catch (error) {
-        if (tmp$26.TAG === "Ok") {
-        }
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
         }

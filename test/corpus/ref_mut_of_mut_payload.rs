@@ -1,5 +1,10 @@
 // `ref mut x` of an `Option<&mut T>`'s payload, `x: &mut &mut T`: that
 // payload where it's used, as a `let outer = &mut list` is `list`.
+/// Of a generic function's `&mut`, which an `Option` boxes: `$someValue(o)`.
+fn call_twice<F: FnMut() -> u32>(o: &mut Option<&mut F>) -> u32 {
+    if let Some(ref mut f) = *o { f() + f() } else { 0 }
+}
+
 struct Foo {
     x: usize,
 }
@@ -49,4 +54,11 @@ fn main() {
     println!("{} {} {}", a, foo.x, unit(&mut p).name());
     let mut v = Unit;
     println!("{}", unit_twice(&mut Some(&mut v)));
+    let mut calls = 0;
+    let mut count = || {
+        calls += 1;
+        calls
+    };
+    println!("{}", call_twice(&mut Some(&mut count)));
+    println!("{}", call_twice::<fn() -> u32>(&mut None));
 }

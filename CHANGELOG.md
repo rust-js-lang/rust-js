@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Box<dyn Any>`, `Box<dyn Display>` or `Box<dyn Error>` of a value with a
+  destructor**, dropped where Rust drops it (ADR 0141).
 - **`as_mut()` of an `Option` of a generic `T`**, through a `&mut`, and a
   `&mut` to a unit struct in what a call gave (ADRs 0051, 0099).
 - **A closure's `TypeId`**, its own, and `assert_eq!` of two function

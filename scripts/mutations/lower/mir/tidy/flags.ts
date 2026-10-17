@@ -46,4 +46,13 @@ export const mutations: Mutation[] = [
     replace: "                    && made_of_values(panic)\n                    && false\n",
     tests: ["test/lowering.test.ts", "-t", "a value moved before anything can leave"],
   },
+  {
+    name: "settled-empty-test-kept",
+    breaks: "a variant's test whose drops all settled away stays, `if (tmp.TAG === \"Err\") {}`, and the `try` around it",
+    file: "src/lower/mir/tidy/flags.rs",
+    find: "                if then.is_empty() && els.as_ref().is_none_or(Vec::is_empty) && !test.has_effects() {\n",
+    replace: "                if false && then.is_empty() && els.as_ref().is_none_or(Vec::is_empty) && !test.has_effects() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(drop_partial|question_drops).rs$"],
+    snapshots: true,
+  },
 ];

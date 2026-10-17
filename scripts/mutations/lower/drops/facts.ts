@@ -11,22 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
-    name: "unsize-array-as-dyn",
-    breaks: "an array unsized to a slice in a trait's default method is taken for a `dyn`, and rejected",
-    file: "src/lower/drops/facts.rs",
-    find: "!target.is_ref()\n                    && matches!(to.kind(), ty::Dynamic(",
-    replace: "matches!(to.kind(), ty::Slice(_)) && self.cx.drops(from) != Drops::Nothing\n                    || !target.is_ref() && matches!(to.kind(), ty::Dynamic(",
-    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
-  },
-  {
-    name: "dyn-reference-refused",
-    breaks: "a `&dyn` of a value with a destructor in a trait's default method, which owns nothing to drop, is rejected",
-    file: "src/lower/drops/facts.rs",
-    find: "                !target.is_ref()\n                    && matches!(to.kind(), ty::Dynamic(",
-    replace: "                matches!(to.kind(), ty::Dynamic(",
-    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
-  },
-  {
     name: "temp-taken-apart-refused",
     breaks: "`let (x, _) = (make(3), make(4));` in a trait's default method is refused",
     file: "src/lower/drops/facts.rs",

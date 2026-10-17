@@ -101,13 +101,7 @@ function main() {
   let opt$0$live = true;
   if (opt) {
     opt$0$live = false;
-    try {
-      consume(opt);
-    } catch (error) {
-      if (opt) {
-      }
-      throw error;
-    }
+    consume(opt);
   }
   try {
     console.log("matched");

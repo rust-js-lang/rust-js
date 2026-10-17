@@ -213,8 +213,6 @@ function main() {
     } catch (error) {
       noisyDrop_drop(built.x);
       noisyDrop_drop(built.y);
-      if (tmp$2) {
-      }
       noisyDrop_drop(defaults.x);
       noisyDrop_drop(defaults.y);
       noisyDrop_drop(fromTemp.x);
@@ -227,8 +225,6 @@ function main() {
       noisyDrop_drop(built.x);
       noisyDrop_drop(built.y);
     } catch (error) {
-      if (tmp$2) {
-      }
       noisyDrop_drop(defaults.x);
       noisyDrop_drop(defaults.y);
       noisyDrop_drop(fromTemp.x);

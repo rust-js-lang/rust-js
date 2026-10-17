@@ -551,17 +551,8 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
                     (Some(to), Some(from)) => (to, from),
                     _ => (target, from),
                 };
-                // A reference owns nothing to drop. What owns one drops it
-                // through its dictionary's `$drop`, as Rust's vtable has it:
-                // a `dyn` of a trait of the crate's, or a library's, which is
-                // a value and its dictionary. Of another, as `dyn Send`, or of
-                // what rust-js can't drop, there's nowhere for it.
-                !target.is_ref()
-                    && matches!(to.kind(), ty::Dynamic(predicates, ..) if match self.cx.drops(from) {
-                        Drops::Nothing => false,
-                        Drops::Runs => !predicates.principal_def_id().is_some_and(|id| self.cx.recognition.is_rust_trait(id)),
-                        Drops::Unsupported(..) => true,
-                    })
+                // What owns one drops it through its dictionary's `$drop`.
+                self.cx.dyn_drop_lost(target, from, to)
             } =>
             {
                 self.problem(expr.span, "a `dyn` of a value with a destructor");

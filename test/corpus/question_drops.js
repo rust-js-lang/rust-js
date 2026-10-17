@@ -214,17 +214,9 @@ function main() {
         console.log(`climbed to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
-        if (d) {
-        }
         throw error;
       }
-      try {
-        dDrop_drop(d);
-      } catch (error) {
-        if (d) {
-        }
-        throw error;
-      }
+      dDrop_drop(d);
     } else {
       try {
         console.log("stopped");
@@ -278,17 +270,9 @@ function main() {
         console.log(`doubled to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
-        if (d) {
-        }
         throw error;
       }
-      try {
-        dDrop_drop(d);
-      } catch (error) {
-        if (d) {
-        }
-        throw error;
-      }
+      dDrop_drop(d);
     } else {
       try {
         console.log("too big");

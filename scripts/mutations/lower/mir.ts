@@ -1951,8 +1951,8 @@ export const mutations: Mutation[] = [
     name: "mir-dyn-drops-lost",
     breaks: "MIR's `Box<dyn Send>` of a value with a destructor never drops it",
     file: "src/lower/mir.rs",
-    find: "                                super::drops::Drops::Unsupported(..) => true,\n                            }\n",
-    replace: "                                super::drops::Drops::Unsupported(..) => false,\n                            } && false\n",
+    find: "                        if self\n                            .drop_query()\n                            .dyn_drop_lost(",
+    replace: "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Send>"],
   },
   {

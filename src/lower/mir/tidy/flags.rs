@@ -281,10 +281,16 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &HashSet<String>) {
                     known.retain(|flag, b| caught.get(flag) == Some(b));
                 }
             }
-            StmtKind::If(_, then, els) => {
+            StmtKind::If(test, then, els) => {
                 settle(then, &mut known.clone(), flags);
                 if let Some(els) = els {
                     settle(els, &mut known.clone(), flags);
+                }
+                // A variant's test whose drops all settled away, of a field
+                // moved out: nothing left to test.
+                if then.is_empty() && els.as_ref().is_none_or(Vec::is_empty) && !test.has_effects() {
+                    stmts.remove(i);
+                    continue;
                 }
                 forget(known, &stmts[i..=i], flags);
             }

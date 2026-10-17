@@ -3990,17 +3990,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);
                         // What owns a value with a destructor drops it through
-                        // its dictionary's `$drop`: of a `dyn Send`, or of what
-                        // rust-js can't drop, there's nowhere for it, refused.
-                        if !to.is_ref()
-                            && let ty::Dynamic(predicates, ..) = self.pointee(*to).kind()
-                            && match self.drops(self.pointee(from)) {
-                                super::drops::Drops::Nothing => false,
-                                super::drops::Drops::Runs => {
-                                    !predicates.principal_def_id().is_some_and(|id| self.is_rust_trait(id))
-                                }
-                                super::drops::Drops::Unsupported(..) => true,
-                            }
+                        // its dictionary's `$drop`.
+                        if self
+                            .drop_query()
+                            .dyn_drop_lost(*to, self.impl_type(self.pointee(from)), self.pointee(*to))
                         {
                             return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
                         }

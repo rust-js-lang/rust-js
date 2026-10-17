@@ -207,17 +207,9 @@ function main() {
       console.log(`late ${pair.b}`);
     } catch (error) {
       noisyDrop_drop(pair.a);
-      if (pair) {
-      }
       throw error;
     }
-    try {
-      noisyDrop_drop(pair.a);
-    } catch (error) {
-      if (pair) {
-      }
-      throw error;
-    }
+    noisyDrop_drop(pair.a);
   } else {
     try {
       console.log("late none");

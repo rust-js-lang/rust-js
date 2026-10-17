@@ -100,3 +100,23 @@ where a `to_string()` of it asks a `{}`. `ToString` is among
 shows numbers, text and the crate's own `Display` so, boxed in a list,
 borrowed, and through `ToString::to_string` as a function pointer, with
 native Rust; rustc's `codegen-object-shim` passes.
+
+## Amendment: a `dyn` of a value with a destructor
+
+A `Box<dyn Any>`, `Box<dyn Display>` or `Box<dyn Error>` of a value with a
+destructor was refused, as only a `dyn` of a trait rust-js compiled kept
+its value's drop, though every pair has a dictionary to keep it in. Now
+each pair keeps it, as Rust's vtable does: a crate type's `Display` or
+`Error` impl's dictionary has its `$drop` already, and `Any`'s, `{ type_id
+}`, gains it. Dropping one is what a crate trait's is, `e.impl.$drop?.(e.value)`.
+
+- **One question, one owner**: whether a `dyn` keeps its value's drop is
+  `DropQuery::dyn_keeps_drop`, a pair's, and whether making one loses a
+  drop, `dyn_drop_lost`, which the THIR check and MIR's lowering both ask;
+  each had a copy of the condition. A dictionary's `$drop` is
+  `dictionary_drop`, for an impl's, a marker's and `Any`'s.
+- **Still refused**: a `dyn` that isn't a pair, so has nowhere to keep it:
+  a `dyn Debug`, the string it shows (ADR 0060), and a `dyn Send`.
+- The `dyn_std_destructors` corpus case drops a `Box<dyn Any>`, a `Vec` of
+  them, a `Box<dyn Display>` and a `Box<dyn Error>` from `?`, against
+  native Rust.

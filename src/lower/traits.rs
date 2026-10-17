@@ -743,7 +743,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 
 /// `Display`, `Error` or `Any`: a std trait whose `dyn` is a pair (ADRs
 /// 0141, 0331).
-fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(super) fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]
         .into_iter()
         .any(|item| is_std_def(tcx, id, item))
@@ -1123,6 +1123,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .fold(root, |dictionary, name| call(dictionary, name))
     }
 
+    /// A dictionary's `$drop`, its type's drop where it has one, as Rust's
+    /// vtable has it: what dropping a `dyn` of it runs (ADR 0098). A name no
+    /// Rust method can have.
+    fn dictionary_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Prop>> {
+        if self.drops(ty) != Drops::Runs {
+            return Ok(None);
+        }
+        let drop = self.drop_function(ty, span)?;
+        Ok(drop.map(|drop| Prop::Field(js::DICTIONARY_DROP.into(), drop)))
+    }
+
     pub(super) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`.
         let tr = self
@@ -1156,7 +1167,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if any_trait(self.tcx) == Some(tr.def_id) {
             let key = self.type_fact_value(tr.self_ty(), TypeFact::Id, span)?;
             let type_id = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(key)).at(js::Span::NONE)]);
-            return Ok(Expr::object(vec![Prop::Field("type_id".into(), type_id)]));
+            let mut props = vec![Prop::Field("type_id".into(), type_id)];
+            props.extend(self.dictionary_drop(tr.self_ty(), span)?);
+            return Ok(Expr::object(props));
         }
         // A marker's of a type a bound gave none for, as none passes one: a
         // type parameter made a `dyn`, `Box::new(value)` of a `T: Marker`.
@@ -1172,11 +1185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ));
                 }
             }
-            if self.drops(tr.self_ty()) == Drops::Runs
-                && let Some(drop) = self.drop_function(tr.self_ty(), span)?
-            {
-                props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));
-            }
+            props.extend(self.dictionary_drop(tr.self_ty(), span)?);
             return Ok(Expr::object(props));
         }
         // Derived and std impls of `Default` and `Clone` (ADR 0052).
@@ -2969,13 +2978,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }
-        // Its type's drop, as Rust's vtable has it: what dropping a `dyn` of it
-        // runs (ADR 0098). A name no Rust method can have.
-        if self.drops(tr.self_ty()) == Drops::Runs
-            && let Some(drop) = self.drop_function(tr.self_ty(), span)?
-        {
-            props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));
-        }
+        props.extend(self.dictionary_drop(tr.self_ty(), span)?);
         props.extend(self.item_drops(tr, span)?);
         props.extend(self.item_facts(tr, span)?);
         let object = Expr::object(props);

@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "dyn-dictionary-without-drop",
     breaks: "a dictionary doesn't carry its type's drop, so a `dyn` of a value with a destructor never drops it",
     file: "src/lower/traits.rs",
-    find: "        if self.drops(tr.self_ty()) == Drops::Runs\n            && let Some(drop)",
-    replace: "        if self.drops(tr.self_ty()) == Drops::Nothing\n            && let Some(drop)",
+    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
+    replace: "        props.extend(self.item_drops(tr, span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
@@ -563,8 +563,8 @@ export const mutations: Mutation[] = [
     name: "impl-item-drops-left-out",
     breaks: "an impl's dictionary has no drop for its associated types, so generic code holding one drops nothing",
     file: "src/lower/traits.rs",
-    find: "            props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));\n        }\n        props.extend(self.item_drops(tr, span)?);\n",
-    replace: "            props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));\n        }\n",
+    find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
+    replace: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
   {
@@ -700,8 +700,8 @@ export const mutations: Mutation[] = [
     name: "marker-dyn-no-drop",
     breaks: "a `T: Marker` made a `dyn` isn't dropped: its dictionary has no `$drop`",
     file: "src/lower/traits.rs",
-    find: "            if self.drops(tr.self_ty()) == Drops::Runs\n                && let Some(drop) = self.drop_function(tr.self_ty(), span)?\n            {\n                props.push(Prop::Field(js::DICTIONARY_DROP.into(), drop));\n            }\n            return Ok(Expr::object(props));",
-    replace: "            return Ok(Expr::object(props));",
+    find: "            }\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n            return Ok(Expr::object(props));",
+    replace: "            }\n            return Ok(Expr::object(props));",
     tests: ["test/traits.test.ts","-t","nothing in it passes no dictionary"],
   },
   {
@@ -1261,5 +1261,13 @@ export const mutations: Mutation[] = [
     find: "        if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {\n            return Ok(value);\n        }\n        let what",
     replace: "        let what",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
+  },
+  {
+    name: "any-dictionary-without-drop",
+    breaks: "`Any`'s dictionary has no `$drop`, so a `Box<dyn Any>` of a value with a destructor never drops it",
+    file: "src/lower/traits.rs",
+    find: "            let mut props = vec![Prop::Field(\"type_id\".into(), type_id)];\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
+    replace: "            let props = vec![Prop::Field(\"type_id\".into(), type_id)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_std_destructors.rs$"],
   },
 ];
