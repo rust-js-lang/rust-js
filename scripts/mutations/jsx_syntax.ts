@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "export-default-dead",
     breaks: "a function only `js::export_default!` names is dead code to rustc, a warning in the editor's check",
     file: "src/jsx_syntax.rs",
-    find: "                item.attrs.push(allow);\n",
-    replace: "                drop(allow);\n",
+    find: "                    sym::dead_code,\n                    item.span,\n                );\n                item.attrs.push(allow);\n",
+    replace: "                    sym::dead_code,\n                    item.span,\n                );\n                drop(allow);\n",
     tests: ["test/editor-check.test.ts", "-t", "reads inside JSX"],
   },
   {
@@ -131,5 +131,13 @@ export const mutations: Mutation[] = [
     find: "        && !matches!(i.checked_sub(1).and_then(|at| trees.get(at)), Some(TokenTree::Token(sep, _)) if sep.kind == TokenKind::PathSep)\n",
     replace: "",
     tests: ["test/format.test.ts", "-t", "JSX formatter preserves literal contents, comments, other macros and skipped items"],
+  },
+  {
+    name: "component-name-lint-kept",
+    breaks: "a component's capitalized name, `fn App()`, is flagged by rustc's lint, so each crate needs `#![allow(non_snake_case)]`",
+    file: "src/jsx_syntax.rs",
+    find: "                        Symbol::intern(\"non_snake_case\"),\n                        item.span,\n                    );\n                    item.attrs.push(allow);\n",
+    replace: "                        Symbol::intern(\"non_snake_case\"),\n                        item.span,\n                    );\n                    drop(allow);\n",
+    tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
   },
 ];

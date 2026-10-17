@@ -127,9 +127,11 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   writePatch(app);
   const check = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(app, "Cargo.toml")], app, 300_000, { RUSTC_BOOTSTRAP: undefined });
   // No error, and no warning of the crates it uses: the app's are of what's
-  // used only in JSX, which react's placeholder `jsx!` doesn't look inside.
+  // used only in JSX, which react's placeholder `jsx!` doesn't look inside,
+  // and of its component's capitalized name, which rust-js's own pass allows
+  // and a plain rustc doesn't run (ADR 0439).
   const warnings = check.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
-  expect(warnings.filter((line) => !/^warning: (unused variable: |static `\w+` is never used)/.test(line))).toEqual([]);
+  expect(warnings.filter((line) => !/^warning: (unused variable: |static `\w+` is never used|function `App` should have a snake case name)/.test(line))).toEqual([]);
   expect(check.stderr).not.toMatch(/`rust-js-\w+` \(lib\) generated/);
   expect(check.code).toBe(0);
 
@@ -143,9 +145,10 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   }
   writePatch(site);
   const next = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(site, "Cargo.toml")], site, 300_000, { RUSTC_BOOTSTRAP: undefined });
-  // What's used only in JSX, `Image`, which react's placeholder `jsx!` doesn't look inside.
+  // What's used only in JSX, `Image`, which react's placeholder `jsx!` doesn't look inside,
+  // and the page's component's capitalized name, which only rust-js's pass allows (ADR 0439).
   const nextWarnings = next.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
-  expect(nextWarnings.filter((line) => !/^warning: unused import: /.test(line))).toEqual([]);
+  expect(nextWarnings.filter((line) => !/^warning: (unused import: |function `Home` should have a snake case name)/.test(line))).toEqual([]);
   expect(next.code).toBe(0);
 }, 900_000);
 

@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A component needs no `#![allow(non_snake_case)]`**: rust-js allows the lint for
+  each component it recognizes; the examples and READMEs drop the line (ADR 0439).
 - **An optional prop is given `Some(..)`, or left out** (ADR 0438): decided, as
   Rust can't take a value bare and still coerce it; no `{..Default::default()}`
   is needed for `None`s, and the next.js example writes none.

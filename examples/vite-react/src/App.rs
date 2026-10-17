@@ -2,8 +2,6 @@
 // it to `App.jsx` beside it (`rust-js build`, its own command beside Vite),
 // and Vite serves that with Fast Refresh, as it would the original.
 
-#![allow(non_snake_case)]
-
 js::import!("./App.css");
 
 use react::{JSX, jsx, use_state};

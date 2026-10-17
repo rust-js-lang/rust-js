@@ -3,8 +3,6 @@
 //! its spec asks for. The todos are a reducer's (`model`), each one a
 //! component (`item`), and the route, `#/active` say, the URL's hash.
 
-#![allow(non_snake_case)]
-
 js::import!("todomvc-common/base.css");
 js::import!("todomvc-app-css/index.css");
 

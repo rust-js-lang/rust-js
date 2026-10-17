@@ -2,8 +2,6 @@
 // `jsx!`, which rust-js prints as the JSX you'd write by hand, and a `main`
 // that renders it into the page's `#app`.
 
-#![allow(non_snake_case)]
-
 use react::dom::client::create_root;
 use react::{JSX, jsx, use_state};
 use webapi::document;

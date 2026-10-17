@@ -4,8 +4,6 @@
 // would the original. Its other files are JS, as create-next-app writes
 // them.
 
-#![allow(non_snake_case)]
-
 use next::image::Image;
 use react::{JSX, jsx};
 

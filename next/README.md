@@ -7,8 +7,6 @@ time you run `rust-js build` in the app, its own command beside `next dev`
 [0412](../docs/decisions/0412-rust-js-build-is-its-own-process.md)):
 
 ```rust
-#![allow(non_snake_case)]
-
 use next::link::Link;
 use react::{JSX, jsx};
 

@@ -7,8 +7,6 @@ whichever React from 18.0 on your project has installed
 ([ADR 0043](../docs/decisions/0043-react-versions.md)):
 
 ```rust
-#![allow(non_snake_case)]
-
 use react::{JSX, jsx, use_state};
 
 pub fn App() -> JSX::Element {

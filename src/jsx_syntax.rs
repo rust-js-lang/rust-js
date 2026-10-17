@@ -324,6 +324,19 @@ impl Expand<'_> {
             companions.extend(parser::thread_local_components(self.sess, item, &built));
             if let Some(companion) = parser::component(self.sess, item, &built) {
                 companions.push(companion);
+                // A component is named as JSX names it, capitalized, which
+                // rustc's lint would flag: rust-js allows it, so no crate
+                // writes `#![allow(non_snake_case)]` for it (ADR 0439).
+                if let ItemKind::Fn(_) = item.kind {
+                    let allow = attr::mk_attr_nested_word(
+                        &self.sess.psess.attr_id_generator,
+                        ast::AttrStyle::Outer,
+                        sym::allow,
+                        Symbol::intern("non_snake_case"),
+                        item.span,
+                    );
+                    item.attrs.push(allow);
+                }
             }
         }
         items.extend(companions);

@@ -188,3 +188,8 @@ own guides do, with nothing specific to rust-js:
   `@rust-js/runtime` is (ADR 0103). The Output shows the JSX rust-js wrote.
 - The plugin compiles with the rust-js binary in this repository
   (`bun run build`). Publishing rust-js and the crates is a later step.
+
+## Amendment: no `#![allow(non_snake_case)]`
+
+A component's capitalized name needs no `#![allow(non_snake_case)]`:
+rust-js allows the lint for each component itself (ADR 0439).

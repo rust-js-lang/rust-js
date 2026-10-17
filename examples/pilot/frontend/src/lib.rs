@@ -2,8 +2,6 @@
 //! rules are the server's (`models`), and it's compiled by rust-js, as Cargo
 //! checks the workspace (ADR 0101).
 
-#![allow(non_snake_case)]
-
 mod api;
 mod detail;
 mod form;

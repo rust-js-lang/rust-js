@@ -3,8 +3,6 @@
 // WebAssembly, the same compiler the page runs (see ../compile-rust.ts), and
 // main.ts calls `start`.
 
-#![allow(non_snake_case)]
-
 mod components;
 
 // What the components use: loading and running the compiler, the Result

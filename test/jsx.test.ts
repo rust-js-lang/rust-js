@@ -6852,3 +6852,26 @@ pub fn Diagram(name: &str, caption_position: Option<CaptionPosition>) -> JSX::El
     '<figure><b>/base/d.dark.png</b><b>/base/d.png</b><i>bottom</i></figure>',
   ]);
 });
+
+// ADR 0439: a component is named as JSX names it, capitalized, and rust-js
+// allows rustc's lint of it, so no crate writes `#![allow(non_snake_case)]`;
+// a function that isn't one, `NotComponent`, is still flagged.
+test("a component's capitalized name needs no allow", () => {
+  const { dir, args } = compile(`use react::{JSX, jsx};
+pub struct GreetingProps<'a> { pub name: &'a str }
+pub fn Greeting(GreetingProps { name }: GreetingProps) -> JSX::Element {
+    jsx! { <p>{"Hi "}{name}</p> }
+}
+pub fn App() -> JSX::Element {
+    jsx! { <Greeting name="Ada" /> }
+}
+mod inner {
+    use react::{JSX, jsx};
+    pub fn Badge() -> JSX::Element { jsx! { <b>{"!"}</b> } }
+}
+pub fn NotComponent() -> u32 { 1 }
+`);
+  const built = Bun.spawnSync(args, { cwd: dir });
+  const warned = [...built.stderr.toString().matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
+  expect([built.exitCode, warned]).toEqual([0, ["NotComponent"]]);
+});
