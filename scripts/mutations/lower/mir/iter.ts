@@ -629,4 +629,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
+  {
+    name: "last-of-destructors-uncounted",
+    breaks: "`last()` of items with a destructor collects them, and drops none it passes",
+    file: "src/lower/mir/iter.rs",
+    find: "                Some(drop) => Expr::call_helper(\"$lastDropping\", vec![it, drop]),\n",
+    replace: "                Some(_) => self.last_of(method(\"toArray\", it, Vec::new()), item, made),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+  },
 ];

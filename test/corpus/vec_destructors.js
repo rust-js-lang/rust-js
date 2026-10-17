@@ -6,6 +6,8 @@ import {
   $dedupBy,
   $dequeInsert,
   $insertAt,
+  $iter,
+  $lastDropping,
   $range,
   $removeAt,
   $removeOpt,
@@ -1016,6 +1018,165 @@ function main() {
   }
   try {
     $truncate(deque, 0, noisyDrop_drop);
+  } catch (error) {
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  let items;
+  try {
+    items = $range(50, 53).map((value) => [value]);
+  } catch (error) {
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  let tmp$18;
+  let tmp$19;
+  try {
+    tmp$18 = $iter(items);
+    tmp$19 = (n) => {
+      try {
+        console.log(`pass ${n[0]}`);
+      } catch (error) {
+        noisyDrop_drop(n);
+        throw error;
+      }
+      return n;
+    };
+  } catch (error) {
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  let tmp$20;
+  try {
+    tmp$20 = tmp$18.map((item) => tmp$19(item));
+  } catch (error) {
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  let last;
+  try {
+    last = $lastDropping(tmp$20, noisyDrop_drop);
+  } catch (error) {
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  const value$12 = (n) => n[0];
+  try {
+    const value = last ? value$12(last) : undefined;
+    console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    if (last != null) {
+      noisyDrop_drop(last);
+    }
+    if (second != null) {
+      noisyDrop_drop(second);
+    }
+    for (const item of deque) {
+      noisyDrop_drop(item);
+    }
+    for (const item of w) {
+      noisyDrop_drop(item);
+    }
+    for (const item of taken) {
+      noisyDrop_drop(item);
+    }
+    for (const item of more) {
+      noisyDrop_drop(item);
+    }
+    for (const item of v) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    if (last != null) {
+      noisyDrop_drop(last);
+    }
   } catch (error) {
     if (second != null) {
       noisyDrop_drop(second);

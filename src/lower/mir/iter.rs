@@ -469,10 +469,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = method("toArray", it, Vec::new());
                 self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
             }
-            Some(IterMethod::Last) => {
-                let items = method("toArray", it, Vec::new());
-                self.last_of(items, item, made)
-            }
+            // Of items with a destructor, each before the last dropped as the
+            // next comes, as std's are (ADR 0098).
+            Some(IterMethod::Last) => match item
+                .map(|item| self.std_drop_function(item, span))
+                .transpose()?
+                .flatten()
+            {
+                Some(drop) => Expr::call_helper("$lastDropping", vec![it, drop]),
+                None => {
+                    let items = method("toArray", it, Vec::new());
+                    self.last_of(items, item, made)
+                }
+            },
             Some(IterMethod::ByRef) => it,
             Some(IterMethod::Fuse) => it,
             Some(IterMethod::Collect) => {
@@ -564,6 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Sum
                     | IterMethod::Product
                     | IterMethod::Count
+                    | IterMethod::Last
                     | IterMethod::Filter
                     | IterMethod::SkipWhile
             )

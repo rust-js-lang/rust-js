@@ -2,7 +2,8 @@
 // in, drops none, and what it takes out it gives back, which its holder
 // drops where Rust's does; what drops what it takes out drops each as std
 // does, `retain` and `dedup_by_key` before the next is asked, `truncate`
-// and `clear` once it's out, in order, a `VecDeque`'s too (ADR 0098).
+// and `clear` once it's out, in order, a `VecDeque`'s too, and `last()`
+// each before it as the next comes (ADR 0098).
 struct Noisy(u32);
 
 impl Drop for Noisy {
@@ -78,5 +79,17 @@ fn main() {
     deque.truncate(1);
     println!("deque {}", deque.len());
     deque.clear();
+
+    // `last()`: each item before it dropped as the next comes.
+    let items: Vec<Noisy> = (50..53).map(Noisy).collect();
+    let last = items
+        .into_iter()
+        .map(|n| {
+            println!("pass {}", n.0);
+            n
+        })
+        .last();
+    println!("last {:?}", last.as_ref().map(|n| n.0));
+    drop(last);
     println!("end");
 }
