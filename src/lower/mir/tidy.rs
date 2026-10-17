@@ -196,6 +196,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A block, or branches, a function's body or a loop's ends in, the function's value made
     // in them, `?`'s.
     js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
+    js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);

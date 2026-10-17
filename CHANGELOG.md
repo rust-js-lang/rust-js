@@ -298,6 +298,11 @@ released any more: `rust-js build` is the one way to build an app.
 - **`[package.metadata.rust-js.format]` is gone**: the app's Prettier lays
   out what rust-js writes; move its options to `.prettierrc`
   ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
+- **A `return` is written where its value is made**: a `?` or a `return
+  Err(..)` inside a loop or a `match`, which went through a variable, a
+  labeled block and a `return` after it, is `return v;` where it's made,
+  and each `?` a guard, `if (r.TAG === "Err") { return r; }`
+  ([ADR 0432](docs/decisions/0432-a-return-is-written-where-its-value-is-made.md)).
 - **`v.some(f) && v.every(g)` has no `!!`**: a call of JS's `some`,
   `every`, `includes`, `has`, `startsWith` or `endsWith` is a `bool` already
   (ADR 0235).

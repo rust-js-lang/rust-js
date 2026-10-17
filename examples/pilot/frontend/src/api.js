@@ -53,32 +53,32 @@ function get(signal) {
 
 export async function contacts(query, signal) {
   const result = await call(`/api/contacts?q=${encodeURIComponent(query)}`, get(signal), 200);
-  if (result.TAG !== "Err") {
-    const text = result._0;
-    const result$1 = $fromJson(text, $json.vec(contactDeserialize_deserialize));
-    return result$1.TAG === "Err"
-      ? {
-          TAG: "Err",
-          _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
-        }
-      : result$1;
+  if (result.TAG === "Err") {
+    return result;
   }
-  return result;
+  const text = result._0;
+  const result$1 = $fromJson(text, $json.vec(contactDeserialize_deserialize));
+  return result$1.TAG === "Err"
+    ? {
+        TAG: "Err",
+        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+      }
+    : result$1;
 }
 
 export async function contact(id, signal) {
   const result = await call(`/api/contacts/${id}`, get(signal), 200);
-  if (result.TAG !== "Err") {
-    const text = result._0;
-    const result$1 = $fromJson(text, contactDeserialize_deserialize);
-    return result$1.TAG === "Err"
-      ? {
-          TAG: "Err",
-          _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
-        }
-      : result$1;
+  if (result.TAG === "Err") {
+    return result;
   }
-  return result;
+  const text = result._0;
+  const result$1 = $fromJson(text, contactDeserialize_deserialize);
+  return result$1.TAG === "Err"
+    ? {
+        TAG: "Err",
+        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+      }
+    : result$1;
 }
 
 export async function create(new$) {
@@ -91,16 +91,16 @@ export async function create(new$) {
   );
   const init = { method: "POST", headers: json, body };
   const result = await call("/api/contacts", init, 201);
-  if (result.TAG !== "Err") {
-    const text = result._0;
-    const result$1 = $fromJson(text, contactDeserialize_deserialize);
-    return result$1.TAG === "Err"
-      ? {
-          TAG: "Err",
-          _0: { TAG: "Refused", _0: 201, _1: Problem.new($displayJsonError(result$1._0)) },
-        }
-      : result$1;
+  if (result.TAG === "Err") {
+    return result;
   }
-  return result;
+  const text = result._0;
+  const result$1 = $fromJson(text, contactDeserialize_deserialize);
+  return result$1.TAG === "Err"
+    ? {
+        TAG: "Err",
+        _0: { TAG: "Refused", _0: 201, _1: Problem.new($displayJsonError(result$1._0)) },
+      }
+    : result$1;
 }
 //# sourceMappingURL=api.js.map

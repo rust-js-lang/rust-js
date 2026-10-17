@@ -729,4 +729,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
     snapshots: true,
   },
+  {
+    name: "tail-continues-unwritten-kept",
+    breaks: "a `continue` the program didn't write, left at a loop body's end by a block returned in place, stays",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
+    snapshots: true,
+  },
 ];

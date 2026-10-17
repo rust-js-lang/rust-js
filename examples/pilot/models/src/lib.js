@@ -186,7 +186,8 @@ export function is_email(text) {
 export function matches(contact, query) {
   const query$1 = $trim(query).toLowerCase();
   return (
-    !!(!query$1 || contact.name.toLowerCase().includes(query$1)) ||
+    !query$1 ||
+    contact.name.toLowerCase().includes(query$1) ||
     contact.email.toLowerCase().includes(query$1)
   );
 }

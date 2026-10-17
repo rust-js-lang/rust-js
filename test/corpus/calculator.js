@@ -150,157 +150,129 @@ const Parser = {
     return { TAG: "Err", _0: { TAG: "Expected", _0: what } };
   },
   expr(parser) {
-    const result$1 = Parser.term(parser);
-    if (result$1.TAG === "Err") {
-      return result$1;
+    const result = Parser.term(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    let left = result$1._0;
+    let left = result._0;
     while (true) {
       const value = Parser.peek(parser);
       if (value == null || value.TAG !== "Op" || (value._0 !== "+" && value._0 !== "-")) {
         break;
       }
       Parser.next(parser);
-      const result$2 = Parser.term(parser);
-      if (result$2.TAG === "Err") {
-        return result$2;
+      const result$1 = Parser.term(parser);
+      if (result$1.TAG === "Err") {
+        return result$1;
       }
-      const right = result$2._0;
+      const right = result$1._0;
       left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
   },
   term(parser) {
-    const result$1 = Parser.power(parser);
-    if (result$1.TAG === "Err") {
-      return result$1;
+    const result = Parser.power(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    let left = result$1._0;
+    let left = result._0;
     while (true) {
       const value = Parser.peek(parser);
       if (value == null || value.TAG !== "Op" || (value._0 !== "*" && value._0 !== "/")) {
         break;
       }
       Parser.next(parser);
-      const result$2 = Parser.power(parser);
-      if (result$2.TAG === "Err") {
-        return result$2;
+      const result$1 = Parser.power(parser);
+      if (result$1.TAG === "Err") {
+        return result$1;
       }
-      const right = result$2._0;
+      const right = result$1._0;
       left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
   },
   power(parser) {
-    const result$1 = Parser.unary(parser);
-    if (result$1.TAG === "Err") {
-      return result$1;
+    const result = Parser.unary(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    const base = result$1._0;
+    const base = result._0;
     const value = Parser.peek(parser);
     if (value != null && value.TAG === "Op" && value._0 === "^") {
       Parser.next(parser);
-      const result$2 = Parser.power(parser);
-      if (result$2.TAG !== "Err") {
-        const exponent = result$2._0;
-        return { TAG: "Ok", _0: { TAG: "Bin", _0: base, _1: "^", _2: exponent } };
+      const result$1 = Parser.power(parser);
+      if (result$1.TAG === "Err") {
+        return result$1;
       }
-      return result$2;
+      const exponent = result$1._0;
+      return { TAG: "Ok", _0: { TAG: "Bin", _0: base, _1: "^", _2: exponent } };
     }
     return { TAG: "Ok", _0: base };
   },
   unary(parser) {
     const other = Parser.next(parser);
-    let result;
-    bb114: {
-      if (other != null) {
-        bb133: {
-          if (other.TAG === "Num") {
-            result = { TAG: "Ok", _0: { TAG: "Num", _0: other._0 } };
-            break bb114;
-          }
-          if (other.TAG === "Ident") {
-            const value = Parser.peek(parser);
-            bb85: {
-              if (value === "LParen") {
-                Parser.next(parser);
-                const args = [];
-                bb128: {
-                  bb69: {
-                    if (Parser.peek(parser) !== "RParen") {
-                      const value = args;
-                      const result$1 = Parser.expr(parser);
-                      if (result$1.TAG !== "Err") {
-                        value.push(result$1._0);
-                        while (true) {
-                          if (Parser.peek(parser) === "Comma") {
-                            Parser.next(parser);
-                            const value = args;
-                            const result$1 = Parser.expr(parser);
-                            if (result$1.TAG !== "Err") {
-                              value.push(result$1._0);
-                              continue;
-                            }
-                            result = result$1;
-                            break;
-                          }
-                          break bb69;
-                        }
-                      } else {
-                        result = result$1;
-                      }
-                      break bb128;
-                    }
-                  }
-                  const result$1 = Parser.expect(parser, "RParen", "')'");
-                  if (result$1.TAG !== "Err") {
-                    result = { TAG: "Ok", _0: { TAG: "Call", _0: other._0, _1: args } };
-                    break bb85;
-                  }
-                  result = result$1;
-                }
-                break bb133;
-              }
-              result = { TAG: "Ok", _0: { TAG: "Var", _0: other._0 } };
-            }
-            break bb114;
-          }
-          if (other.TAG === "Op") {
-            if (other._0 === "-") {
-              const result$1 = Parser.unary(parser);
-              if (result$1.TAG !== "Err") {
-                result = { TAG: "Ok", _0: { TAG: "Neg", _0: result$1._0 } };
-                break bb114;
-              }
-              result = result$1;
-              break bb133;
-            }
-          } else if (other === "LParen") {
-            const result$1 = Parser.expr(parser);
-            if (result$1.TAG !== "Err") {
-              const inner = result$1._0;
-              const result$2 = Parser.expect(parser, "RParen", "')'");
-              if (result$2.TAG !== "Err") {
-                result = { TAG: "Ok", _0: inner };
-                break bb114;
-              }
-              result = result$2;
-            } else {
-              result = result$1;
-            }
-            break bb133;
-          }
-          result = {
-            TAG: "Err",
-            _0: { TAG: "Expected", _0: `a value, not ${tokenDebug_fmt(other)}` },
-          };
-          break bb114;
-        }
-        return result;
+    if (other != null) {
+      if (other.TAG === "Num") {
+        return { TAG: "Ok", _0: { TAG: "Num", _0: other._0 } };
       }
-      result = { TAG: "Err", _0: "UnexpectedEnd" };
+      if (other.TAG === "Ident") {
+        if (Parser.peek(parser) === "LParen") {
+          Parser.next(parser);
+          const args = [];
+          bb69: {
+            if (Parser.peek(parser) !== "RParen") {
+              const value = args;
+              const result = Parser.expr(parser);
+              if (result.TAG === "Err") {
+                return result;
+              }
+              value.push(result._0);
+              while (true) {
+                if (Parser.peek(parser) === "Comma") {
+                  Parser.next(parser);
+                  const value = args;
+                  const result = Parser.expr(parser);
+                  if (result.TAG === "Err") {
+                    return result;
+                  }
+                  value.push(result._0);
+                  continue;
+                }
+                break bb69;
+              }
+            }
+          }
+          const result = Parser.expect(parser, "RParen", "')'");
+          if (result.TAG === "Err") {
+            return result;
+          }
+          return { TAG: "Ok", _0: { TAG: "Call", _0: other._0, _1: args } };
+        }
+        return { TAG: "Ok", _0: { TAG: "Var", _0: other._0 } };
+      }
+      if (other.TAG === "Op") {
+        if (other._0 === "-") {
+          const result = Parser.unary(parser);
+          if (result.TAG === "Err") {
+            return result;
+          }
+          return { TAG: "Ok", _0: { TAG: "Neg", _0: result._0 } };
+        }
+      } else if (other === "LParen") {
+        const result = Parser.expr(parser);
+        if (result.TAG === "Err") {
+          return result;
+        }
+        const inner = result._0;
+        const result$1 = Parser.expect(parser, "RParen", "')'");
+        if (result$1.TAG === "Err") {
+          return result$1;
+        }
+        return { TAG: "Ok", _0: inner };
+      }
+      return { TAG: "Err", _0: { TAG: "Expected", _0: `a value, not ${tokenDebug_fmt(other)}` } };
     }
-    return result;
+    return { TAG: "Err", _0: "UnexpectedEnd" };
   },
 };
 
@@ -332,52 +304,51 @@ const Calculator = {
         tmp = result._0;
       } else if (expr.TAG !== "Neg") {
         if (expr.TAG === "Bin") {
-          const result$1 = Calculator.eval(calculator, expr._0);
-          let result;
-          if (result$1.TAG !== "Err") {
-            const a = result$1._0;
-            const result$2 = Calculator.eval(calculator, expr._2);
-            if (result$2.TAG !== "Err") {
-              const { _0: b } = result$2;
-              if (expr._1 === "+") {
-                tmp = a + b;
-              } else if (expr._1 === "-") {
-                tmp = a - b;
-              } else if (expr._1 === "*") {
-                tmp = a * b;
-              } else if (expr._1 === "/") {
-                if (b === 0) {
-                  return { TAG: "Err", _0: "DivideByZero" };
-                }
-                tmp = a / b;
-              } else {
-                tmp = $powf(a, b);
-              }
-              break bb92;
-            }
-            result = result$2;
-          } else {
-            result = result$1;
+          const result = Calculator.eval(calculator, expr._0);
+          if (result.TAG === "Err") {
+            return result;
           }
-          return result;
+          const a = result._0;
+          const result$1 = Calculator.eval(calculator, expr._2);
+          if (result$1.TAG === "Err") {
+            return result$1;
+          }
+          const { _0: b } = result$1;
+          if (expr._1 === "+") {
+            tmp = a + b;
+          } else if (expr._1 === "-") {
+            tmp = a - b;
+          } else if (expr._1 === "*") {
+            tmp = a * b;
+          } else if (expr._1 === "/") {
+            if (b === 0) {
+              return { TAG: "Err", _0: "DivideByZero" };
+            }
+            tmp = a / b;
+          } else {
+            tmp = $powf(a, b);
+          }
+          break bb92;
         }
         const option = calculator.functions.get(expr._0);
-        const result$2 =
+        const result =
           option != null
             ? { TAG: "Ok", _0: option }
             : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
-        if (result$2.TAG === "Err") {
-          return result$2;
-        }
-        const [wanted, f] = result$2._0;
-        if (expr._1.length !== wanted) {
-          return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
-        }
-        const result = $collectResults(expr._1.values().map((a) => Calculator.eval(calculator, a)));
         if (result.TAG === "Err") {
           return result;
         }
-        const values = result._0;
+        const [wanted, f] = result._0;
+        if (expr._1.length !== wanted) {
+          return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
+        }
+        const result$2 = $collectResults(
+          expr._1.values().map((a) => Calculator.eval(calculator, a)),
+        );
+        if (result$2.TAG === "Err") {
+          return result$2;
+        }
+        const values = result$2._0;
         tmp = f(values);
       } else {
         const result = Calculator.eval(calculator, expr._0);
@@ -398,24 +369,24 @@ const Calculator = {
     if (tokens.length >= 2 && tokens[0].TAG === "Ident" && tokens[1] === "Assign") {
       const name = tokens[0]._0;
       const parser = { tokens: $slice(tokens, 2).slice(), at: 0 };
-      const result$2 = Parser.expr(parser);
-      if (result$2.TAG === "Err") {
-        return result$2;
+      const result = Parser.expr(parser);
+      if (result.TAG === "Err") {
+        return result;
       }
-      const result = Calculator.eval(calculator, result$2._0);
-      if (result.TAG !== "Err") {
-        const value = result._0;
-        calculator.vars.set(name, value);
-        return { TAG: "Ok" };
+      const result$1 = Calculator.eval(calculator, result._0);
+      if (result$1.TAG === "Err") {
+        return result$1;
       }
-      return result;
+      const value = result$1._0;
+      calculator.vars.set(name, value);
+      return { TAG: "Ok" };
     }
     const parser = { tokens, at: 0 };
-    const result = Parser.expr(parser);
-    if (result.TAG === "Err") {
-      return result;
+    const result$2 = Parser.expr(parser);
+    if (result$2.TAG === "Err") {
+      return result$2;
     }
-    const expr = result._0;
+    const expr = result$2._0;
     const extra = Parser.peek(parser);
     if (extra != null) {
       return { TAG: "Err", _0: { TAG: "Expected", _0: `the end, not ${tokenDebug_fmt(extra)}` } };

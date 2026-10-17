@@ -1063,7 +1063,9 @@ test("the calculator's JS is what a person would write", async () => {
   expect(js).toContain("`Some((${value[0]}, ${$debugStr(value[1], \"'\")}))`");
   expect(js).toContain('$splitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
   // `?` from a `&str` error to a `String` one: the same string, returned as it is.
-  expect(js).toContain("option != null ? { TAG: \"Ok\", _0: option } : { TAG: \"Err\", _0: \"underflow\" };\n      if (result$1.TAG !== \"Err\") {");
+  expect(js).toContain(
+    "option != null ? { TAG: \"Ok\", _0: option } : { TAG: \"Err\", _0: \"underflow\" };\n      if (result.TAG === \"Err\") {\n        return result;\n      }",
+  );
 });
 
 // ADR 0064: a number's methods are `Math`'s where JS agrees with Rust, and

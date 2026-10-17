@@ -119,44 +119,40 @@ export function eval$(src) {
   const rpn = to_rpn(result._0);
   const st = [];
   for (const t of rpn) {
-    let result;
     if (t.TAG === "Num") {
       st.push(t._0);
       continue;
     }
     if (t.TAG === "Op") {
       const option = st.pop();
-      const result$1 = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
-      if (result$1.TAG !== "Err") {
-        const b = result$1._0;
-        const option = st.pop();
-        const result$2 =
-          option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
-        if (result$2.TAG !== "Err") {
-          const a = result$2._0;
-          let tmp;
-          if (t._0 === "+") {
-            tmp = a + b;
-          } else if (t._0 === "-") {
-            tmp = a - b;
-          } else if (t._0 === "*") {
-            tmp = a * b;
-          } else if (t._0 === "/") {
-            tmp = a / b;
-          } else {
-            throw new Error("internal error: entered unreachable code");
-          }
-          st.push(tmp);
-          continue;
-        }
-        result = result$2;
-      } else {
-        result = result$1;
+      const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
+      if (result.TAG === "Err") {
+        return result;
       }
+      const b = result._0;
+      const option$1 = st.pop();
+      const result$1 =
+        option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: "underflow" };
+      if (result$1.TAG === "Err") {
+        return result$1;
+      }
+      const a = result$1._0;
+      let tmp;
+      if (t._0 === "+") {
+        tmp = a + b;
+      } else if (t._0 === "-") {
+        tmp = a - b;
+      } else if (t._0 === "*") {
+        tmp = a * b;
+      } else if (t._0 === "/") {
+        tmp = a / b;
+      } else {
+        throw new Error("internal error: entered unreachable code");
+      }
+      st.push(tmp);
     } else {
-      result = { TAG: "Err", _0: "paren" };
+      return { TAG: "Err", _0: "paren" };
     }
-    return result;
   }
   const option = st.pop();
   return option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "empty" };
