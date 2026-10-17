@@ -298,6 +298,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **`[package.metadata.rust-js.format]` is gone**: the app's Prettier lays
   out what rust-js writes; move its options to `.prettierrc`
   ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
+- **`v.some(f) && v.every(g)` has no `!!`**: a call of JS's `some`,
+  `every`, `includes`, `has`, `startsWith` or `endsWith` is a `bool` already
+  (ADR 0235).
 
 ### Fixed
 

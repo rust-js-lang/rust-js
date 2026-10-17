@@ -73,3 +73,16 @@ way: `<Listbox>{isMultiFile && showDropdown && <Listbox.Options>..}</Listbox>`,
 as react.dev's NavigationBar has it, where they were `test ? <el /> :
 undefined`. The component is given `false` where it was given `undefined`,
 as the original's JSX gives it; each renders nothing.
+
+## Amendment: JS's methods whose answer is a `bool`
+
+What `is_boolean` takes for a `bool` now includes a call of JS's own
+`some`, `every`, `includes`, `has`, `startsWith` or `endsWith`, the methods
+rust-js writes for std's `any`, `all`, `contains`, `starts_with` and
+`ends_with`. So `items.iter().any(f) && items.iter().all(g)` is
+`items.some(f) && items.every(g)`, as a person writes it, where it was
+`!!items.some(f) && ..`. Each method answers a JS `boolean`, as Rust's
+`bool` is, so nothing a program can observe changes (ADR 0262's first
+case). A binding of the same name typed `bool` answers one too, as its
+TypeScript says. The corpus's `sales_report` holds it; a mutation that
+empties the list brings `!!` back.

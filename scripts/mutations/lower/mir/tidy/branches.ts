@@ -450,4 +450,13 @@ export const mutations: Mutation[] = [
       "capture of an inlined closure"
     ]
   },
+  {
+    name: "boolean-methods-unknown",
+    breaks: "`v.some(f) && b` is `!!v.some(f) && b`, a `bool` made a `bool`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "const BOOLEAN_METHODS: &[&str] = &[\"some\", \"every\", \"includes\", \"has\", \"startsWith\", \"endsWith\"];\n",
+    replace: "const BOOLEAN_METHODS: &[&str] = &[];\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^sales_report.rs$"],
+  },
 ];
