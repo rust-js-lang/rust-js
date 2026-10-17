@@ -2550,8 +2550,8 @@ export const mutations: Mutation[] = [
     name: "or-insert-given-no-drop",
     breaks: "`or_insert` of a value with a destructor is given no drop",
     file: "src/lower/mir.rs",
-    find: "                list.extend(self.std_drop_function(value, span)?);\n",
-    replace: "                let _ = value;\n",
+    find: "            list.extend(self.std_drop_function(value, span)?);\n",
+    replace: "            let _ = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
 ];

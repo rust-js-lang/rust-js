@@ -4939,6 +4939,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::arrow(patterns, body))
     }
 
+    /// `$orInsert(m, key, value)`, or `$orInsertWith(m, key, f)` of `op`, of
+    /// its map, key and value, `list`: of `or_insert` of a value with a
+    /// destructor, given its drop, which drops the value given where the
+    /// key's there (ADR 0321).
+    fn or_inserted(
+        &mut self,
+        op: MapOp,
+        mut list: Vec<Expr>,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        let name = match op {
+            MapOp::OrInsert => "$orInsert",
+            _ => "$orInsertWith",
+        };
+        if op == MapOp::OrInsert
+            && let Some(value) = generic_args.types().nth(1)
+        {
+            list.extend(self.std_drop_function(value, span)?);
+        }
+        Ok(Expr::call(Expr::helper(name), list))
+    }
+
     /// A call of `def_id`, of its arguments' values, `arg_tys` their types.
     /// Whether `def_id` is a method of a write's result, which never fails
     /// (`never_fails`): `Result`'s own, not `Argument::new_debug(&r)`'s, nor
@@ -5542,18 +5565,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => exprs.next().expect("the value"),
             };
-            let name = match op {
-                MapOp::OrInsert => "$orInsert",
-                _ => "$orInsertWith",
-            };
-            let mut list = vec![map.clone(), key.clone(), default];
-            // The value given dropped where the key's there (ADR 0321).
-            if op == MapOp::OrInsert
-                && let Some(value) = generic_args.types().nth(1)
-            {
-                list.extend(self.std_drop_function(value, span)?);
-            }
-            let inserted = Expr::call(Expr::helper(name), list);
+            let inserted = self.or_inserted(op, vec![map.clone(), key.clone(), default], generic_args, span)?;
             if !self.is_cell(output) {
                 return Ok(Value::Expr(inserted));
             }
