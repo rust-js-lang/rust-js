@@ -390,4 +390,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
+  {
+    name: "default-bound-of-parameters-unread",
+    breaks: "`Default::default()` of `[T; N]`, which a where clause gives a dictionary of, is refused, as only a type parameter's bound is read",
+    file: "src/lower/std_impls.rs",
+    find: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr) {\n",
+    replace: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr).filter(|_| self.is_unknown(ty)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
+  },
 ];

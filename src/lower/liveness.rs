@@ -79,13 +79,9 @@ struct Given<'tcx> {
     structs: Vec<ty::AdtDef<'tcx>>,
 }
 
+// Each body on its own, with its own results: a closure's, or a `const`'s
+// in a type, is a body owner of its own, not walked into from another's.
 impl<'tcx> Visitor<'tcx> for Given<'tcx> {
-    type NestedFilter = rustc_middle::hir::nested_filter::OnlyBodies;
-
-    fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
-        self.tcx
-    }
-
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
         let results = self.results.expect("a body's results");
         let (callee, args): (Option<_>, Vec<&hir::Expr<'_>>) = match expr.kind {

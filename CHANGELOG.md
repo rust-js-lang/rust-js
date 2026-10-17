@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`Default` of `[T; N]`** through its where clause, `[T; N]: Default`, and a
+  bound's dictionary named for what it's of, `TArrayDefault`, `WrappingMul` (ADR 0107).
 - **A `()` given a function value is no argument**: `resolve()` of `resolve(())`,
   `f()` of a `dyn Fn(())`'s call (ADR 0441).
 - **A binding needs no `#[allow]`**: its parameters, which its body never reads,

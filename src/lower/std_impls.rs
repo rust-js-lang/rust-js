@@ -488,12 +488,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// defaults, or a call of a hand-written `default`.
     pub(super) fn default_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let default = std_item(self.tcx, StdItem::Default);
+        // What a bound gave this function for it, a type parameter's or
+        // a where clause's of one made of them, `[Self::Item; N]: Default`:
+        // its dictionary's.
+        let tr = ty::TraitRef::new(self.tcx, default, [ty]);
+        if let Some(dictionary) = self.evidence_for(tr) {
+            return Ok(Expr::call(Expr::member(dictionary, "default"), Vec::new()));
+        }
         if self.is_unknown(ty) {
-            let tr = ty::TraitRef::new(self.tcx, default, [ty]);
-            return match self.evidence_for(tr) {
-                Some(dictionary) => Ok(Expr::call(Expr::member(dictionary, "default"), Vec::new())),
-                None => Err(self.no_evidence(span, tr)),
-            };
+            return Err(self.no_evidence(span, tr));
         }
         // A React element's, React's empty node (ADR 0192): the react
         // crate's `impl` has no JS of its own.

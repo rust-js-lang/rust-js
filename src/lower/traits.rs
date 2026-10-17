@@ -779,6 +779,12 @@ fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         // `name: impl Into<String>`'s, which rustc names as it's written: its
         // trait's word alone, `IntoString`.
         ty::Param(p) if p.name.as_str().starts_with("impl ") => String::new(),
+        // An array's and a slice's, of their item's: `TArray` of `[T; N]`,
+        // as a where clause's bound of one is `TArrayDefault`.
+        ty::Array(item, _) => format!("{}Array", evidence_word(tcx, *item)),
+        ty::Slice(item) => format!("{}Slice", evidence_word(tcx, *item)),
+        // A struct's or an enum's own name, `String`, not its path.
+        ty::Adt(..) => type_word(tcx, ty),
         _ => ty.to_string(),
     }
 }

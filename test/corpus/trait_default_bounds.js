@@ -87,19 +87,18 @@ function u8One_one() {
   return 1;
 }
 
-function wrappingOne(TOne, std__num__Wrapping_T_Mul) {
+function wrappingOne(TOne, WrappingMul) {
   if ($wrappingOne === undefined) {
     $wrappingOne = new WeakMap();
   }
-  return $traitImpl($wrappingOne, [TOne, std__num__Wrapping_T_Mul], () => ({
-    Mul: () => std__num__Wrapping_T_Mul,
-    one: () => wrappingOne_one(TOne, std__num__Wrapping_T_Mul),
-    is_one: (self, SelfPartialEq) =>
-      SelfPartialEq.eq(self, wrappingOne_one(TOne, std__num__Wrapping_T_Mul)),
+  return $traitImpl($wrappingOne, [TOne, WrappingMul], () => ({
+    Mul: () => WrappingMul,
+    one: () => wrappingOne_one(TOne, WrappingMul),
+    is_one: (self, SelfPartialEq) => SelfPartialEq.eq(self, wrappingOne_one(TOne, WrappingMul)),
   }));
 }
 
-function wrappingOne_one(TOne, std__num__Wrapping_T_Mul) {
+function wrappingOne_one(TOne, WrappingMul) {
   return [TOne.one()];
 }
 

@@ -334,10 +334,12 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   // nearly any change to the compiler, a mutation's or not. One that only
   // changes how the JS reads is checked by its snapshots.
   // Its own target, where the crates it builds with `compiler` are no other
-  // test's: run beside the suite, `check:fast`'s, the react crate it built
-  // was read half written, and the suite's tests failed.
+  // test's, nor another mutant's: run beside the suite, `check:fast`'s, the
+  // react crate a mutant built was read half written, and the suite's tests
+  // failed; beside another mutant, each wrote the other's `js` crate.
   const own = join(work, "tests", basename(compiler));
   rmSync(own, { recursive: true, force: true });
+  mkdirSync(own, { recursive: true });
   const p = await withRuntime(compiler, () =>
     run([process.execPath, "test", ...tests], root, testTimeout, {
       RUST_JS_COMPILER: compiler,

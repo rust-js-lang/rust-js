@@ -65,3 +65,11 @@ no binding rust-js takes.
   own binding's was `setTimeout(resolve, ms)`: `js`'s `Promise` `resolve`
   takes the value, here a `()`, which is no argument (ADR 0441); the
   arrow stays, as what `setTimeout` gives its callback isn't Rust's to say.
+
+## Amendment: each body with its own results
+
+The liveness walked into a body in a body, a block given as a const
+argument, `ConstU32<{ identity::<3>() }>`, with its owner's type-check
+results, which have no type for it: rustc's `const_fn_in_generics.rs`
+crashed. Each body owner is walked on its own, with its own results; the
+binding test holds a call inside a const argument.

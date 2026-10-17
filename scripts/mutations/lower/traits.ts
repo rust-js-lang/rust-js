@@ -1295,4 +1295,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
+  {
+    name: "evidence-word-of-array-mangled",
+    breaks: "a bound of an array's dictionary is named by the type as rustc prints it, `_T__N_Default`, not `TArrayDefault`",
+    file: "src/lower/traits.rs",
+    find: "        ty::Array(item, _) => format!(\"{}Array\", evidence_word(tcx, *item)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "evidence-word-of-struct-path",
+    breaks: "a bound of a struct's dictionary is named by its path, `std__num__Wrapping_T_Mul`, not `WrappingMul`",
+    file: "src/lower/traits.rs",
+    find: "        ty::Adt(..) => type_word(tcx, ty),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(array_defaults|trait_default_bounds).rs$"],
+    snapshots: true,
+  },
 ];

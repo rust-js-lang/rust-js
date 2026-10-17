@@ -6905,8 +6905,10 @@ struct Kept { unread: u32 }
 #[cfg_attr(rust_js, rust_js::link_name = "configure")]
 fn configure(options: &dyn std::any::Any) -> u32 { unreachable!() }
 fn keep(_: &Kept) -> u32 { 0 }
+const fn sized<const N: u32>() -> u32 { N }
 pub fn configured() -> u32 {
-    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } })
+    // A body in a body, a block given as a const argument, its own owner.
+    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } }) + sized::<{ sized::<1>() }>()
 }
 `);
   const built = Bun.spawnSync(args, { cwd: dir });

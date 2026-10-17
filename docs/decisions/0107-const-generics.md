@@ -55,3 +55,16 @@ dictionaries: `sum(values, N)`, `describe(values, N, TDebug)`.
   parameters; and the diagnostics test's refusals. Of the 75 rustc tests
   stopping at them, 23 pass, none giving another answer; 21 stop at a
   trait's or a trait method's own, and 13 at generic const expressions.
+
+## Amendment: a where clause's dictionary of an array of `N`
+
+`Default::default()` of `[T; N]`, `[Self::Item; N]` of an iterator say,
+was refused: Rust asks a where clause for it, `[T; N]: Default`, and only
+a type parameter's own bound's dictionary was read. Now a dictionary a
+bound gives of any type, one made of parameters too, is what
+`Default::default()` of that type is (`default_value`), which the caller
+makes of its own `N`. A bound's dictionary of an array or a slice is
+named for its item, `TArrayDefault`, and of a struct by its name,
+`WrappingMul`, not by the type as rustc prints it. The `array_defaults`
+corpus case compares them with native Rust; rustc's
+`const-generics/type-dependent/issue-69816.rs` passes.
