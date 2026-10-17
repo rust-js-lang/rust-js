@@ -72,7 +72,15 @@ const w = $iterator({ inner: { start: 0, end: 4 } }, (iterator) =>
 ## Consequences
 
 - A trait's method's own iterator, `&mut self` of a blanket `impl<I:
-  Iterator> Trait for I`, is still refused.
+  Iterator> Trait for I`, is still refused. (Amended: it isn't. Its
+  dictionary's entry takes the box generic code gives a `&mut Self` and
+  gives the method what's in it, the iterator, which its `Iterator`
+  dictionary steps, as an object's impl's entry does; and a copied
+  default's `&mut self` given to the impl's method is what's in its box,
+  as a type parameter that's a JS iterator isn't boxed (ADR 0099). The
+  `blanket_iterator_trait` corpus case steps a range in place, the crate's
+  own iterator, a slice's and an adapter of the trait's through it, with
+  native Rust; rustc's `streaming_iterator.rs` passes.)
 - A loop over a generic adapter's iterator of `Clone` items reads
   `$iterator(IClone.clone(items), IIterator.next, true)` where it read
   `IClone.clone(items)`: right of a range too, which that wasn't.

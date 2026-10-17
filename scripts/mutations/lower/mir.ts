@@ -2060,14 +2060,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","into an untagged enum is the value"],
   },
   {
-    name: "mir-trait-generic-iter-lent",
-    breaks: "MIR's trait method given a `&mut` to a generic iterator is lowered, a range given it throwing",
-    file: "src/lower/mir.rs",
-    find: "        if self.tcx.trait_of_assoc(def_id).is_some() || self.tcx.trait_impl_of_assoc(def_id).is_some() {\n            for param in &self.thir.params {\n",
-    replace: "        if false {\n            for param in &self.thir.params {\n",
-    tests: ["test/diagnostics.test.ts","-t","a &mut to a generic iterator in a trait's method"],
-  },
-  {
     name: "mir-raw-ptr-object-refused",
     breaks: "MIR's pointer to a JS object, `ptr::eq`'s, is refused",
     file: "src/lower/mir.rs",
@@ -2545,5 +2537,13 @@ export const mutations: Mutation[] = [
     find: "            values.push(Value::Expr(Expr::spread(Expr::var(rest))));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
+  },
+  {
+    name: "generic-iterator-ref-boxed-for-impl",
+    breaks: "a copied default's `&mut self` of a blanket impl over every iterator is given its impl's method as the box, which steps nothing",
+    file: "src/lower/mir.rs",
+    find: "                    self.is_object(inner) || (generic && !self.is_generic_boxed(inner, typing_env.param_env))\n",
+    replace: "                    self.is_object(inner) || (false && generic && !self.is_generic_boxed(inner, typing_env.param_env))\n",
+    tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
   },
 ];

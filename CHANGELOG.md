@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A blanket impl over every iterator**, `impl<I: Iterator> Trait for
+  I`, whose `&mut self` method steps it, through a dictionary and a
+  copied default, which was refused (ADR 0411).
 - **A trait's C-variadic `&mut self` method as a function pointer**: its
   arrow gathers the rest and passes it on (ADR 0428).
 - **`#[track_caller]` through a trait's dictionary**, generic code's or a

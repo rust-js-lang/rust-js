@@ -334,19 +334,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for param in &self.thir.params {
             self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
         }
-        // A trait's method is called through a dictionary, whose `&mut` to a
-        // generic iterator is a handle on it, not what it steps (ADRs 0071,
-        // 0099): refused; a range so given threw.
-        if self.tcx.trait_of_assoc(def_id).is_some() || self.tcx.trait_impl_of_assoc(def_id).is_some() {
-            for param in &self.thir.params {
-                if let ty::Ref(_, inner, ty::Mutability::Mut) = *param.ty.kind()
-                    && self.is_generic_iter(inner)
-                {
-                    let message = format!("`&mut` to a `{inner}` of a trait's method");
-                    return Err(self.unsupported(param.ty_span.unwrap_or(span), &message));
-                }
-            }
-        }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
         let mut out = Vec::new();
@@ -2823,14 +2810,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // Where what's called, an impl's method resolved, takes an object
             // by its own `&mut`, a copied default's `&mut self` given to its
-            // impl's method of an object `Self`: the object, which it changes
-            // in place, a box's `value` or a generic `self` boxed for none.
+            // impl's method of an object `Self`, or of a type parameter that's
+            // a JS iterator or function, which isn't boxed either (ADR 0099):
+            // the object, which it changes in place, a box's `value` or a
+            // generic `self` boxed for none.
             let holds = fn_id.is_some_and(|fn_id| {
-                let param = (self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization().skip_binder().inputs())
-                    .get(i)
-                    .copied();
+                let sig = self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization();
+                let param = sig.skip_binder().inputs().get(i).copied();
+                let typing_env = ty::TypingEnv::post_analysis(self.tcx, fn_id);
+                let itself = |inner: Ty<'tcx>| {
+                    let generic = self.recognition().is_unknown_in(inner, typing_env);
+                    self.is_object(inner) || (generic && !self.is_generic_boxed(inner, typing_env.param_env))
+                };
                 !self.param_is_box(fn_id, i)
-                    && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if self.is_object(inner))
+                    && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if itself(inner))
             });
             if holds {
                 exprs.push(place);

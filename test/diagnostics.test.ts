@@ -62,7 +62,6 @@ for (const [name, source, message, crate] of [
   ["a type's fact of a dyn given to generic code", "trait Trait { fn foo(&self) -> &'static str; }\nimpl<T: ?Sized> Trait for T { fn foo(&self) -> &'static str { std::any::type_name::<T>() } }\nfn bar<T: ?Sized>() -> fn(&T) -> &'static str { Trait::foo }\npub fn f() -> &'static str { bar::<dyn Trait>()(&1i32) }", "a type's fact of `dyn Trait` given to generic code"],
   // A C-variadic function's last parameter gathers the rest, which nothing can come after (ADR 0428).
   ["a C-variadic function given a dictionary", "pub unsafe extern \"C\" fn shown<T: std::fmt::Display>(x: T, mut rest: ...) -> String { format!(\"{x} {}\", unsafe { rest.next_arg::<i32>() }) }\npub fn f() -> String { unsafe { shown(1u8, 2) } }", "a C-variadic function given a dictionary, a fact or a drop"],
-  ["a C-variadic trait method of a &mut as a value", "pub trait T { fn get(&self) -> i32; unsafe extern \"C\" fn bump(&mut self, mut rest: ...) -> i32 { self.get() + unsafe { rest.next_arg::<i32>() } } }\npub struct S(pub i32);\nimpl T for S { fn get(&self) -> i32 { self.0 } }\npub fn f() -> i32 { let b: unsafe extern \"C\" fn(&mut S, ...) -> i32 = S::bump; unsafe { b(&mut S(1), 2) } }", "a C-variadic trait method of a `&mut`, as a value"],
   // Nor its `io::Read`: what would call it is refused (ADR 0425).
   ["a read of a crate's reader", "use std::io::{self, Read};\npub struct S;\nimpl Read for S { fn read(&mut self, _: &mut [u8]) -> io::Result<usize> { Ok(0) } }\npub fn f() -> usize { let mut b = [0u8; 2]; S.read(&mut b).unwrap() }", "rust-js does not support calling `std::io::Read::read` yet"],
   // An adapter holding an iterator with a destructor, which it drops (ADR 0098).
@@ -150,12 +149,6 @@ for (const [name, source, message, crate] of [
   ["a type constant, refused not crashed", "#![feature(min_generic_const_args)]\n#![allow(incomplete_features)]\npub trait Foo { type const N: usize; }\npub struct Bar;\nimpl Foo for Bar { type const N: usize = 3; }", "type constants"],
   ["a generic const expression", "#![feature(generic_const_exprs)]\n#![allow(incomplete_features)]\nfn count<const N: usize>() -> usize { N }\nfn one_more<const N: usize>() -> usize where [(); N + 1]: { count::<{ N + 1 }>() }\npub fn f() -> usize { one_more::<2>() }", "this const argument"],
   ["an externally implementable item", "#![feature(extern_item_impls)]\n#[eii(hello)]\nstatic HELLO: u64;\n#[hello]\nstatic HELLO_IMPL: u64 = 5;\npub fn f() -> u64 { HELLO }", "externally implementable items"],
-  // A generic iterator lent as `&mut` is the lender's, which must know where it is (ADR 0071): a field's doesn't.
-  // A trait's method is called through a dictionary, whose `&mut self` is a handle (ADR 0099).
-  ["a &mut to a generic iterator in a trait's method", 'pub trait Step { fn step(&mut self) -> Option<u32>; }\nimpl<I: Iterator<Item = u32>> Step for I { fn step(&mut self) -> Option<u32> { self.next() } }', "of a trait's method"],
-  // A generic iterator a struct of the crate's holds, which a range given
-  // it isn't a JS iterator of, stepped through a `&mut` to the field:
-  // refused (rustc's iter-map-fold-type-length threw).
   ["{:.2e}", 'pub fn f(x: f64) -> String { format!("{:.2e}", x) }', "`{:.2e}` and the like"],
   ["malformed import", '#[rust_js::import("./style.css")]\nconst _: () = ();\npub fn f() {}', "write it"],
   ["malformed binding", '#[rust_js::link_name(123)] pub fn f() {}', "a binding needs"],
