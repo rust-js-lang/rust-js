@@ -107,6 +107,7 @@ released any more: `rust-js build` is the one way to build an app.
 - **`drain(..)` of a vector of values with destructors**: an iterator
   that owns what it took out, whose drop drops what it hasn't given yet,
   as `into_iter()`'s does (ADR 0098).
+- **`{:?}` of a `Mutex` and an `RwLock`**, as std's shows them (ADR 0328).
 - **`{:?}` of `Bound` and `ControlFlow`**, as a derived `Debug` shows them
   (ADR 0033).
 - **Fixed: an `Rc<dyn T>` of a value with a destructor** was a pair around

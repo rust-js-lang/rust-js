@@ -1221,6 +1221,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(f, Expr::held(value)))
             }
+            // `Mutex { data: 1, poisoned: false, .. }`, or `data: <locked>`
+            // while it's held so, as std's shows it (ADR 0328).
+            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {
+                let mutex = std(StdItem::Mutex);
+                let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                let show = Expr::arrow(
+                    vec!["value".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                let name = Expr::str(if mutex { "Mutex" } else { "RwLock" });
+                Ok(Expr::call(
+                    Expr::helper("$showLocked"),
+                    vec![value, show, name, Expr::bool(mutex)],
+                ))
+            }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
                 let shown = match std(StdItem::RefCell) {

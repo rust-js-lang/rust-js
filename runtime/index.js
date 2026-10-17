@@ -3061,6 +3061,17 @@ export function $tryLock(cell, mutable) {
   return { TAG: "Ok", _0: mutable ? $lock(cell, true) : $lockRead(cell, true) };
 }
 
+// A `Mutex`'s or an `RwLock`'s `{:?}`: what it holds, shown by `show`
+// where it could be locked to read it, a `Mutex`'s by anything holding it,
+// an `RwLock`'s by a writer, else that it's locked, as std's `try_lock` and
+// `try_read` say, a `Mutex`'s as a string, `"<locked>"`, as std's shows it;
+// never poisoned (ADR 0328).
+export function $showLocked(cell, show, name, exclusive) {
+  const locked = exclusive ? cell.borrows : cell.borrows < 0;
+  const data = !locked ? $withBorrow(cell, show) : exclusive ? '"<locked>"' : "<locked>";
+  return `${name} { data: ${data}, poisoned: false, .. }`;
+}
+
 export function $deadlock() {
   throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }

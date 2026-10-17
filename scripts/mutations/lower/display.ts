@@ -476,4 +476,12 @@ export const mutations: Mutation[] = [
     replace: "                    (Expr::bin(Op::Eq, Expr::var(\"value\"), Expr::str(&js_name)), this)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
   },
+  {
+    name: "lock-debug-refused",
+    breaks: "`{:?}` of a `Mutex` or an `RwLock` is refused",
+    file: "src/lower/display.rs",
+    find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
+    replace: "            ty::Adt(_, args) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
+  },
 ];

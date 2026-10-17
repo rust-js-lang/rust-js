@@ -146,4 +146,20 @@ export const mutations: Mutation[] = [
     replace: "{ value: both, writable: true, configurable: true, enumerable: true }",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
+  {
+    name: "show-locked-unlocked",
+    breaks: "`{:?}` of a `Mutex` its thread holds shows what it holds, where std's says it's locked",
+    file: "src/runtime/borrow.js",
+    find: "  const locked = exclusive ? cell.borrows : cell.borrows < 0;\n",
+    replace: "  const locked = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
+  },
+  {
+    name: "show-locked-unquoted",
+    breaks: "`{:?}` of a locked `Mutex` shows `<locked>` bare, where std's quotes it",
+    file: "src/runtime/borrow.js",
+    find: "!locked ? $withBorrow(cell, show) : exclusive ? '\"<locked>\"' : \"<locked>\";",
+    replace: "!locked ? $withBorrow(cell, show) : \"<locked>\";",
+    tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
+  },
 ];

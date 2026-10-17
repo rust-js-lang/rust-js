@@ -123,3 +123,11 @@ try {
   as react.dev's InlineToc gives `items={root.children}`. A JSX test
   renders a tree of them, no `$borrow` in its JS; a mutation takes
   making an element for code that may ask.
+
+## Amendment: `{:?}` of a lock
+
+`{:?}` of a `Mutex` or an `RwLock` was refused. It's std's, `Mutex { data:
+1, poisoned: false, .. }`: what it holds where it could be locked to read
+it, else that it's locked, a `Mutex`'s as std's quotes it, `"<locked>"`,
+an `RwLock`'s bare, `<locked>`; never poisoned, as rust-js's never are
+(`$showLocked`, `lock_debug`).
