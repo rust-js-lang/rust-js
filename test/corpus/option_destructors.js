@@ -31,6 +31,11 @@ const Slot = {
   },
 };
 
+function made(n) {
+  console.log(`made ${n}`);
+  return [n];
+}
+
 function main() {
   const slot = { pending: [1] };
   try {
@@ -206,6 +211,237 @@ function main() {
     throw error;
   }
   slot.pending = value$4;
+  let tmp$2;
+  try {
+    tmp$2 = made(5);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  let held;
+  try {
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    slot.pending = tmp$2;
+    held = slot.pending;
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  try {
+    console.log(`held ${held[0]}`);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  let tmp$3;
+  try {
+    tmp$3 = made(6);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  let same;
+  try {
+    if (slot.pending == null) {
+      slot.pending = tmp$3;
+    } else {
+      noisyDrop_drop(tmp$3);
+    }
+    same = slot.pending;
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  try {
+    console.log(`same ${same[0]}`);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  try {
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+  } catch (error) {
+    slot.pending = undefined;
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  slot.pending = undefined;
+  let tmp$4;
+  try {
+    tmp$4 = made(7);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  let fresh;
+  try {
+    if (slot.pending == null) {
+      slot.pending = tmp$4;
+    } else {
+      noisyDrop_drop(tmp$4);
+    }
+    fresh = slot.pending;
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  try {
+    console.log(`fresh ${fresh[0]}`);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  const value$5 = () => made(8);
+  let with$;
+  try {
+    slot.pending ??= value$5();
+    with$ = slot.pending;
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
+  try {
+    console.log(`with ${with$[0]}`);
+  } catch (error) {
+    if (taken != null) {
+      noisyDrop_drop(taken);
+    }
+    if (kept != null) {
+      noisyDrop_drop(kept);
+    }
+    if (old != null) {
+      noisyDrop_drop(old);
+    }
+    if (slot.pending != null) {
+      noisyDrop_drop(slot.pending);
+    }
+    throw error;
+  }
   try {
     console.log("end");
   } catch (error) {

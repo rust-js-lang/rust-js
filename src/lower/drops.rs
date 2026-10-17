@@ -951,6 +951,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(Expr::member(dictionary, item_drop_key(self.tcx, item)))
     }
 
+    /// `drop_function` of a `ty` a std function drops itself, `truncate`'s
+    /// items or `insert`'s old value: of a type parameter whose drop this
+    /// function isn't given, none, one its callers give none with a
+    /// destructor (ADR 0190).
+    pub(super) fn std_drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let drop = self.drop_function(ty, span)?;
+        if drop.is_none() {
+            self.require_no_drops(ty);
+        }
+        Ok(drop)
+    }
+
     /// The function that drops a `ty`, which a generic function is given for
     /// its type parameter: its `drop` itself, when that's all its drop is,
     /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this

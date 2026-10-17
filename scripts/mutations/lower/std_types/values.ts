@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "option-insert-of-destructors-refused",
+    breaks: "`insert` and `get_or_insert` of an `Option` of a value with a destructor are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                        OptionPlaceOp::Insert\n",
+    replace: "                        OptionPlaceOp::TakeIf\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
+  },
 ];

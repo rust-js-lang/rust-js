@@ -498,8 +498,9 @@ stops the rest of `truncate`'s, which Rust's would still drop as it
 unwinds; `resize` of one and `dedup` are still refused. A `VecDeque`'s
 `push_front`, `pop_front`, `insert` and `remove` move its items too; and an
 `Option`'s `take`, `replace` and `take_if` move what it holds out, or in,
-its old value given back (`option_destructors`), where `insert` and
-`get_or_insert`, which may drop one, are still refused.
+its old value given back (`option_destructors`); `insert` drops the old
+one before it puts the new one in, and `get_or_insert` the one it's given
+where it holds one, as Rust's does.
 
 ## Amended by
 

@@ -85,7 +85,9 @@ released any more: `rust-js build` is the one way to build an app.
   does, in its order; each was refused (ADR 0098).
 - **`take`, `replace` and `take_if` of an `Option` of a value with a
   destructor**, and a `VecDeque`'s `push_front`, `pop_front`, `insert` and
-  `remove` of one: each moves it and drops none (ADR 0098).
+  `remove` of one: each moves it and drops none; and the `Option`'s
+  `insert` and `get_or_insert`, which drop what they don't keep, as Rust's
+  do (ADR 0098).
 - **`drain(..)` of a vector of values with destructors**: an iterator
   that owns what it took out, whose drop drops what it hasn't given yet,
   as `into_iter()`'s does (ADR 0098).

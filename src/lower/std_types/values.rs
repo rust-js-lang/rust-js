@@ -165,6 +165,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::OptionTake
                     | Std::OptionReplace
                     | Std::OptionPlace(OptionPlaceOp::TakeIf)
+                    // And what drops what it doesn't keep, `insert`'s old value
+                    // or `get_or_insert`'s given one.
+                    | Std::OptionPlace(
+                        OptionPlaceOp::Insert
+                            | OptionPlaceOp::GetOrInsert
+                            | OptionPlaceOp::GetOrInsertWith
+                            | OptionPlaceOp::GetOrInsertDefault
+                    )
                     | Std::Slice(
                         SliceOp::SortUnstable { .. } | SliceOp::SelectNth { .. } | SliceOp::SortByCachedKey
                     )

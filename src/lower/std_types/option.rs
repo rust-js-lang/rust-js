@@ -658,12 +658,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::var(&taken));
             }
         };
-        let assign = StmtKind::Assign(place.clone(), value).at(js_span);
-        match op {
-            OptionPlaceOp::Insert => out.push(assign),
-            _ => {
+        // Of a value with a destructor, the one it doesn't keep dropped,
+        // `insert`'s old one, or `get_or_insert`'s given one where it holds
+        // one (ADR 0098).
+        let drop = match matches!(op, OptionPlaceOp::Insert | OptionPlaceOp::GetOrInsert) {
+            true => self.std_drop_function(item, span)?,
+            false => None,
+        };
+        let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
+        let assign = StmtKind::Assign(place.clone(), value.clone()).at(js_span);
+        match (op, drop) {
+            (OptionPlaceOp::Insert, Some(drop)) => {
+                let dropped = StmtKind::Expr(apply(drop, vec![place.clone()])).at(js_span);
+                out.push(StmtKind::If(present, vec![dropped], None).at(js_span));
+                out.push(assign);
+            }
+            (OptionPlaceOp::Insert, None) => out.push(assign),
+            (_, drop) => {
                 let absent = Expr::bin(Op::LooseEq, place, Expr::null());
-                out.push(StmtKind::If(absent, vec![assign], None).at(js_span));
+                let otherwise = drop.map(|drop| vec![StmtKind::Expr(apply(drop, vec![value])).at(js_span)]);
+                out.push(StmtKind::If(absent, vec![assign], otherwise).at(js_span));
             }
         }
         Ok(through)

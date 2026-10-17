@@ -969,13 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// last (ADR 0098).
     pub(super) fn items_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let item = self.slice_item(ty).expect("a slice's, an array's or a `Vec`'s items");
-        let drop = self.drop_function(item, span)?;
-        // Of a type parameter whose drop this function isn't given, none: one
-        // its callers give none with a destructor (ADR 0190).
-        if drop.is_none() {
-            self.require_no_drops(item);
-        }
-        Ok(drop)
+        self.std_drop_function(item, span)
     }
 
     /// `list`, a call's arguments, and last, `items_drop` of `ty`, where it

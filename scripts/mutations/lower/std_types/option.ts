@@ -148,8 +148,8 @@ export const mutations: Mutation[] = [
     name: "get-or-insert-overwrites",
     breaks: "`get_or_insert` replaces what's there",
     file: "src/lower/std_types/option.rs",
-    find: "                out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
-    replace: "                out.push(assign);\n",
+    find: "                out.push(StmtKind::If(absent, vec![assign], otherwise).at(js_span));\n",
+    replace: "                let _ = (absent, otherwise);\n                out.push(assign);\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -247,5 +247,21 @@ export const mutations: Mutation[] = [
       "-t",
       "gives the value itself is none"
     ]
+  },
+  {
+    name: "option-insert-drops-none",
+    breaks: "`insert` into an `Option` of a value with a destructor drops none of the old one",
+    file: "src/lower/std_types/option.rs",
+    find: "            true => self.std_drop_function(item, span)?,\n",
+    replace: "            true => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
+  },
+  {
+    name: "option-get-or-insert-keeps-given",
+    breaks: "`get_or_insert` of an `Option` that holds one drops none of the one it's given",
+    file: "src/lower/std_types/option.rs",
+    find: "                let otherwise = drop.map(|drop| vec![StmtKind::Expr(apply(drop, vec![value])).at(js_span)]);\n",
+    replace: "                let otherwise = drop.filter(|_| false).map(|drop| vec![StmtKind::Expr(apply(drop, vec![value])).at(js_span)]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
   },
 ];
