@@ -3093,6 +3093,13 @@ export function $debugAny() {
   return "Any { .. }";
 }
 
+// `{:?}` of a `TypeId`, its hash, which rust-js doesn't keep: rust-js's
+// error where it's shown, as only an assertion that fails may show one
+// (ADR 0331).
+export function $typeIdShown() {
+  throw new Error("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
+}
+
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
 // time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
 export function $getOrInitLock(cell, f) {

@@ -874,12 +874,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
         let (value, ty) = self.through_boxes(value, ty);
-        // A raw pointer shows its address, which JS hasn't (ADR 0407).
-        if self.is_handle_pointer(ty) {
+        // A raw pointer shows its address, which JS hasn't (ADR 0407), and
+        // so does a function pointer.
+        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {
             return Ok(self.pointer_shown(value));
         }
         // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't;
-        // a `TypeId` its hash, which rust-js doesn't keep (ADR 0331).
+        // a `TypeId` its hash, which rust-js doesn't keep: its error where
+        // it's shown, as a pointer's address is (ADR 0331).
         if self.recognition().is_dyn_any(ty) {
             if value.has_effects() {
                 return Ok(Expr::call(Expr::helper("$debugAny"), vec![value]));
@@ -887,7 +889,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::str("Any { .. }"));
         }
         if self.recognition().is_type_id(ty) {
-            return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
+            return Ok(Expr::call(Expr::helper("$typeIdShown"), vec![value]));
         }
         // `Location { file, line, column }`, as std's shows it (ADR 0427).
         if self.recognition().is_location(ty) {

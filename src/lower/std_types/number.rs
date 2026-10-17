@@ -1441,7 +1441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .tcx
             .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of));
         Ok(Expr::str(match fact {
-            TypeFact::Id => self.type_id_key(self.tcx.erase_and_anonymize_regions(of), span)?,
+            TypeFact::Id => self.type_id_key(self.tcx.erase_and_anonymize_regions(of)),
             _ => rustc_const_eval::util::type_name(self.tcx, of),
         }))
     }

@@ -41,6 +41,9 @@ it is, it refuses:
 And refused when it runs, as a panic that says so, since which it is
 depends on what the program does:
 
+- An address shown, `{:?}` of a raw pointer or a function pointer, but
+  `0x0` of a null one; and a `TypeId`'s hash shown, which rust-js doesn't
+  keep. Only an assertion that fails shows one: `assert_eq!` of two compiles.
 - A union's field read while it holds another, its bytes read as another
   type's.
 - A pointer read as another type's, bytes read as another type's, a pointer
@@ -50,6 +53,7 @@ depends on what the program does:
 
 - A trait object of no trait but auto traits, `dyn Send`: `let b: Box<dyn Send> = Box::new(1u32); drop(b);`
 - A struct whose last field is a `dyn`: `struct W<T: ?Sized> { n: u32, v: T } let w: Box<W<dyn std::fmt::Debug>> = Box::new(W { n: 1, v: 5u8 }); println!("{:?}", &w.v);`
+- The `TypeId` of a type made of a type parameter, a closure's in generic code: `fn make<T: 'static>(t: T) -> std::any::TypeId { fn id<C: 'static>(_: &C) -> std::any::TypeId { std::any::TypeId::of::<C>() } let c = move || drop(t); id(&c) } println!("{:?}", make(1u8) == make(2u8));`
 - `size_of_val` of a value without one size, a `dyn`'s: `let b: Box<dyn std::fmt::Debug> = Box::new(5u64); println!("{}", std::mem::size_of_val(&*b));`
 - `type_name` of a type parameter where it's a trait method's own: `trait T { fn n<U>() -> &'static str; } struct S; impl T for S { fn n<U>() -> &'static str { std::any::type_name::<U>() } } fn g<X: T>() -> &'static str { X::n::<u8>() } println!("{}", g::<S>());`
 - A map key whose `PartialEq` is the crate's own: `use std::collections::HashMap; #[derive(Hash)] struct K(u32); impl PartialEq for K { fn eq(&self, o: &K) -> bool { self.0 % 10 == o.0 % 10 } } impl Eq for K {} let mut m = HashMap::new(); m.insert(K(1), 1); println!("{}", m.contains_key(&K(11)));`
@@ -78,8 +82,6 @@ depends on what the program does:
 
 - `{:x?}`, a `Debug` in hex: `println!("{:x?}", vec![10, 11]);`
 - An exponent with a precision, `{:.2e}`: `println!("{:.2e}", 1234.5f64);`
-- `{:?}` of a function pointer, its address: `fn f() {} let p: fn() = f; println!("{:?}", p);`
-- `{:?}` of a `TypeId`, its hash: `println!("{:?}", std::any::TypeId::of::<u32>());`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
 - `Formatter::pad_integral`: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.pad_integral(true, "", "5") } } println!("{:>4}", X);`
 

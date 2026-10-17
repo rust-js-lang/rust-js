@@ -75,3 +75,17 @@ const n = items[0].impl.type_id() === "i32" ? items[0].value : undefined;
   unboxed, give the value back, skip the closure check, give a binding the
   pair, ask a dictionary for `5i64.type_id()`, and compare deeply.
 - `docs/std-coverage.txt`: `Box` 5 of 17, `Rc` and `Arc` 12 of 23.
+
+## Amendment: a `TypeId` shown, and a closure's
+
+- **`{:?}` of a `TypeId`**, its hash, which rust-js doesn't keep, is its
+  error where it's shown, as a pointer's address is (ADR 0407), not where
+  it's written: `assert_eq!` of two `TypeId`s, which shows them only if
+  they differ, compiles and runs. A runtime test shows one.
+- **A closure's `TypeId`** is its name and rustc's hash of its type, as a
+  function pointer's or a `dyn`'s is: its type holds its signature, a
+  function pointer, and each crate agrees on the hash. Two closures differ,
+  one is itself each time, and one made a `dyn Any` is its type's: the
+  `closure_type_ids` corpus case against native Rust. One made of a type
+  parameter, in generic code, is still refused, as any type made of one is.
+- rustc's `unboxed-closures/type-id-higher-rank.rs` passes.

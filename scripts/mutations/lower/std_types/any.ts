@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
   {
-    name: "type-id-of-closure",
-    breaks: "two closures share a `TypeId`, their name",
-    file: "src/lower/std_types/any.rs",
-    find: "        if unnamed {\n",
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "dyn_any_closure"],
-  },
-  {
     name: "binding-given-pair",
     breaks: "a binding taking a `&dyn Any`, any JS value, is given the pair",
     file: "src/lower/std_types/any.rs",

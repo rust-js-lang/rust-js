@@ -149,20 +149,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The key a `TypeId` is: rustc's name for the type, which each crate
-    /// rust-js compiles agrees on. Not a closure's, which share a name; and a
-    /// type whose name doesn't tell it apart has its hash too.
-    pub(in crate::lower) fn type_id_key(&self, of: Ty<'tcx>, span: Span) -> R<String> {
-        let unnamed = of.walk().any(|part| {
-            part.as_type().is_some_and(|t| {
-                matches!(
-                    t.kind(),
-                    ty::Closure(..) | ty::CoroutineClosure(..) | ty::Coroutine(..) | ty::CoroutineWitness(..)
-                )
-            })
-        });
-        if unnamed {
-            return Err(self.unsupported(span, "the `TypeId` of a closure's type"));
-        }
+    /// rust-js compiles agrees on; and a type whose name doesn't tell it
+    /// apart has rustc's hash of it too, which each agrees on as well: a
+    /// function pointer's or a `dyn`'s, and so a closure's, `{{closure}}`,
+    /// whose type holds its signature, a function pointer.
+    pub(in crate::lower) fn type_id_key(&self, of: Ty<'tcx>) -> String {
         let name = rustc_const_eval::util::type_name(self.tcx, of);
         // A name leaves out lifetimes, which tell a function pointer's or a
         // `dyn`'s types apart, `for<'a> fn(&'a str) -> &'a str` from `..
@@ -175,9 +166,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => false,
             })
         });
-        Ok(match twice {
+        match twice {
             true => format!("{name}#{:x}", self.tcx.type_id_hash(of).as_u128()),
             false => name,
-        })
+        }
     }
 }

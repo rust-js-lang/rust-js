@@ -434,7 +434,7 @@ pub fn fail(message: &str) -> ! {
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
-  <Icon class_name="c" />,
+  <Icon className="c" />,
   words(1n, [true]),
   <Button size="lg" href="/b" target="_blank" />,
   <LinkButton href="/c" title="t" />,
@@ -621,7 +621,7 @@ test("declarations name a parameter as its JS does", () => {
 });
 
 // A type written as one of @types/react's aliases is declared by it, as a
-// person writes it, `on_click?: MouseEventHandler<HTMLButtonElement>`, an
+// person writes it, `onClick?: MouseEventHandler<HTMLButtonElement>`, an
 // argument left to its default left out, `MouseEventHandler`, where
 // Rust's expanded type was spelled out, `(event: MouseEvent<..>) => void`.
 // A `NodeList` is TypeScript's `NodeListOf` of its items' type.
@@ -656,9 +656,9 @@ pub fn lists(elements: &NodeList<HTMLElement>, nodes: &NodeList) -> u32 {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("on_click?: MouseEventHandler<HTMLButtonElement> | undefined;");
-  expect(declarations).toContain("on_change: ChangeEventHandler<HTMLInputElement>;");
-  expect(declarations).toContain("on_any: MouseEventHandler;");
+  expect(declarations).toContain("onClick?: MouseEventHandler<HTMLButtonElement> | undefined;");
+  expect(declarations).toContain("onChange: ChangeEventHandler<HTMLInputElement>;");
+  expect(declarations).toContain("onAny: MouseEventHandler;");
   expect(declarations).toContain("export function attach(target: RefCallback<HTMLElement>): number;");
   expect(declarations).toContain("export function hooks(reducer: Reducer<number, number>, effect: EffectCallback): number;");
   expect(declarations).toContain("export function lists(elements: NodeListOf<HTMLElement>, nodes: NodeListOf<Node>): number;");

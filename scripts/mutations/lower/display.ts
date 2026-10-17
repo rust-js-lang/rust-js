@@ -350,11 +350,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "type-id-debug-shown",
-    breaks: "`{:?}` of a `TypeId` shows its key, where Rust shows its hash",
+    breaks: "`{:?}` of a `TypeId` shows something, where Rust shows its hash, which rust-js doesn't keep",
     file: "src/lower/display.rs",
-    find: "        if self.recognition().is_type_id(ty) {\n            return Err",
-    replace: "        if false {\n            return Err",
-    tests: ["test/corpus.test.ts", "-t", "type_id_debug"],
+    find: "        if self.recognition().is_type_id(ty) {\n            return Ok",
+    replace: "        if false {\n            return Ok",
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
   },
   {
     name: "uninit-debug-full-name",
@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "pointer-debug-refused",
     breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
     file: "src/lower/display.rs",
-    find: "        if self.is_handle_pointer(ty) {\n            return Ok(self.pointer_shown(value));\n",
-    replace: "        if false {\n            return Ok(self.pointer_shown(value));\n",
+    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n            return Ok(self.pointer_shown(value));\n",
+    replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return Ok(self.pointer_shown(value));\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -483,5 +483,21 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
     replace: "            ty::Adt(_, args) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
+  },
+  {
+    name: "fn-pointer-debug-refused",
+    breaks: "`{:?}` of a function pointer, which only a failing `assert_eq!` shows, refuses the whole program",
+    file: "src/lower/display.rs",
+    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n",
+    replace: "        if self.is_handle_pointer(ty) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
+  },
+  {
+    name: "type-id-debug-refused",
+    breaks: "`{:?}` of a `TypeId`, which only a failing `assert_eq!` shows, refuses the whole program",
+    file: "src/lower/display.rs",
+    find: "            return Ok(Expr::call(Expr::helper(\"$typeIdShown\"), vec![value]));\n",
+    replace: "            return Err(self.unsupported(span, \"`{:?}` of a `TypeId`, its hash\"));\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
   },
 ];

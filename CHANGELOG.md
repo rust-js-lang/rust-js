@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A closure's `TypeId`**, its own, and `assert_eq!` of two function
+  pointers or two `TypeId`s: showing one's address or hash is rust-js's error
+  where it's shown, not where it's written (ADRs 0331, 0407).
 - **`rust-js build` is how an app's Rust is compiled**, a command of its
   own beside `vite` or `next dev`, run once each time: each module's JS and
   `.d.ts` beside its Rust, to commit, and `rust-js build --check`, an app's

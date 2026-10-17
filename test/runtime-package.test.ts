@@ -204,6 +204,25 @@ pub fn pointer() -> String {
 pub fn none() -> String {
     format!("{:?} {:p}", std::ptr::null::<u8>(), std::ptr::null::<u8>())
 }
+
+fn named() {}
+
+// A function pointer is a pointer, its address shown as a raw one's is.
+pub fn function_pointer() -> String {
+    format!("{:?}", named as fn())
+}
+
+// What only a failing assertion would show: never.
+pub fn compared() -> bool {
+    assert_eq!(named as fn(), named as fn());
+    assert_eq!(std::any::TypeId::of::<u8>(), std::any::TypeId::of::<u8>());
+    true
+}
+
+// A TypeId shows its hash, which rust-js doesn't keep.
+pub fn type_id() -> String {
+    format!("{:?}", std::any::TypeId::of::<u8>())
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -213,6 +232,9 @@ pub fn none() -> String {
   expect(call("debug")).toBe(error);
   expect(call("pointer")).toBe(error);
   expect(call("none")).toBe("0x0 0x0\n");
+  expect(call("function_pointer")).toBe(error);
+  expect(call("compared")).toBe("true\n");
+  expect(call("type_id")).toBe("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep\n");
 });
 
 // A `None` given to JS is `undefined` given, never left out: a JS function

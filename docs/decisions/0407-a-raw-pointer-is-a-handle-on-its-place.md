@@ -160,3 +160,13 @@ another copy's place than Rust's one: refused, `check_text_pointer`.
   `ptr::eq`, each with native Rust. Twenty-eight of rustc's memory tests
   pass, none wrong; the diagnostics test refuses each kind of address and
   copy.
+
+## Amendment: a function pointer's address
+
+`{:?}` of a function pointer, `main as fn()`, was refused where it was
+written, so a program that compares two with `assert_eq!`, which shows
+them only if they differ, didn't compile: rustc's
+`layout/null-pointer-optimization.rs`. A function pointer is a pointer:
+its address shown is rust-js's error where it's shown, as a raw pointer's
+is, and `assert_eq!` of two compiles and runs. A runtime test shows one
+and compares two.
