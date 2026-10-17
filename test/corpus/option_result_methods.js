@@ -102,8 +102,7 @@ function main() {
   value$14.value = Math.imul(value$14.value, 2);
   let point;
   point ??= { x: 0 };
-  const value$15 = point;
-  value$15.x = (value$15.x + 3) | 0;
+  point.x = (point.x + 3) | 0;
   count = 1;
   const old = {
     get value() {
@@ -156,15 +155,15 @@ function main() {
   );
   const good = { TAG: "Ok", _0: 1 };
   const bad = { TAG: "Err", _0: "no" };
-  const value$16 = good.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : good;
-  const value$17 = bad.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : bad;
+  const value$15 = good.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : good;
+  const value$16 = bad.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : bad;
   console.log(
-    `${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugStr(value$16._0)})`} ${value$17.TAG === "Ok" ? `Ok(${$debugStr(value$17._0)})` : `Err(${$debugStr(value$17._0)})`}`,
+    `${value$15.TAG === "Ok" ? `Ok(${$debugStr(value$15._0)})` : `Err(${$debugStr(value$15._0)})`} ${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugStr(value$16._0)})`}`,
   );
-  const value$18 = good.TAG === "Ok" ? good : { TAG: "Ok", _0: 7 };
-  const value$19 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
+  const value$17 = good.TAG === "Ok" ? good : { TAG: "Ok", _0: 7 };
+  const value$18 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
   console.log(
-    `${value$18.TAG === "Ok" ? `Ok(${value$18._0})` : `Err(${value$18._0})`} ${value$19.TAG === "Ok" ? `Ok(${value$19._0})` : `Err(${value$19._0})`}`,
+    `${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${value$17._0})`} ${value$18.TAG === "Ok" ? `Ok(${value$18._0})` : `Err(${value$18._0})`}`,
   );
   const fallback = (e) => {
     if (e === "no") {
@@ -172,14 +171,14 @@ function main() {
     }
     return { TAG: "Err", _0: 1 };
   };
-  const value$20 = bad.TAG === "Ok" ? bad : fallback(bad._0);
-  console.log(`${value$20.TAG === "Ok" ? `Ok(${value$20._0})` : `Err(${value$20._0})`}`);
+  const value$19 = bad.TAG === "Ok" ? bad : fallback(bad._0);
+  console.log(`${value$19.TAG === "Ok" ? `Ok(${value$19._0})` : `Err(${value$19._0})`}`);
   const nested = { TAG: "Ok", _0: { TAG: "Err", _0: "inner" } };
   const result = { TAG: "Ok", _0: { TAG: "Ok", _0: 3 } };
-  const value$21 = nested.TAG === "Ok" ? nested._0 : nested;
-  const value$22 = result.TAG === "Ok" ? result._0 : result;
+  const value$20 = nested.TAG === "Ok" ? nested._0 : nested;
+  const value$21 = result.TAG === "Ok" ? result._0 : result;
   console.log(
-    `${value$21.TAG === "Ok" ? `Ok(${value$21._0})` : `Err(${$debugStr(value$21._0)})`} ${value$22.TAG === "Ok" ? `Ok(${value$22._0})` : `Err(${$debugStr(value$22._0)})`}`,
+    `${value$20.TAG === "Ok" ? `Ok(${value$20._0})` : `Err(${$debugStr(value$20._0)})`} ${value$21.TAG === "Ok" ? `Ok(${value$21._0})` : `Err(${$debugStr(value$21._0)})`}`,
   );
   const log = [];
   if (good.TAG === "Ok") {
@@ -217,16 +216,16 @@ function main() {
   );
   const listed = { TAG: "Ok", _0: 5 };
   const result$1 = { TAG: "Ok" };
-  const value$23 =
+  const value$22 =
     listed.TAG === "Ok" ? (listed._0 == null ? undefined : { TAG: "Ok", _0: listed._0 }) : listed;
-  const value$24 =
+  const value$23 =
     result$1.TAG === "Ok"
       ? result$1._0 == null
         ? undefined
         : { TAG: "Ok", _0: result$1._0 }
       : result$1;
   console.log(
-    `${value$23 == null ? "None" : `Some(${value$23.TAG === "Ok" ? `Ok(${value$23._0})` : `Err(${$debugStr(value$23._0)})`})`} ${value$24 == null ? "None" : `Some(${value$24.TAG === "Ok" ? `Ok(${value$24._0})` : `Err(${$debugStr(value$24._0)})`})`}`,
+    `${value$22 == null ? "None" : `Some(${value$22.TAG === "Ok" ? `Ok(${value$22._0})` : `Err(${$debugStr(value$22._0)})`})`} ${value$23 == null ? "None" : `Some(${value$23.TAG === "Ok" ? `Ok(${value$23._0})` : `Err(${$debugStr(value$23._0)})`})`}`,
   );
   const pointRef = { TAG: "Ok", _0: { x: 1 } };
   const owned = $unwrapOk(pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef);

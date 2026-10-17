@@ -181,13 +181,13 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     });
     let changing = changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
-    alias_variables(body, &changing);
+    alias_variables(body);
     read_handles(body);
     js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));
     js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
     js::statement_lists(body, &mut rest_parts);
     // What an array made for its parts left, `const _5 = 6;`, too.
-    alias_variables(body, &changing);
+    alias_variables(body);
     named_temporaries(body);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);

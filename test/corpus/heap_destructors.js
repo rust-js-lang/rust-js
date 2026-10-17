@@ -232,13 +232,12 @@ function main() {
     }
     throw error;
   }
-  const value$4 = r;
-  const value$5 = (o) => {
+  const value$4 = (o) => {
     console.log(`keep ${o[0]}?`);
     return o[0] % 5 === 0;
   };
   try {
-    $heapRetain(value$4, value$5, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+    $heapRetain(r, value$4, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
   } catch (error) {
     for (const item of r) {
       oDrop_drop(item);
@@ -289,10 +288,10 @@ function main() {
     }
     throw error;
   }
-  const value$6 = [[11], [12]];
+  const value$5 = [[11], [12]];
   let k;
   try {
-    k = $heapFrom(value$6, (a, b) => $cmp(a[0], b[0]));
+    k = $heapFrom(value$5, (a, b) => $cmp(a[0], b[0]));
   } catch (error) {
     for (const item of sorted) {
       oDrop_drop(item);

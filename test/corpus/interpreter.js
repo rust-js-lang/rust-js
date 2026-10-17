@@ -132,8 +132,7 @@ const Lexer = {
           name += d;
           Lexer.bump(lexer);
         }
-        const value = name;
-        out.push(value === "let" ? "Let" : value === "fn" ? "Fn" : { TAG: "Ident", _0: name });
+        out.push(name === "let" ? "Let" : name === "fn" ? "Fn" : { TAG: "Ident", _0: name });
         continue;
       }
       const at = lexer.pos;
@@ -305,12 +304,11 @@ const Parser = {
       bb40: {
         if (Parser.peek(parser) !== "RParen") {
           while (true) {
-            const value = args;
             const result = Parser.expr(parser);
             if (result.TAG === "Err") {
               return result;
             }
-            value.push(result._0);
+            args.push(result._0);
             if (Parser.peek(parser) !== "Comma") {
               break bb40;
             }
@@ -636,12 +634,11 @@ function run(src) {
       const v = result._0;
       Env.set(globals, stmt._0, v);
     } else {
-      const value = out;
       const result = Interp.eval(interp, stmt._0, globals);
       if (result.TAG === "Err") {
         return result;
       }
-      value.push(valueDisplay_fmt(result._0));
+      out.push(valueDisplay_fmt(result._0));
     }
   }
   out.push(`calls=${interp.calls} depth=${interp.depth}`);

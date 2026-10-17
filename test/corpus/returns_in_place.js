@@ -136,12 +136,11 @@ function call_args(tokens) {
       const args = [];
       bb61: {
         if ($peek(it) !== ")") {
-          const value = args;
           const result = parse($next(it) ?? "");
           if (result.TAG === "Err") {
             return result;
           }
-          value.push(result._0);
+          args.push(result._0);
           while (true) {
             if ($peek(it) === ",") {
               $next(it);
@@ -151,12 +150,11 @@ function call_args(tokens) {
                 }
                 $next(it);
               }
-              const value = args;
               const result = parse($next(it) ?? "");
               if (result.TAG === "Err") {
                 return result;
               }
-              value.push(result._0);
+              args.push(result._0);
               continue;
             }
             break bb61;

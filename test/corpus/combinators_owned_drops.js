@@ -210,14 +210,13 @@ function main() {
     noisyDrop_drop(result$9._0);
     mapped = fallback$2;
   }
-  const value$6 = mapped;
   try {
-    console.log(`${value$6[0]}`);
+    console.log(`${mapped[0]}`);
   } catch (error) {
-    noisyDrop_drop(value$6);
+    noisyDrop_drop(mapped);
     throw error;
   }
-  noisyDrop_drop(value$6);
+  noisyDrop_drop(mapped);
   const result$10 = ok(16);
   const fallback$3 = [101];
   let mapped$1;
@@ -231,14 +230,13 @@ function main() {
     noisyDrop_drop(result$10._0);
     mapped$1 = fallback$3;
   }
-  const value$7 = mapped$1;
   try {
-    console.log(`${value$7[0]}`);
+    console.log(`${mapped$1[0]}`);
   } catch (error) {
-    noisyDrop_drop(value$7);
+    noisyDrop_drop(mapped$1);
     throw error;
   }
-  noisyDrop_drop(value$7);
+  noisyDrop_drop(mapped$1);
   const result$11 = half(17);
   let holds$6;
   if (result$11.TAG === "Ok") {

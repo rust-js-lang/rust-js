@@ -74,8 +74,9 @@ while (p.at % 3 !== 2) {
   going round at the body's end, is turned where `rest` is written first
   and `a` is more than a lone exit, a guard's: `rest` gets the `continue`.
   Where a statement is written (`first_written`) looks into a `try`, and an
-  `if` is placed by its branch, not its test, a `match`'s scrutinee
-  written before every arm.
+  `if` is placed by its branch, a `match`'s test written before every arm,
+  but never before its test, as a binding its pattern makes is written at
+  the pattern, a `let .. else`'s before its `else`.
 
 ## Why
 

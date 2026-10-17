@@ -1064,9 +1064,12 @@ fn broken_to(stmts: &mut [Stmt], own: bool, looped: Option<&str>, to: &str) {
 /// `try`'s too.
 pub(super) fn first_written(stmts: &[Stmt]) -> Option<u32> {
     stmts.iter().find_map(|stmt| match &stmt.kind {
-        // An `if`'s what its branch does, its test a `match`'s, written
-        // before each arm, or its own.
-        StmtKind::If(_, then, _) => first_written(then).or((!stmt.span.is_none()).then_some(stmt.span.lo)),
+        // An `if`'s where its branch is, a `match`'s test written before
+        // each arm; but not before its test, of a binding its pattern makes.
+        StmtKind::If(_, then, _) => {
+            let test = (!stmt.span.is_none()).then_some(stmt.span.lo);
+            first_written(then).max(test)
+        }
         _ if !stmt.span.is_none() => Some(stmt.span.lo),
         StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }

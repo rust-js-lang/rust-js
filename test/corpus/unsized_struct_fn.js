@@ -20,8 +20,7 @@ function main() {
       $unborrow(value);
       throw error;
     }
-    const value$1 = tmp;
-    value$1.value = (value$1.value + tmp$1) | 0;
+    tmp.value = (tmp.value + tmp$1) | 0;
     try {
       $unborrow(tmp);
     } catch (error) {

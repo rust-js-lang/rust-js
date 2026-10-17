@@ -236,7 +236,6 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$1 = copy;
   let tmp$4;
   try {
     tmp$4 = count(doc.pages);
@@ -252,7 +251,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(value$1)} ${tmp$4}`);
+    console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(copy)} ${tmp$4}`);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -264,10 +263,10 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$2 = [[1], [2, 3]];
+  const value$1 = [[1], [2, 3]];
   let tmp$5;
   try {
-    tmp$5 = $iter(value$2);
+    tmp$5 = $iter(value$1);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);

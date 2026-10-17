@@ -235,10 +235,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = hash;
-  const value$3 = (_, v) => v[0] > 5;
+  const value$2 = (_, v) => v[0] > 5;
   try {
-    $retainMap(value$2, value$3, value$2, false, noisyDrop_drop);
+    $retainMap(hash, value$2, hash, false, noisyDrop_drop);
   } catch (error) {
     for (const item of hash.values()) {
       noisyDrop_drop(item);

@@ -501,6 +501,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0431 std's conversions are one list of what's converted into what](decisions/0431-std-conversions-are-one-list.md)
 - [0432 A `return` is written where its value is made](decisions/0432-a-return-is-written-where-its-value-is-made.md)
 - [0433 What's written after a loop is after it](decisions/0433-whats-written-after-a-loop-is-after-it.md)
+- [0434 A temporary of a variable is the variable, until it changes](decisions/0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -298,6 +298,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **`[package.metadata.rust-js.format]` is gone**: the app's Prettier lays
   out what rust-js writes; move its options to `.prettierrc`
   ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
+- **A temporary of a variable is the variable** where nothing sets it
+  between, `args.push(x)` where it was `const value = args; value.push(x)`
+  ([ADR 0434](docs/decisions/0434-a-temporary-of-a-variable-is-the-variable.md)).
 - **What's written after a loop is after it**: what MIR moved into a
   loop's one way out is a `break` there and the statements after the loop,
   and a `while let`'s exit is its first test, `if (c == null || ..) {

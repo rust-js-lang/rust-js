@@ -153,8 +153,7 @@ export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
     const value = $borrowMut(c, true);
-    const value$1 = value;
-    value$1.value = (value$1.value + 2) | 0;
+    value.value = (value.value + 2) | 0;
     $unborrow(value);
   }
   const value = $borrow(c, true);

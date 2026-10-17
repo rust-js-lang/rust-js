@@ -220,21 +220,19 @@ const Parser = {
           const args = [];
           bb69: {
             if (Parser.peek(parser) !== "RParen") {
-              const value = args;
               const result = Parser.expr(parser);
               if (result.TAG === "Err") {
                 return result;
               }
-              value.push(result._0);
+              args.push(result._0);
               while (true) {
                 if (Parser.peek(parser) === "Comma") {
                   Parser.next(parser);
-                  const value = args;
                   const result = Parser.expr(parser);
                   if (result.TAG === "Err") {
                     return result;
                   }
-                  value.push(result._0);
+                  args.push(result._0);
                   continue;
                 }
                 break bb69;

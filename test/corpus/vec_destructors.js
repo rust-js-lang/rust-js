@@ -169,10 +169,9 @@ function main() {
     }
     throw error;
   }
-  const value = v;
-  const value$1 = (n) => n[0];
+  const value = (n) => n[0];
   try {
-    value.sort((a, b) => $cmp(value$1(a), value$1(b)));
+    v.sort((a, b) => $cmp(value(a), value(b)));
   } catch (error) {
     noisyDrop_drop(swapped);
     for (const item of v) {
@@ -199,10 +198,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = v;
-  const value$3 = (a, b) => $cmp(b[0], a[0]);
+  const value$1 = (a, b) => $cmp(b[0], a[0]);
   try {
-    value$2.sort(value$3);
+    v.sort(value$1);
   } catch (error) {
     noisyDrop_drop(swapped);
     for (const item of v) {
@@ -229,10 +227,9 @@ function main() {
     }
     throw error;
   }
-  const value$4 = v;
-  const value$5 = (n) => n[0];
+  const value$2 = (n) => n[0];
   try {
-    $sortUnstable(value$4, (a, b) => value$5(a) < value$5(b), "general8");
+    $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
   } catch (error) {
     noisyDrop_drop(swapped);
     for (const item of v) {
@@ -447,13 +444,12 @@ function main() {
     }
     throw error;
   }
-  const value$6 = w;
-  const value$7 = (n) => {
+  const value$3 = (n) => {
     console.log(`keep ${n[0]}?`);
     return n[0] % 3 !== 0;
   };
   try {
-    $retain(value$6, value$7, noisyDrop_drop);
+    $retain(w, value$3, noisyDrop_drop);
   } catch (error) {
     for (const item of w) {
       noisyDrop_drop(item);
@@ -504,13 +500,12 @@ function main() {
     }
     throw error;
   }
-  const value$8 = w;
-  const value$9 = (n) => {
+  const value$4 = (n) => {
     console.log(`key ${n[0]}`);
     return (n[0] / 4) >>> 0;
   };
   try {
-    $dedupBy(value$8, (a, b) => value$9(a) === value$9(b), noisyDrop_drop);
+    $dedupBy(w, (a, b) => value$4(a) === value$4(b), noisyDrop_drop);
   } catch (error) {
     for (const item of w) {
       noisyDrop_drop(item);
@@ -863,10 +858,10 @@ function main() {
     }
     throw error;
   }
-  const value$10 = (n) => n[0];
+  const value$5 = (n) => n[0];
   let tmp$17;
   try {
-    tmp$17 = front ? value$10(front) : undefined;
+    tmp$17 = front ? value$5(front) : undefined;
   } catch (error) {
     if (second != null) {
       noisyDrop_drop(second);
@@ -945,9 +940,9 @@ function main() {
     }
     throw error;
   }
-  const value$11 = (n) => n[0] !== 41;
+  const value$6 = (n) => n[0] !== 41;
   try {
-    $retain(deque, value$11, noisyDrop_drop);
+    $retain(deque, value$6, noisyDrop_drop);
   } catch (error) {
     if (second != null) {
       noisyDrop_drop(second);
@@ -1145,9 +1140,9 @@ function main() {
     }
     throw error;
   }
-  const value$12 = (n) => n[0];
+  const value$7 = (n) => n[0];
   try {
-    const value = last ? value$12(last) : undefined;
+    const value = last ? value$7(last) : undefined;
     console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     if (last != null) {

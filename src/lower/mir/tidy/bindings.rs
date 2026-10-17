@@ -130,44 +130,41 @@ pub(super) fn is_temporary(name: &str) -> bool {
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
 
-/// `const _5 = children;`, a temporary of a variable nothing changes, nor it:
-/// `children` wherever it's read.
-pub(super) fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
-    let mut aliases: Vec<(String, Expr)> = Vec::new();
+/// `const _5 = children;`, a temporary of a variable: `children` where it's
+/// read, before `children` is set again, as in `match name.as_str()` of a
+/// `let mut name`; one read nowhere, gone. A closure neither reads a
+/// temporary, its captures its own `const`s, nor sets what one's of between,
+/// which Rust's borrows forbid.
+pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
-        stmts.retain(|stmt| match &stmt.kind {
-            StmtKind::Const(name, value)
-                if is_temporary(name)
-                    && !changing.contains(name)
-                    && matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of)) =>
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::Const(alias, value) = &stmts[i].kind
+                && is_temporary(alias)
+                && let ExprKind::Var(of) = &value.kind
             {
-                aliases.push((name.clone(), value.clone()));
-                false
+                let last = (i + 1..stmts.len())
+                    .rev()
+                    .find(|&j| js::mentions_in(&stmts[j..=j], alias) > 0);
+                // What it's of set nowhere from it to its last read.
+                let kept = last.is_some_and(|last| assigned(&mut stmts[i + 1..=last].to_vec()).contains(of));
+                if !kept {
+                    let (alias, of) = (alias.clone(), Expr::var(of));
+                    stmts.remove(i);
+                    if let Some(last) = last {
+                        js::each_expr_mut(&mut stmts[i..last], &mut |e| {
+                            if matches!(&e.kind, ExprKind::Var(v) if *v == alias) {
+                                *e = Expr {
+                                    span: e.span,
+                                    ..of.clone()
+                                };
+                            }
+                        });
+                    }
+                    continue;
+                }
             }
-            _ => true,
-        });
-    });
-    if aliases.is_empty() {
-        return;
-    }
-    // An alias of an alias, its variable or constant.
-    let of = |name: &str| {
-        let mut value = Expr::var(name);
-        while let ExprKind::Var(name) = &value.kind
-            && let Some((_, to)) = aliases.iter().find(|(from, _)| from == name)
-        {
-            value = to.clone();
-        }
-        value
-    };
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Var(name) = &e.kind
-            && aliases.iter().any(|(from, _)| from == name)
-        {
-            *e = Expr {
-                span: e.span,
-                ..of(name)
-            };
+            i += 1;
         }
     });
 }

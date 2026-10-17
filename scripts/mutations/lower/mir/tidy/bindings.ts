@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-alias-variables-kept",
     breaks: "`const _5 = TName;` stays, not `TName` where `_5` is read",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                    && matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of)) =>\n",
-    replace: "                    && false =>\n",
+    find: "                if !kept {\n",
+    replace: "                if false {\n",
     tests: ["test/jsx.test.ts"],
   },
   {
@@ -307,5 +307,13 @@ export const mutations: Mutation[] = [
     find: "                if named.contains(base) || module.contains(base) {\n",
     replace: "                if named.contains(base) {\n",
     tests: ["test/link.test.ts", "-t", "module-load statements"],
+  },
+  {
+    name: "alias-of-changing-set-between",
+    breaks: "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                let kept = last.is_some_and(|last| assigned(&mut stmts[i + 1..=last].to_vec()).contains(of));\n",
+    replace: "                let kept = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^alias_reads.rs$"],
   },
 ];

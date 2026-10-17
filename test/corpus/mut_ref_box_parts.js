@@ -64,17 +64,16 @@ function main() {
   tmp = o$3.value;
   a = 2;
   b = 7;
-  const value = n;
   const o$4 = { value: a };
   const p = { value: b };
-  const value$1 = pair(o$4, p);
+  const value = pair(o$4, p);
   a = o$4.value;
   b = p.value;
   const o$5 = { value: b };
   const p$1 = { value: a };
-  const value$2 = pair(o$5, p$1);
+  const value$1 = pair(o$5, p$1);
   b = o$5.value;
   a = p$1.value;
-  console.log(`${x} ${s} ${value == null ? "None" : `Some(${value})`} ${value$1} ${value$2}`);
+  console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${value} ${value$1}`);
 }
 //# sourceMappingURL=case.js.map
