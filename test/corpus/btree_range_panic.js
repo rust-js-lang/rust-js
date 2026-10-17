@@ -13,6 +13,17 @@ function main() {
   ]);
   const start = 5;
   const end = 2;
-  console.log(`${$treeRange(tree, $cmp, false, "BTreeMap", true, start, true, end, false).length}`);
+  console.log(
+    `${
+      $treeRange(
+        tree,
+        $cmp,
+        false,
+        "BTreeMap",
+        { TAG: "Included", _0: start },
+        { TAG: "Excluded", _0: end },
+      ).length
+    }`,
+  );
 }
 //# sourceMappingURL=case.js.map

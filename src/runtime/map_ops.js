@@ -58,18 +58,31 @@ function $treeEnd(m, cmp, last, set, pop) {
 }
 
 // `m.range(..)` of a B-tree: its entries, or items, whose keys are in the
-// bounds, in order; a start past the end panics, as std's does.
-// Checked as `range` checks its bounds where `checked`; `extract_if`'s
-// aren't (ADR 0344).
-function $treeRange(m, cmp, set, name, hasStart, start, hasEnd, end, endIncluded, checked = true) {
-  if (checked && hasStart && hasEnd && cmp(start, end) > 0) {
-    throw new Error(`range start is greater than range end in ${name}`);
+// bounds, `start` and `end`, `Bound`s, `{ TAG: "Included", _0: key }` or
+// `"Unbounded"`, in order; a start past the end panics, as std's does, and
+// so does one equal to it that both exclude. Checked as `range` checks its
+// bounds where `checked`; `extract_if`'s aren't (ADR 0344).
+function $treeRange(m, cmp, set, name, start, end, checked = true) {
+  if (checked && start !== "Unbounded" && end !== "Unbounded") {
+    const order = cmp(start._0, end._0);
+    if (order > 0) {
+      throw new Error(`range start is greater than range end in ${name}`);
+    }
+    if (order === 0 && start.TAG === "Excluded" && end.TAG === "Excluded") {
+      throw new Error(`range start and end are equal and excluded in ${name}`);
+    }
   }
   const sorted = set ? $sortedKeys(m, cmp) : $sortedEntries(m, cmp);
   return sorted.filter((entry) => {
     const key = set ? entry : entry[0];
-    if (hasStart && cmp(key, start) < 0) return false;
-    if (hasEnd && (endIncluded ? cmp(key, end) > 0 : cmp(key, end) >= 0)) return false;
+    if (start !== "Unbounded") {
+      const order = cmp(key, start._0);
+      if (start.TAG === "Included" ? order < 0 : order <= 0) return false;
+    }
+    if (end !== "Unbounded") {
+      const order = cmp(key, end._0);
+      if (end.TAG === "Included" ? order > 0 : order >= 0) return false;
+    }
     return true;
   });
 }

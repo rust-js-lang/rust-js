@@ -102,6 +102,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A range's start and end as its `RangeBounds` gives them, `Bound`s of
+    /// type `bound`, of its value `range` of type `ty`, a range of std's or a
+    /// pair of `Bound`s: `{ TAG: "Included", _0: r.start }`, `"Unbounded"`,
+    /// or the pair's own items. `range` is read once a bound, from a literal
+    /// itself; `None` of a type that's neither. The one answer, of a
+    /// `RangeBounds` dictionary's and of a B-tree's range alike.
+    pub(in crate::lower) fn range_bound_values(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        bound: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<[Expr; 2]>> {
+        use crate::lower::recognition::RangeBound;
+        let Some((start, end)) = crate::lower::recognition::range_bounds(self.tcx, ty) else {
+            return Ok(None);
+        };
+        let literal = matches!(range.kind, js::ExprKind::Object(_) | js::ExprKind::Array(_))
+            && (range.reads_same() || !range.has_effects());
+        let range = match literal || range.reads_same() {
+            true => range,
+            false => self.spill("range", range, out),
+        };
+        let variant = |name: &str| match bound.kind() {
+            ty::Adt(adt, _) => (adt.variants().iter_enumerated())
+                .find(|(_, v)| v.name.as_str() == name)
+                .map(|(i, _)| i),
+            _ => None,
+        };
+        let value = |this: &mut Self, part: RangeBound| -> R<Expr> {
+            Ok(match part {
+                RangeBound::Item(i) => Expr::index(range.clone(), Expr::int(i as i128)),
+                RangeBound::Field(kind, field) => {
+                    let index = variant(kind).ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
+                    let held = match &range.kind {
+                        js::ExprKind::Object(props) => props.iter().find_map(|prop| match prop {
+                            Prop::Field(name, value) if name == field => Some(value.clone()),
+                            _ => None,
+                        }),
+                        _ => None,
+                    };
+                    let held = held.unwrap_or_else(|| Expr::member(range.clone(), field));
+                    this.adt_value(bound, index, vec![held], &[], span)?
+                }
+                RangeBound::Unbounded => {
+                    let index = variant("Unbounded").ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
+                    this.adt_value(bound, index, Vec::new(), &[], span)?
+                }
+            })
+        };
+        let start = value(self, start)?;
+        let end = value(self, end)?;
+        Ok(Some([start, end]))
+    }
+
     /// The bounds of `{ start: a, end: b }` itself, if each reads the same
     /// wherever it's read, or does nothing, `i + 1`: what it reads, nothing
     /// changes between.

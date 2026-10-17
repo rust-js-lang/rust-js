@@ -93,7 +93,15 @@ function main() {
         v.value += "!";
         return k % 2 === 0;
       },
-      $treeRange(tree, $cmp, false, "BTreeMap", true, 3, true, 6, true, false),
+      $treeRange(
+        tree,
+        $cmp,
+        false,
+        "BTreeMap",
+        { TAG: "Included", _0: 3 },
+        { TAG: "Included", _0: 6 },
+        false,
+      ),
       true,
       false,
     ),
@@ -106,14 +114,30 @@ function main() {
       .join(", ")}}`,
   );
   console.log(
-    `${Iterator.from($mapExtractIf(tree, () => true, $treeRange(tree, $cmp, false, "BTreeMap", true, 6, true, 2, false, false), true, false)).reduce((n) => n + 1, 0)}`,
+    `${Iterator.from(
+      $mapExtractIf(
+        tree,
+        () => true,
+        $treeRange(
+          tree,
+          $cmp,
+          false,
+          "BTreeMap",
+          { TAG: "Included", _0: 6 },
+          { TAG: "Excluded", _0: 2 },
+          false,
+        ),
+        true,
+        false,
+      ),
+    ).reduce((n) => n + 1, 0)}`,
   );
   const keys = new Set($lazyRange(1, 9));
   const firsts = Iterator.from(
     $mapExtractIf(
       keys,
       (k) => k > 2,
-      $treeRange(keys, $cmp, true, "BTreeSet", false, undefined, false, undefined, false, false),
+      $treeRange(keys, $cmp, true, "BTreeSet", "Unbounded", "Unbounded", false),
       false,
       true,
     ),

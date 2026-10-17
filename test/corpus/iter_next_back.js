@@ -79,7 +79,7 @@ function main() {
       [3, "c"],
     ]);
     const value$1 = $nextBack(
-      $iter($treeRange(tree, $cmp, false, "BTreeMap", false, undefined, true, 3, false)),
+      $iter($treeRange(tree, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Excluded", _0: 3 })),
     );
     const value$2 = $nextBack($iter($sortedEntries(tree, $cmp)));
     console.log(

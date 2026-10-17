@@ -22,7 +22,14 @@ function main() {
   const scores = new Map($lazyRange(1, 7).map((k) => [k, Math.imul(k | 0, 10)]));
   for (const [k, v] of $mutEntries(
     scores,
-    $treeRange(scores, $cmp, false, "BTreeMap", true, 2, true, 5, false),
+    $treeRange(
+      scores,
+      $cmp,
+      false,
+      "BTreeMap",
+      { TAG: "Included", _0: 2 },
+      { TAG: "Excluded", _0: 5 },
+    ),
   )) {
     v.value = (v.value + (k | 0)) | 0;
   }
@@ -33,7 +40,7 @@ function main() {
   );
   const total = $mutEntries(
     scores,
-    $treeRange(scores, $cmp, false, "BTreeMap", false, undefined, true, 3, true),
+    $treeRange(scores, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Included", _0: 3 }),
   )
     .map(([, v]) => {
       v.value = Math.imul(v.value, 2);
@@ -52,7 +59,7 @@ function main() {
   ]);
   for (const [, name] of $mutEntries(
     names,
-    $treeRange(names, $cmp, false, "BTreeMap", true, "b", false, undefined, false),
+    $treeRange(names, $cmp, false, "BTreeMap", { TAG: "Included", _0: "b" }, "Unbounded"),
   )) {
     name.value += "!";
   }
@@ -60,7 +67,7 @@ function main() {
     $iter(
       $mutEntries(
         names,
-        $treeRange(names, $cmp, false, "BTreeMap", false, undefined, true, "ann", true),
+        $treeRange(names, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Included", _0: "ann" }),
       ),
     ),
   );
@@ -71,7 +78,17 @@ function main() {
     console.log(`${k}`);
   }
   const last = $iter(
-    $mutEntries(names, $treeRange(names, $cmp, false, "BTreeMap", true, "a", true, "c", false)),
+    $mutEntries(
+      names,
+      $treeRange(
+        names,
+        $cmp,
+        false,
+        "BTreeMap",
+        { TAG: "Included", _0: "a" },
+        { TAG: "Excluded", _0: "c" },
+      ),
+    ),
   );
   const value$1 = $next(last);
   if (value$1) {
@@ -86,7 +103,14 @@ function main() {
       .join(", ")}} ${arg}`,
   );
   const points = new Map($lazyRange(0, 4).map((k) => [k, [k, 0]]));
-  for (const [, p] of $treeRange(points, $cmp, false, "BTreeMap", true, 1, true, 3, false)) {
+  for (const [, p] of $treeRange(
+    points,
+    $cmp,
+    false,
+    "BTreeMap",
+    { TAG: "Included", _0: 1 },
+    { TAG: "Excluded", _0: 3 },
+  )) {
     p[1] = (p[1] + 5) | 0;
   }
   const arg$1 = $treeRange(
@@ -94,11 +118,8 @@ function main() {
     $cmp,
     false,
     "BTreeMap",
-    true,
-    9,
-    false,
-    undefined,
-    false,
+    { TAG: "Included", _0: 9 },
+    "Unbounded",
   ).length;
   console.log(
     `{${Array.from($sortedEntries(points, $cmp))
@@ -106,7 +127,14 @@ function main() {
       .join(", ")}} ${arg$1}`,
   );
   const set = new Set($lazyRange(0, 5));
-  for (const x of $treeRange(set, $cmp, true, "BTreeSet", true, 2, true, 4, false)) {
+  for (const x of $treeRange(
+    set,
+    $cmp,
+    true,
+    "BTreeSet",
+    { TAG: "Included", _0: 2 },
+    { TAG: "Excluded", _0: 4 },
+  )) {
     $print(`${x} `);
   }
   console.log("");

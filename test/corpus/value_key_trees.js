@@ -47,11 +47,8 @@ function main() {
       (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
       false,
       "BTreeMap",
-      true,
-      [1, 0],
-      true,
-      [2, 5],
-      false,
+      { TAG: "Included", _0: [1, 0] },
+      { TAG: "Excluded", _0: [2, 5] },
     )
       .slice()
       .map((item) => `((${item[0][0]}, ${item[0][1]}), ${$debugStr(item[1], "'")})`)

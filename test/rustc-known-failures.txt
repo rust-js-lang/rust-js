@@ -101,7 +101,6 @@ structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support a zero
 structs-enums/tag-align-dyn-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag<u64>` as `usize`, which aren't numbers alone
 structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&A` as `usize`, which aren't numbers alone
 structs-enums/tag-align-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag` as `usize`, which aren't numbers alone
-threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet

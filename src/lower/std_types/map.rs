@@ -4,9 +4,8 @@
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
-use crate::lower::recognition::StdItem;
+use crate::lower::recognition::{StdItem, std_item, trait_method};
 use crate::lower::representation::Num;
-use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -604,11 +603,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("a B-tree's `range` is of a B-tree")
         };
         let name = self.tcx.item_name(adt.did()).to_string();
-        let Some(kind) = self.range_kind(bounds.peel_refs()) else {
+        // Its `Bound`s, as `start_bound()` and `end_bound()` give them, of a
+        // range of std's or a pair of `Bound`s.
+        let key = map.type_at(0);
+        let range_bounds = std_item(self.tcx, StdItem::RangeBounds);
+        let start_bound = trait_method(self.tcx, range_bounds, "start_bound");
+        let bound = self.tcx.instantiate_and_normalize_erasing_regions(
+            self.tcx.mk_args(&[bounds.peel_refs().into(), key.into()]),
+            self.typing_env,
+            self.tcx.fn_sig(start_bound).map_bound(|sig| sig.skip_binder().output()),
+        );
+        let Some([start, end]) = self.range_bound_values(range, bounds.peel_refs(), bound, span, out)? else {
             return Err(self.unsupported(span, "a B-tree's range of bounds that aren't a range"));
         };
-        let cmp = self.cmp_fn(map.type_at(0), false, span)?;
-        let parts = self.range_parts(range, kind, out);
+        let cmp = self.cmp_fn(key, false, span)?;
         // `range_mut` of numbers or strings: each value a handle on it, as
         // `iter_mut`'s is (ADR 0152).
         let handles = mutable && self.is_boxable(map.type_at(1));
@@ -616,28 +624,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.spill("map", m, out),
             false => m,
         };
-        let none = Expr::undefined;
-        let (start, end, included) = match (kind, parts.as_slice()) {
-            (RangeKind::Exclusive, [start, end]) => (Some(start.clone()), Some(end.clone()), false),
-            (RangeKind::Inclusive, [start, end]) => (Some(start.clone()), Some(end.clone()), true),
-            (RangeKind::From, [start]) => (Some(start.clone()), None, false),
-            (RangeKind::To, [end]) => (None, Some(end.clone()), false),
-            (RangeKind::ToInclusive, [end]) => (None, Some(end.clone()), true),
-            _ => (None, None, false),
-        };
         let range = Expr::call(
             Expr::helper("$treeRange"),
-            vec![
-                m.clone(),
-                cmp,
-                Expr::bool(set),
-                Expr::str(&name),
-                Expr::bool(start.is_some()),
-                start.unwrap_or_else(none),
-                Expr::bool(end.is_some()),
-                end.unwrap_or_else(none),
-                Expr::bool(included),
-            ],
+            vec![m.clone(), cmp, Expr::bool(set), Expr::str(&name), start, end],
         );
         if !handles {
             return Ok(range);

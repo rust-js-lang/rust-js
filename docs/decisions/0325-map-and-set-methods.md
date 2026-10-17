@@ -85,3 +85,22 @@ its keys' `cmp`.**
   iterator, tuples written in place, an empty range, and a `for` over a
   set's range. Mutations give numbers for handles and handles for tuples,
   and refuse each. `docs/std-coverage.txt`: `BTreeMap` 31 of 31.
+
+- **A B-tree's range of a pair of `Bound`s, `(Excluded(&2), Unbounded)`,
+  is its range too** (2026-10-17), which was refused: `$treeRange` takes
+  its start's and its end's `Bound`, as `start_bound()` and `end_bound()`
+  give them, `{ TAG: "Included", _0: 2 }` or `"Unbounded"`, of a range
+  of std's and of a pair alike, where it took whether each end was there
+  and whether the end was included, which an excluded start has no place
+  in. A start and an end that are equal and both excluded panic, as
+  std's do. What a range's bounds are is `range_bound_values`'s, of a
+  `RangeBounds` dictionary's too.
+
+  ```js
+  $treeRange(scores, $cmp, false, "BTreeMap", { TAG: "Included", _0: 2 }, { TAG: "Excluded", _0: 5 });
+  ```
+
+  The `btree_range_bounds` corpus case runs, against native Rust, each
+  kind of `Bound` at each end, of a map, a set and `range_mut`, a pair
+  given and one made where it's used, and `btree_range_excluded_panic`
+  std's panic. rustc's `sync-send-iterators-in-libcollections.rs` passes.

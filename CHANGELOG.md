@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **A B-tree's range of a pair of `Bound`s**, `m.range((Excluded(&2),
+  Unbounded))`: `$treeRange` takes each end's `Bound`, of any range alike
+  (ADR 0325).
 - **`a.mul_add(b, c)`**, of `f64`s and `f32`s: `$mulAdd(a, b, c)`, `a * b
   + c` rounded once, exactly, as a fused multiply-add is
   ([ADR 0430](docs/decisions/0430-mul-add-rounds-once.md)).

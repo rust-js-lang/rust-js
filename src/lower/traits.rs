@@ -1179,44 +1179,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // each bound, a `Bound` of what its field holds, `{ TAG: "Included",
         // _0: range.start }`, as any of its values is.
         if is_std_def(self.tcx, tr.def_id, StdItem::RangeBounds)
-            && let Some((start, end)) = super::recognition::range_bounds(self.tcx, ty)
+            && super::recognition::range_bounds(self.tcx, ty).is_some()
         {
-            let mut props = Vec::new();
-            for (name, bound) in [("start_bound", start), ("end_bound", end)] {
-                let method = super::recognition::trait_method(self.tcx, tr.def_id, name);
-                let output = self.tcx.instantiate_and_normalize_erasing_regions(
-                    tr.args,
-                    self.typing_env,
-                    self.tcx.fn_sig(method).map_bound(|sig| sig.skip_binder().output()),
-                );
-                let range = Expr::var("range");
-                let variant = |name: &str| match output.kind() {
-                    ty::Adt(adt, _) => adt
-                        .variants()
-                        .iter_enumerated()
-                        .find(|(_, v)| v.name.as_str() == name)
-                        .map(|(i, _)| i),
-                    _ => None,
-                };
-                let value = match bound {
-                    super::recognition::RangeBound::Item(i) => Expr::index(range, Expr::int(i as i128)),
-                    super::recognition::RangeBound::Field(kind, field) => {
-                        let Some(index) = variant(kind) else {
-                            return Err(self.unsupported(span, "this range's bounds"));
-                        };
-                        self.adt_value(output, index, vec![Expr::member(range, field)], &[], span)?
-                    }
-                    super::recognition::RangeBound::Unbounded => {
-                        let Some(index) = variant("Unbounded") else {
-                            return Err(self.unsupported(span, "this range's bounds"));
-                        };
-                        self.adt_value(output, index, Vec::new(), &[], span)?
-                    }
-                };
-                let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
-                props.push(Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body)));
-            }
-            return Ok(Expr::object(props));
+            let start_bound = super::recognition::trait_method(self.tcx, tr.def_id, "start_bound");
+            let bound = self.tcx.instantiate_and_normalize_erasing_regions(
+                tr.args,
+                self.typing_env,
+                self.tcx.fn_sig(start_bound).map_bound(|sig| sig.skip_binder().output()),
+            );
+            let mut made = Vec::new();
+            let values = self.range_bound_values(Expr::var("range"), ty, bound, span, &mut made)?;
+            let values = values.expect("a range's bounds, as `range_bounds` found them");
+            let props = ["start_bound", "end_bound"]
+                .into_iter()
+                .zip(values)
+                .map(|(name, value)| {
+                    let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
+                    Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body))
+                });
+            return Ok(Expr::object(props.collect()));
         }
         // `usize`'s or a range's `SliceIndex` of a slice (ADR 0418): the
         // runtime's, of each kind, `$sliceIndexes.range`.

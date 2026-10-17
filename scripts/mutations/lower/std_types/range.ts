@@ -118,4 +118,23 @@ export const mutations: Mutation[] = [
       "range_values"
     ]
   },
+
+  {
+    name: "range-bounds-literal-read",
+    breaks: "a range made where its bounds are taken is read, `{ start: 2, end: 5 }.start`, not its fields",
+    file: "src/lower/std_types/range.rs",
+    find: "                    let held = held.unwrap_or_else(|| Expr::member(range.clone(), field));\n",
+    replace: "                    let held = Expr::member(range.clone(), field);\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^btree_range_bounds.rs$"],
+  },
+  {
+    name: "range-bounds-spilled-twice",
+    breaks: "a range's value that doesn't read the same is read once a bound, and made twice",
+    file: "src/lower/std_types/range.rs",
+    find: "        let range = match literal || range.reads_same() {\n",
+    replace: "        let range = match true {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^btree_range_bounds.rs$"],
+  },
 ];

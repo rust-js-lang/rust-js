@@ -150,16 +150,30 @@ function main() {
     `${value$8 == null ? "None" : `Some((${value$8[0]}, ${$debugStr(value$8[1])}))`} ${value$9 == null ? "None" : `Some((${value$9[0]}, ${$debugStr(value$9[1])}))`}`,
   );
   console.log(
-    `[${$treeRange(tree, $cmp, false, "BTreeMap", true, 2, true, 5, false)
+    `[${$treeRange(
+      tree,
+      $cmp,
+      false,
+      "BTreeMap",
+      { TAG: "Included", _0: 2 },
+      { TAG: "Excluded", _0: 5 },
+    )
       .slice()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$treeRange(tree, $cmp, false, "BTreeMap", false, undefined, true, 3, true)
+    `[${$treeRange(tree, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Included", _0: 3 })
       .slice()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
-      .join(", ")}] [${$treeRange(tree, $cmp, false, "BTreeMap", true, 4, false, undefined, false)
+      .join(", ")}] [${$treeRange(
+      tree,
+      $cmp,
+      false,
+      "BTreeMap",
+      { TAG: "Included", _0: 4 },
+      "Unbounded",
+    )
       .slice()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
@@ -205,11 +219,8 @@ function main() {
       $cmp,
       true,
       "BTreeSet",
-      true,
-      3,
-      true,
-      7,
-      false,
+      { TAG: "Included", _0: 3 },
+      { TAG: "Excluded", _0: 7 },
     )
       .slice()
       .map((item) => String(item))
