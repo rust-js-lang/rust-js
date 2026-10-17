@@ -32,6 +32,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match known {
             Std::Then => Expr::bin(Op::Or, arg(), arg()),
+            // `Some(x)`, boxed where it may look like `None` (ADR 0051).
+            Std::OptionFrom if boxed => self.some(arg()),
+            Std::OptionFrom => arg(),
             Std::ThenWith => {
                 let (first, next) = (arg(), arg());
                 // `then_with(|| a.cmp(b))` is `first || $cmp(a, b)`: the closure's body in place.

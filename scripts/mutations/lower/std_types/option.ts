@@ -264,4 +264,12 @@ export const mutations: Mutation[] = [
     replace: "                let otherwise = drop.filter(|_| false).map(|drop| vec![StmtKind::Expr(apply(drop, vec![value])).at(js_span)]);\n",
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
   },
+  {
+    name: "option-from-unboxed",
+    breaks: "`Option::from(None)`, a `Some(None)`, reads as `None`",
+    file: "src/lower/std_types/option.rs",
+    find: "            Std::OptionFrom if boxed => self.some(arg()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
+  },
 ];

@@ -81,6 +81,8 @@ pub(super) enum Std {
     Capacity(CapacityOp),
     /// The allocator's, or a `Layout`'s (ADR 0417).
     Alloc(super::std_types::alloc::AllocOp),
+    /// `Option::from(x)`, or `x.into()` of one: `Some(x)`.
+    OptionFrom,
     /// The argument itself: `Box::new(x)`, `Rc::new(x)`,
     /// `s.to_owned()`, `String::from(s)`, `v.iter()`, and `Deref` of
     /// `String`, `Rc`, `Vec`, `Ref`, `RefMut` and JS objects.
@@ -1290,18 +1292,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Std::CollectString);
         }
         // A `From` or an `Into`: std's own conversions.
-        if let Some(conversion) = self.classify_conversion(ty, trait_, args) {
+        if let Some(conversion) = self.classify_conversion(trait_, args) {
             return Some(conversion);
         }
         // Between integers, which may not fit.
         let into = tcx.is_diagnostic_item(sym::TryInto, trait_);
-        let (from_ty, to_ty) = if into {
-            (Some(ty), args.types().nth(1))
-        } else if tcx.is_diagnostic_item(sym::TryFrom, trait_) {
-            (args.types().nth(1), Some(ty))
-        } else {
-            (None, None)
-        };
+        let sides =
+            conversion_sides(tcx, trait_, args).filter(|_| into || tcx.is_diagnostic_item(sym::TryFrom, trait_));
+        let (from_ty, to_ty) = (sides.map(|(from, _)| from), sides.map(|(_, to)| to));
         if let (Some(from), Some(to)) = (from_ty.and_then(|t| Num::of(t.peel_refs())), to_ty.and_then(Num::of))
             && !from.float()
             && !to.float()
@@ -1373,61 +1371,53 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    /// A `From`'s or an `Into`'s conversion, of std's, that `ty` is given
-    /// to or makes, if rust-js knows it.
-    fn classify_conversion(&self, ty: Ty<'tcx>, trait_: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+    /// A `From`'s or an `Into`'s conversion, of std's, if rust-js knows it:
+    /// one list of what it converts into what, `conversion_sides`', the same
+    /// of either.
+    fn classify_conversion(&self, trait_: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         let tcx = self.tcx;
+        let into = tcx.is_diagnostic_item(sym::Into, trait_);
+        if !into && !tcx.is_diagnostic_item(sym::From, trait_) {
+            return None;
+        }
+        let (from_ty, to_ty) = conversion_sides(tcx, trait_, args)?;
         // `From<T> for T`, std's for every type, and the `Into` it gives:
         // the value itself, of an `impl Into<T>` that is a `T` too (ADR 0387).
-        if (tcx.is_diagnostic_item(sym::From, trait_) || tcx.is_diagnostic_item(sym::Into, trait_))
-            && let Some(other) = args.types().nth(1)
-            && tcx.erase_and_anonymize_regions(self.reveal(ty)) == tcx.erase_and_anonymize_regions(self.reveal(other))
+        if tcx.erase_and_anonymize_regions(self.reveal(from_ty)) == tcx.erase_and_anonymize_regions(self.reveal(to_ty))
         {
             return Some(Std::Same);
         }
         // `VecDeque::from(v)` is a copy of `v`, which may be a clone that
-        // was never made (ADR 0052); `BinaryHeap::from(v)` puts one in heap order.
-        if tcx.is_diagnostic_item(sym::From, trait_)
-            && (self.is_std_type(ty, StdItem::VecDeque) || self.is_std_type(ty, StdItem::LinkedList))
+        // was never made (ADR 0052), and so is `Vec::from([..])`;
+        // `BinaryHeap::from(v)` puts one in heap order.
+        if self.is_std_type(to_ty, StdItem::VecDeque)
+            || self.is_std_type(to_ty, StdItem::LinkedList)
+            || (self.is_std_type(to_ty, StdItem::Vec) && from_ty.is_array())
         {
             return Some(Std::ToVec);
         }
-        if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_type(ty, StdItem::BinaryHeap) {
+        if self.is_std_type(to_ty, StdItem::BinaryHeap) {
             return Some(Std::Heap(HeapOp::From));
         }
         // `HashMap::from([(k, v)])`: `new Map([[k, v]])`.
-        if tcx.is_diagnostic_item(sym::From, trait_) && self.is_map(ty) {
-            let set = self.is_set(ty);
-            return Some(Std::Map(MapOp::From { set }));
+        if self.is_map(to_ty) {
+            return Some(Std::Map(MapOp::From {
+                set: self.is_set(to_ty),
+            }));
         }
-        // `[..].into()` of a map, a set, a queue, a heap or a `Vec`: what
-        // its `from` is.
-        if tcx.is_diagnostic_item(sym::Into, trait_)
-            && let Some(to) = args.types().nth(1)
-        {
-            if self.is_map(to) {
-                return Some(Std::Map(MapOp::From { set: self.is_set(to) }));
-            }
-            if self.is_std_type(to, StdItem::BinaryHeap) {
-                return Some(Std::Heap(HeapOp::From));
-            }
-            if self.is_std_type(to, StdItem::VecDeque)
-                || self.is_std_type(to, StdItem::LinkedList)
-                || (self.is_std_type(to, StdItem::Vec) && ty.is_array())
-            {
-                return Some(Std::ToVec);
-            }
+        // `Option::from(x)`: `Some(x)`.
+        if self.option_of(to_ty) == Some(from_ty) {
+            return Some(Std::OptionFrom);
         }
+        // An `Rc` or an `Arc` of the value, which `rc_same` says it makes, as
+        // `Rc::new(x)`: of a `str` its text, of a `[T]` a `Vec<T>`'s items.
+        if rc_made_of(tcx, from_ty, to_ty).is_some() {
+            return Some(Std::Same);
+        }
+        let (from_ty, to_ty) = (Some(from_ty), Some(to_ty));
         // std's own conversions that change nothing in JS (ADR 0063): to a
         // `String` or a `Box<str>` (ADR 0191) from a `&str` or a `char`, and
         // between numbers, which only widen.
-        let (from_ty, to_ty) = if tcx.is_diagnostic_item(sym::Into, trait_) {
-            (Some(ty), args.types().nth(1))
-        } else if tcx.is_diagnostic_item(sym::From, trait_) {
-            (args.types().nth(1), Some(ty))
-        } else {
-            (None, None)
-        };
         if let (Some(from_ty), Some(to_ty)) = (from_ty, to_ty) {
             let boxed_str = to_ty.is_box() && to_ty.boxed_ty().is_some_and(|inner| inner.is_str());
             if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)
@@ -1451,9 +1441,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             // A number from a `bool` or a `char`, as `as` makes it (ADR 0358).
             if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {
-                return Some(Std::Cast {
-                    into: tcx.is_diagnostic_item(sym::Into, trait_),
-                });
+                return Some(Std::Cast { into });
             }
             // Into a BigInt from a number (ADR 0086), else the same.
             if let (Some(from), Some(to)) = (Num::of(from_ty.peel_refs()), Num::of(to_ty)) {
@@ -2966,6 +2954,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id) {
             return rc_pointee(tcx, args.type_at(0)).map(|pointee| (false, pointee));
         }
+        // `Rc::from(x)` and `x.into()`, of what `rc_made_of` says.
+        if let Some(trait_) = tcx.trait_of_assoc(def_id)
+            && let Some((from, to)) = conversion_sides(tcx, trait_, args)
+            && tcx.is_diagnostic_item(sym::From, trait_) | tcx.is_diagnostic_item(sym::Into, trait_)
+        {
+            return rc_made_of(tcx, from, to).map(|pointee| (true, pointee));
+        }
         let imp = tcx.inherent_impl_of_assoc(def_id)?;
         let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
         (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
@@ -4019,6 +4014,51 @@ pub(crate) fn is_unlowered_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 .skip_normalization()
                 .def_id,
         )
+}
+
+/// What a conversion converts, into what, of its trait's method's `args`:
+/// `From`'s and `TryFrom`'s from their argument into their type, `Into`'s
+/// and `TryInto`'s from their type into their argument. The one answer of
+/// which side is which.
+pub(crate) fn conversion_sides<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    trait_: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    let (this, other) = (args.types().next()?, args.types().nth(1)?);
+    let is = |name: Symbol| tcx.is_diagnostic_item(name, trait_);
+    match () {
+        _ if is(sym::From) || is(sym::TryFrom) => Some((other, this)),
+        _ if is(sym::Into) || is(sym::TryInto) => Some((this, other)),
+        _ => None,
+    }
+}
+
+/// What an `Rc` or an `Arc`, `to`, a conversion makes of `from` points at,
+/// where it's `Rc::new`'s of it: of the value, of a `str` its text, a
+/// `&str`, a `String` or a `Box<str>`, of a `[T]` a `Vec<T>`'s or a
+/// `Box<[T]>`'s items, moved.
+pub(crate) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let pointee = rc_pointee(tcx, to)?;
+    let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
+    let text = |ty: Ty<'tcx>| {
+        ty.peel_refs().is_str()
+            || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String))
+            || ty.boxed_ty().is_some_and(|inner| inner.is_str())
+    };
+    let items = |item: Ty<'tcx>| match from.kind() {
+        ty::Adt(adt, args) if is_std_def(tcx, adt.did(), StdItem::Vec) => erased(args.type_at(0)) == erased(item),
+        _ => from
+            .boxed_ty()
+            .is_some_and(|inner| matches!(inner.kind(), ty::Slice(i) if erased(*i) == erased(item))),
+    };
+    let made = match pointee.kind() {
+        _ if erased(pointee) == erased(from) => true,
+        ty::Str => text(from) && !matches!(from.kind(), ty::Ref(_, _, Mutability::Mut)),
+        ty::Slice(item) => items(*item),
+        _ => false,
+    };
+    made.then_some(pointee)
 }
 
 /// What a conversion makes, a `From` or an `Into`: the trait's method's

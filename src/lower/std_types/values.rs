@@ -224,8 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(ty.kind(), ty::Array(..))
             || self.is_vec_like(ty)
             || self.option_of(ty).is_some()
-            || recognition.array_source(ty) == Some(true)
-            || recognition.owns_one_item(ty)
+            || recognition.owned_items(ty).is_some()
             || recognition.closed_on_drop(ty).is_some()
     }
 
@@ -236,6 +235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !matches!(
                 known,
                 Std::Same
+            | Std::OptionFrom
             | Std::OptionMap
             | Std::Method("pop")
             | Std::First
@@ -434,6 +434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Retain => unreachable!("lowered by vec_call"),
             Std::Then
             | Std::ThenWith
+            | Std::OptionFrom
             | Std::IsOk(_)
             | Std::UnwrapOk
             | Std::UnwrapErr

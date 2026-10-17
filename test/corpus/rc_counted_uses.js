@@ -60,9 +60,38 @@ function main() {
     $rcDrop(again, noisyDrop_drop);
     throw error;
   }
+  const converted = { value: "shared", strong: 1, weak: 0 };
+  let other;
+  try {
+    other = $rcClone(converted);
+  } catch (error) {
+    $rcDrop(converted);
+    $rcDrop(again, noisyDrop_drop);
+    throw error;
+  }
+  try {
+    console.log(`converted ${converted.strong} ${other.value}`);
+  } catch (error) {
+    $rcDrop(other);
+    $rcDrop(converted);
+    $rcDrop(again, noisyDrop_drop);
+    throw error;
+  }
   let again$live = false;
-  $rcDrop(again, noisyDrop_drop);
-  console.log("none left");
+  try {
+    $rcDrop(again, noisyDrop_drop);
+  } catch (error) {
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw error;
+  }
+  try {
+    console.log("none left");
+  } catch (error) {
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw error;
+  }
   const doc = {
     title: { value: "rust", strong: 1, weak: 0 },
     pages: { value: [1, 2], strong: 1, weak: 0 },
@@ -73,6 +102,8 @@ function main() {
   } catch (error) {
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let tmp;
@@ -83,6 +114,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let tmp$1;
@@ -93,6 +126,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -108,6 +143,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   const fresh = {
@@ -126,6 +163,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   const value = { value: 1, strong: 1, weak: 0 };
@@ -140,6 +179,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -152,6 +193,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -163,6 +206,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -174,6 +219,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -185,6 +232,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   const value$1 = copy;
@@ -198,6 +247,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   try {
@@ -209,6 +260,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   const value$2 = [[1], [2, 3]];
@@ -222,6 +275,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let tmp$6;
@@ -234,6 +289,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let lists;
@@ -246,6 +303,8 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let total = 0;
@@ -262,13 +321,15 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
     throw error;
   }
   let iter$1;
   let tmp$7;
   let me;
   let w;
-  bb71: while (true) {
+  bb79: while (true) {
     let tmp;
     try {
       tmp = $next(iter);
@@ -282,6 +343,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -301,6 +364,8 @@ function main() {
         $rcDrop(copy.pages);
         $rcDrop(doc.title);
         $rcDrop(doc.pages);
+        $rcDrop(other);
+        $rcDrop(converted);
         if (again$live) {
           $rcDrop(again, noisyDrop_drop);
         }
@@ -320,13 +385,15 @@ function main() {
           $rcDrop(copy.pages);
           $rcDrop(doc.title);
           $rcDrop(doc.pages);
+          $rcDrop(other);
+          $rcDrop(converted);
           if (again$live) {
             $rcDrop(again, noisyDrop_drop);
           }
           throw error;
         }
         if (tmp == null) {
-          continue bb71;
+          continue bb79;
         }
         const item = tmp;
         total = (total + item) & 255;
@@ -345,15 +412,17 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
       throw error;
     }
     const shared = { value: { value: [1] }, strong: 1, weak: 0 };
-    let other;
+    let other$1;
     try {
-      other = $rcClone(shared);
+      other$1 = $rcClone(shared);
     } catch (error) {
       $rcDrop(shared);
       for (const item of lists) {
@@ -365,15 +434,17 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
       throw error;
     }
     try {
-      tmp$7 = $borrowMut(other.value, true);
+      tmp$7 = $borrowMut(other$1.value, true);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -384,6 +455,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -393,7 +466,7 @@ function main() {
       tmp$7.value.push(2);
     } catch (error) {
       $unborrow(tmp$7);
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -404,6 +477,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -412,7 +487,7 @@ function main() {
     try {
       $unborrow(tmp$7);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -423,6 +498,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -432,7 +509,7 @@ function main() {
     try {
       tmp$1 = $borrow(shared.value, true);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -443,6 +520,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -452,7 +531,7 @@ function main() {
       console.log(`[${tmp$1.value.map((item) => String(item)).join(", ")}] ${count(shared)}`);
     } catch (error) {
       $unborrow(tmp$1);
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -463,6 +542,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -471,7 +552,7 @@ function main() {
     try {
       $unborrow(tmp$1);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
@@ -482,6 +563,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -491,7 +574,7 @@ function main() {
     try {
       tmp$2 = $unwrapOrClone(shared, (value) => ({ value: $borrow(value).value.slice() }));
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -501,6 +584,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -509,9 +594,9 @@ function main() {
     const owned = tmp$2.value;
     let tmp$3;
     try {
-      tmp$3 = $borrow(other.value, true);
+      tmp$3 = $borrow(other$1.value, true);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -521,19 +606,21 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
       throw error;
     }
-    const arg$1 = count(other);
+    const arg$1 = count(other$1);
     try {
       console.log(
         `[${owned.map((item) => String(item)).join(", ")}] [${tmp$3.value.map((item) => String(item)).join(", ")}] ${arg$1}`,
       );
     } catch (error) {
       $unborrow(tmp$3);
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -543,6 +630,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -551,7 +640,7 @@ function main() {
     try {
       $unborrow(tmp$3);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -561,6 +650,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -571,7 +662,7 @@ function main() {
     try {
       owner = $newCyclic(value);
     } catch (error) {
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -581,6 +672,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -593,7 +686,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -603,6 +696,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -614,7 +709,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -624,6 +719,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -639,7 +736,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -649,6 +746,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -662,7 +761,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -672,6 +771,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -685,7 +786,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -695,6 +796,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -707,7 +810,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -717,6 +820,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -731,7 +836,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -741,6 +846,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -754,7 +861,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -764,6 +871,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -780,7 +889,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -790,6 +899,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -802,7 +913,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -812,6 +923,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -824,7 +937,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -834,6 +947,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -847,7 +962,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -857,6 +972,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -869,7 +986,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -879,6 +996,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -891,7 +1010,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -901,6 +1020,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -916,7 +1037,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -926,6 +1047,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -940,7 +1063,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -950,6 +1073,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -966,7 +1091,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -976,6 +1101,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -991,7 +1118,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1001,6 +1128,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1014,7 +1143,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1024,6 +1153,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1039,7 +1170,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1049,6 +1180,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1066,7 +1199,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1076,6 +1209,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1093,7 +1228,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1103,6 +1238,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1118,7 +1255,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1128,6 +1265,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1142,7 +1281,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1152,6 +1291,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1165,7 +1306,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1175,6 +1316,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1187,7 +1330,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1197,6 +1340,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1208,7 +1353,7 @@ function main() {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
-      $rcDrop(other);
+      $rcDrop(other$1);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1218,6 +1363,8 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1228,7 +1375,26 @@ function main() {
         $weakDrop(value.me);
       });
     } catch (error) {
+      $rcDrop(other$1);
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
       $rcDrop(other);
+      $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(other$1);
+    } catch (error) {
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1238,6 +1404,65 @@ function main() {
       $rcDrop(copy.pages);
       $rcDrop(doc.title);
       $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+    } catch (error) {
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+    } catch (error) {
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+    } catch (error) {
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      $rcDrop(other);
+      $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+    } catch (error) {
+      $rcDrop(other);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
@@ -1246,63 +1471,14 @@ function main() {
     try {
       $rcDrop(other);
     } catch (error) {
-      for (const item of lists) {
-        $rcDrop(item);
-      }
-      $rcDrop(fresh.title);
-      $rcDrop(fresh.pages);
-      $rcDrop(copy.title);
-      $rcDrop(copy.pages);
-      $rcDrop(doc.title);
-      $rcDrop(doc.pages);
+      $rcDrop(converted);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
       throw error;
     }
     try {
-      for (const item of lists) {
-        $rcDrop(item);
-      }
-    } catch (error) {
-      $rcDrop(fresh.title);
-      $rcDrop(fresh.pages);
-      $rcDrop(copy.title);
-      $rcDrop(copy.pages);
-      $rcDrop(doc.title);
-      $rcDrop(doc.pages);
-      if (again$live) {
-        $rcDrop(again, noisyDrop_drop);
-      }
-      throw error;
-    }
-    try {
-      $rcDrop(fresh.title);
-      $rcDrop(fresh.pages);
-    } catch (error) {
-      $rcDrop(copy.title);
-      $rcDrop(copy.pages);
-      $rcDrop(doc.title);
-      $rcDrop(doc.pages);
-      if (again$live) {
-        $rcDrop(again, noisyDrop_drop);
-      }
-      throw error;
-    }
-    try {
-      $rcDrop(copy.title);
-      $rcDrop(copy.pages);
-    } catch (error) {
-      $rcDrop(doc.title);
-      $rcDrop(doc.pages);
-      if (again$live) {
-        $rcDrop(again, noisyDrop_drop);
-      }
-      throw error;
-    }
-    try {
-      $rcDrop(doc.title);
-      $rcDrop(doc.pages);
+      $rcDrop(converted);
     } catch (error) {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);

@@ -1,7 +1,8 @@
 //@ library-refused: another crate may share
 // Counted `Rc`s and `Arc`s where other code meets them (ADR 0320): a value
 // with a destructor dropped by the last one, generic code, which counts
-// every `Rc`, traits, loops, `new_cyclic`, and `make_mut` of a field.
+// every `Rc`, traits, loops, `new_cyclic`, `make_mut` of a field, and one
+// made by `Rc::from`, as `Rc::new` makes one.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -35,6 +36,9 @@ fn main() {
     let again = Rc::clone(&noisy);
     drop(noisy);
     println!("one left: {}", Rc::strong_count(&again));
+    let converted: Rc<String> = Rc::from(String::from("shared"));
+    let other = Rc::clone(&converted);
+    println!("converted {} {}", Rc::strong_count(&converted), other);
     drop(again);
     println!("none left");
 
