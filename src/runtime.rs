@@ -61,6 +61,9 @@ helpers! {
     Pow,
     CheckedPow,
     Powi,
+    Fused,
+    MulAdd,
+    MulAddF32,
     Round,
     Checked,
     CheckedDiv,
@@ -734,6 +737,10 @@ impl Helper {
             // `x.powi(n)`: the multiplications Rust's own `__powidf2` does, in
             // its order, so the result rounds the same.
             Helper::Powi => include_str!("runtime/powi.js"),
+            // `a.mul_add(b, c)`: `a * b + c` rounded once (ADR 0430).
+            Helper::Fused => include_str!("runtime/fused.js"),
+            Helper::MulAdd => include_str!("runtime/mul_add.js"),
+            Helper::MulAddF32 => include_str!("runtime/mul_add_f32.js"),
             // `x.round()`: a half away from zero, where `Math.round` goes up.
             Helper::Round => include_str!("runtime/round.js"),
             // `a.checked_add(b)`: the exact result, or `None` out of range. An

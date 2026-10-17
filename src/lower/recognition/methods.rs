@@ -85,6 +85,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "pow" if !float => NumOp::Pow,
         "checked_pow" if !float => NumOp::CheckedPow,
         "powi" if float => NumOp::Powi,
+        "mul_add" if float => NumOp::MulAdd,
         "powf" if float => NumOp::Powf,
         "round" if float => NumOp::Round,
         "total_cmp" if float => NumOp::TotalCmp,

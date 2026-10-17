@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "(0x0b, b'\\r')",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
   },
+  {
+    name: "mul-add-unrecognized",
+    breaks: "`a.mul_add(b, c)` is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"mul_add\" if float => NumOp::MulAdd,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
+  },
 ];

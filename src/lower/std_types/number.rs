@@ -48,6 +48,8 @@ pub(in crate::lower) enum NumOp {
     Pow,
     CheckedPow,
     Powi,
+    /// `a.mul_add(b, c)`: `a * b + c`, rounded once (ADR 0430).
+    MulAdd,
     Powf,
     /// `x.exp2()`: `2 ** x`, as `powf` is (ADR 0136).
     Exp2,
@@ -333,6 +335,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::Powi if num == Num::F32 => helper("$powiF32", vec![arg(), arg()]),
             NumOp::Powi => helper("$powi", vec![arg(), arg()]),
+            NumOp::MulAdd if num == Num::F32 => helper("$mulAddF32", vec![arg(), arg(), arg()]),
+            NumOp::MulAdd => helper("$mulAdd", vec![arg(), arg(), arg()]),
             // `a ** b`, but where JS's `**` gives NaN, of a base of 1 or -1 to an
             // infinite or NaN power, Rust's is 1: `$powf`, unless the power is a
             // finite constant, `x.powf(2.0)`.

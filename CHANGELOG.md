@@ -78,6 +78,9 @@ released any more: `rust-js build` is the one way to build an app.
   `MaybeUninit`s.
 - **`size_hint()` of a generic `I::IntoIter`**, as a type parameter's is
   (ADR 0170).
+- **`a.mul_add(b, c)`**, of `f64`s and `f32`s: `$mulAdd(a, b, c)`, `a * b
+  + c` rounded once, exactly, as a fused multiply-add is
+  ([ADR 0430](docs/decisions/0430-mul-add-rounds-once.md)).
 - **A trait's default method whose `where` clauses an impl can't meet**,
   `where Self::Item: Deref`, is left out of that impl's dictionary, as
   rustc leaves it out of a vtable; one that meets them derefs through its

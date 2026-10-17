@@ -268,4 +268,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
   },
+  {
+    name: "mul-add-f32-as-f64",
+    breaks: "`mul_add` of `f32`s rounds to an `f64`, and a tie an `f32` can't hold rounds twice",
+    file: "src/lower/std_types/number.rs",
+    find: "            NumOp::MulAdd if num == Num::F32 => helper(\"$mulAddF32\", vec![arg(), arg(), arg()]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
+  },
 ];

@@ -65,7 +65,6 @@ fn/dyn-fn-alignment.rs	error: rust-js does not support addressable memory yet: a
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
-intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 layout/null-pointer-optimization.rs	error: rust-js does not support `{:?}` of a `fn()` yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support addressable memory yet: values of type `(*const core::io::error::Custom) is !null`
