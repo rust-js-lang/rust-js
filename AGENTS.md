@@ -102,6 +102,30 @@ same, and what works in one place works the same way in the next.
   that follows one convention for some values and another for the rest.
   Treat it as two ways to do one job, above.
 
+## Idiomatic Rust in
+
+The Rust a rust-js app is written in is the Rust people write everywhere
+else: what a Rust developer would write for a server, a CLI or a library,
+written the way the Rust book, std's docs and clippy teach it. Learning
+Rust on the frontend is learning Rust; moving to the backend, everything
+carries over.
+
+- **No dialect.** A program uses std's types, traits and idioms (`Vec`,
+  `HashMap`, `Option`, `?`, iterators, `impl Trait`, ownership and
+  borrowing as rustc checks them), never a rust-js stand-in for one. What
+  only rust-js has is where Rust meets JS, and only there: a binding's
+  attribute, a JS value's type, `jsx!`.
+- **Nothing shaped for the compiler.** If idiomatic Rust doesn't compile,
+  or compiles to JS that doesn't read well, rust-js is what changes, never
+  the program: no restructured function, no extra clone, no type narrowed
+  or index loop written to get past it. That's the gap to close (as a
+  port's is, below).
+- **Clean under rustc's and clippy's defaults.** A rust-js program needs
+  no `#[allow]` for rust-js's sake, and is formatted by rustfmt.
+- **Spot the red flag**: an example, a test or a port written in Rust no
+  Rust developer would write, a rule only rust-js users must learn, or a
+  workaround in an app. Treat it as a gap in rust-js: fix it there.
+
 ## Principles
 
 - **Each piece understood on its own.** A module owns one responsibility
