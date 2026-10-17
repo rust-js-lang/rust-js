@@ -261,7 +261,7 @@ pub fn Misc() -> JSX::Element {
                 }).collect::<Vec<_>>()}
             </ul>
             <div className="styled" style={CSSProperties::new().color("red").font_size(12).set("--gap", "4px")} />
-            <div className="raw" dangerouslySetInnerHtml={inner_html("<i>raw</i>")} />
+            <div className="raw" dangerouslySetInnerHTML={inner_html("<i>raw</i>")} />
             <span className="id" data-id={id}>{total}</span>
             <Suspense fallback="loading card" name="card">
                 <LAZY_CARD />

@@ -284,6 +284,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **Rust's world and React's each have their own names, JSX the boundary**
+  ([ADR 0435](docs/decisions/0435-rust-and-react-two-worlds.md)). In JS, a
+  component's props are camelCase, `onClick` of `on_click`, and a hook, a
+  `use_x` that calls one, is `useX`; everything else keeps its Rust name.
+  `jsx!` takes a prop only by its JSX name: `on_click=` is an error that
+  says to write `onClick`. `js::camel_case!` is gone, a compile error.
 - **`@rust-js/vite-plugin`, its `rust-js:<package>` imports, `rust-js-patch`
   and its `postinstall`** are gone: `rust-js build` writes the patch Cargo
   reads, and an app imports the JS beside its Rust (ADR 0412).
@@ -386,7 +392,12 @@ names it:
    key: a `.d.ts` is always written.
 5. `bun install` (or npm's, pnpm's), then `bunx rust-js build`: the JS and
    `.d.ts` beside your Rust are 0.0.4's. Commit them with the upgrade.
-6. From now on, run `rust-js build` after each change to your Rust, beside
+6. Remove `js::camel_case!();` if your crate has it, and write each `jsx!`
+   prop by its JSX name, `onClick={..}` not `on_click={..}`: the compiler
+   names each one to change. A JS caller of your component gives its props
+   camelCase, `Button({ onClick })`; one of a function or a data field that
+   `js::camel_case!` named the JS way uses its Rust name now.
+7. From now on, run `rust-js build` after each change to your Rust, beside
    `bun run dev`.
 
 ### Roll back to 0.0.3

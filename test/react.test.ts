@@ -200,17 +200,15 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
 }, 120_000);
 
-// ADR 0046: with `js::camel_case!()` (ADR 0110), a crate's own functions and
-// fields are camelCase in JS too, as its variables already are.
-test("a camel_case crate names its functions, fields and props the JS way", async () => {
+// ADR 0435: what's React's is React's names in JS, a component's props, one
+// spread into JSX and a hook; what's Rust's own keeps Rust's, a function and
+// a data struct's field, whatever the crate.
+test("React's names are camelCase in JS, Rust's own are as written", async () => {
   const { fixture, compiler } = await import("./support");
-  const { mkdirSync, writeFileSync } = await import("node:fs");
+  const { writeFileSync } = await import("node:fs");
   buildReact();
-  const dir = fixture("camel-case");
+  const dir = fixture("react-names");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
-
 mod people;
 
 use react::{JSX, jsx, use_state};
@@ -241,38 +239,54 @@ pub fn use_clicks() -> u32 {
     *clicks
 }
 
+pub fn use_twice() -> u32 {
+    use_clicks() * 2
+}
+
+pub fn use_label(n: u32) -> String {
+    react::start_transition(|| ());
+    format!("{n}!")
+}
+
+pub struct ButtonLook {
+    pub tab_order: i32,
+}
+
 pub struct FancyButtonProps {
     pub label_text: String,
     pub on_press: Box<dyn Fn()>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub look: ButtonLook,
 }
 
-pub fn FancyButton(FancyButtonProps { label_text, on_press }: FancyButtonProps) -> JSX::Element {
+pub fn FancyButton(FancyButtonProps { label_text, on_press, look }: FancyButtonProps) -> JSX::Element {
     jsx! {
-        <button onClick={move |_| on_press()}>{label_text}</button>
+        <button onClick={move |_| on_press()} tabIndex={look.tab_order}>{label_text}</button>
     }
+}
+
+pub struct RowAttrs {
+    pub class_name: &'static str,
+    pub tab_index: i32,
 }
 
 pub fn App() -> JSX::Element {
     let clicks = use_clicks();
+    let attrs = RowAttrs { class_name: "row", tab_index: 2 };
     jsx! {
-        <FancyButton labelText={format!("{clicks} clicks")} onPress={Box::new(|| ())} />
+        <div {...attrs}>
+            <FancyButton labelText={format!("{clicks} clicks")} onPress={Box::new(|| ())} look={ButtonLook { tab_order: 3 }} />
+        </div>
     }
-}
-
-#[rust_js::name = "keep_me"]
-pub fn keep_me() -> u32 {
-    1
 }
 `);
   writeFileSync(join(dir, "people.rs"), `pub struct Person {
     pub first_name: String,
     pub last_name: String,
-    #[rust_js::name = "user_id"]
-    pub user_id: u32,
 }
 
 pub fn make_person(first_name: &str) -> Person {
-    Person { first_name: first_name.to_string(), last_name: "Doe".to_string(), user_id: 7 }
+    Person { first_name: first_name.to_string(), last_name: "Doe".to_string() }
 }
 
 pub fn full_name(person: &Person) -> String {
@@ -282,22 +296,31 @@ pub fn full_name(person: &Person) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const lib = await Bun.file(join(dir, "lib.jsx")).text();
   const people = await Bun.file(join(dir, "people.js")).text();
-  // Functions, across modules.
-  expect(lib).toContain('import { fullName, makePerson } from "./people.js";');
-  expect(lib).toContain("export function greet(firstName) {\n  return fullName(makePerson(firstName));");
-  expect(people).toContain("export function makePerson(firstName) {");
-  // Fields: of a struct, of an enum's variant, and one kept by its `#[rust_js::name]`.
-  expect(people).toContain("firstName, lastName: \"Doe\", user_id: 7");
-  expect(people).toContain('`${person.firstName} ${person.lastName}`');
-  expect(lib).toContain("export function rectWidth(shape) {\n  return (shape.bottomRight - shape.topLeft");
-  // A hook React finds by its name, and props as React code names them.
+  // Rust's own: functions, across modules, and fields, of a struct and a variant.
+  expect(lib).toContain('import { full_name, make_person } from "./people.js";');
+  expect(lib).toContain("export function greet(firstName) {\n  return full_name(make_person(firstName));");
+  expect(people).toContain("first_name: firstName, last_name: \"Doe\"");
+  expect(lib).toContain("export function rect_width(shape) {\n  return (shape.bottom_right - shape.top_left");
+  // React's: a hook React finds by its name, props as React code names them,
+  // and a struct spread into an element, its attributes.
   expect(lib).toContain("export function useClicks() {");
-  expect(lib).toContain("export function FancyButton({ labelText, onPress }) {");
+  // One calling another, and a `use_` function calling none, React's
+  // `startTransition` no hook, Rust's own.
+  expect(lib).toContain("export function useTwice() {");
+  expect(lib).toContain("export function use_label(n) {");
+  expect(lib).toContain("export function FancyButton({ labelText, onPress, ...look }) {");
   expect(lib).toContain("<FancyButton labelText={");
   expect(lib).toContain(" onPress={");
-  expect(lib).toContain("export function keep_me() {");
+  expect(lib).toContain('{ className: "row", tabIndex: 2 }');
+  // A struct flattened into props, its fields props too.
+  expect(lib).toContain("tabIndex={look.tabOrder}");
+  expect(lib).toContain("tabOrder={3}");
+  // `js::camel_case!`, which made a crate's every name camelCase, is gone.
+  writeFileSync(join(dir, "gone.rs"), "js::camel_case!();\n");
+  const gone = Bun.spawnSync([compiler, join(dir, "gone.rs"), "-o", join(dir, "gone.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect([gone.exitCode === 0, gone.stderr.toString().includes("`js::camel_case!` is gone")], gone.stderr.toString()).toEqual([false, true]);
   const module = await import(join(dir, "lib.jsx"));
   expect(module.greet("Ada")).toBe("Ada Doe");
-  expect(module.rectWidth(module.wideRect())).toBe(3);
-  expect((await import(join(dir, "people.js"))).makePerson("Ada")).toEqual({ firstName: "Ada", lastName: "Doe", user_id: 7 });
+  expect(module.rect_width(module.wide_rect())).toBe(3);
+  expect((await import(join(dir, "people.js"))).make_person("Ada")).toEqual({ first_name: "Ada", last_name: "Doe" });
 });

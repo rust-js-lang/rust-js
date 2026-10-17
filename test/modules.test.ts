@@ -184,13 +184,11 @@ pub fn base() -> u32 {
   expect(top()).toBe(42);
 });
 
-test("methods across modules, in a thread-local, and camelCase", async () => {
+test("methods across modules and in a thread-local, by their Rust names", async () => {
   const { fixture, compiler } = await import("./support");
   const { writeFileSync } = await import("node:fs");
   const dir = fixture("methods");
-  writeFileSync(join(dir, "lib.rs"), `#[rust_js::camel_case]
-const _: () = ();
-use std::cell::Cell;
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 
 mod shapes;
 
@@ -240,11 +238,11 @@ pub fn tally_of_four() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
   const lib = await Bun.file(join(join(dir, "mir"), "lib.js")).text();
   const shapes = await Bun.file(join(join(dir, "mir"), "shapes.js")).text();
-  expect(lib).toContain("const SIDE = Square.sideLength(Square.new(3));");
+  expect(lib).toContain("const SIDE = Square.side_length(Square.new(3));");
   expect(lib).toContain("  return Square.area(Square.new(side));");
   expect(shapes).toContain("export const Square = {\n  new(side) {");
-  expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
-  expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return Math.imul(tally[0], 2) >>> 0;\n  },\n};\n\nexport function tallyOfFour() {");
+  expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.side_length(square), Square.side_length(square)) >>> 0;");
+  expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return Math.imul(tally[0], 2) >>> 0;\n  },\n};\n\nexport function tally_of_four() {");
   // Laid out on lines of its own, a lone method still maps back to its Rust.
   const { decodeMappings, lookup } = await import("./sourcemap.ts");
   const segments = decodeMappings((await Bun.file(join(join(dir, "mir"), "shapes.js.map")).json()).mappings);
@@ -256,9 +254,9 @@ pub fn tally_of_four() -> u32 {
     expect([jsText, hit && rsLines[hit.srcLine].slice(hit.srcCol).startsWith(rustText)]).toEqual([jsText, true]);
   }
   const module = await import(join(join(dir, "mir"), "lib.js"));
-  expect(module.areaOf(4)).toBe(16);
-  expect(module.firstSide()).toBe(3);
-  expect((await import(join(join(dir, "mir"), "shapes.js"))).tallyOfFour()).toBe(8);
+  expect(module.area_of(4)).toBe(16);
+  expect(module.first_side()).toBe(3);
+  expect((await import(join(join(dir, "mir"), "shapes.js"))).tally_of_four()).toBe(8);
 });
 
 // ADR 0019: a module is imported when anything of it is used, a `const` or

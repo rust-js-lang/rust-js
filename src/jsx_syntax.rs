@@ -6,6 +6,8 @@ pub mod formatting;
 mod literals;
 mod parser;
 
+pub(crate) use parser::snake;
+
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};

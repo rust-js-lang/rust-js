@@ -9,4 +9,4 @@ export function parse(hash: string): Route;
 
 export function go(to: string): void;
 
-export function use_route(): Route;
+export function useRoute(): Route;

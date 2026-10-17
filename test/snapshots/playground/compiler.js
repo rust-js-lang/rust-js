@@ -46,11 +46,11 @@ export function mb(n) {
 
 export async function load(stat) {
   const start = performance.now();
-  const module = loadCompiler(start, stat);
-  const sysroot = loadSysroot(start, stat);
-  const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
-  const packages = loadPackages(start, stat);
-  const examples = loadExamples();
+  const module = load_compiler(start, stat);
+  const sysroot = load_sysroot(start, stat);
+  const crates = reactLibs.map((name) => [name, load_binding_crate(name, start, stat)]);
+  const packages = load_packages(start, stat);
+  const examples = load_examples();
   const [modules, styles] = await packages;
   const crateFiles = [];
   for (const [name, file] of crates) {
@@ -68,17 +68,17 @@ export async function load(stat) {
   return loaded;
 }
 
-async function loadCompiler(start, stat) {
+async function load_compiler(start, stat) {
   const module = await WebAssembly.compileStreaming(window.fetch("./rust-js.wasm"));
   stat("download + compile rust-js.wasm", ms(performance.now() - start));
   return module;
 }
 
-async function loadSysroot(start, stat) {
+async function load_sysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
   const downloads = [];
   for (const name of names) {
-    downloads.push(loadSysrootFile(name));
+    downloads.push(load_sysroot_file(name));
   }
   const entries = [];
   let size = 0;
@@ -94,13 +94,13 @@ async function loadSysroot(start, stat) {
   return new Map(entries);
 }
 
-async function loadSysrootFile(name) {
+async function load_sysroot_file(name) {
   const response = await window.fetch(`./sysroot/${name}`);
   const bytes = new Uint8Array(await response.arrayBuffer());
   return [name, new File(bytes, { readonly: true })];
 }
 
-async function loadPackages(start, stat) {
+async function load_packages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
   const packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
@@ -110,25 +110,25 @@ async function loadPackages(start, stat) {
   return [modules, Object.entries(packages$1.styles)];
 }
 
-async function loadBindingCrate(name, start, stat) {
+async function load_binding_crate(name, start, stat) {
   const bytes = await (await window.fetch(`./crates/lib${name}.rmeta`)).arrayBuffer();
   stat(`download ${name} crate`, `${ms(performance.now() - start)} (${mb(bytes.byteLength)})`);
   return new File(new Uint8Array(bytes), { readonly: true });
 }
 
-async function loadExamples() {
+async function load_examples() {
   return await (await window.fetch("./examples.json")).json();
 }
 
-async function fetchExampleFile(name, path) {
+async function fetch_example_file(name, path) {
   const response = await window.fetch(`./examples/${name}/${path}`);
   return [path, await response.text()];
 }
 
-export async function loadExample(name, paths) {
+export async function load_example(name, paths) {
   const downloads = [];
   for (const path of paths) {
-    downloads.push(fetchExampleFile(name, path));
+    downloads.push(fetch_example_file(name, path));
   }
   const texts = [];
   for (const download of downloads) {
@@ -141,7 +141,7 @@ function dir(name, entry) {
   return new Directory(new Map([[name, entry]]));
 }
 
-function directoryOf(sources) {
+function directory_of(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
@@ -166,10 +166,10 @@ function directoryOf(sources) {
   return top;
 }
 
-function textsIn(folder, prefix, found) {
+function texts_in(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
-      textsIn(entry, `${prefix}${name}/`, found);
+      texts_in(entry, `${prefix}${name}/`, found);
     } else if (entry instanceof File) {
       const text = new TextDecoder().decode(entry.data);
       found.set(prefix + name, text);
@@ -205,7 +205,7 @@ export async function compile(loaded, sources, rootFile, test) {
       }
       $unborrow(value);
     }),
-    new PreopenDirectory("/in", directoryOf(sources)),
+    new PreopenDirectory("/in", directory_of(sources)),
     outDir,
     new PreopenDirectory(
       "/sysroot",
@@ -255,7 +255,7 @@ export async function compile(loaded, sources, rootFile, test) {
   }
   const written = new Map();
   if (ok) {
-    textsIn(outDir.dir, "", written);
+    texts_in(outDir.dir, "", written);
   }
   const path = (file) => $stripPrefix(file, "/out/") ?? file;
   const files = new Map();

@@ -67,8 +67,10 @@ A component is a capitalized function returning `Element`, with
 zero parameters or one named struct parameter. The props type can have any
 name. Missing, unknown, and wrongly typed props are compile errors. Modules
 and aliases work: `<ui::Card />`, `<ui.Card />`, or `use ui::Card as Panel`.
-Camel-case attribute names select snake-case Rust fields; the crate's existing
-`js::camel_case!();` setting controls their emitted JavaScript names.
+An attribute is written by its JSX name, and only so: `onClick`, `className`,
+`aria-label`, and a component's prop as its field's JS name, `labelText` of
+`label_text`. Rust's spelling, `on_click=`, is an error that says what to
+write ([ADR 0435](decisions/0435-rust-and-react-two-worlds.md)).
 `children` must have the Rust type of the supplied child or tuple of children.
 
 For an existing props value, use `<Card {...props} />`. To override its fields,

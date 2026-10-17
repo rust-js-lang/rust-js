@@ -30,8 +30,6 @@ function snapshot(dir: string, name: string) {
 test("JSX supports components across modules, fragments, lists, conditions and spreads", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::{JSX, jsx};
 #[cfg(any())] mod missing;
 #[cfg_attr(all(), path = "ui/card.rs")] mod card;
@@ -475,8 +473,8 @@ pub fn FooterLink<C: ReactNode>(FooterLinkProps { href, children, is_header }: F
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(output).toContain('  if (!href) {\n    return <div className={classes}>{children}</div>;\n  }\n  if (href.startsWith("https://")) {\n');
   const result = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(result.FooterLink({ href: "https://x", children: "c", is_header: true }))).toBe('<div><a href="https://x" class="link h">c</a></div>');
-  expect(renderToStaticMarkup(result.FooterLink({ href: "", children: "c", is_header: false }))).toBe('<div class="link">c</div>');
+  expect(renderToStaticMarkup(result.FooterLink({ href: "https://x", children: "c", isHeader: true }))).toBe('<div><a href="https://x" class="link h">c</a></div>');
+  expect(renderToStaticMarkup(result.FooterLink({ href: "", children: "c", isHeader: false }))).toBe('<div class="link">c</div>');
 });
 
 // What elements read, made before branches in their tree, each a call:
@@ -1091,8 +1089,6 @@ pub fn bumped() -> JSX::Element {
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::{JSX, jsx};
 use std::rc::Rc;
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) { unreachable!() }
@@ -1510,6 +1506,10 @@ for (const [name, body, message] of [
   ["HTML entity", '<p>&amp;</p>', 'literal or a Rust expression'],
   ["empty attribute expression", '<div title={} />', 'is not text'],
   ["bare text", '<p>Hello world</p>', 'literal or a Rust expression'],
+  // An attribute is JSX's name, one spelling (ADR 0435).
+  ["attribute in Rust's case", '<button on_click={move |_| ()} />', "`on_click` is `onClick` in JSX"],
+  ["className in Rust's case", '<div class_name="x" />', "`class_name` is `className` in JSX"],
+  ["aria attribute in Rust's case", '<div aria_label="x" />', "`aria_label` is `aria-label` in JSX"],
 ] as const) {
   test(`JSX ${name} reports the original source and preserves existing output`, () => {
     const {dir, args} = compile(`#![allow(non_snake_case)]\nuse react::{JSX, jsx};\npub struct Props { pub title: &'static str }\npub fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}</div> } }\npub fn App() -> JSX::Element {\n    jsx! { ${body} }\n}`);
@@ -1525,6 +1525,26 @@ for (const [name, body, message] of [
     expect(existsSync(join(dir, "manifest.json"))).toBe(false);
   });
 }
+
+// ADR 0435: a component's prop is written in JSX as JSX names it, its
+// field camelCase, and only so.
+test("JSX names a component's prop as JSX does, and only so", () => {
+  const source = (attr: string) => `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct BadgeProps { pub label_text: &'static str }
+pub fn Badge(BadgeProps { label_text }: BadgeProps) -> JSX::Element { jsx! { <span>{label_text}</span> } }
+pub fn App() -> JSX::Element {
+    jsx! { <Badge ${attr}="new" /> }
+}`;
+  const good = compile(source("labelText"));
+  run(good.args);
+  const jsx = readFileSync(join(good.dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Badge({ labelText }) {");
+  expect(jsx).toContain('<Badge labelText="new" />');
+  const bad = compile(source("label_text"));
+  const result = Bun.spawnSync(bad.args, { cwd: bad.dir });
+  expect([result.exitCode === 0, result.stderr.toString().includes("`label_text` is `labelText` in JSX")], result.stderr.toString()).toEqual([false, true]);
+});
 
 test("JSX covers generic functions, memo/lazy/forward-ref values and context providers", async () => {
   const { dir, args } = compile(`#![deny(warnings)]
@@ -2357,8 +2377,6 @@ pub fn Chip(ChipProps { label, size, target }: ChipProps) -> JSX::Element {
 // react.dev's Heading takes `isPageAnchor = true`, and `= 3` of a number.
 test("JSX gives a props field the literal default it says, of its type", async () => {
   const anchor = `#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::{JSX, jsx};
 pub struct AnchorProps {
     pub label: &'static str,
@@ -2750,9 +2768,9 @@ pub fn Badge(p: P) -> JSX::Element {
   expect(jsx).toContain("className={className}");
   // A field nothing changes reads the same after the child's statements.
   expect(jsx).toContain("role={p.title}");
-  expect(jsx).toContain("<svg className={q.class_name}>");
+  expect(jsx).toContain("<svg className={q.className}>");
   const result = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20" role="t"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
+  expect(renderToStaticMarkup(result.Badge({ className: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20" role="t"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
 });
 
 // A node told apart by what it is, `react::kind_of`: text, or anything else
@@ -3571,7 +3589,7 @@ pub fn Parsed(text: String) -> JSX::Element {
   const { Button } = await import(join(dir, "lib.jsx"));
   let clicked = false;
   const handler = async () => { clicked = true; };
-  const button = Button({ on_click: handler });
+  const button = Button({ onClick: handler });
   button.props.onClick();
   expect(clicked).toBe(true);
 });
@@ -3593,7 +3611,7 @@ pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) 
   expect([jsx.includes("<button onClick={onClick}>"), jsx.includes("=>")]).toEqual([true, false]);
   const { Button } = await import(join(dir, "lib.jsx"));
   const handler = () => {};
-  expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
+  expect([Button({ children: "b", onClick: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
 });
 
 // A handler that only calls a function with nothing, `move |_| on_clear()`,
@@ -3622,7 +3640,7 @@ pub fn Alert() -> JSX::Element {
   expect(jsx).toContain("<button onClick={() => alert()}>Alert</button>");
   const { Clear } = await import(join(dir, "lib.jsx"));
   const handler = () => {};
-  expect(Clear({ on_clear: handler }).props.onClick).toBe(handler);
+  expect(Clear({ onClear: handler }).props.onClick).toBe(handler);
 });
 
 // A handler prop is named as @types/react names it, `MouseEventHandler<T>`:
@@ -3687,7 +3705,7 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::El
   run(args);
   const { Form } = await import(join(dir, "lib.jsx"));
   const sent: string[] = [];
-  const { props } = Form({ on_send: (s: string) => sent.push(s), on_reset: () => {} });
+  const { props } = Form({ onSend: (s: string) => sent.push(s), onReset: () => {} });
   const button = { title: "Send" };
   props.onSubmit({ preventDefault() {}, submitter: button, nativeEvent: { submitter: button } });
   props.onSubmit({ preventDefault() {}, submitter: null, nativeEvent: { submitter: null } });
@@ -3722,7 +3740,7 @@ pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> JSX::Element {
   run(args);
   const { Field } = await import(join(dir, "lib.jsx"));
   const read: string[] = [];
-  const { props } = Field({ on_read: (s: string) => read.push(s) });
+  const { props } = Field({ onRead: (s: string) => read.push(s) });
   props.onInput({ data: "a", nativeEvent: { inputType: "insertText" }, currentTarget: { value: "ba" } });
   props.onChange({ target: { value: "ba" } });
   expect(read).toEqual(["a insertText ba", "ba"]);
@@ -3749,7 +3767,7 @@ pub fn Pad(PadProps { on_read }: PadProps) -> JSX::Element {
   expect(jsx).toContain("e.nativeEvent.clientX");
   const { Pad } = await import(join(dir, "lib.jsx"));
   const read: string[] = [];
-  const { props } = Pad({ on_read: (s: string) => read.push(s) });
+  const { props } = Pad({ onRead: (s: string) => read.push(s) });
   props.onClick({ nativeEvent: { clientX: 3 } });
   props.onPointerDown({ nativeEvent: { pointerType: "pen" } });
   props.onWheel({ nativeEvent: { deltaY: 1.5 } });
@@ -3801,7 +3819,7 @@ pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> JSX::Element {
   run(args);
   expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<div style={{ width, ...customStyles }} />");
   const { Panel } = await import(join(dir, "lib.jsx"));
-  expect([renderToStaticMarkup(Panel({ width: "6px", custom_styles: { width: "7px", color: "red" } })), renderToStaticMarkup(Panel({ width: "6px" }))])
+  expect([renderToStaticMarkup(Panel({ width: "6px", customStyles: { width: "7px", color: "red" } })), renderToStaticMarkup(Panel({ width: "6px" }))])
     .toEqual(['<div style="width:7px;color:red"></div>', '<div style="width:6px"></div>']);
 });
 
@@ -3818,11 +3836,11 @@ pub fn Input(InputProps { value, on_change, on_clear }: InputProps) -> JSX::Elem
 }
 pub fn Search() -> JSX::Element {
     let (text, set_text) = use_state(String::from("a"));
-    jsx! { <Input value={text.as_str()} on_change={&**set_text} on_clear={Some(&**set_text)} /> }
+    jsx! { <Input value={text.as_str()} onChange={&**set_text} onClear={Some(&**set_text)} /> }
 }
 `);
   run(args);
-  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Input value={text} on_change={setText} on_clear={setText} />");
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Input value={text} onChange={setText} onClear={setText} />");
   const { Search } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(Search))).toBe("<b>a</b>");
 });
@@ -3893,8 +3911,6 @@ pub fn App() -> JSX::Element {
 
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::{JSX, jsx};
 mod ui;
 use ui::Card as Panel;
@@ -5214,7 +5230,7 @@ pub fn Page(home: bool, blog: bool, title: &'static str, meta: &Meta<'static>, p
         <>
             <Seo
                 title={title}
-                title_for_title_tag={meta.title_for_title_tag}
+                titleForTitleTag={meta.title_for_title_tag}
                 image={
                     if home || title.is_empty() || path.starts_with("/errors") {
                         format!("/og-{}.png", path)
@@ -5223,7 +5239,7 @@ pub fn Page(home: bool, blog: bool, title: &'static str, meta: &Meta<'static>, p
                     }
                     .as_str()
                 }
-                search_order={search_order}
+                searchOrder={search_order}
             />
             {(home || blog).then(|| jsx! { <b>{"rss"}</b> })}
             <Top />
@@ -5378,7 +5394,7 @@ pub fn Link(LinkProps { href, class_name, props }: LinkProps) -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<ExternalLink href={href} {...props} className={cn([\"a\", className])}>");
   const lib = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(lib.Link({ href: "https://x", class_name: "b", title: "t" }))).toBe("<a href=\"https://x\" title=\"t\" class=\"a b\">x</a>");
+  expect(renderToStaticMarkup(lib.Link({ href: "https://x", className: "b", title: "t" }))).toBe("<a href=\"https://x\" title=\"t\" class=\"a b\">x</a>");
 });
 
 // ADR 0364: what MIR copies of a dictionary that changes, spread into an
@@ -5511,7 +5527,7 @@ pub fn Seo(SeoProps { image }: SeoProps) -> JSX::Element {
 pub fn Page(home: bool, show: bool, path: String) -> JSX::Element {
     jsx! {
         <div>
-            <Search is_open={show} />
+            <Search isOpen={show} />
             <Seo
                 image={
                     if home {
@@ -5644,8 +5660,8 @@ pub fn Buttons(recipes: bool, shown: bool, toggle: &'static dyn Fn()) -> JSX::El
     jsx! {
         <div>
             {(!recipes).then(|| jsx! {
-                <Button className={Some("me-2")} on_click={Some(Box::new(toggle_solution))} active={Some(shown)}>
-                    <Icon class_name={Some("me-1.5")} />{" "}
+                <Button className={Some("me-2")} onClick={Some(Box::new(toggle_solution))} active={Some(shown)}>
+                    <Icon className={Some("me-1.5")} />{" "}
                     {if shown { "Hide solution" } else { "Show solution" }}
                 </Button>
             })}
@@ -5729,8 +5745,8 @@ pub fn SidebarLink(href: &'static str, title: &'static str, selected: bool, leve
         <Link
             href={href}
             target={target}
-            aria_current={selected.then_some("page")}
-            class_name={Some(cn(&[Some("p-2"), (level > 0).then_some("text-sm"), selected.then_some("text-link")]).as_str())}>
+            ariaCurrent={selected.then_some("page")}
+            className={Some(cn(&[Some("p-2"), (level > 0).then_some("text-sm"), selected.then_some("text-link")]).as_str())}>
             <div>
                 {title}{" "}
                 {(version == 19).then(|| jsx! { <span>{"React 19"}</span> })}
@@ -5747,7 +5763,7 @@ pub fn SidebarLink(href: &'static str, title: &'static str, selected: bool, leve
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // Read in place.
-  expect(jsx).toContain("      target={target}\n      aria_current={selected ? \"page\" : undefined}\n      class_name={cn([");
+  expect(jsx).toContain("      target={target}\n      ariaCurrent={selected ? \"page\" : undefined}\n      className={cn([");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.SidebarLink("/a", "A", true, 2, true, 19))).toBe('<a href="/a" target="_blank" aria-current="page" class="p-2 text-sm text-link"><div>A <span>React 19</span></div><span class="arrow open"></span></a>');
 });
@@ -5990,7 +6006,7 @@ pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::
                     <ErrorMessage error={error} />
                 </div>
             })}
-            <LoadingOverlay dependencies_loading={!*bundlerIsReady && iframeComputedHeight.is_none()} />
+            <LoadingOverlay dependenciesLoading={!*bundlerIsReady && iframeComputedHeight.is_none()} />
         </div>
     }
 }
@@ -6111,8 +6127,6 @@ pub fn NavigationBar(activeFile: &'static str, visibleFiles: &'static [String], 
 // not `let tmp = true` set in an `if` before the JSX.
 test("react.dev's Diagram writes its images' srcs and caption test in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::{JSX, jsx};
 pub struct ImageProps<'a> {
     pub src: &'a str,
@@ -6213,8 +6227,6 @@ pub fn Diagram(
 // after the children, and the button's values are `let`s set before the JSX.
 test("react.dev's SandboxShell shows its expand button in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use react::attributes::HtmlHTMLAttributes;
 use react::{JSX, ReactNode, jsx, use_state};
 fn cn(parts: &[Option<&str>]) -> String {
@@ -6288,8 +6300,6 @@ pub fn SandboxShell(SandboxShellProps { is_expandable }: SandboxShellProps) -> J
 // with `$borrow` and `$unborrow` around each use.
 test("react.dev's InlineToc nests its headings in a field's array", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-#[rust_js::camel_case]
-const _: () = ();
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -6784,8 +6794,8 @@ pub fn App(deep: bool) -> JSX::Element {
     jsx! {
         <details open={*is_expanded} className={cn(&[Some("my-12"), deep.then_some("purple")])}>
             <Button
-                class_name={Some(cn(&[deep.then_some("bg"), Some("x")]).as_str())}
-                on_click={Some(Box::new(move |_| set_is_expanded.update(|current| !current)))}>
+                className={Some(cn(&[deep.then_some("bg"), Some("x")]).as_str())}
+                onClick={Some(Box::new(move |_| set_is_expanded.update(|current| !current)))}>
                 <span>{if *is_expanded { "up" } else { "down" }}</span>
                 {if *is_expanded { "Hide" } else { "Show" }}
             </Button>

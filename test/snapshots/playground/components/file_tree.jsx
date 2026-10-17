@@ -4,11 +4,11 @@
 // a `FileTree` inside it, one level deeper: the component is recursive.
 
 import { ROW } from "../styles.js";
-import { inOrder } from "../tree.js";
+import { in_order } from "../tree.js";
 import { FileItem } from "./file_item.jsx";
 
 export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
-  const rows = inOrder(tree, first).map(([name, entry]) => {
+  const rows = in_order(tree, first).map(([name, entry]) => {
     if (entry.TAG === "Folder") {
       return (
         <li key={`${name}/`} className="flex items-center">

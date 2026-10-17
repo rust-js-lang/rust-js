@@ -4,10 +4,10 @@ import { Toaster } from "sonner";
 import { ContactPage } from "./detail.jsx";
 import { NewContactForm } from "./form.jsx";
 import { ContactList } from "./list.jsx";
-import { use_route } from "./route.js";
+import { useRoute } from "./route.js";
 
 export function App() {
-  const value = use_route();
+  const value = useRoute();
   let page;
   if (value === "List") {
     page = <ContactList />;

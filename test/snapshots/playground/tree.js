@@ -4,7 +4,7 @@
 
 import { $cmp, $iter, $lent, $rsplitOnce } from "@rust-js/runtime";
 
-export function buildTree(paths) {
+export function build_tree(paths) {
   const tree = [];
   let tmp;
   let tmp$1;
@@ -40,7 +40,7 @@ export function buildTree(paths) {
   return tree;
 }
 
-export function inOrder(tree, first) {
+export function in_order(tree, first) {
   const key = ([name, entry]) => {
     if (entry.TAG === "Folder") {
       return `${name}/`;

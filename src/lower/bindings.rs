@@ -2,13 +2,17 @@
 
 use crate::js;
 use rustc_ast::LitKind;
+use rustc_data_structures::svh::Svh;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
+use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{CoroutineKind, CoroutineSource};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
+use rustc_span::def_id::{CrateNum, DefId, DefIndex, LOCAL_CRATE, LocalDefId, LocalModId, StableCrateId};
 use rustc_span::{Span, Symbol, sym};
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
@@ -456,13 +460,7 @@ pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     given_name(tcx, def_id).unwrap_or_else(|| tcx.item_name(def_id).to_string())
 }
 
-/// `js::camel_case!();` at the crate root: the crate's own functions and
-/// fields are camelCase in JS, as its variables are (ADRs 0046 and 0110).
-pub(super) fn camel_case_crate(tcx: TyCtxt<'_>) -> bool {
-    marks(tcx, CRATE_MOD_ID, "camel_case").next().is_some()
-}
-
-/// A module's `js::import!` and `js::camel_case!`: each a `const _` with
+/// A module's `js::import!`: each a `const _` with
 /// the attribute of rust-js's tool its macro writes, `#[rust_js::import]`,
 /// as stable Rust has no inner one of a tool (ADR 0110).
 pub(super) fn marks<'tcx>(
@@ -517,17 +515,15 @@ pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         .is_some()
 }
 
-/// Is `def_id` a `js::import!`'s, `js::camel_case!`'s, `js::directive!`'s,
-/// `js::export_default!`'s or `js::on_load!`'s `const _`, which is rust-js's
-/// to read, and has nothing to write?
+/// Is `def_id` a `js::import!`'s, `js::directive!`'s, `js::export_default!`'s
+/// or `js::on_load!`'s `const _`, which is rust-js's to read, and has nothing
+/// to write?
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    ["import", "camel_case", "directive", "export_default", "on_load"]
-        .iter()
-        .any(|name| {
-            tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
-                .next()
-                .is_some()
-        })
+    ["import", "directive", "export_default", "on_load"].iter().any(|name| {
+        tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
+            .next()
+            .is_some()
+    })
 }
 
 /// Whether `def_id` is a React component, as `jsx!` takes one: a
@@ -715,13 +711,219 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
         .collect()
 }
 
-/// What an item of this crate is called in JS: its `#[rust_js::name]`, or
-/// its Rust name, camelCase in a `camel_case` crate.
+/// What an item is called in JS: its `#[rust_js::name]`; React's name of
+/// what's React's, camelCase, a hook's and a prop's; else its Rust name
+/// (ADR 0435).
 fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
     match given_name(tcx, def_id) {
         Some(given) => given,
-        None if def_id.is_local() && camel_case_crate(tcx) => super::camel_case(name),
+        None if is_reacts(tcx, def_id, name) => super::camel_case(name),
         None => name.to_string(),
+    }
+}
+
+/// Whether `def_id`, named `name`, is React's, as React names it: a hook
+/// (`is_hook`), which React finds by its name, `useX`; or a field of a
+/// component's props (`is_props`).
+fn is_reacts(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
+    match tcx.def_kind(def_id) {
+        DefKind::Fn => is_hook(tcx, def_id, name),
+        DefKind::Field => {
+            matches!(tcx.def_kind(tcx.parent(def_id)), DefKind::Struct) && is_props(tcx, tcx.parent(def_id))
+        }
+        _ => false,
+    }
+}
+
+/// Whether struct `adt` is a component's props, whose fields JSX gives:
+/// one a component of its crate takes, one its crate's JSX spreads into an
+/// element, or one flattened into such.
+pub(super) fn is_props(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    static FOUND: Found = Mutex::new(Vec::new());
+    of_crate(&FOUND, tcx, adt.krate, || props_structs(tcx, adt.krate)).contains(&adt.index)
+}
+
+/// What's found of a crate, by its crate's identity and hash, so a crate
+/// compiled again, the playground's, is found again.
+type Found = Mutex<Vec<((StableCrateId, Svh), Arc<HashSet<DefIndex>>)>>;
+
+/// `found`'s answer of crate `krate`, found once by `find`.
+fn of_crate(
+    found: &Found,
+    tcx: TyCtxt<'_>,
+    krate: CrateNum,
+    find: impl FnOnce() -> HashSet<DefIndex>,
+) -> Arc<HashSet<DefIndex>> {
+    let key = (tcx.stable_crate_id(krate), tcx.crate_hash(krate));
+    let known = (found.lock().expect("not poisoned").iter())
+        .find(|(k, _)| *k == key)
+        .map(|(_, s)| s.clone());
+    known.unwrap_or_else(|| {
+        let answer = Arc::new(find());
+        let mut all = found.lock().expect("not poisoned");
+        // A long session's, the playground's, keeps the latest.
+        if all.len() > 64 {
+            all.remove(0);
+        }
+        all.push((key, answer.clone()));
+        answer
+    })
+}
+
+/// Whether this crate's function `def_id`, named `name`, is a hook, as
+/// React has one: named `use_x`, `useX`, and calling a hook, a binding
+/// React names so or another of these. One of another crate is imported by
+/// the name its crate gave it.
+fn is_hook(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
+    static FOUND: Found = Mutex::new(Vec::new());
+    hook_named(name) && def_id.is_local() && of_crate(&FOUND, tcx, LOCAL_CRATE, || hooks(tcx)).contains(&def_id.index)
+}
+
+/// Whether `name` is a hook's, `use_x`, as React's `useX` is.
+fn hook_named(name: &str) -> bool {
+    name.strip_prefix("use_")
+        .is_some_and(|rest| rest.starts_with(|c: char| c.is_ascii_lowercase()))
+}
+
+/// `is_hook`'s functions of this crate: each `use_x` that calls a hook.
+fn hooks(tcx: TyCtxt<'_>) -> HashSet<DefIndex> {
+    let named: Vec<LocalDefId> = (tcx.hir_crate_items(()).definitions())
+        .filter(|&id| tcx.def_kind(id) == DefKind::Fn && hook_named(tcx.item_name(id.to_def_id()).as_str()))
+        .collect();
+    // Each one's callees.
+    let calls: Vec<(LocalDefId, Vec<DefId>)> = (named.iter())
+        .map(|&id| {
+            let mut callees = Callees {
+                results: tcx.typeck(id),
+                found: Vec::new(),
+            };
+            callees.visit_body(tcx.hir_body_owned_by(id));
+            (id, callees.found)
+        })
+        .collect();
+    // React's own, `react#useState`, or any binding React names a hook.
+    let binding_hook = |callee: DefId| {
+        is_binding(tcx, callee)
+            && matches!(js_form(tcx, callee), JsForm::Call(path) if path.rsplit(['#', '.']).next().is_some_and(|last| {
+                last.strip_prefix("use").is_some_and(|rest| rest.starts_with(|c: char| c.is_ascii_uppercase()))
+            }))
+    };
+    let mut found: HashSet<DefIndex> = HashSet::new();
+    loop {
+        let before = found.len();
+        for (id, callees) in &calls {
+            if !found.contains(&id.local_def_index)
+                && callees
+                    .iter()
+                    .any(|&c| binding_hook(c) || (c.is_local() && found.contains(&c.index)))
+            {
+                found.insert(id.local_def_index);
+            }
+        }
+        if found.len() == before {
+            return found;
+        }
+    }
+}
+
+/// What a body calls by name, a hook as React's are.
+struct Callees<'a, 'tcx> {
+    results: &'a ty::TypeckResults<'tcx>,
+    found: Vec<DefId>,
+}
+
+impl<'tcx> Visitor<'tcx> for Callees<'_, 'tcx> {
+    fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) {
+        if let ExprKind::Call(callee, _) = expr.kind
+            && let ExprKind::Path(path) = &callee.kind
+            && let Res::Def(DefKind::Fn | DefKind::AssocFn, id) = self.results.qpath_res(path, callee.hir_id)
+        {
+            self.found.push(id);
+        }
+        intravisit::walk_expr(self, expr);
+    }
+}
+
+/// `is_props`'s structs of crate `krate`.
+fn props_structs(tcx: TyCtxt<'_>, krate: CrateNum) -> HashSet<DefIndex> {
+    let mut fns = Vec::new();
+    if krate == LOCAL_CRATE {
+        fns.extend(
+            (tcx.hir_crate_items(()).definitions())
+                .filter(|&id| tcx.def_kind(id) == DefKind::Fn)
+                .map(|id| id.to_def_id()),
+        );
+    } else {
+        // Each module where it's declared, its children's, not where it's
+        // re-exported: a tree, each once.
+        let mut modules = vec![krate.as_def_id()];
+        while let Some(module) = modules.pop() {
+            for child in tcx.module_children(module) {
+                match child.res {
+                    Res::Def(DefKind::Mod, id) if tcx.opt_parent(id) == Some(module) => modules.push(id),
+                    Res::Def(DefKind::Fn, id) if id.krate == krate => fns.push(id),
+                    _ => {}
+                }
+            }
+        }
+    }
+    let own = |ty: Ty<'_>| match ty.peel_refs().kind() {
+        ty::Adt(adt, _) if adt.is_struct() && adt.did().krate == krate => Some(adt.did()),
+        _ => None,
+    };
+    let mut structs: Vec<DefId> = (fns.into_iter())
+        .filter(|&f| is_component(tcx, f))
+        .filter_map(|f| {
+            let sig = tcx.fn_sig(f).instantiate_identity().skip_normalization().skip_binder();
+            sig.inputs().first().and_then(|&ty| own(ty))
+        })
+        .collect();
+    // What the crate's JSX spreads into an element, `<div {...attrs}>`.
+    if krate == LOCAL_CRATE {
+        for owner in tcx.hir_body_owners() {
+            let results = tcx.typeck(owner);
+            let body = tcx.hir_body_owned_by(owner);
+            let mut spread = Spreads {
+                tcx,
+                results,
+                found: Vec::new(),
+            };
+            spread.visit_body(body);
+            structs.extend(spread.found.into_iter().filter_map(own));
+        }
+    }
+    // And each flattened into one.
+    let mut all = HashSet::new();
+    while let Some(adt) = structs.pop() {
+        if !all.insert(adt.index) {
+            continue;
+        }
+        for field in tcx.adt_def(adt).all_fields() {
+            if is_flatten(tcx, field) {
+                structs.extend(own(tcx.type_of(field.did).instantiate_identity().skip_normalization()));
+            }
+        }
+    }
+    all
+}
+
+/// The types of what a body's JSX spreads into an element, react's `prop
+/// ...` of a value.
+struct Spreads<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    results: &'a ty::TypeckResults<'tcx>,
+    found: Vec<Ty<'tcx>>,
+}
+
+impl<'tcx> Visitor<'tcx> for Spreads<'_, 'tcx> {
+    fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) {
+        if let ExprKind::MethodCall(_, _, [value], _) = expr.kind
+            && let Some(def) = self.results.type_dependent_def_id(expr.hir_id)
+            && matches!(js_form(self.tcx, def), JsForm::Prop(Some(name)) if name == "...")
+        {
+            self.found.push(self.results.expr_ty(value));
+        }
+        intravisit::walk_expr(self, expr);
     }
 }
 

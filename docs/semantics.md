@@ -397,9 +397,10 @@ What JS sees of a crate:
 
 - **A `pub fn` is an `export function` of its Rust name**; parameters and
   locals are camelCase, and a name JS reserves gets a `$`,
-  `delete$`. With `js::camel_case!();`, the crate's functions, fields and
-  props are camelCase too ([0038](decisions/0038-js-names-and-destructuring.md),
-  [0046](decisions/0046-camel-case-crates.md)).
+  `delete$`. What's React's has React's names: a hook, a `use_x` that calls
+  one, is `useX`, and a component's props are camelCase
+  ([0038](decisions/0038-js-names-and-destructuring.md),
+  [0435](decisions/0435-rust-and-react-two-worlds.md)).
 - **A type's methods are its exported object's,** the receiver first:
   `Point.shift(p, by)` ([0047](decisions/0047-methods.md)).
 - **`LowerHex`, `Pointer` and the other formatting traits are

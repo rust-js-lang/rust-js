@@ -134,13 +134,14 @@ macro_rules! export_default {
     };
 }
 
-/// The crate's own functions, fields and props are camelCase in JS, as its
-/// variables are (ADRs 0046 and 0110): `js::camel_case!();` at the crate root.
+/// Gone (ADR 0435): React's names, a component's props and a hook, are
+/// camelCase in JS, and a crate's own keep Rust's, with no setting.
 #[macro_export]
 macro_rules! camel_case {
-    () => {
-        #[cfg_attr(rust_js, rust_js::camel_case)]
-        const _: () = ();
+    ($($any:tt)*) => {
+        ::core::compile_error!(
+            "`js::camel_case!` is gone: a component's props and a hook are React's names, camelCase, in JS, and the rest Rust's (ADR 0435); remove it"
+        );
     };
 }
 

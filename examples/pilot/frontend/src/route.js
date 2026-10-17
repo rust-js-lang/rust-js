@@ -31,7 +31,7 @@ export function go(to) {
   window.location.hash = to;
 }
 
-export function use_route() {
+export function useRoute() {
   const [current, setCurrent] = useState(hash());
   useEffect(() => {
     const controller = new AbortController();

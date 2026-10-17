@@ -264,6 +264,15 @@ impl Jsx<'_> {
             if attrs.iter().any(|(n, _, _)| n == &attr) {
                 return Err(self.error("duplicate attribute"));
             }
+            // An element's `aria-` or `data-` attribute, which has no
+            // method of its Rust name to say it of (ADR 0435).
+            if intrinsic && let Some(rest) = attr.strip_prefix("aria_").or_else(|| attr.strip_prefix("data_")) {
+                let js = format!("{}-{}", &attr[..4], rest.replace('_', "-"));
+                return Err(self.sess.dcx().span_err(
+                    attr_span,
+                    format!("rust-js: `{attr}` is `{js}` in JSX, as React names it"),
+                ));
+            }
             let value = if self.eat(TokenKind::Eq) {
                 self.value(indent + 4)?
             } else {
@@ -486,6 +495,12 @@ impl Jsx<'_> {
                     .collect(),
             );
         }
+        // Each prop's name as written, which rust-js checks is JSX's, its
+        // field's JS name (ADR 0435).
+        let written: Vec<(String, Span)> = (attrs.iter())
+            .filter(|(name, _, _)| !matches!(name.as_str(), "key" | "ref"))
+            .map(|(name, _, at)| (name.clone(), *at))
+            .collect();
         // JSX's `{...props}` alone is the props; Rust's `{..*post}` builds
         // them field by field, each copied, as a struct update does.
         let mut expr = if attrs.is_empty()
@@ -570,6 +585,9 @@ impl Jsx<'_> {
                 TokenStream::new(tokens)
             }
         };
+        if !written.is_empty() {
+            expr = spelled(self.sess, &written, expr, span);
+        }
         if let Some((key, at)) = key {
             expr = method_call(self.sess, expr, "key", vec![key], at);
         }
@@ -586,10 +604,34 @@ impl Jsx<'_> {
     }
 }
 
+/// `{ #[rust_js::spelled("labelText")] let _ = (); expr }`: a component's
+/// props, `expr`, with the names they're written by, each at where it's
+/// written, which rust-js checks are JSX's (ADR 0435). The statement does
+/// nothing, and MIR has nothing of it.
+fn spelled(sess: &Session, written: &[(String, Span)], expr: TokenStream, span: Span) -> TokenStream {
+    let mut names = Vec::new();
+    for (i, (name, at)) in written.iter().enumerate() {
+        if i > 0 {
+            names.push(TokenTree::token_alone(TokenKind::Comma, span));
+        }
+        names.extend(template(sess, format!("{name:?}"), *at).iter().cloned());
+    }
+    let mut attribute: Vec<_> = template(sess, "rust_js::spelled".into(), span)
+        .iter()
+        .cloned()
+        .collect();
+    attribute.push(group(Delimiter::Parenthesis, TokenStream::new(names), span));
+    let mut tokens: Vec<_> = template(sess, "#".into(), span).iter().cloned().collect();
+    tokens.push(group(Delimiter::Bracket, TokenStream::new(attribute), span));
+    tokens.extend(template(sess, "let _ = ();".into(), span).iter().cloned());
+    tokens.extend(expr.iter().cloned());
+    TokenStream::new(vec![group(Delimiter::Brace, TokenStream::new(tokens), span)])
+}
+
 /// A JS name as the bindings generators name it in Rust, `scripts/rust-names.ts`'s
 /// `snake`: `aria-label` is `aria_label`; HTML stays one word, while
 /// innerHTML and HTMLInput become inner_html and html_input.
-fn snake(name: &str) -> String {
+pub(crate) fn snake(name: &str) -> String {
     let mut result = String::new();
     let chars: Vec<char> = name.chars().collect();
     for (i, &c) in chars.iter().enumerate() {

@@ -15,7 +15,7 @@ const THEME = new Compartment();
 const SOURCE = [
   basicSetup,
   rust(),
-  THEME.of(themeFor(false)),
+  THEME.of(theme_for(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
 
@@ -27,33 +27,33 @@ function output(language) {
   if (language) {
     extensions.push(language);
   }
-  extensions.push(THEME.of(themeFor(false)));
+  extensions.push(THEME.of(theme_for(false)));
   extensions.push(EditorState.readOnly.of(true));
   extensions.push(EditorView.contentAttributes.of({ "aria-label": "Generated JavaScript" }));
   return extensions;
 }
 
-function themeFor(dark) {
+function theme_for(dark) {
   if (dark) {
     return oneDark;
   }
   return [];
 }
 
-export function sourceState(text) {
+export function source_state(text) {
   return EditorState.create({ doc: text, extensions: SOURCE });
 }
 
-export function outputState(text, js) {
+export function output_state(text, js) {
   const extensions = js ? JS_OUTPUT : PLAIN_OUTPUT;
   return EditorState.create({ doc: text, extensions });
 }
 
-export function textOf(state) {
+export function text_of(state) {
   return state.doc.toString();
 }
 
-export function openView(parent, state) {
+export function open_view(parent, state) {
   return new EditorView({ state, parent });
 }
 
@@ -63,8 +63,8 @@ export function show(view, state) {
   }
 }
 
-export function setTheme(view, dark) {
+export function set_theme(view, dark) {
   const theme = THEME;
-  view.dispatch({ effects: theme.reconfigure(themeFor(dark)) });
+  view.dispatch({ effects: theme.reconfigure(theme_for(dark)) });
 }
 //# sourceMappingURL=codemirror.js.map

@@ -396,16 +396,16 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
   expect(await read("components/editor.jsx")).toContain("    return () => {\n      editor.destroy();");
   // A let chain on `&on_submit`, tested where it is: a reference is the value.
   expect(await read("components/editor.jsx")).toContain('    if (onSubmit != null && (e.metaKey || e.ctrlKey) && e.key === "Enter") {');
-  // A hook, found by its name, and props as React code names them (ADR 0046).
+  // A hook, found by its name, and props as React code names them (ADR 0435).
   expect(await read("dark_mode.js")).toContain("export function useDarkMode() {\n  return useSyncExternalStore(");
 
   const compiler = await read("compiler.js");
   expect(compiler).toContain("import {\n  ConsoleStdout,\n  Directory,\n  File,\n  OpenFile,\n  PreopenDirectory,\n  WASI,\n} from \"@bjorn3/browser_wasi_shim\";");
-  for (const name of ["load", "loadExample", "ms", "mb", "compile"]) {
+  for (const name of ["load", "load_example", "ms", "mb", "compile"]) {
     expect(compiler).toMatch(new RegExp(`^export (async )?function ${name}\\(`, "m"));
   }
   // The downloads all start before any is awaited.
-  expect(compiler).toContain("  const module = loadCompiler(start, stat);\n  const sysroot = loadSysroot(start, stat);");
+  expect(compiler).toContain("  const module = load_compiler(start, stat);\n  const sysroot = load_sysroot(start, stat);");
   expect(compiler).toContain('  const module = await WebAssembly.compileStreaming(window.fetch("./rust-js.wasm"));');
   // A `format!` value shown once, in order, is written in place.
   expect(compiler).toContain("  return `${t.toFixed(0)} ms`;");

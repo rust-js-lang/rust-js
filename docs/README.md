@@ -132,7 +132,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0031 A `const` is the value rustc computed, under its own name](decisions/0031-consts.md)
 - [0038 Variables have JS's names and shapes: `const [count, setCount] = ..`](decisions/0038-js-names-and-destructuring.md)
 - [0039 Generic bindings: `#[rust_js::link_name]` on an ordinary function](decisions/0039-generic-bindings.md)
-- [0046 `#![rust_js::camel_case]`: a crate's own names, the JS way](decisions/0046-camel-case-crates.md)
+- [0046 `#![rust_js::camel_case]`: a crate's own names, the JS way](decisions/0046-camel-case-crates.md) *(superseded by 0435)*
 
 **React**
 
@@ -502,6 +502,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0432 A `return` is written where its value is made](decisions/0432-a-return-is-written-where-its-value-is-made.md)
 - [0433 What's written after a loop is after it](decisions/0433-whats-written-after-a-loop-is-after-it.md)
 - [0434 A temporary of a variable is the variable, until it changes](decisions/0434-a-temporary-of-a-variable-is-the-variable.md)
+- [0435 Rust's world and React's: each its own names, JSX the boundary](decisions/0435-rust-and-react-two-worlds.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

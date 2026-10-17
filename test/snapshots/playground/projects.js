@@ -6,14 +6,14 @@
 // `App` renders with it. In JS, the methods are `Project`'s object of them
 // (ADR 0047): `project.opening(path, live)` is `Project.opening(project, path, live)`.
 
-import { sourceState, textOf } from "./codemirror.js";
+import { source_state, text_of } from "./codemirror.js";
 import { $stripSuffix } from "@rust-js/runtime";
 
 function copy(files) {
   return files.map((f) => ({ path: f.path, state: f.state }));
 }
 
-export function jsName(path) {
+export function js_name(path) {
   const stem = $stripSuffix(path, ".rs");
   if (stem != null) {
     return `${stem}.js`;
@@ -26,7 +26,7 @@ export const Project = {
     return { root: "lib.rs", files: [], current: "" };
   },
   of(root, texts) {
-    const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
+    const files = texts.map(([path, text]) => ({ path, state: source_state(text) }));
     return { root, files, current: root };
   },
   has(project, path) {
@@ -35,7 +35,7 @@ export const Project = {
   paths(project) {
     return project.files.map((f) => f.path);
   },
-  currentState(project) {
+  current_state(project) {
     const file = project.files.find((f) => f.path === project.current);
     if (file) {
       return file.state;
@@ -58,7 +58,7 @@ export const Project = {
   },
   adding(project, path, live) {
     const files = Project.keeping(project, live);
-    files.push({ path, state: sourceState("") });
+    files.push({ path, state: source_state("") });
     return { root: project.root, files, current: path };
   },
   removing(project, path) {
@@ -70,7 +70,7 @@ export const Project = {
   },
   sources(project, live) {
     const files = Project.keeping(project, live);
-    return new Map(files.values().map((f) => [f.path, textOf(f.state)]));
+    return new Map(files.values().map((f) => [f.path, text_of(f.state)]));
   },
 };
 //# sourceMappingURL=projects.js.map

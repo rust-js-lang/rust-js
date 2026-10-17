@@ -362,4 +362,20 @@ export const mutations: Mutation[] = [
       "another module's props leaves out"
     ]
   },
+  {
+    name: "aria-attribute-unnamed",
+    breaks: "`<div aria_label>` is rustc's \"no method named `aria_label`\", not what to write",
+    file: "src/jsx_syntax/parser.rs",
+    find: "            if intrinsic && let Some(rest) = attr.strip_prefix(\"aria_\").or_else(|| attr.strip_prefix(\"data_\")) {\n",
+    replace: "            if false && let Some(rest) = attr.strip_prefix(\"aria_\").or_else(|| attr.strip_prefix(\"data_\")) {\n",
+    tests: ["test/jsx.test.ts", "-t", "aria attribute in Rust's case"],
+  },
+  {
+    name: "component-names-unrecorded",
+    breaks: "a component's props as written aren't recorded, so `<Badge label_text>` is taken",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        if !written.is_empty() {\n",
+    replace: "        if false {\n",
+    tests: ["test/jsx.test.ts", "-t", "names a component's prop as JSX"],
+  },
 ];
