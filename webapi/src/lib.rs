@@ -13621,50 +13621,56 @@ impl HTMLCanvasElement {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_data_url(&self) -> String {
+    pub fn to_data_url(&self) -> Result<String, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_data_url_with_type(&self, r#type: &str) -> String {
+    pub fn to_data_url_with_type(&self, r#type: &str) -> Result<String, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_data_url_with_type_and_quality<Q>(&self, r#type: &str, quality: Q) -> String {
+    pub fn to_data_url_with_type_and_quality<Q>(&self, r#type: &str, quality: Q) -> Result<String, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toBlob)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob(&self, callback: Box<dyn FnMut(Option<&Blob>)>) {
+    pub fn to_blob(&self, callback: Box<dyn FnMut(Option<&Blob>)>) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toBlob)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob_with_type(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str) {
+    pub fn to_blob_with_type(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toBlob)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob_with_type_and_quality<Q>(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str, quality: Q) {
+    pub fn to_blob_with_type_and_quality<Q>(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str, quality: Q) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -22069,34 +22075,38 @@ impl History {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/pushState)
+    /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn push_state<D: StructuredClone>(&self, data: D, unused: &str) {
+    pub fn push_state<D: StructuredClone>(&self, data: D, unused: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/pushState)
+    /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn push_state_with_url<D: StructuredClone>(&self, data: D, unused: &str, url: &str) {
+    pub fn push_state_with_url<D: StructuredClone>(&self, data: D, unused: &str, url: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/replaceState)
+    /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_state<D: StructuredClone>(&self, data: D, unused: &str) {
+    pub fn replace_state<D: StructuredClone>(&self, data: D, unused: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/replaceState)
+    /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_state_with_url<D: StructuredClone>(&self, data: D, unused: &str, url: &str) {
+    pub fn replace_state_with_url<D: StructuredClone>(&self, data: D, unused: &str, url: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -49847,34 +49857,38 @@ impl CSSStyleSheet {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/cssRules)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "get cssRules")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn css_rules(&self) -> &'static CSSRuleList {
+    pub fn css_rules(&self) -> Result<&'static CSSRuleList, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/insertRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_rule(&self, rule: &str) -> u32 {
+    pub fn insert_rule(&self, rule: &str) -> Result<u32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/insertRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_rule_with_index(&self, rule: &str, index: u32) -> u32 {
+    pub fn insert_rule_with_index(&self, rule: &str, index: u32) -> Result<u32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/deleteRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_rule(&self, index: u32) {
+    pub fn delete_rule(&self, index: u32) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -49895,58 +49909,65 @@ impl CSSStyleSheet {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/rules)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "get rules")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rules(&self) -> &'static CSSRuleList {
+    pub fn rules(&self) -> Result<&'static CSSRuleList, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/addRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_rule(&self) -> i32 {
+    pub fn add_rule(&self) -> Result<i32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/addRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_rule_with_selector(&self, selector: &str) -> i32 {
+    pub fn add_rule_with_selector(&self, selector: &str) -> Result<i32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/addRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_rule_with_selector_and_style(&self, selector: &str, style: &str) -> i32 {
+    pub fn add_rule_with_selector_and_style(&self, selector: &str, style: &str) -> Result<i32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/addRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_rule_with_selector_and_style_and_index(&self, selector: &str, style: &str, index: u32) -> i32 {
+    pub fn add_rule_with_selector_and_style_and_index(&self, selector: &str, style: &str, index: u32) -> Result<i32, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/removeRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "removeRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_rule(&self) {
+    pub fn remove_rule(&self) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/removeRule)
+    /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "removeRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_rule_with_index(&self, index: u32) {
+    pub fn remove_rule_with_index(&self, index: u32) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -51356,18 +51377,20 @@ impl CanvasRenderingContext2D {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getImageData)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data(&self, sx: i32, sy: i32, sw: i32, sh: i32) -> &'static ImageData {
+    pub fn get_image_data(&self, sx: i32, sy: i32, sw: i32, sh: i32) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getImageData)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data_with_settings(&self, sx: i32, sy: i32, sw: i32, sh: i32, settings: ImageDataSettings<'_>) -> &'static ImageData {
+    pub fn get_image_data_with_settings(&self, sx: i32, sy: i32, sw: i32, sh: i32, settings: ImageDataSettings<'_>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
@@ -63144,26 +63167,29 @@ pub struct IDBFactory(PhantomData<JsObject>);
 
 impl IDBFactory {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open(&self, name: &str) -> &'static IDBOpenDBRequest {
+    pub fn open(&self, name: &str) -> Result<&'static IDBOpenDBRequest, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open_with_version(&self, name: &str, version: f64) -> &'static IDBOpenDBRequest {
+    pub fn open_with_version(&self, name: &str, version: f64) -> Result<&'static IDBOpenDBRequest, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/deleteDatabase)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "deleteDatabase")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_database(&self, name: &str) -> &'static IDBOpenDBRequest {
+    pub fn delete_database(&self, name: &str) -> Result<&'static IDBOpenDBRequest, &'static JsError> {
         unreachable!()
     }
 
@@ -71276,18 +71302,20 @@ impl OffscreenCanvasRenderingContext2D {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/getImageData)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data(&self, sx: i32, sy: i32, sw: i32, sh: i32) -> &'static ImageData {
+    pub fn get_image_data(&self, sx: i32, sy: i32, sw: i32, sh: i32) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/getImageData)
+    /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data_with_settings(&self, sx: i32, sy: i32, sw: i32, sh: i32, settings: ImageDataSettings<'_>) -> &'static ImageData {
+    pub fn get_image_data_with_settings(&self, sx: i32, sy: i32, sw: i32, sh: i32, settings: ImageDataSettings<'_>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 

@@ -18,9 +18,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
-- **webapi's `localStorage`, `sessionStorage`, `Storage::set_item` and `cookie`
-  return a `Result`**: each throws where the page may not keep data, or it's
-  full, which a program can't check first; TodoMVC uses them (ADR 0442).
+- **webapi's `localStorage`, `sessionStorage`, `Storage::set_item`, `cookie`,
+  IndexedDB's `open`, a canvas's `to_data_url`, `to_blob` and `get_image_data`, a
+  stylesheet's rules and `history.push_state` return a `Result`**: each throws
+  for what a program can't check first, the page's permissions, a cross-origin
+  image or stylesheet, a browser's limit; TodoMVC uses them (ADR 0442).
 - **`Default` of `[T; N]`** through its where clause, `[T; N]: Default`, and a
   bound's dictionary named for what it's of, `TArrayDefault`, `WrappingMul` (ADR 0107).
 - **A `()` given a function value is no argument**: `resolve()` of `resolve(())`,

@@ -141,6 +141,20 @@ const THROWS: Record<string, string> = {
   "Storage setItem": "a `QuotaExceededError` where the storage is full",
   "Document get cookie": "a `SecurityError` in a sandboxed document, or one of an opaque origin",
   "Document set cookie": "a `SecurityError` in a sandboxed document, or one of an opaque origin",
+  "History pushState": "a `SecurityError` in a document no longer shown, or where the browser limits how often it's called",
+  "History replaceState": "a `SecurityError` in a document no longer shown, or where the browser limits how often it's called",
+  "HTMLCanvasElement toDataURL": "a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it",
+  "HTMLCanvasElement toBlob": "a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it",
+  "CanvasRenderingContext2D getImageData": "a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it",
+  "OffscreenCanvasRenderingContext2D getImageData": "a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it",
+  "CSSStyleSheet get cssRules": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "CSSStyleSheet get rules": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "CSSStyleSheet insertRule": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "CSSStyleSheet deleteRule": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "CSSStyleSheet addRule": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "CSSStyleSheet removeRule": "a `SecurityError` of a stylesheet of another origin, not shared by CORS",
+  "IDBFactory open": "a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page",
+  "IDBFactory deleteDatabase": "a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page",
 };
 const thrown = new Set<string>();
 

@@ -63,3 +63,19 @@ if (value.TAG !== "Ok") {
   directly handles their `Result`.
 - What else throws so is added to the list as it's met, with the spec's
   reason; the list starts with storage and cookies.
+
+## Amendment: canvases, stylesheets, IndexedDB and history
+
+The list grows by the same rule, each from its spec:
+
+| Member | `Err` |
+|---|---|
+| `HTMLCanvasElement`'s `to_data_url`, `to_blob`; a 2D context's `get_image_data`, an offscreen one's too | a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it: its origin-clean flag, which the server's headers decide |
+| `CSSStyleSheet`'s `css_rules`, `rules`, `insert_rule`, `delete_rule`, `add_rule`, `remove_rule` | a `SecurityError` of a stylesheet of another origin, not shared by CORS |
+| `IDBFactory`'s `open`, `delete_database` | a `SecurityError` where the page may not keep data, as `localStorage`'s |
+| `History`'s `push_state`, `replace_state` | a `SecurityError` in a document no longer shown, or where the browser limits how often it's called, as Safari and Firefox do |
+
+What throws only of a misuse stays a panic: `get_image_data` of a width of
+0, `insert_rule` of text that isn't CSS, `push_state` of state that can't
+be cloned. Each overload of a member, `push_state_with_url`, is its
+member's.
