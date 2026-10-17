@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "arms as statements chain in written order"
+      "arms as statements chain in written order|an else-if at a loop's end from MIR stays one past a written continue"
     ]
   },
   {
@@ -613,7 +613,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    // A loop's early exits again, of what's taken its shape since.\n    js::statement_lists(body, &mut early_returns);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "calculator|kept_generic_iterators"],
+    tests: ["test/corpus.test.ts", "-t", "^(calculator|kept_generic_iterators|interpreter).rs$"],
     snapshots: true,
   },
   {
