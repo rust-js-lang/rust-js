@@ -17,14 +17,12 @@ struct Url(core::marker::PhantomData<js::JsObject>);
 
 // Throws a `TypeError` for a bad URL: JS going wrong, not a panic.
 #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
-#[allow(unused_variables)]
 fn new_url(href: &str) -> &'static Url {
     unreachable!()
 }
 
 // Leaves a rejected promise no one handles: a failure that comes later.
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
-#[allow(unused_variables)]
 fn reject_later(reason: &str) {
     unreachable!()
 }

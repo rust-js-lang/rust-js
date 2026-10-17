@@ -9,7 +9,6 @@ use webapi::{AddEventListenerOptions, EventTargetExt, RequestInit, abort_control
 
 /// Resolves with `value` after `ms` milliseconds.
 #[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
-#[allow(unused_variables)]
 fn later(ms: u32, value: u32) -> Promise<u32> {
     unreachable!()
 }
@@ -149,7 +148,6 @@ struct Env {
 
 /// The module's export, called on its `exports` object.
 #[cfg_attr(rust_js, rust_js::link_name = "add")]
-#[allow(unused_variables)]
 fn wasm_add(this: &JsObject, a: i32, b: i32) -> i32 {
     unreachable!()
 }

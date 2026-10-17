@@ -14,32 +14,27 @@ unsafe extern "Rust" {
 
 // Named imports, and a path inside one.
 #[cfg_attr(rust_js, rust_js::link_name = "node:path#join")]
-#[allow(unused_variables)]
 fn path_join(a: &str, b: &str) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "node:path#posix.basename")]
-#[allow(unused_variables)]
 fn basename(path: &str) -> String {
     unreachable!()
 }
 
 // A class from a module, next to the global of the same name.
 #[cfg_attr(rust_js, rust_js::link_name = "new node:url#URL")]
-#[allow(unused_variables)]
 fn new_url(href: &str) -> &'static Url {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
-#[allow(unused_variables)]
 fn new_global_url(href: &str) -> &'static Url {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get href")]
-#[allow(unused_variables)]
 fn href(this: &Url) -> String {
     unreachable!()
 }
@@ -47,13 +42,11 @@ fn href(this: &Url) -> String {
 // A file of our own, beside the root's JS: its default export, and a
 // path through the whole module.
 #[cfg_attr(rust_js, rust_js::link_name = "./greet.js#default")]
-#[allow(unused_variables)]
 fn greet(name: &str) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "./greet.js#*.polite")]
-#[allow(unused_variables)]
 fn polite(name: &str) -> String {
     unreachable!()
 }

@@ -63,4 +63,13 @@ export async function settle_either(fail) {
   const e = value._0;
   return "rejected: " + String(e);
 }
+
+export function kept(key) {
+  const result = $try(() => window.localStorage);
+  const storage = result.TAG === "Ok" ? result._0 : undefined;
+  if (!storage) {
+    return;
+  }
+  return storage.getItem(key);
+}
 //# sourceMappingURL=throws.js.map

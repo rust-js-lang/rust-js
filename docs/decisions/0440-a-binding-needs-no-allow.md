@@ -57,10 +57,9 @@ no binding rust-js takes.
 
 - A plain `cargo check`, which runs neither, still warns, as it warns of
   what only JSX uses (ADR 0439).
-- todomvc keeps its own `localStorage` and `JSON` bindings: webapi's
-  `localStorage` throws as a panic, not an `Err`, where a sandboxed frame
-  forbids it, and the playground has no serde to write JSON with. Each is
-  a gap of its own.
+- todomvc keeps its own `JSON` bindings, as the playground has no serde
+  to write JSON with; its `localStorage` is webapi's, an `Err` where a
+  sandboxed frame forbids it (ADR 0442).
 - The countdown's JS is `setTimeout(() => { resolve(); }, ms)` where its
   own binding's was `setTimeout(resolve, ms)`: `js`'s `Promise` `resolve`
   takes the value, here a `()`, which is no argument (ADR 0441); the

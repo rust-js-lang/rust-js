@@ -125,7 +125,6 @@ pub fn identical(same: bool) -> (bool, bool) {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
-#[allow(unused_variables)]
 fn rejected(reason: &str) -> js::Promise<Result<u32, &'static js::JsError>> {
     unreachable!()
 }

@@ -5,25 +5,21 @@
 use js::{JsError, Promise, decode_uri_component, encode_uri_component, js_error, settle};
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
-#[allow(unused_variables)]
 fn parse_numbers(json: &str) -> Result<Vec<u32>, &'static JsError> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
-#[allow(unused_variables)]
 fn rejected(reason: &str) -> Promise<Result<u32, &'static JsError>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
-#[allow(unused_variables)]
 fn resolved(value: u32) -> Promise<Result<u32, &'static JsError>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
-#[allow(unused_variables)]
 fn rejects(reason: &str) -> Promise<u32> {
     unreachable!()
 }
@@ -85,7 +81,14 @@ pub async fn settle_either(fail: bool) -> String {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
-#[allow(unused_variables)]
 fn later(value: u32) -> Promise<u32> {
     unreachable!()
+}
+
+/// What's kept under `key`, where the page may keep data: webapi's
+/// `localStorage` is an `Err` where it may not, a sandboxed frame's, which a
+/// program can't check first (ADR 0442).
+pub fn kept(key: &str) -> Option<String> {
+    let storage = webapi::window.local_storage().ok()?;
+    storage.get_item(key)
 }

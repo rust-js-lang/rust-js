@@ -129,6 +129,30 @@ const BUILTINS = new Set([
   "Int32Array", "Uint32Array", "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
 ]);
 
+// What throws for what a program can't prevent or check first, the page's
+// permissions or its quota, as the spec says it does: a `Result`, its `Err`
+// what it threw, as Rust's I/O is (ADRs 0035, 0442). One that throws only of
+// a misuse a program can avoid, an invalid selector, panics, as Rust's
+// indexing does. WebIDL doesn't say which throw: this is the list, by an
+// interface and its member's JS form, and why.
+const THROWS: Record<string, string> = {
+  "Window get localStorage": "a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page",
+  "Window get sessionStorage": "a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page",
+  "Storage setItem": "a `QuotaExceededError` where the storage is full",
+  "Document get cookie": "a `SecurityError` in a sandboxed document, or one of an opaque origin",
+  "Document set cookie": "a `SecurityError` in a sandboxed document, or one of an opaque origin",
+};
+const thrown = new Set<string>();
+
+/** `f`, a member of `i`, that throws as `THROWS` says: its result a `Result`. */
+function throwing(i: Interface, f: Fn): Fn {
+  const key = `${i.name} ${f.jsName}`;
+  const why = THROWS[key];
+  if (why === undefined) return f;
+  thrown.add(key);
+  return { ...f, result: `Result<${f.result}, &'static JsError>`, doc: [...f.doc, `\`Err\`: ${why}.`] };
+}
+
 // A dictionary field's type, where WebIDL's is one Rust can't take: a
 // `HeadersInit` is a sequence or a record, and `fetch` takes a `Headers` too.
 const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers" };
@@ -976,15 +1000,17 @@ function functionsOf(i: Interface): Fn[] {
   // The first of each name wins: later overloads and clashes are skipped,
   // of a method's in the type's `impl` and of a module's in its module.
   const seen = new Set<string>();
-  return fns.filter((f) => {
-    const key = `${f.params[0]?.startsWith("this:") ? "impl" : "mod"} ${f.name}`;
-    if (seen.has(key)) {
-      skip("overload or clash");
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
+  return fns
+    .filter((f) => {
+      const key = `${f.params[0]?.startsWith("this:") ? "impl" : "mod"} ${f.name}`;
+      if (seen.has(key)) {
+        skip("overload or clash");
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .map((f) => throwing(i, f));
 }
 
 // ── Events and tags (ADR 0223) ──────────────────────────────────────────
@@ -1099,7 +1125,7 @@ line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| .
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{${[...BUILTINS, "Defined", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
+line(`use js::{${[...BUILTINS, "Defined", "JsError", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
@@ -1484,6 +1510,10 @@ for (const name of INTERFACES) {
   line(`unsafe impl Defined for ${typeName(name)} {}`);
 }
 
+// Each member `THROWS` names is one this crate binds: a name gone from
+// WebIDL, or written wrong, is no `Result` that quietly isn't.
+const unthrown = Object.keys(THROWS).filter((key) => !thrown.has(key));
+if (unthrown.length > 0) throw new Error(`THROWS names no member this crate binds: ${unthrown.join(", ")}`);
 await Bun.write(process.argv[2] ?? new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
 console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);

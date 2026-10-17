@@ -612,6 +612,10 @@ test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(js).toContain("  const value = $try(() => JSON.parse(json));");
   expect(js).toContain('  const result = $try(() => JSON.parse(json));\n  if (result.TAG === "Err") {\n    return result;\n  }');
   expect(js).toContain('await $settle(Promise.reject("no"))');
+  // A web API that throws where the page may not keep data, an `Err`
+  // (ADR 0442): `None` where it's refused, never a throw.
+  expect(js).toContain("$try(() => window.localStorage)");
+  expect(throws.kept("missing")).toBeUndefined();
   const results = await Bun.file(join(target, "results.js")).text();
   // On an option, the value keeps the variable's name.
   expect(results).toContain("  const a = half(n);\n  if (a == null) {\n    return;\n  }");

@@ -2,6 +2,7 @@
 //! them a route shows, and where they're kept.
 
 use js::JsError;
+use webapi::window;
 
 #[derive(Clone, PartialEq)]
 pub struct Todo {
@@ -91,19 +92,9 @@ impl Filter {
 
 const KEY: &str = "todos-rust-js";
 
-// Each may throw, and in a sandboxed frame, as the playground's is,
-// `localStorage` itself does: an `Err` (ADR 0035), and the todos are
-// the page's only.
-#[cfg_attr(rust_js, rust_js::link_name = "localStorage.getItem")]
-fn stored(key: &str) -> Result<Option<String>, &'static JsError> {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "localStorage.setItem")]
-fn store(key: &str, value: &str) -> Result<(), &'static JsError> {
-    unreachable!()
-}
-
+// `localStorage` is an `Err` where the page may not keep data, as in a
+// sandboxed frame, the playground's: then the todos are the page's only.
+// JSON.parse throws of text that isn't JSON (ADR 0035).
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
 fn parse(json: &str) -> Result<Vec<Todo>, &'static JsError> {
     unreachable!()
@@ -116,13 +107,18 @@ fn stringify(todos: &Vec<Todo>) -> String {
 
 /// The todos kept from before, or none.
 pub fn load() -> Vec<Todo> {
-    match stored(KEY) {
-        Ok(Some(json)) => parse(&json).unwrap_or_default(),
-        _ => Vec::new(),
+    let Ok(storage) = window.local_storage() else {
+        return Vec::new();
+    };
+    match storage.get_item(KEY) {
+        Some(json) => parse(&json).unwrap_or_default(),
+        None => Vec::new(),
     }
 }
 
 /// The todos, kept for next time, where they can be.
 pub fn save(todos: &Vec<Todo>) {
-    let _ = store(KEY, &stringify(todos));
+    if let Ok(storage) = window.local_storage() {
+        let _ = storage.set_item(KEY, &stringify(todos));
+    }
 }

@@ -77,7 +77,6 @@ pub fn numbers(values: Vec<f64>) -> Vec<Src<'static>> {
 
 /// JS's `String(value)`, given one: the value, as JS takes it.
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
-#[allow(unused_variables)]
 fn to_text(value: Src<'_>) -> String {
     unreachable!()
 }

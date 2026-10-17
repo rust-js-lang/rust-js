@@ -510,6 +510,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0439 A component is named as JSX names it, and needs no `#[allow]`](decisions/0439-a-component-is-named-as-jsx-names-it.md)
 - [0440 A binding needs no `#[allow]`](decisions/0440-a-binding-needs-no-allow.md)
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
+- [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

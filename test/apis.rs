@@ -28,7 +28,6 @@ unsafe extern "Rust" {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.store.subscribe")]
-#[allow(unused_variables)]
 fn store_subscribe(notify: react::Notify) -> Box<dyn FnOnce()> {
     unreachable!()
 }
@@ -39,7 +38,6 @@ fn store_get() -> i32 {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.log")]
-#[allow(unused_variables)]
 fn log(what: &str) {
     unreachable!()
 }
@@ -50,7 +48,6 @@ fn flushed_text() -> String {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.uploaded")]
-#[allow(unused_variables)]
 fn uploaded() -> Promise<()> {
     unreachable!()
 }

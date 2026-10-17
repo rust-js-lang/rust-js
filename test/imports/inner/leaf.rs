@@ -1,13 +1,11 @@
 // Two directories down, `./greet.js` still means the file beside the root's JS.
 #[cfg_attr(rust_js, rust_js::link_name = "./greet.js#default")]
-#[allow(unused_variables)]
 fn greet(name: &str) -> String {
     unreachable!()
 }
 
 // A file beside this one, named from the root's: `./wave.js` here.
 #[cfg_attr(rust_js, rust_js::link_name = "./inner/wave.js#default")]
-#[allow(unused_variables)]
 fn wave(name: &str) -> String {
     unreachable!()
 }
@@ -15,7 +13,6 @@ fn wave(name: &str) -> String {
 // The root's import too, beside this file's own `join`: renamed here,
 // and only here.
 #[cfg_attr(rust_js, rust_js::link_name = "node:path#join")]
-#[allow(unused_variables)]
 fn path_join(a: &str, b: &str) -> String {
     unreachable!()
 }

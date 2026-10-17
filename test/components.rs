@@ -150,7 +150,6 @@ thread_local! {
 
 /// Counts renders, for the test.
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.rendered")]
-#[allow(unused_variables)]
 fn rendered(label: &str) {
     unreachable!()
 }

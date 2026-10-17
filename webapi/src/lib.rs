@@ -12,7 +12,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, JsObject, Promise, SharedArrayBuffer, StructuredClone, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
+use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, JsError, JsObject, Promise, SharedArrayBuffer, StructuredClone, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
 
 unsafe extern "Rust" {
     /// The `document` global.
@@ -3215,18 +3215,20 @@ impl Document {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/cookie)
+    /// `Err`: a `SecurityError` in a sandboxed document, or one of an opaque origin.
     #[cfg_attr(rust_js, rust_js::link_name = "get cookie")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cookie(&self) -> String {
+    pub fn cookie(&self) -> Result<String, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/cookie)
+    /// `Err`: a `SecurityError` in a sandboxed document, or one of an opaque origin.
     #[cfg_attr(rust_js, rust_js::link_name = "set cookie")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cookie(&self, value: &str) {
+    pub fn set_cookie(&self, value: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -21787,18 +21789,20 @@ impl Window {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/sessionStorage)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "get sessionStorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn session_storage(&self) -> &'static Storage {
+    pub fn session_storage(&self) -> Result<&'static Storage, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/localStorage)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "get localStorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn local_storage(&self) -> &'static Storage {
+    pub fn local_storage(&self) -> Result<&'static Storage, &'static JsError> {
         unreachable!()
     }
 
@@ -22128,10 +22132,11 @@ impl Storage {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/setItem)
+    /// `Err`: a `QuotaExceededError` where the storage is full.
     #[cfg_attr(rust_js, rust_js::link_name = "setItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_item(&self, key: &str, value: &str) {
+    pub fn set_item(&self, key: &str, value: &str) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
