@@ -423,11 +423,11 @@
 + ArcWeak::strong_count
 + ArcWeak::upgrade
 + ArcWeak::weak_count
-# Cell 9 of 13
-- Cell::as_array_of_cells
+# Cell 12 of 13
++ Cell::as_array_of_cells
 - Cell::as_ptr
-- Cell::as_slice_of_cells
-- Cell::from_mut
++ Cell::as_slice_of_cells
++ Cell::from_mut
 + Cell::get
 + Cell::get_mut
 + Cell::into_inner
