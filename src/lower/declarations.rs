@@ -435,6 +435,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .skip_binder();
         let idents = self.tcx.fn_arg_idents(def_id);
         let decl = (def_id.as_local()).and_then(|local| self.tcx.hir_node_by_def_id(local).fn_decl());
+        // Its trailing `Option`s are optional, `greeting?: string | null`, so a
+        // JS caller leaves them out (ADR 0443).
+        let is_option =
+            |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::Option));
+        let optional_from = sig.inputs().len() - sig.inputs().iter().rev().take_while(|&&ty| is_option(ty)).count();
         let params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
                 // As its JS spells it, a word JS keeps given apart, `new$`.
@@ -447,7 +452,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .and_then(|decl| decl.inputs.get(i))
                     .and_then(|t| self.written_alias(t));
                 let ty = written.unwrap_or_else(|| self.ts(ty));
-                json!({ "name": name, "optional": false, "rest": false, "type": ty })
+                json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
             })
             .collect();
         let output = sig.output();

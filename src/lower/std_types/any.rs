@@ -105,20 +105,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::member(any, "type_id"), Vec::new()))
     }
 
-    /// `value`, a `ty`, as JS is given it: a `dyn Any`'s value, which a
-    /// binding takes as any JS value, of each in a slice, an array or a
-    /// `Vec` of them too.
+    /// `value`, a `ty`, as JS is given it: a `dyn`'s value where its trait is
+    /// nothing to JS, `Any`, which a binding takes as any JS value, or a
+    /// marker of no methods, a union's, `&dyn IntoNumberOrStr` (ADR 0443),
+    /// and of an `Option` of one, of each in a slice, an array or a `Vec`.
     pub(in crate::lower) fn any_given_to_js(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         let pointee = ty.peel_refs();
-        if self.recognition().is_dyn_any(pointee) {
-            // A pair made here, `{ value: v, impl }`: `v`.
-            if let js::ExprKind::Object(props) = &value.kind
-                && let [Prop::Field(name, inside), _] = props.as_slice()
-                && name == js::HELD
-            {
-                return inside.clone();
-            }
-            return Expr::held(value);
+        // A pair made here, `{ value: v, impl }`: `v`.
+        let made = |value: &Expr| match &value.kind {
+            js::ExprKind::Object(props) => match props.as_slice() {
+                [Prop::Field(name, inside), _] if name == js::HELD => Some(inside.clone()),
+                _ => None,
+            },
+            _ => None,
+        };
+        if self.given_as_value(pointee) {
+            return made(&value).unwrap_or_else(|| Expr::held(value));
+        }
+        if let Some(inner) = self.option_of(pointee)
+            && self.given_as_value(inner.peel_refs())
+        {
+            return match value.kind {
+                js::ExprKind::Undefined => value,
+                _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),
+            };
         }
         let item = match *pointee.kind() {
             ty::Slice(item) | ty::Array(item, _) => Some(item),
@@ -126,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         match item {
-            Some(item) if self.recognition().is_dyn_any(item.peel_refs()) => {
+            Some(item) if self.given_as_value(item.peel_refs()) => {
                 if let js::ExprKind::Array(items) = &value.kind {
                     return Expr::array(items.iter().map(|i| self.any_given_to_js(i.clone(), item)).collect());
                 }
@@ -170,5 +180,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => format!("{name}#{:x}", self.tcx.type_id_hash(of).as_u128()),
             false => name,
         }
+    }
+
+    /// A `dyn` JS is given the value of, its trait nothing to JS: `Any`, or a
+    /// marker of no methods (ADR 0443).
+    fn given_as_value(&self, ty: Ty<'tcx>) -> bool {
+        let marker = matches!(ty.kind(), ty::Dynamic(predicates, ..) if predicates
+            .principal_def_id()
+            .is_some_and(|id| crate::lower::traits::is_marker(self.tcx, self.krate.foreign, id)));
+        marker || self.recognition().is_dyn_any(ty)
     }
 }

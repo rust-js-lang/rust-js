@@ -594,6 +594,24 @@ pub(super) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
         .collect()
 }
 
+/// Whether a binding's `index`th parameter, `this` too, is optional,
+/// TypeScript's `x?`: an `Option`, whose `None` is left out where it's
+/// last (ADR 0443). Not one whose `None` is `null`, `#[rust_js::nullable]`.
+pub(super) fn is_optional_param(tcx: TyCtxt<'_>, def_id: DefId, index: usize) -> bool {
+    let sig = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+    let Some(param) = sig.skip_binder().inputs().get(index) else {
+        return false;
+    };
+    let named = tcx
+        .fn_arg_idents(def_id)
+        .get(index)
+        .copied()
+        .flatten()
+        .map(|ident| ident.name);
+    matches!(param.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
+        && !named.is_some_and(|name| nullable_params(tcx, def_id).contains(&name))
+}
+
 /// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`
 /// of its type's `Default`, `Some(Some(..))` of the literal it says,
 /// `"_self"` or `true`.

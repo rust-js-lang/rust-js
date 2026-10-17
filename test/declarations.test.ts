@@ -498,11 +498,12 @@ pub struct BadgeProps<'a> {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export const LanguagesContext: Context<LanguageItem[] | null | undefined>;");
-  expect(declarations).toContain("export function shown(name: string | null | undefined): string;");
+  // A trailing `Option` is optional, left out by a caller (ADR 0443).
+  expect(declarations).toContain("export function shown(name?: string | null | undefined): string;");
   expect(declarations).toContain("export interface BadgeProps {\n    label?: string | null | undefined;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n}");
   writeFileSync(join(dir, "use.tsx"), `import { LanguagesContext, shown, type BadgeProps } from "./lib.jsx";
 const languages: { code: string }[] | null = null;
-export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a")];
+export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a"), shown()];
 export const badges: BadgeProps[] = [{ label: null }, {}, { label: "a", title: "t" }];
 export const wrong: BadgeProps = { title: null };
 export const maybe = (title: string | undefined): BadgeProps => ({ title, label: title });

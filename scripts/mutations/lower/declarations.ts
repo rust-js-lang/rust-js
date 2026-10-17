@@ -464,4 +464,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "no variants"],
   },
+  {
+    name: "trailing-option-param-required",
+    breaks: "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
+    file: "src/lower/declarations.rs",
+    find: "                json!({ \"name\": name, \"optional\": i >= optional_from, \"rest\": false, \"type\": ty })\n",
+    replace: "                json!({ \"name\": name, \"optional\": (false && i >= optional_from), \"rest\": false, \"type\": ty })\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations take JS's null for an Option"],
+  },
 ];

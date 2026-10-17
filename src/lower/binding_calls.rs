@@ -1,7 +1,7 @@
 //! A call of a binding, of its arguments' values (ADR 0364): JS's
 //! function, method, property or operator it names (ADRs 0019, 0020).
 
-use super::bindings::{JsForm, is_binding, is_method, is_variadic, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_variadic, js_form};
 use super::calls::given_to_js;
 use super::{FnCx, R};
 use crate::js;
@@ -73,6 +73,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if let js::ExprKind::Var(name) = &arg.kind {
                     self.note_falsy(name);
                 }
+            }
+        }
+        // A trailing `None` of an optional parameter, TypeScript's `x?`, is no
+        // argument, as a person leaves one out (ADR 0443).
+        if !is_variadic(self.tcx, def_id) {
+            let offset = usize::from(this.is_some());
+            while args
+                .last()
+                .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
+                && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)
+            {
+                args.pop();
             }
         }
         given_to_js(&mut args);

@@ -2166,3 +2166,41 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
   const lib = await import(join(dir, "mir.js"));
   expect(lib.formatStr(["a %s b %d", "x", "4.2", "y"])).toEqual(["a x b 4 y"]);
 });
+
+// ADR 0443: a binding's optional parameter, TypeScript's `x?`, is an
+// `Option`, and a trailing `None` of one is no argument; a `None` before a
+// `Some` is `undefined`, as JS gives one left out. One of a union, a trait
+// of no methods, is taken by reference, `Option<&dyn IntoX>`, and given to
+// JS as its value. An `undefined` given a parameter that isn't optional is
+// still given (ADR 0330).
+test("a binding's trailing None is no argument, and a union's dyn is its value", () => {
+  const dir = fixture("binding-optional");
+  writeFileSync(join(dir, "lib.rs"), `pub trait IntoNumberOrStr {}
+impl IntoNumberOrStr for f64 {}
+impl IntoNumberOrStr for &str {}
+#[cfg_attr(rust_js, rust_js::link_name = "addRule")]
+fn add_rule(selector: Option<&str>, style: Option<&str>, index: Option<u32>) -> i32 { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
+fn to_data_url(kind: Option<&str>, quality: Option<&dyn IntoNumberOrStr>) -> String { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+fn max<T>(a: T, b: T) -> f64 { unreachable!() }
+pub fn rules() -> i32 {
+    add_rule(Some("p"), None, None) + add_rule(None, None, Some(1))
+}
+pub fn urls(q: f64) -> String {
+    to_data_url(None, None) + &to_data_url(Some("image/png"), Some(&q)) + &to_data_url(None, Some(&"x"))
+}
+pub fn forward(q: Option<&dyn IntoNumberOrStr>) -> String {
+    to_data_url(Some("a"), q)
+}
+pub fn counted() -> f64 {
+    max(Some(1), None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return (addRule("p") + addRule(undefined, undefined, 1)) | 0;');
+  expect(js).toContain('toDataURL() + toDataURL("image/png", q) + toDataURL(undefined, "x")');
+  expect(js).toContain('return toDataURL("a", q?.value);');
+  expect(js).toContain("return Math.max(1, undefined);");
+});

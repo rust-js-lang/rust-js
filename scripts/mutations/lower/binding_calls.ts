@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "another crate's function in an extern block"],
   },
+  {
+    name: "binding-trailing-none-given",
+    breaks: "a binding's trailing `None` of an optional parameter is written, `addRule(\"p\", undefined, undefined)`",
+    file: "src/lower/binding_calls.rs",
+    find: "                && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)\n",
+    replace: "                && false\n",
+    tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
+  },
 ];
