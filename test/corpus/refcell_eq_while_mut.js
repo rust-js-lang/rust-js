@@ -12,16 +12,9 @@ function main() {
   const writing = $borrowMut(a, true);
   try {
     console.log(`${$eq(a, b)}`);
-  } catch (error) {
-    $unborrow(writing);
-    throw error;
-  }
-  try {
     console.log(`${writing.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(writing);
-    throw error;
   }
-  $unborrow(writing);
 }
 //# sourceMappingURL=case.js.map

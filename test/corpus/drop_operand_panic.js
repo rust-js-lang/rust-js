@@ -11,11 +11,9 @@ function noisyDrop_drop(noisy) {
 function pair(a, b) {
   try {
     console.log(`pair ${a[0]} ${b}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(a);
-    throw error;
   }
-  noisyDrop_drop(a);
   return b;
 }
 

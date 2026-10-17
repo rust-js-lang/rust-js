@@ -28,28 +28,17 @@ function make(n) {
 
 function tail(n) {
   const _kept = [(100 + n) & 255];
-  let tmp;
-  try {
-    tmp = make(n);
-  } catch (error) {
-    noisyDrop_drop(_kept);
-    throw error;
-  }
   let result;
   try {
-    result = Noisy.big(tmp);
-  } catch (error) {
-    noisyDrop_drop(tmp);
+    const tmp = make(n);
+    try {
+      result = Noisy.big(tmp);
+    } finally {
+      noisyDrop_drop(tmp);
+    }
+  } finally {
     noisyDrop_drop(_kept);
-    throw error;
   }
-  try {
-    noisyDrop_drop(tmp);
-  } catch (error) {
-    noisyDrop_drop(_kept);
-    throw error;
-  }
-  noisyDrop_drop(_kept);
   return result;
 }
 
@@ -81,11 +70,9 @@ function kept_early(stop) {
   result = undefined;
   try {
     noisyDrop_drop(tmp);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_kept);
-    throw error;
   }
-  noisyDrop_drop(_kept);
   return result;
 }
 
@@ -124,41 +111,30 @@ function main() {
     n = (n + 1) & 255;
   }
   const _inner = [50];
-  let tmp$1;
-  try {
-    tmp$1 = make(5);
-  } catch (error) {
-    noisyDrop_drop(_inner);
-    throw error;
-  }
   let found;
   try {
-    found = Noisy.big(tmp$1);
-  } catch (error) {
-    noisyDrop_drop(tmp$1);
+    const tmp = make(5);
+    try {
+      found = Noisy.big(tmp);
+    } finally {
+      noisyDrop_drop(tmp);
+    }
+  } finally {
     noisyDrop_drop(_inner);
-    throw error;
   }
-  try {
-    noisyDrop_drop(tmp$1);
-  } catch (error) {
-    noisyDrop_drop(_inner);
-    throw error;
-  }
-  noisyDrop_drop(_inner);
   console.log(`found ${found}`);
   console.log(`tail ${tail(6)}`);
   const value$1 = make(7);
   const value$2 = [7];
-  let tmp$2;
+  let tmp$1;
   try {
-    tmp$2 = $eq(value$1, value$2);
+    tmp$1 = $eq(value$1, value$2);
   } catch (error) {
     noisyDrop_drop(value$2);
     noisyDrop_drop(value$1);
     throw error;
   }
-  if (!tmp$2) {
+  if (!tmp$1) {
     try {
       $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
     } catch (error) {
@@ -169,20 +145,18 @@ function main() {
   }
   try {
     noisyDrop_drop(value$2);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(value$1);
-    throw error;
   }
-  noisyDrop_drop(value$1);
   const value$3 = make(8);
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = Noisy.big(value$3);
+    tmp$2 = Noisy.big(value$3);
   } catch (error) {
     noisyDrop_drop(value$3);
     throw error;
   }
-  if (!tmp$3) {
+  if (!tmp$2) {
     noisyDrop_drop(value$3);
     throw new Error("assertion failed: make(8).big()");
   }
@@ -190,14 +164,10 @@ function main() {
   const value$4 = early(true);
   try {
     console.log(`early ${!value$4}`);
-  } catch (error) {
+  } finally {
     if (value$4 != null) {
       noisyDrop_drop(value$4.a);
     }
-    throw error;
-  }
-  if (value$4 != null) {
-    noisyDrop_drop(value$4.a);
   }
   const pair = early(false);
   let pair$0$live = true;
@@ -205,11 +175,9 @@ function main() {
     pair$0$live = false;
     try {
       console.log(`late ${pair.b}`);
-    } catch (error) {
+    } finally {
       noisyDrop_drop(pair.a);
-      throw error;
     }
-    noisyDrop_drop(pair.a);
   } else {
     try {
       console.log("late none");
@@ -231,11 +199,9 @@ function main() {
     let result;
     try {
       result = Noisy.big(value);
-    } catch (error) {
+    } finally {
       noisyDrop_drop(value);
-      throw error;
     }
-    noisyDrop_drop(value);
     return result;
   };
   console.log(`check ${check(10)}`);
@@ -251,26 +217,18 @@ function main() {
   const value$5 = pair$1(true);
   try {
     console.log(`pair ${!value$5}`);
-  } catch (error) {
+  } finally {
     if (value$5 != null) {
       noisyDrop_drop(value$5.a);
     }
-    throw error;
-  }
-  if (value$5 != null) {
-    noisyDrop_drop(value$5.a);
   }
   const value$6 = kept_early(true);
   try {
     console.log(`kept ${!value$6}`);
-  } catch (error) {
+  } finally {
     if (value$6 != null) {
       noisyDrop_drop(value$6.a);
     }
-    throw error;
-  }
-  if (value$6 != null) {
-    noisyDrop_drop(value$6.a);
   }
   console.log("end");
 }

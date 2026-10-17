@@ -129,31 +129,25 @@ function main() {
   const value$6 = $borrowMut(log, true);
   try {
     value$6.value.push(4);
-  } catch (error) {
+  } finally {
     $unborrow(value$6);
-    throw error;
   }
-  $unborrow(value$6);
   const after = $cellReplace($borrowMut(log), []);
   const value$7 = $borrow(log, true);
   try {
     console.log(
       `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${value$7.value.map((item) => String(item)).join(", ")}]`,
     );
-  } catch (error) {
+  } finally {
     $unborrow(value$7);
-    throw error;
   }
-  $unborrow(value$7);
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);
   const value$8 = $borrow(name, true);
   try {
     console.log(`${previous} ${value$8.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(value$8);
-    throw error;
   }
-  $unborrow(value$8);
 }
 //# sourceMappingURL=case.js.map

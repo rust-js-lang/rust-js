@@ -15,27 +15,16 @@ function main() {
   const other = { value: 2 };
   swap(cell, other);
   const value = $borrow(cell, true);
-  let tmp;
   try {
-    tmp = $borrow(other, true);
-  } catch (error) {
+    const tmp = $borrow(other, true);
+    try {
+      console.log(`${value.value} ${tmp.value}`);
+    } finally {
+      $unborrow(tmp);
+    }
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  try {
-    console.log(`${value.value} ${tmp.value}`);
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(value);
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    $unborrow(value);
-    throw error;
-  }
-  $unborrow(value);
   swap(cell, cell);
 }
 //# sourceMappingURL=case.js.map

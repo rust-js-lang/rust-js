@@ -37,14 +37,10 @@ function probeDrop_drop(probe) {
   const value$1 = value.TAG === "Err";
   try {
     console.log(`drop sees it borrowed: ${value$1}`);
-  } catch (error) {
+  } finally {
     if (value.TAG === "Ok") {
       $unborrow(value._0);
     }
-    throw error;
-  }
-  if (value.TAG === "Ok") {
-    $unborrow(value._0);
   }
 }
 
@@ -60,14 +56,10 @@ function peekClone_clone(peek) {
   const value$1 = value.TAG === "Err";
   try {
     console.log(`clone sees it borrowed: ${value$1}`);
-  } catch (error) {
+  } finally {
     if (value.TAG === "Ok") {
       $unborrow(value._0);
     }
-    throw error;
-  }
-  if (value.TAG === "Ok") {
-    $unborrow(value._0);
   }
   return [peek[0]];
 }
@@ -79,29 +71,17 @@ const Node = {
     let result;
     if (me) {
       value$0$live = false;
-      let tmp;
       try {
-        tmp = $tryBorrow(me.value, true);
-      } catch (error) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.value.me);
-        });
-        throw error;
-      }
-      result = tmp.TAG === "Err";
-      try {
+        const tmp = $tryBorrow(me.value, true);
+        result = tmp.TAG === "Err";
         if (tmp.TAG === "Ok") {
           $unborrow(tmp._0);
         }
-      } catch (error) {
+      } finally {
         $rcDrop(me, (value) => {
           $weakDrop(value.value.me);
         });
-        throw error;
       }
-      $rcDrop(me, (value) => {
-        $weakDrop(value.value.me);
-      });
     } else {
       result = false;
     }
@@ -169,72 +149,53 @@ function nodeDebug_fmt(node) {
 function main() {
   const cell = { value: [1, 2] };
   const value = $borrow(cell, true);
-  let tmp;
   try {
-    tmp = $tryBorrow(cell, true);
-  } catch (error) {
-    $unborrow(value);
-    throw error;
-  }
-  const length = value.value.length;
-  const value$1 = tmp.TAG === "Err";
-  try {
-    console.log(`${length} ${value$1}`);
-  } catch (error) {
-    if (tmp.TAG === "Ok") {
-      $unborrow(tmp._0);
+    const tmp = $tryBorrow(cell, true);
+    const length = value.value.length;
+    const value$1 = tmp.TAG === "Err";
+    try {
+      console.log(`${length} ${value$1}`);
+    } finally {
+      if (tmp.TAG === "Ok") {
+        $unborrow(tmp._0);
+      }
     }
+  } finally {
     $unborrow(value);
-    throw error;
   }
+  const value$1 = $borrow(cell, true);
+  const value$2 = [cell, 0];
+  const n = (value$1.value.length + value$2[1]) >>> 0;
   try {
-    if (tmp.TAG === "Ok") {
-      $unborrow(tmp._0);
-    }
-  } catch (error) {
-    $unborrow(value);
-    throw error;
+    probeDrop_drop(value$2);
+  } finally {
+    $unborrow(value$1);
   }
-  $unborrow(value);
-  const value$2 = $borrow(cell, true);
-  const value$3 = [cell, 0];
-  const n = (value$2.value.length + value$3[1]) >>> 0;
-  try {
-    probeDrop_drop(value$3);
-  } catch (error) {
-    $unborrow(value$2);
-    throw error;
-  }
-  $unborrow(value$2);
   console.log(`${n}`);
   const peeks = [[cell]];
-  const value$4 = $borrow(cell, true);
-  let tmp$1;
+  const value$3 = $borrow(cell, true);
+  let m;
   try {
-    tmp$1 = peeks.map((item) => peekClone_clone(item));
-  } catch (error) {
-    $unborrow(value$4);
-    throw error;
+    const tmp = peeks.map((item) => peekClone_clone(item));
+    m = (value$3.value.length + tmp.length) >>> 0;
+  } finally {
+    $unborrow(value$3);
   }
-  const m = (value$4.value.length + tmp$1.length) >>> 0;
-  $unborrow(value$4);
   console.log(`${m}`);
   const options = [[cell]];
-  const value$5 = $borrow(cell, true);
-  let tmp$2;
+  const value$4 = $borrow(cell, true);
+  let k;
   try {
-    tmp$2 = options.map((item) => (item == null ? item : peekClone_clone(item)));
-  } catch (error) {
-    $unborrow(value$5);
-    throw error;
+    const tmp = options.map((item) => (item == null ? item : peekClone_clone(item)));
+    k = (value$4.value.length + tmp.length) >>> 0;
+  } finally {
+    $unborrow(value$4);
   }
-  const k = (value$5.value.length + tmp$2.length) >>> 0;
-  $unborrow(value$5);
   console.log(`${k}`);
-  const value$6 = $borrow(cell, true);
+  const value$5 = $borrow(cell, true);
   let asked;
   try {
-    asked = value$6.value.map(() => {
+    asked = value$5.value.map(() => {
       const value = $tryBorrow(cell, true);
       const result = value.TAG === "Err";
       if (value.TAG === "Ok") {
@@ -242,85 +203,41 @@ function main() {
       }
       return result;
     });
-  } catch (error) {
-    $unborrow(value$6);
-    throw error;
+  } finally {
+    $unborrow(value$5);
   }
-  $unborrow(value$6);
   console.log(`[${asked.map((item) => String(item)).join(", ")}]`);
   const seen = ((s) => {
     const value = $borrow(s, true);
     let result;
     try {
       result = value.value.map(asks_shared);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
     return result;
   })(SHARED);
   console.log(`[${seen.map((item) => String(item)).join(", ")}]`);
   const node = $newCyclic((me) => ({ value: { me: $weakClone(me) } }));
-  let copy;
   try {
-    copy = { value: $withBorrow(node.value, (value) => nodeClone_clone(value)) };
-  } catch (error) {
+    const copy = { value: $withBorrow(node.value, (value) => nodeClone_clone(value)) };
+    try {
+      console.log(
+        `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y)))} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value))} }`,
+      );
+      const tmp = $borrow(node.value, true);
+      try {
+        console.log(`${Node.asks(tmp.value)}`);
+      } finally {
+        $unborrow(tmp);
+      }
+    } finally {
+      $weakDrop(copy.value.me);
+    }
+  } finally {
     $rcDrop(node, (value) => {
       $weakDrop(value.value.me);
     });
-    throw error;
   }
-  try {
-    console.log(
-      `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y)))} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value))} }`,
-    );
-  } catch (error) {
-    $weakDrop(copy.value.me);
-    $rcDrop(node, (value) => {
-      $weakDrop(value.value.me);
-    });
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = $borrow(node.value, true);
-  } catch (error) {
-    $weakDrop(copy.value.me);
-    $rcDrop(node, (value) => {
-      $weakDrop(value.value.me);
-    });
-    throw error;
-  }
-  try {
-    console.log(`${Node.asks(tmp$3.value)}`);
-  } catch (error) {
-    $unborrow(tmp$3);
-    $weakDrop(copy.value.me);
-    $rcDrop(node, (value) => {
-      $weakDrop(value.value.me);
-    });
-    throw error;
-  }
-  try {
-    $unborrow(tmp$3);
-  } catch (error) {
-    $weakDrop(copy.value.me);
-    $rcDrop(node, (value) => {
-      $weakDrop(value.value.me);
-    });
-    throw error;
-  }
-  try {
-    $weakDrop(copy.value.me);
-  } catch (error) {
-    $rcDrop(node, (value) => {
-      $weakDrop(value.value.me);
-    });
-    throw error;
-  }
-  $rcDrop(node, (value) => {
-    $weakDrop(value.value.me);
-  });
 }
 //# sourceMappingURL=case.js.map

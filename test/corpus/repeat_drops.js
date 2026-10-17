@@ -223,199 +223,163 @@ function main() {
       throw error;
     }
   }
-  let tmp$5;
   try {
-    tmp$5 = Iterator.from($repeating(["e"], undefined, loudDrop_drop));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
+    let tmp;
+    try {
+      tmp = Iterator.from($repeating(["e"], undefined, loudDrop_drop));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
     }
-    if (it$live) {
-      it.return();
+    let skipped;
+    try {
+      skipped = tmp.drop(1);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
     }
+    try {
+      skipped.return();
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      fill_generic(v, ["f"], 1, { clone: (value) => value }, loudDrop_drop);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    const value = [["g"]];
+    try {
+      $extend(v, Array.from(value));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      $extend(v, Array.from([["h"]]));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      $extend(v, Array.from(["i"]));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    const value$1 = [["j"]];
+    let tmp$1;
+    try {
+      tmp$1 = $iter(value$1);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      $extend(v, Array.from(tmp$1));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    let tmp$2;
+    let tmp$3;
+    try {
+      tmp$2 = v;
+      tmp$3 = $iter([["k"]]);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      $extend(tmp$2, Array.from(tmp$3));
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    const length = v.length;
+    try {
+      console.log(`end ${length}`);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+    } catch (error) {
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    it$live = false;
+  } finally {
     for (const item of v) {
       loudDrop_drop(item);
     }
-    throw error;
-  }
-  let skipped;
-  try {
-    skipped = tmp$5.drop(1);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    skipped.return();
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    fill_generic(v, ["f"], 1, { clone: (value) => value }, loudDrop_drop);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$1 = [["g"]];
-  try {
-    $extend(v, Array.from(value$1));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $extend(v, Array.from([["h"]]));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $extend(v, Array.from(["i"]));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$2 = [["j"]];
-  let tmp$6;
-  try {
-    tmp$6 = $iter(value$2);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $extend(v, Array.from(tmp$6));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$7;
-  let tmp$8;
-  try {
-    tmp$7 = v;
-    tmp$8 = $iter([["k"]]);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $extend(tmp$7, Array.from(tmp$8));
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const length = v.length;
-  try {
-    console.log(`end ${length}`);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-  } catch (error) {
-    if (it$live) {
-      it.return();
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  it$live = false;
-  for (const item of v) {
-    loudDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

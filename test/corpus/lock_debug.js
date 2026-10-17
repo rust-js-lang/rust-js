@@ -16,28 +16,22 @@ function main() {
     console.log(
       `${$showLocked(m, (value) => `[${value.map((item) => String(item)).join(", ")}]`, "Mutex", true)}`,
     );
-  } catch (error) {
+  } finally {
     $unborrow(_held);
-    throw error;
   }
-  $unborrow(_held);
   const r = { value: "text" };
   const _read = $lockRead(r, true);
   try {
     console.log(`${$showLocked(r, (value) => $debugStr(value), "RwLock", false)}`);
-  } catch (error) {
+  } finally {
     $unborrow(_read);
-    throw error;
   }
-  $unborrow(_read);
   const _write = $lock(r, true);
   try {
     console.log(`${$showLocked(r, (value) => $debugStr(value), "RwLock", false)}`);
-  } catch (error) {
+  } finally {
     $unborrow(_write);
-    throw error;
   }
-  $unborrow(_write);
   const shared = { value: 5 };
   console.log(`${$showLocked(shared, (value) => String(value), "Mutex", true)}`);
 }

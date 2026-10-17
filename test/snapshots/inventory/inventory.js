@@ -184,17 +184,10 @@ export function report() {
   let tmp;
   try {
     tmp = $borrow(counter, true);
-  } catch (error) {
-    $unborrow(value);
-    throw error;
-  }
-  try {
     $unborrow(tmp);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   out += `total=${value.value} again=${tmp.value}\n`;
   const stack = [1, 2, 3];
   const popped = [];

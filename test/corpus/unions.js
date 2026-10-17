@@ -81,20 +81,16 @@ function main() {
   const value$1 = $unionField(held, "noisy")[0];
   try {
     console.log(`${value$1}`);
-  } catch (error) {
+  } finally {
     holderDrop_drop(held);
-    throw error;
   }
-  holderDrop_drop(held);
   const counted = { count: 1 };
   $unionSet(counted, "count", ($unionField(counted, "count") + 1) & 255);
   const value$2 = $unionField(counted, "count");
   try {
     console.log(`${value$2}`);
-  } catch (error) {
+  } finally {
     holderDrop_drop(counted);
-    throw error;
   }
-  holderDrop_drop(counted);
 }
 //# sourceMappingURL=case.js.map

@@ -55,11 +55,9 @@ function main() {
   const a = { value: [1], impl: { type_id: () => "lib::D", $drop: dDrop_drop } };
   try {
     console.log(`${a.impl.type_id() === "lib::D"}`);
-  } catch (error) {
+  } finally {
     a.impl.$drop?.(a.value);
-    throw error;
   }
-  a.impl.$drop?.(a.value);
   const shown = { value: [2], impl: dDisplay() };
   try {
     console.log(`${shown.impl.fmt(shown.value)}`);
@@ -130,36 +128,21 @@ function main() {
     }
   }
   try {
-    if (tmp.TAG === "Err") {
-      if (tmp$0$live) {
-        tmp._0.impl.$drop?.(tmp._0.value);
+    try {
+      if (tmp.TAG === "Err") {
+        if (tmp$0$live) {
+          tmp._0.impl.$drop?.(tmp._0.value);
+        }
+      }
+      tmp$0$live = false;
+      console.log("end");
+    } finally {
+      for (const item of items) {
+        item.impl.$drop?.(item.value);
       }
     }
-  } catch (error) {
-    for (const item of items) {
-      item.impl.$drop?.(item.value);
-    }
+  } finally {
     shown.impl.$drop?.(shown.value);
-    throw error;
   }
-  tmp$0$live = false;
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of items) {
-      item.impl.$drop?.(item.value);
-    }
-    shown.impl.$drop?.(shown.value);
-    throw error;
-  }
-  try {
-    for (const item of items) {
-      item.impl.$drop?.(item.value);
-    }
-  } catch (error) {
-    shown.impl.$drop?.(shown.value);
-    throw error;
-  }
-  shown.impl.$drop?.(shown.value);
 }
 //# sourceMappingURL=case.js.map

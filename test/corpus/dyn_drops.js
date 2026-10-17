@@ -69,30 +69,20 @@ function consume(shape) {
   let result;
   try {
     result = shape.impl.name(shape.value);
-  } catch (error) {
+  } finally {
     shape.impl.$drop?.(shape.value);
-    throw error;
   }
-  shape.impl.$drop?.(shape.value);
   return result;
 }
 
 function main() {
   const one = { value: ["one"], impl: noisyShape() };
-  let tmp;
   try {
-    tmp = one.impl.name(one.value);
-  } catch (error) {
-    one.impl.$drop?.(one.value);
-    throw error;
-  }
-  try {
+    const tmp = one.impl.name(one.value);
     console.log(`${tmp}`);
-  } catch (error) {
+  } finally {
     one.impl.$drop?.(one.value);
-    throw error;
   }
-  one.impl.$drop?.(one.value);
   console.log("after one");
   const all = [
     { value: ["a"], impl: noisyShape() },
@@ -178,9 +168,9 @@ function main() {
     throw error;
   }
   const holder = { shape: { value: ["held"], impl: noisyShape() } };
-  let tmp$2;
+  let tmp;
   try {
-    tmp$2 = holder.shape.impl.name(holder.shape.value);
+    tmp = holder.shape.impl.name(holder.shape.value);
   } catch (error) {
     holder.shape.impl.$drop?.(holder.shape.value);
     loudDrop_drop(loud);
@@ -188,7 +178,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$2}`);
+    console.log(`${tmp}`);
   } catch (error) {
     holder.shape.impl.$drop?.(holder.shape.value);
     loudDrop_drop(loud);
@@ -197,137 +187,40 @@ function main() {
   }
   const value = ["given"];
   const impl = noisyShape();
-  let tmp$3;
   try {
-    tmp$3 = consume({ value, impl });
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
+    try {
+      try {
+        const tmp = consume({ value, impl });
+        console.log(`${tmp}`);
+        const kept = ["kept"];
+        try {
+          const tmp = noisyShape_name(kept);
+          console.log(`${tmp}`);
+        } finally {
+          noisyDrop_drop(kept);
+        }
+        let boxed = ["boxed"];
+        const tmp$1 = noisyShape_name(boxed);
+        console.log(`${tmp$1}`);
+        const unboxed = boxed;
+        try {
+          console.log(`moved ${unboxed[0]}`);
+          boxed = ["refilled"];
+          const tmp = noisyShape_name(boxed);
+          console.log(`${tmp}`);
+          console.log("end");
+        } finally {
+          noisyDrop_drop(unboxed);
+        }
+        noisyDrop_drop(boxed);
+      } finally {
+        holder.shape.impl.$drop?.(holder.shape.value);
+      }
+    } finally {
+      loudDrop_drop(loud);
+    }
+  } finally {
     noisyDrop_drop(lent);
-    throw error;
   }
-  try {
-    console.log(`${tmp$3}`);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  const kept = ["kept"];
-  let tmp$4;
-  try {
-    tmp$4 = noisyShape_name(kept);
-  } catch (error) {
-    noisyDrop_drop(kept);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$4}`);
-  } catch (error) {
-    noisyDrop_drop(kept);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(kept);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  let boxed = ["boxed"];
-  let tmp$5;
-  try {
-    tmp$5 = noisyShape_name(boxed);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$5}`);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  const unboxed = boxed;
-  try {
-    console.log(`moved ${unboxed[0]}`);
-  } catch (error) {
-    noisyDrop_drop(unboxed);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  boxed = ["refilled"];
-  let tmp$6;
-  try {
-    tmp$6 = noisyShape_name(boxed);
-  } catch (error) {
-    noisyDrop_drop(unboxed);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$6}`);
-  } catch (error) {
-    noisyDrop_drop(unboxed);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    noisyDrop_drop(unboxed);
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(unboxed);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(boxed);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    holder.shape.impl.$drop?.(holder.shape.value);
-  } catch (error) {
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    loudDrop_drop(loud);
-  } catch (error) {
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  noisyDrop_drop(lent);
 }
 //# sourceMappingURL=case.js.map

@@ -28,49 +28,28 @@ function pick([a, b, c, d], i) {
     result = d;
   }
   try {
-    if (d$live) {
-      noisyDrop_drop(d);
+    try {
+      try {
+        if (d$live) {
+          noisyDrop_drop(d);
+        }
+        d$live = false;
+      } finally {
+        if (c$live) {
+          noisyDrop_drop(c);
+        }
+      }
+      c$live = false;
+    } finally {
+      if (b$live) {
+        noisyDrop_drop(b);
+      }
     }
-  } catch (error) {
-    if (c$live) {
-      noisyDrop_drop(c);
-    }
-    if (b$live) {
-      noisyDrop_drop(b);
-    }
+    b$live = false;
+  } finally {
     if (a$live) {
       noisyDrop_drop(a);
     }
-    throw error;
-  }
-  d$live = false;
-  try {
-    if (c$live) {
-      noisyDrop_drop(c);
-    }
-  } catch (error) {
-    if (b$live) {
-      noisyDrop_drop(b);
-    }
-    if (a$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
-  c$live = false;
-  try {
-    if (b$live) {
-      noisyDrop_drop(b);
-    }
-  } catch (error) {
-    if (a$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
-  b$live = false;
-  if (a$live) {
-    noisyDrop_drop(a);
   }
   a$live = false;
   return result;
@@ -178,14 +157,10 @@ function split(items, keep) {
     for (const item of rest) {
       noisyDrop_drop(item);
     }
-  } catch (error) {
+  } finally {
     if (a$live) {
       noisyDrop_drop(a);
     }
-    throw error;
-  }
-  if (a$live) {
-    noisyDrop_drop(a);
   }
   a$live = false;
   return result;
@@ -202,14 +177,10 @@ function tail(items) {
 function consume(items) {
   try {
     console.log(`consumed ${items.length}`);
-  } catch (error) {
+  } finally {
     for (const item of items) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  for (const item of items) {
-    noisyDrop_drop(item);
   }
 }
 
@@ -240,17 +211,11 @@ function either(items, split) {
   }
   try {
     console.log("end of either");
-  } catch (error) {
+  } finally {
     if (items$live) {
       for (const item of items.slice(1, 3)) {
         noisyDrop_drop(item);
       }
-    }
-    throw error;
-  }
-  if (items$live) {
-    for (const item of items.slice(1, 3)) {
-      noisyDrop_drop(item);
     }
   }
   items$live = false;
@@ -283,217 +248,64 @@ function both(items, first) {
     dropped = (dropped + 2) | 0;
   }
   try {
-    console.log(`end of both ${dropped}`);
-  } catch (error) {
-    if (c$live) {
-      noisyDrop_drop(c);
+    try {
+      try {
+        console.log(`end of both ${dropped}`);
+      } finally {
+        if (c$live) {
+          noisyDrop_drop(c);
+        }
+      }
+      c$live = false;
+    } finally {
+      if (a$live) {
+        noisyDrop_drop(a);
+      }
     }
-    if (a$live) {
-      noisyDrop_drop(a);
-    }
+    a$live = false;
+  } finally {
     noisyDrop_drop(items[1]);
-    throw error;
   }
-  try {
-    if (c$live) {
-      noisyDrop_drop(c);
-    }
-  } catch (error) {
-    if (a$live) {
-      noisyDrop_drop(a);
-    }
-    noisyDrop_drop(items[1]);
-    throw error;
-  }
-  c$live = false;
-  try {
-    if (a$live) {
-      noisyDrop_drop(a);
-    }
-  } catch (error) {
-    noisyDrop_drop(items[1]);
-    throw error;
-  }
-  a$live = false;
-  noisyDrop_drop(items[1]);
 }
 
 function main() {
   const x = pick([["a"], ["b"], ["c"], ["d"]], 1);
   try {
     console.log(`picked ${x[0]}`);
-  } catch (error) {
-    noisyDrop_drop(x);
-    throw error;
-  }
-  let m;
-  try {
-    m = middle([["1"], ["2"], ["3"], ["4"], ["5"], ["6"]]);
-  } catch (error) {
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    console.log(`middle ${m[0]}`);
-  } catch (error) {
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    some([["p"], ["q"], ["r"], ["s"], ["t"]], true);
-  } catch (error) {
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    some([["v"], ["w"], ["x"], ["y"], ["z"]], false);
-  } catch (error) {
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  let a;
-  try {
-    a = split([["e"], ["f"], ["g"], ["h"]], true);
-  } catch (error) {
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  let new$;
-  try {
-    new$ = split([["i"], ["j"], ["k"], ["l"]], false);
-  } catch (error) {
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    console.log(`split ${a[0]} ${new$[0]}`);
-  } catch (error) {
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  let t;
-  try {
-    t = tail([["m"], ["n"], ["o"], ["u"]]);
-  } catch (error) {
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    console.log(`tail ${t.length}`);
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
+    const m = middle([["1"], ["2"], ["3"], ["4"], ["5"], ["6"]]);
+    try {
+      console.log(`middle ${m[0]}`);
+      some([["p"], ["q"], ["r"], ["s"], ["t"]], true);
+      some([["v"], ["w"], ["x"], ["y"], ["z"]], false);
+      const a = split([["e"], ["f"], ["g"], ["h"]], true);
+      try {
+        const new$ = split([["i"], ["j"], ["k"], ["l"]], false);
+        try {
+          console.log(`split ${a[0]} ${new$[0]}`);
+          const t = tail([["m"], ["n"], ["o"], ["u"]]);
+          try {
+            console.log(`tail ${t.length}`);
+            either([["E1"], ["E2"], ["E3"]], true);
+            either([["F1"], ["F2"], ["F3"]], false);
+            both([["G1"], ["G2"], ["G3"]], true);
+            both([["H1"], ["H2"], ["H3"]], false);
+            console.log("end");
+          } finally {
+            for (const item of t) {
+              noisyDrop_drop(item);
+            }
+          }
+        } finally {
+          noisyDrop_drop(new$);
+        }
+      } finally {
+        noisyDrop_drop(a);
+      }
+    } finally {
+      noisyDrop_drop(m);
     }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
+  } finally {
     noisyDrop_drop(x);
-    throw error;
   }
-  try {
-    either([["E1"], ["E2"], ["E3"]], true);
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    either([["F1"], ["F2"], ["F3"]], false);
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    both([["G1"], ["G2"], ["G3"]], true);
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    both([["H1"], ["H2"], ["H3"]], false);
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    for (const item of t) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    noisyDrop_drop(new$);
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(new$);
-  } catch (error) {
-    noisyDrop_drop(a);
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(a);
-  } catch (error) {
-    noisyDrop_drop(m);
-    noisyDrop_drop(x);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(m);
-  } catch (error) {
-    noisyDrop_drop(x);
-    throw error;
-  }
-  noisyDrop_drop(x);
 }
 //# sourceMappingURL=case.js.map

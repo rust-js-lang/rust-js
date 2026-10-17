@@ -137,11 +137,9 @@ function main() {
   const n = Buf.with_capacity(2, 4, 4);
   try {
     Buf.push(n, 7, 4, 4);
-  } catch (error) {
+  } finally {
     bufDrop_drop(n, 4, 4);
-    throw error;
   }
-  bufDrop_drop(n, 4, 4);
   const l = layout_array(3, 8, 8);
   const value = $layout(8, 3);
   console.log(`${$debugLayout(l)} ${l.size} ${value.TAG === "Err"}`);

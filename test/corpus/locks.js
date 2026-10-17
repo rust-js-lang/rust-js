@@ -21,11 +21,9 @@ function record(stats, name) {
   s.value.hits = (s.value.hits + 1) >>> 0;
   try {
     s.value.names.push(name);
-  } catch (error) {
+  } finally {
     $unborrow(s);
-    throw error;
   }
-  $unborrow(s);
 }
 
 function total(shared, f) {
@@ -33,11 +31,9 @@ function total(shared, f) {
   let result;
   try {
     result = f(value.value);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   return result;
 }
 
@@ -52,11 +48,9 @@ function main() {
   const value$1 = $lock(stats, true);
   try {
     console.log(`${hits} [${value$1.value.names.map((item) => $debugStr(item)).join(", ")}]`);
-  } catch (error) {
+  } finally {
     $unborrow(value$1);
-    throw error;
   }
-  $unborrow(value$1);
   const count = { value: 5 };
   const value$2 = $lock(count, true);
   value$2.value = (value$2.value + 2) >>> 0;
@@ -73,22 +67,18 @@ function main() {
   const value$5 = $lock(config, true);
   try {
     value$5.value.push(3);
-  } catch (error) {
+  } finally {
     $unborrow(value$5);
-    throw error;
   }
-  $unborrow(value$5);
   const value$6 = $lockRead(config, true);
   const len = value$6.value.length;
   $unborrow(value$6);
   const value$7 = $lockRead(config, true);
   try {
     console.log(`[${value$7.value.map((item) => String(item)).join(", ")}] ${len}`);
-  } catch (error) {
+  } finally {
     $unborrow(value$7);
-    throw error;
   }
-  $unborrow(value$7);
   const m = { value: "x" };
   const value$8 = $lock(m, true);
   value$8.value += "y";
@@ -100,30 +90,24 @@ function main() {
   num.value = Math.imul(num.value, 10);
   try {
     console.log(`inside ${num.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(num);
-    throw error;
   }
-  $unborrow(num);
   const value$9 = $lock(counter, true);
   try {
     console.log(`${value$9.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(value$9);
-    throw error;
   }
-  $unborrow(value$9);
   const cell = { value: 1.5 };
   const v = $borrowMut(cell, true);
   v.value += 1;
   const r = v.value;
   try {
     console.log(`${$displayF64(r)} ${$displayF64(v.value)}`);
-  } catch (error) {
+  } finally {
     $unborrow(v);
-    throw error;
   }
-  $unborrow(v);
   const text = { value: "a" };
   const w = $lock(text, true);
   w.value += "b";
@@ -136,11 +120,9 @@ function main() {
   first.value = (first.value + 10) | 0;
   try {
     console.log(`${first.value} ${i}`);
-  } catch (error) {
+  } finally {
     $unborrow(first);
-    throw error;
   }
-  $unborrow(first);
   console.log(
     `[${slots
       .map((m) => {
@@ -153,26 +135,15 @@ function main() {
   );
   const r$1 = $lockRead(text, true);
   const value$10 = $byteLen(r$1.value);
-  let tmp;
   try {
-    tmp = $borrow(cell, true);
-  } catch (error) {
+    const tmp = $borrow(cell, true);
+    try {
+      console.log(`${r$1.value} ${value$10} ${$displayF64(tmp.value)}`);
+    } finally {
+      $unborrow(tmp);
+    }
+  } finally {
     $unborrow(r$1);
-    throw error;
   }
-  try {
-    console.log(`${r$1.value} ${value$10} ${$displayF64(tmp.value)}`);
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(r$1);
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    $unborrow(r$1);
-    throw error;
-  }
-  $unborrow(r$1);
 }
 //# sourceMappingURL=case.js.map

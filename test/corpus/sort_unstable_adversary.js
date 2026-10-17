@@ -89,21 +89,13 @@ function adversary(n, select) {
         candidate = y;
       }
     }
-    let tmp$2;
-    try {
-      tmp$2 = $index(v.value, x);
-    } catch (error) {
-      $unborrow(v);
-      throw error;
-    }
     let result;
     try {
-      result = $cmp(tmp$2, $index(v.value, y));
-    } catch (error) {
+      const tmp = $index(v.value, x);
+      result = $cmp(tmp, $index(v.value, y));
+    } finally {
       $unborrow(v);
-      throw error;
     }
-    $unborrow(v);
     return result;
   };
   const items = $range(0, n);

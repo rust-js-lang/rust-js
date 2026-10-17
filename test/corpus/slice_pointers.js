@@ -85,11 +85,9 @@ function dropped_tail() {
   }
   try {
     console.log(`${first[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(first);
-    throw error;
   }
-  noisyDrop_drop(first);
 }
 
 function main() {

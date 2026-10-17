@@ -48,224 +48,51 @@ function stamp(zone, at, name, ZZone) {
 
 function describe(zone, ZZone) {
   const first = ZZone.offset(zone, "first");
-  let tmp;
   try {
-    tmp = ZZone.show(first);
-  } catch (error) {
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
+    const tmp = ZZone.show(first);
     console.log(`made ${tmp}`);
-  } catch (error) {
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let second;
-  try {
-    second = stamp(zone, 7n, "second", ZZone);
-  } catch (error) {
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let tmp$1;
-  let tmp$2;
-  try {
-    tmp$1 = [undefined, ZZone.show(second.offset)];
-    tmp$2 = second.at;
-  } catch (error) {
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log(`stamp ${tmp$2} ${tmp$1[1]}`);
-  } catch (error) {
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let maybe;
-  try {
-    maybe = $some(ZZone.offset(zone, "maybe"));
-  } catch (error) {
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log(`some ${maybe != null}`);
-  } catch (error) {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
+    const second = stamp(zone, 7n, "second", ZZone);
+    try {
+      const tmp = [undefined, ZZone.show(second.offset)];
+      const tmp$1 = second.at;
+      console.log(`stamp ${tmp$1} ${tmp[1]}`);
+      const maybe = $some(ZZone.offset(zone, "maybe"));
+      try {
+        console.log(`some ${maybe != null}`);
+        const inner = ZZone.offset(zone, "inner");
+        try {
+          const tmp = ZZone.show(inner);
+          console.log(`inner ${tmp}`);
+        } finally {
+          ZZone.$dropOffset?.(inner);
+        }
+        let replaced = ZZone.offset(zone, "old");
+        try {
+          const tmp = ZZone.show(replaced);
+          console.log(`was ${tmp}`);
+          const tmp$1 = ZZone.offset(zone, "new");
+          try {
+            ZZone.$dropOffset?.(replaced);
+          } finally {
+            replaced = tmp$1;
+          }
+          const tmp$2 = ZZone.show(replaced);
+          console.log(`replaced ${tmp$2}`);
+          console.log("end");
+        } finally {
+          ZZone.$dropOffset?.(replaced);
+        }
+      } finally {
+        if (maybe != null) {
+          ZZone.$dropOffset?.($someValue(maybe));
+        }
+      }
+    } finally {
+      ZZone.$dropOffset?.(second.offset);
     }
-    ZZone.$dropOffset?.(second.offset);
+  } finally {
     ZZone.$dropOffset?.(first);
-    throw error;
   }
-  let inner;
-  try {
-    inner = ZZone.offset(zone, "inner");
-  } catch (error) {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = ZZone.show(inner);
-  } catch (error) {
-    ZZone.$dropOffset?.(inner);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log(`inner ${tmp$3}`);
-  } catch (error) {
-    ZZone.$dropOffset?.(inner);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    ZZone.$dropOffset?.(inner);
-  } catch (error) {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let replaced;
-  try {
-    replaced = ZZone.offset(zone, "old");
-  } catch (error) {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = ZZone.show(replaced);
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log(`was ${tmp$4}`);
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = ZZone.offset(zone, "new");
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    ZZone.$dropOffset?.(replaced);
-  } catch (error) {
-    replaced = tmp$5;
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  replaced = tmp$5;
-  let tmp$6;
-  try {
-    tmp$6 = ZZone.show(replaced);
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log(`replaced ${tmp$6}`);
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    ZZone.$dropOffset?.(replaced);
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    ZZone.$dropOffset?.(replaced);
-  } catch (error) {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    if (maybe != null) {
-      ZZone.$dropOffset?.($someValue(maybe));
-    }
-  } catch (error) {
-    ZZone.$dropOffset?.(second.offset);
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  try {
-    ZZone.$dropOffset?.(second.offset);
-  } catch (error) {
-    ZZone.$dropOffset?.(first);
-    throw error;
-  }
-  ZZone.$dropOffset?.(first);
 }
 
 function loudSource() {
@@ -283,11 +110,9 @@ function take(source, SSource) {
   const _item = SSource.make(source);
   try {
     console.log("taken");
-  } catch (error) {
+  } finally {
     SSource.$dropItem?.(_item);
-    throw error;
   }
-  SSource.$dropItem?.(_item);
 }
 
 function main() {
@@ -303,16 +128,9 @@ function main() {
   const source = { impl: loudSource() };
   try {
     take(source, { make: (object) => object.impl.make(object.value), $dropItem: noisyDrop_drop });
-  } catch (error) {
-    noisyDrop_drop(kept.offset);
-    throw error;
-  }
-  try {
     take(undefined, loudSource());
-  } catch (error) {
+  } finally {
     noisyDrop_drop(kept.offset);
-    throw error;
   }
-  noisyDrop_drop(kept.offset);
 }
 //# sourceMappingURL=case.js.map

@@ -23,11 +23,9 @@ function first(items, dropIIntoIter) {
   let result;
   try {
     result = $nextSome(it);
-  } catch (error) {
+  } finally {
     dropIIntoIter?.(it);
-    throw error;
   }
-  dropIIntoIter?.(it);
   return result;
 }
 
@@ -150,238 +148,89 @@ function main() {
   const value = (l) => l[0];
   try {
     console.log(`first ${found != null ? value(found) : "none"}`);
-  } catch (error) {
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const value$1 = [["d"], ["e"], ["f"]];
-  let rest$1;
-  try {
-    rest$1 = $iter(value$1);
-  } catch (error) {
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  let found$1;
-  try {
-    found$1 = relay($iterator({ rest: rest$1 }, drainIterator_next), (it) => {
+    const value$1 = [["d"], ["e"], ["f"]];
+    const rest = $iter(value$1);
+    const found$1 = relay($iterator({ rest }, drainIterator_next), (it) => {
       drainDrop_drop(it.of);
       for (const item of it.of.rest) {
         loudDrop_drop(item);
       }
     });
-  } catch (error) {
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const value$2 = (l) => l[0];
-  try {
-    console.log(`relayed ${found$1 != null ? value$2(found$1) : "none"}`);
-  } catch (error) {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const value$3 = [["g"], ["h"]];
-  let tmp;
-  try {
-    tmp = $iter(value$3);
-  } catch (error) {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  let rest;
-  try {
-    rest = skip_one(
-      tmp,
-      { next: $next },
-      (intoIter) => {
-        for (const item of intoIter) {
+    const value$2 = (l) => l[0];
+    try {
+      console.log(`relayed ${found$1 != null ? value$2(found$1) : "none"}`);
+      const value = [["g"], ["h"]];
+      const tmp = $iter(value);
+      const rest = skip_one(
+        tmp,
+        { next: $next },
+        (intoIter) => {
+          for (const item of intoIter) {
+            loudDrop_drop(item);
+          }
+        },
+        loudDrop_drop,
+      );
+      try {
+        console.log(`${rest.end - rest.at} left`);
+      } finally {
+        for (const item of rest) {
           loudDrop_drop(item);
         }
-      },
-      loudDrop_drop,
-    );
-  } catch (error) {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${rest.end - rest.at} left`);
-  } catch (error) {
-    for (const item of rest) {
-      loudDrop_drop(item);
-    }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  try {
-    for (const item of rest) {
-      loudDrop_drop(item);
-    }
-  } catch (error) {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const bag = [[]];
-  const value$4 = [["i"], ["j"], ["stop"], ["k"]];
-  let rest$2;
-  try {
-    rest$2 = $iter(value$4);
-  } catch (error) {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
-    }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  try {
-    bagExtendLoud_extend(
-      bag,
-      $iterator({ rest: rest$2 }, drainIterator_next),
-      (it) => {
-        drainDrop_drop(it.of);
-        for (const item of it.of.rest) {
+      }
+      const bag = [[]];
+      const value$1 = [["i"], ["j"], ["stop"], ["k"]];
+      try {
+        const rest = $iter(value$1);
+        bagExtendLoud_extend(
+          bag,
+          $iterator({ rest }, drainIterator_next),
+          (it) => {
+            drainDrop_drop(it.of);
+            for (const item of it.of.rest) {
+              loudDrop_drop(item);
+            }
+          },
+          (it) => {
+            drainDrop_drop(it.of);
+            for (const item of it.of.rest) {
+              loudDrop_drop(item);
+            }
+          },
+        );
+        const length = bag[0].length;
+        console.log(`bag ${length}`);
+        const value = [["l"], ["stop"], ["m"]];
+        bagExtendLoud_extend(
+          bag,
+          value,
+          (vec) => {
+            for (const item of vec) {
+              loudDrop_drop(item);
+            }
+          },
+          (intoIter) => {
+            for (const item of intoIter) {
+              loudDrop_drop(item);
+            }
+          },
+        );
+        const length$1 = bag[0].length;
+        console.log(`bag ${length$1}`);
+      } finally {
+        for (const item of bag[0]) {
           loudDrop_drop(item);
         }
-      },
-      (it) => {
-        drainDrop_drop(it.of);
-        for (const item of it.of.rest) {
-          loudDrop_drop(item);
-        }
-      },
-    );
-  } catch (error) {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
+      }
+    } finally {
+      if (found$1 != null) {
+        loudDrop_drop(found$1);
+      }
     }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
+  } finally {
     if (found != null) {
       loudDrop_drop(found);
     }
-    throw error;
-  }
-  const length = bag[0].length;
-  try {
-    console.log(`bag ${length}`);
-  } catch (error) {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
-    }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const value$5 = [["l"], ["stop"], ["m"]];
-  try {
-    bagExtendLoud_extend(
-      bag,
-      value$5,
-      (vec) => {
-        for (const item of vec) {
-          loudDrop_drop(item);
-        }
-      },
-      (intoIter) => {
-        for (const item of intoIter) {
-          loudDrop_drop(item);
-        }
-      },
-    );
-  } catch (error) {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
-    }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  const length$1 = bag[0].length;
-  try {
-    console.log(`bag ${length$1}`);
-  } catch (error) {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
-    }
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  try {
-    for (const item of bag[0]) {
-      loudDrop_drop(item);
-    }
-  } catch (error) {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  try {
-    if (found$1 != null) {
-      loudDrop_drop(found$1);
-    }
-  } catch (error) {
-    if (found != null) {
-      loudDrop_drop(found);
-    }
-    throw error;
-  }
-  if (found != null) {
-    loudDrop_drop(found);
   }
 }
 //# sourceMappingURL=case.js.map

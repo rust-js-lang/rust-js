@@ -89,11 +89,9 @@ function main() {
   const _noisy = [1];
   try {
     console.log("pinned");
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_noisy);
-    throw error;
   }
-  noisyDrop_drop(_noisy);
   console.log(`${anyPartialEq_eq(undefined)} ${anyPartialEq_eq(undefined)}`);
   console.log("end");
 }

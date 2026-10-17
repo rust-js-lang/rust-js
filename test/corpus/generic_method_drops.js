@@ -39,28 +39,16 @@ function logStore() {
 }
 
 function logStore_put(log, item, TDebug, dropT) {
-  let tmp;
+  let result;
   try {
-    tmp = TDebug.fmt(item);
-  } catch (error) {
-    dropT?.(item);
-    throw error;
-  }
-  try {
+    const tmp = TDebug.fmt(item);
     log[0].push(tmp);
-  } catch (error) {
-    dropT?.(item);
-    throw error;
-  }
-  const length = log[0].length;
-  try {
+    const length = log[0].length;
     console.log(`put ${length}`);
-  } catch (error) {
+    result = log[0].length;
+  } finally {
     dropT?.(item);
-    throw error;
   }
-  const result = log[0].length;
-  dropT?.(item);
   return result;
 }
 
@@ -95,11 +83,9 @@ function fill(store, SStore) {
   const back = SStore.keep(store, ["kept"], noisyDebug(), noisyDrop_drop);
   try {
     console.log(`got ${noisyDebug_fmt(back)} back`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(back);
-    throw error;
   }
-  noisyDrop_drop(back);
 }
 
 function main() {

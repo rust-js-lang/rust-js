@@ -36,1268 +36,381 @@ function main() {
   let v = [[3], [1], [2]];
   try {
     $insertAt(v, 1, [4]);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = ids(v);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
+    const tmp = ids(v);
     console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let removed;
-  try {
-    removed = $removeAt(v, 0);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = [undefined, ids(v)];
-  } catch (error) {
-    noisyDrop_drop(removed);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`removed ${removed[0]} [${tmp$1[1].map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(removed);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(removed);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let swapped;
-  try {
-    swapped = $swapRemove(v, 0);
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = [undefined, ids(v)];
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`swapped ${swapped[0]} [${tmp$2[1].map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    v.push([7]);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    v.push([5]);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    v.reverse();
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = ids(v);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$3.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value = (n) => n[0];
-  try {
-    v.sort((a, b) => $cmp(value(a), value(b)));
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = ids(v);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$4.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$1 = (a, b) => $cmp(b[0], a[0]);
-  try {
-    v.sort(value$1);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = ids(v);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$5.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$2 = (n) => n[0];
-  try {
-    $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $rotateLeft(v, 1, "mid");
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = ids(v);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$6.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tail;
-  try {
-    tail = $splitOff(v, 2);
-  } catch (error) {
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$7;
-  try {
-    tmp$7 = ids(v);
-  } catch (error) {
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = [undefined, ids(tail)];
-  } catch (error) {
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(
-      `[${tmp$7.map((item) => String(item)).join(", ")}] [${tmp$8[1].map((item) => String(item)).join(", ")}]`,
-    );
-  } catch (error) {
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const more = [[9]];
-  try {
-    $append(v, more);
-  } catch (error) {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$9;
-  let tmp$10;
-  try {
-    tmp$9 = ids(v);
-    tmp$10 = more;
-  } catch (error) {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const length = tmp$10.length;
-  try {
-    console.log(`[${tmp$9.map((item) => String(item)).join(", ")}] ${length}`);
-  } catch (error) {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of tail) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const taken = v;
-  v = [];
-  let tmp$11;
-  let tmp$12;
-  try {
-    tmp$11 = ids(taken);
-    tmp$12 = v;
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const length$1 = tmp$12.length;
-  try {
-    console.log(`taken [${tmp$11.map((item) => String(item)).join(", ")}] left ${length$1}`);
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(swapped);
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(swapped);
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let w;
-  try {
-    w = $range(10, 20).map((value) => [value]);
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$3 = (n) => {
-    console.log(`keep ${n[0]}?`);
-    return n[0] % 3 !== 0;
-  };
-  try {
-    $retain(w, value$3, noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$13;
-  try {
-    tmp$13 = ids(w);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$13.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$4 = (n) => {
-    console.log(`key ${n[0]}`);
-    return (n[0] / 4) >>> 0;
-  };
-  try {
-    $dedupBy(w, (a, b) => value$4(a) === value$4(b), noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$14;
-  try {
-    tmp$14 = ids(w);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$14.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $truncate(w, 3, noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$15;
-  try {
-    tmp$15 = ids(w);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$15.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $resizeWith(w, 5, () => [30], noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $resizeWith(w, 2, () => [31], noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$16;
-  try {
-    tmp$16 = ids(w);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$16.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $truncate(w, 0, noisyDrop_drop);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const length$2 = w.length;
-  try {
-    console.log(`cleared ${length$2}`);
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const deque = [];
-  try {
-    deque.push([40]);
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    deque.push([41]);
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    deque.push([42]);
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    deque.unshift([39]);
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $dequeInsert(deque, 1, [38]);
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let front;
-  try {
-    front = deque.shift();
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let second;
-  try {
-    second = $removeOpt(deque, 1);
-  } catch (error) {
-    if (front != null) {
-      noisyDrop_drop(front);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$5 = (n) => n[0];
-  let tmp$17;
-  try {
-    tmp$17 = front ? value$5(front) : undefined;
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    if (front != null) {
-      noisyDrop_drop(front);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    const value = second ? second[0] : undefined;
-    console.log(
-      `${tmp$17 == null ? "None" : `Some(${tmp$17})`} ${value == null ? "None" : `Some(${value})`}`,
-    );
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    if (front != null) {
-      noisyDrop_drop(front);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (front != null) {
-      noisyDrop_drop(front);
-    }
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$6 = (n) => n[0] !== 41;
-  try {
-    $retain(deque, value$6, noisyDrop_drop);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $truncate(deque, 1, noisyDrop_drop);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const length$3 = deque.length;
-  try {
-    console.log(`deque ${length$3}`);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $truncate(deque, 0, noisyDrop_drop);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let items;
-  try {
-    items = $range(50, 53).map((value) => [value]);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$18;
-  let tmp$19;
-  try {
-    tmp$18 = $iter(items);
-    tmp$19 = (n) => {
-      try {
-        console.log(`pass ${n[0]}`);
-      } catch (error) {
-        noisyDrop_drop(n);
-        throw error;
+    const removed = $removeAt(v, 0);
+    try {
+      const tmp = [undefined, ids(v)];
+      console.log(`removed ${removed[0]} [${tmp[1].map((item) => String(item)).join(", ")}]`);
+    } finally {
+      noisyDrop_drop(removed);
+    }
+    const swapped = $swapRemove(v, 0);
+    let tmp$1;
+    try {
+      tmp$1 = [undefined, ids(v)];
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`swapped ${swapped[0]} [${tmp$1[1].map((item) => String(item)).join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      v.push([7]);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      v.push([5]);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      v.reverse();
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tmp$2;
+    try {
+      tmp$2 = ids(v);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$2.map((item) => String(item)).join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const value = (n) => n[0];
+    try {
+      v.sort((a, b) => $cmp(value(a), value(b)));
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tmp$3;
+    try {
+      tmp$3 = ids(v);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$3.map((item) => String(item)).join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const value$1 = (a, b) => $cmp(b[0], a[0]);
+    try {
+      v.sort(value$1);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tmp$4;
+    try {
+      tmp$4 = ids(v);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$4.map((item) => String(item)).join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const value$2 = (n) => n[0];
+    try {
+      $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      $rotateLeft(v, 1, "mid");
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tmp$5;
+    try {
+      tmp$5 = ids(v);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$5.map((item) => String(item)).join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tail;
+    try {
+      tail = $splitOff(v, 2);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    let tmp$6;
+    try {
+      tmp$6 = ids(v);
+    } catch (error) {
+      for (const item of tail) {
+        noisyDrop_drop(item);
       }
-      return n;
-    };
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
+      noisyDrop_drop(swapped);
+      throw error;
     }
-    for (const item of deque) {
-      noisyDrop_drop(item);
+    let tmp$7;
+    try {
+      tmp$7 = [undefined, ids(tail)];
+    } catch (error) {
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
     }
-    for (const item of w) {
-      noisyDrop_drop(item);
+    try {
+      console.log(
+        `[${tmp$6.map((item) => String(item)).join(", ")}] [${tmp$7[1].map((item) => String(item)).join(", ")}]`,
+      );
+    } catch (error) {
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
     }
-    for (const item of taken) {
-      noisyDrop_drop(item);
+    const more = [[9]];
+    try {
+      $append(v, more);
+    } catch (error) {
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
     }
-    for (const item of more) {
-      noisyDrop_drop(item);
+    let tmp$8;
+    let tmp$9;
+    try {
+      tmp$8 = ids(v);
+      tmp$9 = more;
+    } catch (error) {
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
     }
+    const length = tmp$9.length;
+    try {
+      console.log(`[${tmp$8.map((item) => String(item)).join(", ")}] ${length}`);
+    } catch (error) {
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
+    } catch (error) {
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const taken = v;
+    v = [];
+    let tmp$10;
+    let tmp$11;
+    try {
+      tmp$10 = ids(taken);
+      tmp$11 = v;
+    } catch (error) {
+      for (const item of taken) {
+        noisyDrop_drop(item);
+      }
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const length$1 = tmp$11.length;
+    try {
+      console.log(`taken [${tmp$10.map((item) => String(item)).join(", ")}] left ${length$1}`);
+    } catch (error) {
+      for (const item of taken) {
+        noisyDrop_drop(item);
+      }
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      try {
+        noisyDrop_drop(swapped);
+        const w = $range(10, 20).map((value) => [value]);
+        const value = (n) => {
+          console.log(`keep ${n[0]}?`);
+          return n[0] % 3 !== 0;
+        };
+        try {
+          $retain(w, value, noisyDrop_drop);
+          const tmp = ids(w);
+          console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+          const value$1 = (n) => {
+            console.log(`key ${n[0]}`);
+            return (n[0] / 4) >>> 0;
+          };
+          $dedupBy(w, (a, b) => value$1(a) === value$1(b), noisyDrop_drop);
+          const tmp$1 = ids(w);
+          console.log(`[${tmp$1.map((item) => String(item)).join(", ")}]`);
+          $truncate(w, 3, noisyDrop_drop);
+          const tmp$2 = ids(w);
+          console.log(`[${tmp$2.map((item) => String(item)).join(", ")}]`);
+          $resizeWith(w, 5, () => [30], noisyDrop_drop);
+          $resizeWith(w, 2, () => [31], noisyDrop_drop);
+          const tmp$3 = ids(w);
+          console.log(`[${tmp$3.map((item) => String(item)).join(", ")}]`);
+          $truncate(w, 0, noisyDrop_drop);
+          const length = w.length;
+          console.log(`cleared ${length}`);
+          const deque = [];
+          try {
+            deque.push([40]);
+            deque.push([41]);
+            deque.push([42]);
+            deque.unshift([39]);
+            $dequeInsert(deque, 1, [38]);
+            const front = deque.shift();
+            let second;
+            try {
+              second = $removeOpt(deque, 1);
+            } catch (error) {
+              if (front != null) {
+                noisyDrop_drop(front);
+              }
+              throw error;
+            }
+            const value = (n) => n[0];
+            let tmp;
+            try {
+              tmp = front ? value(front) : undefined;
+            } catch (error) {
+              if (second != null) {
+                noisyDrop_drop(second);
+              }
+              if (front != null) {
+                noisyDrop_drop(front);
+              }
+              throw error;
+            }
+            try {
+              const value = second ? second[0] : undefined;
+              console.log(
+                `${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
+              );
+            } catch (error) {
+              if (second != null) {
+                noisyDrop_drop(second);
+              }
+              if (front != null) {
+                noisyDrop_drop(front);
+              }
+              throw error;
+            }
+            try {
+              if (front != null) {
+                noisyDrop_drop(front);
+              }
+              const value = (n) => n[0] !== 41;
+              $retain(deque, value, noisyDrop_drop);
+              $truncate(deque, 1, noisyDrop_drop);
+              const length = deque.length;
+              console.log(`deque ${length}`);
+              $truncate(deque, 0, noisyDrop_drop);
+              const items = $range(50, 53).map((value) => [value]);
+              const tmp = $iter(items);
+              const tmp$1 = (n) => {
+                try {
+                  console.log(`pass ${n[0]}`);
+                } catch (error) {
+                  noisyDrop_drop(n);
+                  throw error;
+                }
+                return n;
+              };
+              const tmp$2 = tmp.map((item) => tmp$1(item));
+              const last = $lastDropping(tmp$2, noisyDrop_drop);
+              const value$1 = (n) => n[0];
+              try {
+                const value = last ? value$1(last) : undefined;
+                console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+              } finally {
+                if (last != null) {
+                  noisyDrop_drop(last);
+                }
+              }
+              console.log("end");
+            } finally {
+              if (second != null) {
+                noisyDrop_drop(second);
+              }
+            }
+          } finally {
+            for (const item of deque) {
+              noisyDrop_drop(item);
+            }
+          }
+        } finally {
+          for (const item of w) {
+            noisyDrop_drop(item);
+          }
+        }
+      } finally {
+        for (const item of taken) {
+          noisyDrop_drop(item);
+        }
+      }
+    } finally {
+      for (const item of more) {
+        noisyDrop_drop(item);
+      }
+    }
+  } finally {
     for (const item of v) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  let tmp$20;
-  try {
-    tmp$20 = tmp$18.map((item) => tmp$19(item));
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let last;
-  try {
-    last = $lastDropping(tmp$20, noisyDrop_drop);
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$7 = (n) => n[0];
-  try {
-    const value = last ? value$7(last) : undefined;
-    console.log(`last ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    if (last != null) {
-      noisyDrop_drop(last);
-    }
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (last != null) {
-      noisyDrop_drop(last);
-    }
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (second != null) {
-      noisyDrop_drop(second);
-    }
-  } catch (error) {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of deque) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of w) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of taken) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of more) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of v) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of v) {
-    noisyDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

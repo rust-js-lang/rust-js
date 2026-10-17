@@ -51,31 +51,21 @@ function main() {
   if (top) {
     try {
       $peekMutTop(top, true).value = 0;
-    } catch (error) {
+    } finally {
       $peekMutDrop(top);
-      throw error;
     }
-    $peekMutDrop(top);
   } else if (top) {
     $peekMutDrop(top);
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const top$1 = $unwrap($peekMut(heap, $cmp));
-  let tmp;
   try {
-    tmp = $peekMutTop(top$1, true);
-  } catch (error) {
-    $peekMutDrop(top$1);
-    throw error;
-  }
-  tmp.value = (tmp.value - 10) | 0;
-  try {
+    const tmp = $peekMutTop(top$1, true);
+    tmp.value = (tmp.value - 10) | 0;
     console.log(`${top$1.heap[0]} PeekMut(${top$1.heap[0]})`);
-  } catch (error) {
+  } finally {
     $peekMutDrop(top$1);
-    throw error;
   }
-  $peekMutDrop(top$1);
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const top$2 = $unwrap($peekMut(heap, $cmp));
   console.log(`popped ${$peekMutPop(top$2)}`);
@@ -88,11 +78,9 @@ function main() {
   if (top$3) {
     try {
       console.log(`top ${top$3.heap[0][0]}`);
-    } catch (error) {
+    } finally {
       $peekMutDrop(top$3);
-      throw error;
     }
-    $peekMutDrop(top$3);
   } else if (top$3) {
     $peekMutDrop(top$3);
   }
@@ -101,25 +89,19 @@ function main() {
   if (top$4) {
     try {
       $peekMutTop(top$4)[0] = 1;
-    } catch (error) {
+    } finally {
       $peekMutDrop(top$4);
-      throw error;
     }
-    $peekMutDrop(top$4);
   } else if (top$4) {
     $peekMutDrop(top$4);
   }
   const value = $peekMut([], $cmp);
   try {
     console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!value}`);
-  } catch (error) {
+  } finally {
     if (value != null) {
       $peekMutDrop(value);
     }
-    throw error;
-  }
-  if (value != null) {
-    $peekMutDrop(value);
   }
 }
 //# sourceMappingURL=case.js.map

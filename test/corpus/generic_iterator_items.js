@@ -56,10 +56,8 @@ function main() {
   const loud = [9];
   try {
     console.log(`${loud[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(loud);
-    throw error;
   }
-  noisyDrop_drop(loud);
 }
 //# sourceMappingURL=case.js.map

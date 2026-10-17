@@ -1612,161 +1612,51 @@ function main() {
         tmp$0$0$live = false;
       }
       try {
-        console.log("end");
-      } catch (error) {
-        if (err.TAG === "Ok") {
-          dDrop_drop(err._0);
+        try {
+          try {
+            try {
+              try {
+                try {
+                  try {
+                    try {
+                      console.log("end");
+                    } finally {
+                      if (err.TAG === "Ok") {
+                        dDrop_drop(err._0);
+                      }
+                    }
+                  } finally {
+                    if (ok.TAG === "Ok") {
+                      dDrop_drop(ok._0);
+                    }
+                  }
+                } finally {
+                  dDrop_drop(read);
+                }
+              } finally {
+                if (nothing.TAG === "One") {
+                  dDrop_drop(nothing._0);
+                }
+              }
+            } finally {
+              if (one.TAG === "One") {
+                dDrop_drop(one._0);
+              }
+            }
+          } finally {
+            if (closure != null) {
+              dDrop_drop(closure);
+            }
+          }
+        } finally {
+          if (dropped != null) {
+            dDrop_drop(dropped);
+          }
         }
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
+      } finally {
         if (kept != null) {
           dDrop_drop(kept);
         }
-        throw error;
-      }
-      try {
-        if (err.TAG === "Ok") {
-          dDrop_drop(err._0);
-        }
-      } catch (error) {
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-      } catch (error) {
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        dDrop_drop(read);
-      } catch (error) {
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-      } catch (error) {
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-      } catch (error) {
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-      } catch (error) {
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      try {
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-      } catch (error) {
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      if (kept != null) {
-        dDrop_drop(kept);
       }
       return;
     }

@@ -189,21 +189,17 @@ export async function compile(loaded, sources, rootFile, test) {
       const value = $borrowMut(stdoutLines, true);
       try {
         value.value.push(line);
-      } catch (error) {
+      } finally {
         $unborrow(value);
-        throw error;
       }
-      $unborrow(value);
     }),
     ConsoleStdout.lineBuffered((line) => {
       const value = $borrowMut(stderrLines, true);
       try {
         value.value.push(line);
-      } catch (error) {
+      } finally {
         $unborrow(value);
-        throw error;
       }
-      $unborrow(value);
     }),
     new PreopenDirectory("/in", directory_of(sources)),
     outDir,
@@ -290,16 +286,15 @@ export async function compile(loaded, sources, rootFile, test) {
   let tmp;
   let tmp$1;
   let tmp$2;
+  let memory$1;
   try {
     tmp = value.value.join("\n");
     tmp$1 = t1 - t0;
     tmp$2 = t2 - t1;
-  } catch (error) {
+    memory$1 = memory.byteLength;
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  const memory$1 = memory.byteLength;
-  $unborrow(value);
   return {
     exit,
     ok,

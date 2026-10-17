@@ -24,33 +24,17 @@ function subscriptionDrop_drop(subscription) {
   let bus$0$live = true;
   if (bus) {
     bus$0$live = false;
-    let tmp;
     try {
-      tmp = $borrowMut(bus.value, true);
-    } catch (error) {
-      $rcDrop(bus);
-      throw error;
-    }
-    try {
-      tmp.value.handlers.delete(subscription.id);
-    } catch (error) {
-      $unborrow(tmp);
-      $rcDrop(bus);
-      throw error;
-    }
-    try {
-      $unborrow(tmp);
-    } catch (error) {
-      $rcDrop(bus);
-      throw error;
-    }
-    try {
+      const tmp = $borrowMut(bus.value, true);
+      try {
+        tmp.value.handlers.delete(subscription.id);
+      } finally {
+        $unborrow(tmp);
+      }
       console.log(`unsubscribed ${subscription.id}`);
-    } catch (error) {
+    } finally {
       $rcDrop(bus);
-      throw error;
     }
-    $rcDrop(bus);
   } else {
     if (bus) {
       if (bus$0$live) {
@@ -65,20 +49,13 @@ function subscribe(bus, f) {
   const b = $borrowMut(bus.value, true);
   const id = b.value.next;
   b.value.next = (b.value.next + 1) >>> 0;
-  try {
-    b.value.handlers.set(id, f);
-  } catch (error) {
-    $unborrow(b);
-    throw error;
-  }
   let bus$1;
   try {
+    b.value.handlers.set(id, f);
     bus$1 = $downgrade(bus);
-  } catch (error) {
+  } finally {
     $unborrow(b);
-    throw error;
   }
-  $unborrow(b);
   return { id, bus: bus$1 };
 }
 
@@ -152,156 +129,92 @@ const Component = {
 
 function main() {
   const bus = { value: { value: { next: 1, handlers: new Map() } }, strong: 1, weak: 0 };
-  let a;
   try {
-    a = Component.new("a", bus);
-  } catch (error) {
-    $rcDrop(bus);
-    throw error;
-  }
-  let b;
-  try {
-    b = Component.new("b", bus);
-  } catch (error) {
-    for (const item of a.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    publish(bus, "hello");
-  } catch (error) {
-    for (const item of b.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    for (const item of a.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  const length = b.subs.length;
-  try {
-    console.log(`${b.name} has ${length}`);
-  } catch (error) {
-    for (const item of b.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    for (const item of a.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    for (const item of b.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-  } catch (error) {
-    for (const item of a.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    publish(bus, "again");
-  } catch (error) {
-    for (const item of a.subs) {
-      subscriptionDrop_drop(item);
-      $weakDrop(item.bus);
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  const comps = [a];
-  const value = (c) => c.name !== "a";
-  try {
-    $retain(comps, value, (component) => {
-      for (const item of component.subs) {
+    const a = Component.new("a", bus);
+    let b;
+    try {
+      b = Component.new("b", bus);
+    } catch (error) {
+      for (const item of a.subs) {
         subscriptionDrop_drop(item);
         $weakDrop(item.bus);
       }
-    });
-  } catch (error) {
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
+      throw error;
+    }
+    try {
+      publish(bus, "hello");
+    } catch (error) {
+      for (const item of b.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      for (const item of a.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      throw error;
+    }
+    const length = b.subs.length;
+    try {
+      console.log(`${b.name} has ${length}`);
+    } catch (error) {
+      for (const item of b.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      for (const item of a.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      throw error;
+    }
+    try {
+      for (const item of b.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+    } catch (error) {
+      for (const item of a.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      throw error;
+    }
+    try {
+      publish(bus, "again");
+    } catch (error) {
+      for (const item of a.subs) {
+        subscriptionDrop_drop(item);
+        $weakDrop(item.bus);
+      }
+      throw error;
+    }
+    const comps = [a];
+    const value = (c) => c.name !== "a";
+    try {
+      $retain(comps, value, (component) => {
+        for (const item of component.subs) {
+          subscriptionDrop_drop(item);
+          $weakDrop(item.bus);
+        }
+      });
+      publish(bus, "empty");
+      const tmp = $borrow(bus.value, true);
+      try {
+        console.log(`left ${tmp.value.handlers.size}`);
+      } finally {
+        $unborrow(tmp);
+      }
+    } finally {
+      for (const item of comps) {
+        for (const item$1 of item.subs) {
+          subscriptionDrop_drop(item$1);
+          $weakDrop(item$1.bus);
+        }
       }
     }
+  } finally {
     $rcDrop(bus);
-    throw error;
   }
-  try {
-    publish(bus, "empty");
-  } catch (error) {
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
-      }
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $borrow(bus.value, true);
-  } catch (error) {
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
-      }
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    console.log(`left ${tmp.value.handlers.size}`);
-  } catch (error) {
-    $unborrow(tmp);
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
-      }
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
-      }
-    }
-    $rcDrop(bus);
-    throw error;
-  }
-  try {
-    for (const item of comps) {
-      for (const item$1 of item.subs) {
-        subscriptionDrop_drop(item$1);
-        $weakDrop(item$1.bus);
-      }
-    }
-  } catch (error) {
-    $rcDrop(bus);
-    throw error;
-  }
-  $rcDrop(bus);
 }
 //# sourceMappingURL=case.js.map

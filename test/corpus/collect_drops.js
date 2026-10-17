@@ -22,27 +22,10 @@ function main() {
   });
   try {
     console.log(`kept ${long.length}`);
-  } catch (error) {
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const w = [["x"], ["y"], ["z"]];
-  let tmp;
-  let tmp$1;
-  try {
-    tmp = $iter(w);
-    tmp$1 = (n) => n[0] !== "y";
-  } catch (error) {
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = Iterator.from(
+    const w = [["x"], ["y"], ["z"]];
+    const tmp = $iter(w);
+    const tmp$1 = (n) => n[0] !== "y";
+    const tmp$2 = Iterator.from(
       $lazySkipWhile(tmp, (item) => {
         if (tmp$1(item)) {
           noisyDrop_drop(item);
@@ -51,379 +34,88 @@ function main() {
         return false;
       }),
     );
-  } catch (error) {
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let rest;
-  try {
-    rest = tmp$2.toArray();
-  } catch (error) {
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`rest ${rest.length}`);
-  } catch (error) {
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let fragments = [["f1"], ["f2"]];
-  const old = fragments;
-  fragments = [];
-  let tmp$3;
-  let tmp$4;
-  try {
-    tmp$3 = $iter(old);
-    tmp$4 = () => true;
-  } catch (error) {
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = Iterator.from(
-      $lazySkipWhile(tmp$3, (item) => {
-        if (tmp$4(item)) {
-          noisyDrop_drop(item);
-          return true;
-        }
-        return false;
-      }),
-    );
-  } catch (error) {
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let none;
-  try {
-    none = tmp$5.toArray();
-  } catch (error) {
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const length = none.length;
-  const length$1 = fragments.length;
-  try {
-    console.log(`none ${length} ${length$1}`);
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value = [["m1"], ["m2"]];
-  let tmp$6;
-  let tmp$7;
-  try {
-    tmp$6 = $iter(value);
-    tmp$7 = (n) => {
-      const result = n[0];
-      noisyDrop_drop(n);
-      return result;
-    };
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = tmp$6.map((item) => tmp$7(item));
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let names;
-  try {
-    names = tmp$8.toArray();
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$1 = [["p1"], ["p2"], ["p3"]];
-  let tmp$9;
-  let tmp$10;
-  try {
-    tmp$9 = $iter(value$1);
-    tmp$10 = (n) => n[0] !== "p2";
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const keep$1 = (item) => tmp$10(item);
-  let tmp$11;
-  let tmp$12;
-  try {
-    tmp$11 = tmp$9.filter((item) => {
-      if (keep$1(item)) {
-        return true;
-      }
-      noisyDrop_drop(item);
-      return false;
-    });
-    tmp$12 = (n) => {
+    const rest = tmp$2.toArray();
+    try {
+      console.log(`rest ${rest.length}`);
+      let fragments = [["f1"], ["f2"]];
+      const old = fragments;
+      fragments = [];
       try {
-        console.log(`map ${n[0]}`);
-      } catch (error) {
-        noisyDrop_drop(n);
-        throw error;
+        const tmp = $iter(old);
+        const tmp$1 = () => true;
+        const tmp$2 = Iterator.from(
+          $lazySkipWhile(tmp, (item) => {
+            if (tmp$1(item)) {
+              noisyDrop_drop(item);
+              return true;
+            }
+            return false;
+          }),
+        );
+        const none = tmp$2.toArray();
+        const length = none.length;
+        const length$1 = fragments.length;
+        try {
+          console.log(`none ${length} ${length$1}`);
+          const value = [["m1"], ["m2"]];
+          const tmp = $iter(value);
+          const tmp$1 = (n) => {
+            const result = n[0];
+            noisyDrop_drop(n);
+            return result;
+          };
+          const tmp$2 = tmp.map((item) => tmp$1(item));
+          const names = tmp$2.toArray();
+          console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+          const value$1 = [["p1"], ["p2"], ["p3"]];
+          const tmp$3 = $iter(value$1);
+          const tmp$4 = (n) => n[0] !== "p2";
+          const keep = (item) => tmp$4(item);
+          const tmp$5 = tmp$3.filter((item) => {
+            if (keep(item)) {
+              return true;
+            }
+            noisyDrop_drop(item);
+            return false;
+          });
+          const tmp$6 = (n) => {
+            try {
+              console.log(`map ${n[0]}`);
+            } catch (error) {
+              noisyDrop_drop(n);
+              throw error;
+            }
+            return n;
+          };
+          const tmp$7 = tmp$5.map((item) => tmp$6(item));
+          const checked = tmp$7.toArray();
+          try {
+            console.log(`checked ${checked.length}`);
+            console.log("end");
+          } finally {
+            for (const item of checked) {
+              noisyDrop_drop(item);
+            }
+          }
+        } finally {
+          for (const item of none) {
+            noisyDrop_drop(item);
+          }
+        }
+      } finally {
+        for (const item of fragments) {
+          noisyDrop_drop(item);
+        }
       }
-      return n;
-    };
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
+    } finally {
+      for (const item of rest) {
+        noisyDrop_drop(item);
+      }
     }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
+  } finally {
     for (const item of long) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  let tmp$13;
-  try {
-    tmp$13 = tmp$11.map((item) => tmp$12(item));
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let checked;
-  try {
-    checked = tmp$13.toArray();
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`checked ${checked.length}`);
-  } catch (error) {
-    for (const item of checked) {
-      noisyDrop_drop(item);
-    }
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of checked) {
-      noisyDrop_drop(item);
-    }
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of checked) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of none) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of fragments) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of long) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of long) {
-    noisyDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

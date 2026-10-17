@@ -129,37 +129,21 @@ function main() {
     { $drop: noisyDrop_drop },
   );
   try {
-    wrapperDrop_drop(held, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    held.impl.$drop?.(held[1]);
-  } catch (error) {
-    plain.impl.$drop?.(plain.inner);
-    sent.impl.$drop?.(sent.inner);
+    try {
+      try {
+        wrapperDrop_drop(held, (value) => {
+          value.impl.$drop?.(value.value);
+        });
+        held.impl.$drop?.(held[1]);
+        console.log(`end ${x}`);
+      } finally {
+        plain.impl.$drop?.(plain.inner);
+      }
+    } finally {
+      sent.impl.$drop?.(sent.inner);
+    }
+  } finally {
     fat.impl.$drop?.(fat.inner);
-    throw error;
   }
-  try {
-    console.log(`end ${x}`);
-  } catch (error) {
-    plain.impl.$drop?.(plain.inner);
-    sent.impl.$drop?.(sent.inner);
-    fat.impl.$drop?.(fat.inner);
-    throw error;
-  }
-  try {
-    plain.impl.$drop?.(plain.inner);
-  } catch (error) {
-    sent.impl.$drop?.(sent.inner);
-    fat.impl.$drop?.(fat.inner);
-    throw error;
-  }
-  try {
-    sent.impl.$drop?.(sent.inner);
-  } catch (error) {
-    fat.impl.$drop?.(fat.inner);
-    throw error;
-  }
-  fat.impl.$drop?.(fat.inner);
 }
 //# sourceMappingURL=case.js.map

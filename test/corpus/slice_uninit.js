@@ -87,22 +87,11 @@ function main() {
     console.log(
       `[${lists.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] ${$debugStr(value)} ${$debugStr(held[1])}`,
     );
-  } catch (error) {
-    for (const item of src) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
     console.log("end");
-  } catch (error) {
+  } finally {
     for (const item of src) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  for (const item of src) {
-    noisyDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

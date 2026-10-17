@@ -192,11 +192,9 @@ function main() {
   const value$9 = $borrowMut(cell, true);
   try {
     value$9.value.push(2);
-  } catch (error) {
+  } finally {
     $unborrow(value$9);
-    throw error;
   }
-  $unborrow(value$9);
   console.log(`[${cell.value.map((item) => String(item)).join(", ")}] 5`);
   const front = [1];
   const back = [2, 3];

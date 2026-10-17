@@ -22,28 +22,17 @@ function main() {
   value.value = 3;
   $unborrow(value);
   const value$1 = $borrow(limit, true);
-  let tmp;
   try {
-    tmp = $borrow({}, true);
-  } catch (error) {
+    const tmp = $borrow({}, true);
+    try {
+      console.log(
+        `${value$1.value == null ? "None" : `Some(${value$1.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
+      );
+    } finally {
+      $unborrow(tmp);
+    }
+  } finally {
     $unborrow(value$1);
-    throw error;
   }
-  try {
-    console.log(
-      `${value$1.value == null ? "None" : `Some(${value$1.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
-    );
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(value$1);
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    $unborrow(value$1);
-    throw error;
-  }
-  $unborrow(value$1);
 }
 //# sourceMappingURL=case.js.map

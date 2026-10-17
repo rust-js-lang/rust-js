@@ -11,58 +11,43 @@ function noisyDrop_drop(noisy) {
 function by_value(n) {
   try {
     console.log(`by value ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  noisyDrop_drop(n);
 }
 
 function by_ref(_1) {
   const n = _1;
   try {
     console.log(`by ref ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_1);
-    throw error;
   }
-  noisyDrop_drop(_1);
 }
 
 function ignored(_1) {
   try {
     console.log("ignored");
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_1);
-    throw error;
   }
-  noisyDrop_drop(_1);
 }
 
 function both(_1, _2, b) {
   const a = _1;
   try {
-    console.log(`both ${a[0]} ${b[0]}`);
-  } catch (error) {
-    noisyDrop_drop(b);
-    noisyDrop_drop(_2);
+    try {
+      try {
+        console.log(`both ${a[0]} ${b[0]}`);
+      } finally {
+        noisyDrop_drop(b);
+      }
+    } finally {
+      noisyDrop_drop(_2);
+    }
+  } finally {
     noisyDrop_drop(_1);
-    throw error;
   }
-  try {
-    noisyDrop_drop(b);
-  } catch (error) {
-    noisyDrop_drop(_2);
-    noisyDrop_drop(_1);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(_2);
-  } catch (error) {
-    noisyDrop_drop(_1);
-    throw error;
-  }
-  noisyDrop_drop(_1);
 }
 
 function main() {
@@ -75,34 +60,18 @@ function main() {
   const borrowed = same;
   const keptToo = ["i"];
   try {
-    console.log(`${kept[0]} ${borrowed[0]}`);
-  } catch (error) {
-    noisyDrop_drop(keptToo);
-    noisyDrop_drop(same);
+    try {
+      try {
+        console.log(`${kept[0]} ${borrowed[0]}`);
+        console.log("end");
+      } finally {
+        noisyDrop_drop(keptToo);
+      }
+    } finally {
+      noisyDrop_drop(same);
+    }
+  } finally {
     noisyDrop_drop(kept);
-    throw error;
   }
-  try {
-    console.log("end");
-  } catch (error) {
-    noisyDrop_drop(keptToo);
-    noisyDrop_drop(same);
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(keptToo);
-  } catch (error) {
-    noisyDrop_drop(same);
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(same);
-  } catch (error) {
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  noisyDrop_drop(kept);
 }
 //# sourceMappingURL=case.js.map

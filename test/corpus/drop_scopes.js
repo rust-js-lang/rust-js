@@ -21,11 +21,9 @@ function unitDrop_drop(unit) {
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  noisyDrop_drop(n);
 }
 
 function early(stop) {
@@ -40,11 +38,9 @@ function early(stop) {
   result = 2;
   try {
     noisyDrop_drop(_b);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_a);
-    throw error;
   }
-  noisyDrop_drop(_a);
   return result;
 }
 
@@ -92,26 +88,15 @@ function main() {
   const _y = ["y"];
   const _z = ["z"];
   try {
-    noisyDrop_drop(_z);
-  } catch (error) {
-    noisyDrop_drop(_y);
+    try {
+      noisyDrop_drop(_z);
+      console.log("inner done");
+    } finally {
+      noisyDrop_drop(_y);
+    }
+  } finally {
     noisyDrop_drop(_x);
-    throw error;
   }
-  try {
-    console.log("inner done");
-  } catch (error) {
-    noisyDrop_drop(_y);
-    noisyDrop_drop(_x);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(_y);
-  } catch (error) {
-    noisyDrop_drop(_x);
-    throw error;
-  }
-  noisyDrop_drop(_x);
   const moved = ["moved"];
   consume(moved);
   let maybe$live = true;
@@ -270,236 +255,209 @@ function main() {
   const _tuple = [["t0"], 7, ["t1"]];
   const _shapes = ["Empty", { TAG: "One", _0: ["one"] }, { TAG: "Two", a: ["a"], b: ["b"] }];
   try {
-    console.log("end of main");
-  } catch (error) {
-    for (const item of _shapes) {
-      if (item.TAG === "One") {
-        noisyDrop_drop(item._0);
+    try {
+      console.log("end of main");
+    } catch (error) {
+      for (const item of _shapes) {
+        if (item.TAG === "One") {
+          noisyDrop_drop(item._0);
+        }
+        if (item.TAG === "Two") {
+          noisyDrop_drop(item.a);
+          noisyDrop_drop(item.b);
+        }
       }
-      if (item.TAG === "Two") {
-        noisyDrop_drop(item.a);
-        noisyDrop_drop(item.b);
+      noisyDrop_drop(_tuple[0]);
+      noisyDrop_drop(_tuple[2]);
+      noisyDrop_drop(_boxed);
+      if (_none != null) {
+        noisyDrop_drop(_none);
       }
-    }
-    noisyDrop_drop(_tuple[0]);
-    noisyDrop_drop(_tuple[2]);
-    noisyDrop_drop(_boxed);
-    if (_none != null) {
-      noisyDrop_drop(_none);
-    }
-    if (_some != null) {
-      noisyDrop_drop(_some);
-    }
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    for (const item of _shapes) {
-      if (item.TAG === "One") {
-        noisyDrop_drop(item._0);
+      if (_some != null) {
+        noisyDrop_drop(_some);
       }
-      if (item.TAG === "Two") {
-        noisyDrop_drop(item.a);
-        noisyDrop_drop(item.b);
+      for (const item of _list) {
+        noisyDrop_drop(item);
       }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
     }
-  } catch (error) {
-    noisyDrop_drop(_tuple[0]);
-    noisyDrop_drop(_tuple[2]);
-    noisyDrop_drop(_boxed);
-    if (_none != null) {
-      noisyDrop_drop(_none);
+    try {
+      for (const item of _shapes) {
+        if (item.TAG === "One") {
+          noisyDrop_drop(item._0);
+        }
+        if (item.TAG === "Two") {
+          noisyDrop_drop(item.a);
+          noisyDrop_drop(item.b);
+        }
+      }
+    } catch (error) {
+      noisyDrop_drop(_tuple[0]);
+      noisyDrop_drop(_tuple[2]);
+      noisyDrop_drop(_boxed);
+      if (_none != null) {
+        noisyDrop_drop(_none);
+      }
+      if (_some != null) {
+        noisyDrop_drop(_some);
+      }
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
     }
-    if (_some != null) {
-      noisyDrop_drop(_some);
+    try {
+      noisyDrop_drop(_tuple[0]);
+      noisyDrop_drop(_tuple[2]);
+    } catch (error) {
+      noisyDrop_drop(_boxed);
+      if (_none != null) {
+        noisyDrop_drop(_none);
+      }
+      if (_some != null) {
+        noisyDrop_drop(_some);
+      }
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
     }
-    for (const item of _list) {
-      noisyDrop_drop(item);
+    try {
+      noisyDrop_drop(_boxed);
+    } catch (error) {
+      if (_none != null) {
+        noisyDrop_drop(_none);
+      }
+      if (_some != null) {
+        noisyDrop_drop(_some);
+      }
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
     }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
+    try {
+      if (_none != null) {
+        noisyDrop_drop(_none);
+      }
+    } catch (error) {
+      if (_some != null) {
+        noisyDrop_drop(_some);
+      }
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
     }
+    try {
+      if (_some != null) {
+        noisyDrop_drop(_some);
+      }
+    } catch (error) {
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
+    }
+    try {
+      for (const item of _list) {
+        noisyDrop_drop(item);
+      }
+    } catch (error) {
+      noisyDrop_drop(_holder.inner);
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(_holder.inner);
+    } catch (error) {
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
+    }
+    try {
+      pairDrop_drop(_pair);
+      noisyDrop_drop(_pair.first);
+      noisyDrop_drop(_pair.second);
+    } catch (error) {
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(slot);
+    } catch (error) {
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      throw error;
+    }
+    kept$live = false;
+  } finally {
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(_tuple[0]);
-    noisyDrop_drop(_tuple[2]);
-  } catch (error) {
-    noisyDrop_drop(_boxed);
-    if (_none != null) {
-      noisyDrop_drop(_none);
-    }
-    if (_some != null) {
-      noisyDrop_drop(_some);
-    }
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(_boxed);
-  } catch (error) {
-    if (_none != null) {
-      noisyDrop_drop(_none);
-    }
-    if (_some != null) {
-      noisyDrop_drop(_some);
-    }
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    if (_none != null) {
-      noisyDrop_drop(_none);
-    }
-  } catch (error) {
-    if (_some != null) {
-      noisyDrop_drop(_some);
-    }
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    if (_some != null) {
-      noisyDrop_drop(_some);
-    }
-  } catch (error) {
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    for (const item of _list) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    noisyDrop_drop(_holder.inner);
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(_holder.inner);
-  } catch (error) {
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    pairDrop_drop(_pair);
-    noisyDrop_drop(_pair.first);
-    noisyDrop_drop(_pair.second);
-  } catch (error) {
-    noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    noisyDrop_drop(slot);
-  } catch (error) {
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  kept$live = false;
-  if (maybe$live) {
-    noisyDrop_drop(maybe);
   }
   maybe$live = false;
 }

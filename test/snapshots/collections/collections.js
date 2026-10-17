@@ -170,11 +170,9 @@ export function shared(times) {
     const value$1 = Math.imul(i, i);
     try {
       value.value.push(value$1);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
   }
   const v = $borrow(log, true);
   let total = 0;

@@ -440,11 +440,9 @@ const Env = {
     const value$1 = $borrowMut(env[0], true);
     try {
       value$1.value.vars.set(name, value);
-    } catch (error) {
+    } finally {
       $unborrow(value$1);
-      throw error;
     }
-    $unborrow(value$1);
   },
 };
 

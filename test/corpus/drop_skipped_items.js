@@ -24,14 +24,10 @@ function main() {
   ).toArray();
   try {
     console.log(`kept ${kept.length}`);
-  } catch (error) {
+  } finally {
     for (const item of kept) {
       fragmentDrop_drop(item);
     }
-    throw error;
-  }
-  for (const item of kept) {
-    fragmentDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

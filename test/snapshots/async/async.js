@@ -52,29 +52,23 @@ export function spawned() {
     const value = $borrowMut(taskLog, true);
     try {
       value.value.push(1);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
     await setTimeout(0, 0);
     const value$1 = $borrowMut(taskLog, true);
     try {
       value$1.value.push(3);
-    } catch (error) {
+    } finally {
       $unborrow(value$1);
-      throw error;
     }
-    $unborrow(value$1);
   })();
   const value = $borrowMut(log, true);
   try {
     value.value.push(2);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   return log;
 }
 
@@ -85,30 +79,24 @@ export function started() {
     const value = $borrowMut(taskLog, true);
     try {
       value.value.push(1);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
     await setTimeout(0, 0);
     const value$1 = $borrowMut(taskLog, true);
     try {
       value$1.value.push(3);
-    } catch (error) {
+    } finally {
       $unborrow(value$1);
-      throw error;
     }
-    $unborrow(value$1);
   };
   loading();
   const value = $borrowMut(log, true);
   try {
     value.value.push(2);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   return log;
 }
 

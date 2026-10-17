@@ -51,45 +51,23 @@ function main() {
   const first = loud;
   loud = ["second"];
   try {
-    console.log(`replaced ${first[0]}`);
-  } catch (error) {
-    loudDrop_drop(first);
+    try {
+      console.log(`replaced ${first[0]}`);
+      let third = ["third"];
+      const t = loud;
+      loud = third;
+      third = t;
+      try {
+        console.log(`holding ${loud[0]} ${third[0]}`);
+        console.log("42");
+      } finally {
+        loudDrop_drop(third);
+      }
+    } finally {
+      loudDrop_drop(first);
+    }
+  } finally {
     loudDrop_drop(loud);
-    throw error;
   }
-  let third = ["third"];
-  const t$2 = loud;
-  loud = third;
-  third = t$2;
-  try {
-    console.log(`holding ${loud[0]} ${third[0]}`);
-  } catch (error) {
-    loudDrop_drop(third);
-    loudDrop_drop(first);
-    loudDrop_drop(loud);
-    throw error;
-  }
-  try {
-    console.log("42");
-  } catch (error) {
-    loudDrop_drop(third);
-    loudDrop_drop(first);
-    loudDrop_drop(loud);
-    throw error;
-  }
-  try {
-    loudDrop_drop(third);
-  } catch (error) {
-    loudDrop_drop(first);
-    loudDrop_drop(loud);
-    throw error;
-  }
-  try {
-    loudDrop_drop(first);
-  } catch (error) {
-    loudDrop_drop(loud);
-    throw error;
-  }
-  loudDrop_drop(loud);
 }
 //# sourceMappingURL=case.js.map

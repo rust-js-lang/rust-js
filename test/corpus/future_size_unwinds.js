@@ -22,11 +22,9 @@ async function single_with_noop() {
   const x = [new Array(64).fill(0)];
   try {
     noop();
-  } catch (error) {
+  } finally {
     bigDrop_drop(x);
-    throw error;
   }
-  bigDrop_drop(x);
 }
 
 function main() {

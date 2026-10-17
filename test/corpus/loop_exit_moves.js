@@ -18,11 +18,9 @@ function guarded(limit) {
     if (n < limit) {
       try {
         console.log(`round ${n}`);
-      } catch (error) {
+      } finally {
         guardDrop_drop(_g);
-        throw error;
       }
-      guardDrop_drop(_g);
       continue;
     }
     guardDrop_drop(_g);

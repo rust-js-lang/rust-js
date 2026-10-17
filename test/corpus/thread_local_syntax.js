@@ -25,11 +25,9 @@ function main() {
     const value = $borrowMut(n, true);
     try {
       value.value.push("a");
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
   })(NAMES);
   console.log(
     `${COUNT.value} [${((n) => {
@@ -37,11 +35,9 @@ function main() {
       let result;
       try {
         result = value.value.slice();
-      } catch (error) {
+      } finally {
         $unborrow(value);
-        throw error;
       }
-      $unborrow(value);
       return result;
     })(NAMES)
       .map((item) => $debugStr(item))

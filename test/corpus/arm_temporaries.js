@@ -131,12 +131,10 @@ function first(k) {
           loudDrop_drop(tmp);
         }
       }
-    } catch (error) {
+      tmp$0$live = false;
+    } finally {
       loudDrop_drop(held);
-      throw error;
     }
-    tmp$0$live = false;
-    loudDrop_drop(held);
     return result;
   }
   const value = ["arm"];

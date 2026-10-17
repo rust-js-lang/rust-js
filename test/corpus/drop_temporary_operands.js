@@ -22,19 +22,14 @@ function third(fail) {
 
 function three(a, b, n) {
   try {
-    console.log(`three ${a[0]} ${b[0]}`);
-  } catch (error) {
-    noisyDrop_drop(b);
+    try {
+      console.log(`three ${a[0]} ${b[0]}`);
+    } finally {
+      noisyDrop_drop(b);
+    }
+  } finally {
     noisyDrop_drop(a);
-    throw error;
   }
-  try {
-    noisyDrop_drop(b);
-  } catch (error) {
-    noisyDrop_drop(a);
-    throw error;
-  }
-  noisyDrop_drop(a);
   return n;
 }
 

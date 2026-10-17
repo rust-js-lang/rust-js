@@ -203,188 +203,61 @@ function main() {
     }
     break;
   }
-  let tmp$8;
   try {
-    tmp$8 = ids(v);
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
+    try {
+      const tmp = ids(v);
+      console.log(`after loop [${tmp.map((item) => String(item)).join(", ")}]`);
+      const w = $range(10, 14).map((value) => [value]);
+      try {
+        const d = $iter($drain(w, 0));
+        let first;
+        try {
+          first = $next(d);
+        } catch (error) {
+          for (const item of d) {
+            nDrop_drop(item);
+          }
+          throw error;
+        }
+        const value = (n) => n[0];
+        try {
+          const value$1 = first ? value(first) : undefined;
+          console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
+        } catch (error) {
+          if (first != null) {
+            nDrop_drop(first);
+          }
+          for (const item of d) {
+            nDrop_drop(item);
+          }
+          throw error;
+        }
+        try {
+          for (const item of d) {
+            nDrop_drop(item);
+          }
+          const length = w.length;
+          console.log(`after drain ${length}`);
+        } finally {
+          if (first != null) {
+            nDrop_drop(first);
+          }
+        }
+        console.log("end");
+      } finally {
+        for (const item of w) {
+          nDrop_drop(item);
+        }
+      }
+    } finally {
+      for (const item of taken) {
+        nDrop_drop(item);
+      }
     }
+  } finally {
     for (const item of v) {
       nDrop_drop(item);
     }
-    throw error;
-  }
-  try {
-    console.log(`after loop [${tmp$8.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  let w;
-  try {
-    w = $range(10, 14).map((value) => [value]);
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  let d;
-  try {
-    d = $iter($drain(w, 0));
-  } catch (error) {
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  let first;
-  try {
-    first = $next(d);
-  } catch (error) {
-    for (const item of d) {
-      nDrop_drop(item);
-    }
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  const value = (n) => n[0];
-  try {
-    const value$1 = first ? value(first) : undefined;
-    console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } catch (error) {
-    if (first != null) {
-      nDrop_drop(first);
-    }
-    for (const item of d) {
-      nDrop_drop(item);
-    }
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of d) {
-      nDrop_drop(item);
-    }
-  } catch (error) {
-    if (first != null) {
-      nDrop_drop(first);
-    }
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  const length = w.length;
-  try {
-    console.log(`after drain ${length}`);
-  } catch (error) {
-    if (first != null) {
-      nDrop_drop(first);
-    }
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (first != null) {
-      nDrop_drop(first);
-    }
-  } catch (error) {
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of w) {
-      nDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of v) {
-    nDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

@@ -25,14 +25,10 @@ function personGreet() {
         if (value) {
           try {
             console.log("hello");
-          } catch (error) {
+          } finally {
             if (value != null) {
               noisyDrop_drop(value);
             }
-            throw error;
-          }
-          if (value != null) {
-            noisyDrop_drop(value);
           }
         } else if (value != null) {
           noisyDrop_drop(value);
@@ -54,11 +50,9 @@ function personGreet() {
           for (const item of all) {
             noisyDrop_drop(item);
           }
-        } catch (error) {
+        } finally {
           noisyDrop_drop(first);
-          throw error;
         }
-        noisyDrop_drop(first);
         return result;
       },
       lists: (self, long) => {

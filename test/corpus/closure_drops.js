@@ -23,11 +23,9 @@ function call_once(f, dropF) {
 function keep(_f, dropF) {
   try {
     console.log("not called");
-  } catch (error) {
+  } finally {
     dropF?.(_f);
-    throw error;
   }
-  dropF?.(_f);
 }
 
 function run(f) {
@@ -40,11 +38,9 @@ function main() {
   const tick = () => {
     try {
       console.log(`tick ${a[0]}`);
-    } catch (error) {
+    } finally {
       noisyDrop_drop(a);
-      throw error;
     }
-    noisyDrop_drop(a);
     return 1;
   };
   try {
@@ -62,19 +58,14 @@ function main() {
     const kept = b;
     const held = c;
     try {
-      console.log(`once ${kept[0]} ${held[0]}`);
-    } catch (error) {
-      noisyDrop_drop(kept);
+      try {
+        console.log(`once ${kept[0]} ${held[0]}`);
+      } finally {
+        noisyDrop_drop(kept);
+      }
+    } finally {
       noisyDrop_drop(c);
-      throw error;
     }
-    try {
-      noisyDrop_drop(kept);
-    } catch (error) {
-      noisyDrop_drop(c);
-      throw error;
-    }
-    noisyDrop_drop(c);
     return 2;
   };
   console.log(`${once()}`);

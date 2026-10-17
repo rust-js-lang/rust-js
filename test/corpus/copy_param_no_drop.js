@@ -28,19 +28,11 @@ function holderShow_show(holder, TCopy, TDisplay) {
 
 function main() {
   const _loud = ["a"];
-  let tmp;
   try {
-    tmp = holderShow_show([3], { copy: (value) => value }, { fmt: String });
-  } catch (error) {
-    loudDrop_drop(_loud);
-    throw error;
-  }
-  try {
+    const tmp = holderShow_show([3], { copy: (value) => value }, { fmt: String });
     console.log(`${tmp}`);
-  } catch (error) {
+  } finally {
     loudDrop_drop(_loud);
-    throw error;
   }
-  loudDrop_drop(_loud);
 }
 //# sourceMappingURL=case.js.map

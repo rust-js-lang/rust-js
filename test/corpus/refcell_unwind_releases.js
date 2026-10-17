@@ -14,14 +14,10 @@ function asksDrop_drop(asks) {
     const value$1 = value.TAG === "Ok";
     try {
       console.log(`free as it unwinds: ${value$1}`);
-    } catch (error) {
+    } finally {
       if (value.TAG === "Ok") {
         $unborrow(value._0);
       }
-      throw error;
-    }
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
     }
   })(LOG);
 }
@@ -36,10 +32,8 @@ function main() {
   };
   try {
     $withBorrowMut(LOG, value);
-  } catch (error) {
+  } finally {
     asksDrop_drop({ value: _asks });
-    throw error;
   }
-  asksDrop_drop({ value: _asks });
 }
 //# sourceMappingURL=case.js.map

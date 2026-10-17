@@ -77,11 +77,9 @@ function first(d) {
     result = (e[0] + d[0]) >>> 0;
     try {
       dDrop_drop(e);
-    } catch (error) {
+    } finally {
       dDrop_drop(d);
-      throw error;
     }
-    dDrop_drop(d);
     return result;
   }
   result = undefined;
@@ -117,24 +115,19 @@ function go(d) {
   if (tmp.TAG !== "Err") {
     const e = tmp._0;
     try {
-      if (tmp.TAG === "Err") {
+      try {
         if (tmp.TAG === "Err") {
-          dDrop_drop(tmp._0);
+          if (tmp.TAG === "Err") {
+            dDrop_drop(tmp._0);
+          }
         }
+        result = { TAG: "Ok", _0: e[0] };
+      } finally {
+        dDrop_drop(e);
       }
-    } catch (error) {
-      dDrop_drop(e);
+    } finally {
       dDrop_drop(d);
-      throw error;
     }
-    result = { TAG: "Ok", _0: e[0] };
-    try {
-      dDrop_drop(e);
-    } catch (error) {
-      dDrop_drop(d);
-      throw error;
-    }
-    dDrop_drop(d);
     return result;
   }
   result = tmp;
@@ -212,11 +205,9 @@ function main() {
       d$0$live = false;
       try {
         console.log(`climbed to ${d[0]}`);
-      } catch (error) {
+      } finally {
         dDrop_drop(d);
-        throw error;
       }
-      dDrop_drop(d);
     } else {
       try {
         console.log("stopped");
@@ -242,11 +233,9 @@ function main() {
   try {
     const value = discarded(value$2);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
+  } finally {
     dDrop_drop(value$2);
-    throw error;
   }
-  dDrop_drop(value$2);
   for (const start of [2, 3]) {
     const value = go([start]);
     if (value.TAG === "Ok") {
@@ -254,11 +243,9 @@ function main() {
     } else {
       try {
         console.log(`err ${value._0[0]}`);
-      } catch (error) {
+      } finally {
         dDrop_drop(value._0);
-        throw error;
       }
-      dDrop_drop(value._0);
     }
   }
   for (const start of [1, 3]) {
@@ -268,11 +255,9 @@ function main() {
       d$0$live$1 = false;
       try {
         console.log(`doubled to ${d[0]}`);
-      } catch (error) {
+      } finally {
         dDrop_drop(d);
-        throw error;
       }
-      dDrop_drop(d);
     } else {
       try {
         console.log("too big");

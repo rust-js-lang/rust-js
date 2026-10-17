@@ -11,11 +11,9 @@ function noisyDrop_drop(noisy) {
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  noisyDrop_drop(n);
 }
 
 function main() {
@@ -50,14 +48,10 @@ function main() {
   }
   try {
     console.log("done");
-  } catch (error) {
+  } finally {
     if (x$live) {
       noisyDrop_drop(x);
     }
-    throw error;
-  }
-  if (x$live) {
-    noisyDrop_drop(x);
   }
 }
 //# sourceMappingURL=case.js.map

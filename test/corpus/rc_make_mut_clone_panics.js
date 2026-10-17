@@ -25,28 +25,19 @@ function watchDrop_drop(watch) {
 
 function main() {
   let first = { strong: 1, weak: 0 };
-  let _watch;
   try {
-    _watch = [$rcClone(first)];
-  } catch (error) {
-    $rcDrop(first);
-    throw error;
-  }
-  try {
-    first = $makeMut(first, (value) => failsClone_clone(value));
-  } catch (error) {
+    const _watch = [$rcClone(first)];
+    try {
+      first = $makeMut(first, (value) => failsClone_clone(value));
+    } catch (error) {
+      watchDrop_drop(_watch);
+      $rcDrop(_watch[0]);
+      throw error;
+    }
     watchDrop_drop(_watch);
     $rcDrop(_watch[0]);
+  } finally {
     $rcDrop(first);
-    throw error;
   }
-  try {
-    watchDrop_drop(_watch);
-    $rcDrop(_watch[0]);
-  } catch (error) {
-    $rcDrop(first);
-    throw error;
-  }
-  $rcDrop(first);
 }
 //# sourceMappingURL=case.js.map

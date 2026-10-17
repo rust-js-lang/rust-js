@@ -67,17 +67,10 @@ function main() {
   }
   try {
     $rcDrop(a, noisyDrop_drop);
-  } catch (error) {
-    $rcDrop(c, noisyDrop_drop);
-    throw error;
-  }
-  try {
     console.log(`c ${c.value[0]}`);
-  } catch (error) {
+  } finally {
     $rcDrop(c, noisyDrop_drop);
-    throw error;
   }
-  $rcDrop(c, noisyDrop_drop);
   console.log("after a");
   const h = { value: { name: ["h"], items: [["i1"], ["i2"]] }, strong: 1, weak: 0 };
   let tmp;
@@ -124,21 +117,9 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-  } catch (error) {
-    for (const item of v) {
-      $rcDrop(item, (value) => {
-        noisyDrop_drop(value.name);
-        for (const item of value.items) {
-          noisyDrop_drop(item);
-        }
-      });
-    }
-    throw error;
-  }
-  const length = v.length;
-  try {
+    const length = v.length;
     console.log(`${length} ${$index(v, 0).value.name[0]}`);
-  } catch (error) {
+  } finally {
     for (const item of v) {
       $rcDrop(item, (value) => {
         noisyDrop_drop(value.name);
@@ -147,15 +128,6 @@ function main() {
         }
       });
     }
-    throw error;
-  }
-  for (const item of v) {
-    $rcDrop(item, (value) => {
-      noisyDrop_drop(value.name);
-      for (const item of value.items) {
-        noisyDrop_drop(item);
-      }
-    });
   }
   console.log("after h");
   const cell = { value: { value: [["x"]] }, strong: 1, weak: 0 };
@@ -208,112 +180,35 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = $borrow(other.value, true);
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  try {
-    console.log(`${tmp$4.value.length}`);
-  } catch (error) {
-    $unborrow(tmp$4);
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  try {
-    $unborrow(tmp$4);
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = $borrowMut(other.value, true);
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  let last;
-  try {
-    last = tmp$5.value.pop();
-  } catch (error) {
-    $unborrow(tmp$5);
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  try {
-    $unborrow(tmp$5);
-  } catch (error) {
-    if (last != null) {
-      noisyDrop_drop(last);
+    const tmp = $borrow(other.value, true);
+    try {
+      console.log(`${tmp.value.length}`);
+    } finally {
+      $unborrow(tmp);
     }
+    const tmp$1 = $borrowMut(other.value, true);
+    let last;
+    try {
+      last = tmp$1.value.pop();
+    } catch (error) {
+      $unborrow(tmp$1);
+      throw error;
+    }
+    try {
+      $unborrow(tmp$1);
+      console.log(`popped ${!!last}`);
+    } finally {
+      if (last != null) {
+        noisyDrop_drop(last);
+      }
+    }
+  } finally {
     $rcDrop(other, (value) => {
       for (const item of value.value) {
         noisyDrop_drop(item);
       }
     });
-    throw error;
   }
-  try {
-    console.log(`popped ${!!last}`);
-  } catch (error) {
-    if (last != null) {
-      noisyDrop_drop(last);
-    }
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  try {
-    if (last != null) {
-      noisyDrop_drop(last);
-    }
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      for (const item of value.value) {
-        noisyDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  $rcDrop(other, (value) => {
-    for (const item of value.value) {
-      noisyDrop_drop(item);
-    }
-  });
   const outer = { value: { inner: { value: ["o"], strong: 1, weak: 0 } }, strong: 1, weak: 0 };
   let again;
   try {
@@ -328,36 +223,18 @@ function main() {
     $rcDrop(outer, (value) => {
       $rcDrop(value.inner, noisyDrop_drop);
     });
-  } catch (error) {
-    $rcDrop(again, (value) => {
-      $rcDrop(value.inner, noisyDrop_drop);
-    });
-    throw error;
-  }
-  try {
     console.log(`outer kept ${again.value.inner.value[0]}`);
-  } catch (error) {
+  } finally {
     $rcDrop(again, (value) => {
       $rcDrop(value.inner, noisyDrop_drop);
     });
-    throw error;
   }
-  $rcDrop(again, (value) => {
-    $rcDrop(value.inner, noisyDrop_drop);
-  });
   const s = shared("s");
   try {
     console.log(`got ${s.value[0]}`);
-  } catch (error) {
-    $rcDrop(s, noisyDrop_drop);
-    throw error;
-  }
-  try {
     console.log("end");
-  } catch (error) {
+  } finally {
     $rcDrop(s, noisyDrop_drop);
-    throw error;
   }
-  $rcDrop(s, noisyDrop_drop);
 }
 //# sourceMappingURL=case.js.map

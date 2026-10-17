@@ -106,53 +106,21 @@ function main() {
   }
   const w = [v];
   try {
-    wrapIndexMutI_index_mut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
-  } catch (error) {
-    for (const item of w[0]) {
-      loudDrop_drop(item);
+    try {
+      wrapIndexMutI_index_mut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
+      const tmp = wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
+        .map((l) => l[0])
+        .join("");
+      console.log(`${tmp}`);
+    } finally {
+      for (const item of w[0]) {
+        loudDrop_drop(item);
+      }
     }
+  } finally {
     if (last != null) {
       loudDrop_drop(last);
     }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
-      .map((l) => l[0])
-      .join("");
-  } catch (error) {
-    for (const item of w[0]) {
-      loudDrop_drop(item);
-    }
-    if (last != null) {
-      loudDrop_drop(last);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    for (const item of w[0]) {
-      loudDrop_drop(item);
-    }
-    if (last != null) {
-      loudDrop_drop(last);
-    }
-    throw error;
-  }
-  try {
-    for (const item of w[0]) {
-      loudDrop_drop(item);
-    }
-  } catch (error) {
-    if (last != null) {
-      loudDrop_drop(last);
-    }
-    throw error;
-  }
-  if (last != null) {
-    loudDrop_drop(last);
   }
 }
 //# sourceMappingURL=case.js.map

@@ -747,4 +747,25 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
+  {
+    name: "scope-lets-not-declared-where-made",
+    breaks: "a `let x;` a scope's `try` reads stays apart from where it's made, `let tmp; tmp = ids(v);`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut unwinds::scoped_drops);\n    bindings::declarations(body);\n",
+    replace: "    js::statement_lists(body, &mut unwinds::scoped_drops);\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    snapshots: true,
+  },
+  {
+    "name": "mir-temporaries-unnamed",
+    "breaks": "a temporary MIR holds is named `_4`, not `value`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    bindings::readable_temporaries(params, body);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "held temporary is named"
+    ]
+  },
 ];

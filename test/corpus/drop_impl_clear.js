@@ -40,55 +40,26 @@ function main() {
     wrapEmpty_empty(w, (loud) => {
       loudDrop_drop({ value: loud });
     });
-  } catch (error) {
+    const again = [[undefined, undefined]];
+    try {
+      const e = { value: again };
+      emptied(
+        e,
+        wrapEmpty((loud) => {
+          loudDrop_drop({ value: loud });
+        }),
+      );
+      $assign(again, e.value);
+      console.log("end");
+    } finally {
+      for (const item of again[0]) {
+        loudDrop_drop({ value: item });
+      }
+    }
+  } finally {
     for (const item of w[0]) {
       loudDrop_drop({ value: item });
     }
-    throw error;
-  }
-  const again = [[undefined, undefined]];
-  let e;
-  try {
-    e = { value: again };
-    emptied(
-      e,
-      wrapEmpty((loud) => {
-        loudDrop_drop({ value: loud });
-      }),
-    );
-    $assign(again, e.value);
-  } catch (error) {
-    for (const item of again[0]) {
-      loudDrop_drop({ value: item });
-    }
-    for (const item of w[0]) {
-      loudDrop_drop({ value: item });
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of again[0]) {
-      loudDrop_drop({ value: item });
-    }
-    for (const item of w[0]) {
-      loudDrop_drop({ value: item });
-    }
-    throw error;
-  }
-  try {
-    for (const item of again[0]) {
-      loudDrop_drop({ value: item });
-    }
-  } catch (error) {
-    for (const item of w[0]) {
-      loudDrop_drop({ value: item });
-    }
-    throw error;
-  }
-  for (const item of w[0]) {
-    loudDrop_drop({ value: item });
   }
 }
 //# sourceMappingURL=case.js.map

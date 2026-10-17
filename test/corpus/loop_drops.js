@@ -42,14 +42,10 @@ function first_long(items) {
       const result = item[0];
       try {
         noisyDrop_drop(item);
-      } catch (error) {
+      } finally {
         for (const item of iter) {
           noisyDrop_drop(item);
         }
-        throw error;
-      }
-      for (const item of iter) {
-        noisyDrop_drop(item);
       }
       return result;
     }
@@ -216,14 +212,10 @@ function main() {
                       if (tmp != null) {
                         noisyDrop_drop(tmp);
                       }
-                    } catch (error) {
+                    } finally {
                       for (const item of iter$4) {
                         noisyDrop_drop(item);
                       }
-                      throw error;
-                    }
-                    for (const item of iter$4) {
-                      noisyDrop_drop(item);
                     }
                     tmp$4 = undefined;
                     tmp$4 = [
@@ -395,11 +387,9 @@ function main() {
                                   } else {
                                     try {
                                       console.log(`count ${n[0]}`);
-                                    } catch (error) {
+                                    } finally {
                                       noisyDrop_drop(n);
-                                      throw error;
                                     }
-                                    noisyDrop_drop(n);
                                     continue;
                                   }
                                 }

@@ -41,29 +41,18 @@ function main() {
   const more = { value: [9] };
   $refCellSwap(list, more);
   const value = $borrow(list, true);
-  let tmp;
   try {
-    tmp = $borrow(more, true);
-  } catch (error) {
+    const tmp = $borrow(more, true);
+    try {
+      console.log(
+        `[${value.value.map((item) => String(item)).join(", ")}] [${tmp.value.map((item) => String(item)).join(", ")}]`,
+      );
+    } finally {
+      $unborrow(tmp);
+    }
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  try {
-    console.log(
-      `[${value.value.map((item) => String(item)).join(", ")}] [${tmp.value.map((item) => String(item)).join(", ")}]`,
-    );
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(value);
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    $unborrow(value);
-    throw error;
-  }
-  $unborrow(value);
   console.log("false false");
   const deque = $range(1, 7);
   const value$1 = deque[1];

@@ -33,11 +33,9 @@ function main() {
   const _boxed = { value: ["boxed"], impl: { $drop: noisyDrop_drop } };
   try {
     console.log("in scope");
-  } catch (error) {
+  } finally {
     _boxed.impl.$drop?.(_boxed.value);
-    throw error;
   }
-  _boxed.impl.$drop?.(_boxed.value);
   const many = [
     { value: ["first"], impl: { $drop: noisyDrop_drop } },
     { value: 5, impl: {} },
@@ -46,14 +44,10 @@ function main() {
   const length = many.length;
   try {
     console.log(`${length} held`);
-  } catch (error) {
+  } finally {
     for (const item of many) {
       item.impl.$drop?.(item.value);
     }
-    throw error;
-  }
-  for (const item of many) {
-    item.impl.$drop?.(item.value);
   }
   const one = { value: ["upcast"], impl: { $drop: noisyDrop_drop } };
   one.impl.$drop?.(one.value);
@@ -84,23 +78,12 @@ function main() {
     $rcDrop(shared, (value) => {
       value.impl.$drop?.(value.value);
     });
-  } catch (error) {
-    $rcDrop(again, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
-  try {
     console.log("one left");
-  } catch (error) {
+  } finally {
     $rcDrop(again, (value) => {
       value.impl.$drop?.(value.value);
     });
-    throw error;
   }
-  $rcDrop(again, (value) => {
-    value.impl.$drop?.(value.value);
-  });
   let drops = 0;
   $rcDrop(
     {
@@ -128,16 +111,9 @@ function main() {
   const kept = ["borrowed"];
   try {
     keep({ value: kept, impl: { $drop: noisyDrop_drop } });
-  } catch (error) {
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  try {
     console.log("end");
-  } catch (error) {
+  } finally {
     noisyDrop_drop(kept);
-    throw error;
   }
-  noisyDrop_drop(kept);
 }
 //# sourceMappingURL=case.js.map

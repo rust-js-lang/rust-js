@@ -15,11 +15,9 @@ const Wrapper = {
   replace(wrapper, value, dropT) {
     try {
       dropT?.(wrapper.inner);
-    } catch (error) {
+    } finally {
       wrapper.inner = value;
-      throw error;
     }
-    wrapper.inner = value;
     console.log("replaced");
   },
 };
@@ -28,16 +26,9 @@ function main() {
   const wrapper = { inner: ["old", true] };
   try {
     Wrapper.replace(wrapper, ["new", false], loudDrop_drop);
-  } catch (error) {
-    loudDrop_drop(wrapper.inner);
-    throw error;
-  }
-  try {
     console.log("unreached");
-  } catch (error) {
+  } finally {
     loudDrop_drop(wrapper.inner);
-    throw error;
   }
-  loudDrop_drop(wrapper.inner);
 }
 //# sourceMappingURL=case.js.map

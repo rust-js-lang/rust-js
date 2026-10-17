@@ -15,14 +15,12 @@ function guardDrop_drop(guard) {
 }
 
 function main() {
-  let m;
+  const m = undefined;
   try {
     console.log("made");
-  } catch (error) {
+  } finally {
     guardDrop_drop({ value: m });
-    throw error;
   }
-  guardDrop_drop({ value: m });
   console.log("dropped");
   const shared = { value: { value: ["shared"] }, strong: 1, weak: 0 };
   let other;
@@ -38,109 +36,59 @@ function main() {
     $rcDrop(shared, (value) => {
       noisyDrop_drop(value.value);
     });
-  } catch (error) {
-    $rcDrop(other, (value) => {
-      noisyDrop_drop(value.value);
-    });
-    throw error;
-  }
-  try {
     console.log("one left");
-  } catch (error) {
+  } finally {
     $rcDrop(other, (value) => {
       noisyDrop_drop(value.value);
     });
-    throw error;
   }
-  $rcDrop(other, (value) => {
-    noisyDrop_drop(value.value);
-  });
   const l = { value: [["a"], ["b"]] };
-  let tmp;
   try {
-    tmp = $lock(l, true);
-  } catch (error) {
+    const tmp = $lock(l, true);
+    try {
+      tmp.value.push(["c"]);
+    } finally {
+      $unborrow(tmp);
+    }
+    const tmp$1 = $lockRead(l, true);
+    const value = tmp$1.value;
+    try {
+      console.log(`${value.length} held`);
+    } finally {
+      $unborrow(tmp$1);
+    }
+  } finally {
     for (const item of l.value) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  try {
-    tmp.value.push(["c"]);
-  } catch (error) {
-    $unborrow(tmp);
-    for (const item of l.value) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp);
-  } catch (error) {
-    for (const item of l.value) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $lockRead(l, true);
-  } catch (error) {
-    for (const item of l.value) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const value = tmp$1.value;
-  try {
-    console.log(`${value.length} held`);
-  } catch (error) {
-    $unborrow(tmp$1);
-    for (const item of l.value) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$1);
-  } catch (error) {
-    for (const item of l.value) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of l.value) {
-    noisyDrop_drop(item);
   }
   const h = { name: "holder", lock: { value: ["in holder"] } };
   try {
     console.log(`${h.name}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(h.lock.value);
-    throw error;
   }
-  noisyDrop_drop(h.lock.value);
   const m$1 = { value: ["old"] };
-  const value$1 = ["new"];
-  let tmp$2;
+  const value = ["new"];
+  let tmp;
   try {
-    tmp$2 = $lock(m$1, true);
+    tmp = $lock(m$1, true);
   } catch (error) {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(value);
     noisyDrop_drop(m$1.value);
     throw error;
   }
   try {
-    noisyDrop_drop(tmp$2.value);
+    noisyDrop_drop(tmp.value);
   } catch (error) {
-    $assign(tmp$2.value, value$1);
-    $unborrow(tmp$2);
+    $assign(tmp.value, value);
+    $unborrow(tmp);
     noisyDrop_drop(m$1.value);
     throw error;
   }
-  $assign(tmp$2.value, value$1);
+  $assign(tmp.value, value);
   try {
-    $unborrow(tmp$2);
+    $unborrow(tmp);
   } catch (error) {
     noisyDrop_drop(m$1.value);
     throw error;
@@ -152,56 +100,43 @@ function main() {
     throw error;
   }
   const w = { value: ["before"] };
-  const value$2 = ["after"];
-  let tmp$3;
+  const value$1 = ["after"];
+  let tmp$1;
   try {
-    tmp$3 = $lock(w, true);
+    tmp$1 = $lock(w, true);
   } catch (error) {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value$1);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m$1.value);
     throw error;
   }
   try {
-    noisyDrop_drop(tmp$3.value);
+    noisyDrop_drop(tmp$1.value);
   } catch (error) {
-    $assign(tmp$3.value, value$2);
-    $unborrow(tmp$3);
+    $assign(tmp$1.value, value$1);
+    $unborrow(tmp$1);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m$1.value);
     throw error;
   }
-  $assign(tmp$3.value, value$2);
+  $assign(tmp$1.value, value$1);
   try {
-    $unborrow(tmp$3);
-  } catch (error) {
-    noisyDrop_drop(w.value);
+    try {
+      $unborrow(tmp$1);
+      console.log("written");
+    } finally {
+      noisyDrop_drop(w.value);
+    }
+  } finally {
     noisyDrop_drop(m$1.value);
-    throw error;
   }
-  try {
-    console.log("written");
-  } catch (error) {
-    noisyDrop_drop(w.value);
-    noisyDrop_drop(m$1.value);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(w.value);
-  } catch (error) {
-    noisyDrop_drop(m$1.value);
-    throw error;
-  }
-  noisyDrop_drop(m$1.value);
   const m$2 = ["taken"];
   const inner = m$2;
   try {
     console.log(`took ${inner[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(inner);
-    throw error;
   }
-  noisyDrop_drop(inner);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

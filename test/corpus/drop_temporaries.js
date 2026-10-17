@@ -20,35 +20,27 @@ function make(name) {
 }
 
 function two(a, b) {
+  let result;
   try {
-    console.log(`two ${a[0]} ${b[0]}`);
-  } catch (error) {
-    noisyDrop_drop(b);
+    try {
+      console.log(`two ${a[0]} ${b[0]}`);
+      result = b[0];
+    } finally {
+      noisyDrop_drop(b);
+    }
+  } finally {
     noisyDrop_drop(a);
-    throw error;
   }
-  const result = b[0];
-  try {
-    noisyDrop_drop(b);
-  } catch (error) {
-    noisyDrop_drop(a);
-    throw error;
-  }
-  noisyDrop_drop(a);
   return result;
 }
 
 function all(items) {
   try {
     console.log(`all ${items[0][0]}`);
-  } catch (error) {
+  } finally {
     for (const item of items) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  for (const item of items) {
-    noisyDrop_drop(item);
   }
   return items.length;
 }
@@ -57,72 +49,52 @@ function main() {
   const value = make("a");
   try {
     console.log(`${Noisy.name(value)}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(value);
-    throw error;
   }
-  noisyDrop_drop(value);
   const value$1 = make("b");
   const first = value$1[0];
   noisyDrop_drop(value$1);
   const value$2 = make("c");
-  let tmp;
+  let empty;
   try {
-    tmp = Noisy.name(value$2);
-  } catch (error) {
+    const tmp = Noisy.name(value$2);
+    empty = !tmp;
+  } finally {
     noisyDrop_drop(value$2);
-    throw error;
   }
-  const empty = !tmp;
-  noisyDrop_drop(value$2);
   console.log(`${first} ${empty}`);
   const kept = make("d");
   try {
     console.log(`kept ${kept[0]}`);
-  } catch (error) {
+    const tmp = make("e");
+    const field = tmp[0];
+    try {
+      console.log(`field ${field}`);
+    } finally {
+      noisyDrop_drop(tmp);
+    }
+  } finally {
     noisyDrop_drop(kept);
-    throw error;
   }
-  let tmp$1;
-  try {
-    tmp$1 = make("e");
-  } catch (error) {
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  const field = tmp$1[0];
-  try {
-    console.log(`field ${field}`);
-  } catch (error) {
-    noisyDrop_drop(tmp$1);
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  try {
-    noisyDrop_drop(tmp$1);
-  } catch (error) {
-    noisyDrop_drop(kept);
-    throw error;
-  }
-  noisyDrop_drop(kept);
   const value$3 = make("f");
-  let tmp$2;
+  let tmp;
   try {
-    tmp$2 = make("g");
+    tmp = make("g");
   } catch (error) {
     noisyDrop_drop(value$3);
     throw error;
   }
-  const last = two(value$3, tmp$2);
+  const last = two(value$3, tmp);
   const value$4 = make("h");
-  let tmp$3;
+  let tmp$1;
   try {
-    tmp$3 = [value$4, make("i")];
+    tmp$1 = [value$4, make("i")];
   } catch (error) {
     noisyDrop_drop(value$4);
     throw error;
   }
-  console.log(`${last} ${all(tmp$3)}`);
+  console.log(`${last} ${all(tmp$1)}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

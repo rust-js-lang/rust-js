@@ -65,23 +65,12 @@ function main() {
     $rcDrop(a, (value) => {
       value.impl.$drop?.(value.value);
     });
-  } catch (error) {
-    $rcDrop(b, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
-  try {
     console.log("one left");
-  } catch (error) {
+  } finally {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);
     });
-    throw error;
   }
-  $rcDrop(b, (value) => {
-    value.impl.$drop?.(value.value);
-  });
   const value = made(1);
   let tmp$1;
   try {
@@ -110,30 +99,12 @@ function main() {
         value.impl.$drop?.(value.value);
       });
     }
-  } catch (error) {
-    $rcDrop(first, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
-  try {
     console.log(`first ${first.value.impl.area(first.value.value)}`);
-  } catch (error) {
-    $rcDrop(first, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
-  try {
     console.log("end");
-  } catch (error) {
+  } finally {
     $rcDrop(first, (value) => {
       value.impl.$drop?.(value.value);
     });
-    throw error;
   }
-  $rcDrop(first, (value) => {
-    value.impl.$drop?.(value.value);
-  });
 }
 //# sourceMappingURL=case.js.map

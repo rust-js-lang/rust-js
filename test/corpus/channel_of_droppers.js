@@ -137,85 +137,55 @@ function main() {
       throw error;
     }
   }
-  let tmp$5;
   try {
-    tmp$5 = $channel();
-  } catch (error) {
+    const tmp = $channel();
+    const outerTx = tmp[0];
+    const outerRx = tmp[1];
+    try {
+      let tmp;
+      try {
+        tmp = $channel();
+      } catch (error) {
+        $dropReceiver(outerRx, $dropSender);
+        throw error;
+      }
+      const innerTx = tmp[0];
+      const innerRx = tmp[1];
+      let tmp$1;
+      try {
+        tmp$1 = $send(outerTx, innerTx);
+      } catch (error) {
+        $dropReceiver(innerRx);
+        $dropReceiver(outerRx, $dropSender);
+        throw error;
+      }
+      try {
+        $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
+      } catch (error) {
+        $dropReceiver(innerRx);
+        $dropReceiver(outerRx, $dropSender);
+        throw error;
+      }
+      try {
+        const value = $tryRecv(innerRx);
+        console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`);
+      } catch (error) {
+        $dropReceiver(innerRx);
+        $dropReceiver(outerRx, $dropSender);
+        throw error;
+      }
+      try {
+        $dropReceiver(outerRx, $dropSender);
+        const value = $tryRecv(innerRx);
+        console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`);
+      } finally {
+        $dropReceiver(innerRx);
+      }
+    } finally {
+      $dropSender(outerTx);
+    }
+  } finally {
     $dropSender(tx);
-    throw error;
   }
-  const outerTx = tmp$5[0];
-  const outerRx = tmp$5[1];
-  let tmp$6;
-  try {
-    tmp$6 = $channel();
-  } catch (error) {
-    $dropReceiver(outerRx, $dropSender);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  const innerTx = tmp$6[0];
-  const innerRx = tmp$6[1];
-  let tmp$7;
-  try {
-    tmp$7 = $send(outerTx, innerTx);
-  } catch (error) {
-    $dropReceiver(innerRx);
-    $dropReceiver(outerRx, $dropSender);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    $unwrapOk(tmp$7, undefined, (e) => "SendError { .. }");
-  } catch (error) {
-    $dropReceiver(innerRx);
-    $dropReceiver(outerRx, $dropSender);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    const value = $tryRecv(innerRx);
-    console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`);
-  } catch (error) {
-    $dropReceiver(innerRx);
-    $dropReceiver(outerRx, $dropSender);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    $dropReceiver(outerRx, $dropSender);
-  } catch (error) {
-    $dropReceiver(innerRx);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    const value = $tryRecv(innerRx);
-    console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`);
-  } catch (error) {
-    $dropReceiver(innerRx);
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    $dropReceiver(innerRx);
-  } catch (error) {
-    $dropSender(outerTx);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    $dropSender(outerTx);
-  } catch (error) {
-    $dropSender(tx);
-    throw error;
-  }
-  $dropSender(tx);
 }
 //# sourceMappingURL=case.js.map

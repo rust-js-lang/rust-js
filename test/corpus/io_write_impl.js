@@ -57,67 +57,21 @@ function render(out, n, WWrite) {
 
 function main() {
   const b = { bytes: [] };
-  let out;
-  let tmp;
   try {
-    out = { value: b };
-    tmp = render(out, 7, bufWrite(16));
+    const out = { value: b };
+    const tmp = render(out, 7, bufWrite(16));
     $assign(b, out.value);
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = bufWrite_write(b, [33, 33], 16);
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  const n = tmp$1.TAG === "Ok" ? tmp$1._0 : undefined;
-  let tmp$2;
-  try {
-    tmp$2 = bufWrite(16).write_fmt({ value: b }, "1");
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = bufWrite(16).write_all({ value: b }, [63]);
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = b.bytes.slice();
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = $fromUtf8(tmp$4, true);
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  let tmp$6;
-  let tmp$7;
-  try {
-    tmp$6 = [undefined, n];
-    tmp$7 = $unwrapOk(tmp$5, undefined, (e) => $debugUtf8Error(e, true));
-  } catch (error) {
-    bufDrop_drop(b, 16);
-    throw error;
-  }
-  try {
+    const tmp$1 = bufWrite_write(b, [33, 33], 16);
+    const n = tmp$1.TAG === "Ok" ? tmp$1._0 : undefined;
+    const tmp$2 = bufWrite(16).write_fmt({ value: b }, "1");
+    const tmp$3 = bufWrite(16).write_all({ value: b }, [63]);
+    const tmp$4 = b.bytes.slice();
+    const tmp$5 = $fromUtf8(tmp$4, true);
+    const tmp$6 = [undefined, n];
+    const tmp$7 = $unwrapOk(tmp$5, undefined, (e) => $debugUtf8Error(e, true));
     console.log(`${tmp$7} ${tmp$6[1] == null ? "None" : `Some(${tmp$6[1]})`}`);
-  } catch (error) {
+  } finally {
     bufDrop_drop(b, 16);
-    throw error;
   }
-  bufDrop_drop(b, 16);
 }
 //# sourceMappingURL=case.js.map

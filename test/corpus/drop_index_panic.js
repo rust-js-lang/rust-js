@@ -17,11 +17,9 @@ function nth(items, at) {
   const read = items[at];
   try {
     console.log(`read ${read}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_held);
-    throw error;
   }
-  noisyDrop_drop(_held);
   return read;
 }
 

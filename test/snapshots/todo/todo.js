@@ -30,11 +30,9 @@ function on(target, event, state, view, change) {
     const value = $borrowMut(state, true);
     try {
       change(value.value);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
     render(state, view);
   });
 }
@@ -146,11 +144,9 @@ export function main() {
       const value = $borrowMut(adding, true);
       try {
         add(value.value, title$1);
-      } catch (error) {
+      } finally {
         $unborrow(value);
-        throw error;
       }
-      $unborrow(value);
       input.value = "";
       render(adding, view);
     }

@@ -45,42 +45,30 @@ function main() {
   try {
     const value$1 = r ? value(r) : undefined;
     console.log(`got ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } catch (error) {
+  } finally {
     if (r != null) {
       dDrop_drop(r);
     }
-    throw error;
-  }
-  if (r != null) {
-    dDrop_drop(r);
   }
   const r$1 = f([undefined, [3]]);
   const value$1 = (d) => d[0];
   try {
     const value = r$1 ? value$1(r$1) : undefined;
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
+  } finally {
     if (r$1 != null) {
       dDrop_drop(r$1);
     }
-    throw error;
-  }
-  if (r$1 != null) {
-    dDrop_drop(r$1);
   }
   const r$2 = f([undefined, undefined]);
   const value$2 = (d) => d[0];
   try {
     const value = r$2 ? value$2(r$2) : undefined;
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
+  } finally {
     if (r$2 != null) {
       dDrop_drop(r$2);
     }
-    throw error;
-  }
-  if (r$2 != null) {
-    dDrop_drop(r$2);
   }
 }
 //# sourceMappingURL=case.js.map

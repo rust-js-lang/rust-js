@@ -66,11 +66,9 @@ function wrapReset_reset(wrap, TDefault, dropT) {
   const value = TDefault.default();
   try {
     dropT?.(wrap[0]);
-  } catch (error) {
+  } finally {
     wrap[0] = value;
-    throw error;
   }
-  wrap[0] = value;
 }
 
 export function loudDefault() {
@@ -101,16 +99,9 @@ function main() {
   const wrapped = [["replaced"]];
   try {
     wrapReset_reset(wrapped, loudDefault(), loudDrop_drop);
-  } catch (error) {
-    loudDrop_drop(wrapped[0]);
-    throw error;
-  }
-  try {
     console.log("reset");
-  } catch (error) {
+  } finally {
     loudDrop_drop(wrapped[0]);
-    throw error;
   }
-  loudDrop_drop(wrapped[0]);
 }
 //# sourceMappingURL=case.js.map

@@ -25,11 +25,9 @@ function sinkTakeA(dropA) {
 function sinkTakeA_take(sink, _a, dropA) {
   try {
     console.log("sink");
-  } catch (error) {
+  } finally {
     dropA?.(_a);
-    throw error;
   }
-  dropA?.(_a);
   return 1;
 }
 
@@ -73,11 +71,9 @@ function wrapTakeNoisy(TDefault, dropT) {
     take: (self, a) => {
       try {
         console.log("default");
-      } catch (error) {
+      } finally {
         noisyDrop_drop?.(a);
-        throw error;
       }
-      noisyDrop_drop?.(a);
       return 0;
     },
     make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
@@ -88,20 +84,13 @@ function wrapTakeNoisy(TDefault, dropT) {
 }
 
 function wrapTakeNoisy_make(a, TDefault, dropT) {
-  try {
-    console.log(`make ${a[0]}`);
-  } catch (error) {
-    noisyDrop_drop(a);
-    throw error;
-  }
   let result;
   try {
+    console.log(`make ${a[0]}`);
     result = [TDefault.default()];
-  } catch (error) {
+  } finally {
     noisyDrop_drop(a);
-    throw error;
   }
-  noisyDrop_drop(a);
   return result;
 }
 
@@ -194,14 +183,10 @@ function main() {
   }
   try {
     console.log("end");
-  } catch (error) {
+  } finally {
     for (const item of all) {
       item.impl.$drop?.(item.value);
     }
-    throw error;
-  }
-  for (const item of all) {
-    item.impl.$drop?.(item.value);
   }
 }
 //# sourceMappingURL=case.js.map

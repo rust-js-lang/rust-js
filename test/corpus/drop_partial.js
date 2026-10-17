@@ -11,11 +11,9 @@ function noisyDrop_drop(noisy) {
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  noisyDrop_drop(n);
 }
 
 function pair(a, b, n) {
@@ -26,17 +24,10 @@ function main() {
   const whole = pair("a", "b", 1);
   try {
     consume(whole.a);
-  } catch (error) {
-    noisyDrop_drop(whole.b);
-    throw error;
-  }
-  try {
     console.log(`after a ${whole.n}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(whole.b);
-    throw error;
   }
-  noisyDrop_drop(whole.b);
   const maybe = pair("ma", "mb", 2);
   let maybe$b$live = true;
   if (maybe.n === 2) {
@@ -84,19 +75,14 @@ function main() {
   const tuple = [["t0"], ["t1"], 3];
   const [first, , n] = tuple;
   try {
-    console.log(`first ${first[0]} ${n}`);
-  } catch (error) {
-    noisyDrop_drop(first);
+    try {
+      console.log(`first ${first[0]} ${n}`);
+    } finally {
+      noisyDrop_drop(first);
+    }
+  } finally {
     noisyDrop_drop(tuple[1]);
-    throw error;
   }
-  try {
-    noisyDrop_drop(first);
-  } catch (error) {
-    noisyDrop_drop(tuple[1]);
-    throw error;
-  }
-  noisyDrop_drop(tuple[1]);
   const opt = ["o"];
   let opt$0$live = true;
   if (opt) {
@@ -105,17 +91,11 @@ function main() {
   }
   try {
     console.log("matched");
-  } catch (error) {
+  } finally {
     if (opt) {
       if (opt$0$live) {
         noisyDrop_drop(opt);
       }
-    }
-    throw error;
-  }
-  if (opt) {
-    if (opt$0$live) {
-      noisyDrop_drop(opt);
     }
   }
   opt$0$live = false;
@@ -161,7 +141,7 @@ function main() {
   }
   try {
     console.log("shape");
-  } catch (error) {
+  } finally {
     if (shape.TAG === "Two") {
       if (shape$a$live) {
         noisyDrop_drop(shape.a);
@@ -175,21 +155,6 @@ function main() {
         noisyDrop_drop(shape.a);
         noisyDrop_drop(shape.b);
       }
-    }
-    throw error;
-  }
-  if (shape.TAG === "Two") {
-    if (shape$a$live) {
-      noisyDrop_drop(shape.a);
-    }
-    noisyDrop_drop(shape.b);
-  } else {
-    if (shape.TAG === "One") {
-      noisyDrop_drop(shape._0);
-    }
-    if (shape.TAG === "Two") {
-      noisyDrop_drop(shape.a);
-      noisyDrop_drop(shape.b);
     }
   }
   shape$a$live = false;

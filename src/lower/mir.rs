@@ -866,8 +866,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         tidy::destructured_params(&mut params, &mut out);
-        tidy::readable_temporaries(&params, &mut out);
-        tidy::named_flags(&mut out, &flags);
+        tidy::named(&params, &mut out, &flags);
         if let Some((_, name)) = &state.writer {
             self.writer_epilogue(name, &mut out);
         }

@@ -11,16 +11,9 @@ function main() {
   const reading = $borrow(cell, true);
   try {
     $cellReplace($borrowMut(cell), 2);
-  } catch (error) {
-    $unborrow(reading);
-    throw error;
-  }
-  try {
     console.log(`${reading.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(reading);
-    throw error;
   }
-  $unborrow(reading);
 }
 //# sourceMappingURL=case.js.map

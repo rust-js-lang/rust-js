@@ -549,7 +549,7 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 /// is called, `receiver`, else `value`, or `tmp` of a `let` its branches
 /// set, a name no other in the function has, its parameters' and closures'
 /// too.
-pub(in crate::lower::mir) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
+pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::names_in(body, &mut taken);
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the

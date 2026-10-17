@@ -35,7 +35,7 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &HashSet
 
 /// Each flag a temporary's, `_14$live`, named for the variable the drop it
 /// guards is of, `value$live`: after the temporaries are named.
-pub(in crate::lower::mir) fn named_flags(body: &mut Vec<Stmt>, flags: &HashSet<String>) {
+pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &HashSet<String>) {
     let mut taken = HashSet::new();
     js::names_in(body, &mut taken);
     // In the order they're declared, so each build names them alike.

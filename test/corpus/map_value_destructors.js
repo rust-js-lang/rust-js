@@ -29,484 +29,96 @@ function main() {
   };
   try {
     $retainMap(tree, value, $sortedEntries(tree, $cmp), false, noisyDrop_drop);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $sortedEntries(tree, $cmp).map((entry) => entry[0]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
+    const tmp = $sortedEntries(tree, $cmp).map((entry) => entry[0]);
     console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  const value$1 = [
-    [2, [21]],
-    [7, [70]],
-  ];
-  try {
+    const value$1 = [
+      [2, [21]],
+      [7, [70]],
+    ];
     $extendMap(tree, value$1, false, noisyDrop_drop);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $sortedEntries(tree, $cmp)
+    const tmp$1 = $sortedEntries(tree, $cmp)
       .map((entry) => entry[1])
       .map((v) => v[0]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
     console.log(`[${tmp$1.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$2;
-  let tmp$3;
-  try {
-    tmp$2 = $entry(tree, 4);
-    tmp$3 = [41];
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let entry;
-  let got;
-  try {
-    entry = tmp$2;
-    got = $orInsert(entry._0[0], entry._0[1], tmp$3, noisyDrop_drop);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
+    const tmp$2 = $entry(tree, 4);
+    const tmp$3 = [41];
+    const entry = tmp$2;
+    const got = $orInsert(entry._0[0], entry._0[1], tmp$3, noisyDrop_drop);
     console.log(`got ${got[0]}`);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$4;
-  let tmp$5;
-  try {
-    tmp$4 = $entry(tree, 8);
-    tmp$5 = [80];
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let entry$1;
-  let new$;
-  try {
-    entry$1 = tmp$4;
-    new$ = $orInsert(entry$1._0[0], entry$1._0[1], tmp$5, noisyDrop_drop);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
+    const tmp$4 = $entry(tree, 8);
+    const tmp$5 = [80];
+    const entry$1 = tmp$4;
+    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], tmp$5, noisyDrop_drop);
     console.log(`new ${new$[0]}`);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
     for (const [, value] of $sortedEntries(tree, $cmp)) {
       noisyDrop_drop(value);
     }
     tree.clear();
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  const size = tree.size;
-  try {
+    const size = tree.size;
     console.log(`cleared ${size}`);
-  } catch (error) {
+    const hash = new Map();
+    try {
+      const tmp = $insert(hash, "a", [1]);
+      if (tmp != null) {
+        noisyDrop_drop(tmp);
+      }
+      const tmp$1 = $entry(hash, "a");
+      const tmp$2 = [2];
+      const entry = tmp$1;
+      $orInsert(entry._0[0], entry._0[1], tmp$2, noisyDrop_drop);
+      $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
+      const value = (_, v) => v[0] > 5;
+      $retainMap(hash, value, hash, false, noisyDrop_drop);
+      const size = hash.size;
+      console.log(`hash ${size}`);
+      const tmp$3 = $insert(hash, "b", [4]);
+      if (tmp$3 != null) {
+        noisyDrop_drop(tmp$3);
+      }
+      for (const item of hash.values()) {
+        noisyDrop_drop(item);
+      }
+      hash.clear();
+      const drained = new Map();
+      try {
+        const tmp = $insert(drained, 1, [5]);
+        if (tmp != null) {
+          noisyDrop_drop(tmp);
+        }
+        const tmp$1 = $iter($drainAll(drained));
+        const taken = tmp$1.toArray();
+        const length = taken.length;
+        const size = drained.size;
+        try {
+          console.log(`taken ${length} left ${size}`);
+        } finally {
+          for (const item of taken) {
+            noisyDrop_drop(item[1]);
+          }
+        }
+        const tmp$2 = $insert(drained, 2, [6]);
+        if (tmp$2 != null) {
+          noisyDrop_drop(tmp$2);
+        }
+        const tmp$3 = $iter($drainAll(drained));
+        for (const item of tmp$3) {
+          noisyDrop_drop(item[1]);
+        }
+        console.log("end");
+      } finally {
+        for (const item of drained.values()) {
+          noisyDrop_drop(item);
+        }
+      }
+    } finally {
+      for (const item of hash.values()) {
+        noisyDrop_drop(item);
+      }
+    }
+  } finally {
     for (const [, value] of $sortedEntries(tree, $cmp)) {
       noisyDrop_drop(value);
     }
-    throw error;
-  }
-  let hash;
-  try {
-    hash = new Map();
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = $insert(hash, "a", [1]);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$6 != null) {
-      noisyDrop_drop(tmp$6);
-    }
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$7;
-  let tmp$8;
-  try {
-    tmp$7 = $entry(hash, "a");
-    tmp$8 = [2];
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let entry$2;
-  try {
-    entry$2 = tmp$7;
-    $orInsert(entry$2._0[0], entry$2._0[1], tmp$8, noisyDrop_drop);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  const value$2 = (_, v) => v[0] > 5;
-  try {
-    $retainMap(hash, value$2, hash, false, noisyDrop_drop);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  const size$1 = hash.size;
-  try {
-    console.log(`hash ${size$1}`);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$9;
-  try {
-    tmp$9 = $insert(hash, "b", [4]);
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$9 != null) {
-      noisyDrop_drop(tmp$9);
-    }
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    hash.clear();
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let drained;
-  try {
-    drained = new Map();
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$10;
-  try {
-    tmp$10 = $insert(drained, 1, [5]);
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$10 != null) {
-      noisyDrop_drop(tmp$10);
-    }
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$11;
-  try {
-    tmp$11 = $iter($drainAll(drained));
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let taken;
-  try {
-    taken = tmp$11.toArray();
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  const length = taken.length;
-  const size$2 = drained.size;
-  try {
-    console.log(`taken ${length} left ${size$2}`);
-  } catch (error) {
-    for (const item of taken) {
-      noisyDrop_drop(item[1]);
-    }
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    for (const item of taken) {
-      noisyDrop_drop(item[1]);
-    }
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$12;
-  try {
-    tmp$12 = $insert(drained, 2, [6]);
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$12 != null) {
-      noisyDrop_drop(tmp$12);
-    }
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$13;
-  try {
-    tmp$13 = $iter($drainAll(drained));
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    for (const item of tmp$13) {
-      noisyDrop_drop(item[1]);
-    }
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    for (const item of drained.values()) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    for (const item of hash.values()) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(tree, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  for (const [, value] of $sortedEntries(tree, $cmp)) {
-    noisyDrop_drop(value);
   }
 }
 //# sourceMappingURL=case.js.map

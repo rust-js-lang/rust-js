@@ -82,11 +82,9 @@ function total(shapes) {
       let result;
       try {
         result = receiver.impl.area(receiver.value);
-      } catch (error) {
+      } finally {
         $unborrow(receiver);
-        throw error;
       }
-      $unborrow(receiver);
       return result;
     })
     .reduce((a, b) => a + b, -0);
@@ -97,11 +95,9 @@ function grow_all(shapes, by) {
     const receiver = $borrowMut(s, true);
     try {
       receiver.impl.grow(receiver, by);
-    } catch (error) {
+    } finally {
       $unborrow(receiver);
-      throw error;
     }
-    $unborrow(receiver);
   }
 }
 
@@ -115,128 +111,70 @@ function main() {
   $unborrow(value);
   for (const s of shapes) {
     const receiver = $borrow(s, true);
-    let tmp;
     try {
-      tmp = receiver.impl.name(receiver.value);
-    } catch (error) {
+      const tmp = receiver.impl.name(receiver.value);
+      const tmp$1 = $borrow(s, true);
+      try {
+        console.log(`${tmp} ${$displayF64(tmp$1.impl.area(tmp$1.value))}`);
+      } finally {
+        $unborrow(tmp$1);
+      }
+    } finally {
       $unborrow(receiver);
-      throw error;
     }
-    let tmp$1;
-    try {
-      tmp$1 = $borrow(s, true);
-    } catch (error) {
-      $unborrow(receiver);
-      throw error;
-    }
-    try {
-      console.log(`${tmp} ${$displayF64(tmp$1.impl.area(tmp$1.value))}`);
-    } catch (error) {
-      $unborrow(tmp$1);
-      $unborrow(receiver);
-      throw error;
-    }
-    try {
-      $unborrow(tmp$1);
-    } catch (error) {
-      $unborrow(receiver);
-      throw error;
-    }
-    $unborrow(receiver);
   }
   const value$1 = $borrowMut(circle, true);
   $assign(value$1.value, { r: 0.5 });
   $unborrow(value$1);
   const receiver = $borrow($index(shapes, 0), true);
-  let tmp;
   try {
-    tmp = receiver.impl.name(receiver.value);
-  } catch (error) {
-    $unborrow(receiver);
-    throw error;
-  }
-  try {
+    const tmp = receiver.impl.name(receiver.value);
     console.log(`${tmp}`);
-  } catch (error) {
+  } finally {
     $unborrow(receiver);
-    throw error;
   }
-  $unborrow(receiver);
   const labeled = $dynCell(circle, circleLabeled());
   const receiver$1 = $borrowMut($index(shapes, 0), true);
   try {
     receiver$1.impl.grow(receiver$1, 1);
-  } catch (error) {
+  } finally {
     $unborrow(receiver$1);
-    throw error;
   }
-  $unborrow(receiver$1);
   const receiver$2 = $borrow(labeled, true);
-  let tmp$1;
   try {
-    tmp$1 = receiver$2.impl.label(receiver$2.value);
-  } catch (error) {
+    const tmp$1 = receiver$2.impl.label(receiver$2.value);
+    const tmp = $borrow($index(shapes, 0), true);
+    try {
+      console.log(`${tmp$1} ${$displayF64(tmp.impl.area(tmp.value))}`);
+    } finally {
+      $unborrow(tmp);
+    }
+  } finally {
     $unborrow(receiver$2);
-    throw error;
   }
-  let tmp$2;
-  try {
-    tmp$2 = $borrow($index(shapes, 0), true);
-  } catch (error) {
-    $unborrow(receiver$2);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$1} ${$displayF64(tmp$2.impl.area(tmp$2.value))}`);
-  } catch (error) {
-    $unborrow(tmp$2);
-    $unborrow(receiver$2);
-    throw error;
-  }
-  try {
-    $unborrow(tmp$2);
-  } catch (error) {
-    $unborrow(receiver$2);
-    throw error;
-  }
-  $unborrow(receiver$2);
   console.log(`${$eq(circle, { value: { r: 1.5 } })}`);
   const boxed = { value: { side: 1 }, impl: squareShape() };
   const receiver$3 = $borrowMut(boxed, true);
   try {
     receiver$3.impl.grow(receiver$3, 2);
-  } catch (error) {
+  } finally {
     $unborrow(receiver$3);
-    throw error;
   }
-  $unborrow(receiver$3);
   const receiver$4 = $borrow(boxed, true);
-  let tmp$3;
   try {
-    tmp$3 = receiver$4.impl.name(receiver$4.value);
-  } catch (error) {
+    const tmp = receiver$4.impl.name(receiver$4.value);
+    console.log(`${tmp}`);
+  } finally {
     $unborrow(receiver$4);
-    throw error;
   }
-  try {
-    console.log(`${tmp$3}`);
-  } catch (error) {
-    $unborrow(receiver$4);
-    throw error;
-  }
-  $unborrow(receiver$4);
   const again = $tryBorrow($index(shapes, 1), true);
   const value$2 = again.TAG === "Ok";
   try {
     console.log(`${value$2}`);
-  } catch (error) {
+  } finally {
     if (again.TAG === "Ok") {
       $unborrow(again._0);
     }
-    throw error;
-  }
-  if (again.TAG === "Ok") {
-    $unborrow(again._0);
   }
 }
 //# sourceMappingURL=case.js.map

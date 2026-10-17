@@ -506,4 +506,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
+  {
+    name: "stmts-alike-by-name",
+    breaks: "two drops alike but for the names they declare, `for (const item$1 of v)` and `for (const item of v)`, aren't, so a scope stays a `try` per statement",
+    file: "src/js.rs",
+    find: "            .map(|(i, name)| (name, format!(\"${i}\")))\n",
+    replace: "            .map(|(_, name)| (name.clone(), name))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "stmts-alike-by-span",
+    breaks: "two drops alike but where each was written aren't, so a scope stays a `try` per statement",
+    file: "src/js.rs",
+    find: "        unspan(&mut stmts);\n        let mut declared = Vec::new();\n",
+    replace: "        let mut declared = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|dyn_auto_traits).rs$"],
+    snapshots: true,
+  },
 ];

@@ -165,303 +165,60 @@ function main() {
   }
   console.log("sorted dropped");
   const byName = new Map();
-  let tmp$5;
   try {
-    tmp$5 = $insert(byName, "x", ["x"]);
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
+    const tmp = $insert(byName, "x", ["x"]);
+    if (tmp != null) {
+      noisyDrop_drop(tmp);
     }
-    throw error;
-  }
-  try {
-    if (tmp$5 != null) {
-      noisyDrop_drop(tmp$5);
-    }
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$6;
-  let tmp$7;
-  try {
-    tmp$6 = $entry(byName, "y");
-    tmp$7 = () => ["y"];
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let entry;
-  try {
-    entry = tmp$6;
-    $orInsertWith(entry._0[0], entry._0[1], tmp$7);
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const size = byName.size;
-  try {
+    const tmp$1 = $entry(byName, "y");
+    const tmp$2 = () => ["y"];
+    const entry = tmp$1;
+    $orInsertWith(entry._0[0], entry._0[1], tmp$2);
+    const size = byName.size;
     console.log(`${size} ${byName.has("y")}`);
-  } catch (error) {
+    const x = $remove(byName, "x");
+    try {
+      console.log(`${!!x}`);
+      const shared = { value: 5, strong: 1, weak: 0 };
+      try {
+        const handles = new Map();
+        try {
+          const tmp = handles;
+          const tmp$1 = $rcClone(shared);
+          const tmp$2 = $insert(tmp, "a", tmp$1);
+          if (tmp$2 != null) {
+            $rcDrop(tmp$2);
+          }
+          const tmp$3 = handles;
+          const tmp$4 = $rcClone(shared);
+          const tmp$5 = $insert(tmp$3, "b", tmp$4);
+          if (tmp$5 != null) {
+            $rcDrop(tmp$5);
+          }
+          console.log(`${shared.strong}`);
+          const tmp$6 = $remove(handles, "a");
+          if (tmp$6 != null) {
+            $rcDrop(tmp$6);
+          }
+          console.log(`${shared.strong}`);
+        } finally {
+          for (const item of handles.values()) {
+            $rcDrop(item);
+          }
+        }
+        console.log(`${shared.strong}`);
+      } finally {
+        $rcDrop(shared);
+      }
+    } finally {
+      if (x != null) {
+        noisyDrop_drop(x);
+      }
+    }
+  } finally {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    throw error;
-  }
-  let x;
-  try {
-    x = $remove(byName, "x");
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${!!x}`);
-  } catch (error) {
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  const shared = { value: 5, strong: 1, weak: 0 };
-  let handles;
-  try {
-    handles = new Map();
-  } catch (error) {
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$8;
-  let tmp$9;
-  try {
-    tmp$8 = handles;
-    tmp$9 = $rcClone(shared);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$10;
-  try {
-    tmp$10 = $insert(tmp$8, "a", tmp$9);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$10 != null) {
-      $rcDrop(tmp$10);
-    }
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$11;
-  let tmp$12;
-  try {
-    tmp$11 = handles;
-    tmp$12 = $rcClone(shared);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$13;
-  try {
-    tmp$13 = $insert(tmp$11, "b", tmp$12);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$13 != null) {
-      $rcDrop(tmp$13);
-    }
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${shared.strong}`);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$14;
-  try {
-    tmp$14 = $remove(handles, "a");
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$14 != null) {
-      $rcDrop(tmp$14);
-    }
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${shared.strong}`);
-  } catch (error) {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of handles.values()) {
-      $rcDrop(item);
-    }
-  } catch (error) {
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${shared.strong}`);
-  } catch (error) {
-    $rcDrop(shared);
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $rcDrop(shared);
-  } catch (error) {
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (x != null) {
-      noisyDrop_drop(x);
-    }
-  } catch (error) {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of byName.values()) {
-    noisyDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

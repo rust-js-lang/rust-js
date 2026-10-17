@@ -17,19 +17,11 @@ function boom(n) {
 
 function main() {
   const _a = ["a"];
-  let x;
   try {
-    x = (boom(1) + boom(2)) >>> 0;
-  } catch (error) {
-    noisyDrop_drop(_a);
-    throw error;
-  }
-  try {
+    const x = (boom(1) + boom(2)) >>> 0;
     console.log(`${x}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_a);
-    throw error;
   }
-  noisyDrop_drop(_a);
 }
 //# sourceMappingURL=case.js.map

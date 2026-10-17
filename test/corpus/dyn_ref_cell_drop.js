@@ -82,50 +82,21 @@ function main() {
     throw error;
   }
   const inner = { value: ["inner"], impl: noisyNamed() };
-  let tmp$3;
   try {
-    tmp$3 = $borrow(inner, true);
-  } catch (error) {
-    inner.impl.$drop?.(inner.value);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = tmp$3.impl.name(tmp$3.value);
-  } catch (error) {
-    $unborrow(tmp$3);
-    inner.impl.$drop?.(inner.value);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$4}`);
-  } catch (error) {
-    $unborrow(tmp$3);
-    inner.impl.$drop?.(inner.value);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    $unborrow(tmp$3);
-  } catch (error) {
-    inner.impl.$drop?.(inner.value);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    inner.impl.$drop?.(inner.value);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
+    try {
+      const tmp = $borrow(inner, true);
+      try {
+        const tmp$1 = tmp.impl.name(tmp.value);
+        console.log(`${tmp$1}`);
+      } finally {
+        $unborrow(tmp);
+      }
+    } finally {
+      inner.impl.$drop?.(inner.value);
+    }
     console.log("end");
-  } catch (error) {
+  } finally {
     named.impl.$drop?.(named.value);
-    throw error;
   }
-  named.impl.$drop?.(named.value);
 }
 //# sourceMappingURL=case.js.map

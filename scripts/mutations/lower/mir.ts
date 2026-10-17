@@ -1192,18 +1192,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-temporaries-unnamed",
-    "breaks": "a temporary MIR holds is named `_4`, not `value`",
-    "file": "src/lower/mir.rs",
-    "find": "        tidy::readable_temporaries(&params, &mut out);\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "held temporary is named"
-    ]
-  },
-  {
     "name": "mir-stored-paths-unknown",
     "breaks": "a getter's `bool` stored in a local isn't known as one, `!!(element.isContentEditable || ..)`",
     "file": "src/lower/mir.rs",

@@ -11,11 +11,9 @@ function noisyDrop_drop(noisy) {
 function take(n) {
   try {
     console.log(`took ${n[0]}`);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  noisyDrop_drop(n);
 }
 
 function main() {
@@ -30,14 +28,10 @@ function main() {
     }
     try {
       console.log(`end of ${give}`);
-    } catch (error) {
+    } finally {
       if (n$live) {
         noisyDrop_drop(n);
       }
-      throw error;
-    }
-    if (n$live) {
-      noisyDrop_drop(n);
     }
     n$live = false;
   }

@@ -111,160 +111,47 @@ function main() {
   }
   try {
     $dropSender(tx2);
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = drain(rx);
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$2.map((item) => $debugStr(item)).join(", ")}]`);
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = $tryRecv(rx);
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  const value = tmp$3.TAG === "Err" && tmp$3._0 === "Disconnected";
-  try {
+    const tmp = drain(rx);
+    console.log(`[${tmp.map((item) => $debugStr(item)).join(", ")}]`);
+    const tmp$1 = $tryRecv(rx);
+    const value = tmp$1.TAG === "Err" && tmp$1._0 === "Disconnected";
     console.log(`${value}`);
-  } catch (error) {
+    const tmp$2 = $channel();
+    const tx = tmp$2[0];
+    const rx$1 = tmp$2[1];
+    try {
+      $dropReceiver(rx$1);
+      const tmp = $send(tx, 5);
+      const value = tmp.TAG === "Err";
+      console.log(`${value}`);
+      const tmp$1 = $channel();
+      const tx$1 = tmp$1[0];
+      const rx = tmp$1[1];
+      const notify = () => {
+        $unwrapOk($send(tx$1, "done"), undefined, (e) => "SendError { .. }");
+      };
+      try {
+        try {
+          notify();
+          const value = $recv(rx);
+          console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
+          const tmp = $tryRecv(rx);
+          const value$1 = tmp.TAG === "Err" && tmp._0 === "Empty";
+          console.log(`${value$1}`);
+        } finally {
+          $dropSender(tx$1);
+        }
+        const tmp = $recv(rx);
+        const value = tmp.TAG === "Err";
+        console.log(`${value}`);
+      } finally {
+        $dropReceiver(rx);
+      }
+    } finally {
+      $dropSender(tx);
+    }
+  } finally {
     $dropReceiver(rx);
-    throw error;
   }
-  let tmp$4;
-  try {
-    tmp$4 = $channel();
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  const tx$1 = tmp$4[0];
-  const rx$1 = tmp$4[1];
-  try {
-    $dropReceiver(rx$1);
-  } catch (error) {
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = $send(tx$1, 5);
-  } catch (error) {
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  const value$1 = tmp$5.TAG === "Err";
-  try {
-    console.log(`${value$1}`);
-  } catch (error) {
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = $channel();
-  } catch (error) {
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  const tx$2 = tmp$6[0];
-  const rx$2 = tmp$6[1];
-  const notify = () => {
-    $unwrapOk($send(tx$2, "done"), undefined, (e) => "SendError { .. }");
-  };
-  try {
-    notify();
-  } catch (error) {
-    $dropSender(tx$2);
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    const value = $recv(rx$2);
-    console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
-  } catch (error) {
-    $dropSender(tx$2);
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$7;
-  try {
-    tmp$7 = $tryRecv(rx$2);
-  } catch (error) {
-    $dropSender(tx$2);
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  const value$2 = tmp$7.TAG === "Err" && tmp$7._0 === "Empty";
-  try {
-    console.log(`${value$2}`);
-  } catch (error) {
-    $dropSender(tx$2);
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    $dropSender(tx$2);
-  } catch (error) {
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = $recv(rx$2);
-  } catch (error) {
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  const value$3 = tmp$8.TAG === "Err";
-  try {
-    console.log(`${value$3}`);
-  } catch (error) {
-    $dropReceiver(rx$2);
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    $dropReceiver(rx$2);
-  } catch (error) {
-    $dropSender(tx$1);
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    $dropSender(tx$1);
-  } catch (error) {
-    $dropReceiver(rx);
-    throw error;
-  }
-  $dropReceiver(rx);
 }
 //# sourceMappingURL=case.js.map

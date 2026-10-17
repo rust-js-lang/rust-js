@@ -38,48 +38,28 @@ function main() {
   const receiver = $borrowMut(counter, true);
   try {
     receiver.impl.bump(receiver);
-  } catch (error) {
+  } finally {
     $unborrow(receiver);
-    throw error;
   }
-  $unborrow(receiver);
   const receiver$1 = $borrowMut(counter, true);
   try {
     receiver$1.impl.bump(receiver$1);
-  } catch (error) {
+  } finally {
     $unborrow(receiver$1);
-    throw error;
   }
-  $unborrow(receiver$1);
   const receiver$2 = $borrow(named, true);
-  let tmp;
   try {
-    tmp = receiver$2.impl.name(receiver$2.value);
-  } catch (error) {
-    $unborrow(receiver$2);
-    throw error;
-  }
-  try {
+    const tmp = receiver$2.impl.name(receiver$2.value);
     console.log(`${tmp}`);
-  } catch (error) {
+  } finally {
     $unborrow(receiver$2);
-    throw error;
   }
-  $unborrow(receiver$2);
   const receiver$3 = $borrow(counter, true);
-  let tmp$1;
   try {
-    tmp$1 = receiver$3.impl.Named().name(receiver$3.value);
-  } catch (error) {
+    const tmp = receiver$3.impl.Named().name(receiver$3.value);
+    console.log(`${tmp}`);
+  } finally {
     $unborrow(receiver$3);
-    throw error;
   }
-  try {
-    console.log(`${tmp$1}`);
-  } catch (error) {
-    $unborrow(receiver$3);
-    throw error;
-  }
-  $unborrow(receiver$3);
 }
 //# sourceMappingURL=case.js.map

@@ -11,11 +11,9 @@ function total(cell) {
   let result;
   try {
     result = value.value.reduce((a, b) => (a + b) | 0, 0);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   return result;
 }
 
@@ -24,18 +22,14 @@ function main() {
   const value = $borrowMut(cell, true);
   try {
     value.value.push(total(cell));
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
   const value$1 = $borrow(cell, true);
   try {
     console.log(`[${value$1.value.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
+  } finally {
     $unborrow(value$1);
-    throw error;
   }
-  $unborrow(value$1);
 }
 //# sourceMappingURL=case.js.map

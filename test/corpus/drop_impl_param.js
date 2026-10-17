@@ -38,22 +38,10 @@ function main() {
   const w = [["kept"]];
   try {
     console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-  } catch (error) {
-    loudDrop_drop(w[0]);
-    throw error;
-  }
-  try {
     console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
-  } catch (error) {
-    loudDrop_drop(w[0]);
-    throw error;
-  }
-  try {
     console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
-  } catch (error) {
+  } finally {
     loudDrop_drop(w[0]);
-    throw error;
   }
-  loudDrop_drop(w[0]);
 }
 //# sourceMappingURL=case.js.map

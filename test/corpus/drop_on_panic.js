@@ -49,11 +49,9 @@ function count(to) {
   const _never = [200];
   try {
     noisyDrop_drop(_never);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_outer);
-    throw error;
   }
-  noisyDrop_drop(_outer);
 }
 
 function main() {
@@ -61,10 +59,8 @@ function main() {
   const _kept = keep(first);
   try {
     count(5);
-  } catch (error) {
+  } finally {
     noisyDrop_drop(_kept);
-    throw error;
   }
-  noisyDrop_drop(_kept);
 }
 //# sourceMappingURL=case.js.map

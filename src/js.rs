@@ -405,6 +405,134 @@ pub fn ends(stmt: &Stmt) -> bool {
     }
 }
 
+/// Whether `a` and `b` are the same JS, part by part, wherever each was
+/// written and whatever it names what it declares: the drops a panic runs
+/// and the scope's end runs, `for (const item$1 of v)` and `for (const item
+/// of v)`, say.
+pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
+    let canonical = |stmts: &[Stmt]| {
+        let mut stmts = stmts.to_vec();
+        unspan(&mut stmts);
+        let mut declared = Vec::new();
+        binders(&mut stmts, &mut declared);
+        let names: HashMap<String, String> = (declared.into_iter().enumerate())
+            .map(|(i, name)| (name, format!("${i}")))
+            .collect();
+        let rename = |name: &mut String| {
+            if let Some(to) = names.get(name.as_str()) {
+                *name = to.clone();
+            }
+        };
+        rename_binders(&mut stmts, &mut |n| rename(n));
+        each_expr_mut(&mut stmts, &mut |e| {
+            e.span = Span::NONE;
+            match &mut e.kind {
+                ExprKind::Var(name) => rename(name),
+                ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+                    params.iter_mut().for_each(|p| p.each_name_mut(&mut |n| rename(n)));
+                    unspan(body);
+                    rename_binders(body, &mut |n| rename(n));
+                }
+                ExprKind::Function(function) => {
+                    unspan(&mut function.body);
+                    rename_binders(&mut function.body, &mut |n| rename(n));
+                }
+                _ => {}
+            }
+        });
+        stmts
+    };
+    a.len() == b.len() && canonical(a) == canonical(b)
+}
+
+/// The names `stmts` declare, in order, an arrow's in them too.
+fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
+    rename_binders(stmts, &mut |name| declared.push(name.clone()));
+    each_expr_mut(stmts, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+            params
+                .iter_mut()
+                .for_each(|p| p.each_name_mut(&mut |n| declared.push(n.clone())));
+            rename_binders(body, &mut |n: &mut String| declared.push(n.clone()));
+        }
+        ExprKind::Function(function) => {
+            rename_binders(&mut function.body, &mut |n: &mut String| declared.push(n.clone()))
+        }
+        _ => {}
+    });
+}
+
+/// `rename` given each name `stmts`' statements declare, however deep, not
+/// an arrow's in their expressions.
+fn rename_binders(stmts: &mut [Stmt], rename: &mut dyn FnMut(&mut String)) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => rename(name),
+            StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |n| rename(n)),
+            StmtKind::If(_, a, b) => {
+                rename_binders(a, rename);
+                if let Some(b) = b {
+                    rename_binders(b, rename);
+                }
+            }
+            StmtKind::While { body, .. } | StmtKind::Labeled(_, body) => rename_binders(body, rename),
+            StmtKind::ForOf { pattern, body, .. } => {
+                pattern.each_name_mut(&mut |n| rename(n));
+                rename_binders(body, rename);
+            }
+            StmtKind::For { name, body, .. } => {
+                rename(name);
+                rename_binders(body, rename);
+            }
+            StmtKind::Try(a, b) => {
+                rename_binders(a, rename);
+                rename_binders(b, rename);
+            }
+            StmtKind::TryCatch(a, error, b) => {
+                rename_binders(a, rename);
+                if let Some(error) = error {
+                    rename(error);
+                }
+                rename_binders(b, rename);
+            }
+            StmtKind::Function(function) => {
+                rename(&mut function.name);
+                function
+                    .params
+                    .iter_mut()
+                    .for_each(|p| p.each_name_mut(&mut |n| rename(n)));
+                rename_binders(&mut function.body, rename);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Each statement of `stmts`, however deep, of no span.
+fn unspan(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        stmt.span = Span::NONE;
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                unspan(a);
+                if let Some(b) = b {
+                    unspan(b);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => unspan(body),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                unspan(a);
+                unspan(b);
+            }
+            StmtKind::Function(function) => unspan(&mut function.body),
+            _ => {}
+        }
+    }
+}
+
 /// Whether a `break` in `stmts` leaves the loop they're the body of, labeled
 /// `label`: one of no label not inside a loop of their own, or of its label.
 pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
@@ -635,7 +763,7 @@ pub struct Import {
 
 /// Where a dynamic `import()` loads from (ADR 0304): a specifier, or a
 /// module of the crate's by its path, until its file's specifier is known.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum ImportFrom {
     Specifier(String),
     Module(Vec<String>),
@@ -650,7 +778,7 @@ pub struct Package {
     pub namespace: Option<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Function {
     pub name: String,
     pub params: Vec<Pattern>,
@@ -665,7 +793,7 @@ pub struct Function {
 
 /// What a parameter or declaration binds: a variable, or the parts of an
 /// array or object, `[count, setCount]` or `{ initial, label }`.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Pattern {
     Name(String),
     /// `None` skips an element: `[, b]`. An element may be taken apart in
@@ -685,6 +813,20 @@ pub enum Pattern {
 }
 
 impl Pattern {
+    /// Each name it declares.
+    pub fn each_name_mut(&mut self, f: &mut dyn FnMut(&mut String)) {
+        match self {
+            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => f(name),
+            Pattern::Array(items) => items.iter_mut().flatten().for_each(|p| p.each_name_mut(f)),
+            Pattern::Object(fields, rest) => {
+                fields.iter_mut().for_each(|(_, p, _)| p.each_name_mut(f));
+                if let Some(rest) = rest {
+                    f(rest);
+                }
+            }
+        }
+    }
+
     /// An array of variables, `[count, setCount]`; `None` skips one.
     pub fn names_array(names: impl IntoIterator<Item = Option<String>>) -> Pattern {
         Pattern::Array(names.into_iter().map(|name| name.map(Pattern::Name)).collect())
@@ -750,13 +892,13 @@ impl From<&str> for Pattern {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum StmtKind {
     Const(String, Expr),
     Let(String, Option<Expr>),
@@ -822,7 +964,7 @@ impl StmtKind {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
@@ -839,7 +981,7 @@ pub struct Symbol {
     pub export: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum ExprKind {
     Num(f64),
     /// A `u64` or an `i64` (ADR 0086): `5n`.
@@ -924,7 +1066,7 @@ pub enum ExprKind {
 }
 
 /// A JSX element (ADR 0040).
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Jsx {
     pub tag: JsxTag,
     /// Its attributes, `className="hero"`, or `{...props}`.
@@ -932,7 +1074,7 @@ pub struct Jsx {
     pub children: Vec<Expr>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum JsxTag {
     /// `<>`.
     Fragment,
@@ -942,7 +1084,7 @@ pub enum JsxTag {
     Component(Expr),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Prop {
     /// `name: value`, printed as `name` when `value` is a variable of that name.
     Field(String, Expr),
@@ -956,7 +1098,7 @@ pub enum Prop {
     Setter(String, Expr),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum UnaryOp {
     Neg,
     Not,

@@ -23,383 +23,84 @@ function main() {
   const h = [];
   try {
     $heapPush(h, [3], (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
     $heapPush(h, [9], (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
     $heapPush(h, [5], (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
+    const top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
+    const value = (o) => o[0];
+    try {
+      const value$1 = top ? value(top) : undefined;
+      console.log(`top ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    } finally {
+      if (top != null) {
+        oDrop_drop(top);
+      }
+    }
+    const value$1 = [[1], [7]];
+    const other = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
+    try {
+      $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
+      const length = h.length;
+      const length$1 = other.length;
+      console.log(`len ${length} ${length$1}`);
+      const tmp = $iter(h.splice(0));
+      const drained = tmp.toArray();
+      try {
+        console.log(`drained ${drained.length}`);
+      } finally {
+        for (const item of drained) {
+          oDrop_drop(item);
+        }
+      }
+      const value = [[4], [2], [6]];
+      const tmp$1 = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
+      const sorted = $heapSorted(tmp$1, (a, b) => $cmp(a[0], b[0]));
+      try {
+        const tmp = sorted.map((o) => o[0]);
+        console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+        const value = [[20], [25], [21], [30]];
+        const r = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
+        const value$1 = (o) => {
+          console.log(`keep ${o[0]}?`);
+          return o[0] % 5 === 0;
+        };
+        try {
+          $heapRetain(r, value$1, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+          const o = r[0];
+          const value = o ? o[0] : undefined;
+          console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
+        } finally {
+          for (const item of r) {
+            oDrop_drop(item);
+          }
+        }
+        const value$2 = [[11], [12]];
+        const k = $heapFrom(value$2, (a, b) => $cmp(a[0], b[0]));
+        try {
+          const tmp = $iter(k.splice(0));
+          for (const item of tmp) {
+            oDrop_drop(item);
+          }
+          const length = k.length;
+          console.log(`end ${length}`);
+        } finally {
+          for (const item of k) {
+            oDrop_drop(item);
+          }
+        }
+      } finally {
+        for (const item of sorted) {
+          oDrop_drop(item);
+        }
+      }
+    } finally {
+      for (const item of other) {
+        oDrop_drop(item);
+      }
+    }
+  } finally {
     for (const item of h) {
       oDrop_drop(item);
     }
-    throw error;
-  }
-  let top;
-  try {
-    top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value = (o) => o[0];
-  try {
-    const value$1 = top ? value(top) : undefined;
-    console.log(`top ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } catch (error) {
-    if (top != null) {
-      oDrop_drop(top);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    if (top != null) {
-      oDrop_drop(top);
-    }
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$1 = [[1], [7]];
-  let other;
-  try {
-    other = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const length = h.length;
-  const length$1 = other.length;
-  try {
-    console.log(`len ${length} ${length$1}`);
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $iter(h.splice(0));
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  let drained;
-  try {
-    drained = tmp.toArray();
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`drained ${drained.length}`);
-  } catch (error) {
-    for (const item of drained) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of drained) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$2 = [[4], [2], [6]];
-  let tmp$1;
-  try {
-    tmp$1 = $heapFrom(value$2, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  let sorted;
-  try {
-    sorted = $heapSorted(tmp$1, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = sorted.map((o) => o[0]);
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$2.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$3 = [[20], [25], [21], [30]];
-  let r;
-  try {
-    r = $heapFrom(value$3, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$4 = (o) => {
-    console.log(`keep ${o[0]}?`);
-    return o[0] % 5 === 0;
-  };
-  try {
-    $heapRetain(r, value$4, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
-  } catch (error) {
-    for (const item of r) {
-      oDrop_drop(item);
-    }
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const o = r[0];
-  try {
-    const value = o ? o[0] : undefined;
-    console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    for (const item of r) {
-      oDrop_drop(item);
-    }
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of r) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$5 = [[11], [12]];
-  let k;
-  try {
-    k = $heapFrom(value$5, (a, b) => $cmp(a[0], b[0]));
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = $iter(k.splice(0));
-  } catch (error) {
-    for (const item of k) {
-      oDrop_drop(item);
-    }
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of tmp$3) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of k) {
-      oDrop_drop(item);
-    }
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  const length$2 = k.length;
-  try {
-    console.log(`end ${length$2}`);
-  } catch (error) {
-    for (const item of k) {
-      oDrop_drop(item);
-    }
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of k) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of sorted) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    for (const item of other) {
-      oDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of h) {
-      oDrop_drop(item);
-    }
-    throw error;
-  }
-  for (const item of h) {
-    oDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

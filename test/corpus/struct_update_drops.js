@@ -44,14 +44,13 @@ function swap_y(p) {
 }
 
 function keep(n) {
+  let result;
   try {
     console.log(`keep ${n[0]}`);
-  } catch (error) {
+    result = [(n[0] + 10) & 255];
+  } finally {
     noisyDrop_drop(n);
-    throw error;
   }
-  const result = [(n[0] + 10) & 255];
-  noisyDrop_drop(n);
   return result;
 }
 
@@ -72,21 +71,18 @@ function main() {
   const p = { x: [1], y: [2], n: 1 };
   const q = { ...p, y: [3] };
   try {
-    console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
-  } catch (error) {
+    try {
+      console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
+    } catch (error) {
+      noisyDrop_drop(q.x);
+      noisyDrop_drop(q.y);
+      throw error;
+    }
     noisyDrop_drop(q.x);
     noisyDrop_drop(q.y);
+  } finally {
     noisyDrop_drop(p.y);
-    throw error;
   }
-  try {
-    noisyDrop_drop(q.x);
-    noisyDrop_drop(q.y);
-  } catch (error) {
-    noisyDrop_drop(p.y);
-    throw error;
-  }
-  noisyDrop_drop(p.y);
   console.log("after p");
   const swapped = swap_y({ x: [4], y: [5], n: 2 });
   try {

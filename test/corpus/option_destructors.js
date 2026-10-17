@@ -40,466 +40,105 @@ function main() {
   const slot = { pending: [1] };
   try {
     console.log(`flushed ${Slot.flush(slot)}`);
-  } catch (error) {
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
     console.log(`again ${Slot.flush(slot)}`);
-  } catch (error) {
+    const old = slot.pending;
+    slot.pending = [2];
+    try {
+      console.log(`old ${!!old}`);
+      const older = slot.pending;
+      slot.pending = [3];
+      const value = (n) => n[0];
+      try {
+        const value$1 = older ? value(older) : undefined;
+        console.log(`older ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      } finally {
+        if (older != null) {
+          noisyDrop_drop(older);
+        }
+      }
+      const value$1 = (n) => n[0] > 5;
+      let taken;
+      if (slot.pending != null && value$1(slot.pending)) {
+        taken = slot.pending;
+        slot.pending = undefined;
+      }
+      const kept = taken;
+      try {
+        console.log(`kept ${!kept}`);
+        const value = (n) => n[0] === 3;
+        let taken$1;
+        if (slot.pending != null && value(slot.pending)) {
+          taken$1 = slot.pending;
+          slot.pending = undefined;
+        }
+        const taken = taken$1;
+        const value$1 = (n) => n[0];
+        try {
+          const tmp = taken ? value$1(taken) : undefined;
+          const tmp$1 = slot.pending;
+          console.log(`taken ${tmp == null ? "None" : `Some(${tmp})`} left ${!tmp$1}`);
+          const value = [4];
+          try {
+            if (slot.pending != null) {
+              noisyDrop_drop(slot.pending);
+            }
+          } finally {
+            slot.pending = value;
+          }
+          const tmp$2 = made(5);
+          if (slot.pending != null) {
+            noisyDrop_drop(slot.pending);
+          }
+          slot.pending = tmp$2;
+          const held = slot.pending;
+          console.log(`held ${held[0]}`);
+          const tmp$3 = made(6);
+          if (slot.pending == null) {
+            slot.pending = tmp$3;
+          } else {
+            noisyDrop_drop(tmp$3);
+          }
+          const same = slot.pending;
+          console.log(`same ${same[0]}`);
+          try {
+            if (slot.pending != null) {
+              noisyDrop_drop(slot.pending);
+            }
+          } finally {
+            slot.pending = undefined;
+          }
+          const tmp$4 = made(7);
+          if (slot.pending == null) {
+            slot.pending = tmp$4;
+          } else {
+            noisyDrop_drop(tmp$4);
+          }
+          const fresh = slot.pending;
+          console.log(`fresh ${fresh[0]}`);
+          const value$2 = () => made(8);
+          slot.pending ??= value$2();
+          const with$ = slot.pending;
+          console.log(`with ${with$[0]}`);
+          console.log("end");
+        } finally {
+          if (taken != null) {
+            noisyDrop_drop(taken);
+          }
+        }
+      } finally {
+        if (kept != null) {
+          noisyDrop_drop(kept);
+        }
+      }
+    } finally {
+      if (old != null) {
+        noisyDrop_drop(old);
+      }
+    }
+  } finally {
     if (slot.pending != null) {
       noisyDrop_drop(slot.pending);
     }
-    throw error;
-  }
-  const old = slot.pending;
-  slot.pending = [2];
-  try {
-    console.log(`old ${!!old}`);
-  } catch (error) {
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const older = slot.pending;
-  slot.pending = [3];
-  const value = (n) => n[0];
-  try {
-    const value$1 = older ? value(older) : undefined;
-    console.log(`older ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } catch (error) {
-    if (older != null) {
-      noisyDrop_drop(older);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    if (older != null) {
-      noisyDrop_drop(older);
-    }
-  } catch (error) {
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const value$1 = (n) => n[0] > 5;
-  let taken$1;
-  let kept;
-  try {
-    if (slot.pending != null && value$1(slot.pending)) {
-      taken$1 = slot.pending;
-      slot.pending = undefined;
-    }
-    kept = taken$1;
-  } catch (error) {
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`kept ${!kept}`);
-  } catch (error) {
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const value$2 = (n) => n[0] === 3;
-  let taken$2;
-  let taken;
-  try {
-    if (slot.pending != null && value$2(slot.pending)) {
-      taken$2 = slot.pending;
-      slot.pending = undefined;
-    }
-    taken = taken$2;
-  } catch (error) {
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const value$3 = (n) => n[0];
-  let tmp;
-  let tmp$1;
-  try {
-    tmp = taken ? value$3(taken) : undefined;
-    tmp$1 = slot.pending;
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`taken ${tmp == null ? "None" : `Some(${tmp})`} left ${!tmp$1}`);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const value$4 = [4];
-  try {
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-  } catch (error) {
-    slot.pending = value$4;
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  slot.pending = value$4;
-  let tmp$2;
-  try {
-    tmp$2 = made(5);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  let held;
-  try {
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    slot.pending = tmp$2;
-    held = slot.pending;
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`held ${held[0]}`);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = made(6);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  let same;
-  try {
-    if (slot.pending == null) {
-      slot.pending = tmp$3;
-    } else {
-      noisyDrop_drop(tmp$3);
-    }
-    same = slot.pending;
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`same ${same[0]}`);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-  } catch (error) {
-    slot.pending = undefined;
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  slot.pending = undefined;
-  let tmp$4;
-  try {
-    tmp$4 = made(7);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  let fresh;
-  try {
-    if (slot.pending == null) {
-      slot.pending = tmp$4;
-    } else {
-      noisyDrop_drop(tmp$4);
-    }
-    fresh = slot.pending;
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`fresh ${fresh[0]}`);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  const value$5 = () => made(8);
-  let with$;
-  try {
-    slot.pending ??= value$5();
-    with$ = slot.pending;
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log(`with ${with$[0]}`);
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    if (taken != null) {
-      noisyDrop_drop(taken);
-    }
-  } catch (error) {
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    if (kept != null) {
-      noisyDrop_drop(kept);
-    }
-  } catch (error) {
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  try {
-    if (old != null) {
-      noisyDrop_drop(old);
-    }
-  } catch (error) {
-    if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
-    }
-    throw error;
-  }
-  if (slot.pending != null) {
-    noisyDrop_drop(slot.pending);
   }
 }
 //# sourceMappingURL=case.js.map

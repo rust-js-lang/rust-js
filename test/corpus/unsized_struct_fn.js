@@ -12,30 +12,20 @@ function main() {
   let tmp;
   for (const x of [1, 2, 3]) {
     const value = $borrowMut(add, true);
-    let tmp$1;
     try {
-      tmp$1 = value.value(x);
+      const tmp$1 = value.value(x);
       tmp = $borrowMut(total, true);
-    } catch (error) {
-      $unborrow(value);
-      throw error;
-    }
-    tmp.value = (tmp.value + tmp$1) | 0;
-    try {
+      tmp.value = (tmp.value + tmp$1) | 0;
       $unborrow(tmp);
-    } catch (error) {
+    } finally {
       $unborrow(value);
-      throw error;
     }
-    $unborrow(value);
   }
   const value = $borrow(total, true);
   try {
     console.log(`${value.value}`);
-  } catch (error) {
+  } finally {
     $unborrow(value);
-    throw error;
   }
-  $unborrow(value);
 }
 //# sourceMappingURL=case.js.map

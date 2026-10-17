@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A scope's drops on a panic are one `try { .. } finally { .. }`**, not a
+  `try` and `catch` around each statement: about 6,300 lines fewer across the
+  corpus (ADR 0437).
 - **A `dyn` of no trait but auto traits**, `Box<dyn Send>`, `Rc<dyn Send + Sync>`,
   its value dropped where Rust drops it; and a `Box` of a struct whose last
   field is a `dyn`, `Box<Fat<dyn Show>>`, which drops that field (ADRs 0409, 0436).
