@@ -2492,6 +2492,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         self.check_value_ty(target, span)?;
+        // A counted `Rc` as an `Rc<dyn T>` is `{ value: pair, strong, weak }`
+        // (ADR 0320): of one made here, its value made the pair; of one made
+        // elsewhere, which its other owners share as what it is, not yet.
+        if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {
+            return self.counted_unsized(source, target, value, span);
+        }
         if self.dynamic_trait(source).is_some() {
             let self_ty = self.pointee(source);
             let from = self.dyn_trait_ref(source, self_ty).unwrap();
@@ -2545,6 +2551,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Prop::Field(js::HELD.into(), value),
             Prop::Field(js::DICTIONARY.into(), dictionary),
         ]))
+    }
+
+    /// A counted `Rc` made here, `{ value: x, strong: 1, weak: 0 }`, as an
+    /// `Rc<dyn T>`: its value made the pair, `{ value: x, impl }`, as every
+    /// use of one reads it (ADR 0320); one of the same `dyn` already, itself.
+    /// One made elsewhere, of another `dyn`, or a `Weak`, is refused: its
+    /// other owners share it as the type it is.
+    fn counted_unsized(&mut self, source: Ty<'tcx>, target: Ty<'tcx>, value: Expr, span: Span) -> R<Expr> {
+        // Of the same `dyn` already, a slice's unsized: itself.
+        if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {
+            return Ok(value);
+        }
+        let what = format!("a counted `{source}` made elsewhere as a `{target}`");
+        let made_here = match (self.counted_rc(source), value.kind) {
+            (Some(pointee), js::ExprKind::Object(props)) if self.dynamic_trait(pointee).is_none() => {
+                Some((pointee, props))
+            }
+            _ => None,
+        };
+        let Some((pointee, mut props)) = made_here else {
+            return Err(self.unsupported(span, &what));
+        };
+        let tr = self.dyn_trait_ref(target, pointee).expect("a `dyn` of a trait");
+        let dictionary = self.dictionary(tr, span)?;
+        let Some(Prop::Field(_, held)) = props
+            .iter_mut()
+            .find(|p| matches!(p, Prop::Field(name, _) if name == js::HELD))
+        else {
+            return Err(self.unsupported(span, &what));
+        };
+        let inner = std::mem::replace(held, Expr::undefined());
+        *held = Expr::object(vec![
+            Prop::Field(js::HELD.into(), inner),
+            Prop::Field(js::DICTIONARY.into(), dictionary),
+        ]);
+        Ok(Expr::object(props))
     }
 
     /// A dictionary's `method`, which std's defaults of a writer write

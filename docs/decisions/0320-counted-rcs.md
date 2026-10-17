@@ -68,7 +68,14 @@ found.)
   counted `Rc` drops it, so it's found to a fixed point, by the drops'
   own question, `drop_runs`. The `rc_destructors` corpus case drops
   through clones, a `Vec` of them, a `RefCell` in one, one a function
-  gives back, and one of a value holding another, with native Rust.) If one is a generic function's `T`, or a generic function
+  gives back, and one of a value holding another, with native Rust.)
+- **An `Rc<dyn T>` of a counted `Rc`** (amended) is `{ value: { value,
+  impl }, strong, weak }`, the counted `Rc` of the pair, as every use of
+  one reads it: made of one made where it's unsized, `Rc::new(x)`, its
+  value made the pair. One made elsewhere, which its other owners share as
+  the type it is, an upcast of one, and a `Weak`, are refused. It had been
+  a pair around the `Rc`, which each use misread, since an `Rc` of a value
+  with a destructor was counted (`rc_dyn_destructors`). If one is a generic function's `T`, or a generic function
   holds an `Rc` while any is counted, every `Rc` is: the two must agree on
   what an `Rc` is.
 - **Drops are ADR 0098's**: a counted `Rc` and a `Weak` are values with a

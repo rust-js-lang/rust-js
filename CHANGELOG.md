@@ -107,6 +107,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **`drain(..)` of a vector of values with destructors**: an iterator
   that owns what it took out, whose drop drops what it hasn't given yet,
   as `into_iter()`'s does (ADR 0098).
+- **Fixed: an `Rc<dyn T>` of a value with a destructor** was a pair around
+  the counted `Rc`, which each use misread: it's the counted `Rc` of the
+  pair; one made elsewhere and unsized is refused (ADR 0320).
 - **An `Rc` or `Arc` of a value with a destructor**, which was refused: it's
   counted, `{ value, strong, weak }`, and the last of it drops what it
   points at, where Rust's does (ADR 0320).

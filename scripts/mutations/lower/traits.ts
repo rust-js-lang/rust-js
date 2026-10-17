@@ -1238,4 +1238,28 @@ export const mutations: Mutation[] = [
     replace: "            .takes_caller_location(method)\n            .then_some(location)\n            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
+  {
+    name: "counted-rc-unsized-around",
+    breaks: "a counted `Rc` made an `Rc<dyn T>` is a pair around the `Rc`, which each use reads as an `Rc` of a pair",
+    file: "src/lower/traits.rs",
+    find: "        if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {\n            return self.counted_unsized(source, target, value, span);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
+  },
+  {
+    name: "counted-rc-elsewhere-unsized",
+    breaks: "a counted `Rc<dyn Sub>` made here upcast to an `Rc<dyn Super>` is a pair around a pair",
+    file: "src/lower/traits.rs",
+    find: "            (Some(pointee), js::ExprKind::Object(props)) if self.dynamic_trait(pointee).is_none() => {\n",
+    replace: "            (Some(pointee), js::ExprKind::Object(props)) => {\n",
+    tests: ["test/traits.test.ts", "-t", "a counted Rc<dyn> upcast"],
+  },
+  {
+    name: "counted-rc-same-dyn-refused",
+    breaks: "an `Rc<dyn T>` unsized to itself, a slice's, is refused",
+    file: "src/lower/traits.rs",
+    find: "        if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {\n            return Ok(value);\n        }\n        let what",
+    replace: "        let what",
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
+  },
 ];
