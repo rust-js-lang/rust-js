@@ -63,7 +63,7 @@ pub(super) fn module<'tcx>(
             }
             _ => None,
         };
-        items.extend(declaration);
+        items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
     }
     if let Some(def_id) = default_export {
         // One only `js::export_default!` exports is declared, but exported
@@ -639,13 +639,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // One a caller may leave out takes `undefined` too, as leaving it
             // out does, under `exactOptionalPropertyTypes` as without it.
             let ty = if optional { or_undefined(ty) } else { ty };
-            members.push(json!({
+            let property = json!({
                 "kind": "property",
                 "name": field_key(self.tcx, field),
                 "optional": optional,
                 "readonly": false,
                 "type": ty,
-            }));
+            });
+            members.push(documented(property, self.tcx, field.did));
         }
         Some(json!({
             "kind": "interface",
@@ -1026,4 +1027,22 @@ fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {
         }
     }
     keys
+}
+
+/// `declaration` with its item's doc comment, as JSDoc (ADR 0444), which a
+/// TypeScript caller's editor shows: a function's, a type's, a field's.
+fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_id: DefId) -> Value {
+    use rustc_hir::attrs::AttributeKind;
+    let docs: Vec<String> = (rustc_hir::attrs::HasAttrs::get_attrs(def_id, &tcx).iter())
+        .filter_map(|attr| match attr {
+            hir::Attribute::Parsed(AttributeKind::DocComment { comment, .. }) => Some(comment.to_string()),
+            _ => None,
+        })
+        .flat_map(|doc| doc.lines().map(str::to_string).collect::<Vec<_>>())
+        .collect();
+    let lines: Vec<&str> = docs.iter().map(String::as_str).collect();
+    if let Some(jsdoc) = crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty()) {
+        declaration["docs"] = jsdoc.into();
+    }
+    declaration
 }

@@ -15,16 +15,16 @@ import * as f from "typescript/unstable/ast/factory";
  * @typedef {{ declarations: Declaration[], header?: string }} Module
  *
  * @typedef {{ kind: "import", from: string, names: string[], typeOnly: boolean }
- *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[] }
- *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type }
- *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
- *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type }
+ *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
+ *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
+ *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
+ *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, docs?: string }
  *   | { kind: "export-default", name: string }
  *   | { kind: "export-from", from: string, names: [string, string][] }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "other", text: string }} Declaration
  *
- * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type }
+ * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type, docs?: string }
  *   | { kind: "method", name: string, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
@@ -103,7 +103,9 @@ export async function open(files = []) {
       const parts = [];
       let previous;
       for (const declaration of module.declarations) {
-        const text = await project.emitter.printNode(statement(declaration));
+        const text = await documented(declaration, await project.emitter.printNode(statement(declaration)), (node) =>
+          project.emitter.printNode(node),
+        );
         // Imports together, then a blank line before each declaration.
         const together = previous === "import" && declaration.kind === "import";
         parts.push(previous && !together ? `\n${text}` : text);
@@ -113,6 +115,33 @@ export async function open(files = []) {
     },
     close,
   };
+}
+
+/**
+ * `text`, `declaration` as TypeScript printed it, with its JSDoc, `docs`,
+ * before it, and each of its members' before the member (ADR 0444): what
+ * a caller's editor shows. `printNode` prints a member alone, to find its
+ * line in the declaration's.
+ * @param {Declaration} declaration
+ * @param {string} text
+ * @param {(node: any) => Promise<string>} printNode
+ */
+async function documented(declaration, text, printNode) {
+  if (declaration.kind === "interface") {
+    let at = text.indexOf("{");
+    for (const m of declaration.members) {
+      if (m.kind !== "property" || !m.docs) continue;
+      const [first] = (await printNode(member(m))).split("\n");
+      const found = text.indexOf(first, at);
+      if (found < 0) continue;
+      const start = text.lastIndexOf("\n", found) + 1;
+      const indent = text.slice(start, found);
+      const docs = m.docs.split("\n").map((line) => `${indent}${line}\n`).join("");
+      text = text.slice(0, start) + docs + text.slice(start);
+      at = found + docs.length + first.length;
+    }
+  }
+  return declaration.docs ? `${declaration.docs}\n${text}` : text;
 }
 
 /**

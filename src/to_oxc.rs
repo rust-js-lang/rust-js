@@ -279,27 +279,16 @@ fn comments_of(
                     .map(|c| &sources.text[c.lo as usize..c.hi as usize])
                     .collect();
                 // A doc comment's lines, before one item: one JSDoc of them,
-                // unless one has a `*/`, which would end it: then each is
-                // written as it is.
-                if run == 0 || lines.iter().any(|l| l.contains("*/")) {
-                    pieces.push((comment.lo, comment.hi));
-                } else {
-                    let lines: Vec<&str> = (lines.iter())
-                        .map(|l| l.trim_start_matches("///"))
-                        .map(|l| l.strip_prefix(' ').unwrap_or(l))
-                        .collect();
-                    let jsdoc = match lines.as_slice() {
-                        [one] => format!("/** {one} */"),
-                        _ => {
-                            let lines: Vec<String> =
-                                lines.iter().map(|l| format!(" * {l}").trim_end().to_string()).collect();
-                            format!("/**\n{}\n */", lines.join("\n"))
-                        }
-                    };
-                    let lo = text.len() as u32;
-                    text.push_str(&jsdoc);
-                    pieces.push((lo, text.len() as u32));
-                    i += run - 1;
+                // or each as written where JS can't hold one (`jsdoc`).
+                let lines: Vec<&str> = lines.iter().map(|l| l.trim_start_matches("///")).collect();
+                match crate::comments::jsdoc(&lines).filter(|_| run > 0) {
+                    Some(jsdoc) => {
+                        let lo = text.len() as u32;
+                        text.push_str(&jsdoc);
+                        pieces.push((lo, text.len() as u32));
+                        i += run - 1;
+                    }
+                    None => pieces.push((comment.lo, comment.hi)),
                 }
                 i += 1;
             }

@@ -99,7 +99,18 @@ export function sum(x) {
   a comment before a statement, or at a line's end; no comment is moved
   where it doesn't belong. The next step is to keep the statement form
   where a branch has a comment, as an arrow's block is kept (7).
-- A `.d.ts` doesn't have them yet: its declarations are TypeScript's to
-  print (ADR 0207).
+- A `.d.ts` has an item's doc comments, not its other comments (below).
 - The corpus, the examples' snapshots, the pilot's and the playground's
   committed JS have their comments and blank lines.
+
+## Amendment: a `.d.ts` has its items' docs
+
+**A declaration's doc comment is its JSDoc in the `.d.ts`**: a function's,
+a type's, a `const`'s, and each field's before its property, as react.dev's
+getRouteMeta documents `RouteItem`'s fields, which a TypeScript caller's
+editor shows on hover. rustc's doc attributes give the lines, so a
+`#[doc]` a macro writes is one too; one function, `comments::jsdoc`, makes
+a JSDoc of doc lines for the JS and the `.d.ts`, none of lines with a
+`*/`. @rust-js/typescript prints a declaration's `docs` before it, and a
+property's before its line. A plain comment isn't a declaration's: it
+documents the code, which the `.d.ts` hasn't.

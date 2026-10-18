@@ -7,6 +7,8 @@ export type Route = "List" | {
 
 export function parse(hash: string): Route;
 
+/** Go to `hash`, as a link would. */
 export function go(to: string): void;
 
+/** The route, and a render each time it changes. */
 export function useRoute(): Route;

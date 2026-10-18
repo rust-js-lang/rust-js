@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "        None => true,",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
   },
+  {
+    name: "doc-comment-ended-early",
+    breaks: "a `///` line with a `*/` is written in a JSDoc, which it ends, and its rest is code",
+    file: "src/comments.rs",
+    find: "    if lines.iter().any(|line| line.contains(\"*/\")) {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+  },
 ];

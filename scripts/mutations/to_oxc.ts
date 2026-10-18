@@ -318,8 +318,8 @@ export const mutations: Mutation[] = [
     name: "doc-comment-not-jsdoc",
     breaks: "a `///` doc comment is written as a line comment, not JSDoc",
     file: "src/to_oxc.rs",
-    find: "                if run == 0 || lines.iter().any(|l| l.contains(\"*/\")) {",
-    replace: "                if true {",
+    find: "                match crate::comments::jsdoc(&lines).filter(|_| run > 0) {",
+    replace: "                match crate::comments::jsdoc(&lines).filter(|_| false) {",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
   {
@@ -386,14 +386,6 @@ export const mutations: Mutation[] = [
     replace: "            .find(|&&(lo, _)| lo == start && false)",
     tests: ["test/corpus.test.ts", "-t", "^channels.rs$"],
     snapshots: true,
-  },
-  {
-    name: "doc-comment-ended-early",
-    breaks: "a `///` line with a `*/` is written in a JSDoc, which it ends, and its rest is code",
-    file: "src/to_oxc.rs",
-    find: "                if run == 0 || lines.iter().any(|l| l.contains(\"*/\")) {",
-    replace: "                if run == 0 {",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "blank-line-before-span",

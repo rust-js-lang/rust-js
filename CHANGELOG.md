@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `.d.ts` has each item's doc comments as JSDoc**, a function's, a
+  type's and each field's, which a TypeScript caller's editor shows
+  (ADR 0444).
 - **A `pub use` of a JS module's binding re-exports it from that module**,
   `export { Challenges } from "./Challenges"`, in the JS and the `.d.ts`
   (ADR 0240).

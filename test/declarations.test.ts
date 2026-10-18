@@ -767,6 +767,32 @@ export const pair: Pair<number> = [1, 2];
   expect(errors).toEqual([]);
 });
 
+// A doc comment is its declaration's JSDoc, a function's, a type's and a
+// field's, which a TypeScript caller's editor shows, as react.dev's
+// getRouteMeta documents RouteItem (ADR 0444).
+test("declarations carry doc comments as JSDoc", () => {
+  const dir = fixture("declarations-docs");
+  writeFileSync(join(dir, "lib.rs"), `/// A route, in the sidebar.
+pub struct RouteItem {
+    /// Page title (for the sidebar)
+    pub title: String,
+    pub depth: u32,
+    /// Path to page,
+    /// if it has one.
+    pub path: Option<String>,
+}
+
+/// Its title.
+pub fn title(item: &RouteItem) -> &str {
+    &item.title
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("/** A route, in the sidebar. */\nexport interface RouteItem {\n    /** Page title (for the sidebar) */\n    title: string;\n    depth: number;\n    /**\n     * Path to page,\n     * if it has one.\n     */\n    path?: string | undefined;\n}");
+  expect(declarations).toContain("/** Its title. */\nexport function title(item: RouteItem): string;");
+});
+
 // A union is the object of the one field it holds (ADR 0406): to
 // TypeScript, a union of one-field objects.
 test("declarations type a union as the field it holds", () => {

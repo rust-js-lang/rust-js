@@ -53,3 +53,22 @@ pub fn is_one_in_js(comment: &str) -> bool {
         None => !comment.contains(['\r', '\u{2028}', '\u{2029}']),
     }
 }
+
+/// A doc comment's lines, each as `///` or `#[doc]` writes it, its first
+/// space but not its text's: their JSDoc, `/** one */` or one line each
+/// (ADR 0444); none where one has the `*/` that would end it.
+pub fn jsdoc(lines: &[&str]) -> Option<String> {
+    if lines.iter().any(|line| line.contains("*/")) {
+        return None;
+    }
+    let lines: Vec<&str> = (lines.iter()).map(|l| l.strip_prefix(' ').unwrap_or(l)).collect();
+    Some(match lines.as_slice() {
+        [one] => format!("/** {one} */"),
+        _ => {
+            let lines: Vec<String> = (lines.iter())
+                .map(|line| format!(" * {line}").trim_end().to_string())
+                .collect();
+            format!("/**\n{}\n */", lines.join("\n"))
+        }
+    })
+}
