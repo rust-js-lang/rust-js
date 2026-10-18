@@ -713,10 +713,48 @@ pub type Pair<T> = (T, T);
 pub fn deepest(toc: &Toc) -> u32 {
     toc.iter().map(|item| item.depth).max().unwrap_or(0)
 }
+
+pub fn pairs(pair: Pair<Toc>) -> Vec<Toc> {
+    vec![pair.0, pair.1]
+}
+
+pub struct Page {
+    pub toc: Toc,
+    pub sections: Option<Vec<Toc>>,
+}
+
+thread_local! {
+    pub static TOC: react::Context<Toc> = react::create_context(Vec::new());
+}
+
+type Depth = u32;
+
+pub fn depth(item: &TocItem) -> Depth {
+    item.depth
+}
+
+pub mod pages;
 `);
-  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  writeFileSync(join(dir, "pages.rs"), `use crate::Toc;
+
+pub fn first(toc: &Toc) -> Option<&str> {
+    toc.first().map(|item| item.url.as_str())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export type Toc = TocItem[];");
+  // Where the Rust names an alias, so does TypeScript, inside another type too.
+  expect(declarations).toContain("export function deepest(toc: Toc): number;");
+  expect(declarations).toContain("export function pairs(pair: Pair<Toc>): Toc[];");
+  expect(declarations).toContain("toc: Toc;");
+  expect(declarations).toContain("sections?: Toc[] | undefined;");
+  expect(declarations).toContain("export const TOC: Context<Toc>;");
+  // A private one, which isn't declared, is what it stands for.
+  expect(declarations).toContain("export function depth(item: TocItem): number;");
+  const pages = readFileSync(join(dir, "pages.d.ts"), "utf8");
+  expect(pages).toContain("export function first(toc: Toc): string | null | undefined;");
+  expect(pages).toMatch(/import type \{ Toc \} from "\.\/lib\.js";/);
   // TypeScript prints a tuple it's given across lines, as its printer does.
   expect(declarations).toContain("export type Pair<T> = [\n    T,\n    T\n];");
   writeFileSync(join(dir, "use.ts"), `import { deepest, type Pair, type Toc } from "./lib.js";

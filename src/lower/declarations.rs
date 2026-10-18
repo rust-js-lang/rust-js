@@ -43,6 +43,7 @@ pub(super) fn module<'tcx>(
         module_imports: BTreeSet::new(),
         unexported: BTreeMap::new(),
         erased: HashMap::new(),
+        named: Vec::new(),
     };
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
@@ -239,6 +240,10 @@ struct Declarations<'a, 'tcx> {
     /// The type parameters of the item being declared that are a type of
     /// TypeScript's, by index: `C: ReactNode`'s `ReactNode`.
     erased: HashMap<u32, Value>,
+    /// The aliases written in the type being declared, each by its type,
+    /// rustc's, which has them expanded, and what TypeScript names it
+    /// (`as_written`).
+    named: Vec<(Ty<'tcx>, Value)>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -364,6 +369,83 @@ impl<'tcx> Declarations<'_, 'tcx> {
         reference(name, type_args)
     }
 
+    /// A type as the Rust writes it, `of` making it of rustc's: each alias
+    /// written in it by its name, as TypeScript has it, where rustc's type
+    /// has it expanded, the crate's own, `Context<Toc>`, or one that says
+    /// what it is to TypeScript, `MouseEventHandler<HTMLButtonElement>`.
+    fn as_written(&mut self, written: Option<&hir::Ty<'tcx>>, of: impl FnOnce(&mut Self) -> Value) -> Value {
+        let mut named = Vec::new();
+        if let Some(written) = written {
+            self.aliases_in(written, &mut named);
+        }
+        let outer = self.named.len();
+        self.named.extend(named);
+        let value = of(self);
+        self.named.truncate(outer);
+        value
+    }
+
+    /// Each alias `written` names that TypeScript has by its name, and that.
+    fn aliases_in(&mut self, written: &hir::Ty<'tcx>, named: &mut Vec<(Ty<'tcx>, Value)>) {
+        match &written.kind {
+            hir::TyKind::Path(hir::QPath::Resolved(None, path)) => {
+                if let Res::Def(DefKind::TyAlias, did) = path.res
+                    && let Some(value) = self.alias_named(written, path, did)
+                {
+                    let ty = rustc_hir_analysis::lower_ty(self.tcx, written);
+                    named.push((self.tcx.erase_and_anonymize_regions(ty), value));
+                    return;
+                }
+                for arg in path.segments.iter().filter_map(|s| s.args).flat_map(|args| args.args) {
+                    if let hir::GenericArg::Type(ty) = arg {
+                        self.aliases_in(ty.as_unambig_ty(), named);
+                    }
+                }
+            }
+            hir::TyKind::Ref(_, inner) | hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),
+            hir::TyKind::Slice(inner) | hir::TyKind::Array(inner, _) => self.aliases_in(inner, named),
+            hir::TyKind::Tup(items) => {
+                for item in *items {
+                    self.aliases_in(item, named);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// An alias written, `did`, by its name: one that says what it is to
+    /// TypeScript, or one of the crate's it declares, this module's or
+    /// another's, imported from it (ADR 0210), of its arguments as written.
+    fn alias_named(&mut self, written: &hir::Ty<'tcx>, path: &hir::Path<'tcx>, did: DefId) -> Option<Value> {
+        if written_types(self.tcx, did).is_some() {
+            return self.written_alias(written);
+        }
+        let local = did.as_local()?;
+        if !self.tcx.visibility(did).is_public() {
+            return None;
+        }
+        let home = self.tcx.parent_module_from_def_id(local);
+        let name = self.tcx.item_name(did).to_string();
+        if home != self.module {
+            let file = self.files.get(&home)?;
+            self.module_imports.insert((file.clone(), name.clone()));
+        }
+        let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args.map(|args| args.args).unwrap_or_default())
+            .iter()
+            .filter_map(|arg| match arg {
+                hir::GenericArg::Type(ty) => Some(ty.as_unambig_ty()),
+                _ => None,
+            })
+            .collect();
+        let args = (given.into_iter())
+            .map(|given| {
+                let ty = rustc_hir_analysis::lower_ty(self.tcx, given);
+                self.as_written(Some(given), |out| out.ts(ty))
+            })
+            .collect();
+        Some(reference(&name, args))
+    }
+
     /// A type written as an alias that says what it is to TypeScript,
     /// `#[rust_js::types = "react#MouseEventHandler<T>"]`: that, as a person
     /// writes it, `MouseEventHandler<HTMLButtonElement>`, where rustc's
@@ -400,7 +482,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let at = params.iter().position(|param| param.as_str() == wanted)?;
             let Some(given) = given.get(at) else { break };
             let ty = rustc_hir_analysis::lower_ty(self.tcx, given);
-            args.push(self.ts(ty));
+            args.push(self.as_written(Some(given), |out| out.ts(ty)));
         }
         if !from.is_empty() {
             self.imports.insert((from.to_string(), imported(name)));
@@ -448,17 +530,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
-                let written = decl
-                    .and_then(|decl| decl.inputs.get(i))
-                    .and_then(|t| self.written_alias(t));
-                let ty = written.unwrap_or_else(|| self.ts(ty));
+                let ty = self.as_written(decl.and_then(|decl| decl.inputs.get(i)), |out| out.ts(ty));
                 json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
             })
             .collect();
         let output = sig.output();
+        let written = decl.and_then(|decl| match decl.output {
+            hir::FnRetTy::Return(written) => Some(written),
+            hir::FnRetTy::DefaultReturn(_) => None,
+        });
         let returns = match output.is_unit() {
             true => keyword("void"),
-            false => self.ts(output),
+            false => self.as_written(written, |out| out.ts(output)),
         };
         json!({
             "kind": "function",
@@ -531,23 +614,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 _ => None,
             });
             let (optional, ty) = match self.option(ty) {
-                Some(inner) if is_nullable(self.tcx, field) => (
-                    true,
-                    json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] }),
-                ),
                 Some(inner) => {
-                    let alias = written
-                        .and_then(|w| self.written_option(w))
-                        .and_then(|w| self.written_alias(w));
-                    (true, alias.unwrap_or_else(|| self.ts(inner)))
+                    let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
+                    match is_nullable(self.tcx, field) {
+                        true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),
+                        false => (true, inner),
+                    }
                 }
-                None => {
-                    let alias = written.and_then(|w| self.written_alias(w));
-                    (
-                        field_default(self.tcx, field).is_some(),
-                        alias.unwrap_or_else(|| self.field_ts(ty)),
-                    )
-                }
+                None => (
+                    field_default(self.tcx, field).is_some(),
+                    self.as_written(written, |out| out.field_ts(ty)),
+                ),
             };
             // One a caller may leave out takes `undefined` too, as leaving it
             // out does, under `exactOptionalPropertyTypes` as without it.
@@ -576,13 +653,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// `export type Toc = TocItem[];` of `pub type Toc = Vec<TocItem>;`.
     fn alias(&mut self, def_id: DefId) -> Value {
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));
         json!({
             "kind": "type",
             "name": self.tcx.item_name(def_id).as_str(),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),
-            "type": self.ts(ty),
+            "type": ty,
         })
     }
 
@@ -678,13 +756,19 @@ impl<'tcx> Declarations<'_, 'tcx> {
             ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::LocalKey) => args.type_at(0),
             _ => ty,
         };
+        let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));
         json!({
             "kind": "const",
             "name": fn_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
-            "type": self.ts(ty),
+            "type": ty,
         })
+    }
+
+    /// An item's type as the Rust writes it, a `const`'s or an alias's.
+    fn written_type(&self, def_id: DefId) -> Option<&'tcx hir::Ty<'tcx>> {
+        self.tcx.hir_node_by_def_id(def_id.as_local()?).ty()
     }
 
     fn option(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -739,6 +823,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     fn ts(&mut self, ty: Ty<'tcx>) -> Value {
         let tcx = self.tcx;
+        // An alias the Rust writes, by its name (`as_written`).
+        let erased = tcx.erase_and_anonymize_regions(ty);
+        if let Some((_, named)) = self.named.iter().rev().find(|(named, _)| *named == erased) {
+            return named.clone();
+        }
         if let Some(num) = Num::of(ty) {
             return keyword(if num.big() { "bigint" } else { "number" });
         }

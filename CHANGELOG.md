@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `.d.ts` names each type alias the Rust writes**, the crate's own too,
+  wherever it's written: `export const TocContext: Context<Toc>;`, where it
+  was `Context<TocItem[]>` (ADR 0196).
 - **Every comment of the Rust is in the JS**, before the statement its code
   is, or at the end of its line, a `///` doc comment as a JSDoc, which an
   editor shows a JS caller; and a blank line between statements in the

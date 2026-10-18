@@ -82,7 +82,16 @@ export default Tag;
   left out, `MouseEventHandler`. rustc's type is the alias expanded, so the
   field's type is read as written, its arguments lowered by
   `rustc_hir_analysis`. (Amended: it was the expansion, `(event:
-  MouseEvent<HTMLButtonElement>) => void`.)
+  MouseEvent<HTMLButtonElement>) => void`.) **Every alias the Rust writes
+  is named so, the crate's own too, wherever it's written**: a `const`'s
+  type, a field's, a parameter's, a result's, an alias's, and inside
+  another type, `Context<Toc>`, `Pair<Toc>`, `Vec<Toc>` a `Toc[]`; another
+  module's is imported from it (ADR 0210), and a private one, which isn't
+  declared, is what it stands for. One function, `as_written`, reads each
+  written type's aliases, and `ts` writes each by its name where it meets
+  its expansion. (Amended: an alias of the crate's was what it stands
+  for, `Context<TocItem[]>` where react.dev's `TocContext` has
+  `Context<Toc>`, and one of a binding's only at a type's top.)
   **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
