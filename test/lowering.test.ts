@@ -7432,6 +7432,14 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
     }
     out.push(0);
 }
+pub fn spun(mut n: u32) -> u32 {
+    loop {
+        if n <= 1 {
+            return n;
+        }
+        n /= 2;
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
@@ -7440,6 +7448,7 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
   expect(js).toContain("  while (n > 1) {\n");
   // A `loop` the program wrote stays one.
   expect(js).toContain("export function looped(n) {\n  while (true) {\n    if (n <= 1) {\n      return 1;\n    }\n");
+  expect(js).toContain("export function spun(n) {\n  while (true) {\n    if (n <= 1) {\n      return n;\n    }\n");
   expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return (n + 100) >>> 0;\n");
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
