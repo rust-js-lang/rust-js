@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `&mut dyn fmt::Write`**, a function that writes to any writer, and
+  std's `fmt::write(w, args)`, anyhow's (ADR 0446).
 - **Generic code extends and collects into what it's given**: `c.extend(items)`
   of a `C: Extend<A>` and `collect()` into a `B: FromIterator<A>`, through
   their dictionaries; and `s.extend(chars)` of a `String` (ADR 0445).

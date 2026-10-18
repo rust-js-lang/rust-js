@@ -1845,8 +1845,8 @@ export const mutations: Mutation[] = [
     name: "dyn-display-refused",
     breaks: "a `dyn Display` isn't a pair, and is refused",
     file: "src/lower/recognition.rs",
-    find: "        [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n            .into_iter()",
-    replace: "        [StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n            .into_iter()",
+    find: "            StdItem::Display,\n            StdItem::ToString,\n",
+    replace: "            StdItem::ToString,\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
@@ -1861,8 +1861,8 @@ export const mutations: Mutation[] = [
     name: "dyn-to-string-refused",
     breaks: "a `dyn ToString` is no value rust-js makes",
     file: "src/lower/recognition.rs",
-    find: "        [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]\n",
-    replace: "        [StdItem::Display, StdItem::Error, StdItem::IoWrite]\n",
+    find: "            StdItem::ToString,\n            StdItem::Error,\n",
+    replace: "            StdItem::Error,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
   },
   {
@@ -1912,5 +1912,21 @@ export const mutations: Mutation[] = [
     find: "        if self.is_lang_adt(ty, LangItem::String) {\n            Some(Std::PushStr)\n",
     replace: "        if false {\n            Some(Std::PushStr)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "dyn-fmt-write-refused",
+    breaks: "a `&mut dyn fmt::Write` is refused, a function of any writer",
+    file: "src/lower/recognition.rs",
+    find: "            StdItem::IoWrite,\n            StdItem::FmtWrite,\n        ]\n",
+    replace: "            StdItem::IoWrite,\n        ]\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_write_function.rs$"],
+  },
+  {
+    name: "fmt-write-function-unlowered",
+    breaks: "`fmt::write(w, args)` is refused, where it's `w.write_fmt(args)`",
+    file: "src/lower/recognition.rs",
+    find: "            && std_path(tcx, def_id).ends_with(\"fmt::write\")\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_write_function.rs$"],
   },
 ];

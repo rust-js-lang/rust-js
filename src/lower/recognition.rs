@@ -2366,6 +2366,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// The call a std function is, which rust-js lowers as that call:
+    /// `fmt::write(w, args)` is `w.write_fmt(args)`, of the `dyn fmt::Write`
+    /// it takes, anyhow's (ADR 0446). Another is itself.
+    pub(super) fn call_it_is(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> (DefId, ty::GenericArgsRef<'tcx>) {
+        let tcx = self.tcx;
+        if tcx.crate_name(def_id.krate) == sym::core
+            && std_path(tcx, def_id).ends_with("fmt::write")
+            && let sig = tcx
+                .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
+            && let Some(&writer) = sig.inputs().first()
+        {
+            let write_fmt = trait_method(tcx, std_item(tcx, StdItem::FmtWrite), "write_fmt");
+            return (write_fmt, tcx.mk_args(&[writer.peel_refs().into()]));
+        }
+        (def_id, generic_args)
+    }
+
     pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Vec)
             || [StdItem::VecDeque, StdItem::BinaryHeap, StdItem::LinkedList]
@@ -3386,16 +3407,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A trait whose `dyn` is a pair, its value and its dictionary (ADR
     /// 0049): one rust-js compiled, or std's `Display`, `ToString`, `Error`,
-    /// `io::Write` or `Any` (ADRs 0141, 0331).
+    /// `io::Write`, `fmt::Write` or `Any` (ADRs 0141, 0331, 0446).
     pub(super) fn is_pair_trait(&self, id: DefId) -> bool {
         self.is_rust_trait(id) || self.is_std_pair_trait(id)
     }
 
     /// Of those, std's.
     pub(super) fn is_std_pair_trait(&self, id: DefId) -> bool {
-        [StdItem::Display, StdItem::ToString, StdItem::Error, StdItem::IoWrite]
-            .into_iter()
-            .any(|item| is_std_def(self.tcx, id, item))
+        [
+            StdItem::Display,
+            StdItem::ToString,
+            StdItem::Error,
+            StdItem::IoWrite,
+            StdItem::FmtWrite,
+        ]
+        .into_iter()
+        .any(|item| is_std_def(self.tcx, id, item))
             || any_trait(self.tcx) == Some(id)
     }
 
