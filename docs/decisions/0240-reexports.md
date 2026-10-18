@@ -58,3 +58,38 @@ export { helper, other as renamed } from "./inner.js";
   from "./page.js"`, with the module's `pub use`s, as react.dev's
   errors/index makes the errors page its own. A module of only that is a
   file of it.
+
+## Amendment: a binding's, from its JS module
+
+**A `pub use` of a binding of a JS module's export is `export { .. } from`
+that module**, in the JS and the `.d.ts`, as react.dev's Challenges/index
+re-exports its still-TypeScript Challenges:
+
+```rust
+mod bound {
+    #[cfg_attr(rust_js, rust_js::link_name = "./Challenges#Challenges")]
+    pub fn Challenges(props: ChallengesProps) -> JSX::Element { unreachable!() }
+}
+pub use bound::Challenges;
+```
+
+```js
+export { Challenges } from "./Challenges";
+```
+
+- **Its module named as its imports are** (ADR 0028): from the root's JS
+  as written, from this file's folder as JS reads it, `../math.js` a
+  folder down; a default by the name the `use` gives it, `export { default
+  as Half }`.
+- **A binding's `static` is re-exported too**, and a module of only one's
+  `pub use` is a file of it. One function, `analysis::is_reexport`, says
+  what a `pub use` re-exports, which both the module's file and its
+  re-exports ask; the output names every module a re-export or a dynamic
+  `import()` is from by one closure, the crate's or a JS module's.
+- **A `pub fn` binding isn't re-exported**: it's an import its crate's
+  modules call, and a binding crate's thousands of `pub` bindings export
+  nothing. Only `pub use` re-exports, as it does a function of the crate's.
+  Decided with the user.
+- **A JS module's namespace, `#*`, is refused**: `export * as ns from`,
+  which TypeScript's re-export model doesn't hold yet; re-export each of
+  its exports by name.

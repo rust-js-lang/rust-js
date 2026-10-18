@@ -513,6 +513,58 @@ test("a pub use of another module's function is re-exported from it", async () =
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
 });
 
+// A `pub use` of a binding of a JS module's export is a re-export from that
+// module, `export {Challenges} from './Challenges'`, as react.dev's
+// Challenges/index re-exports its still-TypeScript Challenges (ADR 0240),
+// in the JS and the `.d.ts`; a binding's default by the name it's given.
+test("a pub use of a JS module's binding is re-exported from that module", async () => {
+  const dir = fixture("reexported-bindings");
+  writeFileSync(join(dir, "lib.rs"), `mod index;
+mod parts;
+
+pub fn own() -> f64 {
+    index::twice(2.0) + index::Half(4.0) + *parts::values::scale
+}
+`);
+  writeFileSync(join(dir, "parts.rs"), "pub mod values;\n");
+  mkdirSync(join(dir, "parts"), { recursive: true });
+  writeFileSync(join(dir, "parts", "values.rs"), `mod bound {
+    unsafe extern "Rust" {
+        #[link_name = "./math.js#scale"]
+        pub safe static scale: &'static f64;
+    }
+}
+
+pub use bound::scale;
+`);
+  writeFileSync(join(dir, "index.rs"), `mod bound {
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
+    pub fn twice(x: f64) -> f64 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#default")]
+    pub fn half(x: f64) -> f64 {
+        unreachable!()
+    }
+}
+
+pub use bound::half as Half;
+pub use bound::twice;
+`);
+  writeFileSync(join(dir, "math.js"), "export const scale = 10;\n\nexport function twice(x) {\n  return x * 2;\n}\n\nexport default function half(x) {\n  return x / 2;\n}\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { default as Half, twice } from "./math.js";');
+  expect(readFileSync(join(dir, "index.d.ts"), "utf8")).toContain('export { default as Half, twice } from "./math.js";');
+  // A module of only a static's re-export is a file of it, its JS module
+  // named from its folder, as ADR 0028 names an import.
+  expect(readFileSync(join(dir, "parts", "values.js"), "utf8")).toContain('export { scale } from "../math.js";');
+  expect(readFileSync(join(dir, "parts", "values.d.ts"), "utf8")).toContain('export { scale } from "../math.js";');
+  const index = await import(join(dir, "index.js"));
+  const lib = await import(join(dir, "lib.js"));
+  expect([index.twice(3), index.Half(8), lib.own()]).toEqual([6, 4, 16]);
+});
+
 // A `use` that renames another module's function imports it by that name,
 // `import { client as sandpack }`, as react.dev's MDXComponents imports
 // `{SandpackClient as Sandpack}`.

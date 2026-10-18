@@ -37,9 +37,9 @@ pub struct LoweredModule {
     /// as written in `#[link_name]`.
     pub packages: Vec<js::Package>,
     pub imports: Vec<LoweredImport>,
-    /// What it exports of the crate's other modules, by their path: its
-    /// `pub use` of their functions (ADR 0240).
-    pub reexports: Vec<LoweredImport>,
+    /// What it exports of the crate's other modules and of JS modules: its
+    /// `pub use` of their functions and of bindings (ADR 0240).
+    pub reexports: Vec<Reexport>,
     /// Its items, where its Rust has them (ADR 0306).
     pub items: Vec<js::Item>,
     pub caches: Vec<String>,
@@ -58,6 +58,14 @@ pub struct LoweredModule {
 }
 
 /// Named exports used from one Rust module, before its JS path is resolved.
+/// What a module re-exports from one place, each `(export, alias)` (ADR
+/// 0240): a module of the crate's, by its path, or a JS module a binding
+/// names, by its specifier, as its `#[link_name]` writes it.
+pub struct Reexport {
+    pub from: js::ImportFrom,
+    pub named: Vec<(String, String)>,
+}
+
 pub struct LoweredImport {
     pub path: Vec<String>,
     pub named: Vec<(String, String)>,

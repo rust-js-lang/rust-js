@@ -99,14 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
-    name: "reexport-private-use",
-    breaks: "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
-    file: "src/lower/pipeline.rs",
-    find: "        if !tcx.visibility(item.owner_id).is_public() || info.module == module || info.owner.is_some() {",
-    replace: "        if info.module == module || info.owner.is_some() {",
-    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
-  },
-  {
     name: "reexport-alias-unread",
     breaks: "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
     file: "src/lower/pipeline.rs",
@@ -342,5 +334,21 @@ export const mutations: Mutation[] = [
     find: "            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
     replace: "            .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
     tests: ["test/crates.test.ts", "-t", "tracked trait method without a default"],
+  },
+  {
+    name: "binding-reexport-unwritten",
+    breaks: "a `pub use` of a JS module's binding writes no `export { .. } from` it",
+    file: "src/lower/pipeline.rs",
+    find: "        if super::bindings::is_binding(tcx, def_id)\n",
+    replace: "        if false && super::bindings::is_binding(tcx, def_id)\n",
+    tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
+  },
+  {
+    name: "namespace-reexport-unrefused",
+    breaks: "a `pub use` of a JS module's namespace is `export { * as ns }`, which isn't JS",
+    file: "src/lower/pipeline.rs",
+    find: "            if export == \"*\" {\n",
+    replace: "            if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a pub use of a JS module's namespace"],
   },
 ];

@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "module-import-unresolved",
     breaks: "an import of another module's types is given no file it's from",
     file: "src/output.rs",
-    find: "                        import[\"from\"] = self.specifier(&module.path, &path).into();",
-    replace: "                        import[\"from\"] = path.join(\"/\").into();",
+    find: "                js::ImportFrom::Module(path) => self.specifier(&module.path, path),\n",
+    replace: "                js::ImportFrom::Module(path) => path.join(\"/\"),\n",
     tests: ["test/declarations.test.ts"],
   },
   {
@@ -217,5 +217,13 @@ export const mutations: Mutation[] = [
     find: "                .zip(absolute(&self.settings.dir).ok().filter(|_| self.settings.cargo))\n",
     replace: "                .zip(absolute(&self.settings.dir).ok())\n",
     tests: ["test/jsx.test.ts", "-t", "forwarded refs"],
+  },
+  {
+    name: "binding-reexport-unlocated",
+    breaks: "a binding's re-export names its JS module as the root names it, `./math.js` from a folder below",
+    file: "src/output.rs",
+    find: "                js::ImportFrom::Specifier(specifier) => located(specifier),\n",
+    replace: "                js::ImportFrom::Specifier(specifier) => specifier.clone(),\n",
+    tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
   },
 ];

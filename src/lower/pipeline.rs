@@ -4,7 +4,7 @@ use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in}
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
-use crate::program::{ImportRequest, LoweredImport, LoweredModule, Unlinked, UnlinkedModule};
+use crate::program::{ImportRequest, LoweredModule, Reexport, Unlinked, UnlinkedModule};
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::find_attr;
@@ -769,17 +769,20 @@ pub fn lower_crate<'tcx>(
 }
 
 /// What `module` re-exports, its public `pub use` of another module's
-/// function, by that module's path: each `(export, alias)`, the function's
-/// JS name and the name the `use` gives it (ADR 0240); and `default`,
-/// another module's function its `js::export_default!` names.
+/// function, by that module's path, or of a binding of a JS module's
+/// export, by its specifier: each `(export, alias)`, the function's JS name
+/// or the export, and the name the `use` gives it (ADR 0240); and
+/// `default`, another module's function its `js::export_default!` names.
+/// The crate's modules first, then JS modules, each in its order.
 fn reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     fns: &HashMap<DefId, FnInfo>,
     paths: &HashMap<LocalModId, Vec<String>>,
     default_from: Option<DefId>,
-) -> Vec<LoweredImport> {
+) -> Vec<Reexport> {
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    let mut specified: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
     if let Some(info) = default_from.and_then(|function| fns.get(&function))
         && let Some(from) = paths.get(&info.module)
     {
@@ -796,8 +799,25 @@ fn reexports(
         let Some(Res::Def(_, def_id)) = path.res.value_ns else {
             continue;
         };
+        if !super::analysis::is_reexport(tcx, item) {
+            continue;
+        }
+        // A binding of a JS module's export, itself, not a path in it.
+        if super::bindings::is_binding(tcx, def_id)
+            && let Some(written) = super::bindings::js_path(tcx, def_id)
+            && let Some(((from, export), "")) = super::bindings::js_import(&written)
+        {
+            if export == "*" {
+                let why = "it'd be `export * as ns from`; re-export each of its exports by name";
+                let what = "a `pub use` of a JS module's namespace";
+                super::refusal::refuse(tcx, item.span, super::refusal::Refused::Because(what, why));
+                continue;
+            }
+            specified.entry(from).or_default().push((export, ident.to_string()));
+            continue;
+        }
         let Some(info) = fns.get(&def_id) else { continue };
-        if !tcx.visibility(item.owner_id).is_public() || info.module == module || info.owner.is_some() {
+        if info.module == module || info.owner.is_some() {
             continue;
         }
         let Some(from) = paths.get(&info.module) else { continue };
@@ -810,10 +830,15 @@ fn reexports(
             .or_default()
             .push((info.name.clone(), alias));
     }
-    grouped
-        .into_iter()
-        .map(|(path, named)| LoweredImport { path, named })
-        .collect()
+    let modules = (grouped.into_iter()).map(|(path, named)| Reexport {
+        from: js::ImportFrom::Module(path),
+        named,
+    });
+    let specifiers = (specified.into_iter()).map(|(from, named)| Reexport {
+        from: js::ImportFrom::Specifier(from),
+        named,
+    });
+    modules.chain(specifiers).collect()
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).

@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `pub use` of a JS module's binding re-exports it from that module**,
+  `export { Challenges } from "./Challenges"`, in the JS and the `.d.ts`
+  (ADR 0240).
 - **A function's last `return;` isn't written**: it falls off its end, as
   a person ends one, `function half(n) { if (..) { return n / 2; } }`
   (ADR 0299).

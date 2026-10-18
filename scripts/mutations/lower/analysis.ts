@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
     snapshots: true,
   },
+  {
+    name: "static-reexport-fileless",
+    breaks: "a module of only a `pub use` of a binding's static has no file, and its re-export is lost",
+    file: "src/lower/analysis.rs",
+    find: "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),\n",
+    replace: "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, _)) => false,\n",
+    tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
+  },
+  {
+    name: "reexport-private-use",
+    breaks: "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
+    file: "src/lower/analysis.rs",
+    find: "    tcx.visibility(item.owner_id).is_public()\n        && match path.res.value_ns {\n",
+    replace: "    true\n        && match path.res.value_ns {\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
+  },
 ];

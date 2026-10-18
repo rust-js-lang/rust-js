@@ -80,8 +80,19 @@ impl OutputPlan {
                     .collect::<Vec<_>>()
             };
             let imports = specified(&module.imports);
-            let reexports = specified(&module.reexports);
             let located = |from: &str| self.linked_specifier(&module.path, from);
+            // Where a module of the crate's, or a JS module, is from this
+            // one's file, as its JS and its `.d.ts` name it.
+            let from_here = |from: &js::ImportFrom| match from {
+                js::ImportFrom::Module(path) => self.specifier(&module.path, path),
+                js::ImportFrom::Specifier(specifier) => located(specifier),
+            };
+            let reexports = (module.reexports.iter())
+                .map(|reexport| js::Import {
+                    named: reexport.named.clone(),
+                    from: from_here(&reexport.from),
+                })
+                .collect::<Vec<_>>();
             let packages = module
                 .packages
                 .into_iter()
@@ -132,11 +143,7 @@ impl OutputPlan {
             // module of the crate's by its file's specifier (ADR 0304).
             js_module.each_expr_mut(&mut |e| {
                 if let js::ExprKind::Import(from) = &mut e.kind {
-                    let specifier = match from {
-                        js::ImportFrom::Module(path) => self.specifier(&module.path, path),
-                        js::ImportFrom::Specifier(specifier) => located(specifier),
-                    };
-                    *from = js::ImportFrom::Specifier(specifier);
+                    *from = js::ImportFrom::Specifier(from_here(from));
                 }
             });
             crate::prepare::module(&mut js_module);
@@ -188,12 +195,17 @@ impl OutputPlan {
             {
                 declarations["header"] = js_module.header.clone().into();
                 // Another module's types, from its file, as its JS imports it (ADR 0210).
+                // A JS module's, a binding's re-export, as its JS has it (ADR 0240).
                 for import in declarations["declarations"].as_array_mut().into_iter().flatten() {
-                    if let Some(path) = import.get("module").cloned() {
-                        let path: Vec<String> = serde_json::from_value(path).map_err(|e| e.to_string())?;
-                        import["from"] = self.specifier(&module.path, &path).into();
-                        import.as_object_mut().expect("an import").remove("module");
-                    }
+                    let object = import.as_object_mut().expect("a declaration");
+                    let from = match (object.remove("module"), object.remove("specifier")) {
+                        (Some(path), _) => {
+                            js::ImportFrom::Module(serde_json::from_value(path).map_err(|e| e.to_string())?)
+                        }
+                        (None, Some(serde_json::Value::String(specifier))) => js::ImportFrom::Specifier(specifier),
+                        _ => continue,
+                    };
+                    object.insert("from".into(), from_here(&from).into());
                 }
                 typed.push((types_path(&js_path), declarations));
             }

@@ -8,7 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
-use crate::program::LoweredImport;
+use crate::program::Reexport;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
@@ -31,7 +31,7 @@ pub(super) fn module<'tcx>(
     module: LocalModId,
     default_export: Option<DefId>,
     files: &HashMap<LocalModId, Vec<String>>,
-    reexports: &[LoweredImport],
+    reexports: &[Reexport],
     plain_ref_cells: &HashSet<Ty<'tcx>>,
 ) -> Option<Value> {
     let mut out = Declarations {
@@ -113,8 +113,18 @@ pub(super) fn module<'tcx>(
     }
     // `export { Challenges } from "./Challenges.js";`, its `pub use` of another
     // module's function, as its JS has it (ADR 0240).
+    // A JS module's by its specifier, which the output makes the file's too.
     for reexport in reexports {
-        declarations.push(json!({ "kind": "export-from", "module": reexport.path, "names": reexport.named }));
+        let from = match &reexport.from {
+            crate::js::ImportFrom::Module(path) => json!({ "module": path }),
+            crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
+        };
+        let mut declaration = json!({ "kind": "export-from", "names": reexport.named });
+        declaration
+            .as_object_mut()
+            .expect("an object")
+            .extend(from.as_object().expect("an object").clone());
+        declarations.push(declaration);
     }
     declarations.extend(items);
     Some(json!({ "declarations": declarations }))

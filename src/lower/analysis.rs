@@ -508,12 +508,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         if bindings::marks(tcx, module, "import").next().is_some() && seen_modules.insert(module) {
             modules.push(module);
         }
-        let reexports = tcx.hir_module_free_items(module).any(|id| {
-            let item = tcx.hir_item(id);
-            matches!(item.kind, rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_))
-                if tcx.visibility(item.owner_id).is_public()
-                    && matches!(path.res.value_ns, Some(rustc_hir::def::Res::Def(DefKind::Fn, _))))
-        });
+        let reexports = tcx
+            .hir_module_free_items(module)
+            .any(|id| is_reexport(tcx, tcx.hir_item(id)));
         // Or a default that's another module's function (ADR 0240).
         let defaulted = || !bindings::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {
@@ -689,4 +686,18 @@ fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
                 })
         })
     })
+}
+
+/// Whether `item` is a `pub use` its module's JS re-exports (ADR 0240): of
+/// a function, the crate's or a binding's, or of a binding's `static`.
+pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
+    let rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = item.kind else {
+        return false;
+    };
+    tcx.visibility(item.owner_id).is_public()
+        && match path.res.value_ns {
+            Some(rustc_hir::def::Res::Def(DefKind::Fn, _)) => true,
+            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),
+            _ => false,
+        }
 }
