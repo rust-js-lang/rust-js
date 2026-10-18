@@ -238,13 +238,15 @@ pub fn type_id() -> String {
 });
 
 // A `None` given to JS is `undefined` given, never left out: a JS function
-// may count its arguments, as `Math.max` does (ADR 0330).
+// may count its arguments, as `Math.max` does (ADR 0330). Not a binding's
+// optional parameter's, an `Option`, which is left out, `Math.max(1)` of
+// `max(1.0, None)` (ADR 0443); one of any value, `B`, is given.
 test("an undefined given to JS is an argument, never left out", () => {
   const dir = fixture("given-undefined");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[allow(unused_variables)] fn math_max(a: f64, b: Option<f64>) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[allow(unused_variables)] fn math_max<B>(a: f64, b: B) -> f64 { unreachable!() }
 
 pub fn bound() -> f64 {
-    math_max(1.0, None)
+    math_max(1.0, None::<f64>)
 }
 
 pub fn given(f: &dyn Fn(f64, Option<f64>) -> f64) -> f64 {

@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-undefined-left-out",
-    breaks: "`Math.max(1, None)` is `Math.max(1)`, `1` where it's `NaN`",
+    breaks: "`Math.max(1, None::<f64>)`, of a parameter of any value, is `Math.max(1)`, `1` where it's `NaN`",
     file: "src/lower/binding_calls.rs",
     find: "        given_to_js(&mut args);\n",
     replace: "",
