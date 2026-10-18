@@ -43,20 +43,11 @@ pub(super) struct Hints<'h> {
     pub(super) falsy: &'h HashSet<String>,
     /// And the temporaries such a `test && value` tests.
     pub(super) tested: &'h HashSet<String>,
-    /// Where the program writes each `if`'s condition, twice, and each
-    /// `match` of a guarded arm and its guard.
-    pub(super) conditions: &'h [(js::Span, js::Span)],
-    /// Where each loop is written, whether as a `while`, and its label.
-    pub(super) loops: &'h [(js::Span, bool, Option<String>)],
-    /// Where each `if` the program wrote of a `continue` tests: one alone,
-    /// or one that ends what it does.
-    pub(super) continues: &'h [js::Span],
-    /// Where each `&&` or `||` the program wrote is.
-    pub(super) logicals: &'h [js::Span],
+    /// Where the program writes its `if`s, loops, `&&`s, tables and
+    /// comments (`hints::Written`).
+    pub(super) written: &'h super::hints::Written,
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
     pub(super) callbacks: &'h HashSet<String>,
-    /// Where each `match` that reads a table by its key is (ADR 0233).
-    pub(super) tables: &'h [(js::Span, Vec<String>)],
     /// What a `let`'s struct pattern binds, by name.
     pub(super) patterns: &'h HashSet<String>,
     /// Whether the body is a closure's, tidied again in its function's.
@@ -89,12 +80,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         result,
         falsy,
         tested,
-        conditions,
-        loops: written,
-        continues,
-        logicals,
+        written,
         callbacks,
-        tables,
         patterns,
         closure,
         returns,
@@ -106,8 +93,24 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         concise,
         flags,
     } = *hints;
+    let super::hints::Written {
+        tables,
+        conditions,
+        logicals,
+        continues,
+        loops: written,
+        comments,
+    } = written;
+    let (tables, conditions, logicals, continues, written, comments) = (
+        &tables[..],
+        &conditions[..],
+        &logicals[..],
+        &continues[..],
+        &written[..],
+        &comments[..],
+    );
     // What branches make a value of: the function's, and where an `if` is written.
-    let made = (result, conditions);
+    let made = (result, conditions, comments);
     // A guard of a handle made for it alone: the place it's a handle on.
     crate::lower::std_types::cell::unguarded(body);
     // Where a drop's flag is known, no test of it, nor a `try` for it.

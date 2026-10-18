@@ -286,7 +286,7 @@ pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
     booleans: &HashSet<String>,
-    (result, conditions): (&str, &[(js::Span, js::Span)]),
+    (result, conditions, comments): (&str, &[(js::Span, js::Span)], &[js::Span]),
 ) {
     // An `if` the program wrote, where its condition is.
     let written_if =
@@ -358,7 +358,10 @@ pub(super) fn branch_values(
                     && !(updates(x, yes) && updates(x, no))
                     // Nor the function's value an `if` makes, which each returns; a
                     // `match`'s is one value.
-                    && !(x == result && written_if(span)) =>
+                    && !(x == result && written_if(span))
+                    // Nor one whose branch has a comment, which an expression
+                    // has no line for (ADR 0444).
+                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.
@@ -858,6 +861,25 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Str
         }
         _ => None,
     }
+}
+
+/// Whether a comment the program wrote is in what `at` starts, an `if` or
+/// a `match`, among `stmts`, its branches, up to where their code ends (ADR
+/// 0444): what's folded into one expression would have no line for it, so
+/// they stay statements.
+pub(super) fn commented(at: js::Span, stmts: &[Stmt], comments: &[js::Span]) -> bool {
+    if comments.is_empty() || at.is_none() {
+        return false;
+    }
+    let mut spans = vec![at];
+    let mut copy = stmts.to_vec();
+    js::each_block_mut(&mut copy, &mut |list| {
+        spans.extend(list.iter().map(|s| s.span).filter(|s| !s.is_none()));
+    });
+    let (Some(lo), Some(hi)) = (spans.iter().map(|s| s.lo).min(), spans.iter().map(|s| s.hi).max()) else {
+        return false;
+    };
+    comments.iter().any(|c| lo <= c.lo && c.hi <= hi)
 }
 
 /// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`

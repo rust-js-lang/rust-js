@@ -94,11 +94,9 @@ export function sum(x) {
 ## Consequences
 
 - **A comment inside an expression the JS writes as one** isn't written
-  yet: one in an `if`'s or a `match`'s branch written as `a ? b : c`, in a
-  struct literal's field, between a call's arguments. Oxc's printer holds
-  a comment before a statement, or at a line's end; no comment is moved
-  where it doesn't belong. The next step is to keep the statement form
-  where a branch has a comment, as an arrow's block is kept (7).
+  yet: in a struct literal's field, between a call's arguments. Oxc's
+  printer holds a comment before a statement, or at a line's end; no
+  comment is moved where it doesn't belong. A branch's is kept (below).
 - A `.d.ts` has an item's doc comments, not its other comments (below).
 - The corpus, the examples' snapshots, the pilot's and the playground's
   committed JS have their comments and blank lines.
@@ -114,3 +112,13 @@ a JSDoc of doc lines for the JS and the `.d.ts`, none of lines with a
 `*/`. @rust-js/typescript prints a declaration's `docs` before it, and a
 property's before its line. A plain comment isn't a declaration's: it
 documents the code, which the `.d.ts` hasn't.
+
+## Amendment: a branch's comment keeps it a statement
+
+**An `if` or a `match` whose branch has a comment stays statements**,
+`let n; if (flag) { // Yes.\n n = 1; } else { n = 2; }`, where it'd be
+`const n = flag ? 1 : 2`, which has no line for the comment: as an
+arrow's block is kept (7). Tidying folds no branch of a comment
+(`branches::commented`), which it's told of by the body's comment spans,
+`hints::Written::comments`, from where the `if` starts to where its last
+branch's code ends.

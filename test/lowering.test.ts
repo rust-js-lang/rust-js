@@ -104,6 +104,27 @@ thread_local! {
     static START: u32 = 5;
 }
 
+pub fn pick(flag: bool) -> u32 {
+    let n = if flag {
+        // Yes.
+        1
+    } else {
+        2
+    };
+    let k = if flag {
+        3
+    } else {
+        // Four.
+        4
+    };
+    let m = match n {
+        // One.
+        1 => 10,
+        _ => 20,
+    };
+    n + m + k
+}
+
 pub fn gated(n: u32, o: Option<u32>) -> u32 {
     let m = n + 1;
 
@@ -132,6 +153,9 @@ pub fn start() -> u32 {
   // A blank line before a statement whose span starts inside its line, a
   // \`let .. else\`'s at its pattern.
   expect(js).toContain("  const m = (n + 1) >>> 0;\n\n  if (o == null) {");
+  // A branch's comment keeps its branch a statement, as an expression has
+  // no line for it, an \`if\`'s and a \`match\`'s.
+  expect(js).toContain("  let n;\n  if (flag) {\n    // Yes.\n    n = 1;\n  } else {\n    n = 2;\n  }\n  let k;\n  if (flag) {\n    k = 3;\n  } else {\n    // Four.\n    k = 4;\n  }\n  // One.\n  let m;\n  if (n === 1) {\n    m = 10;\n  } else {\n    m = 20;\n  }\n");
 });
 
 test("a variable nothing sets again is a const", async () => {

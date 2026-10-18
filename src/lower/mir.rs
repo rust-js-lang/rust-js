@@ -843,12 +843,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 result: &state.locals.names[mir::RETURN_PLACE],
                 falsy: &falsy,
                 tested: &tested,
-                conditions: &written.conditions,
-                loops: &written.loops,
-                continues: &written.continues,
-                logicals: &written.logicals,
+                written: &written,
                 callbacks: &callbacks,
-                tables: &written.tables,
                 closure: (mir_body.args_iter().next())
                     .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())

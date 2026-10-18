@@ -410,8 +410,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-result-folded",
     breaks: "MIR's tail `if` making the function's value is one conditional, not returned in each",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(x == result && written_if(span)) =>\n",
-    replace: "                    =>\n",
+    find: "                    && !(x == result && written_if(span))\n",
+    replace: "\n",
     tests: ["test/lowering.test.ts","-t","a tail if returns each branch"],
   },
   {
@@ -458,5 +458,13 @@ export const mutations: Mutation[] = [
     replace: "const BOOLEAN_METHODS: &[&str] = &[];\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^sales_report.rs$"],
+  },
+  {
+    name: "commented-else-folded",
+    breaks: "an `if` whose branch has a comment is folded into `c ? a : b`, and the comment is lost",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>",
+    replace: "                    =>",
+    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
 ];
