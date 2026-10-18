@@ -6911,8 +6911,10 @@ fn configure_maybe(options: Option<&dyn std::any::Any>) -> u32 { unreachable!() 
 fn keep(_: &Kept) -> u32 { 0 }
 const fn sized<const N: u32>() -> u32 { N }
 pub fn configured() -> u32 {
+    // Given by its name, a struct in its field is read by JS too.
+    let options = Options { readonly: true, inner: Inner { depth: 2 } };
     // A body in a body, a block given as a const argument, its own owner.
-    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } }) + configure_maybe(Some(&Maybe { given: 3 })) + sized::<{ sized::<1>() }>()
+    keep(&Kept { unread: 1 }) + configure(&options) + configure_maybe(Some(&Maybe { given: 3 })) + sized::<{ sized::<1>() }>()
 }
 `);
   const built = Bun.spawnSync(args, { cwd: dir });
