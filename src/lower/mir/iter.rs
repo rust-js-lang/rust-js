@@ -221,50 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (_, Some(_)) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
                 }
-                _ => {
-                    let items = match self.array_source(iter_ty) {
-                        // One a variable or a field holds, its `$iter`, stepped or
-                        // not: what's left of it.
-                        Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
-                            match std_method {
-                                Some(IterMethod::Peekable) => return Ok(Some(receiver)),
-                                _ => Expr::call_helper("$rest", vec![receiver]),
-                            }
-                        }
-                        Some(_) => match self.std_iterator(receiver, iter_ty) {
-                            it if std_method == Some(IterMethod::Peekable) => return Ok(Some(it)),
-                            // Of one just made, the array, which `toReversed`
-                            // copies anyway.
-                            it if std_method == Some(IterMethod::Rev)
-                                && crate::lower::iterators::is_stepped_items(&it) =>
-                            {
-                                crate::lower::iterators::iterated(it)
-                            }
-                            it => Expr::call_helper("$rest", vec![it]),
-                        },
-                        // A `$iter` of an array, just made: the array.
-                        None if crate::lower::iterators::is_stepped_items(&receiver) => match std_method {
-                            Some(IterMethod::Peekable) => return Ok(Some(receiver)),
-                            _ => crate::lower::iterators::iterated(receiver),
-                        },
-                        // Of such an array's skipped and taken from, the array
-                        // sliced: no closure runs over it.
-                        None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),
-                        None => match from_iterator(receiver) {
-                            Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
-                            Err(_) => {
-                                return Err(
-                                    self.unsupported(span, &format!("`{name}` of a lazy iterator, from its MIR"))
-                                );
-                            }
-                        },
-                    };
-                    let items = match std_method {
-                        Some(IterMethod::Rev) => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
-                        _ => items,
-                    };
-                    self.stepped_items(items)
-                }
+                _ => self.rev_or_peekable_items(receiver, iter_ty, std_method, name, span)?,
             }));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
@@ -498,6 +455,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// `rev()` or `peekable()` of a std iterator neither a range nor the
+    /// crate's own: of items made already, an array's, a `$iter` of them,
+    /// reversed for `rev`; a lazy chain made of its items reversed where its
+    /// closures run in the same order; else refused (ADR 0164).
+    fn rev_or_peekable_items(
+        &mut self,
+        receiver: Expr,
+        iter_ty: Ty<'tcx>,
+        std_method: Option<IterMethod>,
+        name: &str,
+        span: Span,
+    ) -> R<Expr> {
+        let items = match self.array_source(iter_ty) {
+            // One a variable or a field holds, its `$iter`, stepped or
+            // not: what's left of it.
+            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => match std_method {
+                Some(IterMethod::Peekable) => return Ok(receiver),
+                _ => Expr::call_helper("$rest", vec![receiver]),
+            },
+            Some(_) => match self.std_iterator(receiver, iter_ty) {
+                it if std_method == Some(IterMethod::Peekable) => return Ok(it),
+                // Of one just made, the array, which `toReversed`
+                // copies anyway.
+                it if std_method == Some(IterMethod::Rev) && crate::lower::iterators::is_stepped_items(&it) => {
+                    crate::lower::iterators::iterated(it)
+                }
+                it => Expr::call_helper("$rest", vec![it]),
+            },
+            // A `$iter` of an array, just made: the array.
+            None if crate::lower::iterators::is_stepped_items(&receiver) => match std_method {
+                Some(IterMethod::Peekable) => return Ok(receiver),
+                _ => crate::lower::iterators::iterated(receiver),
+            },
+            // Of such an array's skipped and taken from, the array
+            // sliced: no closure runs over it.
+            None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),
+            // A chain over an array's items of callbacks that read
+            // no index: the chain over them reversed, each called
+            // from the back, as Rust's `next_back` calls them.
+            None if std_method == Some(IterMethod::Rev)
+                && let Some(reversed) = reversed_inward(&receiver) =>
+            {
+                return Ok(reversed);
+            }
+            None => match from_iterator(receiver) {
+                Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+                Err(_) => {
+                    return Err(self.unsupported(span, &format!("`{name}` of a lazy iterator, from its MIR")));
+                }
+            },
+        };
+        let items = match std_method {
+            Some(IterMethod::Rev) => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
+            _ => items,
+        };
+        Ok(self.stepped_items(items))
     }
 
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
@@ -869,5 +884,57 @@ fn skipped(it: Expr, n: Expr) -> Expr {
             Expr::call_helper("$skipDropping", vec![source, n, drop])
         }
         kind => Expr::call(Expr::member(Expr { kind, ..it }, "drop"), vec![n]),
+    }
+}
+
+/// `$iter(v).map(f).filter(p)`, a lazy chain over an array's items whose
+/// callbacks read no index, made of the items reversed:
+/// `$iter(v.toReversed()).map(f).filter(p)`. Rust's `Map` and `Filter`
+/// call theirs from the back as they're stepped from it, so each is called
+/// on the same items, in the same order (ADR 0164). An index, an
+/// `enumerate`'s `(x, i) => [i, x]`, would count from the other end, so
+/// it's made of the array's items first, where nothing's called before.
+fn reversed_inward(e: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    // `$iter(v)` of an array just made iterable: `$iter(v.toReversed())`.
+    if crate::lower::iterators::is_stepped_items(e) {
+        let items = crate::lower::iterators::iterated(e.clone());
+        return Some(Expr::call(
+            (**callee).clone(),
+            vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
+        ));
+    }
+    let js::ExprKind::Member(base, method) = &callee.kind else {
+        return None;
+    };
+    // A function given as it is, a Rust one of the item alone, reads no index.
+    let no_index = |f: &Expr| match &f.kind {
+        js::ExprKind::Arrow(params, _) => params.len() == 1,
+        js::ExprKind::Var(_) | js::ExprKind::Member(..) => true,
+        _ => false,
+    };
+    match (method.as_str(), args.as_slice()) {
+        // An index read of an array's items, nothing before it to call: the
+        // array mapped, then reversed, `$iter(v.map((x, i) => [i, x])
+        // .toReversed())`, each index its item's.
+        ("map", [f]) if !no_index(f) && crate::lower::iterators::is_stepped_items(base) => {
+            let js::ExprKind::Call(stepper, _) = &base.kind else {
+                return None;
+            };
+            let items = Expr::call(
+                Expr::member(crate::lower::iterators::iterated((**base).clone()), "map"),
+                args.clone(),
+            );
+            Some(Expr::call(
+                (**stepper).clone(),
+                vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
+            ))
+        }
+        ("map" | "filter", [f]) if no_index(f) => {
+            Some(Expr::call(Expr::member(reversed_inward(base)?, method), args.clone()))
+        }
+        _ => None,
     }
 }

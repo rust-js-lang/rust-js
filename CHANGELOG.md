@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rev()` of a lazy chain over a slice**, `v.iter().map(f).rev()`,
+  `.filter(p).rev()` and `.enumerate().rev()`: `v.toReversed().map(f)`, each
+  closure called in the order Rust calls it (ADR 0164).
 - **webapi's `localStorage`, `sessionStorage`, `Storage::set_item`, `cookie`,
   IndexedDB's `open`, a canvas's `to_data_url`, `to_blob` and `get_image_data`, a
   stylesheet's rules and `history.push_state` return a `Result`**: each throws

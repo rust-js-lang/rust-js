@@ -1,7 +1,8 @@
 # 0164. An iterator of the crate's from both ends, and of a known length
 
 Status: Accepted. Extends [0055](0055-iterator.md) and
-[0160](0160-user-collections.md).
+[0160](0160-user-collections.md). Amended: `rev()` of a lazy chain over a
+slice (below).
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -49,3 +50,17 @@ utf8_iter's, arrayvec's, hashbrown's and litemap's iterators.
   between steps, with native Rust; `exact_len_unknown` the assertion.
 - **It's the JS a person writes:** the type's own functions, stepped by a
   JS iterator.
+
+## Amendment: `rev()` of a lazy chain over a slice
+
+`v.iter().map(f).rev()`, `.filter(p).rev()` and `.enumerate().rev()`
+were refused, as a lazy chain's closures would run in another order. Not
+of these: Rust's `Map` and `Filter` call their closures from the back as
+they're stepped from it, so the chain made of the items reversed calls
+each on the same items in the same order, `v.toReversed().map(f)`; and an
+`enumerate`'s index, which no closure of the program's makes, is made of
+the items before they're reversed, `v.map((x, i) => [i, x]).toReversed()`.
+Case C: what the closures print is observable, and is Rust's.
+`rev_of_lazy_chains` runs each against native Rust, `take` and `next`
+after it too. A chain whose closure reads an index after another
+closure, or that isn't of a slice's items, is still refused.

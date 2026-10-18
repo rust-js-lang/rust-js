@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-items-forward",
     breaks: "`rev()` of items made already gives them in order",
     file: "src/lower/mir/iter.rs",
-    find: "                        Some(IterMethod::Rev) => Expr::call(Expr::member(items, \"toReversed\"), Vec::new()),\n",
-    replace: "                        Some(IterMethod::Rev) => items,\n",
+    find: "            Some(IterMethod::Rev) => Expr::call(Expr::member(items, \"toReversed\"), Vec::new()),\n",
+    replace: "            Some(IterMethod::Rev) => items,\n",
     tests: ["test/corpus.test.ts","-t","linked_lists"],
   },
   {
@@ -103,8 +103,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-fresh-iter-rest",
     breaks: "`rev()` of a `split` just made is `$rest($iter(…))` reversed, not the array's",
     file: "src/lower/mir/iter.rs",
-    find: "                            _ => crate::lower::iterators::iterated(receiver),\n",
-    replace: "                            _ => crate::js::Expr::call_helper(\"$rest\", vec![receiver]),\n",
+    find: "                _ => crate::lower::iterators::iterated(receiver),\n",
+    replace: "                _ => crate::js::Expr::call_helper(\"$rest\", vec![receiver]),\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
   {
@@ -183,8 +183,8 @@ export const mutations: Mutation[] = [
     "name": "mir-rev-of-fresh-copied",
     "breaks": "`xs.iter().rev()` from MIR copies the array first, `$rest($iter(xs)).toReversed()`",
     "file": "src/lower/mir/iter.rs",
-    "find": "                            it if std_method == Some(IterMethod::Rev)\n                                && crate::lower::iterators::is_stepped_items(&it) =>\n",
-    "replace": "                            it if false =>\n",
+    "find": "                it if std_method == Some(IterMethod::Rev) && crate::lower::iterators::is_stepped_items(&it) => {\n",
+    "replace": "                it if false => {\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-counted-refused",
     breaks: "MIR's `rev` of an array's items skipped and taken from is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                        None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),\n",
+    find: "            None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","rev of skipped and taken"],
   },
@@ -479,8 +479,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-kept-iterator-wrapped",
     breaks: "`rev()` of an iterator a variable holds wraps its `$iter` again, `it.toReversed()`, which throws",
     file: "src/lower/mir/iter.rs",
-    find: "                        Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {\n",
-    replace: "                        Some(_) if false => {\n",
+    find: "            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => match std_method {\n",
+    replace: "            Some(_) if false => match std_method {\n",
     tests: [
       "test/lowering.test.ts",
       "-t",
@@ -660,5 +660,29 @@ export const mutations: Mutation[] = [
     find: "        js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some(\"$closing\") => {\n",
     replace: "        js::ExprKind::Call(callee, mut list) if false && callee.helper_name() == Some(\"$closing\") => {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+  },
+  {
+    "name": "rev-chain-refused",
+    "breaks": "`rev()` of a lazy chain over a slice, `v.iter().map(f).rev()`, is refused, though its closures run in the same order over the items reversed",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                && let Some(reversed) = reversed_inward(&receiver) =>\n",
+    "replace": "                && let Some(reversed) = None::<Expr> =>\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rev_of_lazy_chains"
+    ]
+  },
+  {
+    "name": "rev-chain-index-from-back",
+    "breaks": "an `enumerate().rev()`'s index is counted over the items reversed, `(2, 5)` where it's `(0, 5)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        js::ExprKind::Arrow(params, _) => params.len() == 1,\n",
+    "replace": "        js::ExprKind::Arrow(..) => true,\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rev_of_lazy_chains"
+    ]
   },
 ];
