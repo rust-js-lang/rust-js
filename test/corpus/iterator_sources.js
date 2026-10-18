@@ -28,7 +28,6 @@ function counterIterator_next(counter) {
     counter[0] = (counter[0] + 1) >>> 0;
     return counter[0];
   }
-  return;
 }
 
 function repeated(first, n, TClone) {

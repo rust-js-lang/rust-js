@@ -31,7 +31,6 @@ function text_in(root, path) {
     }
     return;
   }
-  return;
 }
 
 function first_big(v) {

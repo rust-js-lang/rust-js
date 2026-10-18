@@ -33,7 +33,6 @@ function sinkTakeA_take(sink, _a, dropA) {
 
 function sinkTakeA_make(_a, dropA) {
   dropA?.(_a);
-  return;
 }
 
 function relayTakeA(STakeA, dropA, dropS) {
@@ -110,7 +109,6 @@ function keepTakeA_take(keep, a, dropA) {
 
 function keepTakeA_make(_a, dropA) {
   dropA?.(_a);
-  return;
 }
 
 function via(t, a, TTakeA) {

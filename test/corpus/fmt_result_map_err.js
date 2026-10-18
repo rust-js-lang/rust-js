@@ -25,7 +25,6 @@ function smallWrite_write_str(small, s) {
     return $fmtError();
   }
   small.text += s;
-  return;
 }
 
 function make(cap, args) {

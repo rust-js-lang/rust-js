@@ -9,7 +9,6 @@ export function half(n) {
   if (n % 2 === 0) {
     return (n / 2) | 0;
   }
-  return;
 }
 
 /** `match`, with patterns inside `Some`, and a guard. */
@@ -101,7 +100,6 @@ function pair(n) {
   if (n > 0) {
     return [n, (n + 1) | 0];
   }
-  return;
 }
 
 /** `map`: the closure runs on the value, for `Some` only. */

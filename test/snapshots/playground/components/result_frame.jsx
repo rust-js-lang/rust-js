@@ -46,7 +46,6 @@ export function ResultFrame({ program, onOutcome }) {
               return;
             }
           }
-          return;
         },
         controller,
       );

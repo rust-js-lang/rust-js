@@ -36,7 +36,6 @@ export function named(value, key) {
   if (key in value) {
     return value[key];
   }
-  return;
 }
 
 /**

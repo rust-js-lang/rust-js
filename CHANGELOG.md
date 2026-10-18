@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A function's last `return;` isn't written**: it falls off its end, as
+  a person ends one, `function half(n) { if (..) { return n / 2; } }`
+  (ADR 0299).
 - **A `thread_local!`'s memo or context is named as JSX names it**,
   `static IconCopy = memo(..)`, `static TocContext`, with no `#[allow]`, and
   so is the component function written in it; and a component's props

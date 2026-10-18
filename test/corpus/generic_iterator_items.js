@@ -29,7 +29,6 @@ function first_long(items, BAsRefStr) {
       return $byteLen(text);
     }
   }
-  return;
 }
 
 function second(items) {

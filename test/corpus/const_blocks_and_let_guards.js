@@ -46,7 +46,6 @@ function first_even(items) {
       return item;
     }
   }
-  return;
 }
 
 function main() {

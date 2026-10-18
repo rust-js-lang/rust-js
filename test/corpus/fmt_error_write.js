@@ -66,7 +66,6 @@ function show(s, h) {
     throw error;
   }
   s.value += ".";
-  return;
 }
 
 function main() {

@@ -23,9 +23,7 @@ function duplicate(t, TClone) {
   return { ...t, unit: t.unit };
 }
 
-function numbersIterator_next(numbers) {
-  return;
-}
+function numbersIterator_next(numbers) {}
 
 function held(h, TClone) {
   return { ...h };

@@ -21,7 +21,6 @@ function spanIterator_next(span) {
     span[0] = (span[0] + 1) >>> 0;
     return (span[0] - 1) >>> 0;
   }
-  return;
 }
 
 function spanDoubleEndedIterator_next_back(span) {
@@ -29,7 +28,6 @@ function spanDoubleEndedIterator_next_back(span) {
     span[1] = (span[1] - 1) >>> 0;
     return span[1];
   }
-  return;
 }
 
 function main() {

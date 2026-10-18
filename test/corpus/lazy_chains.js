@@ -63,7 +63,6 @@ function main() {
       if (noisy("find_map", x) > 1) {
         return Math.imul(x, 10);
       }
-      return;
     })
     .find((item) => item != null);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);

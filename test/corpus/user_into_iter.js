@@ -11,7 +11,6 @@ function countIterator_next(count) {
     count[0] = (count[0] + 1) >>> 0;
     return count[0];
   }
-  return;
 }
 
 const Count = {

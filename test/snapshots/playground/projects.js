@@ -48,7 +48,6 @@ export const Project = {
     if (file) {
       return file.state;
     }
-    return;
   },
 
   /** With the open file's `live` state kept, since the editor has it. */

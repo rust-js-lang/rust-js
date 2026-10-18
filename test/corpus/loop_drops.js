@@ -67,7 +67,6 @@ function first_long(items) {
       throw error;
     }
   }
-  return;
 }
 
 function main() {

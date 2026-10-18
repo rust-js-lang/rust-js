@@ -26,7 +26,6 @@ function table(out, rows) {
   }
   out.value += "end";
   out.value += ".";
-  return;
 }
 
 function main() {

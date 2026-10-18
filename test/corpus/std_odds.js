@@ -8,7 +8,6 @@ export function entry() {
 
 function greet(err) {
   console.error("to stderr 1");
-  return;
 }
 
 function table(rows) {
@@ -21,7 +20,6 @@ function table(rows) {
     $print(`${Math.imul(row, row) >>> 0} `);
   }
   console.log("");
-  return;
 }
 
 function main() {

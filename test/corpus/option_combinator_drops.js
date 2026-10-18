@@ -16,7 +16,6 @@ function make(n) {
   if (n > 0) {
     return [n];
   }
-  return;
 }
 
 function even(d) {

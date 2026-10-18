@@ -6,13 +6,9 @@ export function entry() {
   main();
 }
 
-function numbersIterator_next(numbers) {
-  return;
-}
+function numbersIterator_next(numbers) {}
 
-function listsIterator_next(lists) {
-  return;
-}
+function listsIterator_next(lists) {}
 
 function sTr() {
   if ($sTr === undefined) {

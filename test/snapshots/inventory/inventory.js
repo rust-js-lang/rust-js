@@ -38,7 +38,6 @@ function minStockRule_check(minStock, store) {
   if (have < minStock.min) {
     return `${minStock.item} low: ${have} < ${minStock.min}`;
   }
-  return;
 }
 
 export function revenueRule() {

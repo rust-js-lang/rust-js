@@ -5046,13 +5046,27 @@ pub fn cleanup(on: bool) -> Option<fn()> {
     fn noop() {}
     if on { Some(noop) } else { None }
 }
+
+pub fn effect(on: bool) -> impl Fn() -> Option<u32> {
+    move || {
+        if on {
+            println!("on");
+            return Some(1);
+        }
+        None
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toContain("return undefined;");
-  expect(js.match(/return;/g)?.length).toBe(2);
+  // One at a function's end says nothing: it falls off its end there, a
+  // closure's too, as a person ends one.
+  expect(js.match(/return;/g)?.length).toBe(1);
+  expect(js).toContain("  if (on) {\n    return noop;\n  }\n}\n");
+  expect(js).toContain("      return 1;\n    }\n  };\n}\n");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.halved(3), lib.halved(4), lib.cleanup(false)]).toEqual([undefined, 2, undefined]);
+  expect([lib.halved(3), lib.halved(4), lib.cleanup(false), lib.effect(false)(), lib.effect(true)()]).toEqual([undefined, 2, undefined, undefined, 1]);
 });
 
 // A struct with a flattened field, made outside JSX, is an object of its

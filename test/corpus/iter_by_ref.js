@@ -59,7 +59,6 @@ function equalNamesIterator_next(equalNames) {
       return n;
     }
   }
-  return;
 }
 
 function main() {

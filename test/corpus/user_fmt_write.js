@@ -19,7 +19,6 @@ export function collectorWrite() {
 function collectorWrite_write_str(collector, s) {
   collector.text += s;
   collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
-  return;
 }
 
 export function shoutingWrite() {
@@ -36,14 +35,12 @@ export function shoutingWrite() {
 
 function shoutingWrite_write_str(shouting, s) {
   shouting[0] += s.toUpperCase();
-  return;
 }
 
 function shoutingWrite_write_char(shouting, c) {
   shouting[0] += "<";
   shouting[0] += c;
   shouting[0] += ">";
-  return;
 }
 
 export function pointDisplay() {

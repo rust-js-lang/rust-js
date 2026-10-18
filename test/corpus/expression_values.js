@@ -40,9 +40,7 @@ function shapeArea_unit() {
 }
 
 const Marker = {
-  new() {
-    return;
-  },
+  new() {},
 
   is_marker(marker) {
     return true;

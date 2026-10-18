@@ -32,7 +32,6 @@ function write_time(w, hours, minutes, label, WWrite) {
     WWrite.write_str(w, " ");
     WWrite.write_fmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }
-  return;
 }
 
 export function timeDisplay() {
@@ -63,7 +62,6 @@ function counterWrite_write_str(counter, s) {
   const length = Array.from(s).length;
   counter.chars = (counter.chars + length) >>> 0;
   counter.text += s;
-  return;
 }
 
 // A writer taken by value, as bitflags' `to_writer` takes one: a

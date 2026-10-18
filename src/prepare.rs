@@ -128,7 +128,7 @@ fn compound(module: &mut js::Module) {
 
 /// A function made readable.
 fn prepared(function: &mut js::Function) {
-    block(&mut function.body);
+    function_body(&mut function.body);
     shadows(&mut function.body, None);
     // A closure's own parameter, shadowed in it: nothing outside it sets one.
     js::each_expr_mut(&mut function.body, &mut |e| {
@@ -190,6 +190,18 @@ fn imported(stmts: &mut [Stmt]) {
             },
             mutable: false,
         };
+    }
+}
+
+/// A function's body, a closure's too: its last `return;` isn't written, as
+/// it falls off its end there, as a person ends one (ADR 0299).
+fn function_body(body: &mut Vec<Stmt>) {
+    block(body);
+    if body
+        .last()
+        .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))
+    {
+        body.pop();
     }
 }
 
@@ -255,7 +267,7 @@ fn block(body: &mut Vec<Stmt>) {
                 block(body);
             }
             // A function declared in a body (ADR 0308), as the one it's in.
-            StmtKind::Function(function) => block(&mut function.body),
+            StmtKind::Function(function) => function_body(&mut function.body),
             StmtKind::Compound(_, a, b) => {
                 expr(a);
                 expr(b);
@@ -751,7 +763,10 @@ fn expr(e: &mut Expr) {
                     ..
                 }]
             );
-            block(body);
+            match concise {
+                true => block(body),
+                false => function_body(body),
+            }
             if concise
                 && let [
                     Stmt {
@@ -763,7 +778,7 @@ fn expr(e: &mut Expr) {
                 *value = Some(Expr::undefined());
             }
         }
-        ExprKind::Function(function) => block(&mut function.body),
+        ExprKind::Function(function) => function_body(&mut function.body),
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e);

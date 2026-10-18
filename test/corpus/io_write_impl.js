@@ -42,9 +42,7 @@ function bufWrite_write(buf, data, CAP) {
   return { TAG: "Ok", _0: len };
 }
 
-function bufWrite_flush(buf, CAP) {
-  return;
-}
+function bufWrite_flush(buf, CAP) {}
 
 function bufDrop_drop(buf, CAP) {
   console.log(`dropped ${buf.bytes.length}`);

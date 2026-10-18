@@ -15,7 +15,6 @@ function make(name, give) {
   if (give) {
     return [name];
   }
-  return;
 }
 
 const Mapped = {

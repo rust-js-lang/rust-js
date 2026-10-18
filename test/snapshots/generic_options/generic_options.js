@@ -22,7 +22,6 @@ export function pick(x, keep) {
   if (keep) {
     return $some(x);
   }
-  return;
 }
 
 /** Matching what `pick` made: `Some(None)` is `Some`. */

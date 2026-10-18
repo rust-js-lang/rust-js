@@ -16,7 +16,6 @@ function step(d) {
   if (d[0] < 3) {
     return [(d[0] + 1) >>> 0];
   }
-  return;
 }
 
 function climb(d) {
@@ -146,7 +145,6 @@ function dCheckedDouble_checked_double(d) {
   if (d[0] < 10) {
     return [Math.imul(d[0], 2) >>> 0];
   }
-  return;
 }
 
 function twice(base, TCheckedDouble, dropT) {

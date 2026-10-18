@@ -32,7 +32,6 @@ function reinterpret(p, taken) {
   if (taken) {
     return $ptrRecast(p);
   }
-  return;
 }
 
 function main() {

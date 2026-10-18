@@ -23,25 +23,21 @@ export const Value = {
     if (value.TAG === "Obj") {
       return value._0.get(key);
     }
-    return;
   },
   at(value, i) {
     if (value.TAG === "List") {
       return value._0[i];
     }
-    return;
   },
   as_num(value) {
     if (value.TAG === "Num") {
       return value._0;
     }
-    return;
   },
   as_str(value) {
     if (value.TAG === "Str") {
       return value._0;
     }
-    return;
   },
   is_null(value) {
     return value === "Null";

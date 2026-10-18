@@ -779,16 +779,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !state.deferred.is_empty() {
             return Err(self.unsupported(mir_body.span, "a bounds check this read doesn't make, from its MIR"));
         }
-        // A function's last `return;` says nothing.
-        if matches!(
-            out.last(),
-            Some(Stmt {
-                kind: StmtKind::Return(None),
-                ..
-            })
-        ) {
-            out.pop();
-        }
         // A closure's own, which it named, apart from its body's.
         let falsy = std::mem::replace(&mut self.locals.mir.falsy, outer_falsy);
         let tested = std::mem::replace(&mut self.locals.mir.tested, outer_tested);

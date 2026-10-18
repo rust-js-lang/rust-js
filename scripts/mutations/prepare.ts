@@ -402,4 +402,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
     snapshots: true,
   },
+  {
+    name: "trailing-return-written",
+    breaks: "a function's last `return;` is written, where it falls off its end",
+    file: "src/prepare.rs",
+    find: "        .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))\n",
+    replace: "        .is_some_and(|_| false)\n",
+    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
+  },
+  {
+    name: "closure-trailing-return-written",
+    breaks: "a closure's last `return;` is written, where it falls off its end",
+    file: "src/prepare.rs",
+    find: "                false => function_body(body),\n",
+    replace: "                false => block(body),\n",
+    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
+  },
 ];

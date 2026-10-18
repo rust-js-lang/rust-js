@@ -14,9 +14,7 @@ const Temporary = {
   },
 };
 
-function make() {
-  return;
-}
+function make() {}
 
 function main() {
   const value = make();

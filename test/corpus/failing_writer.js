@@ -21,7 +21,6 @@ function fullWrite_write_str(full, s) {
     return $fmtError();
   }
   full[0] = (full[0] - $byteLen(s)) >>> 0;
-  return;
 }
 
 function main() {
