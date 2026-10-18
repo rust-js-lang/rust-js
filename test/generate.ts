@@ -769,7 +769,11 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
       });
     } else if (choice === 14 && texts.length > 0) {
       const push = r.chance(0.5);
-      stmts.push({ kind: "text-op", name: r.pick(texts).name, op: push ? "push" : "push_str", value: expr(r, push ? "char" : "String", inner, 2) });
+      const name = r.pick(texts).name;
+      // What's appended reads no text, which a loop would double each turn,
+      // itself or two each other's, until the program runs out of memory.
+      const unread = inner.filter((v) => v.ty !== "String");
+      stmts.push({ kind: "text-op", name, op: push ? "push" : "push_str", value: expr(r, push ? "char" : "String", push ? inner : unread, 2) });
     } else if (choice === 15 && maps.length > 0) {
       const op = r.pick(["insert", "insert", "entry", "remove"] as const);
       stmts.push({ kind: "map-op", name: r.pick(maps).name, op, key: expr(r, "u8", inner, 1), value: op === "remove" ? undefined : expr(r, "i32", inner, 2) });

@@ -190,3 +190,10 @@ Found in review. What's left becomes a corpus case.
 - A seed is a 32-bit number to the generator, so `FUZZ_START` and the
   batch's last seed must be in that range, or the run fails before a seed
   does. Found in review: a start past 2^53 didn't count up, and ran none.
+
+## Amendment: a program ends
+
+What's appended to a text reads no text: `v4.push_str(v4.clone())` in
+nested loops, seed 1311's, doubled a string 64 times, and the program ran
+until its runner ran out of memory, a fuzz job killed with nothing said,
+twice. A test holds it of 2000 seeds' programs.

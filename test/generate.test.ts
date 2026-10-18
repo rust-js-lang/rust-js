@@ -15,6 +15,20 @@ test("a seed is the same program, and another seed another", () => {
   expect(draws.every((x) => x >= 0 && x < 1)).toBe(true);
 });
 
+// A text a loop appends to, of itself or of another text that grows too,
+// doubles each turn until the program runs out of memory: seed 1311's
+// \`v4.push_str(v4.clone())\`, nested in loops, took CI's runner down.
+test("what's appended to a text reads no text", () => {
+  for (let seed = 0; seed < 2000; seed++) {
+    const text = print(generate(seed), seed);
+    const texts = [...text.matchAll(/let (?:mut )?(\w+): String\b/g)].map((m) => m[1]);
+    for (const [, argument] of text.matchAll(/\.push_str\((.*)\.as_str\(\)\);$/gm)) {
+      const read = texts.filter((name) => new RegExp(`\\b${name}\\b`).test(argument));
+      expect([seed, read]).toEqual([seed, []]);
+    }
+  }
+});
+
 test("a program is `main` and `id`, which hides each literal from rustc", () => {
   const text = print(generate(1), 1);
   expect(text).toStartWith("// Generated from seed 1.\nfn id<T>(x: T) -> T {");
