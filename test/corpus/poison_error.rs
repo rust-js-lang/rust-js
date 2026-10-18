@@ -39,5 +39,6 @@ fn main() {
     let seven = Ok::<u32, String>(7).unwrap_or_default();
     let eight = Ok::<u32, String>(8).unwrap_or(0);
     let nine = Ok::<u32, String>(9).unwrap_or(loud());
-    println!("{five} {six} {seven} {eight} {nine}");
+    let ten = Ok::<u32, String>(bump(&count)).unwrap_or(0);
+    println!("{five} {six} {seven} {eight} {nine} {ten}");
 }

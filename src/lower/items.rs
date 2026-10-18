@@ -237,6 +237,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A counted `Rc`'s `new` or deref (ADR 0320).
             Std::Same if let Some(counted) = self.counted_same(def_id, args, x.clone()) => counted,
             Std::Same | Std::Format => x,
+            // A guard's `deref`, std's `Deref` of a `Ref<T>` (ADR 0451).
+            Std::GuardValue { mutable } => self.guard_value(x, input, mutable),
             Std::Leak => self.leaked(x, sig.output()),
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),

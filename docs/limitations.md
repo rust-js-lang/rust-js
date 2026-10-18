@@ -38,6 +38,7 @@ it is, it refuses:
 - A pointer's address as a number: `let x = 1; let a = &x as *const i32 as usize;`
 - A raw address of a `static`, or a `&mut` to a `static mut`: `static mut N: u32 = 0; let r = unsafe { &mut *std::ptr::addr_of_mut!(N) }; *r += 1;`
 - A pointer's address shown, `{:p}`: `let x = 5; println!("{:p}", &x);`
+- A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
 - A `transmute` of a `&mut` to a `#[repr(transparent)]` struct's field as one to the struct, whose whole a write through it replaces: `#[repr(transparent)] struct W(String); let mut s = String::new(); let w = unsafe { std::mem::transmute::<&mut String, &mut W>(&mut s) }; *w = W(String::from("x"));`
 
 And refused when it runs, as a panic that says so, since which it is
@@ -55,6 +56,7 @@ depends on what the program does:
 
 - A `dyn Debug` of a value with a destructor, which the string it shows can't keep: `struct D; impl Drop for D { fn drop(&mut self) {} } impl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } } let b: Box<dyn std::fmt::Debug> = Box::new(D); println!("{b:?}");`
 - A struct whose last field is a `dyn Debug`, the string it shows: `struct W<T: ?Sized> { n: u32, v: T } let w: Box<W<dyn std::fmt::Debug>> = Box::new(W { n: 1, v: 5u8 }); println!("{:?}", &w.v);`
+- A `RefCell` of a `dyn` of the crate's trait given to generic code as a cell of a type parameter, which its pair isn't: `trait N { fn n(&self) -> u32; } struct A; impl N for A { fn n(&self) -> u32 { 1 } } fn get<T: ?Sized + N>(c: &std::cell::RefCell<T>) -> u32 { c.borrow().n() } let c: &std::cell::RefCell<dyn N> = &std::cell::RefCell::new(A); println!("{}", get(c));`
 - An `Rc` of a struct whose last field is a `dyn`: `struct W<T: ?Sized> { n: u32, v: T } let w: std::rc::Rc<W<dyn Send>> = std::rc::Rc::new(W { n: 1, v: 5u8 }); println!("{}", w.n);`
 - The `TypeId` of a type made of a type parameter, a closure's in generic code: `fn make<T: 'static>(t: T) -> std::any::TypeId { fn id<C: 'static>(_: &C) -> std::any::TypeId { std::any::TypeId::of::<C>() } let c = move || drop(t); id(&c) } println!("{:?}", make(1u8) == make(2u8));`
 - `size_of_val` of a value without one size, a `dyn`'s: `let b: Box<dyn std::fmt::Debug> = Box::new(5u64); println!("{}", std::mem::size_of_val(&*b));`

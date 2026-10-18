@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/plain.rs",
     find: "        if erased(from) == erased(to) {\n",
     replace: "        if erased(from) == erased(to) && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(plain_data|transparent_transmute).rs$"],
   },
   {
     name: "transmute-part-any-size",
@@ -230,5 +230,13 @@ export const mutations: Mutation[] = [
     find: ".fold(value, |value, layer| self.project(value, layer, 0)),",
     replace: ".fold(value, |value, _| value),",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
+  },
+  {
+    name: "transparent-enum-asked",
+    breaks: "a `transmute` of an enum, `Option<Size>` as a `u8`, asks it for a struct's variant, and rust-js crashes",
+    file: "src/lower/plain.rs",
+    find: "            if !adt.is_struct() || !adt.repr().transparent() {\n",
+    replace: "            if !adt.repr().transparent() && adt.non_enum_variant().fields.len() > 9 {\n",
+    tests: ["test/limitations.test.ts", "-t", "transmute. of an enum"],
   },
 ];

@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **std's `Deref` of a guard in a dictionary**, `Ref<T>`'s and `RefMut<T>`'s
+  as stable_deref_trait's `StableDeref` takes them: `(x) => x.value`
+  (ADR 0451).
 - **uuid compiles.** A guard of a lock of a type parameter's,
   `MutexGuard<C>`, and a `Cow<'_, [T]>`, deref in generic code as a known
   type's do (ADR 0450).
@@ -434,6 +437,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A guard given to generic code is dropped there**, `take(cell.borrow())`:
+  its cell stayed borrowed, and a later `borrow_mut()` panicked (ADR 0451).
+- **`d.len()` of a `D: Deref` returned is read before `d` is dropped**:
+  read after, it saw what `d`'s destructor changed (ADR 0451).
+- **A `RefCell<dyn T>` given to generic code as a cell of a type
+  parameter is a compile error**: it threw (ADR 0451).
 - **A `Duration` assigned through a `&mut`**, `*d = *d + one`, is the
   caller's: it was written to fields a number hasn't, and lost; and a
   `Duration`'s `-=` past zero panics as its `-` does (ADR 0447).

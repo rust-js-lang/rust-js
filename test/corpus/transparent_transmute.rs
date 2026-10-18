@@ -36,6 +36,11 @@ impl fmt::Display for Hyphenated {
     }
 }
 
+/// The same type, but for its lifetime: itself, a `&mut` too.
+fn widened(items: &mut Vec<u32>) -> &mut Vec<u32> {
+    unsafe { std::mem::transmute::<&mut Vec<u32>, &mut Vec<u32>>(items) }
+}
+
 fn main() {
     let bytes = [1, 2, 0xab, 0xcd];
     let id = Uuid::from_bytes_ref(&bytes);
@@ -48,4 +53,7 @@ fn main() {
     let named: Named = unsafe { std::mem::transmute::<String, Named>(String::from("ada")) };
     let text: &String = unsafe { std::mem::transmute::<&Named, &String>(&named) };
     println!("{} {}", named.name, text.len());
+    let mut items = vec![1];
+    widened(&mut items).push(2);
+    println!("{items:?}");
 }

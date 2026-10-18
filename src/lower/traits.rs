@@ -1810,6 +1810,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Vec<Expr>> {
         self.check_drops_given(id, args, span)?;
+        if let Some(held) = self.dyn_in_generic_cell(id, args) {
+            let what = format!("a cell of a `{held}` given to generic code as a cell of a type parameter");
+            return Err(self.unsupported(span, &what));
+        }
         // Where it's called first, of a function that tracks its caller, as
         // `evidence_params` takes it (ADR 0427).
         let mut values: Vec<Expr> = self.takes_caller_location(id).then_some(location).into_iter().collect();
@@ -2250,6 +2254,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
         Ok(values)
+    }
+
+    /// A `dyn` given for one of `id`'s type parameters that its signature,
+    /// or its impl's type, holds in a cell, `RefCell<T>`, or a guard of one,
+    /// a function's or an impl's: a cell of a `dyn` is its pair (ADR 0397),
+    /// which generic code would read as a cell of a value (ADR 0451).
+    fn dyn_in_generic_cell(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
+        let tcx = self.tcx;
+        let held: Vec<Ty<'tcx>> = match tcx.def_kind(id) {
+            DefKind::Impl { .. } => {
+                let mut tys = vec![tcx.type_of(id).instantiate_identity().skip_normalization()];
+                if let Some(tr) = tcx.impl_opt_trait_ref(id) {
+                    tys.extend(tr.instantiate_identity().skip_normalization().args.types());
+                }
+                tys
+            }
+            DefKind::Fn | DefKind::AssocFn => {
+                let sig = tcx.fn_sig(id).instantiate_identity().skip_normalization().skip_binder();
+                sig.inputs_and_output.iter().collect()
+            }
+            _ => return None,
+        };
+        let mut seen = Vec::new();
+        held.into_iter().find_map(|ty| self.celled_dyn(ty, args, &mut seen))
+    }
+
+    /// `dyn_in_generic_cell`'s, of `ty` and what it's made of, the crate's
+    /// structs' fields too, `seen` once each.
+    fn celled_dyn(&self, ty: Ty<'tcx>, args: ty::GenericArgsRef<'tcx>, seen: &mut Vec<DefId>) -> Option<Ty<'tcx>> {
+        let cells = [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock];
+        ty.walk().filter_map(|part| part.as_type()).find_map(|part| {
+            let ty::Adt(adt, part_args) = part.kind() else {
+                return None;
+            };
+            let cell = cells.into_iter().any(|item| self.is_std_type(part, item)) || self.recognition().is_guard(part);
+            if cell
+                && let Some(&ty::Param(param)) = part_args.types().next().map(|t| t.kind())
+                && let Some(given) = args.get(param.index as usize).and_then(|a| a.as_type())
+                && self.cell_dyn_trait(given).is_some()
+            {
+                return Some(given);
+            }
+            if adt.did().is_local() && !seen.contains(&adt.did()) {
+                seen.push(adt.did());
+                let fields: Vec<Ty<'tcx>> = adt.all_fields().map(|f| self.field_ty(f, part_args)).collect();
+                return fields.into_iter().find_map(|field| self.celled_dyn(field, args, seen));
+            }
+            None
+        })
     }
 
     /// The trait of a `RefCell<dyn T>` that `ty` is or points at: the

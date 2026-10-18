@@ -41,6 +41,11 @@ function hyphenatedDisplay_fmt(hyphenated) {
   return `${a.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}-${c.toString(16).padStart(2, "0")}${d.toString(16).padStart(2, "0")}`;
 }
 
+/** The same type, but for its lifetime: itself, a `&mut` too. */
+function widened(items) {
+  return items;
+}
+
 function main() {
   const bytes = [1, 2, 171, 205];
   const id = Uuid.from_bytes_ref(bytes);
@@ -59,5 +64,8 @@ function main() {
   const named = { name: "ada" };
   const text = named.name;
   console.log(`${named.name} ${$byteLen(text)}`);
+  const items = [1];
+  widened(items).push(2);
+  console.log(`[${items.map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

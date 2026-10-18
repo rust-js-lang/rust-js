@@ -173,8 +173,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut ty = outer;
         while erased(ty) != erased(inner) {
             let ty::Adt(adt, args) = ty.kind() else { return None };
+            if !adt.is_struct() || !adt.repr().transparent() {
+                return None;
+            }
             let fields = &adt.non_enum_variant().fields;
-            if !adt.is_struct() || !adt.repr().transparent() || fields.len() != 1 {
+            if fields.len() != 1 {
                 return None;
             }
             if !matches!(self.shape(ty), Shape::Array(_) | Shape::Object(_)) {

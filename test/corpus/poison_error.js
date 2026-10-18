@@ -48,6 +48,7 @@ function main() {
   const eight = 8;
   loud();
   const nine = 9;
-  console.log(`${five} ${six} ${seven} ${eight} ${nine}`);
+  const ten = bump(count);
+  console.log(`${five} ${six} ${seven} ${eight} ${nine} ${ten}`);
 }
 //# sourceMappingURL=case.js.map

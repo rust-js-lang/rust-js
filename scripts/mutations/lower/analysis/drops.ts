@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "drops-without-destructors",
     breaks: "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !counts_rcs && !crate::lower::traits::may_have_destructors(tcx, foreign) {",
+    find: "    if !library && !drops_any {",
     replace: "    if false {",
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
     snapshots: true,
@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "library-drops-skipped",
     breaks: "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
     file: "src/lower/analysis/drops.rs",
-    find: "    if !library && !counts_rcs && !crate::lower::traits::may_have_destructors(tcx, foreign) {",
-    replace: "    if !counts_rcs && !crate::lower::traits::may_have_destructors(tcx, foreign) {",
+    find: "    if !library && !drops_any {",
+    replace: "    if !drops_any {",
     tests: ["test/crates.test.ts", "-t", "impl_drops"],
   },
   {
@@ -74,5 +74,13 @@ export const mutations: Mutation[] = [
     find: "                given.insert((id, count + at as u32));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+  },
+  {
+    name: "guard-given-generic-undropped",
+    breaks: "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
+    file: "src/lower/analysis/drops.rs",
+    find: "                if runs(ty) {\n",
+    replace: "                if false && runs(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
   },
 ];

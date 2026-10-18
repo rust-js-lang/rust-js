@@ -7,9 +7,24 @@ use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
-use rustc_middle::ty::{self};
+use rustc_middle::ty::{self, Ty};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What `guard`, a `Ref`, a `RefMut` or a lock's guard of type `ty`,
+    /// derefs to: its cell's `value`, or of a `&mut` to a number or text, the
+    /// cell, the `{ value }` box that is; a `RefCell<dyn T>`'s the cell, its
+    /// pair (ADRs 0328, 0397).
+    pub(in crate::lower) fn guard_value(&self, guard: Expr, ty: Ty<'tcx>, mutable: bool) -> Expr {
+        let ty::Adt(_, args) = ty.peel_refs().kind() else {
+            unreachable!("a guard")
+        };
+        let guarded = args.types().next().expect("what it guards");
+        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {
+            true => guard,
+            false => Expr::held(guard),
+        }
+    }
+
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
     pub(in crate::lower) fn cell_call(
         &mut self,
@@ -115,17 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::call(Expr::helper(if lock { "$tryLock" } else { "$tryBorrow" }), given)
             }
-            Std::GuardValue { mutable } => {
-                let ty::Adt(_, guard) = generic_args.type_at(0).kind() else {
-                    unreachable!("a guard")
-                };
-                let guarded = guard.types().next().expect("what it guards");
-                // A `RefCell<dyn T>`'s is the cell, its pair (ADR 0397).
-                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {
-                    true => arg(),
-                    false => Expr::held(arg()),
-                }
-            }
+            Std::GuardValue { mutable } => self.guard_value(arg(), generic_args.type_at(0), mutable),
             Std::Lock => result::ok(Expr::held(arg())),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             Std::Drop => {

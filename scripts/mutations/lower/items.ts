@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "another crate's function in an extern block"],
   },
+  {
+    name: "guard-deref-value-unknown",
+    breaks: "std's `Deref` of a `Ref<T>` in a dictionary, stable_deref_trait's, is refused",
+    file: "src/lower/items.rs",
+    find: "            Std::GuardValue { mutable } => self.guard_value(x, input, mutable),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^guard_deref_dictionary.rs$"],
+  },
 ];

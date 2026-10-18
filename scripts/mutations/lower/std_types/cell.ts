@@ -28,11 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-with-closure-called",
-    breaks: "`START.with(|s| s.get())` calls the closure it's given, `((s) => s.value)(START)`, not `START.value` in place",
+    breaks: "`with` of a closure of one statement calls it, not its statement in place",
     file: "src/lower/std_types/cell.rs",
     find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
-    replace: "                Expr::call(f, vec![key])\n",
-    tests: ["test/compiler.test.ts", "-t", "thread-locals are module variables"],
+    replace: "                crate::lower::calls::apply(f, vec![key])\n",
+    tests: ["test/lowering.test.ts", "-t", "with of a one-statement closure"],
   },
   {
     name: "with-statement-called",
@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "guard-value-unboxed",
     breaks: "`*m.lock().unwrap() += 2` of a number writes a copy",
     file: "src/lower/std_types/cell.rs",
-    find: "                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {",
-    replace: "                match self.cell_dyn_trait(guarded).is_some() {",
+    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {",
+    replace: "        match self.cell_dyn_trait(guarded).is_some() {",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-guard-value",
     breaks: "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
     file: "src/lower/std_types/cell.rs",
-    find: "                match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {\n",
-    replace: "                match mutable && self.is_boxable(guarded) {\n",
+    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {\n",
+    replace: "        match mutable && self.is_boxable(guarded) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
   {

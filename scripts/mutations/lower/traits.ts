@@ -1159,14 +1159,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^default_method_where.rs$"],
   },
   {
-    name: "copied-default-deref-known",
-    breaks: "`x.deref()` of a copied default's `Self::Item` is left to std's recognition, which can't see the impl's type, and refused",
-    file: "src/lower/traits.rs",
-    find: "        let known_here = !generic_args.has_non_region_param();\n",
-    replace: "        let known_here = !self.in_impl_terms(generic_args).has_non_region_param();\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_method_where.rs$"],
-  },
-  {
     name: "dyn-shim-location-undefined",
     breaks: "an impl tracking its caller where its declaration doesn't, called through a `dyn`, is given no location, not its definition's",
     file: "src/lower/traits.rs",
@@ -1364,5 +1356,13 @@ export const mutations: Mutation[] = [
     find: "            if !self.is_rust_trait(trait_id) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "dyn-cell-given-generic",
+    breaks: "a `RefCell<dyn T>`, its pair, is given to generic code that reads it as a cell of a value, and JS throws",
+    file: "src/lower/traits.rs",
+    find: "                && self.cell_dyn_trait(given).is_some()\n",
+    replace: "                && false\n",
+    tests: ["test/limitations.test.ts", "-t", "RefCell. of a .dyn"],
   },
 ];

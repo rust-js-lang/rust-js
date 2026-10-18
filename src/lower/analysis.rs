@@ -537,7 +537,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);
-    let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, counted.any());
+    // What a caller gives generic code whose drop runs something, a value
+    // of a destructor, a counted `Rc`'s or a guard's: the one answer the
+    // lowering's drops give (ADR 0451).
+    let drop_recognition = Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    let runs = |ty: Ty<'tcx>| super::drops::drop_runs(drop_recognition, library, &counted, ty);
+    let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, library);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns);
     let given = crate::lower::traits::Given {

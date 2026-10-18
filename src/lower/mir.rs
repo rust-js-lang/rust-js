@@ -274,6 +274,9 @@ struct State<'m, 'tcx> {
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
     in_place: std::collections::HashMap<Local, Expr>,
+    /// Each value read in place assigned before a drop instead, whose `let`
+    /// the function's body declares first (ADR 0451).
+    settled: Vec<Local>,
     /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
     /// whose `value` is the place it points to (ADR 0407).
     pointed: super::pointers::Pointed,
@@ -322,6 +325,14 @@ struct State<'m, 'tcx> {
     /// Each variable a `let` binds: where the `let` is written, which its
     /// declaration maps to.
     let_spans: HashMap<Local, js::Span>,
+}
+
+impl<'tcx> State<'_, 'tcx> {
+    /// The `let` of each value settled before a drop (`settle_reads`),
+    /// first in the function's body.
+    fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
+        (self.settled.iter()).map(|&local| StmtKind::Let(self.locals.names[local].clone(), None).at(js::Span::NONE))
+    }
 }
 
 /// A `Debug` builder's kind, a `DebugStruct` say, its type's name, and
@@ -529,6 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             binding_var: false,
             flattened: Default::default(),
             in_place: Default::default(),
+            settled: Vec::new(),
             pointed: self.pointed_locals(mir_body),
             maps: Default::default(),
             named: Default::default(),
@@ -780,7 +792,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.gather_rest(mir_body, &mut params);
         let start = BasicBlock::from_usize(0);
         let given = options.as_deref().map(Expr::var);
-        out.extend(self.with_given(given, |cx| cx.mir_tree(&mut state, start))?);
+        let lowered = self.with_given(given, |cx| cx.mir_tree(&mut state, start))?;
+        out.extend(state.settled_lets().chain(lowered));
         if let Some(options) = options {
             params.push(js::Pattern::Name(options));
         }
@@ -1839,6 +1852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.mir_drop(state, block, *place, false, span, &mut dropped)?;
                 if !dropped.is_empty() {
                     self.flush(state, &mut out)?;
+                    self.settle_reads(state, &mut out);
                     let cleanup = self.mir_unwind(state, *unwind)?;
                     match cleanup.is_empty() {
                         true => out.extend(dropped),
@@ -1975,6 +1989,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.pending = kept;
         self.unwinding_to(state, unwind, made, out)
+    }
+
+    /// Each value kept to be read in place that reads through a shared
+    /// reference, which nothing changes while it's borrowed, `tmp.length` of
+    /// a `&Vec`: read here, before a drop that may change what it refers to
+    /// once the borrow's over, a `D: Deref`'s `d.len()` returned (ADR 0451).
+    fn settle_reads(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) {
+        let references: HashSet<&str> = (state.body.local_decls.iter_enumerated())
+            .filter(|(_, decl)| decl.ty.is_ref())
+            .map(|(local, _)| state.locals.names[local].as_str())
+            .filter(|name| self.locals.mir.plain.contains(*name))
+            .collect();
+        let reads_reference = |e: &Expr| {
+            // Not an element or an object made where it's used, which reads
+            // what a branch after sets (`capture_jsx`).
+            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(_)) {
+                return false;
+            }
+            let mut found = false;
+            e.visit_vars(&mut |name| found |= references.contains(name));
+            found
+        };
+        let mut settled: Vec<Local> = state
+            .in_place
+            .iter()
+            .filter(|(_, e)| reads_reference(e))
+            .map(|(&l, _)| l)
+            .collect();
+        settled.sort();
+        for local in settled {
+            let expr = state.in_place.remove(&local).expect("found");
+            // Assigned, its `let` where the function's are, as it may be
+            // read past the block it's dropped in.
+            let name = state.locals.names[local].clone();
+            if !state.locals.declared[local] {
+                state.locals.declared[local] = true;
+                state.settled.push(local);
+            }
+            out.push(StmtKind::Assign(Expr::var(&name), expr).at(js::Span::NONE));
+        }
     }
 
     /// `made`, run so that a panic in it drops what `unwind`, its cleanup,

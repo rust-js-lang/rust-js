@@ -7,7 +7,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
@@ -22,13 +22,21 @@ pub(super) fn drop_params<'tcx>(
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
-    counts_rcs: bool,
+    runs: impl Fn(Ty<'tcx>) -> bool,
 ) -> HashMap<DefId, Vec<u32>> {
     let mut given: HashSet<(DefId, u32)> = HashSet::new();
-    // A crate with no destructor of its own, and none of a library's, has
-    // no value to drop: what's below would give drops nothing calls. A
-    // library's consumers may have one, and a counted `Rc` drops (ADR 0320).
-    if !library && !counts_rcs && !crate::lower::traits::may_have_destructors(tcx, foreign) {
+    // A crate none of whose values drops anything, a destructor, a counted
+    // `Rc`'s count or a guard's borrow, and none of a library's consumers,
+    // gives generic code nothing to drop: what's below would give drops
+    // nothing calls (ADR 0451).
+    let mut asked: HashSet<Ty<'tcx>> = HashSet::new();
+    let drops_any = all_bodies.iter().any(|body| {
+        body.thir
+            .exprs
+            .iter()
+            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty))
+    });
+    if !library && !drops_any {
         return HashMap::new();
     }
     // A trait impl's methods are called through its dictionary, or resolved
@@ -126,7 +134,7 @@ pub(super) fn drop_params<'tcx>(
             if crate::lower::bindings::is_component(tcx, callee) {
                 for (index, arg) in args.iter().enumerate() {
                     if let Some(ty) = arg.as_type()
-                        && holds_user_drop(tcx, foreign, ty, &mut Vec::new())
+                        && runs(ty)
                     {
                         let (name, param) = (tcx.item_name(callee), tcx.generics_of(callee).param_at(index, tcx).name);
                         let what = format!("giving component `{name}`'s `{param}` a type with a destructor");
@@ -139,7 +147,7 @@ pub(super) fn drop_params<'tcx>(
             for (index, arg) in args.iter().enumerate() {
                 let Some(ty) = arg.as_type() else { continue };
                 let index = index as u32;
-                if holds_user_drop(tcx, foreign, ty, &mut Vec::new()) {
+                if runs(ty) {
                     given.insert((callee, index));
                 }
                 for part in ty.walk() {
@@ -218,38 +226,4 @@ pub(super) fn drops_nothing_derived(tcx: TyCtxt<'_>, imp: DefId) -> bool {
         .into_iter()
         .any(|item| is_std_def(tcx, tr, item))
         || serde_impl(tcx, imp).is_some()
-}
-
-/// Whether dropping a `ty` could run a `Drop` of the crate's own, through
-/// its fields, variants or what it holds.
-pub(super) fn holds_user_drop<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    ty: Ty<'tcx>,
-    seen: &mut Vec<Ty<'tcx>>,
-) -> bool {
-    if seen.contains(&ty) {
-        return false;
-    }
-    seen.push(ty);
-    let found = match ty.kind() {
-        ty::Adt(adt, args) => {
-            tcx.adt_destructor(adt.did())
-                .is_some_and(|d| d.did.is_local() || foreign.item(d.did).is_some())
-                || adt
-                    .all_fields()
-                    .any(|f| holds_user_drop(tcx, foreign, f.ty(tcx, args).skip_normalization(), seen))
-                || args.types().any(|t| holds_user_drop(tcx, foreign, t, seen))
-        }
-        ty::Tuple(items) => items.iter().any(|t| holds_user_drop(tcx, foreign, t, seen)),
-        ty::Array(item, _) | ty::Slice(item) => holds_user_drop(tcx, foreign, *item, seen),
-        ty::Closure(_, args) => args
-            .as_closure()
-            .upvar_tys()
-            .iter()
-            .any(|t| holds_user_drop(tcx, foreign, t, seen)),
-        _ => false,
-    };
-    seen.pop();
-    found
 }
