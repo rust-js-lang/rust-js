@@ -182,7 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iter(items)`: a JS iterator of an array that knows where it is
     /// (ADR 0071).
     pub(super) fn stepped_items(&mut self, items: Expr) -> Expr {
-        Expr::call(Expr::helper("$iter"), vec![items])
+        array_stepped(items)
     }
 
     /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
@@ -1160,7 +1160,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                     return None;
                 }
                 let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
-                Some(Expr::call(Expr::helper("$iter"), vec![items]))
+                Some(array_stepped(items))
             }
             _ => None,
         }
@@ -1456,4 +1456,9 @@ pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),
         _ => None,
     }
+}
+
+/// `$iter(items)`, `stepped_items`'s, where no `FnCx` is.
+pub(super) fn array_stepped(items: Expr) -> Expr {
+    Expr::call(Expr::helper("$iter"), vec![items])
 }

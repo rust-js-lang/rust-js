@@ -4,7 +4,10 @@
 // impl's, so the caller asks it too, and passes its own on (ADR 0145).
 // And one given its impl's dictionary for a bound, `collect()`'s `B:
 // FromIterator<T>` of a `Stack<T>`, arrayvec's `Clone`, or a generic
-// function's own `C: Push<T>`, asks it too.
+// function's own `C: Push<T>`, asks it too. And a std trait's method that's
+// no dictionary's, `From::from`, smallvec's `SmallVec::from(slice)`, or
+// one a std method calls, `parse()`'s `FromStr::from_str`: its impl's,
+// whose facts its caller asks.
 use std::mem;
 
 struct Stack<T> {
@@ -56,6 +59,32 @@ fn fill<T: Clone>(stack: &mut Stack<T>, item: T) {
     twice(stack, item);
 }
 
+impl<T: Clone> From<&[T]> for Stack<T> {
+    fn from(items: &[T]) -> Self {
+        let sized = if mem::size_of::<T>() == 0 { 0 } else { items.len() };
+        Stack { items: items.to_vec(), sized }
+    }
+}
+
+impl<T> std::str::FromStr for Stack<T> {
+    type Err = String;
+
+    fn from_str(text: &str) -> Result<Self, String> {
+        Ok(Stack {
+            items: Vec::new(),
+            sized: text.len() * mem::size_of::<T>(),
+        })
+    }
+}
+
+fn copied<T: Clone>(items: &[T]) -> Stack<T> {
+    Stack::from(items)
+}
+
+fn parsed<T>(text: &str) -> Stack<T> {
+    text.parse().unwrap()
+}
+
 fn main() {
     let s: Stack<u8> = [1, 2, 3].into_iter().collect();
     let u: Stack<()> = [(), ()].into_iter().collect();
@@ -64,4 +93,7 @@ fn main() {
     fill(&mut s, 4);
     fill(&mut u, ());
     println!("{} {} {} {}", s.items.len(), s.sized, u.items.len(), u.sized);
+    let (a, b) = (copied(&[1u32, 2]), copied(&[(), ()]));
+    let (c, d) = (parsed::<u16>("abc"), parsed::<()>("abc"));
+    println!("{} {} {} {}", a.sized, b.sized, c.sized, d.sized);
 }

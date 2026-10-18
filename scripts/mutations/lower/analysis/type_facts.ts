@@ -123,4 +123,12 @@ export const mutations: Mutation[] = [
     replace: "                for index in debug_named(tcx, bound).into_iter().take(0) {\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
+  {
+    name: "trait-call-facts-unresolved",
+    breaks: "a trait's method called of a type naming the caller's `T`, arrayvec's `array.extend(iter)`, isn't taken as its impl's, so the caller isn't given `size_of::<T>()` to pass on",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {\n",
+    replace: "                    Ok(Some(instance)) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_type_facts_through_trait.rs$"],
+  },
 ];

@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rev()` of a chain over a string's `char_indices()`**, writeable's:
+  its items listed and reversed, each callback called from the back
+  (ADR 0164).
 - **A slice's `to_owned()`**, its `to_vec()`; and `to_vec()` of an array
   made where it's called is that array, not a copy of it (ADR 0153).
 - **`{:?}` of a slice's iterator**, `Iter([2, 3])`: what's left of it, a

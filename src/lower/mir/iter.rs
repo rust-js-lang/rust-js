@@ -1011,6 +1011,16 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
             vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
         ));
     }
+    // `Iterator.from(x)` of what JS steps, a string's `$charIndices(s)`: its
+    // items, listed and reversed, as `Array.from(x)` lists a whole chain's,
+    // stepped as an array's are, `$iter(Array.from(x).toReversed())`.
+    if let Ok(source) = crate::lower::iterators::from_iterator(e.clone()) {
+        let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![source]);
+        return Some(crate::lower::iterators::array_stepped(Expr::call(
+            Expr::member(items, "toReversed"),
+            Vec::new(),
+        )));
+    }
     let js::ExprKind::Member(base, method) = &callee.kind else {
         return None;
     };

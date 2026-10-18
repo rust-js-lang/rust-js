@@ -74,3 +74,13 @@ stepped from its front, of what's left, the iterator itself, not its
 as Rust's `next_back` leaves it. `position` and it are one method,
 `positioned`. Of a lazy chain, whose closures would run in another
 order, it's refused. `rposition` runs both against native Rust.
+
+## Amendment: `rev()` of a chain over what JS steps
+
+**`rev()` of a chain over an iterator JS steps, `Iterator.from(x)`, a
+string's `char_indices()` among them, is the chain over `x`'s items,
+listed and reversed**, `Array.from($charIndices(s)).toReversed().map(f)`:
+each callback called from the back, as Rust's `next_back` calls it, as one
+over an array's items is. writeable's KMP prefix walks a string's char
+boundaries from the longest so, which was refused. A `rev()` is of a
+double-ended iterator, which ends, so its items can be listed first.

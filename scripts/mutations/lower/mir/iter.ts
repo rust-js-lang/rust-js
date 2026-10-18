@@ -757,4 +757,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
+  {
+    name: "rev-iterator-from-unreversed",
+    breaks: "`rev()` of a chain over a string's `char_indices()`, writeable's, is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "    if let Ok(source) = crate::lower::iterators::from_iterator(e.clone()) {\n",
+    replace: "    if let Ok(source) = Err::<Expr, Expr>(e.clone()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_char_indices.rs$"],
+  },
 ];

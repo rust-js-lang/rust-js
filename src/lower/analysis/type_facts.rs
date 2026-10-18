@@ -110,6 +110,17 @@ pub(super) fn type_fact_params<'tcx>(
             if !facts.is_empty() {
                 continue;
             }
+            // A trait's method of a type that names it, `stack.extend(iter)`
+            // of a `Stack<T>`: its impl's, which asks of the impl's parameters.
+            let (callee, args) = match tcx.trait_of_assoc(callee) {
+                Some(_) => match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
+                    Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
+                        (instance.def_id(), instance.args)
+                    }
+                    _ => (callee, args),
+                },
+                None => (callee, args),
+            };
             // Each impl whose dictionary it's given for a bound, `collect()`'s
             // `B: FromIterator` of an `ArrayVec<T, CAP>`: what that asks of
             // its type parameters, of a caller's given it, the caller asks.
