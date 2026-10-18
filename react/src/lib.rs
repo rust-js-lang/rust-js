@@ -1,12 +1,12 @@
 //! [React](https://react.dev) and React DOM for rust-js (ADRs 0041, 0043). A
-//! component is a function that returns an [`Element`], and elements are
+//! component is a function that returns a [`JSX::Element`], and elements are
 //! written with `jsx!`, which rust-js prints as the JSX you would write by
 //! hand (ADR 0075):
 //!
 //! ```ignore
-//! use react::{Element, use_state};
+//! use react::{JSX, jsx, use_state};
 //!
-//! pub fn Counter() -> Element {
+//! pub fn Counter() -> JSX::Element {
 //!     let (count, set_count) = use_state(0);
 //!     jsx! {
 //!         <div className="counter">
