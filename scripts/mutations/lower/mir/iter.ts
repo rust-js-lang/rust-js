@@ -697,4 +697,28 @@ export const mutations: Mutation[] = [
       "fold_from_none"
     ]
   },
+  {
+    "name": "rposition-of-lent-wrapped",
+    "breaks": "`rposition` of a kept iterator is given its `$lent` wrapper, whose items it can't see, so it finds none",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        let items = crate::lower::iterators::unlent(&it).clone();\n",
+    "replace": "        let items = it;\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rposition"
+    ]
+  },
+  {
+    "name": "rposition-of-lazy-unrefused",
+    "breaks": "`rposition` of a lazy chain isn't refused, and is given what it can't step from the back",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        if self.array_source(iter_ty).is_none() {\n",
+    "replace": "        if false {\n",
+    "tests": [
+      "test/traits.test.ts",
+      "-t",
+      "rposition of a lazy chain"
+    ]
+  },
 ];

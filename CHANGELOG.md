@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`Iterator::rposition`** of a slice's items, and of one kept and stepped
+  (ADR 0164).
 - **A map entry's `and_modify(f)`**, `m.entry(k).and_modify(|n| *n += 1)
   .or_insert(1)`, of a `HashMap` and a `BTreeMap` (ADR 0325).
 - **`rev()` of a lazy chain over a slice**, `v.iter().map(f).rev()`,

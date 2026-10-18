@@ -3177,6 +3177,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "all" => IterMethod::All,
             "find" => IterMethod::Find,
             "position" => IterMethod::Position,
+            "rposition" => IterMethod::RPosition,
             "eq" => IterMethod::Eq,
             "ne" => IterMethod::Ne,
             "enumerate" => IterMethod::Enumerate,
@@ -4928,6 +4929,8 @@ pub(crate) enum IterMethod {
     All,
     Find,
     Position,
+    /// `rposition(f)`, of a slice's items: from the back.
+    RPosition,
     Eq,
     Ne,
     Enumerate,

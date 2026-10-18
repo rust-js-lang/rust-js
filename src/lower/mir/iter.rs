@@ -336,9 +336,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => method("find", it, vec![test]),
                 }
             }
-            Some(IterMethod::Position) => {
-                let found = self.unary_callback(arg(), own);
-                Expr::call_helper("$position", vec![it, found])
+            Some(method @ (IterMethod::Position | IterMethod::RPosition)) => {
+                self.positioned(it, arg(), (own, method), iter_ty, span)?
             }
             // Each item of both in turn, till one differs or either ends, as
             // Rust's `eq` steps them; `ne` its negation.
@@ -452,6 +451,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// `position(f)`: where the first that `f` finds is, `$position`; and
+    /// `rposition(f)`, of a slice's items, the last, `$rposition`, `f`
+    /// called from the back as Rust's is, of a `$iter` lent as it is, which
+    /// it steps from its back. Of a lazy chain, whose closures would run in
+    /// another order, refused.
+    fn positioned(
+        &mut self,
+        it: Expr,
+        f: Expr,
+        (own, method): (bool, IterMethod),
+        iter_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        let found = self.unary_callback(f, own);
+        if method == IterMethod::Position {
+            return Ok(Expr::call_helper("$position", vec![it, found]));
+        }
+        if self.array_source(iter_ty).is_none() {
+            return Err(self.unsupported(span, "`rposition` of a lazy iterator, from its MIR"));
+        }
+        let items = crate::lower::iterators::unlent(&it).clone();
+        Ok(Expr::call_helper("$rposition", vec![items, found]))
     }
 
     /// `it.fold(init, f)`: `it.reduce(f, init)`, `f` given after what it
@@ -618,6 +641,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Any
                     | IterMethod::All
                     | IterMethod::Position
+                    | IterMethod::RPosition
                     | IterMethod::Enumerate
                     | IterMethod::ByRef
                     | IterMethod::Fuse

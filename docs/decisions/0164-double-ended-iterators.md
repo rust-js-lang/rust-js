@@ -2,7 +2,7 @@
 
 Status: Accepted. Extends [0055](0055-iterator.md) and
 [0160](0160-user-collections.md). Amended: `rev()` of a lazy chain over a
-slice (below).
+slice, and `rposition` (below).
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -64,3 +64,13 @@ Case C: what the closures print is observable, and is Rust's.
 `rev_of_lazy_chains` runs each against native Rust, `take` and `next`
 after it too. A chain whose closure reads an index after another
 closure, or that isn't of a slice's items, is still refused.
+
+## Amendment: `rposition`
+
+`rposition(f)` was refused. Of a slice's items it's `$rposition(items,
+f)`, each tested from the back as Rust tests them; of a `$iter` kept and
+stepped from its front, of what's left, the iterator itself, not its
+`$lent` wrapper, which it leaves stepped from its back to what it found,
+as Rust's `next_back` leaves it. `position` and it are one method,
+`positioned`. Of a lazy chain, whose closures would run in another
+order, it's refused. `rposition` runs both against native Rust.

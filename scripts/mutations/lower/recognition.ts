@@ -1881,4 +1881,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
   },
+  {
+    "name": "rposition-unknown",
+    "breaks": "`rposition` is refused",
+    "file": "src/lower/recognition.rs",
+    "find": "            \"rposition\" => IterMethod::RPosition,\n",
+    "replace": "",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rposition"
+    ]
+  },
 ];
