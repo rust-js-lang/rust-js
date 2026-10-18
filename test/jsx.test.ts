@@ -6895,12 +6895,21 @@ pub fn Themed() -> JSX::Element {
 pub fn read() -> u32 {
     notConstant.with(|n| *n)
 }
+// Its props private, as react.dev's DiagramGroup's interface isn't
+// exported (ADR 0385): JSX builds them where the component is.
+struct PanelProps { title: &'static str }
+pub fn Panel(PanelProps { title }: PanelProps) -> JSX::Element {
+    jsx! { <h2>{title}</h2> }
+}
+struct Hidden;
+pub fn exposed(_: Hidden) -> u32 { 1 }
 `);
   const built = Bun.spawnSync(args, { cwd: dir });
   const stderr = built.stderr.toString();
   const warned = [...stderr.matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
   const constants = [...stderr.matchAll(/constant `(\w+)` should have an upper case name/g)].map((m) => m[1]);
-  expect([built.exitCode, warned, constants]).toEqual([0, ["NotComponent"], ["notConstant"]]);
+  const private_ = [...stderr.matchAll(/type `(\w+)` is more private than the item `(\w+)`/g)].map((m) => m[2]);
+  expect([built.exitCode, warned, constants, private_]).toEqual([0, ["NotComponent"], ["notConstant"], ["exposed"]]);
 });
 
 // ADR 0440: a binding's body never runs, so its parameters are unread,

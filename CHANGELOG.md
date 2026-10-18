@@ -20,7 +20,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 - **A `thread_local!`'s memo or context is named as JSX names it**,
   `static IconCopy = memo(..)`, `static TocContext`, with no `#[allow]`, and
-  so is the component function written in it (ADR 0439).
+  so is the component function written in it; and a component's props
+  may be private, as TypeScript's interface needn't be exported (ADR 0439).
 - **A `.d.ts` names each type alias the Rust writes**, the crate's own too,
   wherever it's written: `export const TocContext: Context<Toc>;`, where it
   was `Context<TocItem[]>` (ADR 0196).

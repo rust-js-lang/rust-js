@@ -41,6 +41,11 @@ don't.
   `memo(function IconCopy() {..})` is. Another `static` of it,
   `notConstant`, is still flagged. (Amended: each was flagged, and
   react.dev's port wrote `#![allow(non_snake_case, non_upper_case_globals)]`.)
+- **A component's props may be private**, as react.dev's DiagramGroup's
+  interface isn't exported (ADR 0385): JSX builds them in the component's
+  module, so no caller names them, and the pass allows rustc's
+  `private_interfaces` of it too. Another `pub fn` of a private type,
+  `fn exposed(_: Hidden)`, is still flagged.
 - **In the editor too**, where rust-analyzer checks through rust-js
   (`rust-js-check`, ADR 0222), and in `rust-js build`. A plain `cargo
   check`, which doesn't run rust-js's pass, still warns of each component,

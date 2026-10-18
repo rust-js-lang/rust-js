@@ -324,9 +324,13 @@ impl Expand<'_> {
                 companions.push(companion);
                 // A component is named as JSX names it, capitalized, which
                 // rustc's lint would flag: rust-js allows it, so no crate
-                // writes `#![allow(non_snake_case)]` for it (ADR 0439).
+                // writes `#![allow(non_snake_case)]` for it (ADR 0439). Its
+                // props may be private, as TypeScript's interface isn't
+                // exported (ADR 0385): JSX builds them where it is.
                 if let ItemKind::Fn(_) = item.kind {
                     item.attrs.push(self.allow(Symbol::intern("non_snake_case"), item.span));
+                    item.attrs
+                        .push(self.allow(Symbol::intern("private_interfaces"), item.span));
                 }
             }
             // A binding's body never runs, JS's function is called: its

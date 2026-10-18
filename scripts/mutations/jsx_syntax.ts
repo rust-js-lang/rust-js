@@ -156,4 +156,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (mac, tokens);\n",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
   },
+  {
+    name: "component-private-props-flagged",
+    breaks: "a component whose props are private, as react.dev's DiagramGroup's, is flagged for a private type in its interface",
+    file: "src/jsx_syntax.rs",
+    find: "                    item.attrs.push(self.allow(Symbol::intern(\"private_interfaces\"), item.span));\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
+  },
 ];
