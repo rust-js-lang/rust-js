@@ -74,7 +74,6 @@ for (const [name, source, message, crate] of [
   // A static's initializer is code where rustc's value can't say it (ADR 0096),
   // but not one reading another static, nor of a value that can change in place.
   ["a static of a function read from another static", 'pub fn f() {}\nstatic A: fn() = f;\npub static B: &fn() = &A;\npub fn g() { B() }', "statics of type"],
-  // A `RefCell<dyn T>` is its cell with its `impl` (ADR 0397), but not yet in a counted `Rc`.
   // A path map finds `a//b` as the `a/b` it holds, and a `Cow` map `"a"` as the
   // `Cow` it holds, which neither can give back yet (ADRs 0401, 0402).
   ["the key a path map holds", 'use std::{collections::HashMap, path::{Path, PathBuf}};\npub fn f(m: &HashMap<PathBuf, u32>) -> Option<(&PathBuf, &u32)> { m.get_key_value(Path::new("a//b")) }', "does not support the key a `std::collections::HashMap<std::path::PathBuf, u32>` holds, which what it's found by may not be"],

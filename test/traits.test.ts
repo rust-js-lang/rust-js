@@ -252,7 +252,8 @@ for (const [name, source, diagnostic] of [
   // A chain whose stages do what can be seen runs lazily (ADR 0139), and a JS
   // iterator can't run from its other end, as `rev` would have it.
   ["peekable after a closure with effects", `pub fn f(v: &[i32]) -> Option<i32> { let mut p = v.iter().map(|x| { println!("{}", x); *x }).peekable(); p.peek().copied() }`, "\`peekable\` of a lazy iterator"],
-  ["rev after a closure with effects", `pub fn f(v: &[i32]) -> Vec<i32> { v.iter().map(|x| { println!("{}", x); *x }).rev().collect() }`, "\`rev\` of a lazy iterator"],
+  // `rev` of a `map` or a `filter` over a slice is the chain over its items reversed (ADR 0164); an index made after a closure is not.
+  ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "\`rev\` of a lazy iterator"],
   // A closure's drop drops the variables it took, where it's made (ADR 0098):
   // not part of one, nor where JS can't see them, nor given away by value
   // where a call may consume it without its body dropping them.
