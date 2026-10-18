@@ -54,6 +54,7 @@ function main() {
     $unborrow(value);
   }
   console.log("false false");
+
   const deque = $range(1, 7);
   const value$1 = deque[1];
   console.log(
@@ -110,6 +111,7 @@ function main() {
   let letter = "q";
   letter = $asciiCase(letter, true);
   console.log(`${letter}`);
+
   const pair = [1, 2];
   const refs = pair;
   console.log(

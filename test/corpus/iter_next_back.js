@@ -62,6 +62,7 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
+
   const both = $iter($range(1, 5));
   while (true) {
     const a = $next(both);
@@ -115,6 +116,7 @@ function main() {
     console.log(
       `${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
     );
+
     const peeking = $iter(v);
     const first = $peek(peeking);
     const arg = $nextBack(peeking);
@@ -127,6 +129,7 @@ function main() {
     console.log(
       `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
     );
+
     const chars = $iter(Array.from("xyz"));
     $nextBack(chars);
     console.log(`${$debugStr($restStr(chars))}`);

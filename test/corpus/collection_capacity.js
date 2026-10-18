@@ -31,6 +31,7 @@ function main() {
   console.log(`${$capacity(heap) >= 22} ${heap.length === 0}`);
   $shrinkTo(heap, 0);
   console.log(`${$capacity(heap) >= heap.length}`);
+
   const grown = [];
   for (let n = 0; n < 30; n++) {
     $heapPush(grown, n, $cmp);
@@ -38,6 +39,7 @@ function main() {
   $keepCapacity(grown);
   grown.length = 0;
   console.log(`${$capacity(grown) >= 30}`);
+
   const queue = $withCapacity(8);
   console.log(`${$capacity(queue) >= 8}`);
   for (let n = 0; n < 20; n++) {
@@ -48,6 +50,7 @@ function main() {
   $keepCapacity(queue);
   queue.length = 0;
   console.log(`${$capacity(queue) >= 20}`);
+
   const units = [];
   for (let i = 0; i < 4; i++) {
     $heapPush(units, undefined, (a, b) => 0);

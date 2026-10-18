@@ -23,6 +23,7 @@ function main() {
   const left = { TAG: "Borrowed", _0: "b" };
   const right$1 = { TAG: "Owned", _0: "a" };
   console.log(`${$cmp(left._0, right$1._0) > 0}`);
+
   const words = [
     { TAG: "Owned", _0: "pear" },
     { TAG: "Borrowed", _0: "apple" },

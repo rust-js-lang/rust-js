@@ -52,6 +52,7 @@ function main() {
 
   const one = { value: ["upcast"], impl: { $drop: noisyDrop_drop } };
   one.impl.$drop?.(one.value);
+
   const named = { value: ["named"], impl: noisyNamed() };
   try {
     console.log(`${named.impl.name(named.value)}`);
@@ -61,6 +62,7 @@ function main() {
   }
   const unnamed = named;
   unnamed.impl.$drop?.(unnamed.value);
+
   const shared = {
     value: { value: ["shared"], impl: { $drop: noisyDrop_drop } },
     strong: 1,
@@ -85,6 +87,7 @@ function main() {
       value.impl.$drop?.(value.value);
     });
   }
+
   let drops = 0;
   $rcDrop(
     {

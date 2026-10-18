@@ -116,6 +116,7 @@ function main() {
 
   const shown = { value: 5, impl: { fmt: String } };
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);
+
   const up = [0];
   const counter = { value: up, impl: upCounter() };
   console.log(

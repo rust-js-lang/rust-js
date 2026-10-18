@@ -84,6 +84,7 @@ function main() {
     one.impl.$drop?.(one.value);
   }
   console.log("after one");
+
   const all = [
     { value: ["a"], impl: noisyShape() },
     { value: [1], impl: quietShape() },

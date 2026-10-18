@@ -29,10 +29,12 @@ function main() {
   };
   cell.value = (cell.value + 41) | 0;
   console.log(`${n}`);
+
   const slice = [1, 2, 3];
   const cells = $mutItems(slice);
   bump_all(cells);
   console.log(`${cells.length} [${slice.map((item) => String(item)).join(", ")}]`);
+
   const array = [1, 2, 3];
   const cells$1 = $mutItems(array);
   cells$1[0].value = 99;
@@ -41,6 +43,7 @@ function main() {
 
   reset(array);
   console.log(`[${array.map((item) => String(item)).join(", ")}]`);
+
   const words = ["a", "b"];
   const cells$2 = $mutItems(words);
   cells$2[1].value = "z";

@@ -127,6 +127,7 @@ function main() {
   const n = list.next;
   const second = n != null ? n.value : 0;
   console.log(`${list.value} ${second}`);
+
   let a = 1;
   let b = 2;
   const value$2 = pick(
@@ -213,6 +214,7 @@ function main() {
   );
   value.value += "!";
   console.log(`(${$debugStr(s[0])}, ${$debugStr(s[1])})`);
+
   let c = { n: 1 };
   let d = { n: 2 };
   const value$4 = pick(
@@ -256,6 +258,7 @@ function main() {
   ).value;
   e.n = Math.imul(e.n, 10);
   console.log(`${cDebug_fmt(c)} ${cDebug_fmt(d)}`);
+
   const v = [{ n: 3 }];
   const value$5 = first(v).value;
   value$5.n = (value$5.n + 1) | 0;
@@ -265,6 +268,7 @@ function main() {
   console.log(
     `[${v.map((item) => cDebug_fmt(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}]`,
   );
+
   const checked = { value: [0] };
   checkedDerefMut_deref_mut(checked).value.push(1);
   const count = { value: 1 };
@@ -275,6 +279,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}] ${checkedDeref_deref(count)}`,
   );
+
   const k = { n: 1 };
   const r$1 = cSlot_slot(k);
   if (r$1 != null) {

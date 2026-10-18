@@ -45,6 +45,7 @@ function main() {
   const owned = moneySum_sum($iter(prices));
   const borrowed = moneySumMoney_sum($iter(prices));
   console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
+
   const cart = cartFromIterator_std__string__String__Money__from_iter(
     [
       ["tea", 250n],

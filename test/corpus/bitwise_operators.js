@@ -79,6 +79,7 @@ function main() {
   const value$4 = flagsShrU32_shr([RUN[0]], 1);
   console.log(`${flagsDebug_fmt(value$2)} ${flagsDebug_fmt(value$3)} ${flagsDebug_fmt(value$4)}`);
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor(READ, RUN))}`);
+
   const f = [READ[0]];
   flagsBitOrAssign_bitor_assign(f, [RUN[0]]);
   console.log(`${flagsDebug_fmt(f)}`);

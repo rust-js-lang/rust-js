@@ -30,6 +30,7 @@ function main() {
   console.log(
     `${found == null ? "None" : `Some(${found})`} [${arg$1.map((item) => String(item)).join(", ")}]`,
   );
+
   const words = $iter("one two three four five".split(" "));
   const sum = $lent($lent(words))
     .map((w) => $byteLen(w))
@@ -38,6 +39,7 @@ function main() {
   const any = $lent($lent(words)).some((w) => w.startsWith("f"));
   const arg$2 = $next(words);
   console.log(`${sum} ${any} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
+
   const chars = $iter(Array.from("abcdef"));
   const skipped = $next($lent($lent(chars)).drop(1));
   const pos = $position($lent($lent(chars)), (c) => c === "e");
@@ -45,6 +47,7 @@ function main() {
   console.log(
     `${skipped == null ? "None" : `Some(${$debugStr(skipped, "'")})`} ${pos == null ? "None" : `Some(${pos})`} ${$debugStr(arg$3)}`,
   );
+
   const nums = $iter($range(10, 20));
   const evens = $lent($lent(nums))
     .filter((n) => n % 2 === 0)

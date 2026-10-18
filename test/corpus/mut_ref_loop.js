@@ -12,16 +12,19 @@ function main() {
     i.value = (i.value + 22) | 0;
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
+
   const halves = [1.5, 2.5];
   for (const x of $mutItems(halves)) {
     x.value *= 2;
   }
   console.log(`[${halves.map((item) => $debugF64(item)).join(", ")}]`);
+
   const counts = [1, 2];
   for (const c of $mutItems(counts)) {
     c.value = (c.value * 200) & 255;
   }
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
+
   const words = ["a", "b"];
   for (const w of $mutItems(words)) {
     w.value += "!";
@@ -32,6 +35,7 @@ function main() {
     x.value = 0;
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
+
   const ns = [1, 2, 3, 4];
   for (const x of $mutItems($view(ns, 1, 3))) {
     x.value = -x.value | 0;
@@ -40,6 +44,7 @@ function main() {
     x.value = 9;
   }
   console.log(`[${ns.map((item) => String(item)).join(", ")}]`);
+
   const v = [1, 2, 3, 4, 5];
   for (const n of $mutItems(v)) {
     if (n.value % 2 === 0) {

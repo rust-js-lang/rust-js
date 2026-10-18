@@ -10,10 +10,12 @@ function main() {
   const a = [1, 2, 3];
   const seven = $cycle(a).take(7).toArray();
   console.log(`[${seven.map((item) => String(item)).join(", ")}]`);
+
   const it = $iter(a);
   $next(it);
   const rest = $cycle(it.items.slice(it.at, it.end)).take(5).toArray();
   console.log(`[${rest.map((item) => String(item)).join(", ")}]`);
+
   const held = $cycle(a);
   $next(held);
   $next(held);
@@ -22,10 +24,12 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
+
   const names = ["x", "y"];
   const owned = $cycle(names).take(5).toArray();
   owned[$at(owned, 0)] = owned[0] + "!";
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
+
   const lists = [[1], [2]];
   const copies = $cycle(lists, (item) => item.slice())
     .take(3)

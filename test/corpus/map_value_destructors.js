@@ -56,6 +56,7 @@ function main() {
     tree.clear();
     const size = tree.size;
     console.log(`cleared ${size}`);
+
     const hash = new Map();
     try {
       const tmp = $insert(hash, "a", [1]);

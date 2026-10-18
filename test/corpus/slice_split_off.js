@@ -67,6 +67,7 @@ function main() {
   console.log(
     `${split$6[1] == null ? "None" : `Some(${split$6[1]})`} [${s.map((item) => String(item)).join(", ")}]`,
   );
+
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
     const input = { value: text };
@@ -78,6 +79,7 @@ function main() {
     $print(`${word.length} `);
   }
   console.log("");
+
   const w = [1, 2, 3, 4, 5, 6];
   let rest = w;
   const split$7 = $sliceSplitOffMut(rest, 2);

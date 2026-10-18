@@ -401,6 +401,7 @@ function main() {
       }
     }
     const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
+
     try {
       console.log(`${total} ${arg}`);
     } catch (error) {

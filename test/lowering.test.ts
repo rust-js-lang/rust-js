@@ -104,6 +104,15 @@ thread_local! {
     static START: u32 = 5;
 }
 
+pub fn gated(n: u32, o: Option<u32>) -> u32 {
+    let m = n + 1;
+
+    let Some(p) = o else {
+        return m;
+    };
+    p * 2
+}
+
 pub fn start() -> u32 {
     START.with(|s| *s)
 }
@@ -120,6 +129,9 @@ pub fn start() -> u32 {
   expect(js).toContain("/// Globs: `src/**/*.rs`.\nexport function glob() {\n  return 3;");
   expect(js).not.toContain("nested");
   expect(js).toContain("}\n\n/** The count's start. */\nconst START = 5;\n");
+  // A blank line before a statement whose span starts inside its line, a
+  // \`let .. else\`'s at its pattern.
+  expect(js).toContain("  const m = (n + 1) >>> 0;\n\n  if (o == null) {");
 });
 
 test("a variable nothing sets again is a const", async () => {

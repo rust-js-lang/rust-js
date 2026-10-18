@@ -19,6 +19,7 @@ function main() {
   console.log(`${hi._0} ${hey._0} ${$debugStr(hey._0)} ${hey.TAG === "Borrowed"}`);
   const owned = { ...hey }._0;
   console.log(`${owned} ${hi._0}`);
+
   const text = shout("wow!");
   const value = $cowMut(text);
   value.value += "!!";

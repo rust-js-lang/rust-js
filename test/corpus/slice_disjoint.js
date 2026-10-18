@@ -55,6 +55,7 @@ function main() {
     { start: 0, end: 2 },
     { start: 3, end: 6 },
   ]);
+
   if (value$3.TAG === "Ok") {
     const left = value$3._0[0];
     const right = value$3._0[1];
@@ -103,6 +104,7 @@ function main() {
   const [x, y] = $getDisjointMut(v, [1, 4], true)._0;
   x.value = (x.value + y.value) | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   const cells = [{ n: 1 }, { n: 2 }, { n: 3 }];
   const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e) => e);
   first.n = (first.n + last.n) | 0;

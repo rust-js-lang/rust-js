@@ -32,6 +32,7 @@ function main() {
     )}`,
   );
   console.log(`${$cmp(crab, bang) > 0 ? crab : bang} ${$cmp(crab, bang) > 0 ? bang : crab}`);
+
   const sorted = words.slice();
   sorted.sort($cmp);
   console.log(`[${sorted.map((item) => $debugStr(item)).join(", ")}]`);

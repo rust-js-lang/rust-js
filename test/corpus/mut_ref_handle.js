@@ -42,6 +42,7 @@ function main() {
     counterDrop_drop(_c);
   }
   console.log(`${drops}`);
+
   let n = 1;
   let s = "a";
   const p = {
@@ -67,6 +68,7 @@ function main() {
   // Formatted, a `&mut` kept shows what it points at.
   console.log(`${p.left.value} ${$debugStr(p.right.value)}`);
   console.log(`${n} ${s}`);
+
   let a = 1;
   let b = 2;
   for (const take of [true, false]) {
@@ -90,6 +92,7 @@ function main() {
     r.value = Math.imul(r.value, 10);
   }
   console.log(`${a} ${b}`);
+
   let x = 0;
   let y = 0;
   let cur = {
@@ -112,6 +115,7 @@ function main() {
   cur.value = (cur.value + 5) | 0;
   console.log(`${cur.value}`);
   console.log(`${x} ${y}`);
+
   let m = 3;
   const o = {
     get value() {
@@ -125,6 +129,7 @@ function main() {
     o.value = (o.value + 1) | 0;
   }
   console.log(`${m}`);
+
   let i = 1;
   let j = 2;
   const refs = [
@@ -149,6 +154,7 @@ function main() {
     r.value = Math.imul(r.value, 7);
   }
   console.log(`${i} ${j}`);
+
   let u = 5;
   let w = 6;
   pick(
@@ -191,6 +197,7 @@ function main() {
   );
   got.value = (got.value + 1) | 0;
   console.log(`${u} ${w}`);
+
   const v = [1, 2];
   first(v).value = 9;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);

@@ -38,6 +38,7 @@ function main() {
   }
   console.log(`${it.reduce((n) => n + 1, 0)}`);
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   const part = $iter($mutItems($view(v, 2)));
   while (true) {
     const x = $next(part);
@@ -47,6 +48,7 @@ function main() {
     x.value = -x.value | 0;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   const names = ["a", "b", "c"];
   const each = $iter($mutItems(names));
   const value = $unwrap($next(each));
@@ -56,10 +58,12 @@ function main() {
     name.value = $insertStr(name.value, 0, ">");
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+
   const points = [{ x: 1 }, { x: 2 }];
   const walk = $iter(points);
   $unwrap($nextBack(walk)).x = 9;
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
+
   const queue = [1, 2, 3];
   queue.unshift(0);
   const q = Iterator.from($mutItems(queue));

@@ -76,6 +76,7 @@ function main() {
   }
   const sent = $dynCell({ size: 3, inner: [30] }, { $drop: noisyDrop_drop });
   const plain = $dynCell({ size: 4, inner: 5 }, {});
+
   try {
     console.log(`${sent.size} ${plain.size}`);
   } catch (error) {

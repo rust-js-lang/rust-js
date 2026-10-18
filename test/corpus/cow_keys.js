@@ -48,10 +48,12 @@ function main() {
   console.log(`[${held.map((item) => $debugStr(item)).join(", ")}]`);
   const value$3 = $remove(counts, "a");
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`} ${counts.size}`);
+
   const seen = new $CowSet();
   console.log(
     `${$add(seen, { TAG: "Borrowed", _0: "x" })} ${$add(seen, { TAG: "Owned", _0: "x" })}`,
   );
+
   const tree = new $CowMap();
   tree.set({ TAG: "Owned", _0: "pear" }, 1);
   tree.set({ TAG: "Borrowed", _0: "apple" }, 2);
@@ -73,6 +75,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
   const rows = new $CowMap();
   rows.set({ TAG: "Borrowed", _0: [1, 2] }, "first");
   rows.set({ TAG: "Owned", _0: [1, 2] }, "second");

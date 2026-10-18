@@ -75,7 +75,11 @@ pub fn emit(
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
-        commented: comments.iter().map(|c| c.attached_to).collect(),
+        // A blank line's piece is no comment (`comments_of`).
+        commented: (comments.iter())
+            .filter(|c| !c.span.is_empty())
+            .map(|c| c.attached_to)
+            .collect(),
     };
     let b = &cx.b;
 
@@ -245,8 +249,11 @@ fn comments_of(
             .collect();
         // What's before each statement: its comments, and a blank line where
         // the Rust has one, before or between them (ADR 0444).
+        // Before the line it's on: a statement's span may start inside its
+        // Rust's, `if` before its test, a `let .. else` before its pattern.
         let blank_before = |lo: u32| {
             let before = &sources.text[file_start..lo as usize];
+            let before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
             let gap = &before[before.trim_end_matches(char::is_whitespace).len()..];
             gap.matches('\n').count() >= 2
         };
@@ -297,7 +304,11 @@ fn comments_of(
                 i += 1;
             }
             let last = own.last().map_or(at, |c| c.hi);
-            if (own.is_empty() && blank_before(at))
+            // Of the first statement on its line only: not a closure's in
+            // the `let` it's written in.
+            let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
+            let first_on_line = !starts.iter().any(|&s| s >= line_start && s < at);
+            if (own.is_empty() && first_on_line && blank_before(at))
                 || (!own.is_empty() && sources.text[last as usize..at as usize].matches('\n').count() >= 2)
             {
                 pieces.push(blank(&text));

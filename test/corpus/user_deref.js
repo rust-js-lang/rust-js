@@ -57,6 +57,7 @@ function main() {
   console.log(
     `${Point.sum(trackedDeref_deref(outerDeref_deref(outer)))} ${trackedDeref_deref(outerDeref_deref(outer)).x} ${outerDeref_deref(outer).reads}`,
   );
+
   const item = { x: 0, y: 0 };
   const grid = { cells: Array.from({ length: 4 }, () => ({ ...item })), width: 2 };
   gridIndexMut_usize__usize__index_mut(grid, [1, 0]).x = 7;

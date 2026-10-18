@@ -99,6 +99,7 @@ function main() {
   console.log(
     `${name == null ? "None" : `Some(${$debugStr(name)})`} ${point == null ? "None" : `Some(${pointDebug_fmt(point)})`}`,
   );
+
   const ok = { TAG: "Ok", _0: 2 };
   const value = {
     TAG: ok.TAG,

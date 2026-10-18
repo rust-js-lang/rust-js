@@ -38,6 +38,7 @@ function main() {
     const rest = tmp$2.toArray();
     try {
       console.log(`rest ${rest.length}`);
+
       let fragments = [["f1"], ["f2"]];
       const old = fragments;
       fragments = [];

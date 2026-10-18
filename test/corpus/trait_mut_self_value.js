@@ -51,6 +51,7 @@ function main() {
   n = self$2.value;
   step = by.value;
   console.log(`${n} ${step} ${total}`);
+
   let name = "hey";
   const self$3 = { value: name };
   stringShout_shout(self$3);
@@ -59,6 +60,7 @@ function main() {
   stringShout_shout(self$4);
   name = self$4.value;
   console.log(`${name}`);
+
   const counts = [1, 2];
   $index(counts, 1);
   const self$5 = { value: counts[1] };

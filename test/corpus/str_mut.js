@@ -46,14 +46,17 @@ function main() {
   s = t$1.value;
   console.log(`${s}`);
   s = $asciiCase(s, false);
+
   let b = "boxed";
   b = $asciiCase(b, true);
   console.log(`${b}`);
+
   let u = "abc";
   const t$2 = { value: u };
   upper(t$2);
   u = t$2.value;
   console.log(`${u}`);
+
   const v = ["x", "y"];
   v[$at(v, 1)] = $asciiCase(v[1], true);
   $index(v, 0);
@@ -64,6 +67,7 @@ function main() {
     w.value = $asciiCase(w.value, false);
   }
   console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
+
   let kept = "hey";
   const h = {
     text: {
@@ -108,6 +112,7 @@ function main() {
   });
   part.value = $asciiCase(part.value, true);
   console.log(`${name}`);
+
   let word = "capital";
   const head = $strGetMut(
     {
@@ -166,6 +171,7 @@ function main() {
       ) == null
     }`,
   );
+
   let pair = "left|right";
   const [a, z] = $strSplitAtMut(
     {

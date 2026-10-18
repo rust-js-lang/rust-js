@@ -26,6 +26,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
   let owned = "";
   owned += "héllo";
   console.log(
@@ -46,6 +47,7 @@ function main() {
   const bytes = [104, 105];
   const made = $utf8Decode(bytes);
   console.log(`${made}`);
+
   const parts = [1, 2];
   const list = parts;
   list.push(3);

@@ -13,6 +13,7 @@ function sDebug_fmt(s) {
 function main() {
   const a = 1;
   console.log(`${a === 1}`);
+
   let b = 2;
   const c = 2;
   let p = {
@@ -35,6 +36,7 @@ function main() {
     },
   };
   console.log(`${p.value === 2}`);
+
   let n = 4;
   const s = {
     r: {
@@ -47,6 +49,7 @@ function main() {
     },
   };
   console.log(`${s.r.value === 4}`);
+
   let m = 3;
   let r = {
     get value() {
@@ -73,6 +76,7 @@ function main() {
   const v = r;
   v.value = (v.value + 1) | 0;
   console.log(`${m}`);
+
   let i = 3;
   let j = 1;
   let k = 2;

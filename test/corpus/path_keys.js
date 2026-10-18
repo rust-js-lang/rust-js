@@ -43,10 +43,12 @@ function main() {
   );
   const value$4 = $remove(sizes, "src//main.rs");
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+
   const seen = new $PathSet();
   for (const p of ["a/b", "a//b", "a/b/", "./a/b", "/a/b"]) {
     console.log(`${p} ${$add(seen, p)}`);
   }
+
   const tree = new $PathMap();
   for (const [i, p] of ["a.b", "a/b", "a", "/z", "../up", "./here"].entries()) {
     tree.set(p, i & 255);

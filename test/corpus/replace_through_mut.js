@@ -158,6 +158,7 @@ function main() {
   const third = { x: 5 };
   swap_points(second, third);
   console.log(`${qDebug_fmt(first)} ${qDebug_fmt(second)} ${qDebug_fmt(third)}`);
+
   let l = "Off";
   const self = { value: l };
   Light.toggle(self);
@@ -186,6 +187,7 @@ function main() {
   brighter(l$3);
   lights[0] = l$3.value;
   console.log(`[${lights.map((item) => lightDebug_fmt(item)).join(", ")}]`);
+
   const s = { TAG: "Circle", r: 1.5 };
   flip(s);
   const arg$1 = $eq(s, { TAG: "Square", side: 3 });

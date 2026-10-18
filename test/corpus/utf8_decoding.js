@@ -44,6 +44,7 @@ function main() {
   for (const bytes of inputs) {
     show(bytes);
   }
+
   const value = $fromUtf8([104, 105, 255, 33], true);
   if (value.TAG === "Ok") {
     console.log(`${value._0}`);

@@ -64,6 +64,7 @@ function main() {
   const all = v;
   all[$at(all, 5)] = 6;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   const [left, right] = $splitAtMut(v, 3);
   const value$2 = $index(right, 0);
   left[$at(left, 0)] = value$2;
@@ -87,6 +88,7 @@ function main() {
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const value$4 = $splitEndMut(v, false, true);
+
   if (value$4) {
     const first = value$4[0];
     const rest = value$4[1];
@@ -121,6 +123,7 @@ function main() {
     chunk[$at(chunk, 4)] = 99;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   const words = [1, 0, 2, 3, 0, 4];
   for (const part of $sliceSplitByMut(words, (x) => x === 0, undefined, false, false)) {
     part.reverse();
@@ -147,6 +150,7 @@ function main() {
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   const part$1 = $viewGet(words, 1, 3);
+
   if (part$1) {
     part$1.fill(5);
   }
@@ -156,6 +160,7 @@ function main() {
   value$6.value = (value$6.value + 1) | 0;
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   const head = words.length >= 2 ? $view(words, 0, 2) : undefined;
+
   if (head) {
     head[1] = 0;
   }
@@ -177,6 +182,7 @@ function main() {
     end[1] = rest.length | 0;
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
+
   const runs = [1, 1, 2, 3, 3, 3];
   for (const run of $chunkByMut(runs, (a, b) => a === b)) {
     const n = run.length | 0;
@@ -190,10 +196,12 @@ function main() {
       .join(", ")}]`,
   );
   const head$1 = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
+
   if (head$1) {
     $assign(head$1, [7, 8]);
   }
   console.log(`[${runs.map((item) => String(item)).join(", ")}]`);
+
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
   const [head$2, tail$1] = $splitAtMut(points, 1);
   const x = $index(tail$1, 1).x;

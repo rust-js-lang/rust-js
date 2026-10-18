@@ -42,6 +42,7 @@ function main() {
   console.log(
     `[${pairs.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
   );
+
   const w = [1, 2, 3, 4, 5, 6, 7];
   const items$1 = $view(w, 0, 2);
   const all = items$1.length === 2 ? items$1 : undefined;
@@ -72,6 +73,7 @@ function main() {
     chunk.reverse();
   }
   console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+
   const grid = [
     [1, 2],
     [3, 4],

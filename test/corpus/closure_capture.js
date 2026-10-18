@@ -30,9 +30,11 @@ function main() {
     [1, 2, 3],
   );
   console.log(`total ${total}`);
+
   const a = make_counter();
   const b = make_counter();
   console.log(`${a()} ${a()} ${b()} ${a()}`);
+
   const names = ["x"];
   const add = (s) => {
     names.push(s);
@@ -49,6 +51,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
   let value = 5;
   const double = () => {
     value = Math.imul(value, 2);

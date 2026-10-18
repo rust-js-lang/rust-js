@@ -65,6 +65,7 @@ function main() {
   collectorWrite_write_str(c, `1 and ${$debugStr("two")}`);
   describe(c, { x: 3, y: -4 });
   console.log(`${$debugStr(c.text)} ${c.bytes}`);
+
   const s = [""];
   shoutingWrite_write_str(s, "hi 5");
   shoutingWrite_write_char(s, "x");

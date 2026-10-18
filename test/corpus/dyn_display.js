@@ -92,6 +92,7 @@ function main() {
   const value = describe({ value: "text", impl: { fmt: (value) => value } });
   console.log(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}`);
   console.log(`${boxed.impl.fmt(boxed.value)}`);
+
   const all = [
     { value: 1.5, impl: { fmt: $displayF64 } },
     { value: "s", impl: { fmt: (value) => value } },
@@ -106,6 +107,7 @@ function main() {
   const shown = { value: counter, impl: counterDisplay() };
   counter[0].value = 2;
   console.log(`${shown.impl.fmt(shown.value)}`);
+
   const value$1 = lookup("one");
   if (value$1.TAG === "Ok") {
     const n = value$1._0;

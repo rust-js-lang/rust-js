@@ -57,6 +57,7 @@ function main() {
   console.log(
     `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`,
   );
+
   const v = [1, 2, 3];
   const it = $iter(v);
   $next(it);
@@ -69,6 +70,7 @@ function main() {
   console.log(
     `(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
   );
+
   const stepped = $iter(v);
   $next(stepped);
   const value$7 = hint($iter(v));

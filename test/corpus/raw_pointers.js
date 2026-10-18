@@ -88,6 +88,7 @@ function main() {
   console.log(`${x.value} ${c.value}`);
   bump($ptr(x, "value"));
   console.log(`${x.value}`);
+
   const pt = { x: 1, y: 2 };
   const px = $ptr(pt, "x");
   px.value = 10;
@@ -114,12 +115,14 @@ function main() {
     z.value = (z.value + 1) | 0;
   }
   console.log(`${x.value}`);
+
   const third = { value: 3, next: null };
   const second = { value: 2, next: $ptrTo(third) };
   const first = { value: 1, next: $ptrTo(second) };
   console.log(`${sum($ptrTo(first))}`);
   third.value = 30;
   console.log(`${sum($ptrTo(first))}`);
+
   const point = { x: 0, y: 0 };
   const own = { value: $ptrTo(point) };
   ownDerefMut_deref_mut(own).value.x = 5;

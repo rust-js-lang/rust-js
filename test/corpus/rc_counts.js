@@ -63,6 +63,7 @@ function main() {
     $rcDrop(a);
     throw error;
   }
+
   try {
     console.log(`${a.strong} ${a === b}`);
   } catch (error) {
@@ -699,6 +700,7 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
+
     const text = { value: "hi", strong: 1, weak: 0 };
     let other;
     try {

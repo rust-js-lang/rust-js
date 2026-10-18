@@ -77,6 +77,7 @@ function main() {
   const value$3 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
   console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${NEXT_ID}`);
   console.log(`${hit()} ${hit()} ${HITS.value}`);
+
   const seen = [];
   let local = 5;
   order(seen, "load");

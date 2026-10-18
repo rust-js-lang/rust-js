@@ -47,10 +47,12 @@ function main() {
     console.log(`${n}: ${arg}`);
     const arg$1 = order(by);
     console.log(`${n}: ${arg$1}`);
+
     const loose = base.map((p) => [p[0], p[1]]);
     $sortUnstable(loose, (a, b) => looseOrd_cmp(a, b) < 0, "network");
     const arg$2 = loose.map((l) => String(l[1])).join(",");
     console.log(`${n}: ${arg$2}`);
+
     const wide = base.map((p) => ({ key: p[0], pad: new Array(30).fill(p[1]) }));
     const key$1 = (w) => w.key;
     $sortUnstable(wide, (a, b) => key$1(a) < key$1(b), "hoare");
@@ -88,6 +90,7 @@ function main() {
     const value = order(again);
     const arg$6 = order($slice(down, 0, 3));
     console.log(`${n}: ${value} ${arg$6}`);
+
     const picked = base.slice();
     const middle = (picked.length / 2) >>> 0;
     const key$5 = (p) => p[0];

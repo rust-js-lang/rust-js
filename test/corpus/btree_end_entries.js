@@ -34,6 +34,7 @@ function main() {
       .map(([key, value]) => `${key}: ${$debugStr(value)}`)
       .join(", ")}}`,
   );
+
   const counts = new Map([
     ["b", 2],
     ["a", 1],

@@ -113,6 +113,7 @@ function main() {
         ", ",
       )}} ${value$6 == null ? "None" : `Some(${pointDebug_fmt(value$6)})`} ${points.size}`,
   );
+
   const shapes = new $KeyMap();
   shapes.set("Dot", "dot");
   shapes.set({ TAG: "Circle", _0: 2 }, "small");
@@ -136,6 +137,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
   const paths = new $KeySet();
   paths.add([1, [2, 3]]);
   paths.add([undefined, [9]]);

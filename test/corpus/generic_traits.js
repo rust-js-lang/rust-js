@@ -174,6 +174,7 @@ function main() {
   console.log(
     `${$displayF64(a)} ${b} ${value} (${$debugF64(arg[0])}, ${$debugStr(arg[1])}) (${$debugStr(pair[0])}, ${$debugStr(pair[1])})`,
   );
+
   const nums = { list: [1, 2] };
   const stack = { list: [3, 4] };
   const x$1 = { value: nums };

@@ -17,6 +17,7 @@ function main() {
   bump(x);
   tmp = x.value;
   console.log(`${tmp}`);
+
   let tmp$1 = 42;
   tmp$1 = Math.imul(tmp$1, 2);
   console.log(`${tmp$1}`);
@@ -25,6 +26,7 @@ function main() {
   const x$1 = { value: tmp$2 };
   bump(x$1);
   tmp$2 = x$1.value;
+
   let opt = 1;
   if (opt != null) {
     opt = (opt + 10) | 0;
@@ -37,6 +39,7 @@ function main() {
     `${opt == null ? "None" : `Some(${opt})`} ${words == null ? "None" : `Some(${$debugStr(words)})`}`,
   );
   let tmp$3 = 3;
+
   if (tmp$3 != null) {
     tmp$3 = (tmp$3 + 1) | 0;
     console.log(`${tmp$3}`);

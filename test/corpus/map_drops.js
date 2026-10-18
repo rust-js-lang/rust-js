@@ -164,6 +164,7 @@ function main() {
     noisyDrop_drop(value);
   }
   console.log("sorted dropped");
+
   const byName = new Map();
   try {
     const tmp = $insert(byName, "x", ["x"]);

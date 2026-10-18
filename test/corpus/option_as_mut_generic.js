@@ -49,6 +49,7 @@ function main() {
     ).value[0],
   );
   console.log(`${n?.[0][0] ?? 0}`);
+
   let units;
   const self = {
     value: call_and_ref(
@@ -64,6 +65,7 @@ function main() {
     ).value[0],
   };
   console.log(`${Unit.touch(self)}`);
+
   let count;
   const value = call_and_ref(
     {
@@ -78,6 +80,7 @@ function main() {
   );
   value.value = (value.value + 1) >>> 0;
   console.log(`${count == null ? "None" : `Some(${count})`}`);
+
   let words;
   call_and_ref(
     {
@@ -93,6 +96,7 @@ function main() {
   console.log(
     `${words == null ? "None" : `Some([${words.map((item) => $debugStr(item)).join(", ")}])`}`,
   );
+
   let nested;
   call_and_ref(
     {
@@ -108,6 +112,7 @@ function main() {
   console.log(
     `${nested == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nested))})`}`,
   );
+
   let unit;
   const x = { value: unit };
   const value$1 = replace_in(x);
@@ -128,6 +133,7 @@ function main() {
   const value$2 = replace_in(x$1);
   unit = x$1.value;
   console.log(`${value$2} ${unit == null ? "None" : "Some(())"}`);
+
   let maybe = $some(undefined);
   const x$2 = { value: maybe };
   const value$3 = replace_in(x$2, 3);

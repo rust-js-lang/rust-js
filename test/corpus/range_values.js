@@ -82,6 +82,7 @@ function main() {
   console.log(
     `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true ${Math.max(2 - 5, 0)}`,
   );
+
   const steps = { start: 0, end: 4 };
   const first = $rangeNext(steps);
   const last = $rangeNextBack(steps);
@@ -199,6 +200,7 @@ function main() {
               { fmt: (value) => `${value.start}..${value.end}` },
             )} ${shown_twice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
           );
+
           tmp$1 = undefined;
           tmp$1 = [1, 2, 3, 4, 5];
           numbers = tmp$1;

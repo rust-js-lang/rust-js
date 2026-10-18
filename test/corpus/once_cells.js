@@ -44,6 +44,7 @@ function main() {
     $print(`${text} `);
   }
   console.log(`${calls}`);
+
   const taken = {};
   console.log(`${!$cellReplace(taken)}`);
   $getOrInit(taken, () => ({ name: "a" }));
@@ -54,6 +55,7 @@ function main() {
   console.log(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}`);
   const value$3 = $cellReplace(taken)?.name;
   console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${!taken.value}`);
+
   const count = {};
   $unwrapOk($onceSet(count, 5));
   const value$4 = $unwrap(count.value == null ? undefined : count);

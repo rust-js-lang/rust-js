@@ -37,6 +37,7 @@ function main() {
   console.log(
     `[${down.map((item) => String(item)).join(", ")}] [${top.map((item) => String(item)).join(", ")}] [${own.map((item) => String(item)).join(", ")}]`,
   );
+
   const v = [10, 20, 30, 40];
   const it = $iter(v);
   const back = $nextBack(it);
@@ -46,12 +47,14 @@ function main() {
   console.log(
     `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${value} [${arg.map((item) => String(item)).join(", ")}]`,
   );
+
   const range = { start: 0, end: 5 };
   const value$1 = $rangeNextBack(range);
   const value$2 = $rangeNext(range);
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
+
   const p = $iter(v);
   const peeked = $peek(p);
   const ten = $nextIf(p, (item) => item === 10);

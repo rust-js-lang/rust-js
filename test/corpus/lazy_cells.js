@@ -34,6 +34,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
   let calls = 0;
   const lazy = {
     init: () => {
@@ -47,6 +48,7 @@ function main() {
   const value$3 = lazy.init === undefined ? lazy.value : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${$force(lazy)}`);
   console.log(`${calls}`);
+
   const count = { init: () => 40 };
   const value$4 = count.init === undefined ? count : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${value$4.value})`}`);
@@ -61,6 +63,7 @@ function main() {
   console.log(
     `${$force(count)} LazyCell(${count.init === undefined ? String(count.value) : "<uninit>"})`,
   );
+
   const list = { init: () => [] };
   console.log(
     `LazyCell(${list.init === undefined ? `[${list.value.map((item) => String(item)).join(", ")}]` : "<uninit>"})`,

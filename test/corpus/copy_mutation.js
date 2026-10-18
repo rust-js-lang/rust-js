@@ -55,6 +55,7 @@ function main() {
   const c = moved({ ...a });
   const arg = $eq(a, { x: 1, y: 2 });
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(c)} ${arg}`);
+
   const item = { ...a };
   const points = Array.from({ length: 3 }, () => ({ ...item }));
   for (const p of points) {
@@ -65,6 +66,7 @@ function main() {
   console.log(
     `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] ${pointDebug_fmt(first)}`,
   );
+
   const nested = [[1, 2], [3]];
   const snapshot = nested.map((item) => item.slice());
   $index(nested, 0).push(9);

@@ -21,6 +21,7 @@ function main() {
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
+
   const rows = [
     [0, 0],
     [0, 0],

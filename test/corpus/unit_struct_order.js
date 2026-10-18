@@ -31,6 +31,7 @@ function main() {
 
   console.log("Equal false true");
   console.log("true");
+
   const tagged = [{ n: 3 }, { n: 1 }];
   tagged.sort((a, b) => $cmp(a.n, b.n));
   const arg = $maxBy(tagged, (a, b) => $cmp(a.n, b.n));

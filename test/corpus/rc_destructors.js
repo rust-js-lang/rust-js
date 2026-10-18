@@ -72,6 +72,7 @@ function main() {
     $rcDrop(c, noisyDrop_drop);
   }
   console.log("after a");
+
   const h = { value: { name: ["h"], items: [["i1"], ["i2"]] }, strong: 1, weak: 0 };
   let tmp;
   let tmp$1;
@@ -130,6 +131,7 @@ function main() {
     }
   }
   console.log("after h");
+
   const cell = { value: { value: [["x"]] }, strong: 1, weak: 0 };
   let tmp$3;
   try {
@@ -209,6 +211,7 @@ function main() {
       }
     });
   }
+
   const outer = { value: { inner: { value: ["o"], strong: 1, weak: 0 } }, strong: 1, weak: 0 };
   let again;
   try {

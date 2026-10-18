@@ -97,6 +97,7 @@ function main() {
     noisyDrop_drop(p);
     noisyDrop_drop(q);
   });
+
   let r = ["r1"];
   const captured = r;
   const take = () => {

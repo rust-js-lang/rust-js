@@ -35,6 +35,7 @@ function main() {
   const r = tick;
   r();
   console.log(`${count}`);
+
   let total = 0;
   console.log(
     `${apply((x) => {
@@ -43,6 +44,7 @@ function main() {
     }, 3)}`,
   );
   console.log(`${apply(square, 4)}`);
+
   let n = 0;
   console.log(
     `${dynamic(() => {

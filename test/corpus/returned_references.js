@@ -35,6 +35,7 @@ function main() {
   console.log(
     `[${items.map((item) => itemDebug_fmt(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );
+
   const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
   const value$4 = $unwrap(stock.get("pen"));

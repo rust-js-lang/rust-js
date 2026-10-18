@@ -279,6 +279,7 @@ function main() {
     try {
       try {
         noisyDrop_drop(swapped);
+
         const w = $range(10, 20).map((value) => [value]);
         const value = (n) => {
           console.log(`keep ${n[0]}?`);
@@ -305,6 +306,7 @@ function main() {
           $truncate(w, 0, noisyDrop_drop);
           const length = w.length;
           console.log(`cleared ${length}`);
+
           const deque = [];
           try {
             deque.push([40]);

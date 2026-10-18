@@ -293,6 +293,7 @@ function main() {
     throw error;
   }
   let tmp$6;
+
   try {
     tmp$6 = make(7);
   } catch (error) {

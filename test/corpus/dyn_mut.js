@@ -125,6 +125,7 @@ function main() {
   const receiver = up(s);
   receiver.impl.bump(receiver);
   console.log(`${s.impl.name(s.value)} ${n}`);
+
   const boxed = { value: 7, impl: i32Counter() };
   boxed.impl.bump(boxed);
   const list = [

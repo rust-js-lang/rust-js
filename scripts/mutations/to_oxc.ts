@@ -395,4 +395,12 @@ export const mutations: Mutation[] = [
     replace: "                if run == 0 {",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
+  {
+    name: "blank-line-before-span",
+    breaks: "a blank line before a statement whose span starts inside its line, an `if`'s at its test, is lost",
+    file: "src/to_oxc.rs",
+    find: "            let before = &before[..before.rfind('\\n').map_or(0, |i| i + 1)];\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+  },
 ];

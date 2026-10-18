@@ -25,6 +25,7 @@ function main() {
   console.log(`${process_or_insert_default(map, 22)} ${process_or_insert_default(map, 66)}`);
   const value = map.get(66);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+
   const m = new Map();
   m.set(1, 5);
   const v = $mutGet(m, 1);
@@ -37,6 +38,7 @@ function main() {
   }
   const value$1 = m.get(1);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+
   let a = 1;
   let b = 2;
   const refs = [

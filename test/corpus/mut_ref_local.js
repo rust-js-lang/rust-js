@@ -31,6 +31,7 @@ function main() {
   bump(n$1);
   x = n$1.value;
   console.log(`${x}`);
+
   const v = [1, 2, 3];
   let i = 0;
   const index = i;
@@ -46,6 +47,7 @@ function main() {
   i = 2;
   r.value = (r.value + 10) | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}] ${i}`);
+
   let name = "ada";
   name += " lovelace";
   const value = name.toUpperCase();
@@ -139,6 +141,7 @@ function main() {
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+
   let z = 1;
   z = (z + 1) | 0;
   z = (z + 1) | 0;

@@ -30,6 +30,7 @@ function main() {
   const sorted = Array.from(counts);
   sorted.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   console.log(`[${sorted.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`);
+
   const names = new Map();
   for (const k of [2, 1, 2]) {
     const entry = $entry(names, k);
@@ -49,6 +50,7 @@ function main() {
       .map(([key, value]) => `${key}: ${$debugStr(value)}`)
       .join(", ")}}`,
   );
+
   const empty = new Map();
   const value$1 = $entry(empty, "z");
   if (value$1.TAG === "Vacant") {

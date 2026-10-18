@@ -102,6 +102,7 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${$debugStr(value)}`)
       .join(", ")}} ${arg}`,
   );
+
   const points = new Map($lazyRange(0, 4).map((k) => [k, [k, 0]]));
   for (const [, p] of $treeRange(
     points,

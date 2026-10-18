@@ -13,6 +13,7 @@ function main() {
   const key = (w) => $byteLen(w);
   $sortUnstable(words, (a, b) => key(a) < key(b), "network");
   console.log(`${words.join(",")}`);
+
   const pairs = $range(0, 40).map((i) => [(Math.imul(i, 7) >>> 0) % 4, i]);
   const key$1 = (p) => p[0];
   $sortUnstable(pairs, (a, b) => key$1(a) < key$1(b), "network");
@@ -22,9 +23,11 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
   const owned = text.split(" ");
   $sortUnstable(owned, (a, b) => $cmp($byteLen(b), $byteLen(a)) < 0, "general8");
   console.log(`${owned.join(",")}`);
+
   const wide = $range(0, 50).map((i) => [
     i % 3,
     i,
@@ -55,6 +58,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
   const picked = text.split(" ");
   const middle = (picked.length / 2) >>> 0;
   const key$3 = (w) => $byteLen(w);

@@ -47,6 +47,7 @@ function main() {
   console.log(
     `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrowI32Slice_borrow(stack).length}`,
   );
+
   const grid = [[0, 0, 0, 0]];
   for (const [i, cell] of $mutItems(gridAsMutU8Slice_as_mut(grid)).entries()) {
     cell.value = ((i & 255) * 2) & 255;

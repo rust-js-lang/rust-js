@@ -139,6 +139,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
   const tree = new Map([
     [5, "e"],
     [1, "a"],
@@ -211,6 +212,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
   const set = new Set([4, 2, 8, 6]);
   const value$12 = $treeEnd(set, $cmp, false, true, false);
   const value$13 = $treeEnd(set, $cmp, true, true, false);

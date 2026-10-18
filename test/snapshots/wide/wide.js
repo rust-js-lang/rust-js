@@ -179,6 +179,7 @@ export function report() {
   const value$12 = $unwrapErr($tryFromInt(300n, 0, 255));
   const value$13 = low === $unwrapErr($tryFromInt(300n, 0, 255));
   out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$12} ${value$13}\n`;
+
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps

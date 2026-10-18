@@ -50,6 +50,7 @@ function main() {
     `[${a.map((item) => $debugStr(item)).join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}]`,
   );
   console.log(`${Iterator.from($extractIf(w, 1, 1, () => true, true)).reduce((n) => n + 1, 0)}`);
+
   const list = $range(1, 7);
   const odd = Iterator.from(
     $extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true),
@@ -57,6 +58,7 @@ function main() {
   console.log(
     `[${odd.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
   );
+
   const scores = new Map([
     ["a", 1],
     ["b", 20],
@@ -85,6 +87,7 @@ function main() {
   const small = Iterator.from($mapExtractIf(set, (x) => x < 3, set, false, true)).toArray();
   small.sort((a, b) => a - b);
   console.log(`[${small.map((item) => String(item)).join(", ")}] ${set.size}`);
+
   const tree = new Map($lazyRange(1, 9).map((i) => [i, String(i)]));
   const taken = Iterator.from(
     $mapExtractIf(

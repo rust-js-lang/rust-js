@@ -40,6 +40,7 @@ function main() {
   );
   a = 6;
   console.log(`${a}`);
+
   let done = false;
   const done$1 = { value: done };
   const value = settle(done$1);
@@ -49,6 +50,7 @@ function main() {
   const value$1 = settle(done$2);
   done = done$2.value;
   console.log(`${value$1} ${done}`);
+
   let loud = ["first"];
   const first = loud;
   loud = ["second"];

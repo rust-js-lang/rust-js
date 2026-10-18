@@ -92,6 +92,7 @@ function main() {
     noisyDrop_drop(value);
     console.log("else");
   }
+
   let n = 2;
   while (true) {
     const value = make(n);

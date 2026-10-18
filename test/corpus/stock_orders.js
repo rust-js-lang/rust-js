@@ -239,6 +239,7 @@ function main() {
       );
     }
   }
+
   const queue = [
     "ham-1 x 2, saw-2 x1",
     "rak-1 x 9",
@@ -288,6 +289,7 @@ function main() {
   console.log(
     `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(c != null ? money(c) : undefined)}`,
   );
+
   const seen = new Set();
   const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
   const key = (name) => [$byteLen(name), name];
@@ -298,6 +300,7 @@ function main() {
   });
   $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
   console.log(`first letters: ${names.join(",")}`);
+
   const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
   prices.sort((a, b) => a - b);
   $dedup(prices);

@@ -67,6 +67,7 @@ function main() {
   const name = "ann";
   const value$11 = name != null ? $byteLen(name) : undefined;
   console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
+
   let count;
   count ??= 5;
   const value$12 = {

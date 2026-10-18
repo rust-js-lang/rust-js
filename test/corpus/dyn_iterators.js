@@ -61,6 +61,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
+
   const it = $iter(v);
   const value$1 = first_two(it);
   console.log(
@@ -74,6 +75,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
   const boxed = $iter(v);
   const value$2 = $next(boxed);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);

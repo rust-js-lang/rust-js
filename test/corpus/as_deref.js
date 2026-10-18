@@ -27,6 +27,7 @@ function main() {
   console.log(`${greet(owned)} ${greet(none)}`);
   const value = owned != null ? $byteLen(owned) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
+
   const items = [3, 1, 2];
   const slice = items;
   const value$1 = slice?.length;

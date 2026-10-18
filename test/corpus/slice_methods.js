@@ -48,6 +48,7 @@ function main() {
   $fill(cells, { n: 3 }, (value) => ({ ...value }));
   $index(cells, 0).n = 9;
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);
+
   const target = [0, 0, 0];
   $copyFromSlice(target, [1, 2, 3]);
   const copies = [{ n: 0 }, { n: 0 }];
@@ -146,6 +147,7 @@ function main() {
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
+
   const words = ["banana", "fig", "apple"];
   let calls = 0;
   $sortByCachedKey(
