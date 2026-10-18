@@ -803,6 +803,29 @@ export function $lastDropping(it, drop) {
   return last;
 }
 
+// `it.nth(n)` of items with a destructor: its `n`th item, each before it
+// dropped by `drop` as it's passed, as std's `nth` drops each it skips (ADR
+// 0098); boxed where it may look like `None` (ADR 0051).
+export function $nthDropping(it, n, drop, boxed) {
+  for (const item of it) {
+    if (n === 0) return boxed ? $some(item) : item;
+    drop(item);
+    n--;
+  }
+  return undefined;
+}
+
+// `it.find(test)` of items with a destructor: the first that `test` holds
+// of, each before it dropped by `drop` as it's passed, as std's `find` drops
+// each it rejects (ADR 0098); boxed where it may look like `None` (ADR 0051).
+export function $findDropping(it, test, drop, boxed) {
+  for (const item of it) {
+    if (test(item)) return boxed ? $some(item) : item;
+    drop(item);
+  }
+  return undefined;
+}
+
 // An iterator that owns its items, given to a `take`, which closes what it
 // steps as it ends, or is dropped: each item it hasn't given dropped by
 // `drop`, as Rust's drops them with it (ADR 0422).

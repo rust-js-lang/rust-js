@@ -5,7 +5,7 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, io_write_default, is_clone_from,
+    Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, io_write_default, is_clone_from,
     is_std_def, is_std_method, is_writer_default, known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
@@ -742,13 +742,16 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 }
 
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
-/// operator's, `a + b` and `a += b` (ADRs 0108, 0396), and a `Deref`'s (ADR
-/// 0394). Where the type is known, the impl's method is called as it is, so
-/// a crate's impl's dictionary is written only where it's reached.
+/// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
+/// 0394), and an `Extend`'s and a `FromIterator`'s (ADR 0445). Where the
+/// type is known, the impl's method is called as it is, so a crate's impl's
+/// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     super::recognition::value_operator(tcx, trait_id).is_some()
         || super::recognition::assign_operator(tcx, trait_id).is_some()
         || tcx.is_lang_item(trait_id, LangItem::Deref)
+        || super::recognition::is_extend(tcx, trait_id)
+        || is_std_def(tcx, trait_id, StdItem::FromIterator)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -1131,6 +1134,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(drop.map(|drop| Prop::Field(js::DICTIONARY_DROP.into(), drop)))
     }
 
+    /// A std collection's `Extend`, `{ extend(collection, items) }`, what
+    /// generic code calls, `c.extend(items)` of a `C: Extend<A>` (ADR 0445):
+    /// what a known one's call is, of its items as they're given, any
+    /// iterable, and of the box generic code's `&mut` is (ADR 0180). None of
+    /// another type, the crate's, whose impl's dictionary is its own.
+    fn extend_dictionary(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let (collection, items) = (Expr::member(Expr::var("collection"), js::HELD), Expr::var("items"));
+        let mut body = Vec::new();
+        // The items' type said as the collection's, which no range is, so
+        // what's given is iterated as it is.
+        let given = [ty, ty];
+        let none = ty::List::empty();
+        let value = match self.recognition().std_extend(ty) {
+            Some(Std::PushStr) => {
+                let text = self.joined_text(items.clone(), None, span)?;
+                let added = Expr::bin(Op::Add, collection.clone(), text);
+                body.push(StmtKind::Assign(collection.clone(), added).at(js::Span::NONE));
+                None
+            }
+            Some(Std::Comb(comb)) => Some(self.comb_values(
+                comb,
+                (vec![collection.clone(), items.clone()], &given),
+                false,
+                none,
+                span,
+                &mut body,
+            )?),
+            Some(Std::Map(op)) => Some(self.map_values(
+                op,
+                (vec![collection.clone(), items.clone()], &given),
+                none,
+                span,
+                &mut body,
+            )?),
+            _ => return Ok(None),
+        };
+        body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));
+        let extend = Expr::arrow(vec!["collection".into(), "items".into()], body);
+        Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
+    }
+
     pub(super) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`.
         let tr = self
@@ -1210,6 +1254,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body))
                 });
             return Ok(Expr::object(props.collect()));
+        }
+        // A std collection's `FromIterator`, `{ from_iter(items) }`: what
+        // `collect` into it makes, of the items given, any iterable (ADR 0445).
+        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {
+            let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![Expr::var("items")]);
+            let made = self.collected_into(items, ty, Some(tr.args.type_at(1)), None, span)?;
+            let from_iter = Expr::arrow(
+                vec!["items".into()],
+                vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
+            );
+            return Ok(Expr::object(vec![Prop::Field("from_iter".into(), from_iter)]));
+        }
+        // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
+        if super::recognition::is_extend(self.tcx, tr.def_id)
+            && let Some(dictionary) = self.extend_dictionary(ty, span)?
+        {
+            return Ok(dictionary);
         }
         // `usize`'s or a range's `SliceIndex` of a slice (ADR 0418): the
         // runtime's, of each kind, `$sliceIndexes.range`.
@@ -2047,6 +2108,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(None);
         }
+        // So is a known collection's `extend` or `from_iter`, a `Vec<T>`'s
+        // too, of items of any type, which it takes as any iterable: not a
+        // type parameter's (ADR 0445).
+        if (super::recognition::is_extend(self.tcx, trait_id) || is_std_def(self.tcx, trait_id, StdItem::FromIterator))
+            && !matches!(tr.self_ty().kind(), ty::Param(_) | ty::Alias(..))
+        {
+            return Ok(None);
+        }
         // A std trait's dictionary has only its required methods, and those
         // provided ones it's given.
         if operational(self.tcx, self.krate.foreign, trait_id)
@@ -2063,6 +2132,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if operational(self.tcx, self.krate.foreign, trait_id) {
             let dictionary = self.dictionary(tr, span)?;
             let mut values = values;
+            // A range or an iterator of the crate's where a std method's own
+            // generic `IntoIterator` goes, a JS iterator, as a function's (ADR
+            // 0445).
+            if !self.is_rust_trait(trait_id) {
+                let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .to_vec();
+                self.given_iterators(id, &mut values, &given, span)?;
+            }
             let location = self.caller_location(span);
             values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
             return Ok(Some(Expr::call(

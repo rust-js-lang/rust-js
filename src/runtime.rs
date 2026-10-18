@@ -65,6 +65,8 @@ helpers! {
     MulAdd,
     MulAddF32,
     LastDropping,
+    NthDropping,
+    FindDropping,
     Closing,
     SkipDropping,
     Round,
@@ -750,6 +752,8 @@ impl Helper {
             Helper::MulAdd => include_str!("runtime/mul_add.js"),
             Helper::MulAddF32 => include_str!("runtime/mul_add_f32.js"),
             Helper::LastDropping => include_str!("runtime/last_dropping.js"),
+            Helper::NthDropping => include_str!("runtime/nth_dropping.js"),
+            Helper::FindDropping => include_str!("runtime/find_dropping.js"),
             Helper::Closing => include_str!("runtime/closing.js"),
             Helper::SkipDropping => include_str!("runtime/skip_dropping.js"),
             // `x.round()`: a half away from zero, where `Math.round` goes up.

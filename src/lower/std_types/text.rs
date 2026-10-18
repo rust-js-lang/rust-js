@@ -209,6 +209,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
     /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
     /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
+    /// The text a string is extended by, `s.extend(items)`'s: its items',
+    /// each a `char` or a string, joined, `items.join("")` of an array,
+    /// `Array.from(items).join("")` of another iterable, a range's stepped.
+    /// `ty` is the items', or none where they're any iterable already, a
+    /// generic `Extend`'s dictionary's (ADR 0445).
+    pub(in crate::lower) fn joined_text(&mut self, items: Expr, ty: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        let ty = ty.map(|ty| ty.peel_refs());
+        let items = match ty {
+            Some(ty) if self.range_kind(ty).is_some() => self.as_js_iterator(items, ty, span)?,
+            _ => items,
+        };
+        let array = ty.is_some_and(|ty| ty.is_array() || ty.is_slice() || self.is_vec_like(ty));
+        let items = match array {
+            true => items,
+            false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+        };
+        Ok(Expr::call(Expr::member(items, "join"), vec![Expr::str("")]))
+    }
+
     pub(in crate::lower) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
         let name = match (start, end) {
             (true, true) => "$trim",

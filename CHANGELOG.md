@@ -18,6 +18,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **Generic code extends and collects into what it's given**: `c.extend(items)`
+  of a `C: Extend<A>` and `collect()` into a `B: FromIterator<A>`, through
+  their dictionaries; and `s.extend(chars)` of a `String` (ADR 0445).
+- **`nth`, `find` and `partition` of items with a destructor**, each it
+  passes over dropped, as std's are (ADR 0445).
 - **An `Option` compared with a `Some(..)` is `===`**, `p === s`, as a person
   writes it (ADR 0030).
 - **The one field a rest's pattern leaves out is `_`**, `const {currentIndex:

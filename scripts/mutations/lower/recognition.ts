@@ -1905,4 +1905,12 @@ export const mutations: Mutation[] = [
       "collect_fallible_into"
     ]
   },
+  {
+    name: "string-extend-unrecognized",
+    breaks: "`s.extend(chars)` of a `String` is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if self.is_lang_adt(ty, LangItem::String) {\n            Some(Std::PushStr)\n",
+    replace: "        if false {\n            Some(Std::PushStr)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
 ];

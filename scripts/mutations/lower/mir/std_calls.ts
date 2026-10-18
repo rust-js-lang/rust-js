@@ -594,4 +594,20 @@ export const mutations: Mutation[] = [
     replace: "                        if false && owns && self.needs_clone(item) {\n                            args.push(self.clone_fn(\"item\", item, span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
+  {
+    name: "string-extend-unjoined",
+    breaks: "`s.extend(chars)` adds their array, `s += [\"y\", \"z\"]`, not their text",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    true => self.joined_text(value, Some(arg_tys[1]), span)?,\n",
+    replace: "                    true => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "partition-dropping-refused",
+    breaks: "`partition` of items with a destructor is refused, though it moves each",
+    file: "src/lower/mir/std_calls.rs",
+    find: "!matches!(comb, IterComb::SkipWhile | IterComb::Partition)",
+    replace: "comb != IterComb::SkipWhile",
+    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
+  },
 ];

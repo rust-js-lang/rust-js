@@ -19,7 +19,7 @@ newest release its requirement allows.
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.19 | refused | `Extend::extend` of an `L: Extend<A>` |
+| either 1.19 | refused | `rfind`, `nth_back` and `rfold` of a double-ended iterator |
 | itertools 0.14 | blocked | either's |
 | indexmap 2.14 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.13 | runs | |

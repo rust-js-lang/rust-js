@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "                    // Moves its value",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
   },
+  {
+    name: "partition-moves-unseen",
+    breaks: "`partition` of items with a destructor is refused, as if it dropped some",
+    file: "src/lower/std_types/values.rs",
+    find: "            || (known == Std::IterComb(crate::lower::combinators::IterComb::Partition)\n",
+    replace: "            || (false\n",
+    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
+  },
 ];

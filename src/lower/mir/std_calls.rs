@@ -264,6 +264,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Some(Value::Expr(self.fmt_try(tried))));
                 }
                 let value = self.value_expr(given, span)?;
+                // `s.extend(items)`: their text, joined (ADR 0445).
+                let extended = (self.tcx.trait_of_assoc(def_id))
+                    .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t));
+                let value = match extended {
+                    true => self.joined_text(value, Some(arg_tys[1]), span)?,
+                    false => value,
+                };
                 self.flush(state, out)?;
                 // Read and written: a place whose object is made here, a
                 // handle `push_mut` gives, `$pushMut(v, x).value`, held first,
@@ -673,11 +680,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
                 // Items with a destructor a combinator may leave undropped; not
-                // `skip_while`'s, each dropped as it's skipped.
+                // `skip_while`'s, each dropped as it's skipped, nor
+                // `partition`'s, each moved into one of its two (ADR 0445).
                 let dropping = self
                     .iterator_item(iter_ty)
                     .filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-                if dropping.is_some() && comb != IterComb::SkipWhile {
+                if dropping.is_some() && !matches!(comb, IterComb::SkipWhile | IterComb::Partition) {
                     return Err(self.unsupported(
                         span,
                         "an iterator's combinator of items with a destructor, from its MIR",
@@ -704,7 +712,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => Ok(e),
                     })
                     .collect::<R<Vec<_>>>()?;
-                if let Some(item) = dropping {
+                if let Some(item) = dropping.filter(|_| comb == IterComb::SkipWhile) {
                     let test = exprs.remove(0);
                     self.flush(state, out)?;
                     exprs.insert(0, self.dropping_discarded(test, item, true, span, out)?);

@@ -1283,13 +1283,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(write) = self.classify_io_write(def_id, trait_, ty) {
             return Some(write);
         }
-        // `v.extend(items)` (ADR 0062).
-        if is_extend(tcx, trait_) && self.is_vec_like(ty.peel_refs()) {
-            return Some(Std::Comb(Comb::Extend));
-        }
-        // A map's or a set's: each pair set, or item added (ADR 0325).
-        if is_extend(tcx, trait_) && self.is_map(ty.peel_refs()) && !self.is_json_map(ty.peel_refs()) {
-            return Some(Std::Map(MapOp::Extend));
+        if is_extend(tcx, trait_)
+            && let Some(extend) = self.std_extend(ty.peel_refs())
+        {
+            return Some(extend);
         }
         // `String::from_iter(items)` is `items.collect()` into a `String`.
         if tcx.is_diagnostic_item(sym::FromIterator, trait_) && self.is_lang_adt(ty, LangItem::String) {
@@ -2353,6 +2350,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())
     }
 
+    /// What `extend` of a std collection is, of `ty`: a `String`'s, a
+    /// `push_str` of its items' text (ADR 0445); a `Vec`'s (ADR 0062); a map's
+    /// or a set's, each pair set, or item added (ADR 0325). None of another
+    /// type's, whose impl's is its own.
+    pub(super) fn std_extend(&self, ty: Ty<'tcx>) -> Option<Std> {
+        if self.is_lang_adt(ty, LangItem::String) {
+            Some(Std::PushStr)
+        } else if self.is_vec_like(ty) {
+            Some(Std::Comb(Comb::Extend))
+        } else if self.is_map(ty) && !self.is_json_map(ty) {
+            Some(Std::Map(MapOp::Extend))
+        } else {
+            None
+        }
+    }
+
     pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Vec)
             || [StdItem::VecDeque, StdItem::BinaryHeap, StdItem::LinkedList]
@@ -3210,6 +3223,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "max" => IterMethod::Max,
             "min" => IterMethod::Min,
             "last" => IterMethod::Last,
+            "nth" => IterMethod::Nth,
+            "partition" => IterMethod::Partition,
             "collect" => IterMethod::Collect,
             _ => return None,
         })
@@ -4001,6 +4016,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || tcx.is_lang_item(id, LangItem::Deref)
         // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).
         || assign_operator(tcx, id).is_some()
+        // `c.extend(items)` of a `C: Extend<A>`, and `collect` into a `B:
+        // FromIterator<A>`: its dictionary's `extend` or `from_iter` (ADR 0445).
+        || is_extend(tcx, id)
+        || tcx.is_diagnostic_item(sym::FromIterator, id)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -4963,6 +4982,8 @@ pub(crate) enum IterMethod {
     Max,
     Min,
     Last,
+    Nth,
+    Partition,
     Collect,
 }
 
@@ -5084,6 +5105,7 @@ pub(crate) enum StdItem {
     HashMap,
     HashMapEntry,
     HashSet,
+    FromIterator,
     Into,
     IntoIterator,
     Iterator,
@@ -5148,6 +5170,7 @@ impl StdItem {
             StdItem::HashMap => sym::HashMap,
             StdItem::HashMapEntry => Symbol::intern("HashMapEntry"),
             StdItem::HashSet => sym::HashSet,
+            StdItem::FromIterator => sym::FromIterator,
             StdItem::Into => sym::Into,
             StdItem::IntoIterator => sym::IntoIterator,
             StdItem::Iterator => sym::Iterator,

@@ -375,8 +375,8 @@ export const mutations: Mutation[] = [
     name: "mir-find-boxed-unboxed",
     breaks: "MIR's `find` of what looks like `None` gives it unboxed, `None` where it found `Some(None)`",
     file: "src/lower/mir/iter.rs",
-    find: "                    true => Expr::call_helper(\"$nextSome\", vec![method(\"filter\", it, vec![test])]),\n",
-    replace: "                    true => method(\"find\", it, vec![test]),\n",
+    find: "                    (None, true) => Expr::call_helper(\"$nextSome\", vec![method(\"filter\", it, vec![test])]),\n",
+    replace: "                    (None, true) => method(\"find\", it, vec![test]),\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_chains"],
   },
   {
@@ -725,12 +725,36 @@ export const mutations: Mutation[] = [
     "name": "own-from-iter-unused",
     "breaks": "`collect()` into a `Result` of a collection of the crate's own is refused, though its `from_iter` is the crate's",
     "file": "src/lower/mir/iter.rs",
-    "find": "        } else if let Some(made) = self.made_by_own_from_iter(it, output, item, span)? {\n",
+    "find": "        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {\n",
     "replace": "        } else if let Some(made) = None::<Expr> {\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
       "collect_fallible_into"
     ]
+  },
+  {
+    name: "collect-into-param-refused",
+    breaks: "`collect` into a type parameter, a `B: FromIterator`, is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "            && let Some(dictionary) = self.collected_evidence(output, item)\n",
+    replace: "            && let Some(dictionary) = None::<Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
+  },
+  {
+    name: "find-dropping-undropped",
+    breaks: "`find` of items with a destructor drops none it passes over",
+    file: "src/lower/mir/iter.rs",
+    find: "                    (Some(item), _) => self.dropping_pick(\"$findDropping\", it, test, item, span)?,\n",
+    replace: "                    (Some(_), _) => method(\"find\", it, vec![test]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
+  },
+  {
+    name: "nth-dropping-refused",
+    breaks: "`nth` of items with a destructor is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                    | IterMethod::Nth\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
 ];

@@ -331,9 +331,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of what looks like `None`: the first kept, boxed.
             Some(IterMethod::Find) => {
                 let test = self.unary_callback(arg(), own);
-                match item.is_some_and(|item| self.boxed_payload(item)) {
-                    true => Expr::call_helper("$nextSome", vec![method("filter", it, vec![test])]),
-                    false => method("find", it, vec![test]),
+                match (dropping, item.is_some_and(|item| self.boxed_payload(item))) {
+                    (Some(item), _) => self.dropping_pick("$findDropping", it, test, item, span)?,
+                    (None, true) => Expr::call_helper("$nextSome", vec![method("filter", it, vec![test])]),
+                    (None, false) => method("find", it, vec![test]),
                 }
             }
             Some(method @ (IterMethod::Position | IterMethod::RPosition)) => {
@@ -421,6 +422,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
             }
             Some(IterMethod::Last) => self.last_value(it, item, span, made)?,
+            Some(IterMethod::Nth) => match dropping {
+                Some(item) => self.dropping_pick("$nthDropping", it, arg(), item, span)?,
+                None => return Ok(None),
+            },
             Some(IterMethod::ByRef) => it,
             Some(IterMethod::Fuse) => it,
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
@@ -465,8 +470,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.is_map(output) {
             let set = self.is_set(output);
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
-        } else if let Some(made) = self.made_by_own_from_iter(it, output, item, span)? {
+        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
             made
+        } else if let ty::Param(_) = output.kind()
+            && let Some(item) = item
+            && let Some(dictionary) = self.collected_evidence(output, item)
+        {
+            // A type parameter's, its dictionary's `from_iter` (ADR 0445).
+            Expr::call(Expr::member(dictionary, "from_iter"), vec![it])
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })
@@ -474,6 +485,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `items` made a collection of the crate's own, `output`, by its
     /// `FromIterator<item>`'s `from_iter`, the function rust-js compiled.
+    /// The `FromIterator<item>` evidence of a type parameter `output` that
+    /// generic code collects into (ADR 0445).
+    fn collected_evidence(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Option<Expr> {
+        let from_iterator = std_item(self.tcx, StdItem::FromIterator);
+        self.evidence_for(ty::TraitRef::new(self.tcx, from_iterator, [output, item]))
+    }
+
     fn made_by_own_from_iter(
         &mut self,
         items: Expr,
@@ -650,6 +668,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(it)
     }
 
+    /// The one item of `it` a method picks, of items of type `item`, which
+    /// has a destructor: `nth(n)`'s, `$nthDropping`, and `find(test)`'s,
+    /// `$findDropping`, each it passes dropped, as std's are (ADR 0098), its
+    /// `Some` boxed where it may look like `None` (ADR 0051).
+    fn dropping_pick(&mut self, helper: &'static str, it: Expr, which: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let drop = self.std_drop_function(item, span)?.expect("a destructor");
+        let boxed = Expr::bool(self.boxed_payload(item));
+        Ok(Expr::call_helper(helper, vec![it, which, drop, boxed]))
+    }
+
     /// `last()` of `it`, of items of type `item`: of ones with a destructor,
     /// `$lastDropping`, each before the last dropped as the next comes, as
     /// std's are (ADR 0098); else the last of its array.
@@ -691,6 +719,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Product
                     | IterMethod::Count
                     | IterMethod::Last
+                    | IterMethod::Nth
+                    | IterMethod::Find
+                    | IterMethod::Partition
                     | IterMethod::Filter
                     | IterMethod::SkipWhile
             )

@@ -239,4 +239,12 @@ export const mutations: Mutation[] = [
       "a vec's range pushed again or replaced"
     ]
   },
+  {
+    name: "joined-text-of-iterable-unarrayed",
+    breaks: "a string extended by an iterable that isn't an array, generic code's, joins nothing",
+    file: "src/lower/std_types/text.rs",
+    find: "            false => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
+    replace: "            false => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
 ];

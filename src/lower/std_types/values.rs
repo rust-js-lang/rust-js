@@ -46,8 +46,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // would be dropped unrun, so it mustn't hold one.
         let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(tys[1]);
         // `v.extend(items)` moves each into `v`, and drops `items` once it's
-        // given them all: that, of what holds nothing then, is nothing.
-        let moves_all = known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]);
+        // given them all: that, of what holds nothing then, is nothing; and
+        // `it.partition(f)` each into one of its two (ADR 0445).
+        let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
+            || (known == Std::IterComb(crate::lower::combinators::IterComb::Partition)
+                && self.ends_holding_nothing(tys[0]));
         if takes_drops
             && !drained
             && !keeps_value

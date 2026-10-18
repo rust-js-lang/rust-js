@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "own-evidence-unpassed",
     breaks: "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
     file: "src/lower/traits.rs",
-    find: "            let mut values = values;\n            let location = self.caller_location(span);\n            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
-    replace: "            let values = values;\n",
+    find: "            let location = self.caller_location(span);\n            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
+    replace: "",
     tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
   },
   {
@@ -1332,5 +1332,37 @@ export const mutations: Mutation[] = [
       "-t",
       "rc_refcell_dyn_shared"
     ]
+  },
+  {
+    name: "extend-dictionary-none",
+    breaks: "a std collection's `Extend` has no dictionary, and generic code that extends one is refused",
+    file: "src/lower/traits.rs",
+    find: "            && let Some(dictionary) = self.extend_dictionary(ty, span)?\n",
+    replace: "            && let Some(dictionary) = None::<Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "from-iter-dictionary-none",
+    breaks: "a std collection's `FromIterator` has no dictionary, and generic code that collects into one is refused",
+    file: "src/lower/traits.rs",
+    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
+  },
+  {
+    name: "known-extend-by-dictionary",
+    breaks: "a known collection's `extend` of generic items goes through a dictionary, given the collection where it takes its box",
+    file: "src/lower/traits.rs",
+    find: "            && !matches!(tr.self_ty().kind(), ty::Param(_) | ty::Alias(..))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+  },
+  {
+    name: "dictionary-iterator-unconverted",
+    breaks: "a range given a std trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, isn't a JS iterator",
+    file: "src/lower/traits.rs",
+    find: "            if !self.is_rust_trait(trait_id) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
 ];
