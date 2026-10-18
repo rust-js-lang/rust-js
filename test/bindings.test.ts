@@ -847,8 +847,8 @@ pub fn all() -> Vec<String> {
         path::resolve(&["/a", "b"]),
         path::relative("/a/b", "/a/c"),
         path::dirname("/a/b.txt"),
-        path::basename("/a/b.txt"),
-        path::basename_with_suffix("/a/b.txt", ".txt"),
+        path::basename("/a/b.txt", None),
+        path::basename("/a/b.txt", Some(".txt")),
         path::extname("x.md"),
         path::sep.to_string(),
         path::delimiter.to_string(),
@@ -864,7 +864,7 @@ pub fn platform(platform: &PlatformPath) -> Vec<String> {
         platform.join(&["a", "b"]),
         platform.sep(),
         platform.delimiter(),
-        platform.basename_with_suffix("c:/x/y.txt", ".txt"),
+        platform.basename("c:/x/y.txt", Some(".txt")),
         parts(platform.parse("/a/b.c")),
         platform.posix().sep(),
     ]
@@ -881,6 +881,8 @@ pub fn spread(parts: &[&str]) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('join("a", "b", "../c")');
+  // A `None` of an optional parameter is left out, a `Some` given (ADR 0443).
+  expect(js).toContain('basename("/a/b.txt"),\n    basename("/a/b.txt", ".txt"),');
   expect(js).toContain("return join(...parts);");
   expect(js).toContain('platform.join("a", "b")');
   const lib = await import(join(dir, "lib.js"));
@@ -916,40 +918,46 @@ test("node's buffers are made, read and written", () => {
 use node::buffer::{self, Buffer, TranscodeEncoding};
 
 pub fn all() -> Vec<String> {
-    let hi = Buffer::from_with_str("héllo");
-    let hex = Buffer::from_with_str_and_encoding("ff00ab", BufferEncoding::Hex);
+    let hi = Buffer::from_with_str("héllo", None);
+    let hex = Buffer::from_with_str("ff00ab", Some(BufferEncoding::Hex));
     let bytes = Buffer::from(&[1, 2, 3]);
-    let zeros = Buffer::alloc(4);
-    zeros.write_uint16_be_with_offset(0xbeef, 1);
-    let both = Buffer::concat(&[&bytes, &hex]);
-    let numbers = Buffer::alloc(20);
-    numbers.write_int32_le(-5);
-    numbers.write_double_be_with_offset(1.5, 4);
-    numbers.write_big_uint64_le_with_offset(7, 12);
-    let filled = Buffer::alloc_with_fill(5, "ab");
-    filled.fill_with_offset(0, 3);
+    let zeros = Buffer::alloc(4, None, None);
+    zeros.write_uint16_be(0xbeef, Some(1));
+    let both = Buffer::concat(&[&bytes, &hex], None);
+    let numbers = Buffer::alloc(20, None, None);
+    numbers.write_int32_le(-5, None);
+    numbers.write_double_be(1.5, Some(4));
+    numbers.write_big_uint64_le(7, Some(12));
+    let filled = Buffer::alloc(5, Some(&"ab"), None);
+    filled.fill(0, Some(3), None, None);
     vec![
-        hi.to_string(),
+        hi.to_string(None, None, None),
         hi.length().to_string(),
-        Buffer::byte_length("héllo").to_string(),
-        hex.to_string_with_encoding(BufferEncoding::Base64),
-        both.to_string_with_encoding(BufferEncoding::Hex),
-        zeros.to_string_with_encoding(BufferEncoding::Hex),
-        format!("{} {} {}", numbers.read_int32_le(), numbers.read_double_be_with_offset(4), numbers.read_big_uint64_le_with_offset(12)),
-        format!("{} {}", bytes.read_uint8_with_offset(2), bytes.read_uint_be(0, 3)),
-        filled.to_string(),
-        format!("{} {} {}", hi.index_of("l"), hi.last_index_of("l"), hi.includes("xyz")),
+        Buffer::byte_length("héllo", None).to_string(),
+        hex.to_string(Some(BufferEncoding::Base64), None, None),
+        both.to_string(Some(BufferEncoding::Hex), None, None),
+        zeros.to_string(Some(BufferEncoding::Hex), None, None),
+        format!("{} {} {}", numbers.read_int32_le(None), numbers.read_double_be(Some(4)), numbers.read_big_uint64_le(Some(12))),
+        format!("{} {}", bytes.read_uint8(Some(2)), bytes.read_uint_be(0, 3)),
+        filled.to_string(None, None, None),
+        format!("{} {} {}", hi.index_of("l", None, None), hi.last_index_of("l", None, None), hi.includes("xyz", None, None)),
         format!("{} {}", Buffer::compare_buffers(&bytes, &hex), bytes.equals(&Buffer::of(&[1, 2, 3]))),
-        hi.subarray_with_start_and_end(0, 1).to_string(),
+        hi.subarray(Some(0), Some(1)).to_string(None, None, None),
         bytes.to_json().data.len().to_string(),
         format!("{} {}", Buffer::is_buffer(hi), Buffer::is_encoding("utf8")),
         format!("{} {}", buffer::is_utf8(hi), buffer::is_ascii(hi)),
-        buffer::transcode(&Buffer::from_with_str("€"), TranscodeEncoding::Utf8, TranscodeEncoding::Utf16le).length().to_string(),
+        buffer::transcode(&Buffer::from_with_str("€", None), TranscodeEncoding::Utf8, TranscodeEncoding::Utf16le).length().to_string(),
         buffer::INSPECT_MAX_BYTES.to_string(),
     ]
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  // Each optional argument a `None` is left out, as a person writes the
+  // call; a union's `Some(&value)` is the value (ADR 0443).
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  for (const call of ['Buffer.from("héllo")', 'Buffer.alloc(4)', 'Buffer.alloc(5, "ab")', "filled.fill(0, 3)", "numbers.writeDoubleBE(1.5, 4)", "numbers.readInt32LE()", 'hex.toString("base64")', "hi.subarray(0, 1).toString()"]) {
+    expect(js).toContain(call);
+  }
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
   writeFileSync(join(dir, "run.js"), `import { all } from "./lib.js";
 console.log(JSON.stringify(all()));
@@ -987,7 +995,7 @@ impl Emits<Ping> for EventEmitter {
 }
 
 pub fn emitted() -> Vec<String> {
-    let emitter = events::event_emitter::new();
+    let emitter = events::event_emitter::new(None);
     emitter.on(Ping, Box::new(|n, s| log(&format!("on {n} {s}"))));
     emitter.once(Ping, Box::new(|n, _| log(&format!("once {n}"))));
     let quiet: &'static dyn Fn(f64, &str) = events::listener(Box::new(|_, _| log("removed")));
@@ -1001,7 +1009,7 @@ pub fn emitted() -> Vec<String> {
         events::default_max_listeners().to_string(),
         first.to_string(),
         second.to_string(),
-        emitter.listener_count(Ping).to_string(),
+        emitter.listener_count(Ping, None).to_string(),
         emitter.get_max_listeners().to_string(),
         emitter.event_names().join(","),
         events::get_max_listeners(emitter).to_string(),
@@ -1009,8 +1017,8 @@ pub fn emitted() -> Vec<String> {
 }
 
 pub async fn awaited() -> String {
-    let emitter = events::event_emitter::new();
-    let later = events::once(emitter, Ping);
+    let emitter = events::event_emitter::new(None);
+    let later = events::once(emitter, Ping, None);
     emitter.emit(Ping, (3.0, "c"));
     let (n, s) = later.await;
     format!("awaited {n} {s}")
@@ -1025,6 +1033,10 @@ pub fn signalled() {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('emitter.emit("ping", 1, "a")');
+  // What a `None` leaves out isn't written (ADR 0443).
+  for (const call of ["new EventEmitter()", 'emitter.listenerCount("ping")', 'once(emitter, "ping")']) {
+    expect(js).toContain(call);
+  }
   expect(js).toContain('process.on("exit", (code) =>');
   expect(js).toContain("EventEmitter.defaultMaxListeners = 11;");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
@@ -1060,8 +1072,8 @@ pub fn all() -> Vec<String> {
     let root = process::cwd();
     let _ = process::chdir(&here);
     dict::set(process::env(), "RUST_JS_TEST", "set".to_string());
-    let since = process::cpu_usage_with_previous_value(process::cpu_usage());
-    let time = process::hrtime_with_time(process::hrtime());
+    let since = process::cpu_usage(Some(process::cpu_usage(None)));
+    let time = process::hrtime(Some(process::hrtime(None)));
     process::set_exit_code(3.0);
     let code = match process::exit_code() {
         Some(NumberOrStr::Number(n)) => n.to_string(),
@@ -1093,7 +1105,7 @@ pub fn all() -> Vec<String> {
         },
         process::config().variables.host_arch,
         code,
-        process::kill_with_signal(process::pid(), 0.0).map(|sent| sent.to_string()).unwrap_or_default(),
+        process::kill(process::pid(), Some(&0.0)).map(|sent| sent.to_string()).unwrap_or_default(),
         format!("{} {}", process::get_builtin_module("fs").is_some(), process::get_builtin_module("nope").is_some()),
         process::allowed_node_environment_flags().contains("--max-old-space-size").to_string(),
         process::trace_process_warnings().to_string(),
@@ -1158,23 +1170,25 @@ pub fn all() -> Vec<String> {
     dict::set(input, "tags", Some(ParsedUrlQueryInputValue::List(vec![ParsedUrlQueryInputItem::Str("x".to_string()), ParsedUrlQueryInputItem::Number(1.0)])));
     dict::set(input, "none", None);
     vec![
-        querystring::stringify(input),
-        querystring::stringify_with_sep(input, ";"),
-        querystring::stringify_with_sep_and_eq(input, ";", ":"),
-        querystring::stringify_with_sep_and_eq_and_options(input, "&", "=", StringifyOptions { encode_uri_component: Some(Box::new(|s: &str| s.to_uppercase())) }),
-        querystring::encode(input),
-        shown(querystring::parse("a=1&b=2&a=3")),
-        shown(querystring::parse_with_sep("a=1;b=2", ";")),
-        shown(querystring::parse_with_sep_and_eq("a:1;b:2", ";", ":")),
-        shown(querystring::parse_with_sep_and_eq_and_options("a=1&b=2&c=3", "&", "=", ParseOptions { max_keys: Some(2.0), ..Default::default() })),
-        shown(querystring::decode("x=%20y")),
+        querystring::stringify(Some(input), None, None, None),
+        querystring::stringify(Some(input), Some(";"), None, None),
+        querystring::stringify(Some(input), Some(";"), Some(":"), None),
+        querystring::stringify(Some(input), Some("&"), Some("="), Some(StringifyOptions { encode_uri_component: Some(Box::new(|s: &str| s.to_uppercase())) })),
+        querystring::encode(Some(input), None, None, None),
+        shown(querystring::parse("a=1&b=2&a=3", None, None, None)),
+        shown(querystring::parse("a=1;b=2", Some(";"), None, None)),
+        shown(querystring::parse("a:1;b:2", Some(";"), Some(":"), None)),
+        shown(querystring::parse("a=1&b=2&c=3", Some("&"), Some("="), Some(ParseOptions { max_keys: Some(2.0), ..Default::default() }))),
+        shown(querystring::decode("x=%20y", None, None, None)),
         querystring::escape("a b&c"),
         querystring::unescape("a%20b"),
     ]
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('from "querystring";');
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('from "querystring";');
+  expect(js).toContain('stringify(input),\n    stringify(input, ";"),\n    stringify(input, ";", ":"),');
   const lib = await import(join(dir, "lib.js"));
   const qs = await import("node:querystring");
   const input = { name: "a b", n: 2, ok: true, big: 7n, tags: ["x", 1], none: undefined };
@@ -1203,20 +1217,20 @@ test("node's url module binds its own and the WHATWG classes", async () => {
 use node::webapi;
 
 pub fn all() -> Vec<String> {
-    let file = url::path_to_file_url("/tmp/a b.txt");
+    let file = url::path_to_file_url("/tmp/a b.txt", None);
     let link = webapi::url::new("https://user:pw@example.com/p?q=1#top", None);
     let params: &URLSearchParams = link.search_params();
     vec![
         file.href(),
-        url::file_url_to_path("file:///tmp/a%20b.txt"),
-        url::file_url_to_path(file),
-        url::file_url_to_path_with_options("file:///C:/x", FileUrlToPathOptions { windows: Some(true) }),
-        url::path_to_file_url_with_options("C:\\\\x y", PathToFileUrlOptions { windows: Some(true) }).href(),
+        url::file_url_to_path("file:///tmp/a%20b.txt", None),
+        url::file_url_to_path(file, None),
+        url::file_url_to_path("file:///C:/x", Some(FileUrlToPathOptions { windows: Some(true) })),
+        url::path_to_file_url("C:\\\\x y", Some(PathToFileUrlOptions { windows: Some(true) })).href(),
         url::domain_to_ascii("español.com"),
         url::domain_to_unicode("xn--espaol-zwa.com"),
         url::resolve("/one/two", "three"),
-        url::format(link),
-        url::format_with_options(link, URLFormatOptions { auth: Some(false), fragment: Some(false), ..Default::default() }),
+        url::format(link, None),
+        url::format(link, Some(URLFormatOptions { auth: Some(false), fragment: Some(false), ..Default::default() })),
         params.get("q").unwrap_or_default(),
     ]
 }
@@ -1258,8 +1272,8 @@ fn or(part: Option<String>) -> String {
 pub fn parsed() -> Vec<String> {
     let link: UrlWithStringQuery = url::parse("https://u:p@example.com:8080/a/b?x=1&x=2#h");
     let bare: UrlWithStringQuery = url::parse("/only/path");
-    let query: Url = url::parse_with_parse_query_string("https://example.com/?x=1&x=2&y=3", true);
-    let host: Url = url::parse_with_parse_query_string_and_slashes_denote_host("//example.com/p", false, true);
+    let query: Url = url::parse_with_parse_query_string("https://example.com/?x=1&x=2&y=3", true, None);
+    let host: Url = url::parse_with_parse_query_string("//example.com/p", false, Some(true));
     let parsed = match query.query {
         Some(UrlQuery::Parsed(parsed)) => match dict::get(parsed, "x") {
             Some(ParsedUrlQueryValue::Many(many)) => many.join(","),
@@ -1332,7 +1346,7 @@ pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
     res.set_header("x-method", req.method().unwrap_or_default().as_str());
     res.set_header("x-many", &["a", "b"][..]);
     let seen = req.has_header_named("x-seen");
-    res.end_with(&format!("{} {} {}", req.url().unwrap_or_default(), req.http_version(), seen));
+    res.end(Some(&format!("{} {} {}", req.url().unwrap_or_default(), req.http_version(), seen)));
 }
 `.replace("let seen = req.has_header_named(\"x-seen\");", "let seen = req.raw_headers().iter().any(|h| h == \"x-seen\");"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);

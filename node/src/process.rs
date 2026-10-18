@@ -74,16 +74,10 @@ pub fn constrained_memory() -> f64 {
     unreachable!()
 }
 
-/// [`process.cpuUsage()`](https://nodejs.org/api/process.html#processcpuusagepreviousvalue):
-/// the CPU time it has used, in microseconds.
+/// [`process.cpuUsage(previousValue)`](https://nodejs.org/api/process.html#processcpuusagepreviousvalue):
+/// the CPU time it has used, in microseconds, or since `previous_value`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.cpuUsage")]
-pub fn cpu_usage() -> CpuUsage {
-    unreachable!()
-}
-
-/// `process.cpuUsage(previousValue)`: the CPU time since `previous_value`.
-#[cfg_attr(rust_js, rust_js::link_name = "process.cpuUsage")]
-pub fn cpu_usage_with_previous_value(previous_value: CpuUsage) -> CpuUsage {
+pub fn cpu_usage(previous_value: Option<CpuUsage>) -> CpuUsage {
     unreachable!()
 }
 
@@ -129,27 +123,18 @@ pub fn exec_path() -> String {
     unreachable!()
 }
 
-/// [`process.execve(file)`](https://nodejs.org/api/process.html#processexecvefile-args-env):
-/// replace the process with `file`'s; POSIX only.
+/// [`process.execve(file, args, env)`](https://nodejs.org/api/process.html#processexecvefile-args-env):
+/// replace the process with `file`'s, of `args` and `env`, or none and
+/// [`env`]; POSIX only.
 #[cfg_attr(rust_js, rust_js::link_name = "process.execve")]
-pub fn execve(file: &str) -> ! {
+pub fn execve(file: &str, args: Option<&[&str]>, env: Option<&ProcessEnv>) -> ! {
     unreachable!()
 }
 
-#[cfg_attr(rust_js, rust_js::link_name = "process.execve")]
-pub fn execve_with_args(file: &str, args: &[&str]) -> ! {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "process.execve")]
-pub fn execve_with_args_and_env(file: &str, args: &[&str], env: &ProcessEnv) -> ! {
-    unreachable!()
-}
-
-/// [`process.exit()`](https://nodejs.org/api/process.html#processexitcode):
-/// end the process, of [`exit_code`]'s code, or 0.
+/// [`process.exit(code)`](https://nodejs.org/api/process.html#processexitcode):
+/// end the process, of `code`, or [`exit_code`]'s, or 0.
 #[cfg_attr(rust_js, rust_js::link_name = "process.exit")]
-pub fn exit() -> ! {
+pub fn exit(code: Option<&dyn IntoNumberOrStr>) -> ! {
     unreachable!()
 }
 
@@ -223,17 +208,11 @@ pub fn has_uncaught_exception_capture_callback() -> bool {
     unreachable!()
 }
 
-/// [`process.hrtime()`](https://nodejs.org/api/process.html#processhrtimetime):
-/// the time, `(seconds, nanoseconds)`, from a moment in the past. Legacy:
-/// [`hrtime_bigint`] is one number.
+/// [`process.hrtime(time)`](https://nodejs.org/api/process.html#processhrtimetime):
+/// the time, `(seconds, nanoseconds)`, from a moment in the past, or since
+/// `time`. Legacy: [`hrtime_bigint`] is one number.
 #[cfg_attr(rust_js, rust_js::link_name = "process.hrtime")]
-pub fn hrtime() -> (f64, f64) {
-    unreachable!()
-}
-
-/// `process.hrtime(time)`: the time since `time`.
-#[cfg_attr(rust_js, rust_js::link_name = "process.hrtime")]
-pub fn hrtime_with_time(time: (f64, f64)) -> (f64, f64) {
+pub fn hrtime(time: Option<(f64, f64)>) -> (f64, f64) {
     unreachable!()
 }
 
@@ -244,10 +223,10 @@ pub fn hrtime_bigint() -> u64 {
     unreachable!()
 }
 
-/// [`process.loadEnvFile()`](https://nodejs.org/api/process.html#processloadenvfilepath):
-/// read `./.env` into [`env`]; what it throws, an `Err`.
+/// [`process.loadEnvFile(path)`](https://nodejs.org/api/process.html#processloadenvfilepath):
+/// read `path`, or `./.env`, into [`env`]; what it throws, an `Err`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.loadEnvFile")]
-pub fn load_env_file() -> Result<(), &'static JsError> {
+pub fn load_env_file(path: Option<&dyn IntoPathLike>) -> Result<(), &'static JsError> {
     unreachable!()
 }
 
@@ -361,15 +340,11 @@ pub fn source_maps_enabled() -> bool {
     unreachable!()
 }
 
-/// [`process.threadCpuUsage()`](https://nodejs.org/api/process.html#processthreadcpuusagepreviousvalue):
-/// the CPU time this thread has used, in microseconds.
+/// [`process.threadCpuUsage(previousValue)`](https://nodejs.org/api/process.html#processthreadcpuusagepreviousvalue):
+/// the CPU time this thread has used, in microseconds, or since
+/// `previous_value`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.threadCpuUsage")]
-pub fn thread_cpu_usage() -> CpuUsage {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "process.threadCpuUsage")]
-pub fn thread_cpu_usage_with_previous_value(previous_value: CpuUsage) -> CpuUsage {
+pub fn thread_cpu_usage(previous_value: Option<CpuUsage>) -> CpuUsage {
     unreachable!()
 }
 
@@ -457,46 +432,26 @@ pub fn allowed_node_environment_flags() -> HashSet<String> {
     unreachable!()
 }
 
-/// [`process.dlopen(module, filename)`](https://nodejs.org/api/process.html#processdlopenmodule-filename-flags):
-/// load the shared object `filename` into `module`'s `exports`.
+/// [`process.dlopen(module, filename, flags)`](https://nodejs.org/api/process.html#processdlopenmodule-filename-flags):
+/// load the shared object `filename` into `module`'s `exports`, of
+/// `os.constants.dlopen`'s `flags`, or `RTLD_LAZY`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.dlopen")]
-pub fn dlopen<M>(module: &M, filename: &str) -> Result<(), &'static JsError> {
+pub fn dlopen<M>(module: &M, filename: &str, flags: Option<f64>) -> Result<(), &'static JsError> {
     unreachable!()
 }
 
-#[cfg_attr(rust_js, rust_js::link_name = "process.dlopen")]
-pub fn dlopen_with_flags<M>(module: &M, filename: &str, flags: f64) -> Result<(), &'static JsError> {
-    unreachable!()
-}
-
-/// [`process.emitWarning(warning)`](https://nodejs.org/api/process.html#processemitwarningwarning-options):
-/// warn, a text or an `Error`, as a `"warning"` event and on stderr.
+/// [`process.emitWarning(warning, type, code)`](https://nodejs.org/api/process.html#processemitwarningwarning-type-code-ctor):
+/// warn, a text or an `Error`, as a `"warning"` event and on stderr, a
+/// warning of `type`'s name and of `code`, where they're given.
 #[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
-pub fn emit_warning(warning: impl IntoStrOrError) {
+pub fn emit_warning(warning: impl IntoStrOrError, r#type: Option<&str>, code: Option<&str>) {
     unreachable!()
 }
 
-/// `process.emitWarning(warning, type)`: a warning of `type`'s name.
-#[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
-pub fn emit_warning_with_type(warning: impl IntoStrOrError, r#type: &str) {
-    unreachable!()
-}
-
-/// `process.emitWarning(warning, type, code)`.
-#[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
-pub fn emit_warning_with_type_and_code(warning: impl IntoStrOrError, r#type: &str, code: &str) {
-    unreachable!()
-}
-
-/// `process.emitWarning(warning, options)`.
+/// [`process.emitWarning(warning, options)`](https://nodejs.org/api/process.html#processemitwarningwarning-options):
+/// a warning of `options`' type, code and detail.
 #[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
 pub fn emit_warning_with_options(warning: impl IntoStrOrError, options: EmitWarningOptions<'_>) {
-    unreachable!()
-}
-
-/// `process.exit(code)`: end the process, of `code`.
-#[cfg_attr(rust_js, rust_js::link_name = "process.exit")]
-pub fn exit_with_code(code: impl IntoNumberOrStr) -> ! {
     unreachable!()
 }
 
@@ -512,22 +467,11 @@ pub fn set_exit_code(value: impl IntoNumberOrStr) {
     unreachable!()
 }
 
-/// [`process.kill(pid)`](https://nodejs.org/api/process.html#processkillpid-signal):
-/// send `pid` `SIGTERM`; what it throws, an `Err`.
+/// [`process.kill(pid, signal)`](https://nodejs.org/api/process.html#processkillpid-signal):
+/// send `pid` `signal`, `"SIGINT"` or its number, or `SIGTERM`; what it
+/// throws, an `Err`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.kill")]
-pub fn kill(pid: f64) -> Result<bool, &'static JsError> {
-    unreachable!()
-}
-
-/// `process.kill(pid, signal)`: send `pid` `signal`, `"SIGINT"` or its number.
-#[cfg_attr(rust_js, rust_js::link_name = "process.kill")]
-pub fn kill_with_signal(pid: f64, signal: impl IntoNumberOrStr) -> Result<bool, &'static JsError> {
-    unreachable!()
-}
-
-/// `process.loadEnvFile(path)`: read `path` into [`env`].
-#[cfg_attr(rust_js, rust_js::link_name = "process.loadEnvFile")]
-pub fn load_env_file_with_path(path: impl IntoPathLike) -> Result<(), &'static JsError> {
+pub fn kill(pid: f64, signal: Option<&dyn IntoNumberOrStr>) -> Result<bool, &'static JsError> {
     unreachable!()
 }
 
@@ -754,15 +698,10 @@ impl ProcessFinalization {
 pub struct ProcessPermission(PhantomData<JsObject>);
 
 impl ProcessPermission {
-    /// Whether it may use `scope`, `"fs.read"`.
+    /// Whether it may use `scope`, `"fs.read"`, of `reference`, a path say,
+    /// where it's given.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
-    pub fn has(&self, scope: &str) -> bool {
-        unreachable!()
-    }
-
-    /// Whether it may use `scope` of `reference`, a path say.
-    #[cfg_attr(rust_js, rust_js::link_name = "has")]
-    pub fn has_with_reference(&self, scope: &str, reference: &str) -> bool {
+    pub fn has(&self, scope: &str, reference: Option<&str>) -> bool {
         unreachable!()
     }
 }
@@ -801,15 +740,9 @@ impl ProcessReport {
         unreachable!()
     }
 
-    /// A report, as an object, of now.
+    /// A report, as an object, of now, or of `err`'s stack.
     #[cfg_attr(rust_js, rust_js::link_name = "getReport")]
-    pub fn get_report(&self) -> &'static JsObject {
-        unreachable!()
-    }
-
-    /// A report of `err`'s stack.
-    #[cfg_attr(rust_js, rust_js::link_name = "getReport")]
-    pub fn get_report_with_err(&self, err: &JsError) -> &'static JsObject {
+    pub fn get_report(&self, err: Option<&JsError>) -> &'static JsObject {
         unreachable!()
     }
 
@@ -864,24 +797,14 @@ impl ProcessReport {
         unreachable!()
     }
 
-    /// Write a report, and give its file's name.
+    /// Write a report, to `file_name`, of `err`'s stack, where they're
+    /// given, and give its file's name.
     #[cfg_attr(rust_js, rust_js::link_name = "writeReport")]
-    pub fn write_report(&self) -> String {
+    pub fn write_report(&self, file_name: Option<&str>, err: Option<&JsError>) -> String {
         unreachable!()
     }
 
-    /// Write a report to `file_name`.
-    #[cfg_attr(rust_js, rust_js::link_name = "writeReport")]
-    pub fn write_report_with_file_name(&self, file_name: &str) -> String {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "writeReport")]
-    pub fn write_report_with_file_name_and_err(&self, file_name: &str, err: &JsError) -> String {
-        unreachable!()
-    }
-
-    /// Write a report of `err`'s stack.
+    /// `writeReport(err)`: write a report of `err`'s stack.
     #[cfg_attr(rust_js, rust_js::link_name = "writeReport")]
     pub fn write_report_with_err(&self, err: &JsError) -> String {
         unreachable!()
@@ -1026,8 +949,13 @@ pub enum NumberOrStr<'a> {
     Str(&'a str),
 }
 
-/// What a `number | string` parameter takes: each as it is (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | string`")]
+/// What a `number | string` parameter takes: each as it is (ADR 0229); an
+/// optional one, `Option<&dyn IntoNumberOrStr>`, borrowed, `Some(&value)`
+/// (ADR 0443).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `number | string`",
+    note = "an optional one, `Option<&dyn IntoNumberOrStr>`, takes `Some(&value)`"
+)]
 #[cfg_attr(rust_js, rust_js::types = "number | string")]
 pub trait IntoNumberOrStr: sealed::Sealed {}
 impl IntoNumberOrStr for f64 {}

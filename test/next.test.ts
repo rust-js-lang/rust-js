@@ -458,12 +458,12 @@ js::on_load! {
         app.prepare().await;
         http::create_server(move |req, res| {
             if req.url().as_deref() == Some("/custom") {
-                res.end_with("custom server");
+                res.end(Some("custom server"));
             } else {
                 let _ = handle(req, res);
             }
         })
-        .listen_with(${port}.0, || println!("custom server ready on ${port}"));
+        .listen(Some(${port}.0), Some(Box::new(|| println!("custom server ready on ${port}"))));
     }));
 }
 `;

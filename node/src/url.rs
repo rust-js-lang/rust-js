@@ -25,15 +25,10 @@ pub fn domain_to_unicode(domain: &str) -> String {
     unreachable!()
 }
 
-/// [`url.pathToFileURL(path)`](https://nodejs.org/api/url.html#urlpathtofileurlpath-options):
+/// [`url.pathToFileURL(path, options)`](https://nodejs.org/api/url.html#urlpathtofileurlpath-options):
 /// the `file:` URL of `path`, made absolute, its characters encoded.
 #[cfg_attr(rust_js, rust_js::link_name = "url#pathToFileURL")]
-pub fn path_to_file_url(path: &str) -> &'static URL {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "url#pathToFileURL")]
-pub fn path_to_file_url_with_options(path: &str, options: PathToFileUrlOptions) -> &'static URL {
+pub fn path_to_file_url(path: &str, options: Option<PathToFileUrlOptions>) -> &'static URL {
     unreachable!()
 }
 
@@ -45,17 +40,10 @@ pub fn resolve(from: &str, to: &str) -> String {
     unreachable!()
 }
 
-/// [`url.format(url)`](https://nodejs.org/api/url.html#urlformaturl-options):
-/// `url`'s text.
+/// [`url.format(url, options)`](https://nodejs.org/api/url.html#urlformaturl-options):
+/// `url`'s text, without the parts `options` leave out.
 #[cfg_attr(rust_js, rust_js::link_name = "url#format")]
-pub fn format(url: &URL) -> String {
-    unreachable!()
-}
-
-/// `url.format(url, options)`: `url`'s text, without the parts
-/// `options` leave out.
-#[cfg_attr(rust_js, rust_js::link_name = "url#format")]
-pub fn format_with_options(url: &URL, options: URLFormatOptions) -> String {
+pub fn format(url: &URL, options: Option<URLFormatOptions>) -> String {
     unreachable!()
 }
 
@@ -80,20 +68,14 @@ pub fn parse(url_string: &str) -> UrlWithStringQuery {
     unreachable!()
 }
 
-/// `url.parse(urlString, parseQueryString)`: its query parsed, where
-/// `parse_query_string`.
+/// `url.parse(urlString, parseQueryString, slashesDenoteHost)`: its query
+/// parsed, where `parse_query_string`; `//` before a host, where
+/// `slashes_denote_host`, `//example.com/p`'s.
 #[cfg_attr(rust_js, rust_js::link_name = "url#parse")]
-pub fn parse_with_parse_query_string(url_string: &str, parse_query_string: bool) -> Url {
-    unreachable!()
-}
-
-/// `url.parse(urlString, parseQueryString, slashesDenoteHost)`: `//`
-/// before a host, where `slashes_denote_host`, `//example.com/p`'s.
-#[cfg_attr(rust_js, rust_js::link_name = "url#parse")]
-pub fn parse_with_parse_query_string_and_slashes_denote_host(
+pub fn parse_with_parse_query_string(
     url_string: &str,
     parse_query_string: bool,
-    slashes_denote_host: bool,
+    slashes_denote_host: Option<bool>,
 ) -> Url {
     unreachable!()
 }
@@ -161,33 +143,28 @@ pub enum UrlObjectQuery<'a> {
     Input(&'a ParsedUrlQueryInput),
 }
 
-/// [`url.fileURLToPath(url)`](https://nodejs.org/api/url.html#urlfileurltopathurl-options):
+/// [`url.fileURLToPath(url, options)`](https://nodejs.org/api/url.html#urlfileurltopathurl-options):
 /// the path of a `file:` URL, its characters decoded.
 #[cfg_attr(rust_js, rust_js::link_name = "url#fileURLToPath")]
-pub fn file_url_to_path(url: impl IntoStrOrURL) -> String {
+pub fn file_url_to_path(url: impl IntoStrOrURL, options: Option<FileUrlToPathOptions>) -> String {
     unreachable!()
 }
 
-#[cfg_attr(rust_js, rust_js::link_name = "url#fileURLToPath")]
-pub fn file_url_to_path_with_options(url: impl IntoStrOrURL, options: FileUrlToPathOptions) -> String {
-    unreachable!()
-}
-
-/// What [`file_url_to_path_with_options`] takes.
+/// What [`file_url_to_path`] takes.
 #[derive(Default)]
 pub struct FileUrlToPathOptions {
     /// Whether the path is Windows', or this platform's where `None`.
     pub windows: Option<bool>,
 }
 
-/// What [`path_to_file_url_with_options`] takes.
+/// What [`path_to_file_url`] takes.
 #[derive(Default)]
 pub struct PathToFileUrlOptions {
     /// Whether the path is Windows', or this platform's where `None`.
     pub windows: Option<bool>,
 }
 
-/// What [`format_with_options`] takes: whether to write each part, each
+/// What [`format`] takes: whether to write each part, each
 /// `true` where `None` but `unicode`.
 #[derive(Default)]
 pub struct URLFormatOptions {

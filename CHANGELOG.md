@@ -321,11 +321,14 @@ released any more: `rust-js build` is the one way to build an app.
   each JS one, as TypeScript declares it: `history.push_state(data, "",
   None)` is `history.pushState(data, "")`, and `push_state_with_url`, like each
   `_with_` form of an optional argument, is gone: webapi's, `EventTargetExt`'s
-  `add_event_listener_with_options`, and react's `memo_with`, `create_root_with`,
-  `render_to_string_with` and the rest. A union's or an `any`'s is borrowed,
-  `Some(&blob)`, a callback's boxed, `Some(Box::new(|a, b| ..))`; a trailing
-  `None` is no argument, and a Rust function's trailing `Option`s are declared
-  optional, `greeting?:` (ADR 0443).
+  `add_event_listener_with_options`, react's `memo_with`, `create_root_with` and
+  `render_to_string_with`, next's `push_with_options` and `json_with_init`,
+  node's `slice_with_start`, `alloc_with_fill` and `exit_with_code`, and the
+  rest. A union's or an `any`'s is borrowed, `Some(&blob)`, a callback's boxed,
+  `Some(Box::new(|a, b| ..))`; a trailing `None` is no argument, and a Rust
+  function's trailing `Option`s are declared optional, `greeting?:`. What
+  TypeScript declares as signatures of their own stays apart, each one's
+  optional parameters `Option`s: `Buffer::from_with_str(s, None)` (ADR 0443).
 - **Rust's world and React's each have their own names, JSX the boundary**
   ([ADR 0435](docs/decisions/0435-rust-and-react-two-worlds.md)). In JS, a
   component's props are camelCase, `onClick` of `on_click`, and a hook, a

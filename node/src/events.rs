@@ -37,14 +37,9 @@ pub struct EventEmitter(PhantomData<JsObject>);
 pub mod event_emitter {
     use super::{EventEmitter, EventEmitterOptions};
 
-    /// [`new EventEmitter()`](https://nodejs.org/api/events.html#class-eventemitter).
+    /// [`new EventEmitter(options)`](https://nodejs.org/api/events.html#class-eventemitter).
     #[cfg_attr(rust_js, rust_js::link_name = "new events#EventEmitter")]
-    pub fn new() -> &'static EventEmitter {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "new events#EventEmitter")]
-    pub fn new_with_options(options: EventEmitterOptions) -> &'static EventEmitter {
+    pub fn new(options: Option<EventEmitterOptions>) -> &'static EventEmitter {
         unreachable!()
     }
 }
@@ -150,18 +145,10 @@ pub trait EventEmitterExt: Sized {
         unreachable!()
     }
 
-    /// [`emitter.listenerCount(event)`](https://nodejs.org/api/events.html#emitterlistenercounteventname-listener).
+    /// [`emitter.listenerCount(event, listener)`](https://nodejs.org/api/events.html#emitterlistenercounteventname-listener):
+    /// how many listeners `event` has, or how often `listener` is one.
     #[cfg_attr(rust_js, rust_js::link_name = "listenerCount")]
-    fn listener_count<E>(&self, event: E) -> f64
-    where
-        Self: Emits<E>,
-    {
-        unreachable!()
-    }
-
-    /// `emitter.listenerCount(event, listener)`: how often `listener` is one.
-    #[cfg_attr(rust_js, rust_js::link_name = "listenerCount")]
-    fn listener_count_with_listener<E>(&self, event: E, listener: &'static <Self as Emits<E>>::Listener) -> f64
+    fn listener_count<E>(&self, event: E, listener: Option<&'static <Self as Emits<E>>::Listener>) -> f64
     where
         Self: Emits<E>,
     {
@@ -215,20 +202,13 @@ pub fn listener<L: ?Sized>(this: Box<L>) -> &'static L {
     unreachable!()
 }
 
-/// [`events.once(emitter, event)`](https://nodejs.org/api/events.html#eventsonceemitter-name-options):
-/// `event`'s next arguments.
+/// [`events.once(emitter, event, options)`](https://nodejs.org/api/events.html#eventsonceemitter-name-options):
+/// `event`'s next arguments, rejected where `options`' signal aborts first.
 #[cfg_attr(rust_js, rust_js::link_name = "events#once")]
-pub fn once<T: Emits<E>, E>(emitter: &T, event: E) -> Promise<<T as Emits<E>>::Args> {
-    unreachable!()
-}
-
-/// `events.once(emitter, event, options)`: rejected where `options`'
-/// signal aborts first.
-#[cfg_attr(rust_js, rust_js::link_name = "events#once")]
-pub fn once_with_options<T: Emits<E>, E>(
+pub fn once<T: Emits<E>, E>(
     emitter: &T,
     event: E,
-    options: StaticEventEmitterOptions<'_>,
+    options: Option<StaticEventEmitterOptions<'_>>,
 ) -> Promise<<T as Emits<E>>::Args> {
     unreachable!()
 }
@@ -252,17 +232,12 @@ pub fn get_max_listeners<T: EventEmitterExt>(emitter: &T) -> f64 {
     unreachable!()
 }
 
-/// [`events.setMaxListeners(n)`](https://nodejs.org/api/events.html#eventssetmaxlistenersn-eventtargets):
-/// each new emitter's.
-#[cfg_attr(rust_js, rust_js::link_name = "events#setMaxListeners")]
-pub fn set_max_listeners(n: f64) {
-    unreachable!()
-}
-
-/// `events.setMaxListeners(n, ...eventTargets)`: each of `event_targets`'.
+/// [`events.setMaxListeners(n, ...eventTargets)`](https://nodejs.org/api/events.html#eventssetmaxlistenersn-eventtargets):
+/// each of `event_targets`', or, of none, each new emitter's; of `n`, or
+/// [`default_max_listeners`].
 #[cfg_attr(rust_js, rust_js::link_name = "events#setMaxListeners")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn set_max_listeners_with_event_targets(n: f64, event_targets: &[&EventEmitter]) {
+pub fn set_max_listeners(n: Option<f64>, event_targets: &[&EventEmitter]) {
     unreachable!()
 }
 
@@ -312,7 +287,7 @@ pub fn set_default_max_listeners(value: f64) {
     unreachable!()
 }
 
-/// What [`event_emitter::new_with_options`] takes.
+/// What [`event_emitter::new`] takes.
 #[derive(Default)]
 pub struct EventEmitterOptions {
     /// Whether a listener's rejected promise is its `"error"`.
@@ -320,7 +295,7 @@ pub struct EventEmitterOptions {
     pub capture_rejections: Option<bool>,
 }
 
-/// What [`once_with_options`] takes.
+/// What [`once`] takes.
 #[derive(Default)]
 pub struct StaticEventEmitterOptions<'a> {
     /// What aborts the wait.

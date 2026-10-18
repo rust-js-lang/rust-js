@@ -4,31 +4,16 @@
 
 use js::Dict;
 
-/// [`querystring.stringify(obj)`](https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options):
-/// `obj`'s query, `a=1&b=2`, each value encoded; a list's a key each.
+/// [`querystring.stringify(obj, sep, eq, options)`](https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options):
+/// `obj`'s query, `a=1&b=2`, each value encoded; a list's a key each; of
+/// `sep` between pairs, or `&`, and `eq` between a key and its value, or
+/// `=`.
 #[cfg_attr(rust_js, rust_js::link_name = "querystring#stringify")]
-pub fn stringify(obj: &ParsedUrlQueryInput) -> String {
-    unreachable!()
-}
-
-/// `querystring.stringify(obj, sep)`: of `sep` between pairs.
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#stringify")]
-pub fn stringify_with_sep(obj: &ParsedUrlQueryInput, sep: &str) -> String {
-    unreachable!()
-}
-
-/// `querystring.stringify(obj, sep, eq)`: of `eq` between a key and its value.
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#stringify")]
-pub fn stringify_with_sep_and_eq(obj: &ParsedUrlQueryInput, sep: &str, eq: &str) -> String {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#stringify")]
-pub fn stringify_with_sep_and_eq_and_options(
-    obj: &ParsedUrlQueryInput,
-    sep: &str,
-    eq: &str,
-    options: StringifyOptions,
+pub fn stringify(
+    obj: Option<&ParsedUrlQueryInput>,
+    sep: Option<&str>,
+    eq: Option<&str>,
+    options: Option<StringifyOptions>,
 ) -> String {
     unreachable!()
 }
@@ -36,71 +21,28 @@ pub fn stringify_with_sep_and_eq_and_options(
 /// [`querystring.encode`](https://nodejs.org/api/querystring.html#querystringencode):
 /// [`stringify`], by another name.
 #[cfg_attr(rust_js, rust_js::link_name = "querystring#encode")]
-pub fn encode(obj: &ParsedUrlQueryInput) -> String {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#encode")]
-pub fn encode_with_sep(obj: &ParsedUrlQueryInput, sep: &str) -> String {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#encode")]
-pub fn encode_with_sep_and_eq(obj: &ParsedUrlQueryInput, sep: &str, eq: &str) -> String {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#encode")]
-pub fn encode_with_sep_and_eq_and_options(
-    obj: &ParsedUrlQueryInput,
-    sep: &str,
-    eq: &str,
-    options: StringifyOptions,
+pub fn encode(
+    obj: Option<&ParsedUrlQueryInput>,
+    sep: Option<&str>,
+    eq: Option<&str>,
+    options: Option<StringifyOptions>,
 ) -> String {
     unreachable!()
 }
 
-/// [`querystring.parse(str)`](https://nodejs.org/api/querystring.html#querystringparsestr-sep-eq-options):
-/// `str`'s values by their keys, decoded; a key given twice, a list.
+/// [`querystring.parse(str, sep, eq, options)`](https://nodejs.org/api/querystring.html#querystringparsestr-sep-eq-options):
+/// `str`'s values by their keys, decoded; a key given twice, a list; of
+/// `sep` between pairs, or `&`, and `eq` between a key and its value, or
+/// `=`.
 #[cfg_attr(rust_js, rust_js::link_name = "querystring#parse")]
-pub fn parse(str: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#parse")]
-pub fn parse_with_sep(str: &str, sep: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#parse")]
-pub fn parse_with_sep_and_eq(str: &str, sep: &str, eq: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#parse")]
-pub fn parse_with_sep_and_eq_and_options(str: &str, sep: &str, eq: &str, options: ParseOptions) -> &'static ParsedUrlQuery {
+pub fn parse(str: &str, sep: Option<&str>, eq: Option<&str>, options: Option<ParseOptions>) -> &'static ParsedUrlQuery {
     unreachable!()
 }
 
 /// [`querystring.decode`](https://nodejs.org/api/querystring.html#querystringdecode):
 /// [`parse`], by another name.
 #[cfg_attr(rust_js, rust_js::link_name = "querystring#decode")]
-pub fn decode(str: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#decode")]
-pub fn decode_with_sep(str: &str, sep: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#decode")]
-pub fn decode_with_sep_and_eq(str: &str, sep: &str, eq: &str) -> &'static ParsedUrlQuery {
-    unreachable!()
-}
-
-#[cfg_attr(rust_js, rust_js::link_name = "querystring#decode")]
-pub fn decode_with_sep_and_eq_and_options(str: &str, sep: &str, eq: &str, options: ParseOptions) -> &'static ParsedUrlQuery {
+pub fn decode(str: &str, sep: Option<&str>, eq: Option<&str>, options: Option<ParseOptions>) -> &'static ParsedUrlQuery {
     unreachable!()
 }
 
@@ -151,7 +93,7 @@ pub enum ParsedUrlQueryInputItem {
     BigInt(i64),
 }
 
-/// What [`stringify_with_sep_and_eq_and_options`] takes.
+/// The options [`stringify`] takes.
 #[derive(Default)]
 pub struct StringifyOptions {
     /// How a key or a value is encoded, `querystring.escape` where `None`.
@@ -159,7 +101,7 @@ pub struct StringifyOptions {
     pub encode_uri_component: Option<Box<dyn Fn(&str) -> String>>,
 }
 
-/// What [`parse_with_sep_and_eq_and_options`] takes.
+/// The options [`parse`] takes.
 #[derive(Default)]
 pub struct ParseOptions {
     /// The most keys to read, 1000 where `None`, all where 0.

@@ -47,8 +47,12 @@ impl Stats {
 }
 
 /// What a `PathLike` parameter, `string | Buffer | URL`, takes: each as it
-/// is (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a path, a `&str`, a `&Buffer` or a `&URL`")]
+/// is (ADR 0229); an optional one, `Option<&dyn IntoPathLike>`, borrowed,
+/// `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a path, a `&str`, a `&Buffer` or a `&URL`",
+    note = "an optional one, `Option<&dyn IntoPathLike>`, takes `Some(&value)`"
+)]
 #[cfg_attr(rust_js, rust_js::types = "PathLike")]
 pub trait IntoPathLike: sealed::Sealed {}
 impl IntoPathLike for &str {}

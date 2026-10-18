@@ -19,15 +19,11 @@ pub fn create_server(request_listener: impl Fn(&IncomingMessage, &ServerResponse
 pub struct Server(PhantomData<JsObject>);
 
 impl Server {
-    /// Listen on `port`, `server.listen(port)`.
+    /// [`server.listen(port, listeningListener)`](https://nodejs.org/api/net.html#serverlistenport-host-backlog-callback):
+    /// listen on `port`, or one the OS picks, `listening_listener` called
+    /// once it does.
     #[cfg_attr(rust_js, rust_js::link_name = "listen")]
-    pub fn listen(&self, port: f64) -> &Self {
-        unreachable!()
-    }
-
-    /// Listen on `port`, `listening_listener` called once it does.
-    #[cfg_attr(rust_js, rust_js::link_name = "listen")]
-    pub fn listen_with(&self, port: f64, listening_listener: impl Fn() + 'static) -> &Self {
+    pub fn listen(&self, port: Option<f64>, listening_listener: Option<Box<dyn Fn()>>) -> &Self {
         unreachable!()
     }
 
@@ -216,15 +212,10 @@ impl ServerResponse {
         unreachable!()
     }
 
-    /// End it.
+    /// [`response.end(chunk)`](https://nodejs.org/api/http.html#responseenddata-encoding-callback):
+    /// end it, with `chunk`, the last of its body, where it's given.
     #[cfg_attr(rust_js, rust_js::link_name = "end")]
-    pub fn end(&self) -> &Self {
-        unreachable!()
-    }
-
-    /// End it with `chunk`, the last of its body.
-    #[cfg_attr(rust_js, rust_js::link_name = "end")]
-    pub fn end_with(&self, chunk: &str) -> &Self {
+    pub fn end(&self, chunk: Option<&str>) -> &Self {
         unreachable!()
     }
 }

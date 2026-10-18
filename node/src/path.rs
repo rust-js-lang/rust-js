@@ -83,16 +83,10 @@ pub fn dirname(path: &str) -> String {
     unreachable!()
 }
 
-/// [`path.basename(path)`](https://nodejs.org/api/path.html#pathbasenamepath-suffix):
-/// `path`'s last part.
+/// [`path.basename(path, suffix)`](https://nodejs.org/api/path.html#pathbasenamepath-suffix):
+/// `path`'s last part, without `suffix` where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "path#basename")]
-pub fn basename(path: &str) -> String {
-    unreachable!()
-}
-
-/// `path.basename(path, suffix)`: `path`'s last part, without `suffix`.
-#[cfg_attr(rust_js, rust_js::link_name = "path#basename")]
-pub fn basename_with_suffix(path: &str, suffix: &str) -> String {
+pub fn basename(path: &str, suffix: Option<&str>) -> String {
     unreachable!()
 }
 
@@ -192,12 +186,7 @@ impl PlatformPath {
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "basename")]
-    pub fn basename(&self, path: &str) -> String {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "basename")]
-    pub fn basename_with_suffix(&self, path: &str, suffix: &str) -> String {
+    pub fn basename(&self, path: &str, suffix: Option<&str>) -> String {
         unreachable!()
     }
 
