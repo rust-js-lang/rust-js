@@ -121,7 +121,7 @@ for (const [name, source, message, crate] of [
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
-  ["collecting into a Result of the crate's own collection", 'pub struct W(Vec<i32>);\nimpl FromIterator<i32> for W { fn from_iter<I: IntoIterator<Item = i32>>(i: I) -> Self { W(i.into_iter().collect()) } }\npub fn g(v: Vec<Result<i32, ()>>) -> Result<W, ()> { v.into_iter().collect() }', "does not support `collect` into a `W`"],
+  ["collecting into a Result of an Rc slice", 'pub fn f(v: Vec<Result<(u8, u8), ()>>) -> Result<std::rc::Rc<[(u8, u8)]>, ()> { v.into_iter().collect() }', "does not support `collect` into a `std::rc::Rc<[(u8, u8)]>`"],
   // `len()` takes no item, so it runs none of a chain's closures (ADR 0036).
   ["len of a chain whose closure prints", 'pub fn f(v: &[u32]) -> usize { v.iter().map(|x| { println!("{x}"); x }).len() }', "`len()` of a lazy or generic `std::iter::Map`"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.

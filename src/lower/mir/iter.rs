@@ -465,9 +465,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.is_map(output) {
             let set = self.is_set(output);
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
+        } else if let Some(made) = self.made_by_own_from_iter(it, output, item, span)? {
+            made
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })
+    }
+
+    /// `items` made a collection of the crate's own, `output`, by its
+    /// `FromIterator<item>`'s `from_iter`, the function rust-js compiled.
+    fn made_by_own_from_iter(
+        &mut self,
+        items: Expr,
+        output: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let Some((from_iter, args)) = item.and_then(|item| self.recognition().values_from_iter(output, item)) else {
+            return Ok(None);
+        };
+        let Some(instance) = self
+            .resolve_instance(from_iter, args)?
+            .filter(|i| self.is_rust_fn(i.def_id()))
+        else {
+            return Ok(None);
+        };
+        let mut values = vec![items];
+        values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
+        Ok(Some(Expr::call(self.fn_ref(instance.def_id()), values)))
     }
 
     /// `position(f)`: where the first that `f` finds is, `$position`; and

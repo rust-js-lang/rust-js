@@ -1893,4 +1893,16 @@ export const mutations: Mutation[] = [
       "rposition"
     ]
   },
+  {
+    "name": "from-iter-of-values-item",
+    "breaks": "a fallible `collect` into the crate's own collection asks its `FromIterator` of the wrong item, and finds none",
+    "file": "src/lower/recognition.rs",
+    "find": "            self.tcx.mk_args(&[collection.into(), item.into(), values.into()]),\n",
+    "replace": "            self.tcx.mk_args(&[collection.into(), values.into(), values.into()]),\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "collect_fallible_into"
+    ]
+  },
 ];

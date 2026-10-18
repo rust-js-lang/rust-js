@@ -721,4 +721,16 @@ export const mutations: Mutation[] = [
       "rposition of a lazy chain"
     ]
   },
+  {
+    "name": "own-from-iter-unused",
+    "breaks": "`collect()` into a `Result` of a collection of the crate's own is refused, though its `from_iter` is the crate's",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        } else if let Some(made) = self.made_by_own_from_iter(it, output, item, span)? {\n",
+    "replace": "        } else if let Some(made) = None::<Expr> {\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "collect_fallible_into"
+    ]
+  },
 ];

@@ -6,6 +6,7 @@ import {
   $collectOptions,
   $collectResults,
   $debugStr,
+  $iter,
   $lazyRange,
   $parseBig,
   $parseInt,
@@ -48,16 +49,43 @@ function parse_kv(s) {
   );
 }
 
+function bagDebug_fmt(bag) {
+  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
+}
+
+function bagFromIteratorI32_from_iter(it) {
+  const v = Iterator.from(it).toArray();
+  v.sort((a, b) => a - b);
+  return [v];
+}
+
+function bag(words) {
+  return $collectResults(
+    words.values().map((w) => {
+      const result = $parseInt(w, -2147483648, 2147483647);
+      return result.TAG === "Err" ? { TAG: "Err", _0: `${w}: ${result._0}` } : result;
+    }),
+    bagFromIteratorI32_from_iter,
+  );
+}
+
 function main() {
-  const value = parse_kv("a=1;b=2;");
+  const some = $collectOptions($iter([5, 4]), false, bagFromIteratorI32_from_iter);
+  const none = $collectOptions($iter([5, undefined]), false, bagFromIteratorI32_from_iter);
+  const value = bag(["3", "1", "2"]);
+  const value$1 = bag(["1", "x"]);
+  console.log(
+    `${value.TAG === "Ok" ? `Ok(${bagDebug_fmt(value._0)})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${bagDebug_fmt(value$1._0)})` : `Err(${$debugStr(value$1._0)})`} ${some == null ? "None" : `Some(${bagDebug_fmt(some)})`} ${none == null ? "None" : `Some(${bagDebug_fmt(none)})`}`,
+  );
+  const value$2 = parse_kv("a=1;b=2;");
   const result = parse_kv("a=1;b=2");
   console.log(
     `${
-      value.TAG === "Ok"
-        ? `Ok({${Array.from($sortedEntries(value._0, $cmp))
+      value$2.TAG === "Ok"
+        ? `Ok({${Array.from($sortedEntries(value$2._0, $cmp))
             .map(([key, value]) => `${$debugStr(key)}: ${value}`)
             .join(", ")}})`
-        : `Err(${$debugStr(value._0)})`
+        : `Err(${$debugStr(value$2._0)})`
     } ${((result) =>
       result.TAG === "Ok"
         ? `Ok(${result._0 == null ? "None" : `Some(${result._0})`})`
@@ -65,14 +93,14 @@ function main() {
       result.TAG === "Ok" ? { TAG: "Ok", _0: result._0.get("b") } : result,
     )}`,
   );
-  const value$1 = parse_kv("a=1;b");
+  const value$3 = parse_kv("a=1;b");
   console.log(
     `${
-      value$1.TAG === "Ok"
-        ? `Ok({${Array.from($sortedEntries(value$1._0, $cmp))
+      value$3.TAG === "Ok"
+        ? `Ok({${Array.from($sortedEntries(value$3._0, $cmp))
             .map(([key, value]) => `${$debugStr(key)}: ${value}`)
             .join(", ")}})`
-        : `Err(${$debugStr(value$1._0)})`
+        : `Err(${$debugStr(value$3._0)})`
     }`,
   );
   const words = $collectResults(
@@ -92,7 +120,7 @@ function main() {
     false,
     (values) => new Set(values),
   );
-  const none = $collectOptions(
+  const none$1 = $collectOptions(
     ["3", "x"].values().map((s) => {
       const result = $parseInt(s, 0, 4294967295);
       return result.TAG === "Ok" ? result._0 : undefined;
@@ -117,9 +145,9 @@ function main() {
             .map((item) => String(item))
             .join(", ")}})`
     } ${
-      none == null
+      none$1 == null
         ? "None"
-        : `Some({${Array.from($sortedKeys(none, $cmp))
+        : `Some({${Array.from($sortedKeys(none$1, $cmp))
             .map((item) => String(item))
             .join(", ")}})`
     } [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${vecOk.TAG === "Ok" ? `Ok([${vecOk._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(vecOk._0)})`}`,

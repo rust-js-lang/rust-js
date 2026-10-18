@@ -129,5 +129,7 @@ them, was refused. The values, an array, are made into the collection
 the way a plain `collect()` makes one, `collected_into`, one method for
 both: `$collectResults(items, (values) => new Map(values))`, `values.join("")`
 of text, a heap's or a set's. A collection of the crate's own, its
-`FromIterator`, is refused, as a plain `collect()` into one is.
+`FromIterator`, is made by its own `from_iter`, the function rust-js
+compiled, given the values, `$collectResults(items, bagFromIter)`; one
+of std's rust-js doesn't know, an `Rc<[T]>`'s, is refused.
 `collect_fallible_into` runs each against native Rust.

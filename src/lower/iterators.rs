@@ -140,11 +140,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => None,
             false => {
                 let values = self.fresh("values");
-                let made = self.collected_into(Expr::var(&values), collection, None, None, span)?;
-                Some(Expr::arrow(
-                    vec![values.into()],
-                    vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
-                ))
+                // What each `Ok` or `Some` holds.
+                let value = item.and_then(|item| match item.kind() {
+                    ty::Adt(_, args) => args.types().next(),
+                    _ => None,
+                });
+                let made = self.collected_into(Expr::var(&values), collection, value, None, span)?;
+                Some(match made.kind {
+                    // A function that only takes them, a `from_iter`: the function.
+                    js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if *v == values)) => {
+                        *f
+                    }
+                    kind => Expr::arrow(
+                        vec![values.into()],
+                        vec![StmtKind::Return(Some(Expr { kind, ..made })).at(js::Span::NONE)],
+                    ),
+                })
             }
         };
         Ok(if self.option_of(target).is_some() {

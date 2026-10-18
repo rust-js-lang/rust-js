@@ -3148,6 +3148,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.tcx.is_diagnostic_item(sym::FromIterator, trait_id)
     }
 
+    /// `FromIterator::from_iter` and its arguments, `collection` made of
+    /// `item`s given an array of them, `[A; 0]`, an `IntoIterator<Item =
+    /// A>`: what `collect` into a collection of the crate's own calls, of
+    /// values made already, a fallible `collect`'s.
+    pub(super) fn values_from_iter(
+        &self,
+        collection: Ty<'tcx>,
+        item: Ty<'tcx>,
+    ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+        let trait_id = self.tcx.get_diagnostic_item(sym::FromIterator)?;
+        let from_iter = (self.tcx.associated_items(trait_id).in_definition_order())
+            .find(|i| i.is_fn() && i.name().as_str() == "from_iter")?
+            .def_id;
+        let values = Ty::new_array(self.tcx, item, 0);
+        Some((
+            from_iter,
+            self.tcx.mk_args(&[collection.into(), item.into(), values.into()]),
+        ))
+    }
+
     /// The method of std's iterator traits `def_id` is: `Iterator`'s,
     /// `DoubleEndedIterator`'s `next_back`, `ExactSizeIterator`'s `len`,
     /// `IntoIterator`'s `into_iter` or `FromIterator`'s `from_iter`.
