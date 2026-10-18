@@ -2169,7 +2169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if drops::cleans_up(body, drops, *unwind).is_some() {
             return None;
         }
-        if checked_by_division(msg) {
+        if checked_by_division(body, msg, *target) {
             return Some(Check::Unchecked);
         }
         deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))
@@ -6129,13 +6129,45 @@ fn constant_truth<'tcx>(body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Opti
     }
 }
 
-fn checked_by_division(msg: &mir::AssertMessage<'_>) -> bool {
-    matches!(
-        msg,
-        AssertKind::DivisionByZero(_)
-            | AssertKind::RemainderByZero(_)
-            | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)
-    )
+/// Whether an `Assert`, `msg`, is the check of a division, `/` or `%`, and
+/// the division runs next, from `target`: through its other checks, with no
+/// call nor a write through a pointer between, so the division's helper
+/// throws its panic where the `Assert` would. A call between, `v[f()] = a %
+/// b`'s, runs after the check, not before it.
+fn checked_by_division(body: &mir::Body<'_>, msg: &mir::AssertMessage<'_>, target: BasicBlock) -> bool {
+    let of_division = |msg: &mir::AssertMessage<'_>| {
+        matches!(
+            msg,
+            AssertKind::DivisionByZero(_)
+                | AssertKind::RemainderByZero(_)
+                | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)
+        )
+    };
+    if !of_division(msg) {
+        return false;
+    }
+    let mut block = target;
+    // A division's checks are two at most: by zero, then overflow.
+    for _ in 0..3 {
+        let data = &body.basic_blocks[block];
+        for statement in &data.statements {
+            if let StatementKind::Assign(assign) = &statement.kind {
+                let (written, rvalue) = &**assign;
+                if matches!(rvalue, Rvalue::BinaryOp(BinOp::Div | BinOp::Rem, _)) {
+                    return true;
+                }
+                if written.is_indirect() {
+                    return false;
+                }
+            }
+        }
+        match &data.terminator().kind {
+            TerminatorKind::Assert { msg, target, .. } if of_division(msg) => block = *target,
+            TerminatorKind::Goto { target } => block = *target,
+            _ => return false,
+        }
+    }
+    false
 }
 
 fn assert_operands<'m, 'tcx>(msg: &'m AssertKind<Operand<'tcx>>) -> Vec<&'m Operand<'tcx>> {

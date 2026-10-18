@@ -370,6 +370,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A zero divisor panics before what's evaluated after the check**:
+  `v[f()] = a % b` checked `b` only once it divided, after `f()` ran, which
+  native Rust doesn't run (ADR 0372; a generated program, seed 12445863).
 - **A `Mutex` or an `RwLock` holding a value with a destructor** no longer
   crashes the compiler: it drops what it holds as a `RefCell` does, and its
   `into_inner` gives the value back (ADR 0144).

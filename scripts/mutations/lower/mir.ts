@@ -1433,8 +1433,8 @@ export const mutations: Mutation[] = [
     "name": "mir-division-checked-twice",
     "breaks": "a `%` or `/` from MIR is checked before the division checks it, `if ((2 === -1) & \u2026) throw`",
     "file": "src/lower/mir.rs",
-    "find": "        AssertKind::DivisionByZero(_)\n            | AssertKind::RemainderByZero(_)\n            | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)\n",
-    "replace": "        AssertKind::Overflow(BinOp::Shl, ..)\n",
+    "find": "            AssertKind::DivisionByZero(_)\n                | AssertKind::RemainderByZero(_)\n                | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)\n",
+    "replace": "            AssertKind::Overflow(BinOp::Shl, ..)\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -2558,5 +2558,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_mut_of_mut_payload.rs$"],
     snapshots: true,
+  },
+  {
+    name: "division-check-across-a-call",
+    breaks: "a division's check is left to its helper though a call runs between, `v[f()] = a % b`: `f` runs before a zero divisor panics",
+    file: "src/lower/mir.rs",
+    find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return false,\n",
+    replace: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return true,\n",
+    tests: ["test/corpus.test.ts", "-t", "division_check_order"],
   },
 ];

@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0364](0364-mir-lowering.md),
 [0098](0098-destructors.md). Amended: what its constants say of a check is
-`constant_truth`'s alone (below).
+`constant_truth`'s alone (below); and a division's helper checks only a
+division that runs next (below).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a panic drops as
 it unwinds is printed by the program, so it's Rust's, paid for in an `if`.
@@ -77,3 +78,16 @@ left with nothing in it, `if (tmp.TAG === "Err") {}`, and its `try` with
 it, of a `catch` that then only threw on. A test that does nothing whose
 branches settled to nothing goes too, so the `try` does. Six corpus
 programs lost 60 lines; `drop_partial` and `question_drops` hold it.
+
+## Amendment: the helper that runs next
+
+A division's `Assert` was left to its helper, `$rem(a, b)`, wherever the
+division was: `v[f()] = a % b` checks `b` before `f()` is called, as Rust
+evaluates the value, then the place, but divides only once the index is
+made, so `f` ran before a zero divisor panicked, and printed what native
+Rust never does (a generated program, seed 12445863). The helper checks
+only a division that runs next: through its other checks, with no call
+and no write through a pointer between (`checked_by_division`); else
+it's the `if`, where the `Assert` is. Case C: what `f` prints is
+observable. `division_check_order` holds both; no other corpus program,
+snapshot or test's output changed.
