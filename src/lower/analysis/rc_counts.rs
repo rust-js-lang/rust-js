@@ -59,9 +59,20 @@ pub(super) fn counted_rcs<'tcx>(
             }
         }
     };
+    // Each `Rc` made another's, `Rc<RefCell<Logger>>` an
+    // `Rc<RefCell<dyn Listener>>`: the two share their counts.
+    let mut made_others: HashSet<(Ty<'tcx>, Ty<'tcx>)> = HashSet::new();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             found(expr.ty, &mut types, &mut generic_rc);
+            if let ExprKind::PointerCoercion { source, .. } = expr.kind
+                && let (Some(from), Some(to)) = (rc_pointee(tcx, body.thir[source].ty), rc_pointee(tcx, expr.ty))
+            {
+                made_others.insert((
+                    tcx.erase_and_anonymize_regions(from),
+                    tcx.erase_and_anonymize_regions(to),
+                ));
+            }
             if let ExprKind::Call { fun, .. } = expr.kind
                 && let Some((def_id, args)) = fn_def(body.thir[fun].ty)
                 && reads_rc_count(tcx, def_id)
@@ -84,10 +95,16 @@ pub(super) fn counted_rcs<'tcx>(
     }
     let mut counted = Counted { all: false, types };
     loop {
-        let dropping: Vec<Ty<'tcx>> = (pointees.iter())
+        let mut dropping: Vec<Ty<'tcx>> = (pointees.iter())
             .filter(|&&pointee| !counted.types.contains(&pointee) && runs(&counted, pointee))
             .copied()
             .collect();
+        // An `Rc` made a counted one is counted: its counts are the other's.
+        dropping.extend(
+            (made_others.iter())
+                .filter(|(from, to)| counted.types.contains(to) && !counted.types.contains(from))
+                .map(|&(from, _)| from),
+        );
         if dropping.is_empty() {
             break;
         }

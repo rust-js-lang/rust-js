@@ -2474,10 +2474,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("a `{source}` as a `{target}`")));
             }
             let dictionary = self.dictionary(tr, span)?;
-            // A counted `Rc`'s, or a `Weak`'s, of one, whose `dyn` is a pair
-            // around the `Rc` (ADR 0320): not yet.
-            if self.counted_rc(target).is_some() || self.weak_of(target).is_some() {
+            // A `Weak`'s of one, whose `dyn` is a pair around it: not yet.
+            if self.weak_of(target).is_some() {
                 return Err(self.unsupported(span, &format!("a counted `{target}`")));
+            }
+            // A counted `Rc`'s (ADR 0320): its cell given the `impl`, as
+            // every owner shares it, and the same `Rc`, its counts theirs.
+            if self.counted_rc(target).is_some() {
+                let rc = match value.reads_same() {
+                    true => value,
+                    false => self.spill("rc", value, out),
+                };
+                let cell = Expr::member(rc.clone(), js::HELD);
+                let given = self.given_impl(cell, (from.type_at(0), Some(tr.def_id)), dictionary, target, span)?;
+                out.push(StmtKind::Expr(given).at(js::Span::NONE));
+                return Ok(rc);
             }
             return self.given_impl(value, (from.type_at(0), Some(tr.def_id)), dictionary, target, span);
         }

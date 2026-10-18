@@ -885,11 +885,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counted-dyn-cell-unrefused",
-    breaks: "a counted `Rc<RefCell<dyn T>>` is given its `impl` on the `Rc`, not refused, and its call fails",
+    breaks: "a `Weak<RefCell<dyn T>>` is made as an `Rc`'s, not refused, and its upgrade fails",
     file: "src/lower/traits.rs",
-    find: "            if self.counted_rc(target).is_some() || self.weak_of(target).is_some() {\n                return Err(",
+    find: "            if self.weak_of(target).is_some() {\n                return Err(",
     replace: "            if false {\n                return Err(",
-    tests: ["test/diagnostics.test.ts", "-t", "a counted Rc of a RefCell of a dyn"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Weak of a RefCell of a dyn"],
   },
   {
     name: "dyn-cell-clash-unchecked",
@@ -1320,5 +1320,17 @@ export const mutations: Mutation[] = [
     find: "        let value = match self.pointee(source).is_unit()\n",
     replace: "        let value = match self.pointee(source).is_unit() && false\n",
     tests: ["test/jsx.test.ts", "-t", "JSX hooks take"],
+  },
+  {
+    "name": "counted-dyn-cell-refused",
+    "breaks": "a counted `Rc<RefCell<C>>` made an `Rc<RefCell<dyn T>>` is refused, though its cell is shared, given its `impl` in place",
+    "file": "src/lower/traits.rs",
+    "find": "            if self.counted_rc(target).is_some() {\n                let rc = match value.reads_same() {\n",
+    "replace": "            if self.counted_rc(target).is_some() {\n                return Err(self.unsupported(span, \"mutant\"));\n                #[allow(unreachable_code)]\n                let rc = match value.reads_same() {\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rc_refcell_dyn_shared"
+    ]
   },
 ];

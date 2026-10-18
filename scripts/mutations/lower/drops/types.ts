@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "dyn-drops-nothing",
     breaks: "a `dyn` of the crate's trait is taken to drop nothing, and what it holds is never dropped",
     file: "src/lower/drops/types.rs",
-    find: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n                match self.may_have_destructors() {\n                    true => Drops::Runs,",
-    replace: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n                match self.may_have_destructors() {\n                    true => Drops::Nothing,",
+    find: "                    true => self.implementors_drop(predicates, walk),\n",
+    replace: "                    true => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
@@ -178,5 +178,17 @@ export const mutations: Mutation[] = [
     find: "        !target.is_ref()\n            && match self.drops(from) {\n",
     replace: "        match self.drops(from) {\n",
     tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
+  },
+  {
+    "name": "dyn-implementors-unread",
+    "breaks": "a `dyn` of the crate's trait drops something wherever a type may, though none of its implementors drops anything, so its `Rc`, and its owner's, are counted, `{ value, strong, weak }`",
+    "file": "src/lower/drops/types.rs",
+    "find": "            if implementor.has_non_region_param() || !matches!(self.drops_in(implementor, walk), Drops::Nothing) {\n",
+    "replace": "            if true {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an Rc of a dyn none of whose implementors drops"
+    ]
   },
 ];

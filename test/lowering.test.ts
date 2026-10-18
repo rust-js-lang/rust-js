@@ -15,6 +15,19 @@ beforeAll(buildReact, 600_000);
 // ADR 0278: a `let mut` nothing sets again, only changed in place, is a
 // `const`, as react.dev's toCommaSeparatedList has `const list = []`; one
 // set again stays a `let`.
+// ADR 0320: a `dyn` of the crate's trait drops what one of its implementors
+// does, so where none drops anything, an `Rc<RefCell<dyn Listener>>` isn't
+// counted though a `Weak` elsewhere counts others: it's the value it points
+// at, `{ value: .. }`, as its owner's `Rc` is.
+test("an Rc of a dyn none of whose implementors drops is its value", () => {
+  const dir = fixture("uncounted-dyn-rc");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/rc_dyn_listeners.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const logger = { value: { seen: [] } };");
+  expect(js).not.toContain("$rcClone(logger)");
+});
+
 test("a variable nothing sets again is a const", async () => {
   const dir = fixture("consts-of-lets");
   writeFileSync(join(dir, "lib.rs"), `pub fn pushed() -> Vec<u32> {

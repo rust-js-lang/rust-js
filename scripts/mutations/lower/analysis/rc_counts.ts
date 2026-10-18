@@ -26,4 +26,16 @@ export const mutations: Mutation[] = [
     replace: "        counted.types.extend(dropping);\n        break;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
   },
+  {
+    "name": "rc-made-counted-uncounted",
+    "breaks": "an `Rc` made a counted `Rc<RefCell<dyn T>>` isn't counted itself: the two disagree on what an `Rc` is, and a method reads what isn't there",
+    "file": "src/lower/analysis/rc_counts.rs",
+    "find": "                .filter(|(from, to)| counted.types.contains(to) && !counted.types.contains(from))\n",
+    "replace": "                .filter(|_| false)\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "rc_dyn_sinks"
+    ]
+  },
 ];

@@ -420,7 +420,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // dictionary has its drop, where a type may have one.
             ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {
                 match self.may_have_destructors() {
-                    true => Drops::Runs,
+                    true => self.implementors_drop(predicates, walk),
                     false => Drops::Nothing,
                 }
             }
@@ -432,6 +432,34 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         }
         walk.reached = walk.reached.min(outer);
         found
+    }
+}
+
+impl<'a, 'tcx> DropQuery<'a, 'tcx> {
+    /// What a `dyn` of the crate's own trait drops: what one of its
+    /// implementors does, each of them known, where nothing else can be
+    /// one, a `dyn Listener` of a `Logger` nothing. Of another crate's
+    /// trait, a library's, whose consumers may implement it, or one a
+    /// generic impl implements, whatever it holds may (ADR 0320).
+    fn implementors_drop(
+        &self,
+        predicates: &'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>,
+        walk: &mut Walk<'tcx>,
+    ) -> Drops<'tcx> {
+        let tcx = self.recognition.tcx;
+        let Some(principal) = predicates
+            .principal_def_id()
+            .filter(|id| id.is_local() && !self.library)
+        else {
+            return Drops::Runs;
+        };
+        for implementation in tcx.all_impls(principal) {
+            let implementor = tcx.type_of(implementation).instantiate_identity().skip_normalization();
+            if implementor.has_non_region_param() || !matches!(self.drops_in(implementor, walk), Drops::Nothing) {
+                return Drops::Runs;
+            }
+        }
+        Drops::Nothing
     }
 }
 

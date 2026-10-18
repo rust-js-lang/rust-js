@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md)
 and [0098](0098-destructors.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended: a shared `Rc<RefCell<dyn T>>`
+is counted as the `Rc` it's made of (below).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), A for an `Rc`
 whose counts aren't read, D for one another crate may share.
@@ -120,3 +121,26 @@ found.)
   recursive drop, compare counts, and show the box.
 - `docs/std-coverage.txt`: `Rc` and `Arc` 11 of 23, `Weak` 5 of 8; the
   rest are raw pointers, uninitialized memory, `pin` and `downcast`.
+
+## Amendment: a shared `Rc<RefCell<dyn T>>`
+
+A listener a bus and its owner both hold, `vec![logger.clone()]` as a
+`Vec<Rc<RefCell<dyn Listener>>>`, was refused wherever any `Rc` was
+counted, a tree's `Weak` parent beside it: a `dyn` was taken to drop
+something wherever any type might, so its `Rc` was counted, and one made
+of another `Rc` was refused. Three rules now:
+
+- **A `dyn` of the crate's trait drops what one of its implementors
+  does**, each of them known where nothing else can implement it: a `dyn
+  Listener` of `Logger`s drops nothing, and its `Rc` is its value, as its
+  owner's is. Of another crate's trait, a library's, or one a generic impl
+  implements, it may drop anything, as before.
+- **An `Rc` made a counted one is counted** (`made_others`), to the fixed
+  point: the two share their counts, `strong_count` 2 of either.
+- **A counted `Rc<RefCell<C>>` made an `Rc<RefCell<dyn T>>`** is the same
+  `Rc`, its cell given the `impl` in place, as ADR 0397 gives an uncounted
+  one's, which its other owners share. A `Weak`'s is still refused.
+
+`rc_dyn_listeners`, `rc_dyn_sinks` and `rc_refcell_dyn_shared` run each
+against native Rust. An `Rc<dyn T>` of a counted `Rc` made elsewhere,
+with no `RefCell`, is still refused: its pair is a value of its own.

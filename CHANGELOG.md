@@ -375,6 +375,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A shared `Rc<RefCell<dyn T>>`**, a listener a bus and its owner both
+  hold, compiles beside a `Weak` elsewhere, and shares its counts with the
+  `Rc` it's made of (ADR 0320).
 - **A `let .. else` is a guard first**, `if (!isValidElement(child)) { ..;
   return; }`, after another one too, or where its `else` does more than
   return (ADR 0432).
