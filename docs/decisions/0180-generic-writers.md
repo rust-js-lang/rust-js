@@ -38,7 +38,7 @@ bound of the crate's own traits is, of `write_str`, `write_char` and
 | `&mut s`, a `String` | `{ value: s }`, taken back after | `$stringWriter`: what's written is added to `value` |
 | `f`, the `Formatter` a `Display` has | `{ value: f }` of its text, taken back after | `$stringWriter` |
 | a writer of the crate's own | itself, in a box | its impl's: its `write_str`, and std's `write_char` and `write_fmt` as that `write_str` |
-| `f` or `&mut s` taken by value, `W = &mut ..` | as above | `$mutStringWriter`, through the box it's given in; a writer of the crate's, its own |
+| `f` or `&mut s` taken by value, `W = &mut ..` | as above | `$mutWriter($stringWriter)`, through the box it's given in; a writer of the crate's, `$mutWriter` of its own (ADR 0454) |
 
 ```js
 function write_two(w, v, Write) {

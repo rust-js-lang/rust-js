@@ -7462,20 +7462,17 @@ export const $stringWriter = {
   },
 };
 
-// A `&mut String` or `&mut Formatter` taken by value, `writer: impl Write`,
-// which std's `impl Write for &mut W` writes through: generic code gives
-// a `&mut` to the writer, whose `value` is the caller's box (ADR 0180).
-export const $mutStringWriter = {
-  write_str(w, s) {
-    w.value.value += s;
-  },
-  write_char(w, c) {
-    w.value.value += c;
-  },
-  write_fmt(w, text) {
-    w.value.value += text;
-  },
-};
+// A writer's dictionary through the box generic code is given a `&mut`
+// to it in, `W = &mut s` taken by value, `writer: impl Write`, which std's
+// `impl Write for &mut W` writes through: the writer's own, of what's in
+// the box, `$mutWriter($stringWriter)` of a `String` (ADRs 0180, 0454).
+export function $mutWriter(writer) {
+  return {
+    write_str: (w, s) => writer.write_str(w.value, s),
+    write_char: (w, c) => writer.write_char(w.value, c),
+    write_fmt: (w, text) => writer.write_fmt(w.value, text),
+  };
+}
 
 // `a.powf(b)`, as Rust's is, IEEE's `pow`: 1 of a base of 1 to any power, a
 // NaN's too, and of -1 to an infinite one, where JS's `**` gives NaN.

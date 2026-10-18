@@ -2878,24 +2878,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What's called: a trait's method resolved to its impl's, whose
         // parameters say which are boxes, or the crate's trait's own, a
         // dictionary's; not a `dyn`'s, whose pair is its `&mut`, nor std's.
-        let fn_id = match self.tcx.trait_of_assoc(def_id) {
-            None => Some(def_id),
+        let callee = match self.tcx.trait_of_assoc(def_id) {
+            None => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
-                Some((method, _)) => Some(method),
+                Some(method) => Some(method),
                 None if self.is_rust_trait(trait_id) && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) => {
-                    Some(def_id)
+                    Some((def_id, generic_args))
                 }
                 None => None,
             },
+        };
+        let fn_id = callee.map(|(id, _)| id);
+        // Generic code's box of what its caller has as an object, a `D` given
+        // `&mut v` too (ADR 0454).
+        let given_box = |cx: &Self, i: usize| {
+            callee.is_some_and(|(id, args)| {
+                let inputs = cx
+                    .tcx
+                    .fn_sig(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs();
+                inputs
+                    .get(i)
+                    .is_some_and(|&input| cx.boxed_in_call(id, input, args).is_some())
+            })
         };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
             let object = !matches!(value, Value::Ref(_));
             let place = match value {
+                // A shared reference to what generic code has in a box, an
+                // impl's for `&mut T`'s `&self`: a box of it, which nothing
+                // writes through, so nothing's copied back (ADR 0454).
+                Value::Place(object) if given_box(self, i) => {
+                    exprs.push(super::mut_refs::boxed(object));
+                    continue;
+                }
                 Value::Ref(place) => place,
                 // An object given where a box goes, a generic `&mut T`'s: boxed,
                 // and copied back where it's a place.
-                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) => object,
+                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) || given_box(self, i) => {
+                    object
+                }
                 value => {
                     exprs.push(self.value_expr(value, span)?);
                     continue;

@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `&mut` given as a type parameter's value is a box**, as a generic
+  `&mut T`'s is: an `impl Trait for &mut T` used through generic code,
+  std's `impl Write for &mut W` of any writer, and stable_deref_trait's
+  `&mut T`, which compiles (ADR 0454).
 - **`rev()` of a chain over a string's `char_indices()`**, writeable's:
   its items listed and reversed, each callback called from the back
   (ADR 0164).
@@ -446,6 +450,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`f(&mut v)` of a `f<D: Trait>` where `Trait` is implemented for
+  `&mut T`** reads `v`: it threw (ADR 0454).
 - **A clone of a struct whose text or number is changed through a `&mut`
   of it**, `copy[0].0.push('?')`, is a copy: it shared the original's
   parts, which changed with it (ADR 0052).

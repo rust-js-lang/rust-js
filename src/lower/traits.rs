@@ -1408,22 +1408,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `AsRef` of text as a `str`, or of a `Vec`, an array or a slice
         // as a slice: each is the same JS value (ADR 0162).
         // A `String`'s, or a `Formatter`'s, given in a box of its text: what's
-        // written is added to it; of a `&mut` to one taken by value, to the
-        // box the `&mut` given is to (ADR 0180). A `&mut` to an object
-        // writer is the object, as is the `&mut` given to its own methods.
+        // written is added to it (ADR 0180).
         if is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite) {
             let text =
                 |ty: Ty<'tcx>| self.is_lang_adt(ty, LangItem::String) || self.recognition().is_formatter_type(ty);
             if text(ty) {
                 return Ok(Expr::helper("$stringWriter"));
             }
+            // A `&mut` to a writer taken by value, `W = &mut s`, given in a
+            // box (ADR 0454), a generic one's too: its own dictionary,
+            // through the box.
             if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
-                if text(inner) {
-                    return Ok(Expr::helper("$mutStringWriter"));
-                }
-                if self.is_object(inner) {
-                    return self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span);
-                }
+                let writer = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span)?;
+                return Ok(Expr::call_helper("$mutWriter", vec![writer]));
             }
         }
         // std's `Deref` of a `P: Deref` in generic code: what std's `deref`
@@ -1431,6 +1428,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // or text, which are their values (ADR 0394). The crate's own is its
         // impl's.
         if self.tcx.is_lang_item(tr.def_id, LangItem::Deref) && !self.has_user_impl(tr.def_id, ty) {
+            // A `&mut`'s, which generic code is given in a box: what's in it
+            // (ADR 0454).
+            if let ty::Ref(_, _, Mutability::Mut) = ty.kind() {
+                let value = Expr::held(Expr::var("x"));
+                let f = Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
+                return Ok(Expr::object(vec![Prop::Field("deref".into(), f)]));
+            }
             let deref = super::recognition::trait_method(self.tcx, tr.def_id, "deref");
             let function = Ty::new_fn_def(self.tcx, deref, ty::Binder::dummy(tr.args));
             if let Some(known) = self.recognition().classify(deref, tr.args)

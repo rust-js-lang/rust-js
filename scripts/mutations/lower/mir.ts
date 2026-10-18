@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "mir-object-unboxed",
     breaks: "an object given where a generic `&mut T` goes isn't boxed, so the callee reads `value` of it",
     file: "src/lower/mir.rs",
-    find: "                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) => object,\n",
-    replace: "",
+    find: "                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) || given_box(self, i) => {\n",
+    replace: "                Value::Expr(object) if false => {\n",
     tests: ["test/corpus.test.ts","-t","generic_traits|mut_ref_as_generic|generic_mut_ref"],
   },
   {
@@ -2615,5 +2615,13 @@ export const mutations: Mutation[] = [
     find: "            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(_)) {\n",
     replace: "            if false {\n",
     tests: ["test/jsx.test.ts", "-t", "InlineToc"],
+  },
+  {
+    name: "shared-box-unmade",
+    breaks: "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, which it reads as a box",
+    file: "src/lower/mir.rs",
+    find: "                Value::Place(object) if given_box(self, i) => {\n",
+    replace: "                Value::Place(object) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
 ];
