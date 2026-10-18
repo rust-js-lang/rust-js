@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "phantom-debug-unnamed",
     breaks: "`{:?}` of a `PhantomData<u8>` leaves out its type's name",
     file: "src/lower/display.rs",
-    find: "            return Ok(Expr::str(format!(\"PhantomData<{name}>\")));",
-    replace: "            return Ok(Expr::str(format!(\"PhantomData{}\", name.len() * 0)));",
+    find: "Expr::str(\"PhantomData<\"), name, Expr::str(\">\")",
+    replace: "Expr::str(\"PhantomData<\"), Expr::str(\"\"), Expr::str(\">\")",
     tests: ["test/corpus.test.ts","-t","std_odds"],
   },
   {
@@ -515,5 +515,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(join(vec![Expr::str(\"SystemTimeError(\"), duration, Expr::str(\")\")]));",
     replace: "            return Ok(duration);",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
+  },
+  {
+    name: "phantom-debug-unwrapped",
+    breaks: "`{:?}` of a `PhantomData<u8>` is its type's name alone, not `PhantomData<u8>`",
+    file: "src/lower/display.rs",
+    find: "            return Ok(join(vec![Expr::str(\"PhantomData<\"), name, Expr::str(\">\")]));\n",
+    replace: "            return Ok(name);\n",
+    tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
 ];

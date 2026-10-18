@@ -123,4 +123,20 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && let Some(of) = args.types().last()\n",
     tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
   },
+  {
+    name: "phantom-field-unnamed",
+    breaks: "a derived `Debug` of a struct holding a `PhantomData<K>` is given no name of `K`, and refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                for index in phantom_named(tcx, body.thir[source].ty) {\n",
+    replace: "                for index in phantom_named(tcx, body.thir[source].ty).into_iter().take(0) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
+  },
+  {
+    name: "phantom-bound-unnamed",
+    breaks: "`{:?}` of a `PhantomData<T>` written in place is given no name of `T`, and refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                for index in debug_named(tcx, bound) {\n",
+    replace: "                for index in debug_named(tcx, bound).into_iter().take(0) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
+  },
 ];

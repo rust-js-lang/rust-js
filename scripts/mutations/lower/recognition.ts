@@ -1962,4 +1962,12 @@ export const mutations: Mutation[] = [
     replace: "            \"get_ref\" if is_poison_error(owner) => Std::PoisonData,\n",
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
   },
+  {
+    name: "phantom-named-shallow",
+    breaks: "a struct of the crate's holding a `PhantomData<K>`, `{:?}` of it written in place, asks no name of `K`",
+    file: "src/lower/recognition.rs",
+    find: "        ty::Adt(adt, args) if adt.did().is_local() => {\n",
+    replace: "        ty::Adt(adt, args) if adt.did().is_local() && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
+  },
 ];

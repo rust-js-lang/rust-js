@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`{:?}` of a `PhantomData` of a type parameter**, a generic struct's
+  derived `Debug`: `PhantomData<` and the name its caller gives (ADR 0452).
 - **std's `Deref` of a guard in a dictionary**, `Ref<T>`'s and `RefMut<T>`'s
   as stable_deref_trait's `StableDeref` takes them: `(x) => x.value`
   (ADR 0451).

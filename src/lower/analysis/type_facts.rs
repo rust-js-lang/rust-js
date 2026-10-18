@@ -2,7 +2,10 @@
 //! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, which a
 //! caller's type answers.
 
-use crate::lower::recognition::{Recognition, TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_facts};
+use crate::lower::recognition::{
+    Recognition, TypeFact, bound_by_any, debug_named, phantom_named, pointer_target, points_at_dyn_any,
+    points_at_dyn_debug, type_facts,
+};
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -62,6 +65,20 @@ pub(super) fn type_fact_params<'tcx>(
                 && !bound_by_any(tcx, caller, param.index)
             {
                 asked.insert((caller, param.index, TypeFact::Id));
+                continue;
+            }
+            // A `PhantomData<K>` made a `dyn Debug`, a derived `Debug`'s
+            // field, shows `K`'s name (ADR 0452).
+            if let ExprKind::PointerCoercion {
+                cast: PointerCoercion::Unsize,
+                source,
+                ..
+            } = expr.kind
+                && points_at_dyn_debug(tcx, expr.ty)
+            {
+                for index in phantom_named(tcx, body.thir[source].ty) {
+                    asked.insert((caller, index, TypeFact::Name));
+                }
                 continue;
             }
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
@@ -124,6 +141,10 @@ pub(super) fn type_fact_params<'tcx>(
                 let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, bound) else {
                     continue;
                 };
+                // A `Debug` of a `PhantomData<K>`, `{:?}`'s, shows `K`'s name.
+                for index in debug_named(tcx, bound) {
+                    asked.insert((caller, index, TypeFact::Name));
+                }
                 let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
                     continue;
                 };

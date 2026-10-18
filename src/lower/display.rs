@@ -1129,16 +1129,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.range_kind(ty).is_some() {
             return self.range_debug(value, ty, span, pretty);
         }
-        // `PhantomData<u8>`, its type's name as `type_name` gives it (ADR 0132).
+        // `PhantomData<u8>`, its type's name as `type_name` gives it (ADR
+        // 0132); of a type parameter, the name its caller gives (ADR 0452).
         if let ty::Adt(_, args) = ty.kind()
             && self.is_lang_adt(ty, LangItem::PhantomData)
-            && !args.type_at(0).has_param()
         {
-            let of = self
-                .tcx
-                .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(args.type_at(0)));
-            let name = rustc_const_eval::util::type_name(self.tcx, of);
-            return Ok(Expr::str(format!("PhantomData<{name}>")));
+            let name = self.type_fact_value(args.type_at(0), super::recognition::TypeFact::Name, span)?;
+            return Ok(join(vec![Expr::str("PhantomData<"), name, Expr::str(">")]));
         }
         match ty.kind() {
             // A constant is known: `Some(1.0)` is `"Some(1.0)"`, with no test.

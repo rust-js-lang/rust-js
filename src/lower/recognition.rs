@@ -4992,6 +4992,54 @@ pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
 }
 
+/// The type parameters whose names `{:?}` of `ty` shows, each a
+/// `PhantomData<K>`'s, `PhantomData<{type_name::<K>()}>` (ADR 0452), in it
+/// or a struct of the crate's it holds, through what points at it.
+pub(crate) fn phantom_named<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<u32> {
+    let mut found = Vec::new();
+    phantom_named_in(tcx, pointer_target(tcx, ty), &mut Vec::new(), &mut found);
+    found
+}
+
+/// `phantom_named` of a bound's type, where it's `Debug`'s: what `{:?}`
+/// given that bound shows.
+pub(crate) fn debug_named<'tcx>(tcx: TyCtxt<'tcx>, bound: ty::TraitRef<'tcx>) -> Vec<u32> {
+    match tcx.is_diagnostic_item(Symbol::intern("Debug"), bound.def_id) {
+        true => phantom_named(tcx, bound.self_ty()),
+        false => Vec::new(),
+    }
+}
+
+fn phantom_named_in<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>, found: &mut Vec<u32>) {
+    let ty = ty.peel_refs();
+    if seen.contains(&ty) {
+        return;
+    }
+    seen.push(ty);
+    match ty.kind() {
+        ty::Adt(adt, args) if adt.is_phantom_data() => {
+            if let ty::Param(param) = args.type_at(0).kind() {
+                found.push(param.index);
+            }
+        }
+        ty::Adt(adt, args) if adt.did().is_local() => {
+            for field in adt.all_fields() {
+                phantom_named_in(tcx, field.ty(tcx, args).skip_normalization(), seen, found);
+            }
+        }
+        ty::Adt(_, args) => args.types().for_each(|t| phantom_named_in(tcx, t, seen, found)),
+        ty::Tuple(items) => items.iter().for_each(|t| phantom_named_in(tcx, t, seen, found)),
+        ty::Array(item, _) | ty::Slice(item) => phantom_named_in(tcx, *item, seen, found),
+        _ => {}
+    }
+}
+
+/// Does `ty` point at a `dyn Debug`, as a derived `Debug` gives each field?
+pub(crate) fn points_at_dyn_debug<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..)
+        if traits.principal_def_id().is_some_and(|id| tcx.is_diagnostic_item(Symbol::intern("Debug"), id)))
+}
+
 /// Does `owner` bound its type parameter `index` by `Any` (ADR 0331)?
 pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
     (tcx.clauses_of(owner).clauses.iter())
