@@ -10451,15 +10451,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_range_text(&self, replacement: &str) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setRangeText)
-    #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_range_text_with_start_and_end(&self, replacement: &str, start: u32, end: u32, selection_mode: Option<&str>) {
+    pub fn set_range_text(&self, replacement: &str, start: Option<u32>, end: Option<u32>, selection_mode: Option<&str>) {
         unreachable!()
     }
 
@@ -11311,15 +11303,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/remove)
-    #[cfg_attr(rust_js, rust_js::link_name = "remove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove_with_index(&self, index: i32) {
+    pub fn remove(&self, index: Option<i32>) {
         unreachable!()
     }
 
@@ -11844,15 +11828,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_range_text(&self, replacement: &str) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setRangeText)
-    #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_range_text_with_start_and_end(&self, replacement: &str, start: u32, end: u32, selection_mode: Option<&str>) {
+    pub fn set_range_text(&self, replacement: &str, start: Option<u32>, end: Option<u32>, selection_mode: Option<&str>) {
         unreachable!()
     }
 
@@ -18654,15 +18630,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn alert(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
-    #[cfg_attr(rust_js, rust_js::link_name = "alert")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn alert_with_message(&self, message: &str) {
+    pub fn alert(&self, message: Option<&str>) {
         unreachable!()
     }
 
@@ -43240,7 +43208,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disconnect(&self) {
+    pub fn disconnect(&self, output: Option<u32>) {
         unreachable!()
     }
 
@@ -43248,7 +43216,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disconnect_with_output(&self, output: u32) {
+    pub fn disconnect_with_destination_node(&self, destination_node: &AudioNode, output: Option<u32>, input: Option<u32>) {
         unreachable!()
     }
 
@@ -43256,39 +43224,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disconnect_with_destination_node(&self, destination_node: &AudioNode) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
-    #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disconnect_with_destination_node_and_output(&self, destination_node: &AudioNode, output: u32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
-    #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disconnect_with_destination_node_and_output_and_input(&self, destination_node: &AudioNode, output: u32, input: u32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
-    #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disconnect_with_destination_param(&self, destination_param: &AudioParam) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
-    #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disconnect_with_destination_param_and_output(&self, destination_param: &AudioParam, output: u32) {
+    pub fn disconnect_with_destination_param(&self, destination_param: &AudioParam, output: Option<u32>) {
         unreachable!()
     }
 
@@ -49073,15 +49009,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/stroke)
-    #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn stroke_with_path(&self, path: &Path2D) {
+    pub fn stroke(&self, path: Option<&Path2D>) {
         unreachable!()
     }
 
@@ -49177,15 +49105,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawImage)
-    #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn draw_image_with_dw_and_dh(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: f64, dh: f64) {
+    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
     }
 
@@ -49226,15 +49146,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/putImageData)
-    #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn put_image_data_with_dirty_x_and_dirty_y_and_dirty_width_and_dirty_height(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: i32, dirty_y: i32, dirty_width: i32, dirty_height: i32) {
+    pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: Option<i32>, dirty_y: Option<i32>, dirty_width: Option<i32>, dirty_height: Option<i32>) {
         unreachable!()
     }
 
@@ -66908,15 +66820,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/stroke)
-    #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn stroke_with_path(&self, path: &Path2D) {
+    pub fn stroke(&self, path: Option<&Path2D>) {
         unreachable!()
     }
 
@@ -66996,15 +66900,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/drawImage)
-    #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn draw_image_with_dw_and_dh(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: f64, dh: f64) {
+    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
     }
 
@@ -67045,15 +66941,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/putImageData)
-    #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn put_image_data_with_dirty_x_and_dirty_y_and_dirty_width_and_dirty_height(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: i32, dirty_y: i32, dirty_width: i32, dirty_height: i32) {
+    pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: Option<i32>, dirty_y: Option<i32>, dirty_width: Option<i32>, dirty_height: Option<i32>) {
         unreachable!()
     }
 
@@ -71219,7 +71107,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "setLocalDescription")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>) -> Promise<()> {
+    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71251,7 +71139,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "setRemoteDescription")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit) -> Promise<()> {
+    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71283,7 +71171,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "addIceCandidate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>) -> Promise<()> {
+    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71486,35 +71374,11 @@ impl RTCPeerConnection {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setLocalDescription)
-    #[cfg_attr(rust_js, rust_js::link_name = "setLocalDescription")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_local_description_with_description_and_success_callback_and_failure_callback(&self, description: RTCLocalSessionDescriptionInit<'_>, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createAnswer)
     #[cfg_attr(rust_js, rust_js::link_name = "createAnswer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_answer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setRemoteDescription)
-    #[cfg_attr(rust_js, rust_js::link_name = "setRemoteDescription")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_remote_description_with_success_callback_and_failure_callback(&self, description: RTCSessionDescriptionInit, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addIceCandidate)
-    #[cfg_attr(rust_js, rust_js::link_name = "addIceCandidate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn add_ice_candidate_with_candidate_and_success_callback_and_failure_callback(&self, candidate: RTCIceCandidateInit, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()> {
         unreachable!()
     }
 
@@ -82885,15 +82749,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
-    #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn tex_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83781,7 +83637,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView) {
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView, dst_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83790,14 +83646,6 @@ impl WebGL2RenderingContext {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_pixels_with_f64(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, offset: f64) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
-    #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn read_pixels_with_dst_offset(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView, dst_offset: f64) {
         unreachable!()
     }
 
@@ -86917,15 +86765,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open(&self, method: &str, url: &str) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/open)
-    #[cfg_attr(rust_js, rust_js::link_name = "open")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn open_with_async(&self, method: &str, url: &str, r#async: bool, username: Option<&str>, password: Option<&str>) {
+    pub fn open(&self, method: &str, url: &str, r#async: Option<bool>, username: Option<&str>, password: Option<&str>) {
         unreachable!()
     }
 
@@ -87962,15 +87802,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn alert() {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
-    #[cfg_attr(rust_js, rust_js::link_name = "alert")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn alert_with_message(message: &str) {
+    pub fn alert(message: Option<&str>) {
         unreachable!()
     }
 
@@ -88886,6 +88718,13 @@ pub struct RTCIceCandidateInit {
     pub username_fragment: Option<Option<String>>,
 }
 
+/// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCSessionDescriptionInit {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub r#type: String,
+    pub sdp: Option<String>,
+}
+
 /// The `RTCConfiguration` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct RTCConfiguration {
@@ -88907,13 +88746,6 @@ pub struct RTCIceServer {
     pub urls: StrOrList<'static>,
     pub username: Option<String>,
     pub credential: Option<String>,
-}
-
-/// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
-pub struct RTCSessionDescriptionInit {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub r#type: String,
-    pub sdp: Option<String>,
 }
 
 /// The `RTCRtpEncodingParameters` dictionary: a JS object with these fields, a `None` one not there.

@@ -758,7 +758,38 @@ function mdn(iface: string, member?: string) {
 /** Each interface's constants, by name: their Rust. */
 const constantsOf = new Map<string, Map<string, string>>();
 
-function functionsOf(i: Interface): Fn[] {
+/** `i`'s members, an overload whose arguments begin another's folded into
+ * it, the other's later ones optional: `alert()` and `alert(message)` are
+ * `alert(message?)`, as TypeScript declares it (ADR 0443). */
+function foldedOverloads(i: Interface): Interface {
+  // Alike where Rust takes them alike: one name, one Rust type.
+  const key = (a: Arg) => JSON.stringify([a.name, paramType(a.idlType) ?? a.idlType, a.variadic]);
+  const members = [...i.members];
+  for (let a = 0; a < members.length; a++) {
+    const shorter = members[a].member;
+    if (shorter.type !== "operation" || !shorter.name) continue;
+    for (let b = a + 1; b < members.length; b++) {
+      const longer = members[b].member;
+      const short = shorter.arguments ?? [];
+      const long = longer.arguments ?? [];
+      if (longer.type !== "operation" || longer.name !== shorter.name || longer.special !== shorter.special) continue;
+      if (long.length <= short.length || !short.every((arg, j) => key(arg) === key(long[j]))) continue;
+      if (JSON.stringify(longer.idlType) !== JSON.stringify(shorter.idlType)) continue;
+      // webidl2's fields are getters, so each is read, not spread.
+      const arg = (a: Arg, optional: boolean): Arg => ({ name: a.name, idlType: a.idlType, optional, variadic: a.variadic });
+      const args = [...short.map((a) => arg(a, a.optional)), ...long.slice(short.length).map((a) => arg(a, true))];
+      const { type, name, special, idlType, extAttrs } = shorter;
+      members[a] = { ...members[a], member: { type, name, special, idlType, extAttrs, arguments: args } as Member };
+      members.splice(b, 1);
+      a--;
+      break;
+    }
+  }
+  return { ...i, members };
+}
+
+function functionsOf(declared: Interface): Fn[] {
+  const i = foldedOverloads(declared);
   const fns: Fn[] = [];
   // A namespace's functions are called on it: `WebAssembly.compile(bytes)`.
   const self = i.isNamespace ? [] : [`this: &${typeName(i.name)}`];
@@ -949,7 +980,7 @@ function functionsOf(i: Interface): Fn[] {
       const doc = [`[MDN](${mdn(i.name, m.name)})`];
       // A later overload is named, as web-sys does, after the required
       // arguments that set it apart from the first: by name where the first
-      // has none there (`set_range_text_with_start_and_end`), by type where
+      // has none there (`scroll_to_with_x_and_y`), by type where
       // the types differ (`instantiate_with_web_assembly_module`).
       const first = i.members.slice(0, index).find(({ member: o }) => o.type === "operation" && o.name === m.name && o.special !== "static");
       const firstRequired = (first?.member.arguments ?? []).filter((a) => !a.optional);
@@ -958,7 +989,7 @@ function functionsOf(i: Interface): Fn[] {
       const lead = !first
         ? []
         : required.flatMap((a, j) =>
-            // A word of a name, `async`, not a parameter's `r#async`: `open_with_async`.
+            // A word of a name, `type`, not a parameter's `r#type`.
             !firstRequired[j] ? [snakeWords(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
