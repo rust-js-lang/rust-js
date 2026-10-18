@@ -469,6 +469,36 @@ pub fn both() -> u32 {
   expect(lib.both()).toBe(3);
 });
 
+// A default function a module holds two bindings of, signatures that
+// differ in a parameter (ADR 0443), is named for the file it's from,
+// `scale`, as no one function's name is it, nor a class's whose statics
+// the module holds.
+test("a default function bound twice is named for its file", async () => {
+  const dir = fixture("default-overloads");
+  writeFileSync(join(dir, "scale.js"), "export default function scale(x, by) {\n  return typeof x === \"string\" ? x.repeat(by) : x * by;\n}\n");
+  writeFileSync(join(dir, "lib.rs"), `mod sizes {
+    #[cfg_attr(rust_js, rust_js::link_name = "./scale.js#default")]
+    pub fn scaled(x: f64, by: f64) -> f64 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./scale.js#default")]
+    pub fn repeated(x: &str, by: f64) -> String {
+        unreachable!()
+    }
+}
+
+pub fn both() -> String {
+    format!("{} {}", sizes::scaled(2.0, 3.0), sizes::repeated("ab", 2.0))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import scale from "./scale.js";');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.both()).toBe("6 abab");
+});
+
 // A module's `pub use` of another module's function is a JS re-export,
 // `export { helper } from "./inner.js"`, as react.dev's Challenges/index
 // re-exports `Challenges` (ADR 0240).

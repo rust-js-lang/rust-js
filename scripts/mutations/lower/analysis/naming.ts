@@ -36,11 +36,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-function-named-as-class",
-    breaks: "next/dynamic's default, a function, held in `mod dynamic`, is `Dynamic`",
+    breaks: "a default function a module holds two bindings of, in `mod sizes`, is named as a class whose statics it holds, `Sizes`, not for its file",
     file: "src/lower/analysis/naming.rs",
     find: "                .is_some_and(|held| !held.iter().any(|id| itself(&id)));",
     replace: "                .is_some_and(|held| !held.is_empty());",
-    tests: ["test/next.test.ts", "-t", "build builds"],
+    tests: ["test/modules.test.ts", "-t", "default function bound twice"],
   },
   {
     name: "import-named-around-every-module",
