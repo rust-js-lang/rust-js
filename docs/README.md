@@ -516,6 +516,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](decisions/0447-the-clock.md)
+- [0448 A `transmute` to or from a `#[repr(transparent)]` struct is it made or read](decisions/0448-a-transparent-struct-is-its-field.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

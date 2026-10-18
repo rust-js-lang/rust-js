@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `transmute` between a `#[repr(transparent)]` struct and its field**,
+  by value or through a `&`, as uuid's `from_bytes_ref` does: the struct
+  made, `[bytes]`, or its field read, `uuid[0]` (ADR 0448).
 - **The clock**: `SystemTime::now()` and `Instant::now()`, the time between
   two, `elapsed()`, a `Duration` added or taken, and a `SystemTimeError`,
   each its nanoseconds, a BigInt, as a `Duration` is (ADR 0447).
