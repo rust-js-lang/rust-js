@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { root, target, run, buildReact, compiler } from "./support";
 
 test("copied trait defaults map to their original source file", async () => {
@@ -42,8 +42,9 @@ test("source map points from fib.js back into fib.rs", async () => {
   const segments = decodeMappings(map.mappings);
 
   // The map sits in target/, so it names the source relative to there,
-  // and embeds the Rust source so a debugger can show it.
-  expect(map.sources).toEqual(["../examples/fib.rs"]);
+  // wherever that is, a mutation's own too, and embeds the Rust source so
+  // a debugger can show it.
+  expect(map.sources).toEqual([relative(target, join(root, "examples/fib.rs"))]);
   expect(map.sourcesContent).toEqual([rustSource]);
 
   // Nothing in the header or runtime helpers maps to Rust.
