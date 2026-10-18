@@ -28,4 +28,16 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
+  {
+    "name": "mut-get-impure",
+    "breaks": "a handle on a map's value nothing reads is still made, `$mutGet(m, k);`",
+    "file": "src/runtime.rs",
+    "find": "    \"$mutGet\",\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "and_modify then or_insert"
+    ]
+  },
 ];

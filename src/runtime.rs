@@ -341,6 +341,7 @@ const PURE: &[&str] = &[
     "$debugDuration",
     "$durationChecked",
     "$someValue",
+    "$mutGet",
     "$jsonInt",
     "$jsonFloat",
     "$jsonNumberOfF64",

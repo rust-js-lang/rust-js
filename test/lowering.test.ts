@@ -28,6 +28,20 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   expect(js).not.toContain("$rcClone(logger)");
 });
 
+// ADR 0345: an entry's `and_modify(f)` is a statement, and `or_insert`
+// after it is of the map and the key, as of an entry alone; a `&mut` it
+// gives that nothing reads isn't made.
+test("an entry's and_modify then or_insert reads its map and key", () => {
+  const dir = fixture("entry-and-modify");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/entry_and_modify.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('$andModify($entry(inventory, "apple"), (e) => {');
+  expect(js).toContain('$orInsert(inventory, "apple", [0, 0]);');
+  expect(js).not.toContain("entry._0");
+  expect(js).not.toContain("$mutGet(counts, c);");
+});
+
 test("a variable nothing sets again is a const", async () => {
   const dir = fixture("consts-of-lets");
   writeFileSync(join(dir, "lib.rs"), `pub fn pushed() -> Vec<u32> {

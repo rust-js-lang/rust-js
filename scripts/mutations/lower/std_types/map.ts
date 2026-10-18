@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "vacant-insert-not-boxed",
     breaks: "a `VacantEntry`'s `insert` of text asks no handle",
     file: "src/lower/std_types/map.rs",
-    find: "                    list.push(Expr::bool(true));\n                }\n                map_ops(\"$vacantInsert\", list)",
-    replace: "                }\n                map_ops(\"$vacantInsert\", list)",
+    find: "                    list.push(Expr::bool(true));\n                }\n                let name = match op {\n",
+    replace: "                }\n                let name = match op {\n",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },
   {
@@ -307,4 +307,40 @@ export const mutations: Mutation[] = [
     replace: "            MapOp::Clear if false && values_drop.is_some() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
+  {
+    "name": "and-modify-unknown",
+    "breaks": "an entry's `and_modify` is refused",
+    "file": "src/lower/std_types/map.rs",
+    "find": "        \"and_modify\" if entry => MapOp::AndModify,\n",
+    "replace": "",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "entry_and_modify"
+    ]
+  },
+  {
+    "name": "and-modify-value-unhandled",
+    "breaks": "an entry's `and_modify` of a number gives `f` the number, which its `*n += 1` can't write",
+    "file": "src/lower/std_types/map.rs",
+    "find": "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if types.get(1).is_some_and(|&value| self.is_boxable(value)) {\n",
+    "replace": "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if op != MapOp::AndModify && types.get(1).is_some_and(|&value| self.is_boxable(value)) {\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "entry_and_modify"
+    ]
+  },
+  {
+    "name": "and-modify-entry-kept",
+    "breaks": "`or_insert` after an entry's `and_modify` reads the entry's parts, `entry._0[0]`, not its map and key",
+    "file": "src/lower/std_types/map.rs",
+    "find": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$andModify\") => parts.first(),\n",
+    "replace": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$none\") => parts.first(),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "and_modify then or_insert"
+    ]
+  }
 ];

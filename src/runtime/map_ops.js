@@ -195,6 +195,16 @@ function $entry(m, key) {
   return { TAG: m.has(key) ? "Occupied" : "Vacant", _0: [m, key] };
 }
 
+// An entry's `and_modify(f)`: `f` given its value where its key is there,
+// a handle on a number or text (`handle`), and the entry, for `or_insert`.
+function $andModify(entry, f, handle) {
+  if (entry.TAG === "Occupied") {
+    const [m, key] = entry._0;
+    f(handle ? $mutGet(m, key) : m.get(key));
+  }
+  return entry;
+}
+
 // A `VacantEntry`'s `insert(v)`: `v` put in, and a `&mut` to it, a handle
 // on a number or text (`handle`).
 function $vacantInsert([m, key], value, handle) {

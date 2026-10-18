@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0059](0059-hashmap.md) and
 [0121](0121-value-keys.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended: an entry's `and_modify`
+(below).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), B for a `HashMap`'s
 order.
@@ -104,3 +105,24 @@ its keys' `cmp`.**
   kind of `Bound` at each end, of a map, a set and `range_mut`, a pair
   given and one made where it's used, and `btree_range_excluded_panic`
   std's panic. rustc's `sync-send-iterators-in-libcollections.rs` passes.
+
+## Amendment: an entry's `and_modify`
+
+`m.entry(k).and_modify(f).or_insert(v)`, the way to count or update a
+map's value, was refused. It's `$andModify(entry, f)`: `f` given the
+value where the key is there, a handle on a number or text as `insert`
+of a `VacantEntry` gives (ADR 0152), and the entry back. Before
+`or_insert`, `or_insert_with` or `or_default`, it's a statement, and they
+are of the map and the key, as of an entry alone:
+
+```js
+$andModify($entry(counts, c), (n) => {
+  n.value = (n.value + 1) >>> 0;
+}, true);
+$orInsert(counts, c, 1);
+```
+
+A handle on a map's value nothing reads, of an `or_insert` whose `&mut`
+goes unused, isn't made: `$mutGet` only makes a value of what it's
+given, one of the runtime's pure helpers. `entry_and_modify` runs it
+against native Rust, of a `HashMap` and a `BTreeMap`.

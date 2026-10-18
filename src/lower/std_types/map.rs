@@ -89,6 +89,9 @@ pub(in crate::lower) enum MapOp {
     EntryInsert,
     /// A `VacantEntry`'s `insert(v)`: a `&mut` to what it put in.
     VacantInsert,
+    /// An entry's `and_modify(f)`: `f` given its value where its key is
+    /// there, a handle on a number or text; the entry.
+    AndModify,
     /// Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
     EntryRemove {
         entry: bool,
@@ -217,6 +220,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "remove" | "remove_entry" if occupied => MapOp::EntryRemove {
             entry: name == "remove_entry",
         },
+        "and_modify" if entry => MapOp::AndModify,
         "or_insert" if entry => MapOp::OrInsert,
         "or_insert_with" if entry => MapOp::OrInsertWith,
         "or_default" if entry => MapOp::OrDefault,
@@ -233,6 +237,27 @@ pub(in crate::lower) enum Part {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// An entry, `or_insert`'s and the rest's: of `and_modify(f)` first,
+    /// `$andModify($entry(m, k), f)`, that a statement, and the entry it
+    /// was of, whose map and key they're of then (ADR 0325).
+    pub(in crate::lower) fn after_and_modify(&self, entry: Expr, span: Span, out: &mut Vec<Stmt>) -> Expr {
+        let of = match &entry.kind {
+            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some("$andModify") => parts.first(),
+            _ => None,
+        };
+        match of {
+            Some(of)
+                if matches!(&of.kind, js::ExprKind::Call(inner, keyed)
+                    if inner.helper_name() == Some("$entry") && keyed.iter().all(Expr::reads_same)) =>
+            {
+                let of = of.clone();
+                out.push(StmtKind::Expr(entry).at(self.js_span(span)));
+                of
+            }
+            _ => entry,
+        }
+    }
+
     /// A `BTreeMap` or `BTreeSet`, whose order is its keys' (ADR 0059).
     pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
@@ -534,12 +559,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
             // enum is (ADR 0345).
             MapOp::Entry => map_ops("$entry", vec![arg(), arg()]),
-            MapOp::VacantInsert => {
+            MapOp::VacantInsert | MapOp::AndModify => {
                 let mut list = vec![arg(), arg()];
                 if types.get(1).is_some_and(|&value| self.is_boxable(value)) {
                     list.push(Expr::bool(true));
                 }
-                map_ops("$vacantInsert", list)
+                let name = match op {
+                    MapOp::AndModify => "$andModify",
+                    _ => "$vacantInsert",
+                };
+                map_ops(name, list)
             }
             MapOp::EndEntry { last } => {
                 let cmp = self.cmp_fn(types[0], false, span)?;

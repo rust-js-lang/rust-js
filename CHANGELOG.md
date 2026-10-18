@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A map entry's `and_modify(f)`**, `m.entry(k).and_modify(|n| *n += 1)
+  .or_insert(1)`, of a `HashMap` and a `BTreeMap` (ADR 0325).
 - **`rev()` of a lazy chain over a slice**, `v.iter().map(f).rev()`,
   `.filter(p).rev()` and `.enumerate().rev()`: `v.toReversed().map(f)`, each
   closure called in the order Rust calls it (ADR 0164).

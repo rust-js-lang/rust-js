@@ -5528,7 +5528,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?
                 .into_iter();
-            let entry = exprs.next().expect("the entry");
+            let entry = self.after_and_modify(exprs.next().expect("the entry"), span, out);
             let (map, key) = match entry.kind {
                 js::ExprKind::Call(callee, parts) if parts.len() == 2 && callee.helper_name() == Some("$entry") => {
                     let [map, key]: [Expr; 2] = parts.try_into().ok().expect("two");

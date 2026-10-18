@@ -170,4 +170,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
+  {
+    "name": "and-modify-vacant",
+    "breaks": "an entry's `and_modify(f)` calls `f` where its key isn't there",
+    "file": "src/runtime/map_ops.js",
+    "find": "  if (entry.TAG === \"Occupied\") {\n    const [m, key] = entry._0;\n",
+    "replace": "  if (true) {\n    const [m, key] = entry._0;\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "entry_and_modify"
+    ]
+  },
 ];
