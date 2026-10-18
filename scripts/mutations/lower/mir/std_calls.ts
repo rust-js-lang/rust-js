@@ -107,14 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
-    name: "mir-as-slice-whole",
-    breaks: "`it.as_slice()` of a stepped `$iter` is all its items",
-    file: "src/lower/mir/std_calls.rs",
-    find: "vec![Expr::member(it.clone(), \"at\"), Expr::member(it, \"end\")],",
-    replace: "vec![Expr::int(0), Expr::member(it, \"end\")],",
-    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
-  },
-  {
     name: "mir-default-size-hint-one",
     breaks: "std's `size_hint()` of an iterator of the crate's is `(1, None)`",
     file: "src/lower/mir/std_calls.rs",

@@ -1077,6 +1077,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(inner) = self.recognition().wrapping_of(ty) {
             return self.debug_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
         }
+        // A slice's iterator, `Iter([2, 3])`: what's left of it, as its
+        // `as_slice()` gives it (ADR 0453).
+        if self.is_std_type(ty, StdItem::SliceIter) {
+            if pretty.known() != Some(false) {
+                return Err(self.unsupported(span, "`{:#?}` of a slice's iterator"));
+            }
+            let item = self.iterator_item(ty).expect("an iterator's item").peel_refs();
+            // Read twice, `it.items.slice(it.at, it.end)`: in place where it
+            // reads the same, or is `$iter(v)`, whose rest is `v`; else as an
+            // arrow's parameter, which tidy makes a `const`.
+            let in_place = value.reads_same() || super::iterators::fresh_iter_source(&value).is_some();
+            let it = match in_place {
+                true => value.clone(),
+                false => Expr::var("it"),
+            };
+            let left = self.stepped_left(it, ty, false, span)?;
+            let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item), span, pretty)?;
+            let shown = join(vec![Expr::str("Iter("), shown, Expr::str(")")]);
+            return Ok(match in_place {
+                true => shown,
+                false => Expr::call(
+                    Expr::arrow(
+                        vec!["it".into()],
+                        vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                    ),
+                    vec![value],
+                ),
+            });
+        }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));

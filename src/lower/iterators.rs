@@ -196,17 +196,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `owns` that need one (ADR 0181). Of one just made, `$iter(items)`,
     /// nothing's stepped: `items`, which Rust lends it or it owns.
     pub(super) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
-        let left = match it.kind {
-            js::ExprKind::Call(callee, mut args) if callee.helper_name() == Some("$iter") && args.len() == 1 => {
-                args.pop().expect("one")
-            }
-            kind => {
-                let it = Expr { kind, ..it };
-                Expr::call(
-                    Expr::member(Expr::member(it.clone(), "items"), "slice"),
-                    vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
-                )
-            }
+        let left = match fresh_iter_source(&it) {
+            Some(items) => items.clone(),
+            None => Expr::call(
+                Expr::member(Expr::member(it.clone(), "items"), "slice"),
+                vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
+            ),
         };
         let item = self.iterator_item(ty).expect("an iterator's item");
         Ok(match owns && self.needs_clone(item) {
@@ -1451,5 +1446,14 @@ pub(super) fn iterated(e: Expr) -> Expr {
             kind,
             span: e.span,
         },
+    }
+}
+
+/// What `it`, an iterator made here of an array, `$iter(v)`, steps: `v`,
+/// all of it left.
+pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
+    match &it.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),
+        _ => None,
     }
 }

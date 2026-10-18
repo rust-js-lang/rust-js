@@ -524,4 +524,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(name);\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
+  {
+    name: "slice-iter-debug-unnamed",
+    breaks: "`{:?}` of a slice's iterator is its items alone, not `Iter([..])`",
+    file: "src/lower/display.rs",
+    find: "            let shown = join(vec![Expr::str(\"Iter(\"), shown, Expr::str(\")\")]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
+  },
+  {
+    name: "slice-iter-debug-read-twice",
+    breaks: "`{:?}` of a slice's iterator a call gives calls it twice, once for its items and once for where it is",
+    file: "src/lower/display.rs",
+    find: "            let in_place = value.reads_same() || super::iterators::fresh_iter_source(&value).is_some();\n",
+    replace: "            let in_place = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
+  },
 ];

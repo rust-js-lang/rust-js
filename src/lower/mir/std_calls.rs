@@ -781,10 +781,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => {
                         let it = if it.reads_same() { it } else { self.spill("it", it, out) };
-                        Expr::call(
-                            Expr::member(Expr::member(it.clone(), "items"), "slice"),
-                            vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
-                        )
+                        self.stepped_left(it, arg_tys[0].peel_refs(), false, span)?
                     }
                 }
             }
