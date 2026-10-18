@@ -378,4 +378,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/jsx.test.ts", "-t", "names a component's prop as JSX"],
   },
+  {
+    name: "thread-local-names-first-only",
+    breaks: "only a `thread_local!`'s first component is allowed its JSX name; a context after it is flagged",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        starts = matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Semi);",
+    replace: "        starts = false;",
+    tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
+  },
+  {
+    name: "thread-local-names-every-static",
+    breaks: "every static of a `thread_local!` that declares a component is allowed a lowercase name, not only its components",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        if starts && named.get(declaration) == Some(&true) {",
+    replace: "        if starts {",
+    tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
+  },
 ];

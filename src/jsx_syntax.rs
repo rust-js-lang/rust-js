@@ -315,6 +315,11 @@ impl Expand<'_> {
             };
             self.item(item, &attrs);
             companions.extend(parser::thread_local_components(self.sess, item, &built));
+            if let Some(tokens) = parser::thread_local_named_as_jsx(self.sess, item, &built)
+                && let ItemKind::MacCall(mac) = &mut item.kind
+            {
+                mac.args.tokens = tokens;
+            }
             if let Some(companion) = parser::component(self.sess, item, &built) {
                 companions.push(companion);
                 // A component is named as JSX names it, capitalized, which

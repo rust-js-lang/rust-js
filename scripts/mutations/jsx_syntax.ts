@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/jsx.test.ts", "-t", "a binding needs no allow"],
   },
+  {
+    name: "thread-local-names-flagged",
+    breaks: "a `thread_local!`'s component, `static IconCopy = memo(..)`, is flagged for its JSX name",
+    file: "src/jsx_syntax.rs",
+    find: "                mac.args.tokens = tokens;\n",
+    replace: "                let _ = (mac, tokens);\n",
+    tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
+  },
 ];

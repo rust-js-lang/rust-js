@@ -6877,10 +6877,30 @@ mod inner {
     pub fn Badge() -> JSX::Element { jsx! { <b>{"!"}</b> } }
 }
 pub fn NotComponent() -> u32 { 1 }
+// A component that's a thread-local's value, a memo of the function it's
+// made of, as \`memo(function Icon() {..})\`, or a context, a tag too.
+thread_local! {
+    pub static Icon: react::MemoExoticComponent<()> = react::memo({
+        fn Icon() -> JSX::Element {
+            jsx! { <i /> }
+        }
+        Icon
+    }, None);
+    pub static ThemeContext: react::Context<&'static str> = react::create_context("light");
+    pub static notConstant: u32 = 1;
+}
+pub fn Themed() -> JSX::Element {
+    jsx! { <ThemeContext value="dark"><Icon /></ThemeContext> }
+}
+pub fn read() -> u32 {
+    notConstant.with(|n| *n)
+}
 `);
   const built = Bun.spawnSync(args, { cwd: dir });
-  const warned = [...built.stderr.toString().matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
-  expect([built.exitCode, warned]).toEqual([0, ["NotComponent"]]);
+  const stderr = built.stderr.toString();
+  const warned = [...stderr.matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
+  const constants = [...stderr.matchAll(/constant `(\w+)` should have an upper case name/g)].map((m) => m[1]);
+  expect([built.exitCode, warned, constants]).toEqual([0, ["NotComponent"], ["notConstant"]]);
 });
 
 // ADR 0440: a binding's body never runs, so its parameters are unread,

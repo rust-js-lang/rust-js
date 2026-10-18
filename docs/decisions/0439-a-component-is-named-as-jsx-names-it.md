@@ -33,6 +33,14 @@ don't.
 
 - **Only a component**: a capitalized function that isn't one,
   `fn NotComponent() -> u32`, is still flagged.
+- **A component a `thread_local!` declares**, a memo or a context, a tag
+  as a function is, `<IconCopy />`, `<TocContext value={..}>`, is named as
+  JSX names it too: the pass gives its `static`
+  `#[allow(non_upper_case_globals, non_snake_case)]`, which reaches the
+  function its value is made of, written in it, as react.dev's
+  `memo(function IconCopy() {..})` is. Another `static` of it,
+  `notConstant`, is still flagged. (Amended: each was flagged, and
+  react.dev's port wrote `#![allow(non_snake_case, non_upper_case_globals)]`.)
 - **In the editor too**, where rust-analyzer checks through rust-js
   (`rust-js-check`, ADR 0222), and in `rust-js build`. A plain `cargo
   check`, which doesn't run rust-js's pass, still warns of each component,

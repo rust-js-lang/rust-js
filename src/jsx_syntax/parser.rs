@@ -920,6 +920,42 @@ pub(super) fn thread_local_components(
         .collect()
 }
 
+/// A `thread_local!`'s tokens, each component it declares, a memo or a
+/// context, given `#[allow(non_upper_case_globals, non_snake_case)]`: it's
+/// named as JSX names it, `IconCopy`, and so is the function its value is
+/// made of, written in it, as `memo(function IconCopy() {..})` is (ADR
+/// 0439). `None` of another item, or of one that declares none.
+pub(super) fn thread_local_named_as_jsx(
+    sess: &Session,
+    item: &ast::Item,
+    built: &HashSet<String>,
+) -> Option<TokenStream> {
+    let declarations = thread_local_declarations(sess, item)?;
+    let named: Vec<bool> = (declarations.iter())
+        .map(|declaration| component(sess, declaration, built).is_some())
+        .collect();
+    let ItemKind::MacCall(mac) = &item.kind else {
+        return None;
+    };
+    if !named.contains(&true) {
+        return None;
+    }
+    // Each declaration starts the macro's tokens, or after a `;` of them.
+    let mut trees = Vec::new();
+    let mut declaration = 0;
+    let mut starts = true;
+    for tree in mac.args.tokens.iter() {
+        if starts && named.get(declaration) == Some(&true) {
+            let allow = "#[allow(non_upper_case_globals, non_snake_case)]".to_string();
+            trees.extend(template(sess, allow, tree.span()).iter().cloned());
+        }
+        starts = matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Semi);
+        declaration += usize::from(starts);
+        trees.push(tree.clone());
+    }
+    Some(TokenStream::new(trees))
+}
+
 /// A `thread_local!`'s declarations, each a `static`; `None` of another item.
 #[allow(clippy::vec_box)]
 fn thread_local_declarations(sess: &Session, item: &ast::Item) -> Option<Vec<Box<ast::Item>>> {
