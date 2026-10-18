@@ -486,6 +486,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         fresh_in(&mut self.names, base)
     }
 
+    /// The names a pattern gives the fields it leaves out, so the rest
+    /// after them holds only the others (ADR 0205), each `_field`: one left
+    /// out is `_` once it's known, as preparation names it.
+    fn left_out(&mut self, keys: &[&str]) -> Vec<String> {
+        (keys.iter())
+            .map(|key| self.fresh(&format!("_{}", camel_case(&crate::names::js_ident(key)))))
+            .collect()
+    }
+
     fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> String {
         let name = self.fresh(&camel_case(name));
         self.locals.vars.insert(

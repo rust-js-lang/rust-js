@@ -1,7 +1,7 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
 use super::recognition::StdItem;
-use super::{FnCx, Num, Shape, bindings, camel_case, js_ident, without_refs};
+use super::{FnCx, Num, Shape, bindings, without_refs};
 use crate::js::{self, Expr};
 use rustc_ast::{LitKind, Mutability};
 
@@ -101,13 +101,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // pattern leaves, `..` or `_`, is named still, `className:
                 // _className`, or the rest would hold it (ADR 0205).
                 if rest.is_some() {
-                    for (i, (key, _)) in fields.iter().enumerate() {
-                        if !super::bindings::is_rest_field(self.tcx, pat.ty, i)
-                            && !named.iter().any(|(k, _, _)| k == key)
-                        {
-                            let unused = self.fresh(&format!("_{}", camel_case(&js_ident(key))));
-                            named.push((key.clone(), js::Pattern::Name(unused), None));
-                        }
+                    let keys: Vec<&str> = (fields.iter().enumerate())
+                        .filter(|&(i, (key, _))| {
+                            !super::bindings::is_rest_field(self.tcx, pat.ty, i)
+                                && !named.iter().any(|(k, _, _)| k == key)
+                        })
+                        .map(|(_, (key, _))| key.as_str())
+                        .collect();
+                    for (key, unused) in keys.iter().zip(self.left_out(&keys)) {
+                        named.push((key.to_string(), js::Pattern::Name(unused), None));
                     }
                 }
                 if let Some(rest) = &rest {

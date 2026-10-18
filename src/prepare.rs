@@ -128,7 +128,7 @@ fn compound(module: &mut js::Module) {
 
 /// A function made readable.
 fn prepared(function: &mut js::Function) {
-    function_body(&mut function.body);
+    function_body(&mut function.params, &mut function.body);
     shadows(&mut function.body, None);
     // A closure's own parameter, shadowed in it: nothing outside it sets one.
     js::each_expr_mut(&mut function.body, &mut |e| {
@@ -192,10 +192,85 @@ fn imported(stmts: &mut [Stmt]) {
     }
 }
 
+/// `const { currentIndex: _currentIndex, ...meta } = ctx;`, the one field
+/// a rest's pattern leaves out, which nothing reads, is `currentIndex: _`,
+/// as a person writes it (ADR 0205); where it leaves out more, or its block
+/// declares a `_` already, each keeps its name. A parameter's too
+/// (`left_out_params`).
+fn left_out(body: &mut [Stmt]) {
+    for i in 0..body.len() {
+        let StmtKind::Destructure {
+            pattern: js::Pattern::Object(fields, Some(_)),
+            ..
+        } = &body[i].kind
+        else {
+            continue;
+        };
+        let Some(k) = lone_left_out(fields, |name| js::mentions_in(&body[i + 1..], name) > 0) else {
+            continue;
+        };
+        if declares_underscore(body) {
+            continue;
+        }
+        if let StmtKind::Destructure {
+            pattern: js::Pattern::Object(fields, _),
+            ..
+        } = &mut body[i].kind
+        {
+            fields[k].1 = js::Pattern::Name("_".to_string());
+        }
+    }
+}
+
+/// A function's parameters, as `left_out` a body's patterns:
+/// `function Plain({ className: _, ...props })`.
+fn left_out_params(params: &mut [js::Pattern], body: &[Stmt]) {
+    for i in 0..params.len() {
+        let js::Pattern::Object(fields, Some(_)) = &params[i] else {
+            continue;
+        };
+        let Some(k) = lone_left_out(fields, |name| js::mentions_in(body, name) > 0) else {
+            continue;
+        };
+        if declares_underscore(body) || params.iter().any(|p| p.names().contains(&"_")) {
+            continue;
+        }
+        if let js::Pattern::Object(fields, _) = &mut params[i] {
+            fields[k].1 = js::Pattern::Name("_".to_string());
+        }
+    }
+}
+
+/// The one field of an object pattern with a rest that it leaves out, a
+/// `_name` nothing reads, as `read` says; `None` of none, or of more.
+fn lone_left_out(fields: &[(String, js::Pattern, Option<Expr>)], read: impl Fn(&str) -> bool) -> Option<usize> {
+    let unread: Vec<usize> = (fields.iter().enumerate())
+        .filter(
+            |(_, (_, bound, _))| matches!(bound, js::Pattern::Name(n) if n.starts_with('_') && n != "_" && !read(n)),
+        )
+        .map(|(k, _)| k)
+        .collect();
+    match unread[..] {
+        [k] => Some(k),
+        _ => None,
+    }
+}
+
+/// Whether `body` declares a `_` of its own, where another would clash.
+fn declares_underscore(body: &[Stmt]) -> bool {
+    body.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => name == "_",
+        StmtKind::Destructure { pattern, .. } => pattern.names().contains(&"_"),
+        _ => false,
+    })
+}
+
 /// A function's body, a closure's too: its last `return;` isn't written, as
-/// it falls off its end there, as a person ends one (ADR 0299).
-fn function_body(body: &mut Vec<Stmt>) {
+/// it falls off its end there, as a person ends one (ADR 0299); and its
+/// parameters' patterns, as its body's (`left_out_params`).
+fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     block(body);
+    left_out_params(params, body);
     if body
         .last()
         .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))
@@ -206,6 +281,7 @@ fn function_body(body: &mut Vec<Stmt>) {
 
 fn block(body: &mut Vec<Stmt>) {
     try_catches(body);
+    left_out(body);
     for stmt in body.iter_mut() {
         if let Some(coalesced) = coalescing(stmt) {
             stmt.kind = coalesced;
@@ -266,7 +342,7 @@ fn block(body: &mut Vec<Stmt>) {
                 block(body);
             }
             // A function declared in a body (ADR 0308), as the one it's in.
-            StmtKind::Function(function) => function_body(&mut function.body),
+            StmtKind::Function(function) => function_body(&mut function.params, &mut function.body),
             StmtKind::Compound(_, a, b) => {
                 expr(a);
                 expr(b);
@@ -752,7 +828,7 @@ fn expr(e: &mut Expr) {
         e.kind = ExprKind::AsyncArrow(std::mem::take(params), std::mem::take(block));
     }
     match &mut e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             // `() => undefined`, the value it's given: its body is that value,
             // not `return;`.
             let concise = matches!(
@@ -763,8 +839,11 @@ fn expr(e: &mut Expr) {
                 }]
             );
             match concise {
-                true => block(body),
-                false => function_body(body),
+                true => {
+                    block(body);
+                    left_out_params(params, body);
+                }
+                false => function_body(params, body),
             }
             if concise
                 && let [
@@ -777,7 +856,7 @@ fn expr(e: &mut Expr) {
                 *value = Some(Expr::undefined());
             }
         }
-        ExprKind::Function(function) => function_body(&mut function.body),
+        ExprKind::Function(function) => function_body(&mut function.params, &mut function.body),
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e);

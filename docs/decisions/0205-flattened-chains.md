@@ -67,3 +67,15 @@ has too, as a struct's does: `extends Omit<LintMessage, "severity">`. Its
 keys were none, so it was `extends LintMessage`, which TypeScript
 rejects for a `severity` of another type. The declarations test checks
 one, and a mutation reads a reference's keys as none.
+
+## Amendment: the one field left out is `_`
+
+**Of the fields a pattern with a rest leaves out, which nothing reads, one
+alone is `_`**, as a person writes it, react.dev's getRouteMeta's `const
+{currentIndex: _, ...meta} = ctx;`: a `let`'s pattern and a parameter's.
+More left out keep `_field` each, as two `_` would be one name twice, and so
+does one where its block, or its function's parameters, declare a `_`
+already. Lowering names each `_field` (`left_out`, one function for the
+THIR's patterns and the MIR's); preparation makes the one `_`, once
+tidying has bound what the program reads. Decided with the user. Case N:
+a name nothing reads.

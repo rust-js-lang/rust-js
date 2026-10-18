@@ -54,7 +54,6 @@ use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp, range_read};
 use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
-use crate::names::js_ident;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 pub struct Mir<'tcx> {
@@ -2430,12 +2429,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let value = self.mir_place(state, place, span, out)?;
         let tcx = self.tcx;
-        let named = (fields.iter().enumerate())
+        let keys: Vec<&str> = (fields.iter().enumerate())
             .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))
-            .map(|(_, (key, _))| {
-                let unused = self.fresh(&format!("_{}", super::camel_case(&js_ident(key))));
-                (key.clone(), js::Pattern::Name(unused), None)
-            })
+            .map(|(_, (key, _))| key.as_str())
+            .collect();
+        let named = (keys.iter().zip(self.left_out(&keys)))
+            .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused), None))
             .collect();
         self.flush(state, out)?;
         state.locals.declared[local] = true;

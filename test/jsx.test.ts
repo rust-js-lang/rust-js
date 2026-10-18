@@ -5076,6 +5076,9 @@ pub fn Caption(props: CaptionProps) -> JSX::Element {
     let CaptionProps { rest, title, .. } = props;
     jsx! { <img title={title} {...&rest} /> }
 }
+pub fn Badge(CaptionProps { rest, title, .. }: CaptionProps) -> JSX::Element {
+    jsx! { <img title={title} {...&rest} /> }
+}
 pub struct LinkProps {
     pub href: &'static str,
     pub title: &'static str,
@@ -5089,8 +5092,10 @@ pub fn Link(p: LinkProps) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("  const { alt, ...rest } = props;\n");
-  expect(jsx).toContain("  const { title, lang: _lang, ...rest } = props;\n");
-  expect(jsx).toContain("  const { href, title: _title, ...rest } = p;\n");
+  // The one it leaves out is `_`, as a person writes it.
+  expect(jsx).toContain("  const { title, lang: _, ...rest } = props;\n");
+  expect(jsx).toContain("  const { href, title: _, ...rest } = p;\n");
+  expect(jsx).toContain("export function Badge({ title, lang: _, ...rest }) {");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Image, { alt: "a", src: "/s.png" }))).toContain('<img alt="a" class="pic" src="/s.png"/>');
   expect(renderToStaticMarkup(createElement(lib.Caption, { title: "t", lang: "en", src: "/s.png" }))).toContain('<img title="t" src="/s.png"/>');

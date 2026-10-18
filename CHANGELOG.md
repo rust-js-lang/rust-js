@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **The one field a rest's pattern leaves out is `_`**, `const {currentIndex:
+  _, ...meta} = ctx`, as a person writes it (ADR 0205).
 - **A `.d.ts` has each item's doc comments as JSDoc**, a function's, a
   type's and each field's, which a TypeScript caller's editor shows
   (ADR 0444).
