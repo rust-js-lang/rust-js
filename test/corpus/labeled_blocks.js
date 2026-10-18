@@ -22,9 +22,7 @@ function first_even(rows) {
   while (true) {
     const value = $next(iter);
     bb23: {
-      if (!value) {
-        found = undefined;
-      } else {
+      if (value) {
         const i = value[0];
         const row = value[1];
         for (const x of row) {
@@ -35,6 +33,7 @@ function first_even(rows) {
         }
         continue;
       }
+      found = undefined;
     }
     break;
   }

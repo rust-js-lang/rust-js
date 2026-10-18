@@ -673,6 +673,33 @@ pub(super) fn binding(body: &[Stmt], item: &str) -> Option<(js::Pattern, bool, u
     }
 }
 
+/// `if (c) { s } else { e }` of an `e` that always leaves, written before
+/// `s`, a `let .. else`'s: `if (!c) { e } s`, as the program wrote it, the
+/// guard first, where nothing `s` declares is declared beside it.
+pub(super) fn let_else_first(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let first = matches!(&stmts[i].kind, StmtKind::If(_, then, Some(otherwise))
+            if otherwise.last().is_some_and(ends)
+                && matches!((first_written(otherwise), first_written(then)), (Some(e), Some(s)) if e < s)
+                && fits_in_place(stmts, i, then));
+        if !first {
+            i += 1;
+            continue;
+        }
+        let span = stmts[i].span;
+        let StmtKind::If(test, then, Some(otherwise)) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
+        else {
+            unreachable!("matched")
+        };
+        stmts.splice(
+            i..=i,
+            std::iter::once(StmtKind::If(test.negated_test(), otherwise, None).at(span)).chain(then),
+        );
+        i += 1;
+    }
+}
+
 /// `?` of a `Result`, `if (r.TAG !== "Err") { s } else { return r; }`, or
 /// `if (r.TAG !== "Err") { s } return r;` of an `s` that never goes on: its
 /// `return` first, `if (r.TAG === "Err") { return r; } s`, where nothing
@@ -937,31 +964,6 @@ pub(super) fn returned_from_block(stmts: &mut Vec<Stmt>, result: &str) {
         unreachable!("matched")
     };
     stmts.extend(body);
-    // `if (c) { s; return a; } else { return b; }` of a `return b` written
-    // before `s`, a `let .. else`'s: `if (!c) { return b; } s; return a;`,
-    // as the program wrote it.
-    js::statement_lists(stmts, &mut |list| {
-        for stmt in list.iter_mut() {
-            if let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind
-                && let [
-                    Stmt {
-                        kind: StmtKind::Return(_),
-                        span,
-                    },
-                ] = otherwise.as_slice()
-                && then.last().is_some_and(ends)
-                && !span.is_none()
-                && first_written(then).is_some_and(|first| span.lo < first)
-            {
-                let StmtKind::If(test, then, Some(otherwise)) =
-                    std::mem::replace(&mut stmt.kind, StmtKind::Break(None))
-                else {
-                    unreachable!("matched")
-                };
-                stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));
-            }
-        }
-    });
 }
 
 /// Of block `label`, followed by `return result`: each `break label` once

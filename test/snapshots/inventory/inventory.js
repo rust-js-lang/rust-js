@@ -92,15 +92,15 @@ export const Store = {
       } else {
         if (e.TAG === "Sale") {
           const have = $mutGet(store.stock, e.item);
-          if (have != null) {
-            if (have.value < e.qty) {
-              return { TAG: "Err", _0: `not enough ${e.item}: ${have.value} < ${e.qty}` };
-            }
-            have.value = (have.value - e.qty) >>> 0;
-            store.revenue += e.qty * e.price;
-            break bb36;
+          if (have == null) {
+            return { TAG: "Err", _0: `unknown item ${e.item}` };
           }
-          return { TAG: "Err", _0: `unknown item ${e.item}` };
+          if (have.value < e.qty) {
+            return { TAG: "Err", _0: `not enough ${e.item}: ${have.value} < ${e.qty}` };
+          }
+          have.value = (have.value - e.qty) >>> 0;
+          store.revenue += e.qty * e.price;
+          break bb36;
         }
         store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
       }

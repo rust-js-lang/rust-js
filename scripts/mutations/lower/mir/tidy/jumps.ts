@@ -140,14 +140,14 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "let-else-return-not-guard",
-    "breaks": "a `let .. else`'s return stays the `else` of a block, not a guard first",
+    "breaks": "a `let .. else`'s `else` stays the `else` of an `if`, not a guard first, a second one's too, after a first",
     "file": "src/lower/mir/tidy/jumps.rs",
-    "find": "                stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));\n",
-    "replace": "                stmt.kind = StmtKind::If(test, then, Some(otherwise));\n",
+    "find": "                && fits_in_place(stmts, i, then));\n",
+    "replace": "                && false);\n",
     "tests": [
-      "test/lowering.test.ts",
+      "test/jsx.test.ts",
       "-t",
-      "written returns MIR jumps out of a block"
+      "let-else binds is read"
     ]
   },
   {

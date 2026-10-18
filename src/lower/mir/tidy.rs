@@ -385,6 +385,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut headed = false;
     js::statement_lists(body, &mut |stmts| headed |= while_heads(stmts));
     js::statement_lists(body, &mut |stmts| written_order_steps(stmts));
+    js::statement_lists(body, &mut let_else_first);
     js::statement_lists(body, &mut tried_first);
     if headed {
         js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));

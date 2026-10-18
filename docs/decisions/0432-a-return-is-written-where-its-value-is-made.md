@@ -1,6 +1,7 @@
 # 0432. A `return` is written where its value is made
 
-Status: Accepted. Extends [0370](0370-loop-exits-first.md).
+Status: Accepted. Extends [0370](0370-loop-exits-first.md). Amended: a
+`let .. else` is a guard first wherever its `else` is (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): where a `return` is
 written changes nothing a program can observe, only how its JS reads.
@@ -107,3 +108,17 @@ atom(parser) {
 - An `Ok(match .. { .. })` whose arms each give a value still makes it in
   a variable, `tmp`, returned once after a block: each arm's `return {
   TAG: "Ok", .. }` would repeat the `Ok`.
+
+## Amendment: a `let .. else` is a guard first wherever its `else` is
+
+A `let .. else` was a guard first only where its `else` was a lone
+`return` of a block MIR jumps out of. A second one, after a first, or an
+`else` that does something, `content.push(child); return;`, stayed an
+`if`'s `else`, the rest in its `then`: `if (isValidElement(child)) {
+rest } else { content.push(child); return; }`, as react.dev's
+Challenges reads its children. One rule now, `let_else_first`: an `if`
+whose `else` always leaves and is written before its `then` is `if (!c)
+{ else } then`, where nothing `then` declares is declared beside it. The
+lone `return`'s case was this rule's, and is gone. `inventory`'s
+`let Some(have) = .. else { return Err(..) }` is a guard first now, and
+`labeled_blocks`' loop tests its `next()` as written.
