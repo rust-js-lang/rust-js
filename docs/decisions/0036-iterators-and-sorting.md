@@ -1,7 +1,7 @@
 # 0036. An iterator is a JS array; `Ordering` is -1, 0 or 1
 
 Status: Accepted; a chain whose stages do what can be seen is lazy ([0139](0139-lazy-chains.md)). Extends [0025](0025-vec-loops-refcell-mut.md), where a
-`Vec` is a JS array and `for` loops over one.
+`Vec` is a JS array and `for` loops over one. Amended: a fallible `collect()` of any collection (below).
 
 Case: B, A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -120,3 +120,14 @@ Two things came with it:
   apart** (ADR 0342): of numbers, text, `bool`s and `char`s, and tuples
   and arrays of them. Elsewhere, and for `select_nth_unstable`, it's std's
   own algorithm, as its order of equal items is std's.
+
+## Amendment: a fallible `collect()` of any collection
+
+`collect()` into a `Result` or an `Option` was of an array alone, so
+`Result<BTreeMap<_, _>, _>`, the way a parser of `k=v` pairs collects
+them, was refused. The values, an array, are made into the collection
+the way a plain `collect()` makes one, `collected_into`, one method for
+both: `$collectResults(items, (values) => new Map(values))`, `values.join("")`
+of text, a heap's or a set's. A collection of the crate's own, its
+`FromIterator`, is refused, as a plain `collect()` into one is.
+`collect_fallible_into` runs each against native Rust.

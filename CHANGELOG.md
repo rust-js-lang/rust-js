@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`collect()` into a `Result` or an `Option` of a map, a set or text**,
+  `Result<BTreeMap<String, i64>, String>` of parsed pairs (ADR 0036).
 - **`Iterator::rposition`** of a slice's items, and of one kept and stepped
   (ADR 0164).
 - **A map entry's `and_modify(f)`**, `m.entry(k).and_modify(|n| *n += 1)

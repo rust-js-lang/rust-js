@@ -423,34 +423,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Last) => self.last_value(it, item, span, made)?,
             Some(IterMethod::ByRef) => it,
             Some(IterMethod::Fuse) => it,
-            Some(IterMethod::Collect) => {
-                // Into a heap: its items in heap order, `$heapFrom`.
-                if self.is_std_type(output, StdItem::BinaryHeap) {
-                    let items = method("toArray", it, Vec::new());
-                    self.heap_values(HeapOp::From, vec![items], output, span)?
-                } else if self.is_vec_like(output) {
-                    match self.mapped_range(&it, iter_ty) {
-                        Some(items) => items,
-                        None => match self.iterable_items(&it, iter_ty) {
-                            Some(items) => items,
-                            None => method("toArray", it, Vec::new()),
-                        },
-                    }
-                } else if self.is_lang_adt(output, LangItem::String) {
-                    method("join", method("toArray", it, Vec::new()), vec![Expr::str("")])
-                } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
-                    self.collect_fallible(it, output, item, span)?
-                } else if self.is_map(output) {
-                    // A map or a set of what its key is, as a `From` of items
-                    // makes one (ADR 0121).
-                    let set = self.is_set(output);
-                    self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
-                } else {
-                    return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
-                }
-            }
+            Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// `it.collect()` into `output`: a heap of its items in heap order,
+    /// `$heapFrom`; an array, a range's mapped where it's made; text, its
+    /// pieces joined; a `Result` or an `Option` of one of these, the first
+    /// `Err` or `None` or all; a map or a set, as a `From` of items makes one
+    /// (ADR 0121). Of the `Ok` values of a fallible one, an array already,
+    /// `iter_ty` is none, and an array is itself.
+    pub(in crate::lower) fn collected_into(
+        &mut self,
+        it: Expr,
+        output: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
+        let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
+        let items = |it: Expr| match iter_ty {
+            Some(_) => method("toArray", it, Vec::new()),
+            None => it,
+        };
+        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
+            self.heap_values(HeapOp::From, vec![items(it)], output, span)?
+        } else if self.is_vec_like(output) {
+            let Some(iter_ty) = iter_ty else { return Ok(it) };
+            match self.mapped_range(&it, iter_ty) {
+                Some(items) => items,
+                None => match self.iterable_items(&it, iter_ty) {
+                    Some(items) => items,
+                    None => method("toArray", it, Vec::new()),
+                },
+            }
+        } else if self.is_lang_adt(output, LangItem::String) {
+            method("join", items(it), vec![Expr::str("")])
+        } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
+            self.collect_fallible(it, output, item, span)?
+        } else if self.is_map(output) {
+            let set = self.is_set(output);
+            self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
+        } else {
+            return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
+        })
     }
 
     /// `position(f)`: where the first that `f` finds is, `$position`; and

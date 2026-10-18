@@ -53,11 +53,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "collect-fallible-any-target",
-    breaks: "`collect()` into a `Result<String, _>` is an array, not a string",
+    breaks: "`collect()` into a `Result` of a map, a set or text is `Ok` of an array, not of it",
     file: "src/lower/iterators.rs",
-    find: "        if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {",
-    replace: "        if false {",
-    tests: ["test/diagnostics.test.ts", "-t", "collecting into a Result"],
+    find: "        let into = match self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()) {\n",
+    replace: "        let into = match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
   },
   {
     name: "stepped-clone-from-start",

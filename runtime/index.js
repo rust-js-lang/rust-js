@@ -8030,26 +8030,27 @@ export function $lent(it) {
 }
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's
-// does, or `Ok` of all the values.
-export function $collectResults(items) {
+// does, or `Ok` of all the values, made `into` the collection where it's
+// one but an array.
+export function $collectResults(items, into) {
   const values = [];
   for (const item of items) {
     if (item.TAG === "Err") return item;
     values.push(item._0);
   }
-  return { TAG: "Ok", _0: values };
+  return { TAG: "Ok", _0: into ? into(values) : values };
 }
 
 // `collect()` into an `Option`: `None` at the first `None`, where it stops,
 // as Rust's does, or all the values, each out of its box where it has one
-// (ADR 0051).
-export function $collectOptions(items, boxed = false) {
+// (ADR 0051), made `into` the collection where it's one but an array.
+export function $collectOptions(items, boxed = false, into) {
   const values = [];
   for (const item of items) {
     if (item == null) return undefined;
     values.push(boxed ? $someValue(item) : item);
   }
-  return values;
+  return into ? into(values) : values;
 }
 
 export function $cmpIn(names, a, b) {

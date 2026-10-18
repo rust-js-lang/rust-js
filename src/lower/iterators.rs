@@ -122,8 +122,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `items`, each a `Result` or an `Option` (of `item`), collected into
-    /// `target`, a `Result` or an `Option` of an array: the first `Err` or
-    /// `None`, which ends it, or `Ok` of all the values, or the values.
+    /// `target`, a `Result` or an `Option` of a collection: the first `Err`
+    /// or `None`, which ends it, or `Ok` of all the values, or the values,
+    /// an array, made the collection where it's another, `into` it.
     pub(in crate::lower) fn collect_fallible(
         &mut self,
         items: Expr,
@@ -135,17 +136,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("a `Result` or an `Option`")
         };
         let collection = target_args.type_at(0);
-        if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {
-            return Err(self.unsupported(span, &format!("collecting into a `{target}`")));
-        }
+        let into = match self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()) {
+            true => None,
+            false => {
+                let values = self.fresh("values");
+                let made = self.collected_into(Expr::var(&values), collection, None, None, span)?;
+                Some(Expr::arrow(
+                    vec![values.into()],
+                    vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
+                ))
+            }
+        };
         Ok(if self.option_of(target).is_some() {
             let mut list = vec![items];
-            if item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner))) {
-                list.push(Expr::bool(true));
+            let boxed = item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner)));
+            if boxed || into.is_some() {
+                list.push(Expr::bool(boxed));
             }
+            list.extend(into);
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
-            Expr::call(Expr::helper("$collectResults"), vec![items])
+            let mut list = vec![items];
+            list.extend(into);
+            Expr::call(Expr::helper("$collectResults"), list)
         })
     }
 

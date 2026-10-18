@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "mir-collect-map-refused",
     breaks: "`collect` into a map or a set is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                } else if self.is_map(output) {\n",
-    replace: "                } else if false && self.is_map(output) {\n",
+    find: "        } else if self.is_map(output) {\n",
+    replace: "        } else if false && self.is_map(output) {\n",
     tests: ["test/corpus.test.ts","-t","value_keys|user_hash|range_into_set"],
   },
   {
@@ -363,8 +363,8 @@ export const mutations: Mutation[] = [
     "name": "mir-collect-heap-unheaped",
     "breaks": "`collect()` into a `BinaryHeap` from MIR is its items as they came, not in heap order",
     "file": "src/lower/mir/iter.rs",
-    "find": "                if self.is_std_type(output, StdItem::BinaryHeap) {\n",
-    "replace": "                if false && self.is_std_type(output, StdItem::BinaryHeap) {\n",
+    "find": "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n",
+    "replace": "        Ok(if false && self.is_std_type(output, StdItem::BinaryHeap) {\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
