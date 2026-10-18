@@ -48,15 +48,9 @@ impl NextRequest {
 pub mod next_request {
     use super::*;
 
-    /// `new NextRequest(input)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/server#NextRequest")]
-    pub fn new(input: &str) -> &'static NextRequest {
-        unreachable!()
-    }
-
     /// `new NextRequest(input, init)`.
     #[cfg_attr(rust_js, rust_js::link_name = "new next/server#NextRequest")]
-    pub fn new_with_init(input: &str, init: RequestInit<'_>) -> &'static NextRequest {
+    pub fn new(input: &str, init: Option<RequestInit<'_>>) -> &'static NextRequest {
         unreachable!()
     }
 }
@@ -86,76 +80,36 @@ impl<Body> NextResponse<Body> {
 pub mod next_response {
     use super::*;
 
-    /// `new NextResponse()`: an empty one.
+    /// `new NextResponse(body, init)`: an empty one where there's no `body`.
     #[cfg_attr(rust_js, rust_js::link_name = "new next/server#NextResponse")]
-    pub fn new() -> &'static NextResponse {
+    pub fn new(body: Option<&dyn IntoBodyInit>, init: Option<ResponseInit<'_>>) -> &'static NextResponse {
         unreachable!()
     }
 
-    /// `new NextResponse(body)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/server#NextResponse")]
-    pub fn new_with_body(body: impl IntoBodyInit) -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `new NextResponse(body, init)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/server#NextResponse")]
-    pub fn new_with_body_and_init(body: impl IntoBodyInit, init: ResponseInit<'_>) -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `NextResponse.json(body)`: `body` as JSON, its `Content-Type` JSON's.
+    /// `NextResponse.json(body, init)`: `body` as JSON, its `Content-Type` JSON's.
     #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.json")]
-    pub fn json<JsonBody>(body: JsonBody) -> &'static NextResponse<JsonBody> {
+    pub fn json<JsonBody>(body: JsonBody, init: Option<ResponseInit<'_>>) -> &'static NextResponse<JsonBody> {
         unreachable!()
     }
 
-    /// `NextResponse.json(body, init)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.json")]
-    pub fn json_with_init<JsonBody>(body: JsonBody, init: ResponseInit<'_>) -> &'static NextResponse<JsonBody> {
-        unreachable!()
-    }
-
-    /// `NextResponse.redirect(url)`: a 307 to `url`.
+    /// `NextResponse.redirect(url, init)`: a 307 to `url`, or `init`'s
+    /// status, `Some(&308)`, or its `ResponseInit`.
     #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.redirect")]
-    pub fn redirect(url: impl IntoUrl) -> &'static NextResponse {
+    pub fn redirect(url: impl IntoUrl, init: Option<&dyn IntoNumberOrResponseInit>) -> &'static NextResponse {
         unreachable!()
     }
 
-    /// `NextResponse.redirect(url, status)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.redirect")]
-    pub fn redirect_with_status(url: impl IntoUrl, status: u16) -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `NextResponse.redirect(url, init)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.redirect")]
-    pub fn redirect_with_init(url: impl IntoUrl, init: ResponseInit<'_>) -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `NextResponse.rewrite(destination)`: `destination`'s response, the
-    /// browser's URL kept.
+    /// `NextResponse.rewrite(destination, init)`: `destination`'s response,
+    /// the browser's URL kept.
     #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.rewrite")]
-    pub fn rewrite(destination: impl IntoUrl) -> &'static NextResponse {
+    pub fn rewrite(destination: impl IntoUrl, init: Option<MiddlewareResponseInit<'_>>) -> &'static NextResponse {
         unreachable!()
     }
 
-    /// `NextResponse.rewrite(destination, init)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.rewrite")]
-    pub fn rewrite_with_init(destination: impl IntoUrl, init: MiddlewareResponseInit<'_>) -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `NextResponse.next()`: a proxy's going on to the route.
+    /// `NextResponse.next(init)`: a proxy's going on to the route, its
+    /// request's headers `init`'s.
     #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.next")]
-    pub fn next() -> &'static NextResponse {
-        unreachable!()
-    }
-
-    /// `NextResponse.next(init)`, its request's headers `init`'s.
-    #[cfg_attr(rust_js, rust_js::link_name = "next/server#NextResponse.next")]
-    pub fn next_with_init(init: MiddlewareResponseInit<'_>) -> &'static NextResponse {
+    pub fn next(init: Option<MiddlewareResponseInit<'_>>) -> &'static NextResponse {
         unreachable!()
     }
 }
@@ -170,12 +124,26 @@ impl IntoUrl for &String {}
 impl IntoUrl for &NextURL {}
 impl IntoUrl for &URL {}
 
+/// What a `number | ResponseInit` parameter takes: a status, `307`, or a
+/// `ResponseInit`, each as it is (ADR 0229); an optional one, `Option<&dyn
+/// IntoNumberOrResponseInit>`, takes `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `number | ResponseInit`",
+    note = "an optional one, `Option<&dyn IntoNumberOrResponseInit>`, takes `Some(&value)`"
+)]
+#[cfg_attr(rust_js, rust_js::types = "number | ResponseInit")]
+pub trait IntoNumberOrResponseInit: sealed::Sealed {}
+impl IntoNumberOrResponseInit for u16 {}
+impl IntoNumberOrResponseInit for ResponseInit<'_> {}
+
 mod sealed {
     pub trait Sealed {}
     impl Sealed for &str {}
     impl Sealed for &String {}
     impl Sealed for &super::NextURL {}
     impl Sealed for &super::URL {}
+    impl Sealed for u16 {}
+    impl Sealed for super::ResponseInit<'_> {}
 }
 
 /// A [`next_response::rewrite`]'s or [`next_response::next`]'s init: a
@@ -386,13 +354,7 @@ impl RequestCookies {
 
     /// Each cookie.
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all(&self) -> Vec<RequestCookie<'static>> {
-        unreachable!()
-    }
-
-    /// Each cookie named `name`.
-    #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all_with_name(&self, name: &str) -> Vec<RequestCookie<'static>> {
+    pub fn get_all(&self, name: Option<&str>) -> Vec<RequestCookie<'static>> {
         unreachable!()
     }
 
@@ -452,13 +414,7 @@ impl ResponseCookies {
 
     /// Each cookie.
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all(&self) -> Vec<ResponseCookie<'static>> {
-        unreachable!()
-    }
-
-    /// Each cookie named `key`.
-    #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all_with_name(&self, key: &str) -> Vec<ResponseCookie<'static>> {
+    pub fn get_all(&self, key: Option<&str>) -> Vec<ResponseCookie<'static>> {
         unreachable!()
     }
 
@@ -470,13 +426,7 @@ impl ResponseCookies {
 
     /// Set the cookie `key` to `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, key: &str, value: &str) -> &Self {
-        unreachable!()
-    }
-
-    /// Set the cookie `key` to `value`, of `cookie`'s options.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_options(&self, key: &str, value: &str, cookie: CookieOptions<'_>) -> &Self {
+    pub fn set(&self, key: &str, value: &str, cookie: Option<CookieOptions<'_>>) -> &Self {
         unreachable!()
     }
 
@@ -693,21 +643,9 @@ pub fn connection() -> Promise<()> {
 pub mod url_pattern {
     use super::*;
 
-    /// `new URLPattern()`, of any URL.
+    /// `new URLPattern(input, baseURL)`: of any URL, where there's no `input`.
     #[cfg_attr(rust_js, rust_js::link_name = "new next/server#URLPattern")]
-    pub fn new() -> &'static URLPattern {
-        unreachable!()
-    }
-
-    /// `new URLPattern(input)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/server#URLPattern")]
-    pub fn new_with_input(input: impl IntoURLPatternInput) -> &'static URLPattern {
-        unreachable!()
-    }
-
-    /// `new URLPattern(input, baseURL)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/server#URLPattern")]
-    pub fn new_with_base_url(input: impl IntoURLPatternInput, base_url: &str) -> &'static URLPattern {
+    pub fn new(input: Option<&dyn IntoURLPatternInput>, base_url: Option<&str>) -> &'static URLPattern {
         unreachable!()
     }
 }

@@ -53,16 +53,10 @@ pub fn unstable_cache_tag(tags: &[&str]) {
 }
 
 /// Make what's cached for `original_path` stale, to be made again on its
-/// next request.
+/// next request; of its `"layout"` and what's below it, or its `"page"`,
+/// `r#type`, where the path has a dynamic segment.
 #[cfg_attr(rust_js, rust_js::link_name = "next/cache#revalidatePath")]
-pub fn revalidate_path(original_path: &str) {
-    unreachable!()
-}
-
-/// [`revalidate_path`], of its `"layout"` and what's below it, or its
-/// `"page"`, where the path has a dynamic segment.
-#[cfg_attr(rust_js, rust_js::link_name = "next/cache#revalidatePath")]
-pub fn revalidate_path_with_type(original_path: &str, r#type: &str) {
+pub fn revalidate_path(original_path: &str, r#type: Option<&str>) {
     unreachable!()
 }
 
@@ -139,19 +133,7 @@ pub fn navigation() -> Promise<()> {
 /// `key_parts`, as `unstable_cache(cb, keyParts, options)`: an async
 /// function.
 #[cfg_attr(rust_js, rust_js::link_name = "next/cache#unstable_cache")]
-pub fn unstable_cache<F>(cb: F) -> F {
-    unreachable!()
-}
-
-/// [`unstable_cache`], its key `key_parts` too.
-#[cfg_attr(rust_js, rust_js::link_name = "next/cache#unstable_cache")]
-pub fn unstable_cache_with_key_parts<F>(cb: F, key_parts: &[&str]) -> F {
-    unreachable!()
-}
-
-/// [`unstable_cache`], of `options`.
-#[cfg_attr(rust_js, rust_js::link_name = "next/cache#unstable_cache")]
-pub fn unstable_cache_with_options<F>(cb: F, key_parts: Option<&[&str]>, options: UnstableCacheOptions<'_>) -> F {
+pub fn unstable_cache<F>(cb: F, key_parts: Option<&[&str]>, options: Option<UnstableCacheOptions<'_>>) -> F {
     unreachable!()
 }
 

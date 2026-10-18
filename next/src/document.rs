@@ -98,29 +98,22 @@ impl Deref for DocumentContext {
 }
 
 impl DocumentContext {
-    /// Render the page, `await ctx.renderPage()`.
+    /// Render the page, `await ctx.renderPage()`; `options`, given, make
+    /// another of the app and the page first, as a CSS-in-JS library
+    /// collects their styles.
     #[cfg_attr(rust_js, rust_js::link_name = "renderPage")]
-    pub fn render_page(&self) -> Promise<DocumentInitialProps> {
+    pub fn render_page(&self, options: Option<ComponentsEnhancer>) -> Promise<DocumentInitialProps> {
         unreachable!()
     }
 
-    /// [`render_page`](Self::render_page), the app and the page made
-    /// another of first, as a CSS-in-JS library collects their styles.
-    #[cfg_attr(rust_js, rust_js::link_name = "renderPage")]
-    pub fn render_page_with(&self, options: ComponentsEnhancer) -> Promise<DocumentInitialProps> {
-        unreachable!()
-    }
-
-    /// What Next.js's own document gives of `ctx`.
+    /// What Next.js's own document gives of `ctx`, its scripts of
+    /// `options`' nonce.
     #[cfg_attr(rust_js, rust_js::link_name = "defaultGetInitialProps")]
-    pub fn default_get_initial_props(&self, ctx: &DocumentContext) -> Promise<DocumentInitialProps> {
-        unreachable!()
-    }
-
-    /// [`default_get_initial_props`](Self::default_get_initial_props), its
-    /// scripts of `options`' nonce.
-    #[cfg_attr(rust_js, rust_js::link_name = "defaultGetInitialProps")]
-    pub fn default_get_initial_props_with_options(&self, ctx: &DocumentContext, options: NonceOptions<'_>) -> Promise<DocumentInitialProps> {
+    pub fn default_get_initial_props(
+        &self,
+        ctx: &DocumentContext,
+        options: Option<NonceOptions<'_>>,
+    ) -> Promise<DocumentInitialProps> {
         unreachable!()
     }
 }

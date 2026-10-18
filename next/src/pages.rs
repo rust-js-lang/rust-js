@@ -218,15 +218,9 @@ impl<Data> NextApiResponse<Data> {
         unreachable!()
     }
 
-    /// Render the static page `url_path` again, on demand.
+    /// Render the static page `url_path` again, on demand, of `options`.
     #[cfg_attr(rust_js, rust_js::link_name = "revalidate")]
-    pub fn revalidate(&self, url_path: &str) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [`revalidate`](Self::revalidate), of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "revalidate")]
-    pub fn revalidate_with_options(&self, url_path: &str, options: RevalidateOptions) -> Promise<()> {
+    pub fn revalidate(&self, url_path: &str, options: Option<RevalidateOptions>) -> Promise<()> {
         unreachable!()
     }
 }

@@ -120,27 +120,17 @@ impl NextRouter {
         unreachable!()
     }
 
-    /// Go to `url`, adding to the history: whether it went.
+    /// Go to `url`, adding to the history, the browser showing `r#as`, of
+    /// `options`: whether it went.
     #[cfg_attr(rust_js, rust_js::link_name = "push")]
-    pub fn push(&self, url: &str) -> Promise<bool> {
+    pub fn push(&self, url: &str, r#as: Option<&str>, options: Option<TransitionOptions<'_>>) -> Promise<bool> {
         unreachable!()
     }
 
-    /// [`push`](Self::push), the browser showing `r#as`, of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "push")]
-    pub fn push_with_options(&self, url: &str, r#as: Option<&str>, options: TransitionOptions<'_>) -> Promise<bool> {
-        unreachable!()
-    }
-
-    /// Go to `url`, replacing the history's entry: whether it went.
+    /// Go to `url`, replacing the history's entry, the browser showing
+    /// `r#as`, of `options`: whether it went.
     #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-    pub fn replace(&self, url: &str) -> Promise<bool> {
-        unreachable!()
-    }
-
-    /// [`replace`](Self::replace), the browser showing `r#as`, of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-    pub fn replace_with_options(&self, url: &str, r#as: Option<&str>, options: TransitionOptions<'_>) -> Promise<bool> {
+    pub fn replace(&self, url: &str, r#as: Option<&str>, options: Option<TransitionOptions<'_>>) -> Promise<bool> {
         unreachable!()
     }
 
@@ -162,15 +152,10 @@ impl NextRouter {
         unreachable!()
     }
 
-    /// Load `url`'s page ahead, for a quicker `push`.
+    /// Load `url`'s page ahead, for a quicker `push`, the browser showing
+    /// `as_path`, of `options`.
     #[cfg_attr(rust_js, rust_js::link_name = "prefetch")]
-    pub fn prefetch(&self, url: &str) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [`prefetch`](Self::prefetch), the browser showing `as_path`, of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "prefetch")]
-    pub fn prefetch_with_options(&self, url: &str, as_path: Option<&str>, options: PrefetchOptions<'_>) -> Promise<()> {
+    pub fn prefetch(&self, url: &str, as_path: Option<&str>, options: Option<PrefetchOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
 

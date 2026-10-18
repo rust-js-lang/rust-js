@@ -33,28 +33,18 @@ pub fn use_params<T>() -> T {
 }
 
 /// The segments below the layout it's called in, as
-/// `useSelectedLayoutSegments()`.
+/// `useSelectedLayoutSegments()`, or in the parallel route
+/// `parallel_route_key`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/navigation#useSelectedLayoutSegments")]
-pub fn use_selected_layout_segments() -> Vec<String> {
-    unreachable!()
-}
-
-/// [`use_selected_layout_segments`] of the parallel route `parallel_route_key`.
-#[cfg_attr(rust_js, rust_js::link_name = "next/navigation#useSelectedLayoutSegments")]
-pub fn use_selected_layout_segments_with_parallel_route_key(parallel_route_key: &str) -> Vec<String> {
+pub fn use_selected_layout_segments(parallel_route_key: Option<&str>) -> Vec<String> {
     unreachable!()
 }
 
 /// The segment just below the layout it's called in, as
-/// `useSelectedLayoutSegment()`: `None` where there's none.
+/// `useSelectedLayoutSegment()`, or in the parallel route
+/// `parallel_route_key`: `None` where there's none.
 #[cfg_attr(rust_js, rust_js::link_name = "next/navigation#useSelectedLayoutSegment")]
-pub fn use_selected_layout_segment() -> Option<String> {
-    unreachable!()
-}
-
-/// [`use_selected_layout_segment`] of the parallel route `parallel_route_key`.
-#[cfg_attr(rust_js, rust_js::link_name = "next/navigation#useSelectedLayoutSegment")]
-pub fn use_selected_layout_segment_with_parallel_route_key(parallel_route_key: &str) -> Option<String> {
+pub fn use_selected_layout_segment(parallel_route_key: Option<&str>) -> Option<String> {
     unreachable!()
 }
 
@@ -94,27 +84,17 @@ pub fn unauthorized() -> ! {
     unreachable!()
 }
 
-/// Go to `url` instead, as `redirect(url)`, which throws: a 307.
+/// Go to `url` instead, as `redirect(url)`, which throws: a 307; `r#type`
+/// says whether it adds to the history or replaces its entry.
 #[cfg_attr(rust_js, rust_js::link_name = "next/navigation#redirect")]
-pub fn redirect(url: &str) -> ! {
+pub fn redirect(url: &str, r#type: Option<RedirectType>) -> ! {
     unreachable!()
 }
 
-/// [`redirect`], adding to the history or replacing its entry.
-#[cfg_attr(rust_js, rust_js::link_name = "next/navigation#redirect")]
-pub fn redirect_with_type(url: &str, r#type: RedirectType) -> ! {
-    unreachable!()
-}
-
-/// Go to `url` for good, as `permanentRedirect(url)`, which throws: a 308.
+/// Go to `url` for good, as `permanentRedirect(url)`, which throws: a 308;
+/// `r#type` says whether it adds to the history or replaces its entry.
 #[cfg_attr(rust_js, rust_js::link_name = "next/navigation#permanentRedirect")]
-pub fn permanent_redirect(url: &str) -> ! {
-    unreachable!()
-}
-
-/// [`permanent_redirect`], adding to the history or replacing its entry.
-#[cfg_attr(rust_js, rust_js::link_name = "next/navigation#permanentRedirect")]
-pub fn permanent_redirect_with_type(url: &str, r#type: RedirectType) -> ! {
+pub fn permanent_redirect(url: &str, r#type: Option<RedirectType>) -> ! {
     unreachable!()
 }
 
@@ -163,39 +143,21 @@ impl AppRouterInstance {
         unreachable!()
     }
 
-    /// Go to `href`, adding to the history.
+    /// Go to `href`, adding to the history, of `options`.
     #[cfg_attr(rust_js, rust_js::link_name = "push")]
-    pub fn push(&self, href: &str) {
+    pub fn push(&self, href: &str, options: Option<NavigateOptions<'_>>) {
         unreachable!()
     }
 
-    /// [`push`](Self::push), of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "push")]
-    pub fn push_with_options(&self, href: &str, options: NavigateOptions<'_>) {
-        unreachable!()
-    }
-
-    /// Go to `href`, replacing the history's entry.
+    /// Go to `href`, replacing the history's entry, of `options`.
     #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-    pub fn replace(&self, href: &str) {
+    pub fn replace(&self, href: &str, options: Option<NavigateOptions<'_>>) {
         unreachable!()
     }
 
-    /// [`replace`](Self::replace), of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-    pub fn replace_with_options(&self, href: &str, options: NavigateOptions<'_>) {
-        unreachable!()
-    }
-
-    /// Load `href` ahead, for a quicker `push`.
+    /// Load `href` ahead, for a quicker `push`, of `options`.
     #[cfg_attr(rust_js, rust_js::link_name = "prefetch")]
-    pub fn prefetch(&self, href: &str) {
-        unreachable!()
-    }
-
-    /// [`prefetch`](Self::prefetch), of `options`.
-    #[cfg_attr(rust_js, rust_js::link_name = "prefetch")]
-    pub fn prefetch_with_options(&self, href: &str, options: PrefetchOptions) {
+    pub fn prefetch(&self, href: &str, options: Option<PrefetchOptions>) {
         unreachable!()
     }
 
@@ -266,15 +228,9 @@ impl ReadonlyURLSearchParams {
         unreachable!()
     }
 
-    /// Whether there's a `name`.
+    /// Whether there's a `name`, or a `name` of `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
-    pub fn has(&self, name: &str) -> bool {
-        unreachable!()
-    }
-
-    /// Whether there's a `name` of `value`.
-    #[cfg_attr(rust_js, rust_js::link_name = "has")]
-    pub fn has_with_value(&self, name: &str, value: &str) -> bool {
+    pub fn has(&self, name: &str, value: Option<&str>) -> bool {
         unreachable!()
     }
 

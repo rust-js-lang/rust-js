@@ -7,16 +7,13 @@ use react::{ComponentValue, JSX, Module};
 
 /// [`dynamic`](https://nextjs.org/docs/app/guides/lazy-loading#nextdynamic),
 /// in a `thread_local!`: a component whose module `loader` loads,
-/// `dynamic(|| import_module("./hello.jsx"))`.
+/// `dynamic(|| import_module("./hello.jsx"), None)`; `options`, given, say
+/// what it shows while it loads, and whether the server renders it.
 #[cfg_attr(rust_js, rust_js::link_name = "next/dynamic#default")]
-pub fn dynamic<P>(loader: impl Fn() -> LoaderComponent<P> + 'static) -> ComponentValue<P> {
-    unreachable!()
-}
-
-/// [`dynamic`], of `options`: what it shows while it loads, and whether
-/// the server renders it.
-#[cfg_attr(rust_js, rust_js::link_name = "next/dynamic#default")]
-pub fn dynamic_with_options<P>(loader: impl Fn() -> LoaderComponent<P> + 'static, options: DynamicOptions<P>) -> ComponentValue<P> {
+pub fn dynamic<P>(
+    loader: impl Fn() -> LoaderComponent<P> + 'static,
+    options: Option<DynamicOptions<P>>,
+) -> ComponentValue<P> {
     unreachable!()
 }
 

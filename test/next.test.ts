@@ -61,7 +61,7 @@ pub async fn generateViewport(_: &'static js::Unknown, parent: next::ResolvingVi
 
 // A client component loaded by next/dynamic, at the module's top.
 thread_local! {
-    pub static Loaded: react::ComponentValue<()> = next::dynamic::dynamic(|| react::import_module("../later.jsx"));
+    pub static Loaded: react::ComponentValue<()> = next::dynamic::dynamic(|| react::import_module("../later.jsx"), None);
 }
 
 #[derive(Default)]
@@ -334,7 +334,7 @@ pub async fn Request() -> JSX::Element {
     // An inline Server Action, its directive its own.
     let lighten = async |_: &'static FormData| {
         js::directive!("use server");
-        cookies().await.set("theme", "light");
+        cookies().await.set("theme", "light", None);
     };
     jsx! {
         <main>
@@ -364,8 +364,8 @@ pub async fn GET(request: &'static NextRequest) -> &'static Response {
     after(|| {
         let _ = 1;
     });
-    let response = next_response::json(Greeting { hello, bot });
-    response.cookies().set("seen", "1");
+    let response = next_response::json(Greeting { hello, bot }, None);
+    response.cookies().set("seen", "1", None);
     response
 }
 `;
@@ -402,7 +402,7 @@ use react::{CSSProperties, jsx};
 
 pub async fn GET() -> &'static Response {
     let image = jsx! { <div style={CSSProperties::new().display("flex").font_size(64)}>{"Rust"}</div> };
-    image_response::new_with_options(image, ImageResponseOptions { width: Some(600), height: Some(315), ..Default::default() })
+    image_response::new(image, Some(ImageResponseOptions { width: Some(600), height: Some(315), ..Default::default() }))
 }
 `;
 
@@ -475,7 +475,7 @@ use react::webapi::{Response, url};
 // /old is /about, the browser's URL kept.
 pub fn proxy(request: &'static NextRequest) -> NextMiddlewareResult {
     let about = url::new("/about", Some(&request.url()));
-    let response: &Response = next_response::rewrite(about);
+    let response: &Response = next_response::rewrite(about, None);
     Some(response)
 }
 
@@ -503,22 +503,22 @@ pub async fn leave(forbidden: bool) {
     if forbidden {
         next::navigation::forbidden();
     }
-    next::navigation::redirect_with_type("/", next::navigation::RedirectType::Replace);
+    next::navigation::redirect("/", Some(next::navigation::RedirectType::Replace));
 }
 
 pub async fn renew() -> u32 {
-    next::cache::revalidate_path("/request");
+    next::cache::revalidate_path("/request", None);
     next::cache::revalidate_tag("count", "max");
     next::cache::update_tag("count");
     next::cache::refresh();
     let options = next::cache::UnstableCacheOptions { revalidate: Some(next::cache::Revalidate::Seconds(60.0)), tags: Some(&["n"]) };
-    let next_of = next::cache::unstable_cache_with_options(async |n: u32| n + 1, Some(&["n"]), options);
+    let next_of = next::cache::unstable_cache(async |n: u32| n + 1, Some(&["n"]), Some(options));
     next_of(1).await
 }
 
 pub async fn remember(theme: String) {
     let jar = cookies().await;
-    jar.set_with_options("theme", &theme, CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Lax), ..Default::default() });
+    jar.set("theme", &theme, Some(CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Lax), ..Default::default() }));
     jar.delete_cookie(DeletedCookie { name: "old", domain: None, path: Some("/"), secure: None, same_site: None, partitioned: None, http_only: None, max_age: None, priority: None });
 }
 `;
@@ -723,11 +723,11 @@ pub struct Slug {
 pub fn Navigator() -> JSX::Element {
     let router = next::navigation::use_router();
     let query = next::navigation::use_search_params().get("q").unwrap_or_default();
-    let segment = next::navigation::use_selected_layout_segment().unwrap_or_default();
+    let segment = next::navigation::use_selected_layout_segment(None).unwrap_or_default();
     let Slug { slug } = next::navigation::use_params();
     jsx! {
         <>
-        <button key={router.bfcache_id()} onClick={move |_| router.push_with_options("/about", next::navigation::NavigateOptions { scroll: Some(false), ..Default::default() })}>
+        <button key={router.bfcache_id()} onClick={move |_| router.push("/about", Some(next::navigation::NavigateOptions { scroll: Some(false), ..Default::default() }))}>
             {query}{segment}{slug}
         </button>
         // A gesture's push, where Next.js has the experiment.
@@ -738,9 +738,9 @@ pub fn Navigator() -> JSX::Element {
 
 // Only in the browser, and what's shown while it loads.
 thread_local! {
-    pub static Browsed: react::ComponentValue<()> = next::dynamic::dynamic_with_options(
+    pub static Browsed: react::ComponentValue<()> = next::dynamic::dynamic(
         || react::import_module("./later.jsx"),
-        next::dynamic::DynamicOptions { loading: Some(Box::new(|_| jsx! { <p>{"Loading"}</p> })), ssr: Some(false), ..Default::default() },
+        Some(next::dynamic::DynamicOptions { loading: Some(Box::new(|_| jsx! { <p>{"Loading"}</p> })), ssr: Some(false), ..Default::default() }),
     );
 }
 
@@ -775,14 +775,14 @@ const routeEvents = `// The router's locale and readiness, a guard of going back
 pub fn localized() -> (Option<&'static str>, bool) {
     let router = next::router::use_router();
     router.before_pop_state(|state| state.url() != "/stay");
-    let _ = router.prefetch_with_options("/codes/1", None, next::router::PrefetchOptions { priority: Some(true), ..Default::default() });
+    let _ = router.prefetch("/codes/1", None, Some(next::router::PrefetchOptions { priority: Some(true), ..Default::default() }));
     next::router::Router.ready(|| {});
     (router.locale(), router.is_ready())
 }
 
 // The singleton router, Next.js's default export of next/router.
 pub fn go(url: &str) {
-    next::router::Router.push(url);
+    next::router::Router.push(url, None, None);
 }
 
 pub fn use_route_events() {

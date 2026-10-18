@@ -71,15 +71,9 @@ impl ReadonlyRequestCookies {
         unreachable!()
     }
 
-    /// Each cookie.
+    /// Each cookie, or each named `name`.
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all(&self) -> Vec<RequestCookie<'static>> {
-        unreachable!()
-    }
-
-    /// Each cookie named `name`.
-    #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
-    pub fn get_all_with_name(&self, name: &str) -> Vec<RequestCookie<'static>> {
+    pub fn get_all(&self, name: Option<&str>) -> Vec<RequestCookie<'static>> {
         unreachable!()
     }
 
@@ -89,15 +83,9 @@ impl ReadonlyRequestCookies {
         unreachable!()
     }
 
-    /// Set the response's cookie `key` to `value`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, key: &str, value: &str) -> &Self {
-        unreachable!()
-    }
-
     /// Set the response's cookie `key` to `value`, of `cookie`'s options.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_options(&self, key: &str, value: &str, cookie: CookieOptions<'_>) -> &Self {
+    pub fn set(&self, key: &str, value: &str, cookie: Option<CookieOptions<'_>>) -> &Self {
         unreachable!()
     }
 

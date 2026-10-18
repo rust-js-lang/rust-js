@@ -25,15 +25,10 @@ impl Deref for ImageResponse {
 pub mod image_response {
     use super::*;
 
-    /// `new ImageResponse(element)`: 1200 by 630 pixels.
+    /// `new ImageResponse(element, options)`: 1200 by 630 pixels, where
+    /// `options` don't say.
     #[cfg_attr(rust_js, rust_js::link_name = "new next/og#ImageResponse")]
-    pub fn new(element: JSX::Element) -> &'static ImageResponse {
-        unreachable!()
-    }
-
-    /// `new ImageResponse(element, options)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new next/og#ImageResponse")]
-    pub fn new_with_options(element: JSX::Element, options: ImageResponseOptions<'_>) -> &'static ImageResponse {
+    pub fn new(element: JSX::Element, options: Option<ImageResponseOptions<'_>>) -> &'static ImageResponse {
         unreachable!()
     }
 
