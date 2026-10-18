@@ -101,6 +101,7 @@ function main() {
     rest[$at(rest, 0)] = 20;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
   for (const chunk of $chunksMut(v, 4)) {
     const value$1 = Math.imul(chunk[$at(chunk, 0)], 2);
     chunk[0] = value$1;

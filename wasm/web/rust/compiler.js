@@ -44,8 +44,14 @@ export function mb(n) {
   return `${(n / 1048576).toFixed(1)} MB`;
 }
 
+/**
+ * Download the compiler, the sysroot, the webapi and js crates and the examples,
+ * giving `stat` each one's time as it arrives.
+ */
 export async function load(stat) {
   const start = performance.now();
+  // All downloads start here, together: a JS promise runs as soon as it's made
+  // (ADR 0029). Awaiting them one by one below only collects the results.
   const module = load_compiler(start, stat);
   const sysroot = load_sysroot(start, stat);
   const crates = reactLibs.map((name) => [name, load_binding_crate(name, start, stat)]);
@@ -76,6 +82,7 @@ async function load_compiler(start, stat) {
 
 async function load_sysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
+  // Every file's download starts before the first is awaited.
   const downloads = [];
   for (const name of names) {
     downloads.push(load_sysroot_file(name));
@@ -100,6 +107,10 @@ async function load_sysroot_file(name) {
   return [name, new File(bytes, { readonly: true })];
 }
 
+/**
+ * `@rust-js/runtime` and React's modules, and the stylesheets, for a
+ * program to import (ADR 0044).
+ */
 async function load_packages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
   const packages = (await window.fetch("./packages.json")).json();
@@ -125,7 +136,9 @@ async function fetch_example_file(name, path) {
   return [path, await response.text()];
 }
 
+/** An example's files, `path → text`, in the order it lists them. */
 export async function load_example(name, paths) {
+  // All at once: each download starts as it's made (ADR 0029).
   const downloads = [];
   for (const path of paths) {
     downloads.push(fetch_example_file(name, path));
@@ -137,10 +150,12 @@ export async function load_example(name, paths) {
   return texts;
 }
 
+/** A directory holding one entry. */
 function dir(name, entry) {
   return new Directory(new Map([[name, entry]]));
 }
 
+/** A WASI directory tree from `path → text`, e.g. `geometry/area.rs`. */
 function directory_of(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
@@ -166,6 +181,7 @@ function directory_of(sources) {
   return top;
 }
 
+/** Every file under a WASI directory, as `path → text`. */
 function texts_in(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
@@ -177,6 +193,11 @@ function texts_in(folder, prefix, found) {
   }
 }
 
+/**
+ * Run rust-js.wasm on the crate in `sources` (`path → text`): a fresh
+ * instance each time, since rustc keeps global state, and a failed compile
+ * ends in a trap. With `test`, the crate's `#[test]` functions too (ADR 0026).
+ */
 export async function compile(loaded, sources, rootFile, test) {
   const stderr = { value: [] };
   const stdoutLines = stderr;
@@ -184,7 +205,7 @@ export async function compile(loaded, sources, rootFile, test) {
   const outDir = new PreopenDirectory("/out", new Map());
   const sysrootDir = new Directory(loaded.sysroot);
   const fds = [
-    new OpenFile(new File([])),
+    new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
       const value = $borrowMut(stdoutLines, true);
       try {
@@ -192,7 +213,7 @@ export async function compile(loaded, sources, rootFile, test) {
       } finally {
         $unborrow(value);
       }
-    }),
+    }), // stdout
     ConsoleStdout.lineBuffered((line) => {
       const value = $borrowMut(stderrLines, true);
       try {
@@ -200,7 +221,7 @@ export async function compile(loaded, sources, rootFile, test) {
       } finally {
         $unborrow(value);
       }
-    }),
+    }), // stderr
     new PreopenDirectory("/in", directory_of(sources)),
     outDir,
     new PreopenDirectory(
@@ -214,6 +235,10 @@ export async function compile(loaded, sources, rootFile, test) {
   ];
   const stem = $stripSuffix(rootFile, ".rs");
   const outFile = stem != null ? `/out/${stem}.js` : `/out/${rootFile}`;
+  // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
+  // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
+  // too (ADR 0027). Every program may use the webapi and js crates; rustc
+  // only reads them if one does.
   const args = ["rust-js"];
   if (test) {
     args.push("--test");
@@ -233,7 +258,10 @@ export async function compile(loaded, sources, rootFile, test) {
   }
   args.push("-L");
   args.push("/crates");
+  // RUSTC_ICE=0: don't name a crash-report file after the process id (WASI
+  // has none). Without options, the shim logs every call it handles.
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
+
   const t0 = performance.now();
   const imports = { wasi_snapshot_preview1: wasi.wasiImport };
   const instance = await WebAssembly.instantiate(loaded.module, imports);
@@ -249,6 +277,8 @@ export async function compile(loaded, sources, rootFile, test) {
     const e = started._0;
     exit = `trap (${e instanceof Error ? e.message : String(e)})`;
   }
+
+  // What it wrote, as its manifest says: each module's JS, and the runner.
   const written = new Map();
   if (ok) {
     texts_in(outDir.dir, "", written);

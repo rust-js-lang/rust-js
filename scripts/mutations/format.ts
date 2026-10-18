@@ -89,4 +89,12 @@ export const mutations: Mutation[] = [
     replace: "    let (code, map) = formatted(&code, &unformatted, js_file_name, &options)\n        .map(|(formatted, _)| (formatted, map.clone()))\n        .unwrap_or((code, map));\n",
     tests: ["test/traits.test.ts", "test/format.test.ts", "-t", "trait method expressions keep their Rust source locations|maps handlers to the formatted source"],
   },
+  {
+    name: "spaced-comment-apart",
+    breaks: "a statement's comments right above it aren't counted as its, so no blank line is between them and the function before",
+    file: "src/format.rs",
+    find: "            let next = top(next);\n",
+    replace: "            let next = next.max(top(next));\n",
+    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+  },
 ];

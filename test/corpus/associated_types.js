@@ -47,10 +47,13 @@ function drain(s, SSource) {
   return out;
 }
 
+// An equality bound: `S::Item` is `u32` here.
 function total(s, SSource) {
   return drain(s, SSource).reduce((a, b) => (a + b) >>> 0, 0);
 }
 
+// A bound on the associated type, in a `where`: its dictionary is given, as
+// a type parameter's is, `SItemDebug`.
 function shown(s, SSource, SItemDebug) {
   return `[${drain(s, SSource)
     .map((item) => SItemDebug.fmt(item))

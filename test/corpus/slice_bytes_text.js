@@ -15,6 +15,7 @@ function main() {
   const escaped = $escapeAscii([97, 10, 98]);
   console.log(`${escaped} ${$byteLen(escaped)}`);
   console.log(`[${$escapeAscii([])}]`);
+
   const mixed = [111, 107, 255, 104, 195, 169, 226, 130, 32, 101, 110, 100, 240, 159];
   for (const chunk of $utf8Chunks(mixed)) {
     console.log(

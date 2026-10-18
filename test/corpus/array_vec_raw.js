@@ -39,6 +39,7 @@ function stackCapacity(CAP, dropT) {
   }));
 }
 
+/** `n` items along, by bytes for a type with no size, as arrayvec steps. */
 function step(p, n, TSize) {
   if (TSize === 0) {
     return $ptrTyped($ptrAdd($ptrBytes(p), n));
@@ -50,10 +51,14 @@ const Stack = {
   is_full(stack, CAP) {
     return stack.len === CAP;
   },
+
+  /** Of a whole array: its items, read as `MaybeUninit`s. */
   from_array(array, CAP) {
     const xs = array;
     return { xs, len: CAP };
   },
+
+  /** Its items, read as the whole array, when it's full. */
   into_array(stack, CAP) {
     if (!Stack.is_full(stack, CAP)) {
       throw new Error("assertion failed: self.is_full()");
@@ -61,15 +66,19 @@ const Stack = {
     const array = $ptrWhole(Stack.as_ptr(stack, CAP), CAP).value;
     return array;
   },
+
   new(CAP) {
     return { xs: Array.from({ length: CAP }), len: 0 };
   },
+
   as_ptr(stack, CAP) {
     return $ptr(stack.xs, 0);
   },
+
   as_mut_ptr(stack, CAP) {
     return $ptr(stack.xs, 0);
   },
+
   push(stack, value, CAP, TSize, dropT) {
     let value$live = true;
     if (!(stack.len < CAP)) {
@@ -89,6 +98,7 @@ const Stack = {
     tmp.value = value;
     stack.len = (stack.len + 1) >>> 0;
   },
+
   insert(stack, index, value, CAP) {
     if (!(index <= stack.len) || !(stack.len < CAP)) {
       throw new Error("assertion failed: index <= self.len && self.len < CAP");
@@ -98,6 +108,7 @@ const Stack = {
     p.value = value;
     stack.len = (stack.len + 1) >>> 0;
   },
+
   remove(stack, index, CAP) {
     if (!(index < stack.len)) {
       throw new Error("assertion failed: index < self.len");
@@ -108,6 +119,11 @@ const Stack = {
     stack.len = (stack.len - 1) >>> 0;
     return taken;
   },
+
+  /**
+   * Copies of `other`'s items after its own, read through the shared
+   * slice's pointer.
+   */
   extend_from_slice(stack, other, CAP) {
     if (!((stack.len + other.length) >>> 0 <= CAP)) {
       throw new Error("assertion failed: self.len + other.len() <= CAP");
@@ -120,6 +136,8 @@ const Stack = {
     );
     stack.len = (stack.len + other.length) >>> 0;
   },
+
+  /** Its last items dropped, in place, till it has `len`. */
   truncate(stack, len, CAP, dropT) {
     while (stack.len > len) {
       stack.len = (stack.len - 1) >>> 0;
@@ -127,9 +145,11 @@ const Stack = {
       dropT?.(value);
     }
   },
+
   as_slice(stack, CAP) {
     return $ptrSlice(Stack.as_ptr(stack, CAP), stack.len);
   },
+
   as_mut_slice(stack, CAP) {
     return $ptrSliceMut(Stack.as_mut_ptr(stack, CAP), stack.len);
   },
@@ -175,6 +195,7 @@ function main() {
   const value$1 = $ptr(copied, 0);
   $ptrCopy($ptrAdd($ptr(source, 0), 1), value$1, 2);
   console.log(`[${copied.map((item) => String(item)).join(", ")}]`);
+  // An array's pointer as its first item's.
   const row = [4, 5, 6];
   const first = $ptr(row, 0);
   console.log(`${$ptrAdd(first, 2).value}`);
@@ -189,6 +210,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+  // A `Copy` value JS holds as an object, which a copy changes: each
+  // place its own, as Rust's copy is.
   const points = Stack.new(4);
   Stack.push(points, { x: 1 }, 4, 4);
   Stack.push(points, { x: 2 }, 4, 4);

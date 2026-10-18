@@ -29,6 +29,8 @@ function alignedDebug_fmt(aligned) {
   return `Aligned { low: ${aligned.low}, high: ${aligned.high} }`;
 }
 
+// `halves` is at 4, after `Padded`'s padding.
+
 function splitDebug_fmt(split) {
   return `Split { tag: ${split.tag}, halves: ${alignedDebug_fmt(split.halves)} }`;
 }
@@ -49,6 +51,7 @@ function longest(words) {
   let best = "";
   for (const word of words) {
     if ($byteLen(word) > $byteLen(best)) {
+      // Only its lifetime changes.
       best = word;
     }
   }
@@ -56,6 +59,7 @@ function longest(words) {
 }
 
 function main() {
+  // The part at the same offset, of the same size.
   const value = [7];
   console.log(`${value[0]}`);
   console.log("4294967295");
@@ -66,6 +70,8 @@ function main() {
   console.log("true");
   console.log(`${$debugStr(String.fromCodePoint(65), "'")}`);
   console.log(`${nothingDebug_fmt(undefined)}`);
+
+  // Read from the bytes of the whole.
   const value$2 = [120, 86, 52, 18];
   console.log(`0x${$fromBytes(value$2, 4, true, false).toString(16)}`);
   console.log(
@@ -93,6 +99,7 @@ function main() {
   const value$5 = [1, 1];
   const bytes$4 = [...$toBytes(value$5[0], 4, true), ...$toBytes(value$5[1], 4, true)];
   console.log(`${$fromBytes(bytes$4, 8, true, false)}`);
+  // Its padding, bytes 1 to 3, is no part's.
   const value$6 = [9, 7, 7, 7, 4, 3, 2, 1];
   console.log(
     `${paddedDebug_fmt({
@@ -153,6 +160,8 @@ function main() {
   const bytes$10 = [...$toBytes(value$10[0], 2, true), ...$toBytes(value$10[1], 2, true)];
   const swapped = $fromBytes(bytes$10, 4, true, false);
   console.log(`0x${swapped.toString(16)}`);
+
+  // All zero.
   const n = 0;
   const pair = [0, false];
   const items = [0, 0, 0];

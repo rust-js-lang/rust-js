@@ -12,16 +12,19 @@ export function rect(x, y, w, h) {
   return { origin: { x, y }, size: [w, h] };
 }
 
+/** Fields are read with `.`, and a tuple's with `[i]`. */
 export function area(r) {
   return Math.imul(r.size[0], r.size[1]) >>> 0;
 }
 
+/** Changing a field in place: `p.x += dx`. */
 export function moved(x, y, dx) {
   const p = point(x, y);
   p.x = (p.x + dx) | 0;
   return p;
 }
 
+/** Nested fields, read and written. */
 export function grow(w, h, by) {
   const r = rect(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
@@ -31,6 +34,10 @@ export function grow(w, h, by) {
   return r;
 }
 
+/**
+ * `Point` is `Copy` and changed in place in this crate, so copying one
+ * copies the JS object: changing `b` must leave `a` alone.
+ */
 export function copies_are_separate(x) {
   const a = point(x, 0);
   const b = { ...a };
@@ -38,6 +45,7 @@ export function copies_are_separate(x) {
   return [a.x, b.x];
 }
 
+/** A `mut` parameter is a copy too. */
 function bump(p) {
   p.y = (p.y + 10) | 0;
   return p;
@@ -49,6 +57,7 @@ export function caller_keeps_its_point(y) {
   return [{ ...a }, { ...b }];
 }
 
+/** `Rect` moves, but the `Point` inside it was copied from `a`. */
 export function moves_share_nothing(x) {
   const a = point(x, x);
   const s = { origin: { ...a }, size: [1, 1] };
@@ -56,6 +65,10 @@ export function moves_share_nothing(x) {
   return [a.x, s.origin.x];
 }
 
+/**
+ * A variable bound by a pattern keeps its value, even when the struct it
+ * came from is then moved and changed.
+ */
 export function bound_before_move(x) {
   const r = rect(x, x, 1, 1);
   const before = r.origin.x;
@@ -64,6 +77,10 @@ export function bound_before_move(x) {
   return [before, s.origin.x];
 }
 
+/**
+ * Returned through a reference, a `Copy` field is a copy: the caller's
+ * struct still has its own.
+ */
 function origin_of(r) {
   return { ...r.origin };
 }
@@ -95,6 +112,7 @@ export function option_copy_is_separate(x) {
   return [kept, p.x];
 }
 
+/** `*r` of a reference a call returns is a copy too. */
 export function deref_copy_is_separate(x) {
   const points = [point(x, 0)];
   const p = { ...$unwrap(points[0]) };
@@ -102,16 +120,23 @@ export function deref_copy_is_separate(x) {
   return [$unwrap(points[0]).x, p.x];
 }
 
+/** Struct update syntax: fields not written come from `base`. */
 export function with_x(x, y) {
   const base = point(0, y);
   return { x, y: base.y };
 }
 
+/**
+ * Fields run in the order written, though the object lists them in
+ * declaration order. Here `y` is written first, so its division by zero
+ * panics before `x`'s remainder does.
+ */
 export function written_order(a, b) {
   const value = $div(100, a, -2147483648) | 0;
   return { x: $rem(100, b, -2147483648) | 0, y: value };
 }
 
+/** Tuples: built, returned and taken apart. */
 export function divmod(a, b) {
   return [$div(a, b) >>> 0, $rem(a, b) >>> 0];
 }
@@ -121,6 +146,7 @@ export function divmod_sum(a, b) {
   return (q + r) >>> 0;
 }
 
+/** A pattern in a parameter, and `match` on a tuple of variables. */
 export function classify([a, b]) {
   if (a === 0) {
     if (b === 0) {
@@ -141,6 +167,7 @@ export function classify([a, b]) {
   return 1;
 }
 
+/** `match` on struct fields, with bindings. */
 export function quadrant(x, y) {
   const value = point(x, y);
   if (value.x !== 0) {

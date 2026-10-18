@@ -82,6 +82,7 @@ export function capture(button) {
     globalThis.record(e.clientX);
   };
   button.addEventListener("click", listener, true);
+  // Removal without the capture flag must leave the capture listener installed.
   button.removeEventListener("click", listener);
 }
 

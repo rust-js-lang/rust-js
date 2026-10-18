@@ -79,6 +79,9 @@ function main() {
         noisyDrop_drop(item);
       }
       hash.clear();
+
+      // `drain()`: an iterator that owns its entries, whose drop drops what
+      // it hasn't given.
       const drained = new Map();
       try {
         const tmp = $insert(drained, 1, [5]);

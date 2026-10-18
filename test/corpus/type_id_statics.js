@@ -5,6 +5,7 @@ export function entry() {
 }
 
 const ID_ISIZE = "isize";
+
 const IDS = ["usize", "&str", "lib::A"];
 
 const F = [

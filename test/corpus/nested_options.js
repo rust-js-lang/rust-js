@@ -24,6 +24,7 @@ function entryDebug_fmt(entry) {
   return `Entry { name: ${$debugStr(entry.name)}, note: ${entry.note == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(entry.note))})`} }`;
 }
 
+// Constants rustc computes are boxed the same way.
 const NOTHING_FOUND = { $someNone: 0 };
 const DEEP = { $someNone: 1 };
 const FOUND_UNIT = { $someNone: 0 };
@@ -142,11 +143,13 @@ function main() {
     const top = $someValue(value);
     console.log(`${top == null ? "None" : `Some(${unitDebug_fmt($someValue(top))})`}`);
   }
+  // A found `None` is `Some(None)`, and none found is `None`.
   const value$16 = $nextSome($lent($iter(table)).filter((x) => x == null));
   const value$17 = $nextSome($lent($iter(table)).filter((x) => x === 2));
   console.log(
     `${value$16 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$16))})`} ${value$17 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$17))})`}`,
   );
+  // `flatten` is one `Option` of two: `Some(None)` is `None`, at any depth.
   const nested = [1, $some(undefined), undefined];
   console.log(
     `[${nested

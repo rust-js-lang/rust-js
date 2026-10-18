@@ -26,6 +26,7 @@ function main() {
   e = Math.imul(e, 2);
   const { x, y } = { x: 7, y: 8 };
   console.log(`${a} ${b} ${c} ${d} ${e} ${x} ${y}`);
+
   const slots = [0, 0, 0, 0];
   slots[0] = 9;
   slots[3] = 12;

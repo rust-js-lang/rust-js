@@ -142,6 +142,7 @@ function main() {
   );
   ordered(log, moneyAddAssign(), { default: () => [0n] });
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
+  // The crate's own, of a field, where its type is known: its impl's.
   const purse = [[1n]];
   log.push("purse");
   moneyAddAssign_add_assign(purse[0], [2n]);

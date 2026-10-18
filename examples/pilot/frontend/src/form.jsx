@@ -7,6 +7,7 @@ import { Failure, create } from "./api.js";
 import { go } from "./route.js";
 import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/runtime";
 
+/** The message for `field`, if one of `errors` is about it. */
 function message(errors, field) {
   return errors.find((error) => error.field === field)?.message;
 }
@@ -19,6 +20,7 @@ export function NewContactForm() {
   const [sending, setSending] = useState(false);
   const submit = (e) => {
     e.preventDefault();
+    // Every field's error at once: an age that isn't a number is one.
     const result = $parseInt($trim(age), 0, 4294967295);
     const parsed = result.TAG === "Ok" ? result._0 : undefined;
     const new$ = { name, email, age: parsed ?? 0 };

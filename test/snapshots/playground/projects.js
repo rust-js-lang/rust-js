@@ -13,6 +13,7 @@ function copy(files) {
   return files.map((f) => ({ path: f.path, state: f.state }));
 }
 
+/** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
 export function js_name(path) {
   const stem = $stripSuffix(path, ".rs");
   if (stem != null) {
@@ -22,19 +23,26 @@ export function js_name(path) {
 }
 
 export const Project = {
+  /** Before an example has loaded. */
   empty() {
     return { root: "lib.rs", files: [], current: "" };
   },
+
+  /** An example's files, with its root open. */
   of(root, texts) {
     const files = texts.map(([path, text]) => ({ path, state: source_state(text) }));
     return { root, files, current: root };
   },
+
   has(project, path) {
     return project.files.some((f) => f.path === path);
   },
+
   paths(project) {
     return project.files.map((f) => f.path);
   },
+
+  /** The open file's state, as it was stored: its editor has the latest. */
   current_state(project) {
     const file = project.files.find((f) => f.path === project.current);
     if (file) {
@@ -42,6 +50,8 @@ export const Project = {
     }
     return;
   },
+
+  /** With the open file's `live` state kept, since the editor has it. */
   keeping(project, live) {
     const files = copy(project.files);
     if (live) {
@@ -53,14 +63,20 @@ export const Project = {
     }
     return files;
   },
+
+  /** `path` open instead. */
   opening(project, path, live) {
     return { root: project.root, files: Project.keeping(project, live), current: path };
   },
+
+  /** With a new, empty file at `path`, open. */
   adding(project, path, live) {
     const files = Project.keeping(project, live);
     files.push({ path, state: source_state("") });
     return { root: project.root, files, current: path };
   },
+
+  /** Without `path`; if it was open, the root is. */
   removing(project, path) {
     const files = project.files
       .filter((f) => f.path !== path)
@@ -68,6 +84,8 @@ export const Project = {
     const current = project.current === path ? project.root : project.current;
     return { root: project.root, files, current };
   },
+
+  /** The crate as text, `path → text`, with the open file's `live` edits. */
   sources(project, live) {
     const files = Project.keeping(project, live);
     return new Map(files.values().map((f) => [f.path, text_of(f.state)]));

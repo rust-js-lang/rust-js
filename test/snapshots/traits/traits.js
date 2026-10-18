@@ -93,7 +93,7 @@ export function fresh(TDefault, TShape) {
 
 export function demo() {
   const c = { r: 1 };
-  const direct = circleShape_area(c);
+  const direct = circleShape_area(c); // the type is known here
   const mixed = [
     { value: c, impl: circleShape() },
     { value: [2], impl: squareShape() },

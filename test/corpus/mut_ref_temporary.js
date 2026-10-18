@@ -20,6 +20,7 @@ function main() {
   let tmp$1 = 42;
   tmp$1 = Math.imul(tmp$1, 2);
   console.log(`${tmp$1}`);
+
   let tmp$2 = 5;
   const x$1 = { value: tmp$2 };
   bump(x$1);

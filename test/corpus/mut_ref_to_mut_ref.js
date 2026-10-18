@@ -49,6 +49,10 @@ function retarget(r, other) {
   r.value = other;
 }
 
+/**
+ * Each `&mut` an `Option` holds, through `as_mut()`, and a `Vec`'s
+ * through `iter_mut()`: a `&mut` to each, `**r` the number.
+ */
 function each(held, all) {
   const r = held.value == null ? undefined : held;
   if (r != null) {

@@ -152,6 +152,7 @@ function main() {
       noisyDrop_drop(item);
     }
     console.log("after vec");
+
     const iter$1 = $iter([["x"], ["y"]]);
     while (true) {
       try {
@@ -252,6 +253,7 @@ function main() {
                             for (const item of iter$6) {
                               noisyDrop_drop(item);
                             }
+
                             tmp$8 = undefined;
                             tmp$8 = [["r1"], ["r2"]];
                             iter$7 = $iter(tmp$8);
@@ -377,6 +379,7 @@ function main() {
                               for (const item of iter$7) {
                                 noisyDrop_drop(item);
                               }
+
                               iter$9 = [3];
                               while (true) {
                                 tmp$12 = countdownIterator_next(iter$9);

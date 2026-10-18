@@ -40,6 +40,7 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
+
   console.log(`${$displayF64(1 / 4)} ${$displayF32(Math.fround(1 / 3))} ${$displayF64(1 / 0)}`);
   console.log(
     `[${$toBytes($floatToBits(1.5, 4), 4, true)

@@ -37,6 +37,7 @@ function main() {
     `${seen.size} ${((value) => (value == null ? "None" : `Some(${value})`))(seen.get({ kind: "On" }))}`,
   );
   console.log("1");
+  // Cast where it runs: by its tag, not its object (ADR 0393).
   const code = (light) => ["On", "Off"].indexOf(light.kind);
   console.log(`${code({ kind: "On" })} ${code({ kind: "Off" })}`);
   console.log(`Discriminant(${["On", "Off"].indexOf("Off")})`);

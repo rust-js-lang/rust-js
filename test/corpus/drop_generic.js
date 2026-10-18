@@ -35,6 +35,7 @@ function keep(value) {
   return value;
 }
 
+// Drops a `T` it makes, so takes nothing but its drop.
 function made(TDefault, dropT) {
   const _value = TDefault.default();
   try {
@@ -72,6 +73,8 @@ function relay(value, dropU) {
   console.log("relayed");
 }
 
+// Of an `impl Trait` argument, whose type parameter rustc names as it's
+// written: `dropDisplay`.
 function shown(x, Display, dropDisplay) {
   let tmp;
   try {

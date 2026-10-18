@@ -52,14 +52,19 @@ function same(a, b) {
   return $ptrTo(a) === $ptrTo(b);
 }
 
+// A pointer nothing reads, of what a shared reference holds, which has no
+// place: made of nothing.
 function unread(n) {
   return n;
 }
 
+/** One to a field, whose handle making it would make for nothing. */
 function unread_field(pair) {
   return pair[1];
 }
 
+// A `ref mut` binding read through a match guard, the `&mut` a value of its
+// own there.
 function guarded(n) {
   const z = {
     get value() {
@@ -90,6 +95,7 @@ function main() {
   pp.value.y = 20;
   pp.value = { x: (pp.value.x + 1) | 0, y: pp.value.y };
   console.log(`${ptDebug_fmt(pt)}`);
+
   const n = null;
   console.log(`${n === null} ${c === null}`);
   const value = n === null ? undefined : n.value;
@@ -121,9 +127,11 @@ function main() {
   value$2.y = (value$2.y + 2) | 0;
   const x$1 = ownDeref_deref(own).x;
   console.log(`${ptDebug_fmt(point)} ${x$1}`);
+
   const a = { x: 1, y: 1 };
   const b = { ...a };
   console.log(`${same(a, b)} ${same(a, a)} ${$eq(a, b)}`);
+
   console.log(`${unread(4)} ${guarded(6)} ${unread_field([1, 2])}`);
   const literal = { value: 3 };
   const sameLiteral = literal;
@@ -133,9 +141,11 @@ function main() {
   console.log(`${atOnce.value}`);
   const again = c;
   console.log(`${again === c}`);
+
   const tag = { id: 1 };
   const other = { ...tag };
   console.log(`${$ptrTo(tag) === $ptrTo(other)} ${tag.id === other.id}`);
+  // What holds a pointer compares it by its place, not what it points to.
   const twin = { value: 5 };
   const elsewhere = $ptr(twin, "value");
   const seven = { value: 7 };
@@ -151,6 +161,7 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
+
   const items = [10, 20, 30];
   const start = $ptr(items, 0);
   const firstItem = $ptr(items, 0);

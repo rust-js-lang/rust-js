@@ -136,11 +136,13 @@ const Parser = {
   peek(parser) {
     return parser.tokens[parser.at];
   },
+
   next(parser) {
     const token = parser.tokens[parser.at];
     parser.at = (parser.at + 1) >>> 0;
     return token;
   },
+
   expect(parser, token, what) {
     const t = Parser.next(parser);
     if (t != null && $eq(t, token)) {
@@ -148,6 +150,8 @@ const Parser = {
     }
     return { TAG: "Err", _0: { TAG: "Expected", _0: what } };
   },
+
+  // expr := term (('+' | '-') term)*
   expr(parser) {
     const result = Parser.term(parser);
     if (result.TAG === "Err") {
@@ -169,6 +173,8 @@ const Parser = {
     }
     return { TAG: "Ok", _0: left };
   },
+
+  // term := power (('*' | '/') power)*
   term(parser) {
     const result = Parser.power(parser);
     if (result.TAG === "Err") {
@@ -190,6 +196,8 @@ const Parser = {
     }
     return { TAG: "Ok", _0: left };
   },
+
+  // power := unary ('^' power)?
   power(parser) {
     const result = Parser.unary(parser);
     if (result.TAG === "Err") {
@@ -208,6 +216,7 @@ const Parser = {
     }
     return { TAG: "Ok", _0: base };
   },
+
   unary(parser) {
     const other = Parser.next(parser);
     if (other != null) {
@@ -284,6 +293,7 @@ const Calculator = {
     vars.set("pi", 3.141592653589793);
     return { vars, functions };
   },
+
   eval(calculator, expr) {
     let tmp;
     bb92: {
@@ -357,12 +367,14 @@ const Calculator = {
     }
     return { TAG: "Ok", _0: tmp };
   },
+
   run(calculator, line) {
     const result$1 = tokenize(line);
     if (result$1.TAG === "Err") {
       return result$1;
     }
     const tokens = result$1._0;
+    // `name = expr` assigns.
     if (tokens.length >= 2 && tokens[0].TAG === "Ident" && tokens[1] === "Assign") {
       const name = tokens[0]._0;
       const parser = { tokens: $slice(tokens, 2).slice(), at: 0 };

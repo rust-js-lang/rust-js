@@ -41,6 +41,7 @@ const Mapped = {
     }
     return result;
   },
+
   latest(mapped, dropT) {
     let mapped$1$live = true;
     let mapped$0$live = true;
@@ -199,6 +200,7 @@ function main() {
           console.log(`none ${!n}`);
           const numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
           console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
+
           const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
           const value = (l) => l[0];
           try {
@@ -215,6 +217,7 @@ function main() {
                   loudDrop_drop(tmp);
                 }
               }
+
               const tmp$1 = name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] });
               console.log(`name ${tmp$1}`);
               const tmp$2 = name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] });

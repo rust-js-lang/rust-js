@@ -46,6 +46,9 @@ function main() {
   show($mulAdd(Infinity, 1, -Infinity));
   show($mulAdd(1e308, 10, 0));
   show($mulAdd(0, -2, 2.718281828459045));
+
+  // An `f32`'s, rounded once to an `f32`: `a * b` is a tie, which `c`
+  // tips, though too little for an `f64` to hold.
   const a = Math.fround(1 + $powiF32(2, -12));
   show32($mulAddF32(a, a, $powiF32(2, -60)));
   show32($mulAddF32(a, a, -$powiF32(2, -60)));

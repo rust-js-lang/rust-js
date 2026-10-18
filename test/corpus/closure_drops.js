@@ -52,6 +52,7 @@ function main() {
   let tick$live = false;
   console.log(`${tick()}`);
   console.log("after");
+
   const b = ["b"];
   const c = ["c"];
   const once = () => {
@@ -80,6 +81,7 @@ function main() {
   }
   noisyDrop_drop(d);
   noisyDrop_drop(d2);
+
   const p = ["p"];
   const q = ["q"];
   run(() => {
@@ -105,6 +107,7 @@ function main() {
     }
   };
   r = ["r2"];
+
   try {
     take();
   } catch (error) {
@@ -182,6 +185,7 @@ function main() {
     noisyDrop_drop(r);
     throw error;
   }
+
   for (let i = 0; i < 2; i++) {
     const h = [i === 0 ? "h0" : "h1"];
     maybe$live = true;

@@ -23,6 +23,7 @@ const Inline = {
   new(AArray) {
     return { len: 0, data: [] };
   },
+
   push(inline, item, AArray) {
     if (inline.len === AArray.size()) {
       return false;
@@ -41,6 +42,7 @@ const Inline = {
     inline.len = (inline.len + 1) >>> 0;
     return true;
   },
+
   get(inline, i, AArray) {
     return i < inline.len ? $some($ptrAdd($ptrFirst($ptrTo(inline.data)), i).value) : undefined;
   },

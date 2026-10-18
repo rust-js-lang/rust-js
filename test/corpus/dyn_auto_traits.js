@@ -49,6 +49,7 @@ function main() {
       item.impl.$drop?.(item.value);
     }
   }
+
   const one = { value: ["upcast"], impl: { $drop: noisyDrop_drop } };
   one.impl.$drop?.(one.value);
   const named = { value: ["named"], impl: noisyNamed() };
@@ -108,6 +109,7 @@ function main() {
     },
   );
   console.log(`drops ${drops}`);
+
   const kept = ["borrowed"];
   try {
     keep({ value: kept, impl: { $drop: noisyDrop_drop } });

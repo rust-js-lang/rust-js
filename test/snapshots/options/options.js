@@ -12,6 +12,7 @@ export function half(n) {
   return;
 }
 
+/** `match`, with patterns inside `Some`, and a guard. */
 export function describe(o) {
   if (o != null) {
     if (o === 0) {
@@ -25,6 +26,7 @@ export function describe(o) {
   return 0;
 }
 
+/** `if let`, and its `else`. */
 export function half_or_zero(n) {
   const h = half(n);
   if (h != null) {
@@ -33,6 +35,7 @@ export function half_or_zero(n) {
   return 0;
 }
 
+/** `while let`. */
 export function halvings(n) {
   let count = 0;
   while (true) {
@@ -59,6 +62,7 @@ export function expected(n) {
   return $unwrap(half(n), "an even number");
 }
 
+/** `unwrap_or` evaluates its argument even when it isn't needed. */
 export function eager(n) {
   let calls = 0;
   const bump = () => {
@@ -83,6 +87,7 @@ export function same_slots(a, b) {
   return $eq(a, b);
 }
 
+/** A string inside. */
 export function label(n) {
   const name = n > 0 ? String(n) : undefined;
   return name != null ? name + "!" : "none";
@@ -99,6 +104,7 @@ function pair(n) {
   return;
 }
 
+/** `map`: the closure runs on the value, for `Some` only. */
 export function mapped(n) {
   const h = half(n);
   const h$1 = half(n);
@@ -113,6 +119,7 @@ export function mapped(n) {
   ];
 }
 
+/** `map` with a closure of statements, and with a pattern for its parameter. */
 export function mapped_more(n) {
   let calls = 0;
   const h = half(n);
@@ -128,6 +135,10 @@ export function mapped_more(n) {
   return [value, counted, value$1, option$1 != null ? 7 : undefined];
 }
 
+/**
+ * Let chains (Rust 2024): `let`s and conditions joined by `&&`. The
+ * condition reads what the `let` bound.
+ */
 export function chained(n) {
   const h = half(n);
   if (h != null && h > 2) {
@@ -136,6 +147,7 @@ export function chained(n) {
   return -1;
 }
 
+/** A `let` after another is only computed if everything before it held. */
 export function chained_twice(n) {
   let calls = 0;
   const counted = (m) => {
@@ -153,6 +165,7 @@ export function chained_twice(n) {
   return [v, calls];
 }
 
+/** An `else` of more than one statement, reached from each level by a label. */
 export function chained_long_else(n) {
   let calls = 0;
   const counted = (m) => {
@@ -170,6 +183,7 @@ export function chained_long_else(n) {
   return -calls | 0;
 }
 
+/** Without an `else`, and binding a tuple. */
 export function chained_statement(n) {
   let total = 0;
   const h = half(n);
@@ -184,6 +198,7 @@ export function chained_statement(n) {
   return total;
 }
 
+/** `while let` with a chain. */
 export function chained_loop(n) {
   let count = 0;
   while (true) {

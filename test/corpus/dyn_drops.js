@@ -143,6 +143,7 @@ function main() {
     item.impl.$drop?.(item.value);
   }
   console.log("after all");
+
   const lent = ["lent"];
   const borrowed = { value: lent, impl: noisyShape() };
   let tmp$1;
@@ -160,6 +161,7 @@ function main() {
   }
   const loud = [3];
   const shown = loudDebug_fmt(loud);
+
   try {
     console.log(`${shown}`);
   } catch (error) {

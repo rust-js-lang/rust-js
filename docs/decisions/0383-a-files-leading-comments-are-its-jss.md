@@ -1,6 +1,8 @@
 # 0383. A file's leading comments are its JS's
 
-Status: Accepted. Extends [0018](0018-print-with-oxc.md).
+Status: Accepted. Extends [0018](0018-print-with-oxc.md). Extended by
+[0444](0444-a-comment-is-where-its-code-is.md): every other comment is the
+JS's too, where its code is, by the same rules for what JS can hold.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments, which
 nothing runs.

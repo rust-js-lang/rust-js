@@ -10,6 +10,7 @@ const Holder = {
   hold(holder, x) {
     holder.held = x;
   },
+
   bump(holder) {
     const old = holder.held;
     holder.held = undefined;
@@ -24,6 +25,7 @@ function keep(kept, x) {
   kept.push(x);
 }
 
+/** One whose lifetime names no other parameter's: a box, copied back. */
 function doubled(x) {
   x.value = Math.imul(x.value, 2) >>> 0;
 }

@@ -77,6 +77,8 @@ function main() {
   };
   h.text.value = $asciiCase(h.text.value, true);
   console.log(`${kept}`);
+
+  // A range of one, by its UTF-8 bytes.
   let name = "élan vital";
   name = $asciiCase(name, true, 2, 4);
   console.log(`${name}`);
@@ -235,6 +237,8 @@ function main() {
   console.log(`${pair}`);
   pair = $asciiCase(pair, true, 0, 2);
   console.log(`${pair}`);
+
+  // A `&mut str` of bytes, written through to them.
   const bytes = [104, 101, 108, 108, 111];
   const value$3 = $fromUtf8Mut(bytes);
   if (value$3.TAG === "Ok") {

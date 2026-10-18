@@ -33,6 +33,7 @@ function main() {
   console.log(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}`);
   const value$2 = cell.value;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${$getOrInit(cell, () => 3)}`);
+
   const lazy = {};
   let calls = 0;
   for (let i = 0; i < 3; i++) {
@@ -58,6 +59,8 @@ function main() {
   const value$4 = $unwrap(count.value == null ? undefined : count);
   value$4.value = (value$4.value + 1) | 0;
   console.log(`${count.value == null ? "None" : `Some(${count.value})`}`);
+
+  // `()` and `None` look like `None` in JS: what's set is still there.
   const unit = {};
   console.log(
     `${unit.value == null ? "None" : "Some(())"} ${$onceSet(unit).TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit.value == null ? "None" : "Some(())"}`,
@@ -71,6 +74,7 @@ function main() {
   console.log(
     `${value$6.TAG === "Ok" ? "Ok(())" : `Err(${value$6._0 == null ? "None" : `Some(${value$6._0})`})`}`,
   );
+
   const lock = {};
   console.log(
     `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,

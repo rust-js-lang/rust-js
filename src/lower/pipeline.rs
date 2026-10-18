@@ -167,13 +167,12 @@ pub fn lower_crate<'tcx>(
         let key = thread_local_inits.get(&def_id).copied();
         let named = key.unwrap_or(def_id);
         let info = &fns[&named.to_def_id()];
-        let span = tcx.def_span(named).source_callsite();
         const_items.entry(info.module).or_default().push(js::Const {
             name: info.name.clone(),
             value,
             mutable: false,
             export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
-            span: sources.span(span),
+            span: sources.item_span(tcx, named),
         });
     }
 
@@ -413,7 +412,6 @@ pub fn lower_crate<'tcx>(
                     _ => value,
                 };
                 let info = &fns[&key.to_def_id()];
-                let span = tcx.def_span(key).source_callsite();
                 pass.local_consts.entry(info.module).or_default().push(js::Const {
                     name: info.name.clone(),
                     value,
@@ -421,7 +419,7 @@ pub fn lower_crate<'tcx>(
                     // A `const { .. }` block has no visibility: it's its function's alone.
                     export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
                         || called_from_elsewhere.contains(&key.to_def_id()),
-                    span: sources.span(span),
+                    span: sources.item_span(tcx, key),
                 });
                 if lowered.jsx {
                     pass.jsx.insert(module);

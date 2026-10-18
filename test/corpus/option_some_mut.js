@@ -38,6 +38,7 @@ function main() {
   const o = { value: a };
   write(o, 2);
   a = o.value;
+  // A `Some` that looks like `None`, boxed, written a `Some` that doesn't.
   let n = $some(undefined);
   const o$1 = { value: n };
   write(o$1, 5);

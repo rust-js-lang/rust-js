@@ -23,6 +23,11 @@ function set_second(m, v, AArray) {
   $ptrAdd($ptrFirst(m), 1).value = v;
 }
 
+/**
+ * A cast between two types' pointers in generic code, which JS has at the
+ * same place only where they're one type, made where it runs, rust-js's
+ * error there (ADR 0407): not here, where it doesn't.
+ */
 function reinterpret(p, taken) {
   if (taken) {
     return $ptrRecast(p);

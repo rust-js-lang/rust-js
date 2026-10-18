@@ -33,9 +33,11 @@ function main() {
   console.log(`[${words.map((item) => $debugStr(item._0)).join(", ")}]`);
   const value = $maxBy(words, (a, b) => $cmp(a._0, b._0));
   console.log(`${value == null ? "None" : `Some(${$debugStr(value._0)})`}`);
+
   const some = { TAG: "Borrowed", _0: "x" };
   const right$2 = { TAG: "Owned", _0: "x" };
   console.log(`${some == null || right$2 == null ? some == right$2 : some._0 === right$2._0}`);
+
   const a = label(1, { TAG: "Borrowed", _0: "one" });
   const b = label(1, { TAG: "Owned", _0: "one" });
   const c = label(1, { TAG: "Borrowed", _0: "two" });
@@ -44,6 +46,7 @@ function main() {
       ["Less", "Equal", "Greater"][($cmp(b.rank, c.rank) || $cmp(b.name._0, c.name._0)) + 1]
     }`,
   );
+
   const nums = { TAG: "Borrowed", _0: [1, 2, 3] };
   const more = { TAG: "Owned", _0: [1, 2, 3] };
   const value$1 = $eq(nums._0, more._0);

@@ -12,14 +12,26 @@ import {
   $unwrapErr,
 } from "@rust-js/runtime";
 
+/**
+ * JSON's value, each property a reviver gives none of left out, as
+ * react.dev's errors page revives its elements.
+ */
 export function revived(text) {
   return JSON.parse(text, hidden);
 }
 
+/**
+ * Whether `value` has a property of the name, its own or its prototype's,
+ * as react.dev's errors page asks of its MDX components.
+ */
 export function holds(value, key) {
   return key in value;
 }
 
+/**
+ * A property by a name that's itself a JS value, as react.dev's errors page
+ * looks up the component a JSON element names.
+ */
 export function named(value, key) {
   if (key in value) {
     return value[key];
@@ -27,18 +39,34 @@ export function named(value, key) {
   return;
 }
 
+/**
+ * Whether `value` has a property of the name a key that's none has,
+ * `"undefined"`, as react.dev's errors page asks of a type it may not have.
+ */
 export function holds_none(value, key) {
   return key in value;
 }
 
+/**
+ * A struct given by value as a JS value of any shape, an element's props as
+ * react.dev's errors page makes them.
+ */
 export function wrapped(children) {
   return { children };
 }
 
+/**
+ * Text that may be none, as a JS value of any shape: the option itself,
+ * as react.dev's createFileMap shows a code block's children.
+ */
 export function as_unknown(text) {
   return text;
 }
 
+/**
+ * A dictionary made empty, then filled, as react.dev's createFileMap makes
+ * Sandpack's files.
+ */
 export function filled() {
   const files = {};
   files["/App.js"] = 1;
@@ -52,14 +80,20 @@ function hidden(key, value) {
   return value;
 }
 
+/** A string's JSON text, which is a JS string literal too. */
 export function quoted(text) {
   return JSON.stringify(text);
 }
 
+/** `pattern`'s matches replaced with `with`, in which `$1` is the first group. */
 export function replaced(text, pattern, flags, with$) {
   return text.replace(new RegExp(pattern, flags), with$);
 }
 
+/**
+ * JS's string methods, by JS's indexes, UTF-16's, as react.dev's code
+ * reads its strings: each part of `text`, and where `part` is in it.
+ */
 export function parts(text, part) {
   const parts = [
     text.slice(1, -1),
@@ -74,32 +108,49 @@ export function parts(text, part) {
   return [parts, at, text.length];
 }
 
+/**
+ * What's after a path's last `/`, as react.dev's NavigationBar takes a
+ * file's name: an index is a JS number, as TypeScript has it, so one past
+ * it is `+ 1`.
+ */
 export function file_name(path) {
   return path.slice(path.lastIndexOf("/") + 1);
 }
 
+/**
+ * JS's `replace` of a string: the first match only, where Rust's
+ * `str::replace` replaces each.
+ */
 export function replaced_first(text, from, to) {
   return text.replace(from, to);
 }
 
+/**
+ * JS's `split` of a string, by text and by a pattern of no groups, as
+ * react.dev's pages take a path's query and hash off, `/[\?\#]/`.
+ */
 export function split_parts(text) {
   return [text.split(","), text.split(/[,;]/)];
 }
 
+/** Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves. */
 export function units(text) {
   return $range(0, text.length).map((i) => text.charAt(i));
 }
 
+/** A JS object of these keys and values, as an API taking a dictionary wants. */
 export function attributes(label, level) {
   return { "aria-label": label, "aria-level": String(level) };
 }
 
+/** `Object.is`: the same object, or the same value, NaN too. */
 export function identical(same) {
   const a = { k: 1 };
   const b = same ? a : { k: 1 };
   return [Object.is(a, b), Object.is(NaN, NaN)];
 }
 
+/** What was thrown: an `Error`'s message, or that it's no `Error`. */
 export async function thrown() {
   const error = $unwrapErr($try(() => decodeURIComponent("%E0%A4%A")));
   const first = error instanceof Error ? error.message : "not an Error";
@@ -108,35 +159,49 @@ export async function thrown() {
   return [first, second];
 }
 
+/** `x.toFixed(digits)`, as JS rounds, and `format!`'s, as Rust does. */
 export function fixed(x, digits) {
   return [x.toFixed(digits), $toFixed(x, digits)];
 }
 
+/**
+ * `Math.round(x)`, as JS rounds, a half up, and `x.round()`, as Rust
+ * does, a half away from zero.
+ */
 export function rounded(x) {
   return [Math.round(x), $round(x)];
 }
 
+/**
+ * `Math.max(a, b)` and `Math.min(a, b)`, `NaN` of a `NaN`, and Rust's, the
+ * other number.
+ */
 export function bounds(a, b) {
   return [Math.max(a, b), $f64Max(a, b), Math.min(a, b), $f64Min(a, b)];
 }
 
+/** `Math.sign(x)`, `0` of a zero, and `x.signum()`, `1` of `0`. */
 export function signs(x) {
   return [Math.sign(x), $signum(x)];
 }
 
+/** `Math.random()`, from `0` up to `1`. */
 export function random() {
   return Math.random();
 }
 
+/** `done` after `ms`. */
 export function after(ms, done) {
   setTimeout(done, ms);
 }
 
+/** `never` after `ms`, cleared first: it doesn't run. */
 export function cancelled(ms, never) {
   const id = setTimeout(never, ms);
   clearTimeout(id);
 }
 
+/** `tick` every `ms`, until `stop` of what this gives. */
 export function every(ms, tick) {
   return setInterval(tick, ms);
 }
@@ -145,6 +210,10 @@ export function stop(id) {
   clearInterval(id);
 }
 
+/**
+ * `done` at `at`: a delay is a JS number, as TypeScript's, the time
+ * until then as it is, as react.dev's clock waits for the next minute.
+ */
 export function at(at, done) {
   setTimeout(done, at - Date.now());
 }
@@ -153,6 +222,10 @@ async function doubled(n) {
   return Math.imul(n, 2) >>> 0;
 }
 
+/**
+ * A future, unawaited, as the promise it is: what a binding taking a
+ * promise is given, as react.dev's "Copy page" gives `ClipboardItem` one.
+ */
 export async function promised(n) {
   const pending = doubled(n);
   const result = await $settle(pending);

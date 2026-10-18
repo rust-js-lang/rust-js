@@ -92,6 +92,7 @@ function main() {
   );
   names.clear();
   console.log(`${names.size}`);
+
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
@@ -251,6 +252,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}}`,
   );
+
+  // A remove whose old value nothing reads: JS's own `delete`.
   const seen = new Map();
   seen.set("a", 1);
   seen.set("b", 2);

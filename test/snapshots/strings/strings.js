@@ -17,6 +17,7 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
+/** `format!`, as the pieces and values joined. */
 export function labeled(name, n) {
   return `${name}: ${n} item${n === 1 ? "" : "s"}`;
 }
@@ -37,12 +38,14 @@ export function replaced(s) {
   return s.replaceAll("/", " / ").replaceAll("a", "A");
 }
 
+/** `strip_prefix` and `strip_suffix` are options. */
 export function module_name(path) {
   const rest = $stripPrefix(path, "src/");
   const file = rest != null ? rest : path;
   return $stripSuffix(file, ".rs") ?? file;
 }
 
+/** `split`: looped over, collected, or its last piece. */
 export function parts(path) {
   const kept = [];
   let empty = 0;
@@ -62,6 +65,7 @@ export function rejoined(path) {
   return pieces.join(" > ");
 }
 
+/** Building a string up: `push_str` and `push` on a variable. */
 export function built(n) {
   let s = "";
   for (let i = 0; i < n; i++) {
@@ -72,12 +76,14 @@ export function built(n) {
   return s;
 }
 
+/** `char`s: literals, `==`, and `to_string`. */
 export function separator(windows) {
   const c = windows ? "\\" : "/";
   const same = c === "/";
   return c + (same ? " (unix)" : " (windows)");
 }
 
+/** `split_once` and `rsplit_once`: an option of the two sides. */
 export function folder_and_file(path) {
   const value = $splitOnce(path, "/");
   let first;
@@ -102,6 +108,7 @@ export function repeated(s, n) {
   return s.repeat(n);
 }
 
+/** `match` on string literals, with `|`. */
 export function kind(s) {
   if (s === "") {
     return 0;
@@ -118,6 +125,7 @@ export function kind(s) {
   return 4;
 }
 
+/** String literals inside other patterns: an option, a tuple. */
 export function tagged(s) {
   const option = $splitOnce(s, "/");
   const top = option ? option[0] : undefined;
@@ -142,16 +150,28 @@ function tick(c) {
   return c.value;
 }
 
+/**
+ * `format!`'s arguments run in the order they're written, whatever order
+ * the template shows them in, and each runs once.
+ */
 export function format_order(start) {
   const c = { value: start };
   const value = tick(c);
   return `${tick(c)} ${value} ${value} ${c.value}`;
 }
 
+/**
+ * Format options (ADR 0058): width, fill and alignment, `+`, zeros, a
+ * precision, and other bases, as Rust applies them.
+ */
 export function padded(n, name) {
   return `[${String(n).padStart(6)}] [${String(n).padEnd(6)}] [${$pad(name, 9, "^")}] [${$pad(name, 9, ">", "*")}] [${$zeroPad(String(n), 6)}] [${$plus(String(n))}] [0x${(n >>> 0).toString(16)}] [${$zeroPad("0b" + (n >>> 0).toString(2), 10)}] [${(n >>> 0).toString(16).toUpperCase()}] [${$toFixed(n / 8, 2)}] [${Array.from(name).slice(0, 3).join("")}]`;
 }
 
+/**
+ * `{:.1}` rounds a tie to even, as Rust does, where JS's `toFixed` rounds
+ * it up; and `{:?}` of an `f64` keeps its `.0`.
+ */
 export function rounded(quarters) {
   const x = quarters / 4;
   return `${$toFixed(x, 0)} ${$toFixed(x, 1)} ${$toFixed(x, 3).padStart(8)} ${$debugF64(x)}`;

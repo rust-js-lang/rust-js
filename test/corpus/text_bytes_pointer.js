@@ -10,6 +10,7 @@ const Text = {
   new(CAP) {
     return { xs: Array.from({ length: CAP }), len: 0 };
   },
+
   push_str(text, s, CAP) {
     if ($byteLen(s) > (CAP - text.len) >>> 0) {
       return false;
@@ -20,6 +21,7 @@ const Text = {
     text.len = (text.len + $byteLen(s)) >>> 0;
     return true;
   },
+
   as_str(text, CAP) {
     const bytes = $ptrSlice($ptr(text.xs, 0), text.len);
     return $utf8Decode(bytes);

@@ -4,6 +4,7 @@
 
 import { $div } from "@rust-js/runtime";
 
+/** Recursive, with `if` as an expression. */
 export function fib(n) {
   if (n < 2) {
     return n;
@@ -11,6 +12,7 @@ export function fib(n) {
   return (fib((n - 1) >>> 0) + fib((n - 2) >>> 0)) >>> 0;
 }
 
+/** Recursive, with `match` on integers. */
 export function fib_match(n) {
   if (n === 0) {
     return 0;
@@ -21,6 +23,7 @@ export function fib_match(n) {
   return (fib_match((n - 1) >>> 0) + fib_match((n - 2) >>> 0)) >>> 0;
 }
 
+/** Iterative, with `while` and mutable locals. */
 export function fib_iter(n) {
   let a = 0;
   let b = 1;
@@ -34,6 +37,7 @@ export function fib_iter(n) {
   return a;
 }
 
+/** `loop` with `break value`. */
 export function fib_loop(n) {
   let a = 0;
   let b = 1;
@@ -49,6 +53,7 @@ export function fib_loop(n) {
   }
 }
 
+/** Simple enum + `match`. */
 export function nth(order, n) {
   if (order === "Ascending") {
     return fib_iter(n);
@@ -56,10 +61,12 @@ export function nth(order, n) {
   return fib_iter((20 - n) >>> 0);
 }
 
+/** Signed wrapping arithmetic. */
 export function wrap_demo(x) {
   return (Math.imul(x, 3) - 7) | 0;
 }
 
+/** Integer division panics on zero (and on `i32::MIN / -1`), just like Rust. */
 export function ratio(a, b) {
   return $div(a, b, -2147483648) | 0;
 }

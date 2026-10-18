@@ -42,6 +42,7 @@ extern crate rustc_target;
 
 mod cargo;
 mod command;
+mod comments;
 mod format;
 mod hooks;
 mod js;

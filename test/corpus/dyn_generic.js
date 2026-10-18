@@ -92,6 +92,7 @@ function main() {
     },
   );
   console.log(`${$displayF64(square[0])}`);
+
   const named = { value: square, impl: squareNamed() };
   console.log(
     `${describe(named, {
@@ -112,6 +113,7 @@ function main() {
       }),
     )}`,
   );
+
   const shown = { value: 5, impl: { fmt: String } };
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);
   const up = [0];

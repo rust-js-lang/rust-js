@@ -8,6 +8,7 @@ export function entry() {
   main();
 }
 
+// Ordered by the first number alone.
 export function loosePartialOrd() {
   if ($loosePartialOrd === undefined) {
     $loosePartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: loosePartialOrd_partial_cmp };
@@ -55,6 +56,8 @@ function main() {
     $sortUnstable(wide, (a, b) => key$1(a) < key$1(b), "hoare");
     const arg$3 = wide.map((w) => String(w.pad[0])).join(",");
     console.log(`${n}: ${arg$3}`);
+
+    // How many times std asks, which each small sort asks as many as it does.
     let asked = 0;
     const tags = base.map((p) => [p[0], p[1]]);
     const compare = (a, b) => {
@@ -72,6 +75,8 @@ function main() {
     $sortUnstable(counted, (a, b) => key$2(a) < key$2(b), "fallback");
     const arg$5 = counted.map((c) => String(c[1])).join(",");
     console.log(`${n}: ${arg$5}`);
+
+    // In order already, it's left as it is; in reverse, reversed.
     const again = byKey.slice();
     const key$3 = (p) => p[0];
     $sortUnstable(again, (a, b) => key$3(a) < key$3(b), "network");

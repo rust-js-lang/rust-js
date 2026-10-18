@@ -81,6 +81,7 @@ function main() {
     $print(`${n} `);
   }
   console.log("");
+
   const noisy = v.values().map((n) => {
     console.log(`see ${n}`);
     return n;

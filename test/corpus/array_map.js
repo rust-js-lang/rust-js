@@ -56,6 +56,7 @@ function main() {
   console.log(
     `[${points.map((item) => pDebug_fmt(item)).join(", ")}] [${moved.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );
+  // So is an array iterated by value: its items are copies.
   const iterated = points
     .map((item) => ({ ...item }))
     .map((p) => {

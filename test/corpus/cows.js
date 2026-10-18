@@ -23,6 +23,7 @@ function main() {
   const value = $cowMut(text);
   value.value += "!!";
   console.log(`${text._0} ${text.TAG === "Owned"}`);
+
   const items = [1, 2, 3];
   const list = { TAG: "Borrowed", _0: items };
   console.log(`[${list._0.map((item) => String(item)).join(", ")}]`);

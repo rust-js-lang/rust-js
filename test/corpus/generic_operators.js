@@ -96,6 +96,7 @@ function metersMulF64_mul(meters, k) {
   return [meters[0] * k];
 }
 
+// A number's, of the crate's own on its right: the crate's impl.
 export function f64MulV2() {
   if ($f64MulV2 === undefined) {
     $f64MulV2 = { mul: f64MulV2_mul };
@@ -116,6 +117,7 @@ function scaled(x, k, TMulF64) {
 }
 
 function main() {
+  // `u8`'s and `i32`'s wrap as they do outside generic code.
   console.log(
     `${total(
       [1, 2, 3],

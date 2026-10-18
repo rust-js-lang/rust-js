@@ -23,6 +23,7 @@ function unitTracked() {
   return $unitTracked;
 }
 
+// Its declaration's `#[track_caller]` is its own too.
 function unitTracked_inherited(unit, location) {
   return location;
 }

@@ -16,6 +16,7 @@ function stackBorrowMutI32Slice_borrow_mut(stack) {
   return stack.items;
 }
 
+// `BorrowMut` needs `Borrow`, its supertrait.
 export function stackBorrowI32Slice() {
   if ($stackBorrowI32Slice === undefined) {
     $stackBorrowI32Slice = { borrow: stackBorrowI32Slice_borrow };

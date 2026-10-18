@@ -104,6 +104,7 @@ function main() {
     }
     if (!tmp) {
       noisyDrop_drop(value);
+
       break;
     }
     noisyDrop_drop(value);
@@ -123,7 +124,9 @@ function main() {
     noisyDrop_drop(_inner);
   }
   console.log(`found ${found}`);
+
   console.log(`tail ${tail(6)}`);
+
   const value$1 = make(7);
   const value$2 = [7];
   let tmp$1;
@@ -193,6 +196,7 @@ function main() {
       noisyDrop_drop(pair.a);
     }
   }
+
   pair$0$live = false;
   const check = (n) => {
     const value = make(n);

@@ -49,17 +49,21 @@ function main() {
   for (const v of values) {
     console.log(`${Value.show(v)} ${Value.is_zero(v)}`);
   }
+  // A copy is a union of its own: writing one leaves the other.
   const value = $index(values, 0);
   const copy = { ...value, number: { ...value.number } };
   $unionSet($index(values, 0).number, "int", 8);
   $index(values, 0).kind = "Int";
   console.log(`${$unionField(copy.number, "int")} ${$unionField($index(values, 0).number, "int")}`);
+  // Written as another field, it holds that one now.
   $index(values, 1).kind = "Int";
   $unionSet($index(values, 1).number, "int", -3);
   console.log(`${Value.show($index(values, 1))}`);
   const n = { int: 1 };
   set_float(n, 0.5);
   console.log(`${$displayF64($unionField(n, "float"))}`);
+
+  // Fields of one type read each other's: the same bytes.
   const same = { left: 40 };
   $unionSet(same, "right", ($unionField(same, "right", "left") + 2) & 65535);
   const arg = $unionField(same, "left", "right");
@@ -67,6 +71,8 @@ function main() {
   console.log(`${arg} ${arg$1}`);
   const left = $unionField(same, "left", "right");
   console.log(`${left}`);
+
+  // One holding what's changed in place: its copy holds a copy.
   const shape = { point: { x: 1, y: 2 } };
   const kept = Object.hasOwn(shape, "point") ? { point: { ...shape.point } } : { ...shape };
   $unionField(shape, "point").x = 10;
@@ -74,6 +80,7 @@ function main() {
   const arg$3 = $unionField(shape, "point").x;
   const arg$4 = $unionField(shape, "point").y;
   console.log(`${arg$2} ${arg$3} ${arg$4}`);
+  // A field of no bytes reads nothing, whatever it holds.
   console.log("()");
   const boxed = 5;
   console.log(`${(boxed + 1) | 0}`);

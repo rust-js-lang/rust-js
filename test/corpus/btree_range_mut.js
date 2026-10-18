@@ -126,6 +126,7 @@ function main() {
       .map(([key, value]) => `${key}: (${value[0]}, ${value[1]})`)
       .join(", ")}} ${arg$1}`,
   );
+
   const set = new Set($lazyRange(0, 5));
   for (const x of $treeRange(
     set,

@@ -153,6 +153,7 @@ function main() {
   console.log(
     `${taken$1 == null ? "None" : `Some(${taken$1})`} ${maybe == null ? "None" : `Some(${maybe})`}`,
   );
+
   const good = { TAG: "Ok", _0: 1 };
   const bad = { TAG: "Err", _0: "no" };
   const value$15 = good.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : good;

@@ -10,6 +10,7 @@ function guardDrop_drop(guard) {
   console.log(`drop ${guard[0]}`);
 }
 
+// A value the loop declares, dropped where its `break` leaves.
 function guarded(limit) {
   let n = 0;
   while (true) {
@@ -31,6 +32,7 @@ function guarded(limit) {
   return after;
 }
 
+// A name declared before the loop, shadowed after it.
 function shadowed(words) {
   const count = words.length;
   let i = 0;
@@ -45,6 +47,7 @@ function shadowed(words) {
   return count$1;
 }
 
+// A loop after the loop, with a `break` of its own.
 function two_loops(values) {
   const it = $iter(values);
   let first = 0;
@@ -69,6 +72,7 @@ function two_loops(values) {
   return (Math.imul(first, 100) + sum) | 0;
 }
 
+// A labeled loop left from inside an inner one, then more.
 function grid_find(grid, want) {
   let at;
   bb5: for (const [r, row] of grid.entries()) {
@@ -89,6 +93,7 @@ function grid_find(grid, want) {
   return text;
 }
 
+// A name declared before the loop, set once in it, read after it.
 function set_in_loop(values) {
   let i = 0;
   while (true) {
@@ -101,6 +106,7 @@ function set_in_loop(values) {
   }
 }
 
+// A name shadowed after the loop by one that doesn't read it.
 function reshadowed(limit) {
   const label = Math.imul(limit, 2) >>> 0;
   console.log(`label ${label}`);
@@ -115,6 +121,7 @@ function reshadowed(limit) {
   return label$1;
 }
 
+// A `return` written in the loop stays where it's written.
 function first_big(values) {
   let i = 0;
   while (true) {
@@ -125,6 +132,7 @@ function first_big(values) {
   }
 }
 
+// So does a `break` that gives the loop its value.
 function first_even(values) {
   let i = 0;
   while (true) {
@@ -135,6 +143,7 @@ function first_even(values) {
   }
 }
 
+// A name the loop's test shadows, its early `break`s each its own.
 function shadow_in_loop(values) {
   const it = $iter(values);
   let total = 0;

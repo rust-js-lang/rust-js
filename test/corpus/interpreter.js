@@ -86,6 +86,7 @@ const Lexer = {
   new(src) {
     return { chars: $iter(Array.from(src)), pos: 0 };
   },
+
   bump(lexer) {
     const c = $next(lexer.chars);
     if (c == null) {
@@ -94,6 +95,7 @@ const Lexer = {
     lexer.pos = (lexer.pos + 1) >>> 0;
     return c;
   },
+
   tokens(lexer) {
     const out = [];
     let token;
@@ -199,11 +201,13 @@ const Parser = {
   peek(parser) {
     return parser.tokens[parser.at];
   },
+
   next(parser) {
     const t = parser.tokens[parser.at];
     parser.at = (parser.at + 1) >>> 0;
     return t;
   },
+
   expect(parser, want) {
     const t = Parser.next(parser);
     if (t != null) {
@@ -214,6 +218,7 @@ const Parser = {
     }
     return { TAG: "Err", _0: `expected ${tokenDebug_fmt(want)}, found the end` };
   },
+
   program(parser) {
     const stmts = [];
     let stmt;
@@ -255,6 +260,7 @@ const Parser = {
     }
     return { TAG: "Ok", _0: stmts };
   },
+
   precedence(op) {
     if (op === "<") {
       return 1;
@@ -264,9 +270,11 @@ const Parser = {
     }
     return 3;
   },
+
   expr(parser) {
     return Parser.binary(parser, 0);
   },
+
   binary(parser, min) {
     const result$1 = Parser.call(parser);
     if (result$1.TAG === "Err") {
@@ -292,6 +300,7 @@ const Parser = {
     }
     return { TAG: "Ok", _0: left };
   },
+
   call(parser) {
     const result$1 = Parser.atom(parser);
     if (result$1.TAG === "Err") {
@@ -324,6 +333,7 @@ const Parser = {
     }
     return { TAG: "Ok", _0: e };
   },
+
   atom(parser) {
     const t = Parser.next(parser);
     if (t != null) {
@@ -412,6 +422,7 @@ const Env = {
   child(env) {
     return [{ value: { vars: new Map(), parent: env } }];
   },
+
   get(env, name) {
     const scope = $borrow(env[0], true);
     let tmp;
@@ -436,6 +447,7 @@ const Env = {
     $unborrow(scope);
     return result;
   },
+
   set(env, name, value) {
     const value$1 = $borrowMut(env[0], true);
     try {

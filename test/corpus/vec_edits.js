@@ -20,6 +20,7 @@ export function entry() {
 function main() {
   const v = [];
   $extend(v, Array.from([5, 1, 4, 1, 3]));
+  // What it's given still runs.
   let asked = 0;
   const ask = () => {
     asked = (asked + 1) >>> 0;
@@ -65,6 +66,7 @@ function main() {
   console.log(
     `${top == null ? "None" : `Some(${top})`} ${kept == null ? "None" : `Some(${kept})`} [${s.map((item) => String(item)).join(", ")}]`,
   );
+  // What a closure changes through its `&mut` is kept, popped or not.
   const still = $popIfCell(s, (x) => {
     x.value = (x.value + 1) >>> 0;
     return false;

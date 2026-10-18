@@ -34,6 +34,7 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
+
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);
   const shared = "rc";
@@ -42,6 +43,7 @@ function main() {
   const named = ["custom"];
   const value$4 = named != null ? nameDeref_deref(named) : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
+
   const ok = { TAG: "Ok", _0: "fine" };
   const err = { TAG: "Err", _0: 4 };
   console.log(

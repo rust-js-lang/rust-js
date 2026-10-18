@@ -229,6 +229,7 @@ function main() {
       $rcDrop(value.inner, noisyDrop_drop);
     });
   }
+
   const s = shared("s");
   try {
     console.log(`got ${s.value[0]}`);

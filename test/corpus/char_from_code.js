@@ -40,6 +40,7 @@ function decode(bytes) {
               ];
     const point = value[0];
     const width = value[1];
+    // SAFETY: a code point of well-formed UTF-8.
     out.push(String.fromCodePoint(point));
     i = (i + width) >>> 0;
   }

@@ -18,6 +18,7 @@ function drainDrop_drop(drain) {
   console.log(`drain dropped, ${drain.rest.end - drain.rest.at} left`);
 }
 
+/** Its first, and the iterator dropped, with what it hasn't given. */
 function first(items, dropIIntoIter) {
   const it = Iterator.from(items);
   let result;
@@ -29,11 +30,13 @@ function first(items, dropIIntoIter) {
   return result;
 }
 
+/** Its own iterator given on, as smallvec's `insert_many` gives `extend`. */
 function relay(items, dropIIntoIter) {
   const it = Iterator.from(items);
   return first(it, dropIIntoIter);
 }
 
+/** Its first item dropped, and the iterator given back. */
 function skip_one(it, IIterator, dropI, dropIItem) {
   let tmp;
   try {

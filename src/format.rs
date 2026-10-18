@@ -391,6 +391,24 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
         let span = oxc_span::GetSpan::span(statement);
         (line_of(span.start), line_of(span.end))
     };
+    // A statement's first line, of the comments right above it if it has
+    // them (ADR 0444), each on lines of its own, after the one before.
+    let own_line = |at: u32| {
+        code[..at as usize]
+            .rsplit('\n')
+            .next()
+            .is_some_and(|before| before.trim().is_empty())
+    };
+    let comments: Vec<(usize, usize)> = (parsed.program.comments.iter())
+        .filter(|c| own_line(c.span.start))
+        .map(|c| (line_of(c.span.start), line_of(c.span.end)))
+        .collect();
+    let top = |mut line: usize| {
+        while let Some(&(start, _)) = comments.iter().find(|&&(start, end)| end + 1 == line && start < line) {
+            line = start;
+        }
+        line
+    };
     parsed
         .program
         .body
@@ -400,6 +418,7 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
             let imports = matches!(pair[0], Statement::ImportDeclaration(_))
                 || matches!(pair[1], Statement::ImportDeclaration(_));
             let apart = function(&pair[0]) || function(&pair[1]) || first < last || next < next_last;
+            let next = top(next);
             (apart && !imports && last + 1 == next).then_some(next)
         })
         .collect()

@@ -40,6 +40,7 @@ function main() {
   const value = method(get);
   console.log(`[${get.map((item) => String(item)).join(", ")}] ${get.length} ${value}`);
   console.log(`${method([80, 79, 83, 84])} ${method([])}`);
+  // Escapes, and every byte, not just ASCII.
   const raw = [97, 1, 255, 10, 92, 34];
   console.log(`[${raw.map((item) => String(item)).join(", ")}] ${checksum(raw)}`);
   const joined = [97, 98, 99, 100];
@@ -49,6 +50,8 @@ function main() {
   const left = [122, 122];
   const right = [122, 97];
   console.log(`${$cmpItems(left, right, $cmp) > 0}`);
+
+  // A string's UTF-8 bytes: a multi-byte character is more than one.
   const word = "héllo €";
   const bytes = Array.from(new TextEncoder().encode(word));
   console.log(

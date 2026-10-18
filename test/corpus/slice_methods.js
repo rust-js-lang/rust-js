@@ -65,6 +65,7 @@ function main() {
   console.log(
     `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => String(item)).join(", ")}] [${shifted.map((item) => String(item)).join(", ")}]`,
   );
+
   const sorted = [1, 2, 2, 5];
   console.log(
     `${$isSortedBy([1, NaN], (a, b) => a <= b)} ${$isSortedBy([0.5, 1.5], (a, b) => a <= b)}`,
@@ -79,6 +80,7 @@ function main() {
       $cmp,
     )} ${$partitionPoint(sorted, (x) => x < 3)}`,
   );
+
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
     `[${$chunksExact(items, 3)

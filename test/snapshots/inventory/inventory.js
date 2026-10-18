@@ -210,6 +210,7 @@ export function report() {
   return out;
 }
 
+// A `&mut` to a map's number, from `get_mut`, and the count idiom with a `&u32`.
 export function tallies(words) {
   const counts = new Map();
   const one = 1;

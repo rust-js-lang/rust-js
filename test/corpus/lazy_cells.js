@@ -82,6 +82,8 @@ function main() {
       ")",
     )}`,
   );
+
+  // `()` looks like `None` in JS: what's made is still there.
   const unit = {
     init: () => {
       console.log("unit");

@@ -2,6 +2,7 @@
 
 // Closures: arrow functions, with Rust's capture rules (ADR 0022).
 
+/** Captured by reference: the closure changes the variable itself. */
 export function by_reference(a, b) {
   let total = 0;
   const add = (x) => {
@@ -12,6 +13,10 @@ export function by_reference(a, b) {
   return total;
 }
 
+/**
+ * `move` copies `n` into the closure, so changing `n` afterwards doesn't
+ * change what the closure sees.
+ */
 export function move_copies(n) {
   let n$1 = n;
   const captured = n$1;
@@ -20,6 +25,7 @@ export function move_copies(n) {
   return (Math.imul(get(), 1000) + n$1) | 0;
 }
 
+/** A `move` closure owns its copy and can change it between calls. */
 export function own_state(start) {
   const count = start;
   let count$1 = count;
@@ -32,6 +38,7 @@ export function own_state(start) {
   return [next(), count];
 }
 
+/** Each time round the loop, a new closure takes a new copy of `n`. */
 export function fresh_copy_each_time(times) {
   const n = 0;
   let total = 0;
@@ -48,6 +55,7 @@ export function fresh_copy_each_time(times) {
   return total;
 }
 
+/** A `Copy` struct, changed in place: the closure gets a real copy. */
 export function struct_copy(x) {
   const p = { x, y: 0 };
   let captured = p.x;
@@ -60,6 +68,7 @@ export function struct_copy(x) {
   return [shift(), (p.x + p.y) | 0];
 }
 
+/** Closures returned from functions, boxed. */
 function adder(k) {
   return (x) => (x + k) | 0;
 }
@@ -70,6 +79,7 @@ export function add_both(a, b) {
   return addA(addB(1));
 }
 
+/** A closure that takes a pattern, and one passed to another function. */
 function apply(f, a, b) {
   return f([a, b]);
 }

@@ -30,6 +30,7 @@ function twice(f, x) {
 }
 
 function main() {
+  // Constructors: of an `Option`, a `Result`, a tuple struct and variants.
   const found = [1, 2].slice();
   const checked = [3].map((value) => ({ TAG: "Ok", _0: value }));
   const lengths = [1.5, 2.5].map((value) => [value]);
@@ -46,14 +47,19 @@ function main() {
   console.log(`${metersDebug_fmt([4])} ${value}`);
   const asFn = (value) => [value];
   console.log(`${metersDebug_fmt(asFn(5))}`);
+
+  // A closure that captures nothing, as a `fn`.
   const addOne = (x) => (x + 1) | 0;
   console.log(`${addOne(1)} ${apply(addOne, 10)} ${apply((x) => Math.imul(x, 3), 7)}`);
   console.log(`${twice(addOne, 0)}`);
+
+  // A number's method.
   const sizes = [-3, 4, -5].map((n) => Math.abs(n) | 0);
   const roots = [4, 9].map((n) => Math.sqrt(n));
   console.log(
     `[${sizes.map((item) => String(item)).join(", ")}] [${roots.map((item) => $debugF64(item)).join(", ")}]`,
   );
+  // An `f32`'s, rounded to one as its call is: squared, it isn't 2.
   const single = [2].map((n) => Math.fround(Math.sqrt(n)));
   console.log(
     `${$displayF32(Math.fround($index(single, 0) * $index(single, 0)))} ${Math.fround($index(single, 0) * $index(single, 0)) === 2}`,

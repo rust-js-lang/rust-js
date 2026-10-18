@@ -43,6 +43,7 @@ function main() {
   }
   const noisy = undefined;
   console.log(`${noisyDebug_fmt(noisy)} kept`);
+
   let r = 5;
   r = (r + 1) | 0;
   const n = { value: r };

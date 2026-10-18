@@ -27,6 +27,7 @@ export function entry() {
 const FROM = { start: 5 };
 const TO = { end: 8 };
 const THROUGH = { end: 7 };
+// A static's is its value, which no MIR of its own gives.
 const AFTER = { start: 2 };
 const BEFORE = { end: 3 };
 const UPTO = { end: 4 };
@@ -39,6 +40,7 @@ function sum_all(items) {
   return Iterator.from(items).reduce((a, b) => (a + b) >>> 0, 0);
 }
 
+// A range given where any `T` goes is the range, not its items.
 function shown_twice(value, TClone, TDebug) {
   return `${TDebug.fmt(TClone.clone(value))} ${TDebug.fmt(value)}`;
 }
@@ -86,6 +88,7 @@ function main() {
   console.log(
     `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} ${steps.start}..${steps.end} ${Math.max(steps.end - steps.start, 0)}`,
   );
+
   const inclusive = { start: 1, end: 6 };
   console.log(
     `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${evens({
@@ -98,6 +101,7 @@ function main() {
   const low = 3;
   const high = 9;
   console.log(`${low} ${high} true`);
+
   console.log(
     `${total({ start: 1, end: 5 })} ${$lazyRange(0, 5)
       .map((x) => Math.imul(x, 2))
@@ -110,6 +114,7 @@ function main() {
   console.log(
     `[${ids.map((item) => String(item)).join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,
   );
+
   for (const x of [3, 7, 10]) {
     console.log(`${1 <= x && x < 4} ${1 <= x && x <= 7} ${5 <= x} ${x < 8} ${x <= 7}`);
   }
@@ -118,6 +123,7 @@ function main() {
   console.log(
     `${unit.start <= 0.5 && 0.5 < unit.end} ${unit.start <= NaN && NaN < unit.end} ${$debugF64(unit.start)}..${$debugF64(unit.end)}`,
   );
+
   const w = { rows: { start: 1, end: 3 } };
   const letters = ["a", "b", "c", "d"];
   console.log(
@@ -142,6 +148,7 @@ function main() {
         const n = $rangeInclusiveNext(iter);
         if (n == null) {
           console.log("");
+
           console.log(`4.. ..4 ..=4 .. ${-2n}..=${2n}`);
           console.log(
             `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
@@ -153,6 +160,8 @@ function main() {
             0n,
           );
           console.log(`${big}`);
+
+          // A clone of a range stepped through is its own.
           a = { start: 0, end: 3 };
           $rangeNext(a);
           const b = { start: a.start, end: a.end };
@@ -163,6 +172,7 @@ function main() {
           console.log(
             `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
           );
+
           const labelled = { span: { start: 2, end: 5 }, name: "x" };
           const copy = {
             ...labelled,
@@ -203,6 +213,8 @@ function main() {
               .map((item) => String(item))
               .join(", ")}]`,
           );
+
+          // `char`s step past the surrogates, which no `char` is.
           const letters = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
           const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
           kept = new Set();

@@ -30,6 +30,7 @@ function pointDebug_fmt(point) {
 }
 
 function main() {
+  // A `Vec` extended from a slice, a copy of each item.
   const v = [1, 2];
   $extend(v, [3, 4]);
   const tail = [5, 6];
@@ -41,6 +42,8 @@ function main() {
   console.log(
     `[${v.map((item) => String(item)).join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
   );
+  // Each a clone: changing one in the copy leaves the original, as
+  // `to_vec()` does too.
   const origin = [{ x: 1 }];
   const grown = [{ x: 0 }];
   $extend(
@@ -53,6 +56,8 @@ function main() {
   console.log(
     `[${origin.map((item) => pointDebug_fmt(item)).join(", ")}] [${grown.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
+
+  // Binary search by a comparison: where it is, or where it would go.
   const sorted = [10, 20, 30, 40];
   const value = $binarySearchBy(sorted, (p) => $cmp(p, 30));
   const value$1 = $binarySearchBy(sorted, (p) => $cmp(p, 25));
@@ -84,6 +89,8 @@ function main() {
   console.log(
     `${found.TAG === "Ok" ? `Ok(${found._0})` : `Err(${found._0})`} ${byKey.TAG === "Ok" ? `Ok(${byKey._0})` : `Err(${byKey._0})`} ${reversed.TAG === "Ok" ? `Ok(${reversed._0})` : `Err(${reversed._0})`} ${heavy.TAG === "Ok" ? `Ok(${heavy._0})` : `Err(${heavy._0})`}`,
   );
+
+  // A queue rotated either way.
   const q = [1, 2, 3, 4, 5].slice();
   $rotateLeft(q, 2, "n");
   console.log(`[${q.map((item) => String(item)).join(", ")}]`);
@@ -93,6 +100,8 @@ function main() {
   $rotateLeft(r, 1, "mid");
   $rotateRight(r, 2, "k");
   console.log(`[${r.map((item) => $debugStr(item, "'")).join(", ")}]`);
+
+  // Sets and maps from arrays, by `into()` and `from`.
   const tags = new Set(["b", "a", "b"]);
   const seen = new Set([3, 3, 4]);
   const ages = new Map([
@@ -115,6 +124,8 @@ function main() {
         ", ",
       )}} ${value$4} [${queue.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
   );
+
+  // What a `Cell` or a `RefCell` holds, replaced or taken.
   const count = { value: 5 };
   const old = $cellReplace(count, 6);
   const taken = $cellReplace(count, 0);

@@ -6,6 +6,10 @@ export function entry() {
   main();
 }
 
+/**
+ * A vector's items moved out into an array of slots, as smallvec's
+ * `from_vec` does with its inline one.
+ */
 function take_all(v) {
   const moved = Array.from({ length: 3 });
   const len = v.length;

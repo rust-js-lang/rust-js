@@ -14,6 +14,7 @@ const Point = {
   sum(point) {
     return (point.x + point.y) | 0;
   },
+
   shift(point, by) {
     point.x = (point.x + by) | 0;
     point.y = (point.y + by) | 0;
@@ -51,6 +52,7 @@ function main() {
   const copied = { ...trackedDeref_deref(t) };
   trackedDerefMut_deref_mut(t).x = -1;
   console.log(`${pointDebug_fmt(copied)} ${pointDebug_fmt(t.point)} ${t.reads}`);
+
   const outer = [{ point: { x: 4, y: 5 }, reads: 0 }];
   console.log(
     `${Point.sum(trackedDeref_deref(outerDeref_deref(outer)))} ${trackedDeref_deref(outerDeref_deref(outer)).x} ${outerDeref_deref(outer).reads}`,

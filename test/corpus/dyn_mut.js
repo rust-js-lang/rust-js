@@ -100,6 +100,7 @@ function main() {
     })}`,
   );
   console.log(`${cDebug_fmt(c)} ${n}`);
+
   const d = {
     impl: i32Counter(),
     get value() {

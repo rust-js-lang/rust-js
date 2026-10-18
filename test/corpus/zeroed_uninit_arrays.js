@@ -8,9 +8,11 @@ const Bytes = {
   zeroed(CAP) {
     return { xs: new Array(CAP).fill(0), len: 0 };
   },
+
   uninit(CAP) {
     return { xs: Array.from({ length: CAP }), len: 0 };
   },
+
   sum(bytes, CAP) {
     return bytes.xs.reduce((a, b) => (a + b) >>> 0, 0);
   },

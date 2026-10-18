@@ -49,6 +49,7 @@ function main() {
   console.log(
     `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${value$6._0})`}`,
   );
+
   const set = new Set(words);
   console.log(
     `{${Array.from($sortedKeys(set, $cmp))
@@ -61,6 +62,8 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
+
+  // Tuples and structs compare their strings so too.
   const pairs = [
     [crab, 1],
     [bang, 2],
@@ -71,6 +74,8 @@ function main() {
   const left = [crab];
   const right = [bang];
   console.log(`${$cmp(left[0], right[0]) > 0}`);
+
+  // Chars, and their ranges and patterns.
   const c = "🦀";
   const value$7 = $cmp(c, "！") > 0;
   const value$8 = $cmp(c, "�");
@@ -87,7 +92,11 @@ function main() {
   const chars = Array.from("b！🦀�a");
   chars.sort($cmp);
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}]`);
+
+  // Literal bounds below U+D800 compare as JS's `<` does.
   console.log(`${crab > "z"} ${"m" < crab} ${"apple" < "banana"}`);
+
+  // trim() by White_Space.
   for (const s of ["hi", "﻿hi﻿", " 	 hi \n", "　hi\u2028"]) {
     console.log(`${$debugStr($trim(s))} ${$debugStr($trimStart(s))} ${$debugStr($trimEnd(s))}`);
   }

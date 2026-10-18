@@ -111,6 +111,7 @@ function main() {
   } finally {
     $unborrow(value);
   }
+
   const root = {
     value: { name: "root", parent: { value: { strong: 0, weak: 0 } } },
     strong: 1,
@@ -240,6 +241,7 @@ function main() {
     });
     throw error;
   }
+
   const counter = { value: { value: { sum: 0 } }, strong: 1, weak: 0 };
   let tmp$6;
   try {

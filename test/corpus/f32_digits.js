@@ -7,6 +7,7 @@ export function entry() {
 }
 
 function main() {
+  // 2^-149 to 2^127, each from the one before: doubling is exact.
   let power = 1;
   for (let i = 0; i < 149; i++) {
     power = Math.fround(power * 0.5);
@@ -15,6 +16,9 @@ function main() {
     console.log(`${$displayF32(power)} ${$debugF32(power)}`);
     power = Math.fround(power * 2);
   }
+
+  // 24 random bits, scaled by a random power of two: exact, but where
+  // it falls below the normal range, where it's rounded.
   const seed = 20261001;
   let seed$1 = seed;
   const next = () => {

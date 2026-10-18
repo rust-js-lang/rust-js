@@ -17,7 +17,10 @@ export function entry() {
 }
 
 function main() {
+  // Signs.
   console.log(`true false ${-3n < 0n} false`);
+
+  // Negation, of signed and unsigned.
   for (const x of [5, 0, -2147483648]) {
     const value = $checked(-x, -2147483648, 2147483647);
     const value$1 = $checked(Math.abs(x), -2147483648, 2147483647);
@@ -43,6 +46,8 @@ function main() {
   console.log(
     `${Math.abs(-2147483648) | 0} ${(Math.abs(-7) << 24) >> 24} ${(Math.abs(-128) << 24) >> 24}`,
   );
+
+  // Overflowing arithmetic: what wrapping gives, and whether it wrapped.
   const value = $overflowing(4, 250 + 10, 0, 255);
   const value$2 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
   const value$3 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
@@ -65,6 +70,8 @@ function main() {
     9223372036854775807n,
   );
   console.log(`(${value$7[0]}, ${value$7[1]}) (${value$8[0]}, ${value$8[1]})`);
+
+  // Division and remainder, where `MIN / -1` overflows.
   const value$9 = $checkedRem(7, 2, -2147483648);
   const value$10 = $checkedRem(7, 0, -2147483648);
   const value$11 = $checkedRem(-2147483648, -1, -2147483648);
@@ -78,6 +85,8 @@ function main() {
   console.log(
     `${$wrappingDiv(0, -5, -2147483648)} ${$wrappingRem(9n, 4n)} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
   );
+
+  // Shifts: checked by the width, wrapping by the amount's low bits.
   const by = 33;
   const value$13 = (1 << 4) | 0;
   const value$14 = by < 32 ? (1 << by) | 0 : undefined;
@@ -88,12 +97,15 @@ function main() {
   console.log(
     `${value$15 == null ? "None" : `Some(${value$15})`} None ${BigInt.asUintN(64, 1n << 1n)}`,
   );
+
+  // Powers.
   console.log(
     `${$pow(3, 21)} ${$pow(2, 9) & 255} ${$saturatingPow(-2, 31, -2147483648, 2147483647)} ${$saturatingPow(-2, 32, -2147483648, 2147483647)}`,
   );
   console.log(
     `${$saturatingPow(10, 10, 0, 4294967295)} ${$saturatingPow(2n, 70, -9223372036854775808n, 9223372036854775807n)} ${$saturatingPow(7, 2, 0, 255)}`,
   );
+  // Past the range, below it for a negative base to an odd power.
   console.log(
     `${$saturatingPow(-3, 21, -2147483648, 2147483647)} ${$saturatingPow(-3, 22, -2147483648, 2147483647)} ${$saturatingPow(-2n, 65, -9223372036854775808n, 9223372036854775807n)}`,
   );

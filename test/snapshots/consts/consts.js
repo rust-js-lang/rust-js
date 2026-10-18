@@ -29,6 +29,10 @@ export function on() {
   return ON;
 }
 
+/**
+ * Each use of a `const` is a value of its own: changing one leaves the
+ * next use as it was.
+ */
 export function moved(dx) {
   const p = { ...ORIGIN };
   p.x = (p.x + dx) | 0;
@@ -55,10 +59,12 @@ export function high() {
   return LEVEL === "High" && LEVEL !== "Low";
 }
 
+/** Constants from std are written in place. */
 export function limits() {
   return [4294967295, -2147483648];
 }
 
+/** A `const` inside a function. */
 const STEP = 3;
 
 export function local() {

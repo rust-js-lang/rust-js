@@ -5,6 +5,7 @@
 
 import { $unwrap } from "@rust-js/runtime";
 
+/** A promise that resolves after `ms` milliseconds. */
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -28,6 +29,7 @@ export function main() {
   const start = document.createElement("button");
   start.textContent = "Start";
   const output = document.createElement("output");
+  // One countdown at a time.
   let running = false;
   start.addEventListener("click", () => {
     if (running) {

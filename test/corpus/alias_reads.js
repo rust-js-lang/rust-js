@@ -23,10 +23,13 @@ function kind(word) {
 }
 
 function main() {
+  // Read before it changes, then changed.
   let word = "let";
   const k = word === "let" ? 1 : 2;
   word += "ter";
   console.log(`${k} ${word} ${kind(word)}`);
+
+  // Read, then changed in a later argument: the value it had.
   let n = 5;
   const value = n;
   n = (n + 1) | 0;
@@ -35,12 +38,14 @@ function main() {
   const value$1 = s;
   s += "b";
   console.log(`${joined(value$1, s)}`);
+  // Changed, then read again: the new value.
   let m = 1;
   for (let i = 0; i < 3; i++) {
     const before = m;
     m = (Math.imul(m, 2) + before) | 0;
     console.log(`${before} ${m}`);
   }
+  // A closure made before it changes, called after.
   let count = 10;
   const at = count;
   const shown = () => Math.imul(at, 2);

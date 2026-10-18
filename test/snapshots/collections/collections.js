@@ -28,6 +28,7 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+/** A range, counted with `for (let i = ..; i < ..; i++)`. */
 export function sum_to(n) {
   let total = 0;
   for (let i = 0; i < n; i++) {
@@ -36,6 +37,10 @@ export function sum_to(n) {
   return total;
 }
 
+/**
+ * Rust works out a range's end once: growing `n` in the loop doesn't
+ * make it run longer.
+ */
 export function end_once(n) {
   let n$1 = n;
   let times = 0;
@@ -47,6 +52,7 @@ export function end_once(n) {
   return (Math.imul(times, 1000) + n$1) | 0;
 }
 
+/** A `mut` loop variable is a copy: changing it doesn't move the loop on. */
 export function mut_counter(n) {
   let total = 0;
   const iter = { start: 0, end: n };
@@ -62,6 +68,7 @@ export function mut_counter(n) {
   return total;
 }
 
+/** A `Vec` is a JS array. */
 export function evens(n) {
   const v = [];
   for (let i = 0; i < n; i++) {
@@ -85,6 +92,7 @@ export function lengths(n) {
   return [before, v.length === 0];
 }
 
+/** Iterating by reference, by `iter()`, and over an array of tuples. */
 export function iterate(n) {
   const v = evens(n);
   let total = 0;
@@ -103,6 +111,7 @@ export function iterate(n) {
   return total;
 }
 
+/** `break` and `continue`, including to an outer loop. */
 export function labeled(n) {
   let found = 0;
   outer: for (let i = 0; i < n; i++) {
@@ -119,6 +128,7 @@ export function labeled(n) {
   return found;
 }
 
+/** `&mut` to a struct is the object: changes through it are the caller's. */
 function toggle(todos, id) {
   for (const todo of todos) {
     if (todo.id === id) {
@@ -149,6 +159,7 @@ export function toggled(n) {
   return [ids, done];
 }
 
+/** A `RefCell` is `{ value }`: `*c.borrow_mut() += 1` changes its value. */
 export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
@@ -162,6 +173,7 @@ export function cell(times) {
   return result;
 }
 
+/** Shared through an `Rc`, a `RefCell<Vec<_>>` is one array everyone changes. */
 export function shared(times) {
   const log = { value: [] };
   const writer = log;
@@ -202,12 +214,18 @@ export function shared(times) {
   return result;
 }
 
+/** Strings: `trim`, `is_empty`, `==`, `String::from`. */
 export function words(s) {
   const owned = s;
   const trimmed = $trim(owned);
   return [trimmed, !trimmed, trimmed === "hi"];
 }
 
+/**
+ * Indexing (ADR 0056): `v[i]` of a `Vec` is a slice's, `$index(v, i)`,
+ * which panics as Rust does past the end. A write checks first too,
+ * `v[$at(v, i)] = x`, since JS would make the array longer.
+ */
 export function indexed(i) {
   const v = [10, 20, 30];
   const read = $index(v, i);
@@ -219,6 +237,7 @@ export function indexed(i) {
   return [read, $index(v, i), v];
 }
 
+/** An element's fields are written in place, and a copy of one is its own. */
 export function element_fields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
   const value = $index(cells, i);
@@ -229,6 +248,7 @@ export function element_fields(i) {
   return [before.hits, $index(cells, i).hits, $index(cells, (1 - i) >>> 0).hits];
 }
 
+/** An array changed in place is copied when it's copied. */
 export function arrays(i) {
   const a = [1, 2, 3];
   const b = a.slice();
@@ -236,6 +256,11 @@ export function arrays(i) {
   return [$index(a, i), $index(b, i)];
 }
 
+/**
+ * `HashMap` and `HashSet` (ADR 0059): a JS `Map` and `Set`, keyed by what
+ * JS compares by value. Their order isn't Rust's, which is arbitrary too,
+ * so these sort what they take out.
+ */
 export function word_counts(text) {
   const counts = new Map();
   for (const word of text.split(" ")) {
@@ -290,6 +315,10 @@ export function set_basics(n) {
   ];
 }
 
+/**
+ * `or_default()` of a `Vec` value, pushed to, and a clone of the map that
+ * keeps its own `Vec`s.
+ */
 export function grouped(n) {
   const groups = new Map();
   for (let i = 1; i < n; i++) {

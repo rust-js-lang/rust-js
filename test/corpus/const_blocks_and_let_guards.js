@@ -54,6 +54,7 @@ function main() {
   const table = [1, 4, 9];
   const name = "fixed";
   console.log(`${x} [${table.map((item) => String(item)).join(", ")}] ${name} ${generic_size()}`);
+
   for (const input of ["a=1", 'b="hi"', 'e=""', "c=x", "d"]) {
     console.log(`${classify(input)}`);
   }

@@ -12,6 +12,10 @@
 import { transform } from "sucrase";
 import { $extend, $iter, $lent, $next } from "@rust-js/runtime";
 
+/**
+ * `from`'s directory joined with a relative specifier like `../lib.js`. A
+ * package's, `@rust-js/runtime`, is itself.
+ */
 export function resolve(from, specifier) {
   if (!specifier.startsWith(".")) {
     return specifier;
@@ -28,6 +32,11 @@ export function resolve(from, specifier) {
   return parts.join("/");
 }
 
+/**
+ * Link generated ES modules through an import map. Virtual specifiers avoid
+ * embedding URLs recursively, so cycles work. The browser owns module
+ * evaluation, named imports and live bindings; no identifier rewriting.
+ */
 export function link(files) {
   const imports = /^import ([^;]+?) from "([^"]+)";/gm;
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
@@ -40,6 +49,7 @@ export function link(files) {
     });
     const body$1 = body.replace(sourceMap, "");
     const specifier = JSON.stringify(`rust-js:${path}`);
+    // Identical module bodies must still have separate state.
     const url = JSON.stringify(
       `data:text/javascript,${encodeURIComponent(body$1)}#${encodeURIComponent(path)}`,
     );
@@ -49,6 +59,11 @@ export function link(files) {
   return `<script type="importmap">{"imports":{${entries$1}}}<\/script>`;
 }
 
+/**
+ * A small `bun test` look-alike for the Result frame: `test` and `test.skip`
+ * collect the tests, which then run one after another. What they leave in
+ * the page is replaced by the report.
+ */
 const TEST_RUNNER = `
     const results = registered.map(({ name, f }) => {
       if (!f) return { name, outcome: "skip" };
@@ -72,10 +87,15 @@ const TEST_RUNNER = `
     }));
     const count = (outcome) => results.filter((r) => r.outcome === outcome).length;`;
 
+/** The frame's style, before its scripts. */
+// A link to `#/active` is this page's, as a program's routes need: a
+// sandboxed `srcdoc` page's links resolve against its parent's URL
+// otherwise, and navigate the frame away.
 const FRAME_HEAD = `<!doctype html>
 <meta charset="utf-8">
 <base href="about:srcdoc">`;
 
+/** The frame's own look, for a program that brings none. */
 const FRAME_STYLE = `<style>
   :root { color-scheme: light dark; font: 15px/1.5 system-ui, sans-serif; }
   body { margin: 12px; }
@@ -86,7 +106,15 @@ const FRAME_STYLE = `<style>
   pre { margin: 2px 0 8px 1.5em; white-space: pre-wrap; font-size: 13px; }
 </style>`;
 
+/**
+ * The page that runs the root module's `main()`, if it exports one
+ * (`main`), or with `test`, the crate's tests by their runner (`tests`),
+ * as the compiler's manifest says, and reports as run number `run`.
+ */
+
 export function prepare(files, modules, styles, rootFile, main, tests, test, run) {
+  // The program's modules, its JSX as JS (Sucrase's), and what they import
+  // of the page's: the runtime, and React's.
   const sources = Array.from(files)
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
@@ -109,6 +137,9 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   if (runnable == null) {
     return "Nothing";
   }
+  // A stylesheet a module imports, `import "todomvc-app-css/index.css";`
+  // (ADR 0028), is the page's, as a bundler makes it: in a `<style>`, in
+  // the order imported, and the program's look, not the frame's.
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
   const css = [];
   const iter = $iter(sources);
@@ -135,6 +166,8 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     value$1[1] = value;
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
+  // Imports from JS modules (ADR 0028) name packages or files the page
+  // doesn't have. A bundler would bring them in; the playground has none.
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   const external = [];
   let tmp$1;
@@ -188,6 +221,7 @@ ${start}
   };
 }
 
+/** What a report says happened. */
 export function outcome(report) {
   if (report.error != null) {
     return { TAG: "Failed", _0: report.error };

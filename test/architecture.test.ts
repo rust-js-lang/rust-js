@@ -15,7 +15,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/panic_runtime.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/js.rs",
+  owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs"],
   printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],

@@ -23,6 +23,7 @@ function looseDebug_fmt(loose) {
   return `Loose(${loose[0]})`;
 }
 
+// Equal when they're within one of each other.
 export function loosePartialEq() {
   if ($loosePartialEq === undefined) {
     $loosePartialEq = { eq: loosePartialEq_eq };
@@ -67,6 +68,7 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some([${value$3.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
   );
+
   const loose = [[1], [5], [9]];
   console.log(
     `${$sliceStartsWith(loose, [[2]], false, loosePartialEq_eq)} ${$sliceStartsWith(loose, [[7]], true, loosePartialEq_eq)}`,

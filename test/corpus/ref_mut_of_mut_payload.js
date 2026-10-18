@@ -6,6 +6,7 @@ export function entry() {
   main();
 }
 
+/** Of a generic function's `&mut`, which an `Option` boxes: `$someValue(o)`. */
 function call_twice(o) {
   if (o.value != null) {
     return ($someValue(o.value)() + $someValue(o.value)()) >>> 0;
@@ -34,6 +35,7 @@ function unit(o) {
   return o.value;
 }
 
+/** Used twice: the payload where each is, `$someValue(o.value)`. */
 function unit_twice(o) {
   if (o.value != null) {
     return `${Unit.name(o.value.value)} ${Unit.name(o.value.value)}`;

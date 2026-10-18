@@ -15,6 +15,7 @@ function fnv1a(text) {
   return hash;
 }
 
+// A number at the start of a line, read a byte at a time.
 function leading_number(line) {
   const bytes = $iter(Array.from(new TextEncoder().encode(line)));
   let value;
@@ -65,12 +66,14 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
+  // `len()` is what's left, and doesn't take it.
   const rest = $iter(Array.from(new TextEncoder().encode("abc")));
   $next(rest);
   const before = rest.end - rest.at;
   const next = $next(rest);
   console.log(`${before} ${next == null ? "None" : `Some(${next})`} ${rest.end - rest.at}`);
   console.log(`${[1, 2, 3].slice(1).length}`);
+  // A clone of it is what it has left, as a slice's is (ADR 0181).
   const first = $iter(Array.from(new TextEncoder().encode("héllo")));
   $next(first);
   const second = $iter(first.items.slice(first.at, first.end));

@@ -51,6 +51,7 @@ function main() {
   } finally {
     $unborrow(value$1);
   }
+
   const count = { value: 5 };
   const value$2 = $lock(count, true);
   value$2.value = (value$2.value + 2) >>> 0;
@@ -63,6 +64,7 @@ function main() {
   const now = value$4.value;
   $unborrow(value$4);
   console.log(`${now} ${total(count, (n) => (n + 1) >>> 0)}`);
+
   const config = { value: [1, 2] };
   const value$5 = $lock(config, true);
   try {
@@ -79,11 +81,13 @@ function main() {
   } finally {
     $unborrow(value$7);
   }
+
   const m = { value: "x" };
   const value$8 = $lock(m, true);
   value$8.value += "y";
   $unborrow(value$8);
   console.log(`${m.value}`);
+
   const counter = { value: 0 };
   const num = $lock(counter, true);
   num.value = (num.value + 1) | 0;

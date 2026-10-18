@@ -26,11 +26,14 @@ function accountDebug_fmt(account) {
 }
 
 function main() {
+  // A tuple key: a grid's cells.
   const seen = new $KeySet();
   console.log(`${$add(seen, [1, 2])} ${$add(seen, [1, 2])} ${$add(seen, [2, 1])}`);
   console.log(`${seen.size} ${seen.has([1, 2])} ${seen.has([3, 3])}`);
   seen.delete([1, 2]);
   console.log(`${seen.size} ${seen.has([1, 2])}`);
+
+  // A struct key, its fields given in another order than declared.
   const walls = new $KeyMap();
   walls.set({ x: 1, y: 2 }, "stone");
   walls.set({ x: 1, y: 2 }, "brick");
@@ -48,6 +51,8 @@ function main() {
       .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
       .join(", ")}}`,
   );
+
+  // Counting by key, through an entry.
   const counts = new $KeyMap();
   for (const shape of [
     { TAG: "Circle", _0: 2 },
@@ -67,6 +72,8 @@ function main() {
   console.log(
     `${size$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
+
+  // An `Option` key, `None` among them.
   const byParent = new Map();
   $orInsertWith(byParent, undefined, () => []).push("root");
   $orInsertWith(byParent, 1, () => []).push("leaf");
@@ -76,6 +83,8 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some([${value$6.map((item) => $debugStr(item)).join(", ")}])`} ${value$7 == null ? "None" : `Some([${value$7.map((item) => $debugStr(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`))(byParent.get(2))}`,
   );
+
+  // A key with a string, a BigInt and a struct in it.
   const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
   const value$8 = $unwrap($mutGet(balances, ann));
@@ -87,6 +96,8 @@ function main() {
   console.log(
     `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
   );
+
+  // A `Copy` key changed after it's put in: the map's is its own.
   const p = { x: 5, y: 5 };
   const marks = new $KeySet();
   marks.add({ ...p });
@@ -96,6 +107,8 @@ function main() {
       .map((item) => pointDebug_fmt(item))
       .join(", ")}}`,
   );
+
+  // A clone's keys are its own: the original's, taken and changed, aren't.
   const copy = new $KeyMap(Array.from(walls).map(([key, value]) => [{ ...key }, value]));
   const iter = $iter(Array.from(walls));
   while (true) {
@@ -107,6 +120,7 @@ function main() {
           .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
           .join(", ")}} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
       );
+      // A key that isn't `Copy` is moved out, not copied: the clone's is its own.
       const kept = new $KeyMap(
         Array.from(balances).map(([key, value]) => [{ ...key, at: { ...key.at } }, value]),
       );
@@ -119,6 +133,7 @@ function main() {
           .map(([key, value]) => `${accountDebug_fmt(key)}: ${value}`)
           .join(", ")}}`,
       );
+
       const pairs = new $KeyMap(
         $iter([
           [["a", true], 1],

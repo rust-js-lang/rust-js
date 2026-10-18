@@ -21,6 +21,7 @@ export function parse_digit(c) {
   return { TAG: "Err", _0: c + " isn't a digit I know" };
 }
 
+/** `?` on a `Result`: the first `Err` is the answer. */
 export function sum_digits(a, b) {
   const result = parse_digit(a);
   if (result.TAG === "Err") {
@@ -35,6 +36,7 @@ export function sum_digits(a, b) {
   return { TAG: "Ok", _0: ((Math.imul(x, 10) >>> 0) + y) >>> 0 };
 }
 
+/** `?` on an `Option`. */
 export function halves(n) {
   const a = half(n);
   if (a == null) {
@@ -76,6 +78,7 @@ function appErrorFromString_from(message) {
   return { TAG: "Parse", _0: message };
 }
 
+/** `?` converts the error with `From`: `Err(AppError::from(e))`. */
 function small_sum(a, b) {
   const result = parse_digit(a);
   if (result.TAG === "Err") {

@@ -21,12 +21,14 @@ function main() {
   console.log(
     `${map.size} ${((value) => (value == null ? "None" : `Some(${value})`))(map.get(undefined))}`,
   );
+
   const set = new $KeySet($iter([undefined, undefined, undefined]));
   console.log(
     `{${Array.from($sortedKeys(set, (a, b) => 0))
       .map((item) => unitDebug_fmt(item))
       .join(", ")}}`,
   );
+
   console.log("Equal false true");
   console.log("true");
   const tagged = [{ n: 3 }, { n: 1 }];

@@ -29,11 +29,13 @@ function main() {
   console.log(
     `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+
   const cells = [[{ value: 1 }, { value: 2 }]];
   cells[0][1].value = Math.imul(cells[0][1].value, 10);
   console.log(
     `[${cells.map((item) => `[${item.map((item) => cellDebug_fmt(item)).join(", ")}]`).join(", ")}]`,
   );
+
   const i = 1;
   const deep = [
     [

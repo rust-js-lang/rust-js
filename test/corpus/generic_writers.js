@@ -66,6 +66,9 @@ function counterWrite_write_str(counter, s) {
   return;
 }
 
+// A writer taken by value, as bitflags' `to_writer` takes one: a
+// `Formatter` or a `String` given as a `&mut`, which std's
+// `impl Write for &mut W` writes through.
 function to_writer(bits, writer, Write) {
   const self = { value: writer };
   Write.write_str(self, "bits");

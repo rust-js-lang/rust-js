@@ -148,7 +148,7 @@ module's `crate::` and `super::` paths and checks them against this table:
 |---|---|---|---|
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `panic_runtime.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
-| Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
+| Owned output | `js.rs`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
 | Printing | `to_oxc.rs`, `format.rs`, `typescript.rs`, `prettier.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript, and lay them out, by oxfmt or the app's Prettier; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
 
 Two owned modules start printing, and are named as its exceptions:

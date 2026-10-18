@@ -23,6 +23,7 @@ function fnv1a(text) {
   return hash;
 }
 
+// xorshift, as small random number generators are written.
 function xorshift(x) {
   x = x ^ BigInt.asUintN(64, x << 13n);
   x = x ^ (x >> 7n);
@@ -31,6 +32,7 @@ function xorshift(x) {
 }
 
 function main() {
+  // Rotated, by less and more than the width, signed and unsigned.
   console.log(
     `${$rotateBits(1, 31, 32, true)} ${$rotateBits(2147483649, 1, 32, false)} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(129, 4, 8, false)}`,
   );
@@ -41,6 +43,8 @@ function main() {
     `${$rotateBits(BigInt.asUintN(64, 1n), 63, 64, true)} ${$rotateBits(BigInt.asUintN(64, 9223372036854775809n), 4, 64, false)}`,
   );
   console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
+
+  // Bytes, in each order, and back.
   const value = $toBytes(16909060, 4, false);
   const value$1 = $toBytes(16909060, 4, true);
   console.log(
@@ -81,6 +85,8 @@ function main() {
       false,
     )} ${$fromBytes($toBytes(-7n, 8, true), 8, true, true)}`,
   );
+
+  // A float's bits, and back.
   console.log(`${$floatToBits(1.5, 8)} ${$floatToBits(-0, 8)} ${$floatToBits(Infinity, 8)}`);
   console.log(
     `${$floatToBits(1.5, 4)} ${$displayF32($floatFromBits(1078530011, 4))} ${$displayF64($floatFromBits(4614256656552045848n, 8))}`,
@@ -88,6 +94,7 @@ function main() {
   console.log(
     `${$displayF64($floatFromBits($floatToBits(1.25, 8), 8))} ${$floatToBits(Math.fround(1.1754944e-38), 4)}`,
   );
+
   console.log(`${fnv1a("hello")} ${xorshift(88172645463325252n)}`);
 }
 //# sourceMappingURL=case.js.map

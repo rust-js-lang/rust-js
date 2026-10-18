@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **Every comment of the Rust is in the JS**, before the statement its code
+  is, or at the end of its line, a `///` doc comment as a JSDoc, which an
+  editor shows a JS caller; and a blank line between statements in the
+  Rust is one in the JS (ADR 0444).
 - **`collect()` into a `Result` or an `Option` of a map, a set, text or a
   collection of the crate's own**, `Result<BTreeMap<String, i64>, String>`
   of parsed pairs (ADR 0036).

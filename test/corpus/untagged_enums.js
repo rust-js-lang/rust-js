@@ -43,6 +43,8 @@ function posDebug_fmt(pos) {
   return `Pos { x: ${pos.x} }`;
 }
 
+// A `Copy` one: a copy of its struct is the struct's own.
+
 function spotDebug_fmt(spot) {
   if (typeof spot === "object") {
     return `At(${posDebug_fmt(spot)})`;
@@ -108,6 +110,8 @@ function main() {
     console.log(`${describe(value)} | ${valueDebug_fmt(value)}`);
   }
   const items = $index(values, 8);
+
+  // The payload is the value, so writing it writes the enum's.
   if (Array.isArray(items)) {
     items.push(3);
   }
@@ -117,6 +121,7 @@ function main() {
   const value$1 = $index(values, 8);
   const arg = $eq(copy, [1, 2, 3]);
   console.log(`${valueDebug_fmt(copy)} ${valueDebug_fmt(value$1)} ${arg}`);
+
   const counts = [4, 5];
   const texts = values.filter((v) => typeof v === "string").length;
   const first = values.find((v) => typeof v === "bigint");
@@ -124,6 +129,8 @@ function main() {
   console.log(
     `[${counts.map((item) => valueDebug_fmt(item)).join(", ")}] ${texts} ${first == null ? "None" : `Some(${valueDebug_fmt(first)})`} ${arg$1}`,
   );
+
+  // A clone is the payload's own, which a change to the first leaves.
   const list = [1];
   const kept = Array.isArray(list) ? list.slice() : list;
   if (Array.isArray(list)) {
@@ -146,6 +153,7 @@ function main() {
   console.log(
     `${valueDebug_fmt(list)} ${valueDebug_fmt(kept)} ${spotDebug_fmt(spot)} ${spotDebug_fmt(copied)} ${code} ${valueDebug_fmt(START)}`,
   );
+
   const left = ["Ada"];
   const right = ["ADA"];
   const same = Array.isArray(left)
@@ -155,6 +163,7 @@ function main() {
       : false;
   const other = 1 === ["1"];
   console.log(`${same} ${other} true`);
+
   const lone = ["b"];
   if (typeof lone === "number") {
     try {
@@ -214,6 +223,7 @@ function main() {
       throw error;
     }
   }
+  // Its payload's part moved out: the rest is dropped as the variant's.
   const first$1 = ["f"];
   const second = ["s"];
   let both$0$live = true;
@@ -379,6 +389,8 @@ function main() {
       throw error;
     }
     if (tmp == null) {
+      // One that's there, its payload falsy in JS, `""`, `false` or `0`:
+      // there all the same.
       const firsts = [[""], [false], [0], []];
       try {
         iter$1 = $iter(firsts);

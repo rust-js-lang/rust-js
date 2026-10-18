@@ -35,6 +35,8 @@ function main() {
   console.log(
     `${Delayed.total(moved, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(moved, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
   );
+
+  // Stepped through, then cloned: each goes on from where it was.
   const it = $iter(v);
   $next(it);
   const copy = $iter(it.items.slice(it.at, it.end));
@@ -54,6 +56,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
   );
+
+  // Owned items a clone copies: changing one doesn't change the other.
   const rows = $iter([[1], [2]]);
   const again = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));
   for (const row of rows) {

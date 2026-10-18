@@ -9,6 +9,7 @@ function main() {
   const add = (x) => (x + base) | 0;
   const add2 = add;
   console.log(`${add(1)} ${add2(2)}`);
+
   let count = 0;
   const counter = () => {
     count = (count + 1) | 0;

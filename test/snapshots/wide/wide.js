@@ -38,6 +38,7 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
+/** An ID of a millisecond, a worker and a sequence, packed in 64 bits. */
 function idDebug_fmt(id) {
   return `Id(${id[0]})`;
 }
@@ -71,6 +72,7 @@ export const Id = {
   },
 };
 
+/** FNV-1a: a multiply that wraps at every character. */
 export function fnv1a(text) {
   let hash = 14695981039346656037n;
   for (const c of text) {
@@ -107,6 +109,7 @@ function paymentDeserialize_deserialize(json) {
   );
 }
 
+/** Each account's total, in cents. */
 export function balances(entries) {
   const totals = new Map();
   for (const [account, cents] of entries) {
@@ -124,6 +127,7 @@ export function dollars(cents) {
 
 export function report() {
   let out = "";
+
   const id = Id.new(1700000000123n, 5, 42);
   const value = Id.millis(id);
   const value$1 = Id.worker(id);
@@ -131,10 +135,12 @@ export function report() {
   out += `${idDebug_fmt(id)} ${value} ${value$1} ${value$2}\n`;
   const later = Id.new(1700000000124n, 1, 0);
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
+
   for (const text of ["", "a", "rust-js"]) {
     out += `${$zeroPad(fnv1a(text).toString(16), 16)} `;
   }
   out += "\n";
+
   const entries = [
     ["rent", -25000000n],
     ["pay", 100000000n],
@@ -146,6 +152,8 @@ export function report() {
     out += `${account} ${arg} `;
   }
   out += "\n";
+
+  // The edges, where a JS number would round.
   const max = 18446744073709551615n;
   const min = -9223372036854775808n;
   out += `${max} ${BigInt.asUintN(64, max + 1n)} ${BigInt.asIntN(64, min - 1n)} ${9007199254740993n} ${27021597764222979n}\n`;
@@ -166,6 +174,7 @@ export function report() {
     $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG ===
     "Err";
   out += `${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${$debugParseError(value$10._0, "TryFromIntError")})`} ${value$11} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
+  // Of too small a value, and its message, which is one for both.
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
   const value$12 = $unwrapErr($tryFromInt(300n, 0, 255));
   const value$13 = low === $unwrapErr($tryFromInt(300n, 0, 255));
@@ -178,6 +187,7 @@ export function report() {
     .reduce((a, b) => BigInt.asIntN(64, a + b), 0n);
   const arg = $max(stamps);
   out += `[${stamps.map((item) => String(item)).join(", ")}] ${total} ${arg == null ? "None" : `Some(${arg})`}\n`;
+
   const payment = { id, cents: -1999n, at: 1700000000123n };
   const text = $unwrapOk(
     $toJson(payment, paymentSerialize_serialize, false),
@@ -207,10 +217,15 @@ export function report() {
   return out;
 }
 
+/** An `i64` in and out, each past what a double holds to the digit. */
 export function scaled(n) {
   return BigInt.asIntN(64, n * 3n);
 }
 
+/**
+ * What panics: dividing by zero, and `i64::MIN / -1`, whose answer an
+ * `i64` can't hold, even in release.
+ */
 export function panics(i) {
   const zero = BigInt.asIntN(64, BigInt(i) - BigInt(i));
   if (i === 0) {

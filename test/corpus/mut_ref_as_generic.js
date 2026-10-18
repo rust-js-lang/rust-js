@@ -21,6 +21,7 @@ function go(t, TBump) {
   TBump.bump(t);
 }
 
+// Passed on from a `&mut` parameter, a box already: the box.
 function via(x) {
   go(x, refMutI32Bump());
   go(x, refMutI32Bump());

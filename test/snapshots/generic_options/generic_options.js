@@ -6,6 +6,7 @@
 
 import { $pop, $some, $someAt, $someValue, $unwrap } from "@rust-js/runtime";
 
+/** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function count_some(xs) {
   let n = 0;
   for (const x of xs) {
@@ -24,6 +25,7 @@ export function pick(x, keep) {
   return;
 }
 
+/** Matching what `pick` made: `Some(None)` is `Some`. */
 export function kept(xs) {
   let n = 0;
   for (const x of xs) {
@@ -34,6 +36,7 @@ export function kept(xs) {
   return n;
 }
 
+/** The value inside, taken out again: `unwrap_or`, `unwrap` and `map`. */
 export function inner_or(x, keep, fallback) {
   return $someValue(pick(x, keep) ?? $some(fallback));
 }
@@ -47,6 +50,7 @@ export function mapped(x, f) {
   return option != null ? $some(f($someValue(option))) : undefined;
 }
 
+/** `?` on an `Option<T>`. */
 export function tried(x, keep) {
   const value = pick(x, keep);
   if (value == null) {
@@ -56,6 +60,7 @@ export function tried(x, keep) {
   return $some(v);
 }
 
+/** What std makes an `Option` of: the last of a `Vec`, the first of a slice. */
 export function popped(xs) {
   return $pop(xs);
 }
@@ -64,6 +69,8 @@ export function first_of(xs) {
   return $someAt(xs, 0);
 }
 
+// A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these
+// ask about the generic ones without making one.
 export function tried_some(x, keep) {
   return tried(x, keep) != null;
 }
@@ -75,6 +82,9 @@ export function popped_some(xs) {
 export function first_some(xs) {
   return first_of(xs) != null;
 }
+
+// With the types a JS value of can't tell from `None`. Each result is
+// concrete, so native Rust and the JS can be compared.
 
 export function units() {
   return (count_some([undefined, undefined, undefined]) + kept([undefined, undefined])) >>> 0;

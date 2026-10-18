@@ -36,6 +36,7 @@ function main() {
   shifts(1n, 9n, 3);
 }
 
+// A shift's amount may be any integer type, and is masked to the width.
 function shifts(by, far, small) {
   console.log(
     `${22 >> Number(by & 63n)} ${(1 << (Number(far & 63n) & 7)) & 255} ${BigInt.asUintN(64, 5n << (BigInt(small) & 63n))} ${-64n >> (BigInt(far) & 63n)}`,

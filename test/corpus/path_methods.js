@@ -73,6 +73,7 @@ function main() {
   for (const other of ["rust", "lib/rust", "ib/rust", "/usr/lib/rust", "/lib/rust", ""]) {
     console.log(`ends ${$debugStr(other)} ${$pathEndsWith(base, other)}`);
   }
+
   for (const p of ["/usr/lib/../x/./y.txt", "a//b/", "./c", "", "/"]) {
     const parts = $pathParts(p).map((part) => $unwrap(part));
     const value = $pathAncestors(p);

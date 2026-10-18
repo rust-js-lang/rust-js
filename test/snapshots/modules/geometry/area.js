@@ -4,15 +4,18 @@ import { clamp } from "../lib.js";
 import { double } from "../util.js";
 import { triple } from "./util.js";
 
+/** Two levels deep: imports the root as `../lib.js`. */
 export function square(x) {
   const c = clamp(x);
   return Math.imul(c, c) >>> 0;
 }
 
+/** Uses `crate::util` and `geometry::util`: both are called `util`. */
 export function mixed(x) {
   return (double(x) + triple(x)) >>> 0;
 }
 
+/** A local named like an import alias must not shadow the import. */
 export function shadowed(x) {
   const util = (x + 1) >>> 0;
   return double(util);

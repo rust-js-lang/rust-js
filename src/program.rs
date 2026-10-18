@@ -10,6 +10,18 @@ pub struct Source {
     pub path: Option<PathBuf>,
     pub text: String,
     pub line: u32,
+    /// Its comments, in order (ADR 0444).
+    pub comments: Vec<Comment>,
+}
+
+/// A comment of a source, `//` or `/* */`, where it is in the arena: its JS's,
+/// where its code is (ADR 0444). A doc comment, `///` or `/** */`, its
+/// item's, is a JSDoc one, `doc`.
+#[derive(Clone, Copy)]
+pub struct Comment {
+    pub lo: u32,
+    pub hi: u32,
+    pub doc: bool,
 }
 
 /// One Rust module's functions: a future JS file (ADR 0019).

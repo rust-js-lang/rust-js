@@ -6,6 +6,7 @@ export function entry() {
   main();
 }
 
+/** A counter. */
 const COUNT = { value: 0 };
 const NAMES = { value: [] };
 const LIMIT = 3;

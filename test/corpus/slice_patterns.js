@@ -52,6 +52,7 @@ function greet(words) {
   return "?";
 }
 
+// An array's parameter, taken apart where it's given.
 function sum3([x, y, z]) {
   return (((x + y) | 0) + z) | 0;
 }
@@ -65,6 +66,8 @@ function main() {
   for (const words of [["hello", "ann"], ["hello", "a", "b"], ["so", "bye"], ["x"]]) {
     console.log(`${greet(words)}`);
   }
+
+  // A range, an `Option` and a tuple inside.
   const xs = [5, 6, 7];
   if (xs[0] >= 3 && xs[0] <= 14) {
     console.log("starts small");
@@ -81,6 +84,8 @@ function main() {
   const n = pairs[0][0];
   const c = pairs[0][1];
   console.log(`${n} ${c}`);
+
+  // An array's, irrefutable: its items, and its rest, a shorter array.
   const a = 10;
   const b = 20;
   const c$1 = 30;
@@ -90,6 +95,8 @@ function main() {
   const last = rest[2];
   console.log(`${a} ${b} ${c$1} ${first} [${rest.map((item) => String(item)).join(", ")}] ${last}`);
   console.log(`${sum3([1, 2, 3])}`);
+
+  // A constant array as a pattern: its items.
   for (const p of [
     [0, 0],
     [0, 1],
@@ -101,6 +108,8 @@ function main() {
       console.log(`${x} ${y}`);
     }
   }
+
+  // Through a `&mut`: what's bound names the item, and writes it.
   const grid = [1, 2, 3];
   grid[0] = (grid[0] + 10) | 0;
   grid[2] = Math.imul(grid[2], 2);
@@ -110,6 +119,8 @@ function main() {
     names[0] += "!";
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+  // An item of the rest, a subslice JS holds a copy of, bounds-checked:
+  // its length's borrow points through nothing.
   if (names.length >= 1) {
     const rest = $view(names, 1);
     const length = rest.length;

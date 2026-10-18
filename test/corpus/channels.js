@@ -116,6 +116,7 @@ function main() {
     const tmp$1 = $tryRecv(rx);
     const value = tmp$1.TAG === "Err" && tmp$1._0 === "Disconnected";
     console.log(`${value}`);
+
     const tmp$2 = $channel();
     const tx = tmp$2[0];
     const rx$1 = tmp$2[1];
@@ -124,6 +125,7 @@ function main() {
       const tmp = $send(tx, 5);
       const value = tmp.TAG === "Err";
       console.log(`${value}`);
+
       const tmp$1 = $channel();
       const tx$1 = tmp$1[0];
       const rx = tmp$1[1];

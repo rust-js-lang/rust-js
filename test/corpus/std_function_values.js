@@ -20,6 +20,7 @@ export function entry() {
 }
 
 function main() {
+  // Of one argument: lengths in bytes, as `len()` is, and emptiness.
   const words = ["héllo", "ab", ""];
   const bytes = words.map((s) => $byteLen(s));
   const owned = words.slice();
@@ -30,6 +31,8 @@ function main() {
   console.log(
     `[${bytes.map((item) => String(item)).join(", ")}] [${owned.map((item) => $debugStr(item)).join(", ")}] [${sizes.map((item) => String(item)).join(", ")}] [${counts.map((item) => String(item)).join(", ")}] [${empty.map((item) => String(item)).join(", ")}]`,
   );
+
+  // Conversions, and what an `Option` or a `Result` gives.
   const names = ["a", "b"].slice();
   const into = ["c"].slice();
   const present = [1, 2].map((x) => $unwrap(x));
@@ -58,6 +61,8 @@ function main() {
   console.log(
     `${numbers.TAG === "Ok" ? `Ok([${numbers._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(numbers._0, "ParseIntError")})`} ${bad.TAG === "Ok" ? `Ok([${bad._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(bad._0, "ParseIntError")})`}`,
   );
+
+  // Of none: what makes an empty value.
   const missing = undefined;
   const text = undefined;
   const table = undefined;
@@ -76,6 +81,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
+
+  // Of two: a trait's method on numbers, as a fold's or a sort's.
   const highest = [3, 9, 4].reduce((a, b) => Math.max(a, b), -2147483648);
   const lowest = [5n, -2n, 8n].reduce((a, b) => $bigMin(a, b), 9223372036854775807n);
   const widest = [1.5, 0.25].reduce($f64Max, 0);

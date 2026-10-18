@@ -219,6 +219,7 @@ export function tree() {
   return out;
 }
 
+// `&mut` to what JS can't change in place: a box, copied back after the call.
 function bump(count, by) {
   count.value = (count.value + by) >>> 0;
   return count.value;

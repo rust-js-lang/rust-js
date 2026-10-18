@@ -11,6 +11,7 @@ const Counter = {
     counter.n = (counter.n + 1) >>> 0;
     return counter.n;
   },
+
   get(counter) {
     return counter.n;
   },

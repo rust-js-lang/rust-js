@@ -69,9 +69,13 @@ pub fn emit(
 ) -> Output {
     let rust_source = sources.text.as_str();
     let allocator = Allocator::default();
+    // The module's comments, each where its code is (ADR 0444), whose text
+    // the program's source has, a doc comment's JSDoc after the Rust.
+    let (text, comments, trailing) = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
+        commented: comments.iter().map(|c| c.attached_to).collect(),
     };
     let b = &cx.b;
 
@@ -89,8 +93,8 @@ pub fn emit(
     let program = Program::new(
         Span::new(0, rust_source.len() as u32),
         SourceType::mjs(),
-        rust_source,
-        ArenaVec::new_in(b), // comments
+        allocator.alloc_str(&text),
+        ArenaVec::from_iter_in(comments, b),
         None,                // hashbang
         ArenaVec::new_in(b), // directives
         body,
@@ -112,8 +116,26 @@ pub fn emit(
     // to fix the map.
     let header_lines = code.matches('\n').count() as u32;
     let mut lines: Vec<u32> = Vec::new();
-    for (out_line, line) in (header_lines..).zip(generated.code.lines()) {
+    // A comment after code is after the last JS of its line (ADR 0444); of
+    // a line no JS is of, a `}`'s, it's nobody's.
+    let mut after: std::collections::HashMap<u32, Vec<&str>> = std::collections::HashMap::new();
+    if let Some(map) = &generated.map {
+        for (line, comment) in &trailing {
+            let last = (map.get_tokens())
+                .filter(|t| t.get_src_line() == *line)
+                .map(|t| t.get_dst_line())
+                .max();
+            if let Some(last) = last {
+                after.entry(last).or_default().push(comment);
+            }
+        }
+    }
+    for (i, (out_line, line)) in (header_lines..).zip(generated.code.lines()).enumerate() {
         code.push_str(line);
+        for comment in after.get(&(i as u32)).into_iter().flatten() {
+            code.push(' ');
+            code.push_str(comment);
+        }
         code.push('\n');
         lines.push(out_line);
     }
@@ -138,6 +160,226 @@ pub fn emit(
     // Laid out as oxfmt lays it out, rust-js's own layout.
     let (code, map) = crate::format::laid_out(code, map, js_file_name);
     Output { code, map }
+}
+
+/// The comments of the files `module`'s code is of, past the ones each
+/// starts with, a header's (ADR 0383), each before the statement or item it's
+/// before: where only the start of that is between them, no `;`, `{` or
+/// `}`, so not one of what has no JS, a struct's (ADR 0444). Each is as
+/// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
+/// whose text is added after the arena's, where its span points. The text
+/// the program's source is, and the comments.
+fn comments_of(
+    module: &Module,
+    sources: &crate::program::Sources,
+) -> (String, Vec<oxc_ast::Comment>, Vec<(u32, String)>) {
+    use oxc_ast::{CommentKind, CommentPosition};
+    let mut text = sources.text.clone();
+    let mut found = Vec::new();
+    let mut trailing = Vec::new();
+    let spans = statement_spans(module);
+    let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).collect();
+    starts.sort_unstable();
+    starts.dedup();
+    // What's before the Rust statement at `start` is before the first JS
+    // statement printed of it, a temporary rust-js made first, `const value
+    // = ..` of `let v = V { patch: .. }`: the first of its spans.
+    let printed_first = |start: u32| {
+        let end = (spans.iter())
+            .filter(|&&(lo, _)| lo == start)
+            .map(|&(_, hi)| hi)
+            .max()
+            .unwrap_or(start);
+        (spans.iter())
+            .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))
+            .map_or(start, |&(lo, _)| lo)
+    };
+    let mut file_start = 0;
+    for file in &sources.files {
+        let start = file_start;
+        file_start += file.text.len() + 1;
+        let end = start + file.text.len();
+        // Past what it starts with, a license's, its header's (ADR 0383).
+        let past = (start + crate::comments::leading_comments(&file.text).len()) as u32;
+        let file_start = start;
+        let in_file = |at: u32| at >= past && (at as usize) < end;
+        if !starts.iter().any(|&at| in_file(at)) {
+            continue;
+        }
+        // Each comment, past the leading ones, with what it's before.
+        // One after code on its line is that code's: by its line, which the
+        // map gives the JS of.
+        let after_code = |c: &crate::program::Comment| {
+            let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
+            !sources.text[line_start..c.lo as usize].trim().is_empty()
+        };
+        for c in file.comments.iter().filter(|c| c.lo >= past && after_code(c)) {
+            let written = &sources.text[c.lo as usize..c.hi as usize];
+            if !written.contains('\n') {
+                let line = sources.text[..c.lo as usize].matches('\n').count() as u32;
+                trailing.push((line, written.to_string()));
+            }
+        }
+        let attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
+            .filter(|c| c.lo >= past && !after_code(c))
+            .filter_map(|c| {
+                let at = *starts
+                    .get(starts.partition_point(|&s| s < c.hi))
+                    .filter(|&&at| in_file(at))?;
+                // What's between, but other comments, whose text is no code.
+                let mut code = c.hi;
+                let only_starts = (file.comments.iter())
+                    .filter(|other| other.lo >= c.hi && other.hi <= at)
+                    .chain([&crate::program::Comment {
+                        lo: at,
+                        hi: at,
+                        doc: false,
+                    }])
+                    .all(|other| {
+                        let between = &sources.text[code as usize..other.lo as usize];
+                        code = other.hi;
+                        !between.contains([';', '{', '}'])
+                    });
+                only_starts.then_some((*c, at))
+            })
+            .collect();
+        // What's before each statement: its comments, and a blank line where
+        // the Rust has one, before or between them (ADR 0444).
+        let blank_before = |lo: u32| {
+            let before = &sources.text[file_start..lo as usize];
+            let gap = &before[before.trim_end_matches(char::is_whitespace).len()..];
+            gap.matches('\n').count() >= 2
+        };
+        // A blank line: a line comment of nothing, which prints as one.
+        let blank = |text: &String| {
+            let at = text.len() as u32;
+            (at, at)
+        };
+        for &at in starts.iter().filter(|&&at| in_file(at)) {
+            let mut pieces: Vec<(u32, u32)> = Vec::new();
+            let own: Vec<crate::program::Comment> =
+                attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect();
+            let mut i = 0;
+            while i < own.len() {
+                let comment = own[i];
+                if blank_before(comment.lo) {
+                    pieces.push(blank(&text));
+                }
+                let is_doc_line =
+                    |c: &crate::program::Comment| c.doc && sources.text[c.lo as usize..].starts_with("///");
+                let run = own[i..].iter().take_while(|c| is_doc_line(c)).count();
+                let lines: Vec<&str> = (own[i..i + run].iter())
+                    .map(|c| &sources.text[c.lo as usize..c.hi as usize])
+                    .collect();
+                // A doc comment's lines, before one item: one JSDoc of them,
+                // unless one has a `*/`, which would end it: then each is
+                // written as it is.
+                if run == 0 || lines.iter().any(|l| l.contains("*/")) {
+                    pieces.push((comment.lo, comment.hi));
+                } else {
+                    let lines: Vec<&str> = (lines.iter())
+                        .map(|l| l.trim_start_matches("///"))
+                        .map(|l| l.strip_prefix(' ').unwrap_or(l))
+                        .collect();
+                    let jsdoc = match lines.as_slice() {
+                        [one] => format!("/** {one} */"),
+                        _ => {
+                            let lines: Vec<String> =
+                                lines.iter().map(|l| format!(" * {l}").trim_end().to_string()).collect();
+                            format!("/**\n{}\n */", lines.join("\n"))
+                        }
+                    };
+                    let lo = text.len() as u32;
+                    text.push_str(&jsdoc);
+                    pieces.push((lo, text.len() as u32));
+                    i += run - 1;
+                }
+                i += 1;
+            }
+            let last = own.last().map_or(at, |c| c.hi);
+            if (own.is_empty() && blank_before(at))
+                || (!own.is_empty() && sources.text[last as usize..at as usize].matches('\n').count() >= 2)
+            {
+                pieces.push(blank(&text));
+            }
+            for (lo, hi) in pieces {
+                let written = &text[lo as usize..hi as usize];
+                let kind = match (written.starts_with("/*"), written.contains('\n')) {
+                    (false, _) => CommentKind::Line,
+                    (true, false) => CommentKind::SingleLineBlock,
+                    (true, true) => CommentKind::MultiLineBlock,
+                };
+                let mut made = oxc_ast::Comment::new(lo, hi, kind);
+                made.attached_to = printed_first(at);
+                made.position = CommentPosition::Leading;
+                made.set_preceded_by_newline(true);
+                made.set_followed_by_newline(true);
+                found.push(made);
+            }
+        }
+    }
+    (text, found, trailing)
+}
+
+/// The span of each of `list`'s statements that has one: a temporary
+/// rust-js made has the next's start when it's printed (`push_stmts`).
+fn list_spans(list: &[js::Stmt]) -> impl Iterator<Item = (u32, u32)> + '_ {
+    (list.iter())
+        .filter(|stmt| !stmt.span.is_none())
+        .map(|stmt| (stmt.span.lo, stmt.span.hi))
+}
+
+/// The span of each statement and item of `module`, closures' and nested
+/// functions' too, each list's in the order it's printed: what a comment is
+/// attached to (ADR 0444).
+fn statement_spans(module: &Module) -> Vec<(u32, u32)> {
+    fn of_stmts(stmts: &[js::Stmt], starts: &mut Vec<(u32, u32)>) {
+        let mut copy = stmts.to_vec();
+        let mut functions = Vec::new();
+        js::statement_lists(&mut copy, &mut |list| {
+            starts.extend(list_spans(list));
+            for stmt in list.iter() {
+                if let StmtKind::Function(f) = &stmt.kind {
+                    functions.push(f.body.clone());
+                }
+            }
+        });
+        js::each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
+                js::statement_lists(body, &mut |list| starts.extend(list_spans(list)));
+            }
+            ExprKind::Function(f) => functions.push(f.body.clone()),
+            _ => {}
+        });
+        for body in functions {
+            of_stmts(&body, starts);
+        }
+    }
+    let mut starts = Vec::new();
+    let function = |f: &js::Function, starts: &mut Vec<(u32, u32)>| {
+        if !f.span.is_none() {
+            starts.push((f.span.lo, f.span.hi));
+        }
+        of_stmts(&f.body, starts);
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => {
+                if !c.span.is_none() {
+                    starts.push((c.span.lo, c.span.hi));
+                }
+                of_stmts(&[StmtKind::Expr(c.value.clone()).at(js::Span::NONE)], &mut starts);
+            }
+            js::Item::Function(f) => function(f, &mut starts),
+            js::Item::Namespace(n) => {
+                for method in &n.methods {
+                    function(method, &mut starts);
+                }
+            }
+            js::Item::Statements(stmts) => of_stmts(stmts, &mut starts),
+        }
+    }
+    starts
 }
 
 /// `import clause from "from";`, an import's line, the one way it's written:
@@ -244,6 +486,8 @@ fn header(module: &Module) -> String {
 struct Cx<'a> {
     b: AstBuilder<'a>,
     allocator: &'a Allocator,
+    /// Where a statement a comment is printed before starts.
+    commented: std::collections::HashSet<u32>,
 }
 
 impl<'a> Cx<'a> {
@@ -442,8 +686,17 @@ impl<'a> Cx<'a> {
 
     /// `stmts`, each pushed to `out`.
     fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
-        for s in stmts {
-            out.push(self.stmt(s));
+        for (i, s) in stmts.iter().enumerate() {
+            let mut statement = self.stmt(s);
+            // One rust-js made, a temporary, with no Rust of its own: at the
+            // start of the next that has, whose comments it's printed after
+            // (ADR 0444), the first of its JS.
+            if s.span.is_none()
+                && let Some(next) = stmts[i + 1..].iter().find(|n| !n.span.is_none())
+            {
+                *oxc_span::GetSpanMut::span_mut(&mut statement) = Span::new(next.span.lo, next.span.lo);
+            }
+            out.push(statement);
         }
     }
 
@@ -867,14 +1120,17 @@ impl<'a> Cx<'a> {
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));
                 let params = ArenaBox::new_in(self.params(FormalParameterKind::ArrowFormalParameters, params), b);
-                // `() => x` when the body only returns a value.
+                // `() => x` when the body only returns a value, and no
+                // comment is printed before it: a statement's.
                 let body = match body.as_slice() {
                     [
                         js::Stmt {
                             kind: StmtKind::Return(Some(value)),
-                            ..
+                            span,
                         },
-                    ] => ArrowFunctionBody::from(self.expr(value)),
+                    ] if span.is_none() || !self.commented.contains(&span.lo) => {
+                        ArrowFunctionBody::from(self.expr(value))
+                    }
                     _ => ArrowFunctionBody::FunctionBody(ArenaBox::new_in(self.function_body(body), b)),
                 };
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)

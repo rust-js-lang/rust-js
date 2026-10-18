@@ -179,6 +179,7 @@ function main() {
     const x = $remove(byName, "x");
     try {
       console.log(`${!!x}`);
+
       const shared = { value: 5, strong: 1, weak: 0 };
       try {
         const handles = new Map();

@@ -31,6 +31,7 @@ function main() {
   console.log(
     `${boxed} [${array.map((item) => String(item)).join(", ")}] [${slice.map((item) => String(item)).join(", ")}] 5`,
   );
+
   const text = "";
   const none = [];
   const zeros = [0, 0, 0];
@@ -40,6 +41,7 @@ function main() {
   console.log(
     `[${text}] [${none.map((item) => String(item)).join(", ")}] [${zeros.map((item) => String(item)).join(", ")}] (${pair[0]}, ${$debugStr(pair[1])}) [${boxedStr}] [${boxedSlice.map((item) => String(item)).join(", ")}] PhantomData<u8>`,
   );
+
   console.log("alloc::vec::Vec<core::option::Option<&str>>");
   console.log("(u8, f64) [i64; 2]");
   console.log("hello world");

@@ -150,23 +150,30 @@ export function panics(i) {
   return $removeAt(v, i);
 }
 
+// A slice's `concat` of parts written out is an array of them, spread, as
+// JS writes it: `[...path, last]`.
 export function joined(path, last) {
   return [...path, last];
 }
 
+// `then` of a closure that only returns is its value in place, closures in
+// it too: `ok ? items.map((n) => n + 1) : undefined`.
 export function bumped(ok, items) {
   return ok ? items.map((n) => (n + 1) >>> 0) : undefined;
 }
 
+// One that reads the value it's given is called: `x` is the argument.
 export function shifted(by, items) {
   const map = (x) => items.map((n) => (n + x) >>> 0);
   return by != null ? map(by) : undefined;
 }
 
+// A field of what's there, or nothing: `named?.name`, as a person writes it.
 export function name_of(named) {
   return named?.name;
 }
 
+// Not of another's, nor where nothing isn't `undefined`.
 export function other_name(flag, named) {
   return flag != null ? named.name : undefined;
 }
@@ -175,6 +182,7 @@ export function label_of(named) {
   return named?.label ?? "none";
 }
 
+// Not where the fallback is a value: `?.` would give `undefined`.
 export function label_or_else(named) {
   return named != null ? named.label : "none";
 }

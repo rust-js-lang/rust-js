@@ -42,6 +42,7 @@ function main() {
   long = $strExtendWithin(long, 0, 2);
   long = $strExtendWithin(long, 1);
   console.log(`[${long}]`);
+
   console.log(
     `${/^[\0-\x7f]*$/.test("abc")} ${/^[\0-\x7f]*$/.test("héllo")} ${/^[\0-\x7f]*$/.test("")}`,
   );

@@ -7,15 +7,18 @@ async function double(x) {
   return Math.imul(await setTimeout(1, x), 2) >>> 0;
 }
 
+/** `.await` in the middle of an expression, in Rust's order. */
 export async function sum(a, b) {
   return ((await double(a)) + (await double(b))) >>> 0;
 }
 
+/** What an `.await` gives, given back. */
 export async function twice(n) {
   const d = await double(n);
   return await double(d);
 }
 
+/** A parameter that changes, and one taken apart. */
 export async function countdown(n) {
   let steps = 0;
   while (n > 0) {
@@ -29,22 +32,32 @@ export async function swap([a, b]) {
   return [await setTimeout(0, b), a];
 }
 
+/**
+ * A struct taken apart where it's given, as Next.js's `getStaticProps`
+ * takes its context.
+ */
 export async function given({ params }) {
   return ((await setTimeout(0, params ?? 0)) + 1) >>> 0;
 }
 
+/** An `async` block, and an `async` closure. */
 export async function blocks(x) {
   const block = (async () => ((await double(x)) + 1) >>> 0)();
   const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;
   return ((await block) + (await add(10))) >>> 0;
 }
 
+/** A future held in a variable, awaited later. */
 export async function held() {
   const first = setTimeout(5, 1);
   const second = double(2);
   return ((await first) + (await second)) >>> 0;
 }
 
+/**
+ * A spawned task runs up to its first `.await` right away (a JS promise is
+ * already running), and the rest later.
+ */
 export function spawned() {
   const log = { value: [] };
   const taskLog = log;
@@ -72,6 +85,10 @@ export function spawned() {
   return log;
 }
 
+/**
+ * A closure of an `async` block is an async function, called as react.dev's
+ * useSandpackLint calls its `loadLinter`: up to its first `.await` at once.
+ */
 export function started() {
   const log = { value: [] };
   const taskLog = log;
@@ -100,17 +117,23 @@ export function started() {
   return log;
 }
 
+/** `fetch`, from the webapi crate: its promises, awaited one after the other. */
 export async function load(url) {
   const response = await window.fetch(url);
   const body = await response.text();
   return [response.status, response.ok, body];
 }
 
+/**
+ * A dictionary a function takes (ADR 0102): a struct of what's given, the
+ * rest `..Default::default()`, which JS reads as not given.
+ */
 export async function post(url, body) {
   const init = { method: "POST", body };
   return await (await window.fetch(url, init)).text();
 }
 
+/** A listener that goes when its signal aborts: `addEventListener`'s options. */
 export function listen_until_aborted() {
   const count = { value: 0 };
   const target = new EventTarget();
@@ -134,6 +157,7 @@ export function listen_until_aborted() {
   return value.value;
 }
 
+/** Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer. */
 export async function load_bytes(url) {
   const response = await window.fetch(url);
   const copy = response.clone();
@@ -143,6 +167,10 @@ export async function load_bytes(url) {
   return [bytes.length, buffer.byteLength, view.length];
 }
 
+/**
+ * WebAssembly: compile a module, instantiate it with imports from Rust
+ * (a struct, which is a JS object), and call its export, which calls back.
+ */
 export async function run_wasm(bytes, a, b) {
   const module = await WebAssembly.compile(bytes);
   const imports = { env: { double: (x) => Math.imul(x, 2) } };
@@ -150,6 +178,7 @@ export async function run_wasm(bytes, a, b) {
   return instance.exports.add(a, b);
 }
 
+/** The other `instantiate`: from bytes, to a `{ module, instance }` dictionary. */
 export async function instantiate_bytes(bytes) {
   const imports = { env: { double: (x) => x } };
   const source = await WebAssembly.instantiate(bytes.buffer, imports);

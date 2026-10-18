@@ -7,6 +7,8 @@ export function entry() {
 }
 
 function main() {
+  // The last two are an `i64`'s and a `u64`'s `"26x"`: ten times what's
+  // before the `x` is too large, but the `x` is read first.
   for (const s of [
     "999x",
     "26x",

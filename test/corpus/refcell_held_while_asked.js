@@ -218,6 +218,7 @@ function main() {
     return result;
   })(SHARED);
   console.log(`[${seen.map((item) => String(item)).join(", ")}]`);
+
   const node = $newCyclic((me) => ({ value: { me: $weakClone(me) } }));
   try {
     const copy = { value: $withBorrow(node.value, (value) => nodeClone_clone(value)) };

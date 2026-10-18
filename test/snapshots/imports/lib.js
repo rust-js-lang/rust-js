@@ -6,6 +6,7 @@ import greet, { punctuation } from "./greet.js";
 import * as greet$1 from "./greet.js";
 
 export function paths() {
+  // A local named like an import doesn't hide it.
   const join$1 = "c.txt";
   return join(join("a", "b"), join$1);
 }

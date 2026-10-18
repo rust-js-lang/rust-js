@@ -237,6 +237,7 @@ function main() {
         $rcDrop(tmp);
       }
     }
+
     const leaf = {
       value: { name: "leaf", parent: { value: { strong: 0, weak: 0 } }, children: { value: [] } },
       strong: 1,

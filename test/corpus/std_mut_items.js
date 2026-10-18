@@ -26,6 +26,7 @@ function peek(o) {
 }
 
 function main() {
+  // Given to closures.
   const scores = [1, 2, 3];
   $mutItems(scores).forEach((s) => {
     s.value = Math.imul(s.value, 10);
@@ -44,6 +45,8 @@ function main() {
     n.value += "!";
   });
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+
+  // A map's values, and its entries.
   const stock = new Map([
     ["apples", 3],
     ["pears", 0],
@@ -69,6 +72,7 @@ function main() {
   for (const [, x] of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
     x.value += 0.25;
   }
+  // In the keys' order, as a B-tree's are.
   const visited = [];
   for (const [k, x] of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
     visited.push(k);
@@ -82,6 +86,8 @@ function main() {
         ", ",
       )}} [${visited.map((item) => String(item)).join(", ")}] [${halves.map((item) => $debugF64(item)).join(", ")}]`,
   );
+
+  // Kept in a variable, and passed on.
   const counts = new Map();
   counts.set("a", 1);
   const a = $mutGet(counts, "a");
@@ -106,6 +112,8 @@ function main() {
       .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
       .join(", ")}} [${row.map((item) => String(item)).join(", ")}]`,
   );
+
+  // Passed on in an `Option`, matched, and collected.
   const seen = (peek($mutGet(counts, "a")) + peek($mutGet(counts, "z"))) | 0;
   const r = $mutGet(counts, "a");
   let found;

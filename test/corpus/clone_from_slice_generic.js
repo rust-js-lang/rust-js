@@ -51,6 +51,7 @@ function _T__N_Array(N) {
   return $traitImpl($_T__N_Array, [N], () => ({}));
 }
 
+/** Of an associated type's items, smallvec's `A::Item`: the same. */
 function refill_items(into, from, AArray, AItemClone) {
   $cloneFromSlice(
     into,

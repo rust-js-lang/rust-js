@@ -24,6 +24,7 @@ function even(d) {
   return d[0] % 2 === 0;
 }
 
+// In generic code, a `T` whose `Some` is boxed (ADR 0051).
 function keep(value, test, dropT) {
   let kept;
   try {
@@ -78,6 +79,8 @@ function parse(name, BNamed) {
   return { TAG: "Ok", _0: parsed };
 }
 
+// In a branch, as bitflags' parser has it: dropped there, if a panic comes
+// before it's moved.
 function parse_flag(flag, BNamed) {
   const flag$1 = $stripPrefix(flag, "0x");
   let parsed;
@@ -105,6 +108,7 @@ function parse_flag(flag, BNamed) {
   return { TAG: "Ok", _0: parsed };
 }
 
+// Two in one branch.
 function parse_pair(a, b, both, BNamed, dropB) {
   let pair;
   bb38: {
@@ -465,6 +469,7 @@ function main() {
     }
     throw error;
   }
+
   let tmp$10;
   try {
     tmp$10 = make(8);
@@ -836,6 +841,7 @@ function main() {
     }
     throw error;
   }
+
   let tmp$20;
   let tmp$21;
   try {

@@ -17,6 +17,7 @@ function shapeDebug_fmt(shape) {
 }
 
 const EMPTY = 2;
+// A static's is its value, which no MIR of its own gives.
 const SQUARE = 1;
 
 function same_kind(a, b) {

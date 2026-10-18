@@ -90,6 +90,8 @@ function main() {
   console.log(`${flagsDebug_fmt(f)}`);
   flagsShlAssignU8_shl_assign(f, 2);
   console.log(`${flagsDebug_fmt(f)}`);
+
+  // An element's, and a field's, as a place `|=` writes.
   const all = [[READ[0]], [WRITE[0]]];
   flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
   const user = [[READ[0]], "ann"];

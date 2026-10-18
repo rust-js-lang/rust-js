@@ -28,6 +28,7 @@ import { createPortal, flushSync, useFormStatus } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { renderToReadableStream, renderToString } from "react-dom/server";
 
+/** `use` a promise: Suspense shows the fallback until it resolves. */
 export function Greeting() {
   const text = use(globalThis.greeting);
   return <p className="greeting">{text}</p>;
@@ -41,6 +42,7 @@ export function Suspended() {
   );
 }
 
+/** A store outside React, and a Transition. */
 export function Store() {
   const value = useSyncExternalStore(
     (notify) => globalThis.store.subscribe(notify),
@@ -68,6 +70,7 @@ export function Store() {
   );
 }
 
+/** A form with an action, its state, an optimistic value, and its status. */
 function submit(previous, data) {
   const text = data.get("name");
   const name = typeof text === "string" ? text : "";
@@ -87,6 +90,7 @@ export function SubmitStatus() {
   return <span className="status">{status}</span>;
 }
 
+/** A form whose action waits for the test, pending till then. */
 export function Upload() {
   return (
     <form
@@ -160,8 +164,10 @@ export function Refs() {
   );
 }
 
+/** Activity keeps hidden state; a portal renders elsewhere; flushSync applies now. */
 export function Counter() {
   const [n, setN] = useState(0);
+  // An effect that cleans up only once it's counted: its cleanup an `Option`.
   useEffect(() => {
     if (n === 0) {
       return;
@@ -195,6 +201,7 @@ export function Places() {
           flushSync(() => {
             setFlushed(1);
           });
+          // flushSync has already put the new count on the page.
           globalThis.log(`flushed ${globalThis.flushedText()}`);
         }}
       >
@@ -253,6 +260,7 @@ export function Misc() {
 
 function unused(_, _$1) {}
 
+/** Putting React on a page, and rendering it on a server, with options. */
 export function Page() {
   return <p className="page">id {useId()}</p>;
 }

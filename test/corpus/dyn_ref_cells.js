@@ -106,6 +106,7 @@ function main() {
   const shapes = [$dynCell(circle, circleShape()), { value: { side: 2 }, impl: squareShape() }];
   console.log(`${$displayF64(total(shapes))}`);
   grow_all(shapes, 1);
+  // Through the concrete `Rc`, the same cell.
   const value = $borrowMut(circle, true);
   value.value.r = 10;
   $unborrow(value);
@@ -133,6 +134,7 @@ function main() {
   } finally {
     $unborrow(receiver);
   }
+  // The same cell, a `dyn` of another trait too.
   const labeled = $dynCell(circle, circleLabeled());
   const receiver$1 = $borrowMut($index(shapes, 0), true);
   try {
@@ -152,6 +154,7 @@ function main() {
   } finally {
     $unborrow(receiver$2);
   }
+  // Its `impl` isn't one of its fields: it's equal to a cell of its value.
   console.log(`${$eq(circle, { value: { r: 1.5 } })}`);
   const boxed = { value: { side: 1 }, impl: squareShape() };
   const receiver$3 = $borrowMut(boxed, true);

@@ -131,6 +131,7 @@ export function grids(n) {
       items[$at(items, i)] = v;
     }
   }
+  // Each is its own copy: changing one leaves the others.
   const cell = { hits: 0 };
   const cells = Array.from({ length: 3 }, () => ({ ...cell }));
   const value = $index(cells, 1);
@@ -150,6 +151,7 @@ export function searches() {
   return `${found.join(" ")} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`;
 }
 
+// Integers are never -0, which `%`, `/` and `*` can make in JS: `1 / x` tells.
 export function zeros(a) {
   const parts = [
     $remEuclid(a, 7, -2147483648),

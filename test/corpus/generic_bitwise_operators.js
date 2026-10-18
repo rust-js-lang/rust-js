@@ -14,10 +14,12 @@ function masked(value, mask, TBitAnd, TBitXor) {
   return [TBitAnd.bitand(value, mask), TBitXor.bitxor(value, mask)];
 }
 
+// A shift's amount of another type than the value's, as `x << 3u32` is.
 function shifted(value, by, TShlU32, TShrU32) {
   return [TShlU32.shl(value, by), TShrU32.shr(value, by)];
 }
 
+// By a `u64`, a BigInt, of a narrower number: the amount a JS number.
 function shifted_far(value, by, TShlU64) {
   return TShlU64.shl(value, by);
 }
@@ -62,6 +64,7 @@ function main() {
     { bitxor: (a, b) => a !== b },
   );
   console.log(`(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`);
+  // A `u8` wraps, an `i32`'s `>>` keeps its sign, and a `u64`'s is a BigInt's.
   const value$4 = shifted(
     193,
     2,
@@ -81,6 +84,8 @@ function main() {
   console.log(
     `${shifted_far(3, 4n, { shl: (a, b) => (a << Number(b & 63n)) >>> 0 })} ${shifted_far(1, 17n, { shl: (a, b) => (a << (Number(b & 63n) & 15)) & 65535 })}`,
   );
+
+  // Of references to numbers, as an iterator gives them.
   const a = 12;
   const b = 10;
   console.log(`${(a & b) >>> 0} ${(a | b) >>> 0} ${(a ^ b) >>> 0} ${(a << 2) >>> 0}`);

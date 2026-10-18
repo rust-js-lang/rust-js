@@ -22,6 +22,7 @@ function noisy(tag, x) {
   return x;
 }
 
+// A chain kept in a variable that's returned: who ends it isn't known here.
 function doubled(v) {
   const it = v.values().map((x) => noisy("returned", Math.imul(x, 2)));
   return it;
@@ -29,23 +30,29 @@ function doubled(v) {
 
 function main() {
   const v = [1, 2, 3, 4];
+
   const kept = v
     .values()
     .map((x) => noisy("map", Math.imul(x, 2)))
     .filter((x) => noisy("filter", x) > 2)
     .toArray();
   console.log(`[${kept.map((item) => String(item)).join(", ")}]`);
+
+  // `fold`'s start is made before any item is stepped: a stage that does
+  // something runs after it.
   const total = v
     .values()
     .filter((x) => noisy("kept", x) % 2 === 0)
     .reduce((acc, x) => (acc + x) | 0, noisy("start", 100));
   console.log(`${total}`);
+
   const first = v
     .values()
     .map((x) => noisy("take", x))
     .take(2)
     .toArray();
   console.log(`[${first.map((item) => String(item)).join(", ")}]`);
+
   const value = $lent(v.values().map((x) => noisy("find", x))).find((x) => x > 1);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`${$lent(v.values().map((x) => noisy("any", x))).some((x) => x === 2)}`);
@@ -60,6 +67,7 @@ function main() {
     })
     .find((item) => item != null);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  // A found `None` is `Some(None)`, from a lazy chain as from an array.
   const value$3 = $nextSome(
     $lent(
       [undefined, 1].values().map((x) => (x != null ? noisy("find none", x) : undefined)),
@@ -76,6 +84,7 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
+
   for (const x of $lazyTakeWhile(
     v.values().map((x) => noisy("loop", x)),
     (x) => x < 3,
@@ -88,6 +97,7 @@ function main() {
     .map((x, i) => [i, x])) {
     console.log(`${i} ${x}`);
   }
+
   const total$1 = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
   const inspect = (x) => {
     console.log(`saw ${x}`);
@@ -99,6 +109,9 @@ function main() {
     })
     .filter((x) => x > 2).length;
   console.log(`${total$1} ${count}`);
+
+  // A chain kept in a variable that's only iterated, and the other side of
+  // a `zip` or a `chain`, run in their turn too.
   const kept$1 = v.values().map((x) => noisy("kept", x));
   for (const x of kept$1) {
     console.log(`kept body ${x}`);
@@ -135,6 +148,8 @@ function main() {
     .take(2)
     .toArray();
   console.log(`[${joined.map((item) => String(item)).join(", ")}]`);
+
+  // `next()` takes one item, of a chain made there or kept to step through.
   const value$8 = $next(v.values().map((x) => noisy("next", x)));
   console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
   const stepped = v.values().map((x) => noisy("stepped", x));
@@ -142,6 +157,8 @@ function main() {
   console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
   const value$10 = $next(stepped);
   console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
+
+  // Closures that do nothing that can be seen keep arrays.
   const doubled$1 = v
     .map((x) => Math.imul(x, 2))
     .filter((x) => x % 4 === 0)

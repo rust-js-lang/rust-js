@@ -15,6 +15,7 @@ function square(x) {
 let CURRENT = double;
 export const HANDLER = { value: { run: double, name: "double" } };
 const TABLE = [double, square];
+
 let REGISTRY = { names: [], fallback: double };
 
 function main() {

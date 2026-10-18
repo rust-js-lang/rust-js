@@ -113,6 +113,7 @@ const Inventory = {
     const items$1 = new Map(items.values().map((item) => [item.sku, item]));
     return { items: items$1, log: [] };
   },
+
   reserve(inventory, sku, wanted) {
     const option = inventory.items.get(sku);
     const result =
@@ -130,6 +131,7 @@ const Inventory = {
     inventory.log.push(`reserved ${wanted} of ${sku}`);
     return { TAG: "Ok", _0: { sku, quantity: wanted, unit_cents: item.price_cents } };
   },
+
   place(inventory, order) {
     if (order.length === 0) {
       return { TAG: "Err", _0: "EmptyOrder" };
@@ -140,6 +142,7 @@ const Inventory = {
       if (value.TAG === "Ok") {
         lines.push(value._0);
       } else {
+        // Put back what this order took before failing.
         for (const line of lines) {
           const item = inventory.items.get(line.sku);
           if (item) {
@@ -152,6 +155,7 @@ const Inventory = {
     }
     return { TAG: "Ok", _0: lines };
   },
+
   by_category(inventory) {
     const groups = new Map();
     for (const item of Array.from(inventory.items.values())) {
@@ -164,6 +168,7 @@ const Inventory = {
     }
     return groups;
   },
+
   low_stock(inventory, below) {
     const skus = Array.from(inventory.items.values())
       .filter((item) => item.stock < below)
@@ -171,6 +176,7 @@ const Inventory = {
     skus.sort($cmp);
     return skus;
   },
+
   value_cents(inventory) {
     return Array.from(inventory.items.values())
       .map((item) => {
@@ -222,6 +228,7 @@ function main() {
     { sku: "KNF-4", name: "Knife", category: "Kitchen", price_cents: 999, stock: 0 },
   ]);
   console.log(`stock value: ${money(Inventory.value_cents(inventory))}`);
+
   for (const [category, items] of $sortedEntries(Inventory.by_category(inventory), (a, b) =>
     $cmpIn(["Tools", "Garden", "Kitchen"], a, b),
   )) {
@@ -299,6 +306,7 @@ function main() {
   console.log(
     `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
   );
+
   const restock = new Map([
     ["KNF-4", 6],
     ["SAW-2", 2],

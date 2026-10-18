@@ -38,6 +38,7 @@ function main() {
   cells$1[0].value = 99;
   $cellSwap(cells$1[1], cells$1[2]);
   console.log(`[${array.map((item) => String(item)).join(", ")}]`);
+
   reset(array);
   console.log(`[${array.map((item) => String(item)).join(", ")}]`);
   const words = ["a", "b"];

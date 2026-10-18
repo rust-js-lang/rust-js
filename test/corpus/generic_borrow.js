@@ -124,11 +124,13 @@ function main() {
   );
   const ids = [[[7]], [[9]]];
   console.log(`${contains(ids, [9], hyphenatedBorrowUuid(), { eq: $eq })}`);
+
   console.log(
     `${total([1, 2, 3], {
       borrow: (value) => value,
     })} ${total([4, 5], { borrow: (value) => value })} ${total([6, 7], { borrow: (value) => value })}`,
   );
+
   const value = position(
     words,
     "milk",
@@ -153,6 +155,7 @@ function main() {
   );
   const value$4 = position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid()));
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+
   const id = hyphenatedBorrowUuid_borrow(ids[1]);
   const name = tagBorrowStr_borrow(tags[0]);
   const text = $index(words, 0);

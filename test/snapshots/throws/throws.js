@@ -2,6 +2,7 @@
 
 import { $iter, $next, $settle, $try } from "@rust-js/runtime";
 
+/** The numbers' sum, or what `JSON.parse` threw. */
 export function sum_json(json) {
   const value = $try(() => JSON.parse(json));
   if (value.TAG === "Ok") {
@@ -16,6 +17,7 @@ export function sum_json(json) {
   return { TAG: "Err", _0: String(e) };
 }
 
+/** `?` on a thrown error: it's an `Err` like any other. */
 export function first_twice(json) {
   const result = $try(() => JSON.parse(json));
   if (result.TAG === "Err") {
@@ -31,6 +33,7 @@ export function first_twice(json) {
   return { TAG: "Ok", _0: first };
 }
 
+/** A rejected promise is an `Err` at its `.await`, not a throw. */
 export async function settled(fail) {
   const result = fail ? await $settle(Promise.reject("no")) : await $settle(Promise.resolve(7));
   if (result.TAG === "Ok") {
@@ -41,6 +44,11 @@ export async function settled(fail) {
   return "rejected: " + String(e);
 }
 
+/**
+ * The JS language's own globals, from the js crate (ADR 0102):
+ * `encodeURIComponent`, and `decodeURIComponent`, which throws a
+ * `URIError` on what isn't an encoded text: an `Err`.
+ */
 export function uri(text) {
   const encoded = encodeURIComponent(text);
   const result = $try(() => decodeURIComponent(encoded));
@@ -53,6 +61,10 @@ export function uri(text) {
   return [encoded + " " + String(e), decoded];
 }
 
+/**
+ * A promise of the webapi crate's, `fetch`'s say, rejects with what went
+ * wrong; `js::settle` makes its `.await` an `Err` of it.
+ */
 export async function settle_either(fail) {
   const promise = fail ? Promise.reject("no") : Promise.resolve(8);
   const value = await $settle(promise);
@@ -64,6 +76,11 @@ export async function settle_either(fail) {
   return "rejected: " + String(e);
 }
 
+/**
+ * What's kept under `key`, where the page may keep data: webapi's
+ * `localStorage` is an `Err` where it may not, a sandboxed frame's, which a
+ * program can't check first (ADR 0442).
+ */
 export function kept(key) {
   const result = $try(() => window.localStorage);
   const storage = result.TAG === "Ok" ? result._0 : undefined;

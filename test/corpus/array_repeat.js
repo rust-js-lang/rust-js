@@ -36,6 +36,7 @@ function main() {
   console.log(`[${once.map((item) => String(item)).join(", ")}] ${none.length}`);
   const options = [2, 2];
   console.log(`[${options.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
+  // The case this was, while rust-js didn't support `[x; N]`.
   const row = [0, 0, 0];
   row[1] = 5;
   const item$2 = [0, 0, 0];

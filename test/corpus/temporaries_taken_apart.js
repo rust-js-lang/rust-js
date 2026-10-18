@@ -33,6 +33,7 @@ function pick(n) {
   return { TAG: "Both", _0: a, _1: b };
 }
 
+// A parameter taken apart: the function owns what its pattern leaves.
 function some_borrowed(_1) {
   const a = _1[0];
   const b = _1[1];
@@ -119,6 +120,7 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
+
   try {
     console.log(`after pair ${right[0]}`);
   } catch (error) {
@@ -245,6 +247,7 @@ function main() {
       throw error;
     }
   }
+
   let tmp$4;
   try {
     tmp$4 = make(5);
@@ -357,6 +360,7 @@ function main() {
   try {
     try {
       try {
+        // `ref b` keeps the temporary for the block, less what `a` moves out.
         const before = make(1);
         try {
           const tmp = make(40);

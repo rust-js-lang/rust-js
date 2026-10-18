@@ -35,6 +35,7 @@ function main() {
   console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
   buf[$at(buf, 2)] = 7;
   console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
+
   const src = [[1], [2]];
   const slots = Array.from({ length: 2 });
   let cloned;

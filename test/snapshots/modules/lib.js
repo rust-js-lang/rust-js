@@ -12,12 +12,15 @@ import { mixed as mixed$1, shadowed as shadowed$1, square } from "./geometry/are
 import { mean } from "./stats.js";
 import { double } from "./util.js";
 
+/** Calls into two other files. */
 export function summary(a, b) {
   return (mean(a, b) + square(a)) >>> 0;
 }
 
+/** A private `const` that a child module uses: exported too (ADR 0031). */
 export const HALVES = 2;
 
+/** Private in Rust, but child modules call it, so its JS file must export it. */
 export function clamp(x) {
   if (x > 1000) {
     return 1000;
@@ -29,6 +32,7 @@ export function doubled_mean(a, b) {
   return double(mean(a, b));
 }
 
+/** Reaches two levels down, where both `util` modules are used. */
 export function mixed(x) {
   return mixed$1(x);
 }

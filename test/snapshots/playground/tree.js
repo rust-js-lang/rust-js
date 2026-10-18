@@ -40,6 +40,11 @@ export function build_tree(paths) {
   return tree;
 }
 
+/**
+ * A folder's entries as the explorer shows them: `first` (the crate root),
+ * then by name, a module's file just before its folder: `geometry.rs`, then
+ * `geometry/` ("." sorts before "/").
+ */
 export function in_order(tree, first) {
   const key = ([name, entry]) => {
     if (entry.TAG === "Folder") {

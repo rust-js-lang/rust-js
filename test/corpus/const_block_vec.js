@@ -5,6 +5,7 @@ export function entry() {
 }
 
 const EMPTY = [];
+
 const mainConst = [];
 
 function main() {
@@ -15,6 +16,7 @@ function main() {
   console.log(
     `[${first.map((item) => String(item)).join(", ")}] [${second.map((item) => String(item)).join(", ")}] [${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+  // One of a value that isn't `Copy` is the one there is.
   const single = [[7]];
   console.log(
     `[${single.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,

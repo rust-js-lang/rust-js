@@ -190,6 +190,7 @@ function main() {
   );
   r.value = Math.imul(r.value, 2);
   console.log(`${a} ${b}`);
+
   const s = ["x", "y"];
   const value = pick(
     false,

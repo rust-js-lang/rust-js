@@ -42,6 +42,86 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0444: a comment is its JS's where its code is, before the statement
+// or item it's before, as written; a doc comment, `///`, is a JSDoc one; one
+// before what has no JS, a struct's, is nobody's.
+test("a comment is in the JS where it's in the Rust", () => {
+  const dir = fixture("comments-kept");
+  writeFileSync(join(dir, "lib.rs"), `// The file's own leading comment, its header's.
+
+pub fn a() -> u32 {
+    1
+}
+
+// Why b is two.
+pub fn b() -> u32 {
+    2
+}
+
+/// The sum, documented.
+/// Of two lines.
+pub fn sum(x: u32) -> u32 {
+    // Add them.
+    let y = x + a();
+    /* Then b. */
+    y + b()
+}
+
+/// No JS: a type's.
+pub struct S {
+    pub a: u32,
+}
+
+pub fn c(s: &S) -> u32 {
+    s.a
+}
+
+/// One line.
+pub fn later(v: &[u32]) -> u32 {
+    let first = v.len() as u32; // Its length.
+
+    // In a closure.
+    let f = |x: u32| {
+        // Inside.
+        x + 1
+    };
+    // Before a match.
+    let n = match v.first() {
+        Some(&x) if x > 3 => x,
+        _ => 0,
+    };
+    f(first) + n
+}
+
+/// Globs: \`src/**/*.rs\`.
+pub fn glob() -> u32 {
+    /* Outer /* nested */ still outer. */
+    3
+}
+
+thread_local! {
+    /// The count's start.
+    static START: u32 = 5;
+}
+
+pub fn start() -> u32 {
+    START.with(|s| *s)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("// The file's own leading comment, its header's.\n");
+  expect(js.match(/leading comment/g)?.length).toBe(1);
+  expect(js).toContain("// Why b is two.\nexport function b() {");
+  expect(js).toContain("/**\n * The sum, documented.\n * Of two lines.\n */\nexport function sum(x) {\n  // Add them.\n  const y");
+  expect(js).toContain("  /* Then b. */\n  return (y + b()) >>> 0;");
+  expect(js).not.toContain("No JS");
+  expect(js).toContain("/** One line. */\nexport function later(v) {\n  const first = v.length; // Its length.\n\n  // In a closure.\n  const f = (x) => {\n    // Inside.\n    return (x + 1) >>> 0;\n  };\n  // Before a match.\n  const x = v[0];\n  let n;");
+  expect(js).toContain("/// Globs: `src/**/*.rs`.\nexport function glob() {\n  return 3;");
+  expect(js).not.toContain("nested");
+  expect(js).toContain("}\n\n/** The count's start. */\nconst START = 5;\n");
+});
+
 test("a variable nothing sets again is a const", async () => {
   const dir = fixture("consts-of-lets");
   writeFileSync(join(dir, "lib.rs"), `pub fn pushed() -> Vec<u32> {

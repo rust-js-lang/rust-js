@@ -8,6 +8,7 @@ export function entry() {
   main();
 }
 
+// `Auto` is either.
 export function modePartialEq() {
   if ($modePartialEq === undefined) {
     $modePartialEq = { eq: modePartialEq_eq };

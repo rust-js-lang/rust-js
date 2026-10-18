@@ -43,6 +43,7 @@ const Marker = {
   new() {
     return;
   },
+
   is_marker(marker) {
     return true;
   },
@@ -69,9 +70,13 @@ function give(f, loud) {
   console.log("given");
 }
 
+// `size_of` and `align_of` as values of a type parameter's: what the caller
+// gives for `T`.
 function sizes(TSize, TAlign) {
   return [TSize, TAlign];
 }
+
+// An `if let` that always matches is one Rust warns of, but takes.
 
 function main() {
   const maybe = 3;
@@ -96,6 +101,7 @@ function main() {
       radius_plus_one({ TAG: "Circle", _0: 2 }),
     )} ${$displayF64(radius_plus_one("Dot"))}`,
   );
+
   const shapes = [
     { TAG: "Circle", _0: 1 },
     { TAG: "Square", side: 2 },

@@ -72,6 +72,7 @@ function main() {
     }
     const value = $next(both);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+
     const tree = new Map([
       [1, "a"],
       [2, "b"],
@@ -92,6 +93,7 @@ function main() {
     console.log(
       `${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
     );
+
     const maybe = [1, undefined];
     const options = $iter(maybe);
     const value$6 = $nextBackSome(options);

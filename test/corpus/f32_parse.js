@@ -31,6 +31,7 @@ function main() {
   ]) {
     show(s);
   }
+  // Past the largest `f32`, and its tie with infinity.
   for (const s of [
     "3.4028236e38",
     "1e39",
@@ -42,6 +43,7 @@ function main() {
   for (const s of ["inf", "-Infinity", "NaN", "", "abc", "1.2.3", "1e", "0x10", " 1"]) {
     show(s);
   }
+  // The tie between 1 and the next `f32`, 1 + 2^-24, and a hair either side.
   for (const s of [
     "1.000000059604644775390625",
     "1.000000059604644775390625000001",

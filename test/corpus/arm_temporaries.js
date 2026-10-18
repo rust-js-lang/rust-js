@@ -81,6 +81,7 @@ const Mapped = {
     }
     return result;
   },
+
   count(mapped) {
     if (mapped === "None") {
       return 0;

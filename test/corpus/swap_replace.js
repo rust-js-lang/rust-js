@@ -23,6 +23,7 @@ function main() {
   a = b;
   b = t;
   console.log(`${a} ${b}`);
+
   const pair = { left: [1, 2], right: [3], label: "p" };
   $exchange(pair.left, pair.right);
   let other = "q";
@@ -32,6 +33,7 @@ function main() {
   console.log(
     `[${pair.left.map((item) => String(item)).join(", ")}] [${pair.right.map((item) => String(item)).join(", ")}] ${pair.label} ${other}`,
   );
+
   const old = $take(pair.left, [9]);
   console.log(
     `[${old.map((item) => String(item)).join(", ")}] [${pair.left.map((item) => String(item)).join(", ")}]`,
@@ -59,6 +61,7 @@ function main() {
       third = t;
       try {
         console.log(`holding ${loud[0]} ${third[0]}`);
+
         console.log("42");
       } finally {
         loudDrop_drop(third);

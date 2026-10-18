@@ -359,6 +359,8 @@ function main() {
               const length = deque.length;
               console.log(`deque ${length}`);
               $truncate(deque, 0, noisyDrop_drop);
+
+              // `last()`: each item before it dropped as the next comes.
               const items = $range(50, 53).map((value) => [value]);
               const tmp = $iter(items);
               const tmp$1 = (n) => {

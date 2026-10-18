@@ -27,6 +27,7 @@ const Stack = {
     stack.head = undefined;
     stack.head = { value, next };
   },
+
   pop(stack) {
     const old = stack.head;
     stack.head = undefined;
@@ -114,6 +115,7 @@ function tableDebug_fmt(table) {
   return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;
 }
 
+// Made for what it prints.
 function loud(n) {
   console.log(`made ${n}`);
   return n;
@@ -157,6 +159,7 @@ function main() {
   console.log(
     `[${itemsTaken.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
   );
+
   const value$3 = Math.min(3, 7);
   const value$4 = $bigMax(-2n, 5n);
   const left = [1, "x"];
@@ -173,6 +176,7 @@ function main() {
   console.log(
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
   );
+
   const inspect = (x) => {
     $print(`saw ${x} `);
   };
@@ -208,6 +212,7 @@ function main() {
   console.log(
     `${$displayF64(2 ** 3)} ${$displayF32(Math.fround(2 ** 0.5))} ${$displayF64(Math.expm1(1e-10))} ${$displayF64(Math.log1p(1e-10))}`,
   );
+
   console.log(`${pointDebug_fmt({ x: 1, label: "a", tags: [2, 3] })}`);
   console.log(
     `${secretDebug_fmt([4])} ${pairDebug_fmt([5, "six"])} ${bagDebug_fmt([[1, 2]])} ${bagDebug_fmt([[]])}`,

@@ -27,12 +27,14 @@ function main() {
   console.log(
     `${size} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
+
   const seen = new $KeySet(
     $iter(["Stable", { TAG: "Beta", _0: 2 }, { TAG: "Beta", _0: 2 }, { TAG: "Beta", _0: 3 }]),
   );
   const value$2 = seen.has({ TAG: "Beta", _0: 3 });
   const arg = seen.has({ TAG: "Beta", _0: 4 });
   console.log(`${seen.size} ${value$2} ${arg}`);
+
   const tally = counts([{ TAG: "Beta", _0: 1 }, "Stable", { TAG: "Beta", _0: 1 }]);
   const value$3 = tally.get({ TAG: "Beta", _0: 1 });
   const value$4 = tally.get("Stable");

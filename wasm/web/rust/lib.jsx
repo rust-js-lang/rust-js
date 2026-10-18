@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./components/app.jsx";
 import { $unwrap } from "@rust-js/runtime";
 
+/** Render the page into `#app`. */
 export function start() {
   const root = createRoot($unwrap(document.getElementById("app"), "the page has an #app"));
   root.render(

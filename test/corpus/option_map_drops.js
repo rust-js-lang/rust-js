@@ -21,6 +21,8 @@ function wrapped(value) {
   return value != null ? [$someValue(value)] : undefined;
 }
 
+// Drops `value` where it doesn't keep it: a generic `Option<T>`, whose
+// `Some` of an `Option` is boxed (ADR 0051).
 function keep_if(value, keep, dropT) {
   let value$live = true;
   let result;

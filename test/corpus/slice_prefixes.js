@@ -32,6 +32,7 @@ function main() {
   );
   const flags = [true, false];
   console.log(`${$sliceStartsWith(flags, [false], true)}`);
+
   const a = [67, 111, 110, 116, 101, 110, 116, 45, 84, 121, 112, 101];
   console.log(
     `${$bytesAsciiEq(

@@ -32,6 +32,7 @@ function parse(s) {
   return { TAG: "Ok", _0: n };
 }
 
+// A `?` inside a loop inside a loop, and the inner loop's own `break`.
 function sum_rows(rows) {
   let total = 0;
   for (const [i, row] of rows.entries()) {
@@ -55,6 +56,7 @@ function sum_rows(rows) {
   return { TAG: "Ok", _0: total };
 }
 
+// A match whose arms return, some through `?`, one falling to the end.
 function describe(token, limit) {
   if (token == null) {
     return { TAG: "Err", _0: "Empty" };
@@ -88,6 +90,7 @@ function describe(token, limit) {
   return { TAG: "Ok", _0: `<${text}>` };
 }
 
+// A loop that only ends by returning, its `continue`s written.
 function first_even(values) {
   let i = 0;
   while (true) {
@@ -108,6 +111,7 @@ function first_even(values) {
   }
 }
 
+// A labeled loop broken from inside an inner one, a value made after it.
 function find_pair(grid, want) {
   let found;
   rows: for (const [r, row] of grid.entries()) {
@@ -128,6 +132,8 @@ function find_pair(grid, want) {
   return found != null ? { TAG: "Ok", _0: found } : { TAG: "Err", _0: "Empty" };
 }
 
+// A `?` in a loop that holds a loop of its own, left by its own `break`,
+// as it's given to what a call's arguments are pushed to.
 function call_args(tokens) {
   const it = $iter(tokens);
   const t = $next(it);

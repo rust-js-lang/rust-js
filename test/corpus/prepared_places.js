@@ -21,6 +21,7 @@ function slots(take) {
   map.set(0, 1);
   const n = $mutGet(map, 0);
   if (n != null) {
+    // Statement-valued assignment must still write the map entry back.
     let tmp;
     if (take) {
       const next = (n.value + 3) | 0;
@@ -42,6 +43,7 @@ function main() {
   slots(true);
   const map = new Map();
   const log = [];
+  // Primitive compound assignment takes the value first.
   const value$1 = value(log);
   const key$1 = key(log);
   const current = $orInsert(map, key$1, 10);
@@ -50,6 +52,7 @@ function main() {
     `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
   );
   log.length = 0;
+  // An overloaded operator is a call: receiver, then argument.
   const key$2 = key(log);
   const current$1 = $orInsert(map, key$2, 10);
   map.set(key$2, (current$1 + value(log)) | 0);

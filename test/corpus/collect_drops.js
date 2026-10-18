@@ -22,6 +22,7 @@ function main() {
   });
   try {
     console.log(`kept ${long.length}`);
+
     const w = [["x"], ["y"], ["z"]];
     const tmp = $iter(w);
     const tmp$1 = (n) => n[0] !== "y";
@@ -57,6 +58,7 @@ function main() {
         const length$1 = fragments.length;
         try {
           console.log(`none ${length} ${length$1}`);
+
           const value = [["m1"], ["m2"]];
           const tmp = $iter(value);
           const tmp$1 = (n) => {
@@ -67,6 +69,7 @@ function main() {
           const tmp$2 = tmp.map((item) => tmp$1(item));
           const names = tmp$2.toArray();
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+
           const value$1 = [["p1"], ["p2"], ["p3"]];
           const tmp$3 = $iter(value$1);
           const tmp$4 = (n) => n[0] !== "p2";

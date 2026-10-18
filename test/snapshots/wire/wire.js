@@ -458,6 +458,7 @@ export function report() {
     paid: false,
     cache: 0,
   };
+  // And read back, as the server reads them: every enum representation.
   const events = $unwrapOk(
     $fromJson(
       $unwrapOk(

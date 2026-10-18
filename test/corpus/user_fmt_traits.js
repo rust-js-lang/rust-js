@@ -46,6 +46,7 @@ function idUpperHex_fmt(id, options) {
   return id[0].toString(16).toUpperCase().padStart(8, "0");
 }
 
+// Delegating to another of the crate's impls, as uuid's do.
 export function idOctal() {
   if ($idOctal === undefined) {
     $idOctal = { fmt: idOctal_fmt };

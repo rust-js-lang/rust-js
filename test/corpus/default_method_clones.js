@@ -25,6 +25,7 @@ function main() {
   const n = { item: 1 };
   const c = sTr().a(n, { clone: (value) => value });
   console.log(`${n.item} ${c.item}`);
+
   const h = { item: [1] };
   const c$1 = sTr().b(h, { clone: (value) => value });
   c$1.item.push(2);

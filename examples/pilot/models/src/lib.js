@@ -4,6 +4,7 @@ import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/runtime";
 
 var $contactDebug, $newContactDebug, $fieldErrorDebug, $problemDebug;
 
+/** A contact the server has stored. */
 export function contactDebug_fmt(contact) {
   return `Contact { id: ${contact.id}, name: ${$debugStr(contact.name)}, email: ${$debugStr(contact.email)}, age: ${contact.age} }`;
 }
@@ -41,6 +42,7 @@ export function contactDeserialize_deserialize(json) {
   );
 }
 
+/** A contact as a form sends it, before the server gives it an id. */
 export function newContactDebug_fmt(newContact) {
   return `NewContact { name: ${$debugStr(newContact.name)}, email: ${$debugStr(newContact.email)}, age: ${newContact.age} }`;
 }
@@ -75,6 +77,7 @@ export function newContactDeserialize_deserialize(json) {
   );
 }
 
+/** What's wrong with one field of a form. */
 export function fieldErrorDebug_fmt(fieldError) {
   return `FieldError { field: ${$debugStr(fieldError.field)}, message: ${$debugStr(fieldError.message)} }`;
 }
@@ -106,6 +109,7 @@ export function fieldErrorDeserialize_deserialize(json) {
   );
 }
 
+/** Why the server refused a request: a message, and the fields to blame. */
 export function problemDebug_fmt(problem) {
   return `Problem { message: ${$debugStr(problem.message)}, errors: [${problem.errors.map((item) => fieldErrorDebug_fmt(item)).join(", ")}] }`;
 }
@@ -150,6 +154,10 @@ export const Problem = {
 
 export const MAX_NAME = 40;
 
+/**
+ * Each rule `contact` breaks, in the form's order. The server keeps them
+ * as the client does, so a request made without the form is held to them.
+ */
 export function validate(contact) {
   const errors = [];
   const fail = (field, message) => {
@@ -170,6 +178,7 @@ export function validate(contact) {
   return errors;
 }
 
+/** Text, an `@`, and a domain with a dot that neither starts nor ends it. */
 export function is_email(text) {
   const value = $splitOnce(text, "@");
   if (value) {
@@ -183,6 +192,7 @@ export function is_email(text) {
   return false;
 }
 
+/** Does `contact` match a search: its name or email, ignoring case. */
 export function matches(contact, query) {
   const query$1 = $trim(query).toLowerCase();
   return (

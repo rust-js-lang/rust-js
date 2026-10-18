@@ -62,6 +62,7 @@ function main() {
   }
   const converted = { value: "shared", strong: 1, weak: 0 };
   let other;
+
   try {
     other = $rcClone(converted);
   } catch (error) {
@@ -237,6 +238,7 @@ function main() {
     throw error;
   }
   let tmp$4;
+
   try {
     tmp$4 = count(doc.pages);
   } catch (error) {
@@ -656,6 +658,7 @@ function main() {
       }
       throw error;
     }
+
     const value = (me) => ({ me: $weakClone(me), name: "self" });
     let owner;
     try {

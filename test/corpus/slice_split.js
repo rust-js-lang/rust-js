@@ -12,6 +12,7 @@ function halves(bytes) {
   return [fold(high), fold(low)];
 }
 
+// Each item in turn, as chrono's queue of format items is read.
 function total(items) {
   const value = items.length === 0 ? undefined : [items[0], items.slice(1)];
   if (value) {
@@ -42,6 +43,7 @@ function main() {
   const words = ["a", "b", "c"];
   const [first, rest] = $sliceSplitAt(words, 1);
   console.log(`${first.join("+")} ${rest.join("+")}`);
+
   const value$2 = $sliceGet(v, 1, 3);
   const value$3 = $sliceGet(v, 3);
   console.log(

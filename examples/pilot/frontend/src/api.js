@@ -28,6 +28,10 @@ export const Failure = {
   },
 };
 
+/**
+ * The server's answer's text, if it answered with a status of `ok`, or why
+ * not. A rejection, a network error or an abort, is an `Err` (`settle`).
+ */
 async function call(url, init, ok) {
   const signal = init.signal;
   const value = await $settle(window.fetch(url, init));
@@ -38,6 +42,7 @@ async function call(url, init, ok) {
     if (status === ok) {
       return { TAG: "Ok", _0: text };
     }
+    // Not the server's JSON: a proxy's page, say.
     const result = $fromJson(text, problemDeserialize_deserialize);
     const problem = result.TAG === "Ok" ? result._0 : Problem.new(`the server answered ${status}`);
     return { TAG: "Err", _0: { TAG: "Refused", _0: status, _1: problem } };
@@ -51,6 +56,7 @@ function get(signal) {
   return { signal };
 }
 
+/** The contacts matching `query`. */
 export async function contacts(query, signal) {
   const result = await call(`/api/contacts?q=${encodeURIComponent(query)}`, get(signal), 200);
   if (result.TAG === "Err") {
@@ -66,6 +72,7 @@ export async function contacts(query, signal) {
     : result$1;
 }
 
+/** The contact `id`. */
 export async function contact(id, signal) {
   const result = await call(`/api/contacts/${id}`, get(signal), 200);
   if (result.TAG === "Err") {
@@ -81,6 +88,7 @@ export async function contact(id, signal) {
     : result$1;
 }
 
+/** `new`, stored: the contact the server made of it. */
 export async function create(new$) {
   const json = new Headers();
   json.set("content-type", "application/json");

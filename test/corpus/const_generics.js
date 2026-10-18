@@ -16,6 +16,7 @@ function sum(values, N) {
   return total;
 }
 
+// Given on to another, and with a type's dictionary after it.
 function describe(values, N, TDebug) {
   const value = count(N);
   return `${N} of [${values.map((item) => TDebug.fmt(item)).join(", ")}], ${value}`;
@@ -25,6 +26,7 @@ function count(N) {
   return Math.imul(N, 2) >>> 0;
 }
 
+// `[x; N]` of a caller's `N`.
 function filled(x, N) {
   return new Array(N).fill(x);
 }
@@ -33,17 +35,20 @@ const Ring = {
   new(CAP) {
     return { items: [] };
   },
+
   push(ring, x, CAP) {
     if (ring.items.length === CAP) {
       $removeAt(ring.items, 0);
     }
     ring.items.push(x);
   },
+
   capacity(ring, CAP) {
     return CAP;
   },
 };
 
+// Of other types: a `bool` and a `char`.
 function flag(ON, C) {
   if (ON) {
     return C;
@@ -51,6 +56,7 @@ function flag(ON, C) {
   return "-";
 }
 
+// A closure sees its function's.
 function scaled(values, K) {
   return values.map((v) => Math.imul(v, K) >>> 0);
 }

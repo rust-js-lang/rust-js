@@ -37,6 +37,7 @@ function main() {
   };
   handle.value = (handle.value + 1) | 0;
   console.log(`${n}`);
+  // Of an object: a handle on it, whose `as_mut()` is the object.
   const node = { value: 1 };
   const at = $ptrTo(node);
   at.value.value = 7;

@@ -26,6 +26,7 @@ export function Editor({ state, view, onSubmit }) {
       }
     };
   }, []);
+  // Another file, a new compile, or the system's theme changing.
   useEffect(() => {
     const editor = made.current;
     if (editor) {

@@ -32,6 +32,7 @@ function total(values, zero, TAdd) {
 }
 
 function main() {
+  // Arithmetic, each step rounded: ten tenths aren't one.
   const tenth = Math.fround(0.1);
   let sum = 0;
   for (let i = 0; i < 10; i++) {
@@ -44,6 +45,9 @@ function main() {
     `${$displayF32(16777216)} ${$displayF32(Math.fround(3.3000002))} ${$displayF32(Math.fround(Math.sqrt(2)))}`,
   );
   console.log(`${$debugF32(1)} ${$debugF32(Math.fround(0.1))} ${$debugF32(-0)}`);
+
+  // As Rust shows them: `{}` never with an exponent, `{:?}` with one far
+  // from 1, and the shortest digits of this f32.
   console.log(`${$displayF32(Math.fround(3.4028235e38))} ${$debugF32(Math.fround(3.4028235e38))}`);
   console.log(
     `${$displayF32(Math.fround(1.1754944e-38))} ${$debugF32(Math.fround(1.1754944e-38))}`,
@@ -55,13 +59,18 @@ function main() {
   console.log(
     `${$toFixed(Math.fround(0.1), 3)} ${$toFixed(2.5, 0)} ${$toFixed(Math.fround(1.005), 2)}`,
   );
+
+  // Casts: from f32 saturating, into f32 rounded once.
   console.log("3 0 2147483647 0");
   console.log(
     `${$displayF32(16777216)} ${$displayF32(Math.fround(4294967300))} ${$displayF32(Math.fround(0.1))}`,
   );
+  // Through an f64 this would round twice, to 2^60.
   const big = BigInt.asUintN(64, (1n << 60n) + (1n << 36n) + 1n);
   console.log(`${$displayF32($bigToF32(big))} ${$displayF64($bigToF32(big))}`);
   console.log(`${$displayF64(0.10000000149011612)} ${$displayF64(3.4028234663852886e38)}`);
+
+  // Methods: exact ones as they are, the others rounded.
   const x = -2.75;
   console.log(
     `${$displayF32(Math.abs(x))} ${$displayF32(Math.floor(x))} ${$displayF32(Math.ceil(x))} ${$displayF32($round(x))} ${$displayF32(Math.trunc(x))}`,
@@ -73,6 +82,8 @@ function main() {
     `${$displayF32($f64Max(1.5, NaN))} ${$displayF32($f64Min(1.5, -3))} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,
   );
   console.log(`${Number.isNaN(NaN)} ${Math.abs(Math.fround(1 / 0)) === Infinity}`);
+
+  // In a struct, an iterator, a sort, and generic code.
   const readings = [
     { celsius: Math.fround(21.7) },
     { celsius: Math.fround(-3.2) },

@@ -91,6 +91,7 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} [${deque.map((item) => String(item)).join(", ")}]`,
   );
+
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
     console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
   }

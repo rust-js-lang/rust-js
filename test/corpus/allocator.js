@@ -35,6 +35,7 @@ const Buf = {
     const ptr = $ptrTyped($alloc(layout) ?? fallback());
     return { ptr, cap, len: 0 };
   },
+
   push(buf, value, TSize, TAlign) {
     if (buf.len === buf.cap) {
       const old = layout_array(buf.cap, TSize, TAlign);
@@ -47,6 +48,7 @@ const Buf = {
     $ptrAdd(buf.ptr, buf.len).value = value;
     buf.len = (buf.len + 1) >>> 0;
   },
+
   pop(buf) {
     if (buf.len === 0) {
       return;
@@ -54,6 +56,7 @@ const Buf = {
     buf.len = (buf.len - 1) >>> 0;
     return $some($ptrAdd(buf.ptr, buf.len).value);
   },
+
   into_vec(buf) {
     const me = buf;
     return $vecFromRaw(me.ptr, me.len, me.cap);

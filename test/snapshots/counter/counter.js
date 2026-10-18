@@ -12,6 +12,7 @@ function button(label) {
   return b;
 }
 
+/** A button that adds `by` to the shared count, and shows the new count. */
 function stepper(label, by, count, output) {
   const b = button(label);
   b.addEventListener("click", () => {
@@ -23,9 +24,12 @@ function stepper(label, by, count, output) {
 
 export function main() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  // Both buttons change one count, so they share it: `Rc` to share, `Cell`
+  // to change it through a shared reference.
   const count = { value: 0 };
   const output = document.createElement("output");
   output.textContent = "0";
+  // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
   app.append(stepper("-", -1, count, output));
   app.append(output);
   app.append(stepper("+", 1, count, output));

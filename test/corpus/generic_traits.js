@@ -187,6 +187,7 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
+  // `None`s in a `Stack`: generic code tells a taken `None` from none left.
   const value$5 = { list: [undefined, undefined, 1] };
   const x$3 = { value: value$5 };
   const value$6 = count(x$3, stackTakeT());
@@ -196,8 +197,10 @@ function main() {
   const value$8 = count(x$4, numsTakeU32());
   $assign(value$7, x$4.value);
   console.log(`${value$6} ${value$8}`);
+
   const d = { value: m, impl: metersConvertString() };
   console.log(`${d.impl.convert(d.value)}`);
+
   const x = unwrapped(m, metersWrapF64());
   const value$9 = metersBoth().both(m);
   const value$10 = number(m, metersBoth());

@@ -6,6 +6,8 @@ import { join as join$1 } from "node:path";
 import greet from "../greet.js";
 import wave from "./wave.js";
 
+// Named as the root's import of `node:path`'s `join`, which this file
+// imports too: the root's keeps its name.
 function join(greeting) {
   return greeting;
 }

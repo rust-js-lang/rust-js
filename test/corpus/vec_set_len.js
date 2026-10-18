@@ -16,6 +16,10 @@ export function entry() {
   main();
 }
 
+/**
+ * Moves a vector's items out into another, as smallvec's `from_vec` does:
+ * its length `0` first, so the vector drops none of them.
+ */
 function take_all(v) {
   const out = $withCapacity(v.length);
   const len = v.length;
@@ -34,6 +38,8 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
+  // Written past its length, then lengthened to it.
   const v$1 = $withCapacity(4);
   v$1.push(1);
   const p = $ptr(v$1, 0);
@@ -42,6 +48,8 @@ function main() {
   $keepCapacity(v$1);
   $setLen(v$1, 3);
   console.log(`[${v$1.map((item) => String(item)).join(", ")}] ${v$1.length}`);
+
+  // Shortened, read past it, and lengthened back.
   const v$2 = [10, 20, 30, 40, 50];
   $keepCapacity(v$2);
   $setLen(v$2, 1);
@@ -51,6 +59,7 @@ function main() {
   console.log(
     `[${v$2.map((item) => String(item)).join(", ")}] ${third} [${past.map((item) => String(item)).join(", ")}] ${arg}`,
   );
+  // Its last two moved down over what's left behind, as a drain does.
   const p$1 = $ptr(v$2, 0);
   $ptrCopy($ptrAdd(p$1, 3), $ptrAdd(p$1, 1), 2);
   $keepCapacity(v$2);

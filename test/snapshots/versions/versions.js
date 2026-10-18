@@ -166,6 +166,7 @@ function made(c) {
 
 export function edges() {
   const order = { value: 0 };
+  // Rust works out the fields, then the base.
   const value = tick(order, 1);
   const v = { major: tick(order, 2), minor: made(order).minor, patch: value };
   const upto = $scan([5, 3, 8, 1], 1, (acc, x) => {

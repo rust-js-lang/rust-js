@@ -64,6 +64,7 @@ function main() {
   };
   p.left.value = (p.left.value + 10) | 0;
   p.right.value += "b";
+  // Formatted, a `&mut` kept shows what it points at.
   console.log(`${p.left.value} ${$debugStr(p.right.value)}`);
   console.log(`${n} ${s}`);
   let a = 1;

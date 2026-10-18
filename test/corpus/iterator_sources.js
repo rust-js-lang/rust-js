@@ -73,6 +73,8 @@ function maybe_items(item) {
   ];
 }
 
+// A `for` over an `Option` is one Rust warns of, but takes.
+
 function main() {
   console.log(
     `[${powers_of_two(100)
@@ -123,6 +125,8 @@ function main() {
     .take(4)
     .toArray();
   console.log(`[${squares.map((item) => String(item)).join(", ")}]`);
+
+  // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
   const zipped = Iterator.from(
     $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))),
@@ -167,6 +171,7 @@ function main() {
   console.log(
     `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${squares$1.map((item) => String(item)).join(", ")}]`,
   );
+  // `successors` finds the next item before it gives this one.
   let calls = 0;
   const taken = Iterator.from(
     $successors(1, (n) => {

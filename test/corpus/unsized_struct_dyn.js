@@ -52,6 +52,7 @@ function main() {
     throw error;
   }
   const noisy = $dynCell({ size: 2, inner: [20] }, noisyShow());
+
   try {
     console.log(`${read(noisy)}`);
   } catch (error) {
@@ -66,6 +67,7 @@ function main() {
     throw error;
   }
   const shown = $dynCell({ size: 6, inner: 7 }, { fmt: String });
+
   try {
     console.log(`${shown.size} ${shown.impl.fmt(shown.inner)}`);
   } catch (error) {

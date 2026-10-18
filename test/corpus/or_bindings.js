@@ -34,6 +34,7 @@ function size(s) {
   return s._0;
 }
 
+// Bound at another place in each alternative.
 function pick(p) {
   let x;
   if (p[0] === 0) {
@@ -96,6 +97,8 @@ function main() {
   ]) {
     console.log(`${text(t)}`);
   }
+
+  // Nested, with a guard that reads what's bound.
   let r;
   let r$1;
   let r$2;
@@ -137,6 +140,8 @@ function main() {
   const r$3 = { TAG: "Err", _0: 9 };
   const n = r$3.TAG === "Ok" ? r$3._0 : r$3._0;
   console.log(`${n}`);
+
+  // Through a `&mut`, where it's the same place in each: written there.
   const grown = shapes.map((item) => ({ ...item }));
   for (const s of grown) {
     let r;

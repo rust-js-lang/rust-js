@@ -96,6 +96,7 @@ function main() {
       .map(([key, value]) => `(${key[0]}, ${key[1]}): ${$debugStr(value, "'")}`)
       .join(", ")}}`,
   );
+
   const points = new $KeySet(
     $iter([
       { x: 3, y: 0 },

@@ -84,6 +84,7 @@ function main() {
   console.log(
     `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${x$1} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+  // The value is read before the place changes it. Found in review.
   let x = 1;
   const one = [0];
   const value$13 = x;
@@ -105,6 +106,8 @@ function main() {
   const index$4 = bump(c);
   t[$at(t, index$4)] = n;
   console.log(`${one[0]} ${x} ${$index(w, 0)} ${y} ${$index(u, 0)} ${z} ${$index(t, 0)} ${c.n}`);
+  // `+=` reads its place after the value, which may change it. Found in
+  // review.
   const d = { n: 1 };
   const value$16 = reset(d);
   d.n = (d.n + value$16) | 0;
@@ -116,6 +119,9 @@ function main() {
   const value$17 = inc();
   e = (e + value$17) | 0;
   console.log(`${d.n} ${e}`);
+  // A `Vec`'s index is `index_mut(&mut *cur, i)`, which takes `*cur`
+  // before `i` runs; an array's is the place `(*cur)[i]`, which follows
+  // `cur` after. Found in review.
   const a$1 = [1, 2];
   const b = [10, 20];
   let cur = a$1;

@@ -40,6 +40,7 @@ function main() {
   add("y");
   add("z");
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+
   const base = 10;
   const adders = $range(0, 3).map((i) => (x) => (x + Math.imul(i, base)) | 0);
   console.log(
@@ -55,6 +56,7 @@ function main() {
   double();
   double();
   console.log(`value ${value}`);
+
   const text = "moved";
   const owns = () => Array.from(text).length;
   console.log(`len ${owns()}`);

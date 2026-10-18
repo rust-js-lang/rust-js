@@ -52,9 +52,14 @@ export function App() {
   const [output, setOutput] = useState("Nothing");
   const [program, setProgram] = useState(undefined);
   const [compiling, startTransition] = useTransition();
+  // The source editor's view, whose state has the open file's latest edits.
   const source = useRef(undefined);
+  // How many programs have run, and how many compiles: a counter each.
   const runs = useRef(0);
   const compiles = useRef(0);
+
+  // Download everything, then open the first example. In development,
+  // StrictMode runs this twice; the first run's results are dropped.
   useEffect(() => {
     let cancelled = false;
     const stat = (label, value) => {
@@ -83,7 +88,11 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  // The open file's latest state, from its editor.
   const live = () => source.current?.state;
+
+  // Run what a compile wrote, in the Result frame.
   const run = (compiled, loaded, test) => {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
@@ -112,6 +121,8 @@ export function App() {
       setProgram({ run: n, page: value._0 });
     }
   };
+
+  // Compile the crate, or with `test`, its tests too, and run it.
   const onCompile = (test) => {
     if (!loaded) {
       return;
@@ -124,6 +135,7 @@ export function App() {
     const root = project.root;
     const shown = output.TAG === "Files" ? output.shown : "";
     setStatus(say(test ? "Compiling the tests…" : "Compiling…", "Plain"));
+    // A Transition: `compiling` is true until it's done.
     startTransition(async () => {
       const r = await compileInWorker(loaded$1, sources, root, test);
       const n = (compiles.current + 1) | 0;
@@ -131,6 +143,7 @@ export function App() {
       if (r.ok) {
         const files = Array.from(r.files).map(([path, text]) => [path, text]);
         const count = files.length;
+        // Keep showing the same file if it's still there; otherwise the root's.
         const shown$1 = files.some(([path]) => path === shown) ? shown : r.root;
         setOutput({ TAG: "Files", files, shown: shown$1 });
         setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
@@ -144,9 +157,12 @@ export function App() {
       const times = `instantiate ${ms(r.instantiate)}, run ${ms(r.run)}, memory ${mb(r.memory)}, ${result}`;
       const label = `compile #${n}`;
       setStats((rows) => appended(rows, label, times));
+      // For automated checks.
       window.lastResult = r;
     });
   };
+
+  // What the Result frame reports.
   const onOutcome = (outcome) => {
     if (outcome.TAG === "Failed") {
       setStatus(say(`Runtime error: ${outcome._0}`, "Bad"));
@@ -160,6 +176,7 @@ export function App() {
       setStatus(say(text, "Bad"));
     }
   };
+
   const onExample = (name) => {
     const chosen = loaded ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen) {
@@ -175,6 +192,7 @@ export function App() {
       })();
     }
   };
+
   const openFile = (path) => {
     setProject(Project.opening(project, path, live()));
   };
@@ -218,6 +236,9 @@ export function App() {
       setOutput({ TAG: "Files", files, shown: path });
     }
   };
+
+  // What the editors show. A state is made once for each output, so the
+  // editor only changes when it does.
   const blank = useMemo(() => source_state(""), []);
   const state = Project.current_state(project);
   const current = state || blank;

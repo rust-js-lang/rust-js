@@ -41,6 +41,8 @@ export function indexed(words) {
   return words.map((w, i) => `${i}:${w}`);
 }
 
+// Whether a word is as long as where it is, and the first long one's
+// place: a `find` keeps its pairs, which its `map` takes apart.
 export function placed(words) {
   const fits = words.some((w, i) => $byteLen(w) === i);
   const option = words.map((x, i) => [i, x]).find(([i, w]) => $byteLen(w) > (2 + i) >>> 0);
@@ -69,6 +71,7 @@ export function backwards(s) {
   return Array.from(s).toReversed().join("");
 }
 
+/** `collect` makes a new `Vec`: sorting it leaves the original as it was. */
 export function sorted_copy(v) {
   const copy = v.slice();
   copy.sort((a, b) => a - b);
@@ -87,6 +90,7 @@ export function descending(v) {
   return w;
 }
 
+/** By the last digit; stable, so ties keep their order, as in Rust. */
 export function by_last_digit(v) {
   const w = v.slice();
   const key = (x) => (x % 10) | 0;
@@ -101,6 +105,7 @@ export function sorted_words(words) {
   return w;
 }
 
+/** Two keys: `then_with`. */
 export function by_length_then_name(words) {
   const w = words.slice();
   w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
@@ -122,11 +127,19 @@ export function bigger(a, b) {
   return [Math.max(a, b), Math.min(a, b)];
 }
 
+/**
+ * `-x` and `!b` of references, which rustc writes as calls of `Neg::neg`
+ * and `Not::not`: in JS, the operators.
+ */
 export function negated(v) {
   const positive = v.map((x) => x > 0);
   return [v.map((x) => -x | 0), positive.map((p) => !p)];
 }
 
+/**
+ * `a..=b` includes its end: `i <= n` in a `for`, `$range(a, b + 1)` as an
+ * iterator.
+ */
 export function inclusive(n) {
   let total = 0;
   const iter = { start: 1, end: n };
@@ -147,6 +160,7 @@ export function inclusive(n) {
   ];
 }
 
+/** An `Ordering` is -1, 0 or 1 already, so `as` changes nothing. */
 export function order_number(a, b) {
   return [$cmp(a, b), $cmp(a, b) & 255];
 }

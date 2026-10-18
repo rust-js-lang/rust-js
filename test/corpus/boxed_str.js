@@ -19,6 +19,7 @@ const Item = {
       ? { TAG: "OwnedLiteral", _0: item._0 }
       : { TAG: "OwnedLiteral", _0: item._0 };
   },
+
   text(item) {
     return item.TAG === "Literal" ? item._0 : item._0;
   },

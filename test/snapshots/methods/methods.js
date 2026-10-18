@@ -8,12 +8,17 @@ export const Counter = {
   new(step) {
     return { count: 0, step };
   },
+
   default_step() {
     return 1;
   },
+
+  /** `&mut self`: the object itself changes. */
   tick(counter) {
     counter.count = (counter.count + counter.step) >>> 0;
   },
+
+  /** `&self`, and `Self` for the type. */
   ticked(counter, times) {
     const next = { count: counter.count, step: counter.step };
     for (let i = 0; i < times; i++) {
@@ -21,18 +26,21 @@ export const Counter = {
     }
     return next;
   },
+
   value(counter) {
     return counter.count;
   },
 };
 
 export const Light = {
+  /** `self` by value. */
   next(light) {
     if (light === "Red") {
       return "Green";
     }
     return "Red";
   },
+
   is_go(light) {
     return light === "Green";
   },
@@ -42,6 +50,7 @@ export const Pair = {
   new(a, b) {
     return [a, b];
   },
+
   sum(pair) {
     return (pair[0] + pair[1]) | 0;
   },

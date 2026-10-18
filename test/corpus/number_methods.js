@@ -25,11 +25,14 @@ export function entry() {
 }
 
 function main() {
+  // Clamped, into a range, an integer's or a float's.
   console.log(
     `${$clamp(17, 0, 10)} ${$clamp(-3n, -2n, 2n)} ${$clamp(200, 1, 100)} ${$displayF64($clampFloat(1.5, 0, 1, $debugF64))} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
   );
   const level = 7;
   console.log(`${Math.imul($clamp(level, 1, 5), 2) >>> 0}`);
+
+  // Parsed in a radix, and errors where Rust finds them.
   const value = $parseInt("-ff", -2147483648, 2147483647, 16);
   const value$1 = $parseInt("11111111", 0, 255, 2);
   const value$2 = $parseBig("777", 0n, 18446744073709551615n, 8);
@@ -43,7 +46,11 @@ function main() {
       `${$debugStr(s)}: ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`}`,
     );
   }
+
+  // Divided, rounding up.
   console.log(`${$divCeil(7, 2)} ${$divCeil(8, 2)} ${$divCeil(0, 3)} ${$divCeil(10n, 3n)}`);
+
+  // A float's sign, fraction and angle.
   for (const x of [-2.5, 0, -0, 3.75]) {
     console.log(
       `${$displayF64($signum(x))} ${$displayF64(x - Math.trunc(x))} ${$signNegative(x)} ${!$signNegative(x)} ${$displayF64(x * (Math.PI / 180))}`,
@@ -53,6 +60,8 @@ function main() {
   console.log(
     `${$displayF32(Math.fround(45 * 0.01745329238474369))} ${$displayF32(Math.fround(1 * 57.295780181884766))} ${$displayF32(-0.5 - Math.trunc(-0.5))}`,
   );
+
+  // Integer logarithms, roots, midpoints and zeros.
   console.log(`${$ilog(1000, 10)} ${$ilog(999, 10)} ${$ilog(8, 2)} ${$ilog(255, 2)}`);
   console.log(`${$ilog(1n, 10)} ${$ilog(18446744073709551615n, 2)} ${$ilog(12345n, 10)}`);
   console.log(

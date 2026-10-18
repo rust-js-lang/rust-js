@@ -19,6 +19,8 @@ const SOURCE = [
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
 
+// Read-only, but still selectable and copyable. Highlighted as JS for a
+// generated file, plain text when it shows rustc's diagnostics.
 const JS_OUTPUT = output(javascript());
 const PLAIN_OUTPUT = output(undefined);
 
@@ -40,10 +42,15 @@ function theme_for(dark) {
   return [];
 }
 
+/**
+ * A Rust file's editor state. Each file keeps its own, so its undo history
+ * survives switching.
+ */
 export function source_state(text) {
   return EditorState.create({ doc: text, extensions: SOURCE });
 }
 
+/** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
 export function output_state(text, js) {
   const extensions = js ? JS_OUTPUT : PLAIN_OUTPUT;
   return EditorState.create({ doc: text, extensions });
@@ -53,16 +60,25 @@ export function text_of(state) {
   return state.doc.toString();
 }
 
+/** A view of `state` in `parent`. */
 export function open_view(parent, state) {
   return new EditorView({ state, parent });
 }
 
+/**
+ * Show `state`, unless it's the one showing: setting it again would lose
+ * the view's scroll position.
+ */
 export function show(view, state) {
   if (!Object.is(view.state, state)) {
     view.setState(state);
   }
 }
 
+/**
+ * Follow the system's light or dark setting. A state keeps the theme it was
+ * made with, so this runs after `show` too.
+ */
 export function set_theme(view, dark) {
   const theme = THEME;
   view.dispatch({ effects: theme.reconfigure(theme_for(dark)) });

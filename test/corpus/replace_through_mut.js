@@ -49,12 +49,15 @@ function origin(p) {
   $assign(p, { x: 0, y: 0 });
 }
 
+// A `ref mut` binding of an object, replaced whole.
 function through_ref_mut() {
   const a = { x: 1, y: 0 };
   const cur = a;
   $assign(cur, { x: 2, y: 3 });
   return (a.x + a.y) | 0;
 }
+
+// The same, its `&mut` in a `let mut`: still `a`, replaced whole.
 
 function through_ref_mut_variable() {
   const a = { x: 1, y: 0 };
@@ -106,6 +109,7 @@ function flip(s) {
   $assign(s, s.TAG === "Circle" ? { TAG: "Square", side: s.r * 2 } : { TAG: "Circle", r: s.side });
 }
 
+// A string replaced whole is its place's: it's still cloned as itself.
 function shout(s) {
   s.value = `${s.value}!`;
 }
@@ -142,6 +146,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}] [${items.map((item) => String(item)).join(", ")}]`,
   );
+
   const a = { x: 1, y: 2 };
   const b = { ...a };
   origin(b);

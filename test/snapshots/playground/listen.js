@@ -2,6 +2,7 @@
 
 // Listening to the DOM from an effect, whose cleanup stops it.
 
+/** `target.addEventListener(type, f, { signal })`: until `controller` aborts. */
 export function listen(target, type, f, controller) {
   target.addEventListener(type, f, { signal: controller.signal });
 }

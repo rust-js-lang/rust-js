@@ -18,6 +18,7 @@ export function entry() {
   main();
 }
 
+/** Says each time it's compared. */
 function loudDebug_fmt(loud) {
   return `Loud(${loud[0]})`;
 }

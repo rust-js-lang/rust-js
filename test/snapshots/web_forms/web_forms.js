@@ -16,29 +16,51 @@ export function forms() {
   return $unwrap(app.textContent) + input.value;
 }
 
+/**
+ * An optional argument is an `Option`, a trailing `None` no argument (ADR
+ * 0443): `encode(Some(text))` is `e.encode(text)`, and a union takes its
+ * member as it is (ADR 0229): `decode(Some(&bytes), None)` is `d.decode(bytes)`.
+ */
 export function round_trip(text) {
   const bytes = new TextEncoder().encode(text);
   const back = new TextDecoder("utf-8").decode(bytes);
   return [bytes.length, back];
 }
 
+/**
+ * A `BodyInit` of a `Blob`, and a `RequestInfo` of a URL: each the value
+ * itself, as TypeScript's union takes it.
+ */
 export function bodies(url) {
   const blob = new Blob();
   const response = new Response(blob);
   return [response, window.fetch(url)];
 }
 
+/**
+ * A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
+ * `BlobPart`, and the clipboard written a list of items, each `new
+ * Blob([text, "!"])` and `navigator.clipboard.write(items)`.
+ */
 export function copied(text, items) {
   const blob = new Blob([text, "!"]);
   return [blob, navigator.clipboard.write(items)];
 }
 
+/**
+ * A frame's window, a message's sender, and the page's clock:
+ * `frame.contentWindow`, `e.source` and `window.performance.now()`.
+ */
 export function from_frame(frame, e) {
   const sender = e.source;
   const windowOf = frame.contentWindow;
   return [Object.is(sender, windowOf), window.performance.now()];
 }
 
+/**
+ * A canvas, which a library like canvas-confetti draws on: its size, set
+ * and read, `canvas.width = 320`.
+ */
 export function canvas_size() {
   const canvas = document.createElement("canvas");
   canvas.width = 320;
@@ -46,12 +68,22 @@ export function canvas_size() {
   return [canvas.width, canvas.height];
 }
 
+/**
+ * A static method, the class's own, as react.dev's DownloadButton asks
+ * whether a script may be an import map and makes a URL of a blob:
+ * `HTMLScriptElement.supports("importmap")`, `URL.createObjectURL(blob)`.
+ */
 export function statics(blob) {
   const url = URL.createObjectURL(blob);
   URL.revokeObjectURL(url);
   return [HTMLScriptElement.supports("importmap"), url];
 }
 
+/**
+ * What a function gives, of each WebIDL type: a sequence is a `Vec`, a
+ * frozen array a slice, a `long long` an `f64` (a JS number), a `float` an
+ * `f32`, a dictionary a struct of `Option`s, and a constant a `const`.
+ */
 export function kinds(el, blob, param, bytes) {
   const names = el.getAttributeNames();
   const languages = navigator.languages;
@@ -59,6 +91,10 @@ export function kinds(el, blob, param, bytes) {
   return [names, languages.length, blob.size, param.value, 1, into.written];
 }
 
+/**
+ * An event handler property, `onclick`: a closure given the event its name
+ * is on the target, a button's click a `PointerEvent`, or `None`, `null`.
+ */
 export function handlers(button) {
   button.onclick = (e) => {
     e.preventDefault();
@@ -68,16 +104,25 @@ export function handlers(button) {
   return set;
 }
 
+/** A constructor of a class from a spec the crate didn't read before. */
 export function socket(url) {
   return new WebSocket(url);
 }
 
+/**
+ * A CSS property of an element's style, by its own name, as TypeScript has
+ * each: `style.backgroundColor`.
+ */
 export function styled(el) {
   const style = el.style;
   style.backgroundColor = "red";
   return style.webkitLineClamp;
 }
 
+/**
+ * What an iterable, a maplike or a setlike declares: `forEach` of each
+ * item, and a map's `get`, `has` and `size`.
+ */
 export function iterables(nodes, headers, ranges) {
   const count = 0;
   let count$1 = count;
@@ -92,6 +137,11 @@ export function iterables(nodes, headers, ranges) {
   return [seen, headers.get("a"), ranges.has("x"), ranges.size];
 }
 
+/**
+ * What an iterable gives, `keys()`, `values()` and `entries()`: JS
+ * iterators, each a `Box<dyn Iterator>` (ADR 0140), stepped by `for`,
+ * adapted lazily by JS's iterator helpers, or stepped by `next()`.
+ */
 export function iterated(headers, list) {
   const names = [];
   for (const [name, value] of headers.entries()) {
@@ -105,6 +155,11 @@ export function iterated(headers, list) {
   return [names, long, $next(keys)];
 }
 
+/**
+ * A typed array is the js crate's, `getChannelData`'s `Float32Array`; an
+ * SVG name is the class it's an alias of, `SVGPoint` a `DOMPoint`; and a
+ * union of a typedef is named as it's written, `string | BufferSource`.
+ */
 export function samples(buffer, svg) {
   const data = buffer.getChannelData(0);
   const point = svg.createSVGPoint();
@@ -113,26 +168,48 @@ export function samples(buffer, svg) {
   return [data[0] ?? 0, point.x, face];
 }
 
+/**
+ * A stringifier is `to_string()`, JS's `toString()`: of `stringifier;`,
+ * and of a `stringifier attribute`, a URL's `href`.
+ */
 export function texts(url, list) {
   return [url.toString(), list.toString()];
 }
 
+/**
+ * A static attribute, read at each call, and a static method an instance's
+ * has the name of, each its class's: `Notification.permission`, `Response.json`.
+ */
 export function statics_read() {
   return [Notification.permission, Response.json([1, 2])];
 }
 
+/**
+ * `onerror`'s closure is given an error's event, or on a window its
+ * message, and gives whether it's handled; `onbeforeunload`'s gives the
+ * text that asks whether to leave, or none.
+ */
 export function on_errors(button) {
   button.onerror = (e) => typeof e === "string";
   window.onbeforeunload = () => undefined;
   return !!button.onerror;
 }
 
+/**
+ * `for..of`'s `[Symbol.iterator]`: `Iterator.from(list)`, a JS iterator of
+ * an indexed collection's items, or of an iterable's entries.
+ */
 export function listed(list, headers) {
   const count = Iterator.from(list).reduce((n) => n + 1, 0);
   const names = Array.from(headers).map(([name]) => name);
   return [count, names];
 }
 
+/**
+ * A list's items are of the type TypeScript's `NodeListOf` gives:
+ * `querySelectorAll`'s `Element`s, whose rect is read as they are, and
+ * an input's `labels`, `HTMLLabelElement`s.
+ */
 export function selected(el, input) {
   const widths = el
     .querySelectorAll("p")
@@ -143,11 +220,20 @@ export function selected(el, input) {
   return [widths, label];
 }
 
+/**
+ * A list's items collected are `Array.from(list)`, each mapped as an
+ * array's, as react.dev's home page reads its hover targets.
+ */
 export function widths(el) {
   const nodes = el.querySelectorAll("p");
   return Array.from(nodes).map((p) => p.getBoundingClientRect().width);
 }
 
+/**
+ * A union a function gives is the enum a parameter of it takes, read as
+ * the member JS gives: `reader.result`, text or an `ArrayBuffer`, and a
+ * form's field, text or a `File`.
+ */
 export function unions_read(reader, data) {
   const result = reader.result;
   const text = typeof result === "string";
@@ -156,11 +242,19 @@ export function unions_read(reader, data) {
   return [text, name];
 }
 
+/**
+ * An `ObservableArray`, `adoptedStyleSheets`, is a JS array, given as a
+ * slice and read as one.
+ */
 export function adopted(sheet) {
   document.adoptedStyleSheets = [sheet];
   return document.adoptedStyleSheets.length;
 }
 
+/**
+ * A function JS gives is an object, as an event handler's is:
+ * `customElements.get(name)`, a class, or none.
+ */
 export function defined(registry) {
   return !!registry.get("x-card");
 }

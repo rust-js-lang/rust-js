@@ -101,6 +101,7 @@ function main() {
     $print(`${d.impl.fmt(d.value)} `);
   }
   console.log("");
+
   const counter = [{ value: 1 }];
   const shown = { value: counter, impl: counterDisplay() };
   counter[0].value = 2;

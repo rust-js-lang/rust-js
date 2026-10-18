@@ -16,11 +16,13 @@ function variant(kind) {
   return VARIANTS[kind];
 }
 
+// A `let` of it, as ExpandableCallout has `const variant = variantMap[type]`.
 function titled(kind) {
   const chosen = VARIANTS[kind];
   return chosen.title;
 }
 
+// What's matched, a call, is read once, as the key.
 function pick(i) {
   console.log(`pick ${i}`);
   return $index(["note", "pitfall", "rsc"], i % 3);
@@ -30,6 +32,7 @@ function picked(i) {
   return VARIANTS[pick(i)];
 }
 
+// An arm of another field is a conditional, as before.
 function crossed(kind) {
   return kind === "note" ? VARIANTS.pitfall : kind === "pitfall" ? VARIANTS.note : VARIANTS.rsc;
 }
@@ -40,6 +43,7 @@ const OTHER = {
   rsc: { title: "Other RSC", depth: 6 },
 };
 
+// Arms of two tables are a conditional too.
 function mixed(kind) {
   return kind === "note" ? VARIANTS.note : kind === "pitfall" ? OTHER.pitfall : VARIANTS.rsc;
 }

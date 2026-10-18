@@ -84,7 +84,9 @@ function main() {
     noisyDrop_drop(p.y);
   }
   console.log("after p");
+
   const swapped = swap_y({ x: [4], y: [5], n: 2 });
+
   try {
     console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
   } catch (error) {
@@ -103,6 +105,7 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
+
   try {
     console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
   } catch (error) {
@@ -136,6 +139,7 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
+
   try {
     console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
   } catch (error) {

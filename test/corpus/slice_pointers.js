@@ -43,6 +43,7 @@ function takenIterator_next(taken, dropT) {
   return $nextSome(taken.iter);
 }
 
+/** A `&mut`'s, only read through: where it is matters to nothing. */
 function peeked(count) {
   count.value = (count.value + 1) >>> 0;
   const p = $ptr(count, "value");
@@ -53,6 +54,11 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
+/**
+ * Each item of a slice dropped in place through its pointer, as arrayvec's
+ * `truncate` drops its tail; the vector forgotten after, its first item
+ * taken out first.
+ */
 function dropped_tail() {
   const items = [[1], [2], [3]];
   let tail;

@@ -55,9 +55,11 @@ function main() {
   by_ref(["b"]);
   ignored(["c"]);
   both(["d"], ["e"], ["f"]);
+  // A `let` that binds a new value by `ref` owns it too.
   const kept = ["g"];
   const same = ["h"];
   const borrowed = same;
+  // `let _ = x` doesn't move `x`, so its scope drops it.
   const keptToo = ["i"];
   try {
     try {

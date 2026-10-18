@@ -96,10 +96,12 @@ export function twice(x, TClone) {
   return [TClone.clone(x), TClone.clone(x)];
 }
 
+/** A `T: Copy` clones by copying. */
 export function copied(x) {
   return x;
 }
 
+/** Derived and hand-written, direct and through a generic. */
 export function defaults() {
   const s = { size: 0, tags: [], mode: "Off" };
   const c = fresh(configDefault());
@@ -107,6 +109,7 @@ export function defaults() {
   return [s.size, c.retries, s.mode === "Off", n, c.name, s.tags.length];
 }
 
+/** A clone of a `Vec` that's changed is an array of its own. */
 export function vec_clones() {
   const v = [1, 2];
   const w = v.slice();
@@ -114,6 +117,7 @@ export function vec_clones() {
   return [v.length, w.length];
 }
 
+/** A derived clone copies what changes: here `tags`, pushed to. */
 export function struct_clones() {
   const s = { size: 1, tags: ["a"], mode: "On" };
   const t = { ...s, tags: s.tags.slice() };
@@ -122,6 +126,10 @@ export function struct_clones() {
   return [s.tags.length, t.tags.length, s.size, t.size];
 }
 
+/**
+ * A hand-written clone runs: called directly, from a derived one, from an
+ * iterator's `cloned`, and through a generic.
+ */
 export function hand_written() {
   const a = { generation: 0 };
   const b = trackedClone_clone(a);
@@ -145,6 +153,7 @@ function points(s) {
   return s._0.length;
 }
 
+/** A derived clone of an enum copies the variant whose `Vec` changes. */
 export function enum_clones() {
   const a = { TAG: "Poly", _0: [1] };
   const other = a.TAG === "Poly" ? { ...a, _0: a._0.slice() } : a;
@@ -203,10 +212,12 @@ export function same(a, b, TPartialEq) {
   return TPartialEq.eq(a, b);
 }
 
+/** A `T: Eq` compares with `T`'s `PartialEq`. */
 export function count_equal(items, x, TPartialEq) {
   return items.filter((item) => TPartialEq.eq(item, x)).length;
 }
 
+/** A hand-written `eq` decides, directly, from derived ones, and through generics. */
 export function equalities() {
   const r1 = { version: version(1, "a"), notes: ["x"] };
   const r2 = { version: version(1, "b"), notes: ["x"] };
@@ -254,6 +265,7 @@ export function generic_equalities() {
   ];
 }
 
+/** A `PartialEq` with another type on the right: `!=` is its `eq` too. */
 export function metersPartialEqF64() {
   if ($metersPartialEqF64 === undefined) {
     $metersPartialEqF64 = { eq: metersPartialEqF64_eq };
@@ -305,6 +317,7 @@ function routeDisplay_fmt(route) {
   return f;
 }
 
+/** A helper that writes to the same formatter. */
 function write_loop(stops) {
   return ` (a loop of ${stops})`;
 }
@@ -541,6 +554,10 @@ export function more_orderings() {
   ];
 }
 
+/**
+ * `Debug` (ADR 0060): `{:?}` by the type, as Rust shows it. A derived one is
+ * a function like any `fmt`, left out unless something shows the type.
+ */
 function posDebug_fmt(pos) {
   return `Pos { x: ${$debugF64(pos.x)}, y: ${$debugF64(pos.y)} }`;
 }
@@ -640,6 +657,11 @@ export function debugs(n) {
   ];
 }
 
+/**
+ * Generic iterators (ADR 0061). An `impl Iterator` is the type it hides; a
+ * `T: Iterator` is an array or a JS iterator, so generic code takes it with
+ * `Iterator.from`, and one of the crate's own is given as a JS iterator.
+ */
 export function evens_below(n) {
   return $lazyRange(0, n).filter((x) => x % 2 === 0);
 }

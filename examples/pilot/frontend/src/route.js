@@ -27,14 +27,17 @@ function hash() {
   return window.location.hash;
 }
 
+/** Go to `hash`, as a link would. */
 export function go(to) {
   window.location.hash = to;
 }
 
+/** The route, and a render each time it changes. */
 export function useRoute() {
   const [current, setCurrent] = useState(hash());
   useEffect(() => {
     const controller = new AbortController();
+    // It's removed when the effect is cleaned up: its signal aborts.
     const options = { signal: controller.signal };
     window.addEventListener(
       "hashchange",

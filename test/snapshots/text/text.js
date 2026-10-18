@@ -70,6 +70,7 @@ export function parses(s) {
   } ${f.TAG === "Ok" ? `Ok(${$debugF64(f._0)})` : `Err(${$debugStr(f._0)})`} ${b.TAG === "Ok" ? `Ok(${b._0})` : `Err(${$debugStr(b._0)})`} ${c.TAG === "Ok" ? `Ok(${$debugStr(c._0, "'")})` : `Err(${$debugStr(c._0)})`} ${$debugStr(owned)}`;
 }
 
+// `?` on a `parse`: its error converts to the function's.
 function sum(text) {
   let total = 0;
   for (const word of text.split(/\p{White_Space}+/u).filter((word) => word !== "")) {
@@ -87,6 +88,7 @@ export function words(text) {
   const lines = $lines(text);
   const value = sum(text);
   const total = value.TAG === "Ok" ? `sum ${value._0}` : `error: ${value._0}`;
+  // A closure as the pattern.
   const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r");
   return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
@@ -106,6 +108,7 @@ export function escapes() {
   return `${$debugStr('a"b\\c\n	\r\0\x1Bé　\xA0​\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
 }
 
+// A template literal's own characters, in the text around the values.
 export function templates(n) {
   return `\`${n}\` costs \${n} \\ ${(n + 1) >>> 0}\t\u2028|\u0001|`;
 }

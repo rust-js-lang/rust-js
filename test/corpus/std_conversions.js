@@ -13,11 +13,13 @@ function main() {
   console.log(
     `${some == null ? "None" : `Some(${some})`} ${from == null ? "None" : `Some(${$debugStr(from)})`} ${nested == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nested))})`}`,
   );
+
   const v = [8, 9];
   const w = [1, 2];
   console.log(
     `[${v.map((item) => String(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}]`,
   );
+
   const deque = [3, 4].slice();
   const heap = $heapFrom([2, 7, 1], $cmp);
   const map = new Map([["k", 1]]);
@@ -28,6 +30,7 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
+
   const rc = 7;
   const text = "hi";
   const owned = "yo";
@@ -36,6 +39,7 @@ function main() {
   console.log(
     `${rc} ${text} ${owned} [${items.map((item) => String(item)).join(", ")}] [${boxed.map((item) => String(item)).join(", ")}]`,
   );
+
   const lent = { TAG: "Borrowed", _0: "lent" };
   const made = { TAG: "Owned", _0: "made" };
   const name = "named";

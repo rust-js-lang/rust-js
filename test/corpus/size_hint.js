@@ -40,6 +40,8 @@ function indexedIterator_size_hint(indexed) {
   return [0, undefined];
 }
 
+// Of a generic iterator: exact of one that's an array, std's `(0, None)` of
+// a lazy one, as serde's `iterator_len_hint` asks.
 function hint(it) {
   return $sizeHint(it);
 }

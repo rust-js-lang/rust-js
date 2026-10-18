@@ -19,6 +19,8 @@ export function entry() {
 
 function main() {
   const line = "id=42; name=Zoë, age 31";
+
+  // A closure, a function, a set: where the first and last match, in bytes.
   const value = $findBy(line, (c) => /^[0-9]$/.test(c), false);
   const value$1 = $findBy(line, (c) => /^\p{N}$/u.test(c), true);
   const value$2 = $findBy(line, (c) => [";", ","].includes(c), false);
@@ -31,10 +33,14 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
+
+  // Starting and ending with one.
   console.log(
     `${$startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
   );
   console.log(`${$startsBy("x😀", (c) => $byteLen(c) === 4, true)}`);
+
+  // Split, tested and trimmed by one.
   const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => $trim(s));
   console.log(`[${fields.map((item) => $debugStr(item)).join(", ")}]`);
   const words = $splitBy("a1b22c", (c) => /^\p{N}$/u.test(c));
@@ -49,6 +55,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+  // A vertical tab isn't ASCII whitespace to Rust, though JS's `\s` is.
   console.log(
     `[${"a\vb c"
       .split(/[\t\n\f\r ]+/)
@@ -56,6 +63,8 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+
+  // Pieces by bytes, `None` where a range isn't on a character's edge.
   const name = "Zoë!";
   const value$6 = $strGet(name, 0, 2);
   const value$7 = $strGet(name, 2, 3);
@@ -72,6 +81,8 @@ function main() {
   );
   const edges = $range(0, 7).map((i) => $charBoundary(name, i) !== undefined);
   console.log(`[${edges.map((item) => String(item)).join(", ")}]`);
+
+  // Characters' sizes, and characters from bytes and back.
   console.log(`${$byteLen("a")} ${$byteLen("ë")} ${$byteLen("😀")} ${"😀".length}`);
   console.log(`${String.fromCharCode(65)} ${String.fromCharCode(233)}`);
   const letters = ["h", "é", "!"].join("");

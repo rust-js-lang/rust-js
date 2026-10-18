@@ -27,6 +27,7 @@ function main() {
     w.value += "!";
   }
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
+
   for (const x of $mutItems($view(ints, 1))) {
     x.value = 0;
   }
@@ -51,6 +52,9 @@ function main() {
     break;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+
+  // The loop changes the collection it started with, whatever `cur`
+  // holds after.
   const a = [1, 2];
   const b = [10, 20];
   let cur = a;
@@ -64,6 +68,8 @@ function main() {
   console.log(
     `[${a.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
   );
+
+  // And if it's a field that holds the reference.
   const a$1 = [1, 2];
   const b$1 = [10, 20];
   const h = { list: a$1 };

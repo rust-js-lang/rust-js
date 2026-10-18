@@ -40,51 +40,6 @@ pub struct OutputPlan {
 /// build read.
 pub type DepInfo = Box<dyn FnOnce(&[PathBuf]) -> Result<Vec<u8>, String>>;
 
-/// The comments a Rust file starts with, `//` and `/* */`, a license's, up
-/// to its first doc comment, attribute or item: what its JS starts with too
-/// (ADR 0383). A doc comment is its item's or its module's, `///`, `//!`,
-/// `/**` and `/*!`, but `////`, `/***` and `/**/` are plain; a block comment
-/// Rust nests, or a line comment JS would end early, ends them.
-fn leading_comments(text: &str) -> &str {
-    let mut end = 0;
-    let mut rest = text;
-    loop {
-        let trimmed = rest.trim_start();
-        let at = text.len() - trimmed.len();
-        let doc =
-            |marker: &str, plain: &[&str]| trimmed.starts_with(marker) && !plain.iter().any(|p| trimmed.starts_with(p));
-        let length = if trimmed.starts_with("//") {
-            if doc("///", &["////"]) || trimmed.starts_with("//!") {
-                break;
-            }
-            let line = trimmed.find('\n').unwrap_or(trimmed.len());
-            // JS ends a line comment where Rust's goes on, at a carriage
-            // return but a CRLF's, U+2028 or U+2029: its rest would be code.
-            let text = trimmed[..line].strip_suffix('\r').unwrap_or(&trimmed[..line]);
-            if text.contains(['\r', '\u{2028}', '\u{2029}']) {
-                break;
-            }
-            line
-        } else if trimmed.starts_with("/*") {
-            if doc("/**", &["/***", "/**/"]) || trimmed.starts_with("/*!") {
-                break;
-            }
-            let Some(close) = trimmed.find("*/") else {
-                break;
-            };
-            if trimmed[2..close].contains("/*") {
-                break;
-            }
-            close + 2
-        } else {
-            break;
-        };
-        end = at + length;
-        rest = &text[end..];
-    }
-    &text[..end]
-}
-
 /// A module's JS, as rust-js lays it out, and where it's written.
 struct Laid {
     js_file_name: String,
@@ -155,7 +110,7 @@ impl OutputPlan {
                     .find(|source| source.path.as_deref().map(resolve).as_ref() == Some(&file))
             });
             if let Some(comments) = own
-                .map(|source| leading_comments(&source.text))
+                .map(|source| crate::comments::leading_comments(&source.text))
                 .filter(|c| !c.is_empty())
             {
                 header.push_str("\n\n");

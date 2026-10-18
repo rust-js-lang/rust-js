@@ -7,6 +7,7 @@ export function entry() {
 }
 
 const START = [250];
+// A static's is its value, which no MIR of its own gives.
 const STEP = [7];
 
 function pow(base, one, exp, TMul, TCopy) {

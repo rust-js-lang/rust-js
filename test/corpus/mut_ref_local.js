@@ -22,6 +22,7 @@ function main() {
       x = value;
     },
   };
+  // Formatted, a `&mut` shows what it points at.
   console.log(`${value$1.value} ${value$1.value}`);
   const n = { value: x };
   bump(n);
@@ -55,9 +56,12 @@ function main() {
     o = (o + 1) >>> 0;
   }
   console.log(`${o == null ? "None" : `Some(${o})`}`);
+
   const pt = { x: 1, y: 2 };
   pt.x = Math.imul(pt.x, 10);
   console.log(`${pt.x} ${pt.y}`);
+
+  // Through a reference that's assigned again: the object of that moment.
   const a = { count: 1 };
   const b = { count: 10 };
   let cur = a;
@@ -77,6 +81,8 @@ function main() {
   console.log(
     `[${xs.map((item) => String(item)).join(", ")}] [${ys.map((item) => String(item)).join(", ")}]`,
   );
+
+  // Through a reference in a field that's assigned again: the same.
   const xs$1 = [1, 2];
   const ys$1 = [10, 20];
   const na = { count: 1 };
@@ -92,6 +98,8 @@ function main() {
   console.log(
     `[${xs$1.map((item) => String(item)).join(", ")}] [${ys$1.map((item) => String(item)).join(", ")}] ${na.count} ${nb.count}`,
   );
+
+  // In an element, or behind another reference: the same.
   const xs$2 = [1, 2];
   const ys$2 = [10, 20];
   const refs = [xs$2];
@@ -112,6 +120,8 @@ function main() {
   console.log(
     `[${xs$3.map((item) => String(item)).join(", ")}] [${ys$3.map((item) => String(item)).join(", ")}]`,
   );
+
+  // A field of an element, and an element of an element.
   const nodes = [{ count: 1 }, { count: 2 }];
   let j = 1;
   const item$3 = $index(nodes, j);

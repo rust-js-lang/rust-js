@@ -143,6 +143,7 @@ function main() {
       }
     }
   }
+
   const l = { value: "a" };
   const r1 = $unwrapOk($tryLock(l), undefined, (e) =>
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',

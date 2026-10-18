@@ -14,6 +14,7 @@ function fahrenheitFromCelsius_from(c) {
   return [(c[0] * 9) / 5 + 32];
 }
 
+// The idiom: a function that takes anything that makes a `String`.
 function greet(name, IntoString) {
   const name$1 = IntoString.into(name);
   return `hello, ${name$1}`;

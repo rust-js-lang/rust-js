@@ -34,6 +34,7 @@ function main() {
   console.log(
     `[${copies.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+
   const none = [];
   const value$2 = $next($cycle(none));
   console.log(
@@ -41,6 +42,7 @@ function main() {
       .take(1)
       .reduce((n) => n + 1, 0)}`,
   );
+
   const sum = $cycle(a)
     .drop(2)
     .filter((_, i) => i % 2 === 0)

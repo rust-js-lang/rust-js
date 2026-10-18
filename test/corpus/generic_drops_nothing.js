@@ -32,6 +32,7 @@ function shuffle(v, extra, TClone) {
   return v.length;
 }
 
+/** The last item moved out, as `pop` does. */
 function take_last(v) {
   const len = v.length;
   if (len === 0) {

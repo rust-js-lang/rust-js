@@ -84,6 +84,7 @@ function main() {
   twice(x$1, cBump());
   $assign(c, x$1.value);
   console.log(`${n} ${c.n}`);
+
   const x$2 = { value: n };
   set(x$2, 7);
   n = x$2.value;
@@ -91,7 +92,9 @@ function main() {
   set(x$3, { n: 20 });
   $assign(c, x$3.value);
   console.log(`${n} ${cDebug_fmt(c)}`);
+
   console.log(`${bumped(1, i32Bump())} ${bumped({ n: 3 }, cBump()).n}`);
+
   const self = { value: n };
   const value = i32Bump().bumped_twice(self);
   n = self.value;

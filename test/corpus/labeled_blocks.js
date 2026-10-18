@@ -50,6 +50,8 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
   );
+
+  // As a statement, leaving it without a value, and one inside another.
   const log = [];
   log.push("start");
   if (log.length !== 1) {

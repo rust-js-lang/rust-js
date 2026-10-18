@@ -7,6 +7,7 @@ export function entry() {
 }
 
 function main() {
+  // Counted, `{ value, strong, weak }`, as its count is read.
   const counted = { value: [1, 2], strong: 1, weak: 0 };
   try {
     const again = counted == null ? counted : $rcClone(counted);
@@ -15,6 +16,7 @@ function main() {
       console.log(
         `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${$unwrap(again).strong}`,
       );
+      // Two counted layers: `as_deref` takes off one.
       const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
       const inner = nested?.value;
       const value$1 = (rc) => rc.strong;

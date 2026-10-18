@@ -23,6 +23,7 @@ function year(n) {
   return value ? [value] : undefined;
 }
 
+// `new` of a number known only when it runs, shown as it is.
 function non_zero(n) {
   return n === 0 ? undefined : n;
 }
@@ -57,6 +58,7 @@ function main() {
   console.log(
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugParseError(value$6._0, "TryFromIntError")})`}`,
   );
+  // SAFETY: not zero.
   const d = -5;
   console.log(
     `${Math.abs(d) | 0} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(d * $unwrap(2), -2147483648, 2147483647))}`,

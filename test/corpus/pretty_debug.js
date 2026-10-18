@@ -280,6 +280,7 @@ function main() {
     )} ${failed.TAG === "Ok" ? $pretty("Ok(", [String(failed._0)], ")") : $pretty("Err(", [$debugStr(failed._0)], ")")}`,
   );
   console.log(`1..4 ${$debugStr("text")} [${[1].map((item) => String(item)).join(", ")}]`);
+
   const point = { x: 1, label: "a" };
   console.log(`${pointDebug_fmt(point, { alternate: true })}\n${pointDebug_fmt(point)}`);
   console.log(`${pairDebug_fmt([2, { x: 3, label: "b" }], { alternate: true })}`);
@@ -307,6 +308,7 @@ function main() {
       { fmt: (value, options) => String(value) },
     )}`,
   );
+
   console.log(
     `${builtDebug_fmt(
       { x: 1, tags: [2] },
@@ -323,6 +325,7 @@ function main() {
       wrapDebug(rawDebug()),
     )}`,
   );
+  // What `dbg!` writes: a `&dyn Debug` made in its arguments.
   const kept = [1, undefined];
   console.error(`${pairDebug_fmt(kept, { alternate: true })}`);
   console.log(`${pairDebug_fmt(kept)}`);

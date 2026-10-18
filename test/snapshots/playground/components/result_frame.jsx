@@ -14,6 +14,8 @@ import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
   const [run, page] = program ? [program.run, program.page] : [0, ""];
+  // Listen for this run's report. If there's none, say so: something
+  // stopped its script.
   useEffect(() => {
     const controller = new AbortController();
     if (run > 0) {
@@ -28,6 +30,7 @@ export function ResultFrame({ program, onOutcome }) {
           const report = readReport(e);
           if (report && fromFrame) {
             if (report.run == run) {
+              // As tall as its page, from the height it starts with.
               if (report.height != null && frame.current) {
                 const height = report.height;
                 const frame$1 = frame.current;

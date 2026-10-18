@@ -41,6 +41,7 @@ function sum_doubled(j) {
   ).reduce((a, b) => (a + b) | 0, 0);
 }
 
+// Given back, stepped through what holds it, and through itself.
 function skip_one(d, IIterator) {
   doubledIterator_next(d, IIterator);
   return d;
@@ -88,6 +89,7 @@ function sum_keyed(f, FKeyed) {
   return Iterator.from(f).reduce((a, b) => (a + b) | 0, 0);
 }
 
+// Given on to generic code as a JS iterator, stepped by its impl's `next`.
 function sum_all(j) {
   return Iterator.from(j).reduce((a, b) => (a + b) | 0, 0);
 }

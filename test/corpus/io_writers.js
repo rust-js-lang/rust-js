@@ -44,6 +44,7 @@ function main() {
   $extend(buf, [10]);
   $print($unwrapOk($fromUtf8(buf.slice(), true), undefined, (e) => $debugUtf8Error(e, true)));
   console.log(`${buf.length}`);
+
   const value = undefined;
   const out$1 = { value };
   render(out$1, 2, $stdoutWriter);
@@ -67,6 +68,7 @@ function main() {
   const written = $printBytes([119, 114, 111, 116, 101, 10], 0);
   console.log(`${written}`);
   $printBytes(Array.from(new TextEncoder().encode("é whole\n")), 0);
+  // A character split between two writes, and a byte that's no text.
   $printBytes([195], 0);
   $printBytes([169, 10, 255, 10], 0);
   const err = undefined;

@@ -28,6 +28,7 @@ export function area(s) {
   return Math.imul(s.w, s.h);
 }
 
+/** Patterns inside variants, guards, `|`, and `..`. */
 export function classify(s) {
   if (s.TAG !== "Circle") {
     if (s !== "Empty") {
@@ -55,6 +56,7 @@ export function width(s) {
   return -1;
 }
 
+/** `==` compares variant and fields. */
 export function same(a, b) {
   return $eq(a, b);
 }
@@ -77,6 +79,7 @@ export function tree_sum(depth) {
   return sum(build(depth));
 }
 
+/** `Result` is an enum like any other: `{ TAG: "Ok", _0: v }`, as in ReScript. */
 export function checked_div(a, b) {
   if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };

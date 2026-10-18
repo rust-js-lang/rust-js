@@ -2,10 +2,12 @@
 
 import { HALVES, clamp } from "./lib.js";
 
+/** Calls back up into the crate root: a cycle (lib ↔ stats), which Rust allows. */
 export function mean(a, b) {
   return half((clamp(a) + clamp(b)) >>> 0);
 }
 
+/** Private and only used here: stays unexported. */
 function half(x) {
   return (x / HALVES) >>> 0;
 }

@@ -15,6 +15,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+/**
+ * An element by its tag's name: `create_element(document, Button)` is one by
+ * its tag's type, `HTMLButtonElement` (ADR 0223).
+ */
 function create(tag) {
   return document.createElement(tag);
 }
@@ -25,6 +29,7 @@ function text(tag, s) {
   return e;
 }
 
+/** When `event` fires on `target`, apply `change` to the state and draw it again. */
 function on(target, event, state, view, change) {
   target.addEventListener(event, () => {
     const value = $borrowMut(state, true);
@@ -60,23 +65,28 @@ function shown(filter, todo) {
   return todo.done;
 }
 
+/** One `<li>`: a checkbox, the title, and a button to delete it. */
 function item(state, view, todo) {
   const li = create("li");
   const id = todo.id;
+
   const check = create("input");
   check.type = "checkbox";
   check.checked = todo.done;
   on(check, "change", state, view, (s) => {
     toggle(s, id);
   });
+
   const title = text("span", todo.title);
   if (todo.done) {
     title.style.setProperty("text-decoration", "line-through");
   }
+
   const delete$ = text("button", "×");
   on(delete$, "click", state, view, (s) => {
     $retain(s.todos, (t) => t.id !== id);
   });
+
   li.append(check);
   li.append(title);
   li.append(delete$);
@@ -134,6 +144,8 @@ export function main() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
   const state = { value: { todos: [], next_id: 1, filter: "All" } };
   const view = { list: create("ul"), left: create("span") };
+
+  // Typing a title and pressing Enter adds it.
   const input = create("input");
   input.placeholder = "What needs to be done?";
   const adding = state;
@@ -151,6 +163,8 @@ export function main() {
       render(adding, view);
     }
   });
+
+  // Which todos to show, and clearing the completed ones.
   const footer = create("p");
   footer.append(view.left);
   for (const [label, filter] of [
@@ -169,6 +183,7 @@ export function main() {
     $retain(s.todos, (t) => !t.done);
   });
   footer.append(clear);
+
   app.append(input);
   app.append(view.list);
   app.append(footer);

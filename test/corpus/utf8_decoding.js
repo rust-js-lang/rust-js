@@ -57,6 +57,7 @@ function main() {
   console.log(
     `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${$debugUtf8Error(value$1._0, true)})`}`,
   );
+
   const lossy = [
     [102, 105, 110, 101],
     [97, 255, 98, 226, 130, 99, 240, 159, 152],
@@ -73,6 +74,8 @@ function main() {
   }
   const owned = $utf8Lossy([120, 128])._0;
   console.log(`${owned}`);
+
+  // SAFETY: the euro sign's bytes.
   const euro = $utf8Decode([226, 130, 172]);
   console.log(`${euro} ${$fromUtf8($slice(inputs[2], 2, 3)).TAG === "Ok"}`);
 }

@@ -46,6 +46,8 @@ function main() {
   console.log(`${max} ${min} ${top}`);
   console.log(`${max.toString(16)} 0b${5n.toString(2)} ${-7n}`);
   console.log(`${fnv([114, 117, 115, 116, 45, 106, 115])}`);
+
+  // Arithmetic, wrapped as release Rust wraps it.
   const big = BigInt.asUintN(128, 1n << 100n);
   console.log(
     `${BigInt.asUintN(128, big + 1n)} ${BigInt.asUintN(128, big * big)} ${BigInt.asUintN(128, max + 2n)}`,
@@ -55,6 +57,8 @@ function main() {
   );
   console.log(`${big >> 99n} ${BigInt.asUintN(128, big << 27n) >> 100n} ${max % 1000000007n}`);
   console.log(`${min / 7n} ${min % 7n}`);
+
+  // Methods.
   const value = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
   const value$1 = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
   const value$2 = $bigChecked(
@@ -75,6 +79,7 @@ function main() {
     `${$bigAbs(min)} ${BigInt.asIntN(128, $bigAbs(-5n))} ${$bigRemEuclid(-5n, 3n, -170141183460469231731687303715884105728n)}`,
   );
   console.log(`${big !== 0n && (big & (big - 1n)) === 0n} ${$bigMax(max, big)}`);
+
   const exact = top + 1n;
   const value$3 = $overflowing(
     BigInt.asIntN(128, exact),
@@ -97,6 +102,8 @@ function main() {
   console.log(
     `${$fromBytes($toBytes(-3n, 16, true), 16, true, true)} ${$displayF32($bigToF32(big))}`,
   );
+
+  // Casts.
   const x = 18446744073709551615n;
   console.log(
     `${BigInt.asUintN(128, x * 3n)} ${BigInt.asUintN(64, max)} ${340282366920938463463374607431768211455n}`,
@@ -127,6 +134,8 @@ function main() {
   console.log(
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
+
+  // Parsing.
   const value$8 = $parseBig(
     "340282366920938463463374607431768211455",
     0n,

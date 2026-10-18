@@ -36,6 +36,7 @@ function main() {
   const b = { ...a };
   b.x = 10;
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(b)}`);
+
   const grid = [
     [0, 0, 0],
     [0, 0, 0],
@@ -45,12 +46,14 @@ function main() {
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
+
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
   const copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
   copy.name += "-copy";
   $index(copy.points, 0).y = -1;
   copy.points.push({ x: 0, y: 0 });
   console.log(`${shapeDebug_fmt(shape)}\n${shapeDebug_fmt(copy)}`);
+
   const c = moved({ ...a });
   const arg = $eq(a, { x: 1, y: 2 });
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(c)} ${arg}`);
@@ -72,14 +75,20 @@ function main() {
   console.log(
     `[${nested.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+
   const tagged = { n: 1 };
   const copy$1 = duplicate(tagged, { clone: (value) => value });
   copy$1.n = (copy$1.n + 1) | 0;
   console.log(`${tagged.n} ${copy$1.n}`);
+
   const holder = { item: 1 };
   const copy$2 = held(holder, { clone: (value) => value });
   copy$2.item = (copy$2.item + 1) >>> 0;
   console.log(`${holder.item} ${copy$2.item}`);
+
+  // An array of what's changed in place is copied as it is: what a
+  // closure given its items by value changes, and a copy's item, leave
+  // the array they came from as it was.
   const points$1 = [
     { x: 1, y: 2 },
     { x: 3, y: 4 },

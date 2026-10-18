@@ -34,6 +34,7 @@ function reduce(todos, action) {
   return todos.map((t) => ({ id: t.id, text: t.text, done: t.id === captured ? !t.done : t.done }));
 }
 
+/** A list with keys, a reducer, an input, and a conditional child. */
 export function Todos() {
   const [todos, dispatch] = useReducer(reduce, []);
   const [draft, setDraft] = useState("");
@@ -80,6 +81,7 @@ export function Todos() {
   );
 }
 
+/** State, an effect that runs once and cleans up, and a ref. */
 export function Clock() {
   const [ticks, setTicks] = useState(0);
   const renders = useRef(0);
@@ -100,8 +102,10 @@ export function Clock() {
   );
 }
 
+/** A context and memoized components: each a `const` of the module. */
 const THEME = createContext("light");
 const BADGE = memo(Badge);
+/** Any two labels that aren't empty count as the same props. */
 const LOOSE_BADGE = memo(Badge, (a, b) => !a.label === !b.label);
 
 export function Badge({ label }) {
@@ -110,6 +114,7 @@ export function Badge({ label }) {
   return <span className={`badge ${theme}`}>{label}</span>;
 }
 
+/** Context from a provider, or its default outside one; `memo` skipping renders. */
 export function Themed() {
   const [dark, setDark] = useState(false);
   const [clicks, setClicks] = useState(0);
