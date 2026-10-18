@@ -326,9 +326,12 @@ released any more: `rust-js build` is the one way to build an app.
   node's `slice_with_start`, `alloc_with_fill` and `exit_with_code`, and the
   rest. A union's or an `any`'s is borrowed, `Some(&blob)`, a callback's boxed,
   `Some(Box::new(|a, b| ..))`; a trailing `None` is no argument, and a Rust
-  function's trailing `Option`s are declared optional, `greeting?:`. What
-  TypeScript declares as signatures of their own stays apart, each one's
-  optional parameters `Option`s: `Buffer::from_with_str(s, None)` (ADR 0443).
+  function's trailing `Option`s are declared optional, `greeting?:`. The js
+  crate's `slice_to_end`, `index_of_from`, `fill_range`, `sort_by` and Date's
+  `new_with_ymd`, react's `use_effect_on_every_render` and webapi's
+  `alert_with_message` are their one function's too: what stays apart differs
+  in a parameter or its result, `Buffer::from_with_str(s, None)`, and a test
+  holds it (ADR 0443).
 - **Rust's world and React's each have their own names, JSX the boundary**
   ([ADR 0435](docs/decisions/0435-rust-and-react-two-worlds.md)). In JS, a
   component's props are camelCase, `onClick` of `on_click`, and a hook, a
@@ -445,7 +448,13 @@ names it:
    names each one to change. A JS caller of your component gives its props
    camelCase, `Button({ onClick })`; one of a function or a data field that
    `js::camel_case!` named the JS way uses its Rust name now.
-7. From now on, run `rust-js build` after each change to your Rust, beside
+7. Call each binding's one function where you called a `_with_` form of an
+   optional argument, its optional arguments `Option`s: `push_state(data,
+   "", Some(url))` for `push_state_with_url(data, "", url)`,
+   `use_effect(f, Some(&[n]))` for `use_effect(f, [n])`, and a `None` for
+   each one you leave out, `fetch(url, None)`. rustc names each call, and
+   the argument it misses.
+8. From now on, run `rust-js build` after each change to your Rust, beside
    `bun run dev`.
 
 ### Roll back to 0.0.3

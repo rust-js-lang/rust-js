@@ -1,10 +1,11 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Proposed. The design we want, before its work: once delivered, it
-would supersede the `_with_` forms of an optional argument that
-[0024](0024-web-crate.md), [0102](0102-js-and-webapi.md) and
-[0272](0272-node.md) give, and extend [0196](0196-typescript-declarations.md),
-[0313](0313-console-forms.md) and [0330](0330-undefined-given-to-js.md).
+Status: Accepted. Amends [0024](0024-web-crate.md),
+[0102](0102-js-and-webapi.md) and [0272](0272-node.md), whose `_with_` forms
+of an optional argument are gone, and [0020](0020-structs-and-tuples.md):
+a `()` as a `dyn` JS is given the value of is an array too. Extends
+[0196](0196-typescript-declarations.md), [0313](0313-console-forms.md) and
+[0330](0330-undefined-given-to-js.md).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): whether a value left
 out is written out or not changes nothing a program does; and least
@@ -77,10 +78,22 @@ TypeScript, wherever it crosses, in each direction.** `None` is absent,
 4. **A Rust function's trailing `Option` parameters are declared optional**,
    `greeting?: string | null`, so a JS or TypeScript caller leaves them
    out, `greet("Ada")`.
-5. **What stays separate is what TypeScript separates**: a method it
-   declares as several signatures, `drawImage(image, dx, dy)`,
-   `drawImage(image, dx, dy, dw, dh)` and the nine-argument one, keeps a
-   name for each, as its declaration lists them.
+5. **What stays separate differs in a parameter or in its result**, not
+   only in more of them: `drawImage(image, dx, dy, dw?, dh?)` and the
+   nine-argument one, whose second is `sx`, not `dx`; `Buffer.from(string)`
+   and `Buffer.from(arrayBuffer)`; `createAnswer()`, a promise of an
+   answer, and its callbacks' form, a promise of nothing. Signatures that
+   only add arguments are one function, even where TypeScript writes them
+   apart, `stroke()` and `stroke(path)`, or WebIDL does, `alert()` and
+   `alert(message)`: webapi's generator folds such overloads.
+6. **A `()` as a `dyn` JS is given the value of is `[]`**, as a `()`
+   argument is (ADR 0020): `use_effect(f, Some(&()))` is
+   `useEffect(f, [])`, `use_effect(f, None)` `useEffect(f)`, which runs
+   after every render.
+7. **A generic optional parameter whose bound isn't a marker's** is an
+   `Option` of it, its `None` of a type: node's
+   `remove_all_listeners(None::<Ping>)`, the event's type checked by
+   `Self: Emits<E>` (ADR 0361), which a `&dyn` can't be.
 
 ```rust
 history.push_state(state, "", None);
@@ -98,8 +111,11 @@ canvas.toDataURL();
 
 ### Held
 
-- A test fails where a binding crate has a function that's another's
-  `_with_` form of an optional argument, naming the one function to use.
+- `test/architecture.test.ts` fails where two bindings of one JS name, in
+  one impl or module, give one result and one's parameters begin the
+  other's, naming the one function to give an `Option` each, in every
+  binding crate: whatever the second is called, `_with_url`, `_to_end`,
+  `_from`, `_on_every_render`.
 - `test/declarations.test.ts` holds a Rust function's trailing `Option`s
   declared `?`; a lowering test holds a binding's trailing `None` left out,
   and `Math.max(1, undefined)`'s kept.
@@ -142,7 +158,14 @@ canvas.toDataURL();
 - **A breaking change** of every binding crate's optional-argument forms
   and their callers: the examples, the playground, the pilot and the
   tests are migrated with it. A program that called a `_with_` form calls
-  the function it's a form of, with its arguments' `Option`s.
+  the function it's a form of, with its arguments' `Option`s. webapi has
+  9138 functions, from 9933; 50 `_with_` names are left, each an overload
+  that differs in a parameter.
 - A call writes the `None`s a TypeScript call leaves out; the JS doesn't.
-- ADRs 0024, 0102 and 0272 are marked superseded in this respect once it's
-  delivered, and this one Accepted.
+  The most common: `use_effect(f, Some(&[n]))`, `memo(Card, None)`,
+  `window.fetch(url, None)`, `event::new("ping", None)`.
+- Adding an optional parameter to a binding later is a breaking change in
+  Rust, as it isn't in TypeScript: a binding has its TypeScript signature
+  from the start.
+- A trailing `None` given a variadic binding is still `undefined`:
+  `setMaxListeners(undefined, ...targets)`, which Node reads as left out.
