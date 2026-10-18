@@ -44,7 +44,7 @@ pub fn use_route() -> Route {
                 signal: Some(controller.signal()),
                 ..Default::default()
             };
-            window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
+            window.add_event_listener(Hashchange, move |_| set_current.set(hash()), Some(&options));
             move || controller.abort(None)
         },
         (),

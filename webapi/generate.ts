@@ -1313,26 +1313,24 @@ module("window_global", functionsOf(windowScope));
 line();
 line("/// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).");
 line("pub trait EventTargetExt: IsA<EventTarget> {");
-for (const options of [false, true]) {
-  const suffix = options ? "_with_options" : "";
-  const addOptions = options ? ", options: impl IntoAddEventListenerOptionsOrBool" : "";
-  const removeOptions = options ? ", options: impl IntoEventListenerOptionsOrBool" : "";
-  for (const [name, js, callback, extra] of [
-    [`add_event_listener${suffix}`, "addEventListener", listener, addOptions],
-    [`remove_event_listener${suffix}`, "removeEventListener", shared, removeOptions],
-  ]) {
-    line(typed([`[MDN](${mdn("EventTarget", js)}). The event type comes from this receiver.`], js,
-      `${name}<E>(&self, event: E, listener: ${callback}${extra}) where Self: Listen<E>`, ""));
-    line();
-  }
-  for (const [name, js, callback, extra] of [
-    ["add", "addEventListener", "impl FnMut(&Event) + 'static", addOptions],
-    ["remove", "removeEventListener", "&'static dyn Fn(&Event)", removeOptions],
-  ]) {
-    line(typed(["A custom name, with the base Event."], js,
-      `${name}_event_listener_named${suffix}(&self, name: &str, listener: ${callback}${extra})`, ""));
-    line();
-  }
+// Each with its options, an `Option`, a trailing `None` no argument (ADR 0443).
+const addOptions = ", options: Option<&dyn IntoAddEventListenerOptionsOrBool>";
+const removeOptions = ", options: Option<&dyn IntoEventListenerOptionsOrBool>";
+for (const [name, js, callback, extra] of [
+  ["add_event_listener", "addEventListener", listener, addOptions],
+  ["remove_event_listener", "removeEventListener", shared, removeOptions],
+]) {
+  line(typed([`[MDN](${mdn("EventTarget", js)}). The event type comes from this receiver.`], js,
+    `${name}<E>(&self, event: E, listener: ${callback}${extra}) where Self: Listen<E>`, ""));
+  line();
+}
+for (const [name, js, callback, extra] of [
+  ["add", "addEventListener", "impl FnMut(&Event) + 'static", addOptions],
+  ["remove", "removeEventListener", "&'static dyn Fn(&Event)", removeOptions],
+]) {
+  line(typed(["A custom name, with the base Event."], js,
+    `${name}_event_listener_named(&self, name: &str, listener: ${callback}${extra})`, ""));
+  line();
 }
 line("}");
 line("impl<T: IsA<EventTarget>> EventTargetExt for T {}");

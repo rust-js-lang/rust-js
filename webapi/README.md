@@ -15,7 +15,7 @@ let b = document.create_element(Button); // document.createElement("button"), a 
 b.set_text_content("+");                 // b.textContent = "+"
 b.add_event_listener(Click, |e| {
     e.client_x();                         // e is the PointerEvent a button's click is
-});
+}, None);
 app.append(b);                            // app.append(b)
 ```
 

@@ -55,7 +55,7 @@ fn on(target: &'static Element, event: &str, state: &Shared, view: View, change:
     target.add_event_listener_named(event, move |_| {
         change(&mut state.borrow_mut());
         render(&state, view);
-    });
+    }, None);
 }
 
 fn add(s: &mut State, title: &str) {
@@ -136,7 +136,7 @@ pub fn main() {
             input.set_value("");
             render(&adding, view);
         }
-    });
+    }, None);
 
     // Which todos to show, and clearing the completed ones.
     let footer = create("p");

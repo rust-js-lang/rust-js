@@ -11,7 +11,7 @@ pub fn forms() -> String {
     app.append(input);
     app.append("!");
     let ping: &Event = event::new("ping", None);
-    app.add_event_listener_named("ping", |e| e.prevent_default());
+    app.add_event_listener_named("ping", |e| e.prevent_default(), None);
     let _ = window.dispatch_event(ping);
     app.text_content().unwrap() + &input.value()
 }

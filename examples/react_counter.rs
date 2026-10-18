@@ -19,5 +19,5 @@ pub fn Counter() -> JSX::Element {
 
 pub fn main() {
     let app = document.get_element_by_id("app").expect("the page has an #app");
-    create_root(app).render(jsx! { <Counter /> });
+    create_root(app, None).render(jsx! { <Counter /> });
 }

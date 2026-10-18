@@ -79,7 +79,7 @@ level. In Rust that's a `thread_local!`, which rust-js compiles to just that:
 ```rust
 thread_local! {
     static THEME: Context<&'static str> = create_context("light");
-    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
+    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card, None);
 }
 
 pub fn Toolbar() -> JSX::Element {
@@ -108,7 +108,9 @@ export function App() {
 }
 ```
 
-`memo_with(Card, |a, b| ..)` is `memo(Card, arePropsEqual)`.
+`memo(Card, Some(Box::new(|a, b| ..)))` is `memo(Card, arePropsEqual)`, and
+`memo(Card, None)` is `memo(Card)`: an optional argument is an `Option`, and a
+trailing `None` none (ADR 0443).
 Use `<THEME.Provider value="dark">...</THEME.Provider>` on React 18;
 React 19 also supports `<THEME value="dark">...</THEME>`.
 
@@ -128,7 +130,7 @@ and `browser`. Under it:
 - `dom::prerender`: `react-dom/static`'s `prerender` and the rest.
 
 Options are objects built by methods:
-`create_root_with(el, RootOptions::new().identifier_prefix("app-"))` is
+`create_root(el, Some(RootOptions::new().identifier_prefix("app-")))` is
 `createRoot(el, { identifierPrefix: "app-" })`.
 
 Left out on purpose:

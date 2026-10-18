@@ -3,10 +3,10 @@
 
 #![allow(non_snake_case)]
 
-use react::dom::client::{Root, RootOptions, create_root_with};
+use react::dom::client::{Root, RootOptions, create_root};
 use react::dom::server::{
     BootstrapScript, BootstrapScriptDescriptor, NonceOption, Nonces, ReactDOMServerReadableStream,
-    RenderToReadableStreamOptions, ServerOptions, render_to_readable_stream_with, render_to_string_with,
+    RenderToReadableStreamOptions, ServerOptions, render_to_readable_stream, render_to_string,
 };
 use react::dom::{FormStatus, create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
@@ -73,10 +73,10 @@ pub fn Suspended() -> JSX::Element {
 
 /// A store outside React, and a Transition.
 pub fn Store() -> JSX::Element {
-    let value = use_sync_external_store(|notify| store_subscribe(notify), || store_get());
+    let value = use_sync_external_store(|notify| store_subscribe(notify), || store_get(), None);
     let (pending, start) = use_transition();
     let (filter, set_filter) = use_state(0);
-    let deferred = use_deferred_value(*filter);
+    let deferred = use_deferred_value(*filter, None);
     jsx! {
         <div>
             <span className="store">{value}</span>
@@ -218,7 +218,7 @@ pub fn Places() -> JSX::Element {
             <button className="toggle" onClick={move |_| set_hidden.update(|h| !h)}>{"toggle"}</button>
             {create_portal(jsx! {
                 <span className="portaled">{"in the portal"}</span>
-            }, portal_target)}
+            }, portal_target, None)}
             <button
                 className="flush"
                 onClick={move |_| {
@@ -249,7 +249,7 @@ pub fn Misc() -> JSX::Element {
                 {vec![1, 2].into_iter().map(|n| jsx! {
                     <Fragment key={n} ref={move |fragment: Option<&'static FragmentInstance>| {
                         if let Some(fragment) = fragment {
-                            fragment.add_event_listener("click", move |_| log(&format!("fragment {n} clicked")));
+                            fragment.add_event_listener("click", move |_| log(&format!("fragment {n} clicked")), None);
                         }
                     }}>
                         <li>{n}</li>
@@ -281,26 +281,28 @@ pub fn Page() -> JSX::Element {
 }
 
 pub fn page_html() -> String {
-    render_to_string_with(
+    render_to_string(
         jsx! {
             <Page />
         },
-        ServerOptions::new().identifier_prefix("s-"),
+        Some(ServerOptions::new().identifier_prefix("s-")),
     )
 }
 
 pub async fn page_stream() -> &'static ReactDOMServerReadableStream {
-    let stream = render_to_readable_stream_with(
+    let stream = render_to_readable_stream(
         jsx! {
             <Page />
         },
-        RenderToReadableStreamOptions::new()
-            .identifier_prefix("w-")
-            .nonce(NonceOption::Each(Nonces::new().script("n1")))
-            .bootstrap_scripts(vec![
-                BootstrapScript::Src("/a.js"),
-                BootstrapScript::Descriptor(BootstrapScriptDescriptor::new("/b.js").integrity("sha-b")),
-            ]),
+        Some(
+            RenderToReadableStreamOptions::new()
+                .identifier_prefix("w-")
+                .nonce(NonceOption::Each(Nonces::new().script("n1")))
+                .bootstrap_scripts(vec![
+                    BootstrapScript::Src("/a.js"),
+                    BootstrapScript::Descriptor(BootstrapScriptDescriptor::new("/b.js").integrity("sha-b")),
+                ]),
+        ),
     )
     .await;
     stream.all_ready().await;
@@ -308,7 +310,7 @@ pub async fn page_stream() -> &'static ReactDOMServerReadableStream {
 }
 
 pub fn mount(container: &webapi::Element) -> &'static Root {
-    let root = create_root_with(container, RootOptions::new().identifier_prefix("c-"));
+    let root = create_root(container, Some(RootOptions::new().identifier_prefix("c-")));
     root.render(jsx! {
         <Page />
     });

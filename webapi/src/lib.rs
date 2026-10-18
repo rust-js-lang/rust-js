@@ -88069,7 +88069,7 @@ pub trait EventTargetExt: IsA<EventTarget> {
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    fn add_event_listener<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static) where Self: Listen<E> {
+    fn add_event_listener<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) where Self: Listen<E> {
         unreachable!()
     }
 
@@ -88077,7 +88077,7 @@ pub trait EventTargetExt: IsA<EventTarget> {
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    fn remove_event_listener<E>(&self, event: E, listener: &'static dyn Fn(&<Self as Listen<E>>::Event)) where Self: Listen<E> {
+    fn remove_event_listener<E>(&self, event: E, listener: &'static dyn Fn(&<Self as Listen<E>>::Event), options: Option<&dyn IntoEventListenerOptionsOrBool>) where Self: Listen<E> {
         unreachable!()
     }
 
@@ -88085,7 +88085,7 @@ pub trait EventTargetExt: IsA<EventTarget> {
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    fn add_event_listener_named(&self, name: &str, listener: impl FnMut(&Event) + 'static) {
+    fn add_event_listener_named(&self, name: &str, listener: impl FnMut(&Event) + 'static, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) {
         unreachable!()
     }
 
@@ -88093,39 +88093,7 @@ pub trait EventTargetExt: IsA<EventTarget> {
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    fn remove_event_listener_named(&self, name: &str, listener: &'static dyn Fn(&Event)) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener). The event type comes from this receiver.
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    fn add_event_listener_with_options<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static, options: impl IntoAddEventListenerOptionsOrBool) where Self: Listen<E> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener). The event type comes from this receiver.
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    fn remove_event_listener_with_options<E>(&self, event: E, listener: &'static dyn Fn(&<Self as Listen<E>>::Event), options: impl IntoEventListenerOptionsOrBool) where Self: Listen<E> {
-        unreachable!()
-    }
-
-    /// A custom name, with the base Event.
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    fn add_event_listener_named_with_options(&self, name: &str, listener: impl FnMut(&Event) + 'static, options: impl IntoAddEventListenerOptionsOrBool) {
-        unreachable!()
-    }
-
-    /// A custom name, with the base Event.
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    fn remove_event_listener_named_with_options(&self, name: &str, listener: &'static dyn Fn(&Event), options: impl IntoEventListenerOptionsOrBool) {
+    fn remove_event_listener_named(&self, name: &str, listener: &'static dyn Fn(&Event), options: Option<&dyn IntoEventListenerOptionsOrBool>) {
         unreachable!()
     }
 

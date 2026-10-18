@@ -25,10 +25,10 @@ pub fn wire() -> &'static webapi::HTMLButtonElement {
     button.set_disabled(false);
     button.add_event_listener(Click, |e| {
         let _ = e.client_x();
-    });
+    }, None);
     document.add_event_listener(Keydown, |e| {
         let _ = e.key();
-    });
+    }, None);
     button
 }
 `;
@@ -42,7 +42,7 @@ pub fn wire() -> &'static webapi::HTMLButtonElement {
   // A key's event isn't a mouse's, and a button takes no window's message.
   for (const [wrong, error, message] of [
     ["document.add_event_listener(Keydown, |e| {\n        let _ = e.key();", "document.add_event_listener(Keydown, |e| {\n        let _ = e.client_x();", "no method named `client_x`"],
-    ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HTMLButtonElement) { b.add_event_listener(Message, |_| ()); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HTMLButtonElement`"],
+    ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HTMLButtonElement) { b.add_event_listener(Message, |_| (), None); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HTMLButtonElement`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, error));
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });

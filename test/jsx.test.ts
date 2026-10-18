@@ -686,8 +686,8 @@ pub struct BadgeProps {
 }
 impl ElementProps for BadgeProps {}
 thread_local! {
-    pub static IconNote: MemoExoticComponent<SVGAttributes<'static>> = memo(Note);
-    pub static IconBadge: MemoExoticComponent<BadgeProps> = memo(Badge);
+    pub static IconNote: MemoExoticComponent<SVGAttributes<'static>> = memo(Note, None);
+    pub static IconBadge: MemoExoticComponent<BadgeProps> = memo(Badge, None);
 }
 fn Note(props: SVGAttributes<'static>) -> JSX::Element {
     jsx! { <svg className={props.class_name} /> }
@@ -1585,7 +1585,7 @@ pub fn Card(p: Props) -> JSX::Element { jsx! { <b>{p.label}</b> } }
 pub fn Provider() -> JSX::Element { jsx! { <i /> } }
 pub fn Input(p: Props, _: ForwardedRef<i32>) -> JSX::Element { jsx! { <b>{p.label}</b> } }
 thread_local! {
-    pub static MEMO: MemoExoticComponent<Props> = memo(Card);
+    pub static MEMO: MemoExoticComponent<Props> = memo(Card, None);
     pub static LAZY: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy.jsx"));
     pub static FORWARD: ForwardRefExoticComponent<Props, i32> = forward_ref(Input);
     pub static THEME: Context<&'static str> = create_context("light");
@@ -1630,7 +1630,7 @@ pub fn Label() -> JSX::Element {
     jsx! { <THEME.Consumer>{|theme: &&str| jsx! { <b>{*theme}</b> }}</THEME.Consumer> }
 }
 pub fn Away(container: &'static HTMLElement) -> JSX::Element {
-    let portal: &ReactPortal = create_portal(jsx! { <i>{"away"}</i> }, container);
+    let portal: &ReactPortal = create_portal(jsx! { <i>{"away"}</i> }, container, None);
     portal.element()
 }
 `);
@@ -3525,7 +3525,7 @@ fn Bold(Props { name }: Props) -> JSX::Element {
     jsx! { <b>{name}</b> }
 }
 thread_local! {
-    pub static Memoized: MemoExoticComponent<Props> = memo(Bold);
+    pub static Memoized: MemoExoticComponent<Props> = memo(Bold, None);
 }
 `,
   });
@@ -4297,7 +4297,7 @@ fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
 }
 
 thread_local! {
-    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label, None);
 }
 
 pub fn greet(name: &str) -> JSX::Element {
@@ -4331,7 +4331,7 @@ pub mod memoized {
     use super::label::{Label, LabelProps};
     use react::{MemoExoticComponent, memo};
     thread_local! {
-        pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+        pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label, None);
     }
 }
 use memoized::Memoized;
@@ -4633,7 +4633,7 @@ thread_local! {
             jsx! { <b>{text}</b> }
         }
         Label
-    });
+    }, None);
 }
 pub struct CountProps {
     pub n: u32,
@@ -4648,14 +4648,14 @@ thread_local! {
             jsx! { <i>{loud(text)}</i> }
         }
         Shout
-    });
+    }, None);
     // One reading what's named as it is, the static, is named apart.
     pub static Count: MemoExoticComponent<CountProps> = memo({
         fn Count(CountProps { n }: CountProps) -> JSX::Element {
             jsx! { <b>{n}{(n > 0).then(|| jsx! { <Count n={n - 1} /> })}</b> }
         }
         Count
-    });
+    }, None);
 }
 // One that calls itself is named twice: a function of the module.
 pub static FACT: fn(u32) -> u32 = {
@@ -4877,7 +4877,7 @@ thread_local! {
             jsx! { <b>{n}</b> }
         }
         Count
-    });
+    }, None);
 }
 pub fn App(big: bool) -> JSX::Element {
     jsx! { <Count n={if big { 10 } else { 1 }} /> }
@@ -5155,7 +5155,7 @@ mod seo {
         jsx! { <span title={title}>{image}</span> }
     }
     thread_local! {
-        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner);
+        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner, None);
     }
 }
 use seo::{Seo, SeoProps};
@@ -5204,7 +5204,7 @@ mod seo {
         jsx! { <span title={title}>{title_for_title_tag}{image}{search_order}</span> }
     }
     thread_local! {
-        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner);
+        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner, None);
     }
 }
 use seo::{Seo, SeoProps};
@@ -6689,7 +6689,7 @@ thread_local! {
             }
         }
         ClientWrapper
-    });
+    }, None);
 }
 `);
   run(args);

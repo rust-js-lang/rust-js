@@ -44,7 +44,7 @@ pub fn main() {
             count_down(output, 3).await;
             running.set(false);
         }));
-    });
+    }, None);
     app.append(start);
     app.append(output);
 }

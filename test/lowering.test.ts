@@ -2608,7 +2608,7 @@ pub fn Label(LabelProps { text, shown }: LabelProps) -> Option<JSX::Element> {
 }
 
 thread_local! {
-    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label, None);
 }
 
 pub struct ShownProps<C> {

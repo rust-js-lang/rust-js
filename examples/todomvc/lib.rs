@@ -29,7 +29,7 @@ fn use_filter() -> Filter {
                 signal: Some(controller.signal()),
                 ..Default::default()
             };
-            window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
+            window.add_event_listener(Hashchange, move |_| set_current.set(hash()), Some(&options));
             move || controller.abort(None)
         },
         (),
@@ -113,5 +113,5 @@ pub fn App() -> JSX::Element {
 
 pub fn main() {
     let app = document.get_element_by_id("app").expect("the page has an #app");
-    create_root(app).render(jsx! { <App /> });
+    create_root(app, None).render(jsx! { <App /> });
 }

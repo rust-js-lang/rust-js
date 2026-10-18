@@ -117,7 +117,7 @@ pub fn listen_until_aborted() -> u32 {
     let controller = abort_controller::new();
     let counted = Rc::clone(&count);
     let options = AddEventListenerOptions { signal: Some(controller.signal()), ..Default::default() };
-    target.add_event_listener_named_with_options("ping", move |_| *counted.borrow_mut() += 1, options);
+    target.add_event_listener_named("ping", move |_| *counted.borrow_mut() += 1, Some(&options));
     let _ = target.dispatch_event(event::new("ping", None));
     controller.abort(None);
     let _ = target.dispatch_event(event::new("ping", None));

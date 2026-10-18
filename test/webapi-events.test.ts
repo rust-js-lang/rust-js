@@ -27,18 +27,18 @@ test("event methods keep target types and retained callback lifetimes", () => {
   const dir = fixture("event-errors");
   const source = join(dir, "lib.rs");
   for (const [body, diagnostic] of [
-    ['button.add_event_listener(Keydown, |e| { let _ = e.client_x(); });', 'no method named `client_x`'],
-    ['button.add_event_listener(Message, |_| {});', 'Listen<webapi::events::Message>'],
-    ['let count = 1; button.add_event_listener(Click, |_| record(count));', 'closure may outlive the current function'],
-    ['let count = 1; let listener = listener::<PointerEvent>(|_| record(count)); button.add_event_listener(Click, listener);', 'closure may outlive the current function'],
-    ['let listener = listener::<KeyboardEvent>(|_| {}); button.add_event_listener(Click, listener);', 'expected an `FnMut(&webapi::PointerEvent)` closure'],
+    ['button.add_event_listener(Keydown, |e| { let _ = e.client_x(); }, None);', 'no method named `client_x`'],
+    ['button.add_event_listener(Message, |_| {}, None);', 'Listen<webapi::events::Message>'],
+    ['let count = 1; button.add_event_listener(Click, |_| record(count), None);', 'closure may outlive the current function'],
+    ['let count = 1; let listener = listener::<PointerEvent>(|_| record(count)); button.add_event_listener(Click, listener, None);', 'closure may outlive the current function'],
+    ['let listener = listener::<KeyboardEvent>(|_| {}); button.add_event_listener(Click, listener, None);', 'expected an `FnMut(&webapi::PointerEvent)` closure'],
     ['webapi::event_target::add_event_listener(button, Click, |_| {});', 'cannot find function `add_event_listener`'],
     ['button.add_listener(Click, |_| {});', 'no method named `add_listener`'],
-    ['button.add_event_listener(Click, |e| webapi::event::prevent_default(e));', 'cannot find function `prevent_default`'],
+    ['button.add_event_listener(Click, |e| webapi::event::prevent_default(e), None);', 'cannot find function `prevent_default`'],
     // Removal finds the same function, so a closure made for it, a new one,
     // never removes anything: only a shared callback, `listener(..)`'s, can.
-    ['button.remove_event_listener(Click, |_| {});', 'mismatched types'],
-    ['button.remove_event_listener_named("custom", |_| {});', 'mismatched types'],
+    ['button.remove_event_listener(Click, |_| {}, None);', 'mismatched types'],
+    ['button.remove_event_listener_named("custom", |_| {}, None);', 'mismatched types'],
   ]) {
     writeFileSync(source, `use webapi::{EventTargetExt, HTMLButtonElement, listener, PointerEvent, KeyboardEvent};
 use webapi::events::{Click, Keydown, Message};

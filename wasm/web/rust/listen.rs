@@ -4,12 +4,12 @@ use webapi::{AbortController, AddEventListenerOptions, Event, EventTarget, Event
 
 /// `target.addEventListener(type, f, { signal })`: until `controller` aborts.
 pub fn listen(target: &EventTarget, r#type: &str, f: Box<dyn FnMut(&Event)>, controller: &AbortController) {
-    target.add_event_listener_named_with_options(
+    target.add_event_listener_named(
         r#type,
         f,
-        AddEventListenerOptions {
+        Some(&AddEventListenerOptions {
             signal: Some(controller.signal()),
             ..Default::default()
-        },
+        }),
     );
 }

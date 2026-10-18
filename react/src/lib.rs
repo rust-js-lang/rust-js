@@ -1066,16 +1066,10 @@ impl TransitionStartFunction {
 }
 
 /// [`useDeferredValue`](https://react.dev/reference/react/useDeferredValue):
-/// `value`, which lags behind while more urgent updates render.
+/// `value`, which lags behind while more urgent updates render; from React
+/// 19, `initial`, given, on the first render.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useDeferredValue")]
-pub fn use_deferred_value<T>(value: T) -> &'static T {
-    unreachable!()
-}
-
-/// `useDeferredValue(value, initialValue)`: `initial` on the first render.
-#[cfg(react = "19.0")]
-#[cfg_attr(rust_js, rust_js::link_name = "react#useDeferredValue")]
-pub fn use_deferred_value_with<T>(value: T, initial: T) -> &'static T {
+pub fn use_deferred_value<T>(value: T, #[cfg(react = "19.0")] initial: Option<T>) -> &'static T {
     unreachable!()
 }
 
@@ -1109,36 +1103,22 @@ impl Notify {
 
 /// [`useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore):
 /// a value from outside React. `subscribe` gets a [`Notify`] to call on each
-/// change, and returns what unsubscribes; `snapshot` reads the value.
+/// change, and returns what unsubscribes; `snapshot` reads the value, and
+/// `server_snapshot`, given, on the server and while hydrating.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useSyncExternalStore")]
 pub fn use_sync_external_store<T, U: Cleanup>(
     subscribe: impl Fn(Notify) -> U + 'static,
     snapshot: impl Fn() -> T + 'static,
-) -> &'static T {
-    unreachable!()
-}
-
-/// `useSyncExternalStore(subscribe, snapshot, serverSnapshot)`: on the server
-/// and while hydrating, the value is `server_snapshot`'s.
-#[cfg_attr(rust_js, rust_js::link_name = "react#useSyncExternalStore")]
-pub fn use_sync_external_store_with_server<T, U: Cleanup>(
-    subscribe: impl Fn(Notify) -> U + 'static,
-    snapshot: impl Fn() -> T + 'static,
-    server_snapshot: impl Fn() -> T + 'static,
+    server_snapshot: Option<Box<dyn Fn() -> T>>,
 ) -> &'static T {
     unreachable!()
 }
 
 /// [`useDebugValue`](https://react.dev/reference/react/useDebugValue): a label
-/// for a custom hook in React DevTools.
+/// for a custom hook in React DevTools, `format`, given, making it only when
+/// DevTools shows it.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useDebugValue")]
-pub fn use_debug_value<T>(value: T) {
-    unreachable!()
-}
-
-/// `useDebugValue(value, format)`: formatted only when DevTools shows it.
-#[cfg_attr(rust_js, rust_js::link_name = "react#useDebugValue")]
-pub fn use_debug_value_with<T>(value: T, format: impl Fn(&T) -> String + 'static) {
+pub fn use_debug_value<T>(value: T, format: Option<Box<dyn Fn(&T) -> String>>) {
     unreachable!()
 }
 
@@ -1383,23 +1363,13 @@ impl FragmentInstance {
 
     /// Focus its first focusable node.
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
-    pub fn focus(&self) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "focus")]
-    pub fn focus_with_options(&self, options: webapi::FocusOptions) {
+    pub fn focus(&self, options: Option<webapi::FocusOptions>) {
         unreachable!()
     }
 
     /// Focus its last focusable node.
     #[cfg_attr(rust_js, rust_js::link_name = "focusLast")]
-    pub fn focus_last(&self) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "focusLast")]
-    pub fn focus_last_with_options(&self, options: webapi::FocusOptions) {
+    pub fn focus_last(&self, options: Option<webapi::FocusOptions>) {
         unreachable!()
     }
 
@@ -1421,42 +1391,27 @@ impl FragmentInstance {
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "getRootNode")]
-    pub fn get_root_node(&self) -> FragmentRootNode {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "getRootNode")]
-    pub fn get_root_node_with_options(&self, options: webapi::GetRootNodeOptions) -> FragmentRootNode {
+    pub fn get_root_node(&self, options: Option<webapi::GetRootNodeOptions>) -> FragmentRootNode {
         unreachable!()
     }
 
     /// Listen on each of its nodes, those added later too.
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    pub fn add_event_listener(&self, name: &str, listener: impl FnMut(&webapi::Event) + 'static) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    pub fn add_event_listener_with_options(
+    pub fn add_event_listener(
         &self,
         name: &str,
         listener: impl FnMut(&webapi::Event) + 'static,
-        options: impl webapi::IntoAddEventListenerOptionsOrBool,
+        options: Option<&dyn webapi::IntoAddEventListenerOptionsOrBool>,
     ) {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    pub fn remove_event_listener(&self, name: &str, listener: &'static dyn Fn(&webapi::Event)) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    pub fn remove_event_listener_with_options(
+    pub fn remove_event_listener(
         &self,
         name: &str,
         listener: &'static dyn Fn(&webapi::Event),
-        options: impl webapi::IntoEventListenerOptionsOrBool,
+        options: Option<&dyn webapi::IntoEventListenerOptionsOrBool>,
     ) {
         unreachable!()
     }
@@ -1467,14 +1422,9 @@ impl FragmentInstance {
         unreachable!()
     }
 
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
-    pub fn scroll_into_view(&self) {
-        unreachable!()
-    }
-
     /// `scrollIntoView(alignToTop)`.
     #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
-    pub fn scroll_into_view_with(&self, align_to_top: bool) {
+    pub fn scroll_into_view(&self, align_to_top: Option<bool>) {
         unreachable!()
     }
 }
@@ -1717,15 +1667,10 @@ impl<T: 'static, R: ReactNode, F: Fn(&'static T) -> R + 'static> ComponentType<C
 pub struct MemoExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// [`memo`](https://react.dev/reference/react/memo), in a `thread_local!`.
-/// Props are the same when each field is (`Object.is`).
+/// Props are the same when each field is (`Object.is`), or when
+/// `are_equal`, given, says so: `memo(component, arePropsEqual)`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#memo")]
-pub fn memo<P, M>(component: impl ComponentType<P, M>) -> MemoExoticComponent<P> {
-    unreachable!()
-}
-
-/// `memo(component, arePropsEqual)`: the props are the same when `are_equal` says so.
-#[cfg_attr(rust_js, rust_js::link_name = "react#memo")]
-pub fn memo_with<P, M>(component: impl ComponentType<P, M>, are_equal: impl Fn(&P, &P) -> bool + 'static) -> MemoExoticComponent<P> {
+pub fn memo<P, M>(component: impl ComponentType<P, M>, are_equal: Option<Box<dyn Fn(&P, &P) -> bool>>) -> MemoExoticComponent<P> {
     unreachable!()
 }
 

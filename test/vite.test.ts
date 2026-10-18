@@ -263,7 +263,7 @@ use react::{JSX, MemoExoticComponent, jsx, memo, use_context, use_state};
 mod theme;
 use theme::THEME;
 thread_local! {
-    static FAST_LABEL: MemoExoticComponent<LabelProps> = memo(Label);
+    static FAST_LABEL: MemoExoticComponent<LabelProps> = memo(Label, None);
 }
 pub struct LabelProps {
     pub text: &'static str,

@@ -6,7 +6,7 @@
 use react::event::{ChangeEvent, KeyboardEvent};
 use react::jsx;
 use react::{
-    Context, JSX, MemoExoticComponent, create_context, memo, memo_with, use_context, use_effect, use_id, use_memo,
+    Context, JSX, MemoExoticComponent, create_context, memo, use_context, use_effect, use_id, use_memo,
     use_reducer, use_ref, use_state,
 };
 
@@ -143,9 +143,9 @@ pub fn Clock() -> JSX::Element {
 thread_local! {
     /// A context and memoized components: each a `const` of the module.
     static THEME: Context<&'static str> = create_context("light");
-    static BADGE: MemoExoticComponent<BadgeProps> = memo(Badge);
+    static BADGE: MemoExoticComponent<BadgeProps> = memo(Badge, None);
     /// Any two labels that aren't empty count as the same props.
-    static LOOSE_BADGE: MemoExoticComponent<BadgeProps> = memo_with(Badge, |a, b| a.label.is_empty() == b.label.is_empty());
+    static LOOSE_BADGE: MemoExoticComponent<BadgeProps> = memo(Badge, Some(Box::new(|a, b| a.label.is_empty() == b.label.is_empty())));
 }
 
 /// Counts renders, for the test.

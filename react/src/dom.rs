@@ -9,13 +9,11 @@ use super::*;
 /// still bubble through the React tree. A [`ReactPortal`], as @types/react
 /// types it: a child as it is, a component's result by `.element()`.
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal(children: impl ReactNode, container: &webapi::Element) -> &'static ReactPortal {
-    unreachable!()
-}
-
-/// `createPortal(children, container, key)`.
-#[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal_with_key(children: impl ReactNode, container: &webapi::Element, key: impl Key) -> &'static ReactPortal {
+pub fn create_portal(
+    children: impl ReactNode,
+    container: &webapi::Element,
+    key: Option<&dyn Key>,
+) -> &'static ReactPortal {
     unreachable!()
 }
 
@@ -46,14 +44,7 @@ pub fn prefetch_dns(href: &str) {
 /// to a server early.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#preconnect")]
-pub fn preconnect(href: &str) {
-    unreachable!()
-}
-
-/// `preconnect(href, options)`.
-#[cfg(react = "19.0")]
-#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preconnect")]
-pub fn preconnect_with(href: &str, options: PreconnectOptions) {
+pub fn preconnect(href: &str, options: Option<PreconnectOptions>) {
     unreachable!()
 }
 
@@ -114,7 +105,7 @@ macro_rules! options {
 }
 
 options! {
-    /// [`preconnect_with`]'s options.
+    /// [`preconnect`]'s options.
     #[cfg(react = "19.0")]
     PreconnectOptions("{}") {
         /// `"anonymous"`, `"use-credentials"` or `""`.
@@ -151,7 +142,7 @@ pub fn preload(href: &str, options: PreloadOptions) {
     unreachable!()
 }
 
-/// What a module is, for [`preload_module_with`]: a fetch's
+/// What a module is, for [`preload_module`]: a fetch's
 /// `RequestDestination`, `"script"` where none is given.
 #[cfg(react = "19.0")]
 pub enum PreloadModuleAs {
@@ -198,7 +189,7 @@ pub enum PreloadModuleAs {
 }
 
 options! {
-    /// [`preload_module_with`]'s options: `PreloadModuleOptions::new(PreloadModuleAs::Script)`.
+    /// [`preload_module`]'s options: `PreloadModuleOptions::new(PreloadModuleAs::Script)`.
     #[cfg(react = "19.0")]
     PreloadModuleOptions("{as}", r#as: PreloadModuleAs) {
         cross_origin: impl Value = "crossOrigin";
@@ -211,14 +202,7 @@ options! {
 /// fetch an ES module you'll need soon.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#preloadModule")]
-pub fn preload_module(href: &str) {
-    unreachable!()
-}
-
-/// `preloadModule(href, options)`.
-#[cfg(react = "19.0")]
-#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preloadModule")]
-pub fn preload_module_with(href: &str, options: PreloadModuleOptions) {
+pub fn preload_module(href: &str, options: Option<PreloadModuleOptions>) {
     unreachable!()
 }
 
@@ -253,7 +237,7 @@ pub fn preinit(href: &str, options: PreinitOptions) {
     unreachable!()
 }
 
-/// What [`preinit_module_with`] loads: a script, as for now only one is.
+/// What [`preinit_module`] loads: a script, as for now only one is.
 #[cfg(react = "19.0")]
 pub enum PreinitModuleAs {
     #[cfg_attr(rust_js, rust_js::name = "script")]
@@ -261,7 +245,7 @@ pub enum PreinitModuleAs {
 }
 
 options! {
-    /// [`preinit_module_with`]'s options.
+    /// [`preinit_module`]'s options.
     #[cfg(react = "19.0")]
     PreinitModuleOptions("{}") {
         /// `PreinitModuleAs::Script` where none is given.
@@ -276,14 +260,7 @@ options! {
 /// fetch and run an ES module early.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#preinitModule")]
-pub fn preinit_module(href: &str) {
-    unreachable!()
-}
-
-/// `preinitModule(href, options)`.
-#[cfg(react = "19.0")]
-#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preinitModule")]
-pub fn preinit_module_with(href: &str, options: PreinitModuleOptions) {
+pub fn preinit_module(href: &str, options: Option<PreinitModuleOptions>) {
     unreachable!()
 }
 
@@ -406,7 +383,7 @@ pub mod client {
     }
 
     options! {
-        /// [`hydrate_root_with`]'s options: a root's, and the state of the
+        /// [`hydrate_root`]'s options: a root's, and the state of the
         /// form the server's action rendered.
         HydrationOptions("{}") {
             #[cfg(react = "19.0")]
@@ -425,29 +402,17 @@ pub mod client {
 
     /// [`createRoot`](https://react.dev/reference/react-dom/client/createRoot).
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#createRoot")]
-    pub fn create_root<M>(container: impl Container<M>) -> &'static Root {
-        unreachable!()
-    }
-
-    /// `createRoot(container, options)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#createRoot")]
-    pub fn create_root_with<M>(container: impl Container<M>, options: RootOptions) -> &'static Root {
+    pub fn create_root<M>(container: impl Container<M>, options: Option<RootOptions>) -> &'static Root {
         unreachable!()
     }
 
     /// [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot):
     /// attach React to HTML the server rendered from `children`.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#hydrateRoot")]
-    pub fn hydrate_root<M>(container: impl HydrationContainer<M>, children: impl ReactNode) -> &'static Root {
-        unreachable!()
-    }
-
-    /// `hydrateRoot(container, children, options)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#hydrateRoot")]
-    pub fn hydrate_root_with<M>(
+    pub fn hydrate_root<M>(
         container: impl HydrationContainer<M>,
         children: impl ReactNode,
-        options: HydrationOptions,
+        options: Option<HydrationOptions>,
     ) -> &'static Root {
         unreachable!()
     }
@@ -468,7 +433,7 @@ pub mod server {
     use js::Dict;
 
     options! {
-        /// The options of [`render_to_string_with`] and [`render_to_static_markup_with`].
+        /// The options of [`render_to_string`] and [`render_to_static_markup`].
         ServerOptions("{}") {
             identifier_prefix: impl Value = "identifierPrefix";
         }
@@ -521,24 +486,14 @@ pub mod server {
     /// HTML that [`client::hydrate_root`] can take over. A suspending
     /// component gets its fallback.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToString")]
-    pub fn render_to_string(children: impl ReactNode) -> String {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToString")]
-    pub fn render_to_string_with(children: impl ReactNode, options: ServerOptions) -> String {
+    pub fn render_to_string(children: impl ReactNode, options: Option<ServerOptions>) -> String {
         unreachable!()
     }
 
     /// [`renderToStaticMarkup`](https://react.dev/reference/react-dom/server/renderToStaticMarkup):
     /// HTML that won't be hydrated.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToStaticMarkup")]
-    pub fn render_to_static_markup(children: impl ReactNode) -> String {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToStaticMarkup")]
-    pub fn render_to_static_markup_with(children: impl ReactNode, options: ServerOptions) -> String {
+    pub fn render_to_static_markup(children: impl ReactNode, options: Option<ServerOptions>) -> String {
         unreachable!()
     }
 
@@ -598,15 +553,9 @@ pub mod server {
     /// a Web stream of the page's HTML, sent as it's ready. It rejects if the
     /// page's shell fails.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToReadableStream")]
-    pub fn render_to_readable_stream(children: impl ReactNode) -> Promise<&'static ReactDOMServerReadableStream> {
-        unreachable!()
-    }
-
-    /// `renderToReadableStream(children, options)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToReadableStream")]
-    pub fn render_to_readable_stream_with(
+    pub fn render_to_readable_stream(
         children: impl ReactNode,
-        options: RenderToReadableStreamOptions,
+        options: Option<RenderToReadableStreamOptions>,
     ) -> Promise<&'static ReactDOMServerReadableStream> {
         unreachable!()
     }
@@ -615,17 +564,10 @@ pub mod server {
     /// as a Web stream, a page [`prerender`] postponed.
     #[cfg(react = "19.2")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resume")]
-    pub fn resume(children: impl ReactNode, postponed: &PostponedState) -> Promise<&'static ReactDOMServerReadableStream> {
-        unreachable!()
-    }
-
-    /// `resume(children, postponed, options)`.
-    #[cfg(react = "19.2")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resume")]
-    pub fn resume_with(
+    pub fn resume(
         children: impl ReactNode,
         postponed: &PostponedState,
-        options: ResumeOptions,
+        options: Option<ResumeOptions>,
     ) -> Promise<&'static ReactDOMServerReadableStream> {
         unreachable!()
     }
@@ -685,15 +627,10 @@ pub mod server {
             unreachable!()
         }
 
-        /// Stop rendering, and leave the rest to the client.
+        /// Stop rendering, and leave the rest to the client; `reason`, given,
+        /// is what the error callbacks get.
         #[cfg_attr(rust_js, rust_js::link_name = "abort")]
-        pub fn abort(&self) {
-            unreachable!()
-        }
-
-        /// `abort(reason)`: stop, with why, which the error callbacks get.
-        #[cfg_attr(rust_js, rust_js::link_name = "abort")]
-        pub fn abort_with<R>(&self, reason: R) {
+        pub fn abort(&self, reason: Option<&dyn js::IntoUnknown>) {
             unreachable!()
         }
     }
@@ -701,18 +638,15 @@ pub mod server {
     /// [`renderToPipeableStream`](https://react.dev/reference/react-dom/server/renderToPipeableStream):
     /// the page's HTML, for Node's streams.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToPipeableStream")]
-    pub fn render_to_pipeable_stream(children: impl ReactNode) -> &'static PipeableStream {
-        unreachable!()
-    }
-
-    /// `renderToPipeableStream(children, options)`.
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToPipeableStream")]
-    pub fn render_to_pipeable_stream_with(children: impl ReactNode, options: RenderToPipeableStreamOptions) -> &'static PipeableStream {
+    pub fn render_to_pipeable_stream(
+        children: impl ReactNode,
+        options: Option<RenderToPipeableStreamOptions>,
+    ) -> &'static PipeableStream {
         unreachable!()
     }
 
     options! {
-        /// [`resume_to_pipeable_stream_with`]'s options.
+        /// [`resume_to_pipeable_stream`]'s options.
         #[cfg(react = "19.2")]
         ResumeToPipeableStreamOptions("{}") {
             nonce: NonceOption = "nonce";
@@ -729,17 +663,10 @@ pub mod server {
     /// finish, for Node's streams, a page [`prerender`] postponed.
     #[cfg(react = "19.2")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resumeToPipeableStream")]
-    pub fn resume_to_pipeable_stream(children: impl ReactNode, postponed: &PostponedState) -> Promise<&'static PipeableStream> {
-        unreachable!()
-    }
-
-    /// `resumeToPipeableStream(children, postponed, options)`.
-    #[cfg(react = "19.2")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resumeToPipeableStream")]
-    pub fn resume_to_pipeable_stream_with(
+    pub fn resume_to_pipeable_stream(
         children: impl ReactNode,
         postponed: &PostponedState,
-        options: ResumeToPipeableStreamOptions,
+        options: Option<ResumeToPipeableStreamOptions>,
     ) -> Promise<&'static PipeableStream> {
         unreachable!()
     }
@@ -762,7 +689,7 @@ pub mod prerender {
     use super::*;
 
     options! {
-        /// [`prerender_with`]'s and [`prerender_to_node_stream_with`]'s options.
+        /// [`prerender`]'s and [`prerender_to_node_stream`]'s options.
         #[cfg(react = "19.0")]
         PrerenderOptions("{}") {
             bootstrap_script_content: impl Value = "bootstrapScriptContent";
@@ -783,8 +710,8 @@ pub mod prerender {
     }
 
     options! {
-        /// [`server::resume_with`]'s options, and, but its nonce,
-        /// [`resume_and_prerender_with`]'s.
+        /// [`server::resume`]'s options, and, but its nonce,
+        /// [`resume_and_prerender`]'s.
         #[cfg(react = "19.0")]
         ResumeOptions("{}") {
             nonce: NonceOption = "nonce";
@@ -839,14 +766,7 @@ pub mod prerender {
     /// with Web streams.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerender")]
-    pub fn prerender(children: impl ReactNode) -> Promise<&'static PrerenderResult> {
-        unreachable!()
-    }
-
-    /// `prerender(children, options)`.
-    #[cfg(react = "19.0")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerender")]
-    pub fn prerender_with(children: impl ReactNode, options: PrerenderOptions) -> Promise<&'static PrerenderResult> {
+    pub fn prerender(children: impl ReactNode, options: Option<PrerenderOptions>) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
 
@@ -854,16 +774,9 @@ pub mod prerender {
     /// with Node's streams.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerenderToNodeStream")]
-    pub fn prerender_to_node_stream(children: impl ReactNode) -> Promise<&'static PrerenderToNodeStreamResult> {
-        unreachable!()
-    }
-
-    /// `prerenderToNodeStream(children, options)`.
-    #[cfg(react = "19.0")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerenderToNodeStream")]
-    pub fn prerender_to_node_stream_with(
+    pub fn prerender_to_node_stream(
         children: impl ReactNode,
-        options: PrerenderOptions,
+        options: Option<PrerenderOptions>,
     ) -> Promise<&'static PrerenderToNodeStreamResult> {
         unreachable!()
     }
@@ -872,17 +785,10 @@ pub mod prerender {
     /// go on with a prerender that was postponed.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#resumeAndPrerender")]
-    pub fn resume_and_prerender(children: impl ReactNode, postponed: Option<&PostponedState>) -> Promise<&'static PrerenderResult> {
-        unreachable!()
-    }
-
-    /// `resumeAndPrerender(children, postponed, options)`, options without a nonce.
-    #[cfg(react = "19.0")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#resumeAndPrerender")]
-    pub fn resume_and_prerender_with(
+    pub fn resume_and_prerender(
         children: impl ReactNode,
         postponed: Option<&PostponedState>,
-        options: ResumeOptions,
+        options: Option<ResumeOptions>,
     ) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
@@ -893,17 +799,7 @@ pub mod prerender {
     pub fn resume_and_prerender_to_node_stream(
         children: impl ReactNode,
         postponed: Option<&PostponedState>,
-    ) -> Promise<&'static PrerenderToNodeStreamResult> {
-        unreachable!()
-    }
-
-    /// `resumeAndPrerenderToNodeStream(children, postponed, options)`.
-    #[cfg(react = "19.0")]
-    #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#resumeAndPrerenderToNodeStream")]
-    pub fn resume_and_prerender_to_node_stream_with(
-        children: impl ReactNode,
-        postponed: Option<&PostponedState>,
-        options: ResumeOptions,
+        options: Option<ResumeOptions>,
     ) -> Promise<&'static PrerenderToNodeStreamResult> {
         unreachable!()
     }

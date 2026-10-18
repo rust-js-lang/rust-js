@@ -10,8 +10,8 @@ fn record(value: i32) {
 }
 
 pub fn methods(button: &HTMLButtonElement) {
-    button.add_event_listener(Click, |e| record(e.client_x()));
-    document.add_event_listener(Keydown, |e| record(if e.key() == "Enter" { 5 } else { 0 }));
+    button.add_event_listener(Click, |e| record(e.client_x()), None);
+    document.add_event_listener(Keydown, |e| record(if e.key() == "Enter" { 5 } else { 0 }), None);
 }
 
 pub fn mutable(button: &HTMLButtonElement) {
@@ -19,7 +19,7 @@ pub fn mutable(button: &HTMLButtonElement) {
     button.add_event_listener(Click, move |_| {
         count += 1;
         record(count);
-    });
+    }, None);
 }
 
 pub fn shared_mutable(button: &HTMLButtonElement) {
@@ -28,91 +28,91 @@ pub fn shared_mutable(button: &HTMLButtonElement) {
         count.set(count.get() + 1);
         record(count.get());
     });
-    button.add_event_listener(Click, callback);
-    button.add_event_listener(Click, callback);
+    button.add_event_listener(Click, callback, None);
+    button.add_event_listener(Click, callback, None);
 }
 
 pub fn removed(button: &HTMLButtonElement) {
     let listener = listener::<PointerEvent>(|e| record(e.client_x()));
-    button.add_event_listener(Click, listener);
-    button.remove_event_listener(Click, listener);
+    button.add_event_listener(Click, listener, None);
+    button.remove_event_listener(Click, listener, None);
 }
 
 pub fn duplicate(button: &HTMLButtonElement) {
     let listener = listener::<PointerEvent>(|e| record(e.client_x()));
-    button.add_event_listener(Click, listener);
-    button.add_event_listener(Click, listener);
+    button.add_event_listener(Click, listener, None);
+    button.add_event_listener(Click, listener, None);
 }
 
 pub fn different(button: &HTMLButtonElement) {
     let first = listener::<PointerEvent>(|e| record(e.client_x()));
     let second = listener::<PointerEvent>(|e| record(e.client_x()));
-    button.add_event_listener(Click, first);
-    button.remove_event_listener(Click, second);
+    button.add_event_listener(Click, first, None);
+    button.remove_event_listener(Click, second, None);
 }
 
 pub fn once(button: &HTMLButtonElement) {
-    button.add_event_listener_with_options(
+    button.add_event_listener(
         Click,
         |e| record(e.client_x()),
-        AddEventListenerOptions {
+        Some(&AddEventListenerOptions {
             once: Some(true),
             ..Default::default()
-        },
+        }),
     );
 }
 
 pub fn aborted(button: &HTMLButtonElement) {
     let controller = abort_controller::new();
-    button.add_event_listener_with_options(
+    button.add_event_listener(
         Click,
         |e| record(e.client_x()),
-        AddEventListenerOptions {
+        Some(&AddEventListenerOptions {
             signal: Some(controller.signal()),
             ..Default::default()
-        },
+        }),
     );
     controller.abort(None);
 }
 
 pub fn capture(button: &HTMLButtonElement) {
     let listener = listener::<PointerEvent>(|e| record(e.client_x()));
-    button.add_event_listener_with_options(Click, listener, true);
+    button.add_event_listener(Click, listener, Some(&true));
     // Removal without the capture flag must leave the capture listener installed.
-    button.remove_event_listener(Click, listener);
+    button.remove_event_listener(Click, listener, None);
 }
 
 pub fn capture_removed(button: &HTMLButtonElement) {
     let listener = listener::<PointerEvent>(|e| record(e.client_x()));
-    button.add_event_listener_with_options(Click, listener, true);
-    button.remove_event_listener_with_options(Click, listener, true);
+    button.add_event_listener(Click, listener, Some(&true));
+    button.remove_event_listener(Click, listener, Some(&true));
 }
 
 pub fn named(button: &HTMLButtonElement) {
     button.add_event_listener_named("custom", |e| {
         e.prevent_default();
         record(1);
-    });
+    }, None);
 }
 pub fn named_once(button: &HTMLButtonElement) {
-    button.add_event_listener_named_with_options(
+    button.add_event_listener_named(
         "custom",
         |_| record(1),
-        AddEventListenerOptions {
+        Some(&AddEventListenerOptions {
             once: Some(true),
             ..Default::default()
-        },
+        }),
     );
 }
 
 pub fn named_removed(button: &HTMLButtonElement) {
     let callback = listener::<Event>(|_| record(1));
-    button.add_event_listener_named("custom", callback);
-    button.remove_event_listener_named("custom", callback);
+    button.add_event_listener_named("custom", callback, None);
+    button.remove_event_listener_named("custom", callback, None);
 }
 
 pub fn named_capture_removed(button: &HTMLButtonElement) {
     let callback = listener::<Event>(|_| record(1));
-    button.add_event_listener_named_with_options("custom", callback, true);
-    button.remove_event_listener_named_with_options("custom", callback, EventListenerOptions { capture: Some(true) });
+    button.add_event_listener_named("custom", callback, Some(&true));
+    button.remove_event_listener_named("custom", callback, Some(&EventListenerOptions { capture: Some(true) }));
 }

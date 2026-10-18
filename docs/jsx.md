@@ -100,7 +100,7 @@ Named `thread_local!` declarations of `MemoExoticComponent<Props>`, `LazyExoticC
 
 ```rust
 thread_local! {
-    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
+    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card, None);
     static THEME: Context<&'static str> = create_context("light");
 }
 

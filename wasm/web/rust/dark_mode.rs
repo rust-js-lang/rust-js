@@ -23,5 +23,6 @@ pub fn use_dark_mode() -> bool {
             move || controller.abort(None)
         },
         || DARK.with(|dark| *dark).matches(),
+        None,
     )
 }

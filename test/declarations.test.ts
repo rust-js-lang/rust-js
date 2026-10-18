@@ -230,7 +230,7 @@ fn Svg(props: IconProps) -> JSX::Element {
 }
 
 thread_local! {
-    pub static Icon: MemoExoticComponent<IconProps> = memo(Svg);
+    pub static Icon: MemoExoticComponent<IconProps> = memo(Svg, None);
 }
 
 pub fn words(n: u64, flags: Vec<bool>) -> String {
@@ -820,7 +820,7 @@ fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
 }
 
 thread_local! {
-    static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+    static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label, None);
 }
 
 js::export_default!(Memoized);
@@ -864,7 +864,7 @@ fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
 }
 
 thread_local! {
-    pub(crate) static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+    pub(crate) static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label, None);
 }
 
 js::export_default!(Memoized);
