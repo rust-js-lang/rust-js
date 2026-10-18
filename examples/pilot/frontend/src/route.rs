@@ -47,7 +47,7 @@ pub fn use_route() -> Route {
             window.add_event_listener(Hashchange, move |_| set_current.set(hash()), Some(&options));
             move || controller.abort(None)
         },
-        (),
+        Some(&()),
     );
     parse(current)
 }

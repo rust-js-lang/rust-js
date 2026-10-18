@@ -929,8 +929,8 @@ pub fn same(a: &Date, b: &Date) -> bool {
 }
 
 pub fn made() -> (bool, bool) {
-    let a = date::new_with_time(0.0);
-    let b = date::new_with_time(0.0);
+    let a = date::new(Some(&0.0));
+    let b = date::new(Some(&0.0));
     (core::ptr::eq(a, a), std::ptr::eq(a as *const Date, b))
 }
 `);
@@ -10244,7 +10244,7 @@ test("a whole float's cast is the float from MIR too", async () => {
   const dir = fixture("whole-cast");
   writeFileSync(join(dir, "lib.rs"), `use js::string;
 pub fn column(line: &str, substr: &str) -> u32 {
-    let index = string::index_of(line, substr);
+    let index = string::index_of(line, substr, None);
     if index == -1.0 {
         panic!("Could not find: '{substr}'");
     }

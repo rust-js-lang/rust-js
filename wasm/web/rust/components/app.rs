@@ -116,7 +116,7 @@ pub fn App() -> JSX::Element {
             }));
             move || cancelled.set(true)
         },
-        (),
+        Some(&()),
     );
 
     // The open file's latest state, from its editor.

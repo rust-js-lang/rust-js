@@ -517,7 +517,7 @@ pub fn Counter() -> JSX::Element {
     let tick = move || {
         set_count.set(count + 1);
     };
-    use_effect(tick, [count]);
+    use_effect(tick, Some(&[count]));
     jsx! { <b>{count}</b> }
 }
 `;
@@ -1905,7 +1905,7 @@ pub struct CounterProps {
 }
 pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> JSX::Element {
     let (count, _dispatch): (&i32, ActionDispatch<i32>) = use_reducer(reducer, 1);
-    use_effect(effect, ());
+    use_effect(effect, Some(&()));
     if let Some(later) = later {
         start_transition(later);
     }
@@ -4707,7 +4707,7 @@ pub fn Ticker() -> JSX::Element {
     let startTicking = move || {
         set_n.set(1);
     };
-    use_effect(startTicking, ());
+    use_effect(startTicking, Some(&()));
     let computeDouble = move || n * 2;
     let double = use_memo(computeDouble, [n]);
     let handleClick = move || set_n.set(n + 1);
@@ -4717,7 +4717,7 @@ pub fn Ticker() -> JSX::Element {
     // One reading what it would be named is a const too.
     let step = 1u32;
     let step = move || set_n.set(step);
-    use_effect(step, [n]);
+    use_effect(step, Some(&[n]));
     // One used besides is a const too.
     let report = move || n;
     let reported = use_memo(report, [n]);
@@ -5889,7 +5889,7 @@ pub fn SidebarLink(
                 }
             }
         },
-        (r#ref, selected),
+        Some(&(r#ref, selected)),
     );
 
     let mut target = "";

@@ -34,7 +34,7 @@ pub fn ContactList() -> JSX::Element {
             }));
             move || controller.abort(None)
         },
-        (query, attempt),
+        Some(&(query, attempt)),
     );
     let results = match loaded {
         Loaded::Loading => jsx! { <p className="status">{"Loading…"}</p> },

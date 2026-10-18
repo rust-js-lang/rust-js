@@ -127,15 +127,10 @@ pub fn load<A: AtomicArray + ?Sized>(array: &A, index: u32) -> A::Element {
 }
 
 /// [`Atomics.notify(a, i, count)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/notify):
-/// wakes up to `count` of the threads waiting on `a[i]`; how many it woke.
+/// wakes up to `count` of the threads waiting on `a[i]`, each where there's
+/// no `count`; how many it woke.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.notify")]
-pub fn notify<A: WaitableArray + ?Sized>(array: &A, index: u32, count: u32) -> u32 {
-    unreachable!()
-}
-
-/// `Atomics.notify(a, i)`: wakes every thread waiting on `a[i]`.
-#[cfg_attr(rust_js, rust_js::link_name = "Atomics.notify")]
-pub fn notify_all<A: WaitableArray + ?Sized>(array: &A, index: u32) -> u32 {
+pub fn notify<A: WaitableArray + ?Sized>(array: &A, index: u32, count: Option<u32>) -> u32 {
     unreachable!()
 }
 
@@ -162,30 +157,23 @@ pub fn sub<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) ->
 
 /// [`Atomics.wait(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait):
 /// sleeps while `a[i]` is `x`, until notified. A browser's main thread
-/// may not, which JS throws a `TypeError` of.
+/// may not, which JS throws a `TypeError` of. At most `timeout`
+/// milliseconds, where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.wait")]
-pub fn wait<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element) -> WaitResult {
-    unreachable!()
-}
-
-/// `Atomics.wait(a, i, x, timeout)`: sleeps at most `timeout`
-/// milliseconds.
-#[cfg_attr(rust_js, rust_js::link_name = "Atomics.wait")]
-pub fn wait_with_timeout<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element, timeout: f64) -> WaitResult {
+pub fn wait<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element, timeout: Option<f64>) -> WaitResult {
     unreachable!()
 }
 
 /// [`Atomics.waitAsync(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/waitAsync):
-/// `wait`'s without sleeping, a promise of how it ends where it waits.
+/// `wait`'s without sleeping, a promise of how it ends where it waits, at
+/// most `timeout` milliseconds where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.waitAsync")]
-pub fn wait_async<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element) -> WaitAsyncResult {
-    unreachable!()
-}
-
-/// `Atomics.waitAsync(a, i, x, timeout)`: waits at most `timeout`
-/// milliseconds.
-#[cfg_attr(rust_js, rust_js::link_name = "Atomics.waitAsync")]
-pub fn wait_async_with_timeout<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element, timeout: f64) -> WaitAsyncResult {
+pub fn wait_async<A: WaitableArray + ?Sized>(
+    array: &A,
+    index: u32,
+    value: A::Element,
+    timeout: Option<f64>,
+) -> WaitAsyncResult {
     unreachable!()
 }
 

@@ -1313,4 +1313,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(array_defaults|trait_default_bounds).rs$"],
     snapshots: true,
   },
+  {
+    name: "unit-dyn-given-undefined",
+    breaks: "a `()` as a `dyn` JS is given the value of is `undefined`, a trailing one left out: `useEffect(effect)`, run on every render, of `use_effect(effect, Some(&()))`, `[]`",
+    file: "src/lower/traits.rs",
+    find: "        let value = match self.pointee(source).is_unit()\n",
+    replace: "        let value = match self.pointee(source).is_unit() && false\n",
+    tests: ["test/jsx.test.ts", "-t", "JSX hooks take"],
+  },
 ];

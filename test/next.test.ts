@@ -795,7 +795,7 @@ pub fn use_route_events() {
             events.on(next::router::RouterEvent::RouteChangeStart, started);
             move || events.off(next::router::RouterEvent::RouteChangeStart, started)
         },
-        (events,),
+        Some(&(events,)),
     );
 }
 `;

@@ -225,7 +225,7 @@ const dateFields: Field[] = [
   ["weekday", "Style"], ["era", "Style"], ["year", "NumericStyle"], ["month", "MonthStyle"], ["day", "NumericStyle"],
   ["hour", "NumericStyle"], ["minute", "NumericStyle"], ["second", "NumericStyle"], ["timeZoneName", "TimeZoneNameStyle"],
 ];
-options("DateTimeFormatOptions", "What [`date_time_format::new`] and a date's `to_locale_string_with` are given: `time_zone` an IANA name, `\"Asia/Tokyo\"`.", [
+options("DateTimeFormatOptions", "What [`date_time_format::new`] and a date's `to_locale_string` are given: `time_zone` an IANA name, `\"Asia/Tokyo\"`.", [
   ["localeMatcher", "LocaleMatcher"], ...dateFields, ["formatMatcher", "FormatMatcher"], ["hour12", "bool"], ["timeZone", "&'a str"],
   ["calendar", "&'a str"], ["dayPeriod", "Style"], ["numberingSystem", "&'a str"], ["dateStyle", "DateTimeStyle"],
   ["timeStyle", "DateTimeStyle"], ["hourCycle", "HourCycle"], ["fractionalSecondDigits", "u32"],

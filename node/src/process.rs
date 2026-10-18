@@ -397,10 +397,10 @@ pub fn set_trace_process_warnings(value: bool) {
 }
 
 /// [`process.umask()`](https://nodejs.org/api/process.html#processumask):
-/// its file mode mask. Deprecated: reading it races; [`umask_with_mask`]
-/// sets it.
+/// its file mode mask, `mask` where it's given, which it gives the old
+/// one of. Reading it, without one, is deprecated: it races.
 #[cfg_attr(rust_js, rust_js::link_name = "process.umask")]
-pub fn umask() -> f64 {
+pub fn umask(mask: Option<&dyn IntoNumberOrStr>) -> f64 {
     unreachable!()
 }
 
@@ -514,13 +514,6 @@ pub fn setgid(id: impl IntoNumberOrStr) -> Result<(), &'static JsError> {
 /// set its user, by id or name; POSIX only.
 #[cfg_attr(rust_js, rust_js::link_name = "process.setuid")]
 pub fn setuid(id: impl IntoNumberOrStr) -> Result<(), &'static JsError> {
-    unreachable!()
-}
-
-/// `process.umask(mask)`: set its file mode mask, `0o022` or `"022"`, and
-/// give the last.
-#[cfg_attr(rust_js, rust_js::link_name = "process.umask")]
-pub fn umask_with_mask(mask: impl IntoNumberOrStr) -> f64 {
     unreachable!()
 }
 

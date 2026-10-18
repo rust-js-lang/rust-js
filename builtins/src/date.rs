@@ -12,7 +12,7 @@ use super::{JsError, JsObject};
 use core::marker::PhantomData;
 
 /// [`Date`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date):
-/// `date::now()` is the time, `date::new()` a `Date` of it.
+/// `date::now()` is the time, `date::new(None)` a `Date` of it.
 pub struct Date(PhantomData<JsObject>);
 
 // An object, never `undefined`.
@@ -139,15 +139,15 @@ impl Date {
         unreachable!()
     }
 
-    /// [`date.setFullYear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear): sets its year, in the local time zone; its new time.
+    /// [`date.setFullYear(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear): sets its year, and its month and day where they're given, in the local time zone; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setFullYear")]
-    pub fn set_full_year(&self, value: i32) -> f64 {
+    pub fn set_full_year(&self, year: i32, month: Option<i32>, day: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setHours()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours): sets its hour, 0 to 23, in the local time zone; its new time.
+    /// [`date.setHours(hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours): sets its hour, 0 to 23, and its minute, second and millisecond where they're given, in the local time zone; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setHours")]
-    pub fn set_hours(&self, value: i32) -> f64 {
+    pub fn set_hours(&self, hours: i32, minutes: Option<i32>, seconds: Option<i32>, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
@@ -157,21 +157,21 @@ impl Date {
         unreachable!()
     }
 
-    /// [`date.setMinutes()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes): sets its minute, 0 to 59, in the local time zone; its new time.
+    /// [`date.setMinutes(minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes): sets its minute, 0 to 59, and its second and millisecond where they're given, in the local time zone; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setMinutes")]
-    pub fn set_minutes(&self, value: i32) -> f64 {
+    pub fn set_minutes(&self, minutes: i32, seconds: Option<i32>, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setMonth()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMonth): sets its month, 0 for January, in the local time zone; its new time.
+    /// [`date.setMonth(month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMonth): sets its month, 0 for January, and its day of the month where it's given, in the local time zone; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setMonth")]
-    pub fn set_month(&self, value: i32) -> f64 {
+    pub fn set_month(&self, month: i32, day: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setSeconds()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setSeconds): sets its second, 0 to 59, in the local time zone; its new time.
+    /// [`date.setSeconds(seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setSeconds): sets its second, 0 to 59, and its millisecond where it's given, in the local time zone; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setSeconds")]
-    pub fn set_seconds(&self, value: i32) -> f64 {
+    pub fn set_seconds(&self, seconds: i32, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
@@ -181,15 +181,15 @@ impl Date {
         unreachable!()
     }
 
-    /// [`date.setUTCFullYear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCFullYear): sets its year, in UTC; its new time.
+    /// [`date.setUTCFullYear(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCFullYear): sets its year, and its month and day where they're given, in UTC; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setUTCFullYear")]
-    pub fn set_utc_full_year(&self, value: i32) -> f64 {
+    pub fn set_utc_full_year(&self, year: i32, month: Option<i32>, day: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setUTCHours()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours): sets its hour, 0 to 23, in UTC; its new time.
+    /// [`date.setUTCHours(hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours): sets its hour, 0 to 23, and its minute, second and millisecond where they're given, in UTC; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setUTCHours")]
-    pub fn set_utc_hours(&self, value: i32) -> f64 {
+    pub fn set_utc_hours(&self, hours: i32, minutes: Option<i32>, seconds: Option<i32>, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
@@ -199,21 +199,21 @@ impl Date {
         unreachable!()
     }
 
-    /// [`date.setUTCMinutes()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMinutes): sets its minute, 0 to 59, in UTC; its new time.
+    /// [`date.setUTCMinutes(minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMinutes): sets its minute, 0 to 59, and its second and millisecond where they're given, in UTC; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setUTCMinutes")]
-    pub fn set_utc_minutes(&self, value: i32) -> f64 {
+    pub fn set_utc_minutes(&self, minutes: i32, seconds: Option<i32>, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setUTCMonth()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMonth): sets its month, 0 for January, in UTC; its new time.
+    /// [`date.setUTCMonth(month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMonth): sets its month, 0 for January, and its day of the month where it's given, in UTC; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setUTCMonth")]
-    pub fn set_utc_month(&self, value: i32) -> f64 {
+    pub fn set_utc_month(&self, month: i32, day: Option<i32>) -> f64 {
         unreachable!()
     }
 
-    /// [`date.setUTCSeconds()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCSeconds): sets its second, 0 to 59, in UTC; its new time.
+    /// [`date.setUTCSeconds(seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCSeconds): sets its second, 0 to 59, and its millisecond where it's given, in UTC; its new time.
     #[cfg_attr(rust_js, rust_js::link_name = "setUTCSeconds")]
-    pub fn set_utc_seconds(&self, value: i32) -> f64 {
+    pub fn set_utc_seconds(&self, seconds: i32, ms: Option<i32>) -> f64 {
         unreachable!()
     }
 
@@ -259,197 +259,60 @@ impl Date {
         unreachable!()
     }
 
-    /// [`date.toLocaleString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString): its date and time as the user's locale writes them.
+    /// [`date.toLocaleString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString): its date and time as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleString")]
-    pub fn to_locale_string(&self) -> String {
+    pub fn to_locale_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 
-    /// [`date.toLocaleDateString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString): its date as the user's locale writes it.
+    /// [`date.toLocaleDateString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString): its date as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleDateString")]
-    pub fn to_locale_date_string(&self) -> String {
+    pub fn to_locale_date_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 
-    /// [`date.toLocaleTimeString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleTimeString): its time as the user's locale writes it.
+    /// [`date.toLocaleTimeString(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleTimeString): its time as `intl::date_time_format::new(locales, options)` writes it, the user's locale's where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleTimeString")]
-    pub fn to_locale_time_string(&self) -> String {
-        unreachable!()
-    }
-
-    /// `date.toLocaleString(locales, options)`: its date and time as `intl::date_time_format::new(locales, options)` writes them.
-    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleString")]
-    pub fn to_locale_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
-        unreachable!()
-    }
-
-    /// `date.toLocaleDateString(locales, options)`: its date as `intl::date_time_format::new(locales, options)` writes it.
-    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleDateString")]
-    pub fn to_locale_date_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
-        unreachable!()
-    }
-
-    /// `date.toLocaleTimeString(locales, options)`: its time as `intl::date_time_format::new(locales, options)` writes them.
-    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleTimeString")]
-    pub fn to_locale_time_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
-        unreachable!()
-    }
-
-    /// [`date.setFullYear(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setFullYear")]
-    pub fn set_full_year_m(&self, year: i32, month: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setFullYear(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setFullYear")]
-    pub fn set_full_year_m_d(&self, year: i32, month: i32, day: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setHours(hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setHours")]
-    pub fn set_hours_m(&self, hours: i32, minutes: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setHours(hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setHours")]
-    pub fn set_hours_m_s(&self, hours: i32, minutes: i32, seconds: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setHours(hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setHours")]
-    pub fn set_hours_m_s_ms(&self, hours: i32, minutes: i32, seconds: i32, ms: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setMinutes(minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setMinutes")]
-    pub fn set_minutes_s(&self, minutes: i32, seconds: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setMinutes(minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setMinutes")]
-    pub fn set_minutes_s_ms(&self, minutes: i32, seconds: i32, ms: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setSeconds(seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setSeconds): each set; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setSeconds")]
-    pub fn set_seconds_ms(&self, seconds: i32, ms: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCFullYear(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCFullYear): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCFullYear")]
-    pub fn set_utc_full_year_m(&self, year: i32, month: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCFullYear(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCFullYear): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCFullYear")]
-    pub fn set_utc_full_year_m_d(&self, year: i32, month: i32, day: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCHours(hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCHours")]
-    pub fn set_utc_hours_m(&self, hours: i32, minutes: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCHours(hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCHours")]
-    pub fn set_utc_hours_m_s(&self, hours: i32, minutes: i32, seconds: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCHours(hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCHours")]
-    pub fn set_utc_hours_m_s_ms(&self, hours: i32, minutes: i32, seconds: i32, ms: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCMinutes(minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMinutes): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCMinutes")]
-    pub fn set_utc_minutes_s(&self, minutes: i32, seconds: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCMinutes(minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMinutes): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCMinutes")]
-    pub fn set_utc_minutes_s_ms(&self, minutes: i32, seconds: i32, ms: i32) -> f64 {
-        unreachable!()
-    }
-
-    /// [`date.setUTCSeconds(seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCSeconds): each set, in UTC; its new time.
-    #[cfg_attr(rust_js, rust_js::link_name = "setUTCSeconds")]
-    pub fn set_utc_seconds_ms(&self, seconds: i32, ms: i32) -> f64 {
+    pub fn to_locale_time_string(&self, locales: Option<&[&str]>, options: Option<&DateTimeFormatOptions<'_>>) -> String {
         unreachable!()
     }
 }
 
-/// [`new Date()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): now.
+/// [`new Date(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date):
+/// now where there's no `value`; of milliseconds since 1970 UTC,
+/// `Some(&0.0)`; of text `Date.parse` reads, `Some(&"2024-01-01")`, an
+/// invalid date of other text; or a copy of a `Date`.
 #[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new() -> &'static Date {
+pub fn new(value: Option<&dyn IntoNumberOrStrOrDate>) -> &'static Date {
     unreachable!()
 }
 
-/// [`new Date(time)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of milliseconds since 1970 UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_time(time: f64) -> &'static Date {
-    unreachable!()
-}
+/// What a `number | string | Date` parameter takes: each as it is (ADR
+/// 0229); an optional one, `Option<&dyn IntoNumberOrStrOrDate>`, takes
+/// `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `number | string | Date`",
+    note = "an optional one, `Option<&dyn IntoNumberOrStrOrDate>`, takes `Some(&value)`"
+)]
+#[cfg_attr(rust_js, rust_js::types = "number | string | Date")]
+pub trait IntoNumberOrStrOrDate: sealed::Sealed {}
+impl IntoNumberOrStrOrDate for f64 {}
+impl IntoNumberOrStrOrDate for &str {}
+impl IntoNumberOrStrOrDate for &String {}
+impl IntoNumberOrStrOrDate for &Date {}
 
-/// [`new Date(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of text `Date.parse` reads, an invalid date of
-/// other text.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_text(text: &str) -> &'static Date {
-    unreachable!()
-}
-
-/// [`new Date(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ym(year: i32, month: i32) -> &'static Date {
-    unreachable!()
-}
-
-/// [`new Date(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ymd(year: i32, month: i32, day: i32) -> &'static Date {
-    unreachable!()
-}
-
-/// [`new Date(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ymdh(year: i32, month: i32, day: i32, hours: i32) -> &'static Date {
-    unreachable!()
-}
-
-/// [`new Date(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> &'static Date {
-    unreachable!()
-}
-
-/// [`new Date(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
-#[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> &'static Date {
-    unreachable!()
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for f64 {}
+    impl Sealed for &str {}
+    impl Sealed for &String {}
+    impl Sealed for &super::Date {}
 }
 
 /// [`new Date(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/Date): of these parts in the local time
-/// zone, the month 0 for January.
+/// zone, the month 0 for January, the day 1 and the rest 0 where they aren't given.
 #[cfg_attr(rust_js, rust_js::link_name = "new Date")]
-pub fn new_with_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> &'static Date {
+pub fn new_with_year_and_month(year: i32, month: i32, day: Option<i32>, hours: Option<i32>, minutes: Option<i32>, seconds: Option<i32>, ms: Option<i32>) -> &'static Date {
     unreachable!()
 }
 
@@ -465,38 +328,9 @@ pub fn parse(text: &str) -> f64 {
     unreachable!()
 }
 
-/// [`Date.UTC(year, month)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
+/// [`Date.UTC(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC,
+/// the month 0 and the day 1 and the rest 0 where they aren't given.
 #[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ym(year: i32, month: i32) -> f64 {
-    unreachable!()
-}
-
-/// [`Date.UTC(year, month, day)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ymd(year: i32, month: i32, day: i32) -> f64 {
-    unreachable!()
-}
-
-/// [`Date.UTC(year, month, day, hours)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ymdh(year: i32, month: i32, day: i32, hours: i32) -> f64 {
-    unreachable!()
-}
-
-/// [`Date.UTC(year, month, day, hours, minutes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ymdhm(year: i32, month: i32, day: i32, hours: i32, minutes: i32) -> f64 {
-    unreachable!()
-}
-
-/// [`Date.UTC(year, month, day, hours, minutes, seconds)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ymdhms(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32) -> f64 {
-    unreachable!()
-}
-
-/// [`Date.UTC(year, month, day, hours, minutes, seconds, ms)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC): the time of these parts in UTC.
-#[cfg_attr(rust_js, rust_js::link_name = "Date.UTC")]
-pub fn utc_ymdhmsm(year: i32, month: i32, day: i32, hours: i32, minutes: i32, seconds: i32, ms: i32) -> f64 {
+pub fn utc(year: i32, month: Option<i32>, day: Option<i32>, hours: Option<i32>, minutes: Option<i32>, seconds: Option<i32>, ms: Option<i32>) -> f64 {
     unreachable!()
 }

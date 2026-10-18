@@ -36,7 +36,7 @@ pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
             }));
             move || controller.abort(None)
         },
-        (id,),
+        Some(&(id,)),
     );
     match loaded {
         Loaded::Loading => jsx! { <p className="status">{"Loading…"}</p> },

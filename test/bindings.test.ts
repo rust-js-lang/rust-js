@@ -357,7 +357,7 @@ pub fn shown(text: &str) -> String {
 test("RegExp, Error, Symbol, weak collections and globals are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-objects");
-  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, parse_int_with, reg_exp, symbol, weak_map, weak_ref};
+  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, reg_exp, symbol, weak_map, weak_ref};
 pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
     let pattern = reg_exp::new(r"(?<word>[a-z]+)(\\d)", "g");
     let m = pattern.exec(text)?;
@@ -366,7 +366,7 @@ pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
 }
 pub fn errors() -> (String, String, f64, f64) {
     let e = js_error::new("boom");
-    (e.name(), e.message(), parse_int_with("42px", 10), parse_int("0x1f"))
+    (e.name(), e.message(), parse_int("42px", Some(10)), parse_int("0x1f", None))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
     let a = symbol::r#for("app");
@@ -455,18 +455,18 @@ pub fn reflected(o: &Unknown) -> (bool, String, usize, bool, bool) {
     d.set_value(Some(unknown("fixed")));
     d.set_writable(false);
     let defined = reflect::define_property(o, "id", d);
-    let written = reflect::set(o, "id", "other");
+    let written = reflect::set(o, "id", "other", None);
     let own = reflect::get_own_property_descriptor(o, "id").and_then(|d| d.writable()) == Some(false);
-    (defined, string(reflect::get(o, "id")), reflect::own_keys(o).len(), written, own || !reflect::set_prototype_of(o, None))
+    (defined, string(reflect::get(o, "id", None)), reflect::own_keys(o).len(), written, own || !reflect::set_prototype_of(o, None))
 }
 pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
     let handler = proxy_handler::new();
-    handler.set_get(Box::new(|target, key, _| match reflect::get(target, key) {
+    handler.set_get(Box::new(|target, key, _| match reflect::get(target, key, None) {
         Some(value) => Some(value),
         None => Some(unknown("missing")),
     }));
     let p = proxy::revocable(o, handler);
-    let seen = (string(reflect::get(p.proxy(), "a")), string(reflect::get(p.proxy(), "b")));
+    let seen = (string(reflect::get(p.proxy(), "a", None)), string(reflect::get(p.proxy(), "b", None)));
     p.revoke();
     (seen.0, seen.1, reflect::get_prototype_of(o).is_none())
 }
@@ -491,18 +491,18 @@ test("Atomics are JS's, of a view of a shared buffer", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{WaitAsyncValue, WaitResult, atomics, big_int64_array, int32_array, shared_array_buffer};
 pub fn counted() -> (i32, i32, i32, i64, bool, bool) {
     let shared = shared_array_buffer::new(16);
-    let counts = int32_array::new_with_buffer(shared);
+    let counts = int32_array::new_with_buffer(shared, None, None);
     atomics::add(counts, 0, 5);
     let before = atomics::sub(counts, 0, 2);
     atomics::compare_exchange(counts, 1, 0, 9);
     let wide = big_int64_array::new(1);
     atomics::store(wide, 0, 7);
-    let waited = matches!(atomics::wait(counts, 0, 0), WaitResult::NotEqual);
+    let waited = matches!(atomics::wait(counts, 0, 0, None), WaitResult::NotEqual);
     (before, atomics::load(counts, 0), atomics::load(counts, 1), atomics::or(wide, 0, 8), waited, counts.buffer().growable())
 }
 pub async fn waited() -> bool {
-    let counts = int32_array::new_with_buffer(shared_array_buffer::new(4));
-    match atomics::wait_async_with_timeout(counts, 0, 0, 1.0).value {
+    let counts = int32_array::new_with_buffer(shared_array_buffer::new(4), None, None);
+    match atomics::wait_async(counts, 0, 0, Some(1.0)).value {
         WaitAsyncValue::Waiting(promise) => matches!(promise.await, WaitResult::TimedOut),
         WaitAsyncValue::Ended(_) => false,
     }
@@ -533,11 +533,11 @@ pub fn numbers() -> (String, String, bool, Vec<String>, String) {
     (price.format(1234.5), plain.format(1234.0), options.use_grouping == UseGrouping::Bool(false), parts, price.format_range(3.0, 5.0))
 }
 pub fn dates() -> (String, String, Vec<String>) {
-    let d = date::new_with_time(0.0);
+    let d = date::new(Some(&0.0));
     let utc = DateTimeFormatOptions { time_zone: Some("UTC"), year: Some(NumericStyle::Numeric), month: Some(MonthStyle::Long), day: Some(NumericStyle::Numeric), ..Default::default() };
     let format = date_time_format::new(&["en-US"], &utc);
     let kinds = format.format_to_parts(d).into_iter().filter(|p| p.r#type != DateTimeFormatPartType::Literal).map(|p| p.value).collect();
-    (format.format(d), d.to_locale_date_string_with(&["en-GB"], &utc), kinds)
+    (format.format(d), d.to_locale_date_string(Some(&["en-GB"]), Some(&utc)), kinds)
 }
 pub fn words() -> (Vec<String>, PluralCategory, String, String, Option<String>, usize) {
     let collator = collator::new(&["en"], &CollatorOptions { numeric: Some(true), ..Default::default() });
@@ -578,21 +578,21 @@ pub fn floats() -> (f64, Option<f64>, u32, String) {
     let a = float64_array::from(&[1.5, -2.0, 3.25]);
     a.set_index(1, 4.0);
     let doubled = a.map(|x| x * 2.0);
-    let sorted = a.to_sorted_by(|x, y| y.partial_cmp(&x).unwrap());
+    let sorted = a.to_sorted(Some(Box::new(|x, y| y.partial_cmp(&x).unwrap())));
     let shifted = sorted.map_with_index(|x, i| x + i as f64);
-    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice_to_end(1).join("|"))
+    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice(Some(1), None).join(Some("|")))
 }
 pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let buffer = array_buffer::new(8);
-    let view = data_view::new(buffer);
+    let view = data_view::new(buffer, None, None);
     view.set_int16(0, -2, true);
-    let bytes = uint8_array::new_with_buffer(buffer);
+    let bytes = uint8_array::new_with_buffer(buffer, None, None);
     let signed = int8_array::of(&[1, -1, 127]);
-    (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(0, 2).values().collect())
+    (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(Some(0), Some(2)).values().collect())
 }
 pub fn bigs() -> (i64, bool) {
     let a = big_int64_array::from(&[1, -2, 3]);
-    (a.reduce(|sum, x| sum + x, 0), a.includes(-2))
+    (a.reduce(|sum, x| sum + x, 0), a.includes(-2, None))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
@@ -613,17 +613,17 @@ test("a Date is JS's, its members methods", async () => {
   const dir = fixture("js-date");
   writeFileSync(join(dir, "lib.rs"), `use js::{Date, date};
 pub fn moment(time: f64) -> (f64, f64, f64, String) {
-    let d = date::new_with_time(time);
-    d.set_utc_hours(12);
-    d.set_utc_minutes_s(30, 15);
+    let d = date::new(Some(&time));
+    d.set_utc_hours(12, None, None, None);
+    d.set_utc_minutes(30, Some(15), None);
     (d.get_utc_full_year(), d.get_utc_month(), d.get_time(), d.to_iso_string().unwrap())
 }
 pub fn invalid() -> (bool, bool, Option<String>) {
-    let d = date::new_with_text("not a date");
+    let d = date::new(Some(&"not a date"));
     (d.get_time().is_nan(), d.to_iso_string().is_err(), d.to_json())
 }
 pub fn utc() -> f64 {
-    date::utc_ymd(2026, 9, 8)
+    date::utc(2026, Some(9), Some(8), None, None, None, None)
 }
 pub fn now_is_recent(d: &Date) -> bool {
     date::now() - d.get_time() < 60_000.0
@@ -2019,7 +2019,7 @@ pub fn anchor(id: Option<&Unknown>) -> String {
 }
 
 pub fn int_of(value: Option<&Unknown>) -> String {
-    number::to_string(js::parse_int_with(value, 10))
+    number::to_string(js::parse_int(value, Some(10)))
 }
 
 pub fn float_of(value: &Unknown) -> String {
@@ -2143,7 +2143,7 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
                         arg = Some(js::unknown_of(js::concat_text(arg)));
                     }
                     Some("d") | Some("i") => {
-                        arg = Some(js::unknown_of(number::to_string(js::parse_int_with(arg, 10))));
+                        arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, Some(10)))));
                     }
                     Some("f") => {
                         arg = Some(js::unknown_of(number::to_string(js::parse_float(arg))));

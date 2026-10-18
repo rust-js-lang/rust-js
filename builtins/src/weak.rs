@@ -125,16 +125,10 @@ pub struct FinalizationRegistry<T>(PhantomData<JsObject>, PhantomData<T>);
 
 impl<T> FinalizationRegistry<T> {
     /// [`registry.register(target, held)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry/register):
-    /// `held` given to its callback once `target` is collected.
+    /// `held` given to its callback once `target` is collected;
+    /// `unregister(token)` undoes it, where there's a `token`.
     #[cfg_attr(rust_js, rust_js::link_name = "register")]
-    pub fn register<K: WeakKey + ?Sized>(&self, target: &K, held: T) {
-        unreachable!()
-    }
-
-    /// [`registry.register(target, held, token)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry/register):
-    /// `register`, which `unregister(token)` undoes.
-    #[cfg_attr(rust_js, rust_js::link_name = "register")]
-    pub fn register_with_token<K: WeakKey + ?Sized, U: WeakKey + ?Sized>(&self, target: &K, held: T, token: &U) {
+    pub fn register<K: WeakKey + ?Sized>(&self, target: &K, held: T, token: Option<&dyn WeakKey>) {
         unreachable!()
     }
 

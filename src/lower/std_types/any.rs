@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `dyn` JS is given the value of, its trait nothing to JS: `Any`, or a
     /// marker of no methods (ADR 0443).
-    fn given_as_value(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn given_as_value(&self, ty: Ty<'tcx>) -> bool {
         let marker = matches!(ty.kind(), ty::Dynamic(predicates, ..) if predicates
             .principal_def_id()
             .is_some_and(|id| crate::lower::traits::is_marker(self.tcx, self.krate.foreign, id)));

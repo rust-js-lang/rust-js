@@ -118,16 +118,11 @@ pub trait EventEmitterExt: Sized {
         unreachable!()
     }
 
-    /// [`emitter.removeAllListeners()`](https://nodejs.org/api/events.html#emitterremovealllistenerseventname):
-    /// each event's.
+    /// [`emitter.removeAllListeners(event)`](https://nodejs.org/api/events.html#emitterremovealllistenerseventname):
+    /// `event`'s, or each event's where it's `None`, of the event's type:
+    /// `remove_all_listeners(None::<Ping>)`.
     #[cfg_attr(rust_js, rust_js::link_name = "removeAllListeners")]
-    fn remove_all_listeners(&self) -> &Self {
-        unreachable!()
-    }
-
-    /// `emitter.removeAllListeners(event)`: `event`'s.
-    #[cfg_attr(rust_js, rust_js::link_name = "removeAllListeners")]
-    fn remove_all_listeners_with_event_name<E>(&self, event: E) -> &Self
+    fn remove_all_listeners<E>(&self, event: Option<E>) -> &Self
     where
         Self: Emits<E>,
     {

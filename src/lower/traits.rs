@@ -2453,6 +2453,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_dyn_debug(target) && !self.is_dyn_debug(source) {
             return self.dyn_debug_string(value, self.pointee(source), span);
         }
+        // A `()` as a `dyn` JS is given the value of, a binding crate's or a
+        // marker's, is what JS is given of a tuple, an array (ADR 0020):
+        // `use_effect(f, Some(&()))`'s `[]`.
+        let value = match self.pointee(source).is_unit()
+            && (!self.is_pair_dyn(target) || self.given_as_value(self.pointee(target)))
+        {
+            true => Expr::array(Vec::new()),
+            false => value,
+        };
         // A `RefCell<C>` as a `RefCell<dyn T>`: the same cell, given its
         // `impl`, in place, so an `Rc` of it before is the same (ADR 0397).
         if self.dyn_cell_trait(target).is_some()

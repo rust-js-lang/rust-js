@@ -32,7 +32,7 @@ fn use_filter() -> Filter {
             window.add_event_listener(Hashchange, move |_| set_current.set(hash()), Some(&options));
             move || controller.abort(None)
         },
-        (),
+        Some(&()),
     );
     Filter::from_hash(current)
 }
@@ -41,7 +41,7 @@ pub fn App() -> JSX::Element {
     let (todos, dispatch) = use_reducer_with(reduce, (), |_| load());
     let filter = use_filter();
     let (draft, set_draft) = use_state(String::new());
-    use_effect(move || save(todos), (todos,));
+    use_effect(move || save(todos), Some(&(todos,)));
     let active = todos.iter().filter(|todo| !todo.completed).count();
     let completed = todos.len() - active;
     let add = move |e: &KeyboardEvent<_>| {

@@ -19,16 +19,10 @@ pub fn apply(target: &dyn Fn(), this_argument: Option<&Unknown>, arguments: &[Op
 }
 
 /// [`Reflect.construct(C, args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/construct):
-/// `new C(...arguments)`.
+/// `new C(...arguments)`, as if `new_target`'s, whose `prototype` it has,
+/// where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.construct")]
-pub fn construct(target: &dyn Fn(), arguments: &[Option<&Unknown>]) -> &'static Unknown {
-    unreachable!()
-}
-
-/// `Reflect.construct(C, args, newTarget)`: `new C(...arguments)` as if
-/// `new_target`'s, whose `prototype` it has.
-#[cfg_attr(rust_js, rust_js::link_name = "Reflect.construct")]
-pub fn construct_with_new_target(target: &dyn Fn(), arguments: &[Option<&Unknown>], new_target: &dyn Fn()) -> &'static Unknown {
+pub fn construct(target: &dyn Fn(), arguments: &[Option<&Unknown>], new_target: Option<&dyn Fn()>) -> &'static Unknown {
     unreachable!()
 }
 
@@ -47,15 +41,10 @@ pub fn delete_property<K: PropertyKey + ?Sized>(target: &Unknown, key: &K) -> bo
 }
 
 /// [`Reflect.get(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/get):
-/// `o[key]`, `None` where it's `undefined` or `null`.
+/// `o[key]`, `None` where it's `undefined` or `null`; a getter's `this`
+/// `receiver`, where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.get")]
-pub fn get<K: PropertyKey + ?Sized>(target: &Unknown, key: &K) -> Option<&'static Unknown> {
-    unreachable!()
-}
-
-/// `Reflect.get(o, key, receiver)`: `o[key]`, a getter's `this` `receiver`.
-#[cfg_attr(rust_js, rust_js::link_name = "Reflect.get")]
-pub fn get_with_receiver<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, receiver: &Unknown) -> Option<&'static Unknown> {
+pub fn get<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, receiver: Option<&Unknown>) -> Option<&'static Unknown> {
     unreachable!()
 }
 
@@ -102,16 +91,10 @@ pub fn prevent_extensions(target: &Unknown) -> bool {
 }
 
 /// [`Reflect.set(o, key, value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/set):
-/// `o[key] = value`, whether it was.
+/// `o[key] = value`, whether it was; a setter's `this` `receiver`, where
+/// it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.set")]
-pub fn set<K: PropertyKey + ?Sized, T>(target: &Unknown, key: &K, value: T) -> bool {
-    unreachable!()
-}
-
-/// `Reflect.set(o, key, value, receiver)`: `o[key] = value`, a setter's
-/// `this` `receiver`.
-#[cfg_attr(rust_js, rust_js::link_name = "Reflect.set")]
-pub fn set_with_receiver<K: PropertyKey + ?Sized, T>(target: &Unknown, key: &K, value: T, receiver: &Unknown) -> bool {
+pub fn set<K: PropertyKey + ?Sized, T>(target: &Unknown, key: &K, value: T, receiver: Option<&Unknown>) -> bool {
     unreachable!()
 }
 

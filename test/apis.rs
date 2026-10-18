@@ -153,7 +153,7 @@ pub fn Refs() -> JSX::Element {
     let handle: RefObject<Option<&'static str>> = use_ref(None);
     let element: RefObject<Option<&'static webapi::Element>> = use_ref(None);
     let (shown, set_shown) = use_state(true);
-    use_layout_effect(move || log("layout"), ());
+    use_layout_effect(move || log("layout"), Some(&()));
     use_effect(
         move || {
             log(if element.current().is_some() {
@@ -163,10 +163,10 @@ pub fn Refs() -> JSX::Element {
             });
             log(handle.current().unwrap_or("no handle"));
         },
-        (),
+        Some(&()),
     );
     let on_log = use_effect_event(move || log(if *shown { "shown" } else { "hidden" }));
-    use_effect(move || on_log(), (shown,));
+    use_effect(move || on_log(), Some(&(shown,)));
     jsx! {
         <div>
             <FancyInput handle={handle} />
@@ -200,7 +200,7 @@ pub fn Counter() -> JSX::Element {
             }
             Some(move || log(&format!("cleanup {n}")))
         },
-        [n],
+        Some(&[n]),
     );
     jsx! {
         <button className="count" onClick={move |_| set_n.update(|n| n + 1)}>{n}</button>

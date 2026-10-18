@@ -37,7 +37,7 @@ pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> JSX::Eleme
                 }
             }
         },
-        (),
+        Some(&()),
     );
     // Another file, a new compile, or the system's theme changing.
     use_effect(
@@ -47,7 +47,7 @@ pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> JSX::Eleme
                 set_theme(editor, dark);
             }
         },
-        (state, dark),
+        Some(&(state, dark)),
     );
     jsx! {
         <div

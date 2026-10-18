@@ -130,7 +130,7 @@ pub fn Clock() -> JSX::Element {
             set_ticks.update(|t| t + 10);
             move || set_ticks.set(-1)
         },
-        (),
+        Some(&()),
     );
     jsx! {
         <>

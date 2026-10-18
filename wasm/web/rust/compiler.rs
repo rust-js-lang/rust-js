@@ -314,7 +314,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
 
 async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
     let response = window.fetch(format!("./sysroot/{name}").as_str(), None).await;
-    let bytes = uint8_array::new_with_buffer(response.array_buffer().await);
+    let bytes = uint8_array::new_with_buffer(response.array_buffer().await, None, None);
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
 
@@ -341,7 +341,10 @@ async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static Wasi
         format!("download {name} crate"),
         format!("{} ({})", ms(performance.now() - start), mb(bytes.byte_length() as f64)),
     );
-    new_file(uint8_array::new_with_buffer(bytes), &FileOptions { readonly: true })
+    new_file(
+        uint8_array::new_with_buffer(bytes, None, None),
+        &FileOptions { readonly: true },
+    )
 }
 
 async fn load_examples() -> Vec<Example> {

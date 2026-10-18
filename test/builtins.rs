@@ -72,17 +72,17 @@ pub fn replaced(text: &str, pattern: &str, flags: &str, with: &str) -> String {
 /// reads its strings: each part of `text`, and where `part` is in it.
 pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<f64>, u32) {
     let parts = vec![
-        string::slice(text, 1.0, -1.0),
-        string::slice_to_end(text, -2.0),
-        string::substring(text, 1, 3),
-        string::substring_to_end(text, 1),
+        string::slice(text, 1.0, Some(-1.0)),
+        string::slice(text, -2.0, None),
+        string::substring(text, 1, Some(3)),
+        string::substring(text, 1, None),
         string::trim(text),
         string::trim_start(text),
         string::trim_end(text),
     ];
     let at = vec![
-        string::index_of(text, part),
-        string::index_of_from(text, part, 2.0),
+        string::index_of(text, part, None),
+        string::index_of(text, part, Some(2.0)),
         string::last_index_of(text, part),
     ];
     (parts, at, string::length(text))
@@ -92,7 +92,7 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<f64>, u32) {
 /// file's name: an index is a JS number, as TypeScript has it, so one past
 /// it is `+ 1`.
 pub fn file_name(path: &str) -> String {
-    string::slice_to_end(path, string::last_index_of(path, "/") + 1.0)
+    string::slice(path, string::last_index_of(path, "/") + 1.0, None)
 }
 
 /// JS's `replace` of a string: the first match only, where Rust's

@@ -80,7 +80,7 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
             }
             move || controller.abort(None)
         },
-        (run,),
+        Some(&(run,)),
     );
     jsx! {
         <section id="result-section" className="mt-3" hidden={program.is_none()}>

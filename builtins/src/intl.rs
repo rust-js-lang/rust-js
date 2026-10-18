@@ -625,7 +625,7 @@ pub enum DateTimeFormatPartType {
     FractionalSecond,
 }
 
-/// What [`date_time_format::new`] and a date's `to_locale_string_with` are given: `time_zone` an IANA name, `"Asia/Tokyo"`.
+/// What [`date_time_format::new`] and a date's `to_locale_string` are given: `time_zone` an IANA name, `"Asia/Tokyo"`.
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct DateTimeFormatOptions<'a> {

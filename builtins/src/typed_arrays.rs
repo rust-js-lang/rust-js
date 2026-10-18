@@ -40,9 +40,9 @@ impl ArrayBuffer {
         unreachable!()
     }
 
-    /// [`buffer.slice(begin, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/slice): a copy of its bytes from `begin` to `end`.
+    /// [`buffer.slice(begin, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/slice): a copy of its bytes from `begin` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, begin: i32, end: i32) -> &'static ArrayBuffer {
+    pub fn slice(&self, begin: Option<i32>, end: Option<i32>) -> &'static ArrayBuffer {
         unreachable!()
     }
 
@@ -109,9 +109,9 @@ impl SharedArrayBuffer {
         unreachable!()
     }
 
-    /// [`buffer.slice(begin, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer/slice): a copy of its bytes from `begin` to `end`.
+    /// [`buffer.slice(begin, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer/slice): a copy of its bytes from `begin` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, begin: i32, end: i32) -> &'static SharedArrayBuffer {
+    pub fn slice(&self, begin: Option<i32>, end: Option<i32>) -> &'static SharedArrayBuffer {
         unreachable!()
     }
 }
@@ -286,15 +286,9 @@ impl<B> DataView<B> {
 pub mod data_view {
     use super::*;
 
-    /// [`new DataView(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/DataView): a view of all of `buffer`.
+    /// [`new DataView(buffer, offset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/DataView): a view of `length` bytes from `offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new DataView")]
-    pub fn new<B: ArrayBufferLike>(buffer: &B) -> &'static DataView<B> {
-        unreachable!()
-    }
-
-    /// [`new DataView(buffer, offset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/DataView): of `length` bytes from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new DataView")]
-    pub fn new_with_offset_and_length<B: ArrayBufferLike>(buffer: &B, offset: u32, length: u32) -> &'static DataView<B> {
+    pub fn new<B: ArrayBufferLike>(buffer: &B, offset: Option<u32>, length: Option<u32>) -> &'static DataView<B> {
         unreachable!()
     }
 }
@@ -355,33 +349,21 @@ impl<B> Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[i8]) {
+    pub fn set(&self, items: &[i8], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[i8], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: i8) -> &'static Int8Array<B> {
+    pub fn fill(&self, value: i8, start: Option<i32>, end: Option<i32>) -> &'static Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: i8, start: i32, end: i32) -> &'static Int8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Int8Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Int8Array<B> {
         unreachable!()
     }
 
@@ -391,27 +373,15 @@ impl<B> Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Int8Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(i8, i8) -> core::cmp::Ordering>>) -> &'static Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(i8, i8) -> core::cmp::Ordering + 'static) -> &'static Int8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(i8, i8) -> core::cmp::Ordering + 'static) -> &'static Int8Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Int8Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(i8, i8) -> core::cmp::Ordering>>) -> &'static Int8Array {
         unreachable!()
     }
 
@@ -427,57 +397,33 @@ impl<B> Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Int8Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Int8Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Int8Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Int8Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Int8Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Int8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: i8) -> bool {
+    pub fn includes(&self, value: i8, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: i8) -> i32 {
+    pub fn index_of(&self, value: i8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: i8, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: i8) -> i32 {
+    pub fn last_index_of(&self, value: i8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -607,9 +553,9 @@ impl<B> Int8Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -675,15 +621,9 @@ pub mod int8_array {
         unreachable!()
     }
 
-    /// [`new Int8Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): a view of all of `buffer`.
+    /// [`new Int8Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Int8Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Int8Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Int8Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array/Int8Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Int8Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Int8Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Int8Array<B> {
         unreachable!()
     }
 }
@@ -744,33 +684,21 @@ impl<B> Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[u8]) {
+    pub fn set(&self, items: &[u8], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[u8], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: u8) -> &'static Uint8Array<B> {
+    pub fn fill(&self, value: u8, start: Option<i32>, end: Option<i32>) -> &'static Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: u8, start: i32, end: i32) -> &'static Uint8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Uint8Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Uint8Array<B> {
         unreachable!()
     }
 
@@ -780,27 +708,15 @@ impl<B> Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Uint8Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(u8, u8) -> core::cmp::Ordering>>) -> &'static Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(u8, u8) -> core::cmp::Ordering + 'static) -> &'static Uint8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(u8, u8) -> core::cmp::Ordering + 'static) -> &'static Uint8Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Uint8Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(u8, u8) -> core::cmp::Ordering>>) -> &'static Uint8Array {
         unreachable!()
     }
 
@@ -816,57 +732,33 @@ impl<B> Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Uint8Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint8Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Uint8Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Uint8Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Uint8Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Uint8Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: u8) -> bool {
+    pub fn includes(&self, value: u8, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: u8) -> i32 {
+    pub fn index_of(&self, value: u8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: u8, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: u8) -> i32 {
+    pub fn last_index_of(&self, value: u8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -996,9 +888,9 @@ impl<B> Uint8Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -1064,15 +956,9 @@ pub mod uint8_array {
         unreachable!()
     }
 
-    /// [`new Uint8Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): a view of all of `buffer`.
+    /// [`new Uint8Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Uint8Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Uint8Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Uint8Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Uint8Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Uint8Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Uint8Array<B> {
         unreachable!()
     }
 }
@@ -1133,33 +1019,21 @@ impl<B> Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[u8]) {
+    pub fn set(&self, items: &[u8], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[u8], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: u8) -> &'static Uint8ClampedArray<B> {
+    pub fn fill(&self, value: u8, start: Option<i32>, end: Option<i32>) -> &'static Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: u8, start: i32, end: i32) -> &'static Uint8ClampedArray<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Uint8ClampedArray<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Uint8ClampedArray<B> {
         unreachable!()
     }
 
@@ -1169,27 +1043,15 @@ impl<B> Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Uint8ClampedArray<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(u8, u8) -> core::cmp::Ordering>>) -> &'static Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(u8, u8) -> core::cmp::Ordering + 'static) -> &'static Uint8ClampedArray<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(u8, u8) -> core::cmp::Ordering + 'static) -> &'static Uint8ClampedArray {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Uint8ClampedArray {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(u8, u8) -> core::cmp::Ordering>>) -> &'static Uint8ClampedArray {
         unreachable!()
     }
 
@@ -1205,57 +1067,33 @@ impl<B> Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Uint8ClampedArray {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint8ClampedArray {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Uint8ClampedArray {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Uint8ClampedArray {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Uint8ClampedArray<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Uint8ClampedArray<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: u8) -> bool {
+    pub fn includes(&self, value: u8, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: u8) -> i32 {
+    pub fn index_of(&self, value: u8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: u8, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: u8) -> i32 {
+    pub fn last_index_of(&self, value: u8, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -1385,9 +1223,9 @@ impl<B> Uint8ClampedArray<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -1453,15 +1291,9 @@ pub mod uint8_clamped_array {
         unreachable!()
     }
 
-    /// [`new Uint8ClampedArray(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): a view of all of `buffer`.
+    /// [`new Uint8ClampedArray(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Uint8ClampedArray")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Uint8ClampedArray<B> {
-        unreachable!()
-    }
-
-    /// [`new Uint8ClampedArray(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray/Uint8ClampedArray): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Uint8ClampedArray")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Uint8ClampedArray<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Uint8ClampedArray<B> {
         unreachable!()
     }
 }
@@ -1522,33 +1354,21 @@ impl<B> Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[i16]) {
+    pub fn set(&self, items: &[i16], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[i16], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: i16) -> &'static Int16Array<B> {
+    pub fn fill(&self, value: i16, start: Option<i32>, end: Option<i32>) -> &'static Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: i16, start: i32, end: i32) -> &'static Int16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Int16Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Int16Array<B> {
         unreachable!()
     }
 
@@ -1558,27 +1378,15 @@ impl<B> Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Int16Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(i16, i16) -> core::cmp::Ordering>>) -> &'static Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(i16, i16) -> core::cmp::Ordering + 'static) -> &'static Int16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(i16, i16) -> core::cmp::Ordering + 'static) -> &'static Int16Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Int16Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(i16, i16) -> core::cmp::Ordering>>) -> &'static Int16Array {
         unreachable!()
     }
 
@@ -1594,57 +1402,33 @@ impl<B> Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Int16Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Int16Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Int16Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Int16Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Int16Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Int16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: i16) -> bool {
+    pub fn includes(&self, value: i16, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: i16) -> i32 {
+    pub fn index_of(&self, value: i16, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: i16, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: i16) -> i32 {
+    pub fn last_index_of(&self, value: i16, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -1774,9 +1558,9 @@ impl<B> Int16Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -1842,15 +1626,9 @@ pub mod int16_array {
         unreachable!()
     }
 
-    /// [`new Int16Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): a view of all of `buffer`.
+    /// [`new Int16Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Int16Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Int16Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Int16Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array/Int16Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Int16Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Int16Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Int16Array<B> {
         unreachable!()
     }
 }
@@ -1911,33 +1689,21 @@ impl<B> Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[u16]) {
+    pub fn set(&self, items: &[u16], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[u16], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: u16) -> &'static Uint16Array<B> {
+    pub fn fill(&self, value: u16, start: Option<i32>, end: Option<i32>) -> &'static Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: u16, start: i32, end: i32) -> &'static Uint16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Uint16Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Uint16Array<B> {
         unreachable!()
     }
 
@@ -1947,27 +1713,15 @@ impl<B> Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Uint16Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(u16, u16) -> core::cmp::Ordering>>) -> &'static Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(u16, u16) -> core::cmp::Ordering + 'static) -> &'static Uint16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(u16, u16) -> core::cmp::Ordering + 'static) -> &'static Uint16Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Uint16Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(u16, u16) -> core::cmp::Ordering>>) -> &'static Uint16Array {
         unreachable!()
     }
 
@@ -1983,57 +1737,33 @@ impl<B> Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Uint16Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint16Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Uint16Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Uint16Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Uint16Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Uint16Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: u16) -> bool {
+    pub fn includes(&self, value: u16, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: u16) -> i32 {
+    pub fn index_of(&self, value: u16, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: u16, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: u16) -> i32 {
+    pub fn last_index_of(&self, value: u16, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -2163,9 +1893,9 @@ impl<B> Uint16Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -2231,15 +1961,9 @@ pub mod uint16_array {
         unreachable!()
     }
 
-    /// [`new Uint16Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): a view of all of `buffer`.
+    /// [`new Uint16Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Uint16Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Uint16Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Uint16Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array/Uint16Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Uint16Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Uint16Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Uint16Array<B> {
         unreachable!()
     }
 }
@@ -2300,33 +2024,21 @@ impl<B> Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[i32]) {
+    pub fn set(&self, items: &[i32], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[i32], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: i32) -> &'static Int32Array<B> {
+    pub fn fill(&self, value: i32, start: Option<i32>, end: Option<i32>) -> &'static Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: i32, start: i32, end: i32) -> &'static Int32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Int32Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Int32Array<B> {
         unreachable!()
     }
 
@@ -2336,27 +2048,15 @@ impl<B> Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Int32Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(i32, i32) -> core::cmp::Ordering>>) -> &'static Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(i32, i32) -> core::cmp::Ordering + 'static) -> &'static Int32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(i32, i32) -> core::cmp::Ordering + 'static) -> &'static Int32Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Int32Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(i32, i32) -> core::cmp::Ordering>>) -> &'static Int32Array {
         unreachable!()
     }
 
@@ -2372,57 +2072,33 @@ impl<B> Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Int32Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Int32Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Int32Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Int32Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Int32Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Int32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: i32) -> bool {
+    pub fn includes(&self, value: i32, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: i32) -> i32 {
+    pub fn index_of(&self, value: i32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: i32, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: i32) -> i32 {
+    pub fn last_index_of(&self, value: i32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -2552,9 +2228,9 @@ impl<B> Int32Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -2620,15 +2296,9 @@ pub mod int32_array {
         unreachable!()
     }
 
-    /// [`new Int32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): a view of all of `buffer`.
+    /// [`new Int32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Int32Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Int32Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Int32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array/Int32Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Int32Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Int32Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Int32Array<B> {
         unreachable!()
     }
 }
@@ -2689,33 +2359,21 @@ impl<B> Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[u32]) {
+    pub fn set(&self, items: &[u32], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[u32], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: u32) -> &'static Uint32Array<B> {
+    pub fn fill(&self, value: u32, start: Option<i32>, end: Option<i32>) -> &'static Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: u32, start: i32, end: i32) -> &'static Uint32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Uint32Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Uint32Array<B> {
         unreachable!()
     }
 
@@ -2725,27 +2383,15 @@ impl<B> Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Uint32Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(u32, u32) -> core::cmp::Ordering>>) -> &'static Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(u32, u32) -> core::cmp::Ordering + 'static) -> &'static Uint32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(u32, u32) -> core::cmp::Ordering + 'static) -> &'static Uint32Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Uint32Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(u32, u32) -> core::cmp::Ordering>>) -> &'static Uint32Array {
         unreachable!()
     }
 
@@ -2761,57 +2407,33 @@ impl<B> Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Uint32Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint32Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Uint32Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Uint32Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Uint32Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Uint32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: u32) -> bool {
+    pub fn includes(&self, value: u32, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: u32) -> i32 {
+    pub fn index_of(&self, value: u32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: u32, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: u32) -> i32 {
+    pub fn last_index_of(&self, value: u32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -2941,9 +2563,9 @@ impl<B> Uint32Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -3009,15 +2631,9 @@ pub mod uint32_array {
         unreachable!()
     }
 
-    /// [`new Uint32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): a view of all of `buffer`.
+    /// [`new Uint32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Uint32Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Uint32Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Uint32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array/Uint32Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Uint32Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Uint32Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Uint32Array<B> {
         unreachable!()
     }
 }
@@ -3078,33 +2694,21 @@ impl<B> Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[f32]) {
+    pub fn set(&self, items: &[f32], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[f32], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: f32) -> &'static Float32Array<B> {
+    pub fn fill(&self, value: f32, start: Option<i32>, end: Option<i32>) -> &'static Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: f32, start: i32, end: i32) -> &'static Float32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Float32Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Float32Array<B> {
         unreachable!()
     }
 
@@ -3114,27 +2718,15 @@ impl<B> Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Float32Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(f32, f32) -> core::cmp::Ordering>>) -> &'static Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(f32, f32) -> core::cmp::Ordering + 'static) -> &'static Float32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(f32, f32) -> core::cmp::Ordering + 'static) -> &'static Float32Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Float32Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(f32, f32) -> core::cmp::Ordering>>) -> &'static Float32Array {
         unreachable!()
     }
 
@@ -3150,57 +2742,33 @@ impl<B> Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Float32Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Float32Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Float32Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Float32Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Float32Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Float32Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: f32) -> bool {
+    pub fn includes(&self, value: f32, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: f32) -> i32 {
+    pub fn index_of(&self, value: f32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: f32, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: f32) -> i32 {
+    pub fn last_index_of(&self, value: f32, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -3330,9 +2898,9 @@ impl<B> Float32Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -3398,15 +2966,9 @@ pub mod float32_array {
         unreachable!()
     }
 
-    /// [`new Float32Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): a view of all of `buffer`.
+    /// [`new Float32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Float32Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Float32Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Float32Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array/Float32Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Float32Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Float32Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Float32Array<B> {
         unreachable!()
     }
 }
@@ -3467,33 +3029,21 @@ impl<B> Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[f64]) {
+    pub fn set(&self, items: &[f64], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[f64], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: f64) -> &'static Float64Array<B> {
+    pub fn fill(&self, value: f64, start: Option<i32>, end: Option<i32>) -> &'static Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: f64, start: i32, end: i32) -> &'static Float64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static Float64Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static Float64Array<B> {
         unreachable!()
     }
 
@@ -3503,27 +3053,15 @@ impl<B> Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static Float64Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(f64, f64) -> core::cmp::Ordering>>) -> &'static Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(f64, f64) -> core::cmp::Ordering + 'static) -> &'static Float64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(f64, f64) -> core::cmp::Ordering + 'static) -> &'static Float64Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static Float64Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(f64, f64) -> core::cmp::Ordering>>) -> &'static Float64Array {
         unreachable!()
     }
 
@@ -3539,57 +3077,33 @@ impl<B> Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static Float64Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static Float64Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static Float64Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static Float64Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static Float64Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static Float64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: f64) -> bool {
+    pub fn includes(&self, value: f64, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: f64) -> i32 {
+    pub fn index_of(&self, value: f64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: f64, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: f64) -> i32 {
+    pub fn last_index_of(&self, value: f64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -3719,9 +3233,9 @@ impl<B> Float64Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -3787,15 +3301,9 @@ pub mod float64_array {
         unreachable!()
     }
 
-    /// [`new Float64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): a view of all of `buffer`.
+    /// [`new Float64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new Float64Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static Float64Array<B> {
-        unreachable!()
-    }
-
-    /// [`new Float64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array/Float64Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new Float64Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static Float64Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static Float64Array<B> {
         unreachable!()
     }
 }
@@ -3856,33 +3364,21 @@ impl<B> BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[i64]) {
+    pub fn set(&self, items: &[i64], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[i64], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: i64) -> &'static BigInt64Array<B> {
+    pub fn fill(&self, value: i64, start: Option<i32>, end: Option<i32>) -> &'static BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: i64, start: i32, end: i32) -> &'static BigInt64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static BigInt64Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static BigInt64Array<B> {
         unreachable!()
     }
 
@@ -3892,27 +3388,15 @@ impl<B> BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static BigInt64Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(i64, i64) -> core::cmp::Ordering>>) -> &'static BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(i64, i64) -> core::cmp::Ordering + 'static) -> &'static BigInt64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(i64, i64) -> core::cmp::Ordering + 'static) -> &'static BigInt64Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static BigInt64Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(i64, i64) -> core::cmp::Ordering>>) -> &'static BigInt64Array {
         unreachable!()
     }
 
@@ -3928,57 +3412,33 @@ impl<B> BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static BigInt64Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static BigInt64Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static BigInt64Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static BigInt64Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static BigInt64Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static BigInt64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: i64) -> bool {
+    pub fn includes(&self, value: i64, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: i64) -> i32 {
+    pub fn index_of(&self, value: i64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: i64, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: i64) -> i32 {
+    pub fn last_index_of(&self, value: i64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -4108,9 +3568,9 @@ impl<B> BigInt64Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -4176,15 +3636,9 @@ pub mod big_int64_array {
         unreachable!()
     }
 
-    /// [`new BigInt64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): a view of all of `buffer`.
+    /// [`new BigInt64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new BigInt64Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static BigInt64Array<B> {
-        unreachable!()
-    }
-
-    /// [`new BigInt64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array/BigInt64Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new BigInt64Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static BigInt64Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static BigInt64Array<B> {
         unreachable!()
     }
 }
@@ -4245,33 +3699,21 @@ impl<B> BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.set(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from its start.
+    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`, its start where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set(&self, items: &[u64]) {
+    pub fn set(&self, items: &[u64], offset: Option<u32>) {
         unreachable!()
     }
 
-    /// [`array.set(items, offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set): `items` written from `offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set")]
-    pub fn set_with_offset(&self, items: &[u64], offset: u32) {
-        unreachable!()
-    }
-
-    /// [`array.fill(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): each element `value`; itself.
+    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`, each where they aren't given; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill(&self, value: u64) -> &'static BigUint64Array<B> {
+    pub fn fill(&self, value: u64, start: Option<i32>, end: Option<i32>) -> &'static BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.fill(value, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/fill): its elements from `start` to `end` `value`; itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "fill")]
-    pub fn fill_range(&self, value: u64, start: i32, end: i32) -> &'static BigUint64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.copyWithin(target, start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` copied to `target`; itself.
+    /// [`array.copyWithin(target, start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/copyWithin): its elements from `start` to `end`, its end where it isn't given, copied to `target`; itself.
     #[cfg_attr(rust_js, rust_js::link_name = "copyWithin")]
-    pub fn copy_within(&self, target: i32, start: i32) -> &'static BigUint64Array<B> {
+    pub fn copy_within(&self, target: i32, start: i32, end: Option<i32>) -> &'static BigUint64Array<B> {
         unreachable!()
     }
 
@@ -4281,27 +3723,15 @@ impl<B> BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place; itself.
+    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): its elements in order, in place, or in `compare`'s, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort(&self) -> &'static BigUint64Array<B> {
+    pub fn sort(&self, compare: Option<Box<dyn FnMut(u64, u64) -> core::cmp::Ordering>>) -> &'static BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.sort(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort): in `compare`'s order, `a.cmp(&b)` as Rust sorts, an `Ordering` JS reads as -1, 0 or 1 (ADR 0057); itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "sort")]
-    pub fn sort_by(&self, compare: impl FnMut(u64, u64) -> core::cmp::Ordering + 'static) -> &'static BigUint64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a copy in `compare`'s order.
+    /// [`array.toSorted(compare)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy, or one in `compare`'s order.
     #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted_by(&self, compare: impl FnMut(u64, u64) -> core::cmp::Ordering + 'static) -> &'static BigUint64Array {
-        unreachable!()
-    }
-
-    /// [`array.toSorted()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/toSorted): a sorted copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "toSorted")]
-    pub fn to_sorted(&self) -> &'static BigUint64Array {
+    pub fn to_sorted(&self, compare: Option<Box<dyn FnMut(u64, u64) -> core::cmp::Ordering>>) -> &'static BigUint64Array {
         unreachable!()
     }
 
@@ -4317,57 +3747,33 @@ impl<B> BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`.
+    /// [`array.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` to `end`, its start and its end where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice(&self, start: i32, end: i32) -> &'static BigUint64Array {
+    pub fn slice(&self, start: Option<i32>, end: Option<i32>) -> &'static BigUint64Array {
         unreachable!()
     }
 
-    /// [`array.slice(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn slice_to_end(&self, start: i32) -> &'static BigUint64Array {
-        unreachable!()
-    }
-
-    /// [`array.slice()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/slice): a copy.
-    #[cfg_attr(rust_js, rust_js::link_name = "slice")]
-    pub fn copy(&self) -> &'static BigUint64Array {
-        unreachable!()
-    }
-
-    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, sharing its buffer.
+    /// [`array.subarray(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` to `end`, its start and its end where they aren't given, sharing its buffer.
     #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray(&self, start: i32, end: i32) -> &'static BigUint64Array<B> {
+    pub fn subarray(&self, start: Option<i32>, end: Option<i32>) -> &'static BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.subarray(start)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/subarray): a view of its elements from `start` on.
-    #[cfg_attr(rust_js, rust_js::link_name = "subarray")]
-    pub fn subarray_to_end(&self, start: i32) -> &'static BigUint64Array<B> {
-        unreachable!()
-    }
-
-    /// [`array.includes(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too.
+    /// [`array.includes(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/includes): whether it has `value`, NaN too, from `from` on.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes(&self, value: u64) -> bool {
+    pub fn includes(&self, value: u64, from: Option<i32>) -> bool {
         unreachable!()
     }
 
-    /// [`array.indexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, or -1.
+    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value`, from `from` on, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of(&self, value: u64) -> i32 {
+    pub fn index_of(&self, value: u64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
-    /// [`array.indexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/indexOf): where it first has `value` from `from` on, or -1.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_from(&self, value: u64, from: i32) -> i32 {
-        unreachable!()
-    }
-
-    /// [`array.lastIndexOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, or -1.
+    /// [`array.lastIndexOf(value, from)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/lastIndexOf): where it last has `value`, up to `from`, or -1.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of(&self, value: u64) -> i32 {
+    pub fn last_index_of(&self, value: u64, from: Option<i32>) -> i32 {
         unreachable!()
     }
 
@@ -4497,9 +3903,9 @@ impl<B> BigUint64Array<B> {
         unreachable!()
     }
 
-    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between.
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/join): its elements as text, `separator` between, `,` where it isn't given.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    pub fn join(&self, separator: &str) -> String {
+    pub fn join(&self, separator: Option<&str>) -> String {
         unreachable!()
     }
 
@@ -4565,15 +3971,9 @@ pub mod big_uint64_array {
         unreachable!()
     }
 
-    /// [`new BigUint64Array(buffer)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): a view of all of `buffer`.
+    /// [`new BigUint64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): a view of `length` elements from `byte_offset`, all of `buffer` where they aren't given.
     #[cfg_attr(rust_js, rust_js::link_name = "new BigUint64Array")]
-    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static BigUint64Array<B> {
-        unreachable!()
-    }
-
-    /// [`new BigUint64Array(buffer, byteOffset, length)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array/BigUint64Array): a view of `length` elements from `byte_offset`.
-    #[cfg_attr(rust_js, rust_js::link_name = "new BigUint64Array")]
-    pub fn new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static BigUint64Array<B> {
+    pub fn new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static BigUint64Array<B> {
         unreachable!()
     }
 }

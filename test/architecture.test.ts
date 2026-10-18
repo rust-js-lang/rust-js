@@ -654,6 +654,96 @@ test("a binding's keyword name is its raw identifier", () => {
   expect(generators.filter((file) => /KEYWORDS|`r#\$\{|replace\(\/\(\[a-z0-9\]\)\(\[A-Z\]\)/.test(read(file)))).toEqual([]);
 });
 
+// A binding's optional argument is an `Option` of the one function that
+// binds its JS name (ADR 0443): no second binding of that name, in one impl
+// or module, whose parameters begin with another's and go on, as
+// `push_state` and `push_state_with_url` did, `slice` and `slice_to_end`.
+// What TypeScript declares apart, `drawImage(image, dx, dy)` and its
+// nine-argument signature, differs in a parameter, not only in more.
+type Binding = { file: string; line: number; name: string; link: string; scope: string; params: string[]; result: string };
+const parameters = (list: string) => {
+  const out: string[] = [];
+  let depth = 0, current = "", previous = "";
+  for (const c of list) {
+    if ("(<[{".includes(c)) depth++;
+    if (")]}".includes(c) || (c === ">" && previous !== "-")) depth--;
+    if (c === "," && depth === 0) {
+      out.push(current.trim());
+      current = "";
+    } else current += c;
+    previous = c;
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
+};
+const bindingsOf = (file: string, text: string): Binding[] => {
+  const lines = text.split("\n");
+  const found: Binding[] = [];
+  let scope = "";
+  for (let i = 0; i < lines.length; i++) {
+    const opened = lines[i].match(/^(\s*)(?:pub )?(?:mod|impl(?:<[^>]*>)?|trait) ([^{]*)\{/);
+    if (opened && !lines[i].includes("fn ")) scope = `${opened[1].length}:${opened[2].trim()}`;
+    const fn = lines[i].match(/^\s*(?:pub )?fn (\w+)/);
+    if (!fn) continue;
+    let link = "", cfg = "";
+    for (let j = i - 1; j >= 0 && /^\s*(\/\/|#\[)/.test(lines[j]); j--) {
+      link ||= lines[j].match(/link_name = "([^"]*)"/)?.[1] ?? "";
+      if (lines[j].includes("#[cfg(")) cfg += lines[j].trim();
+    }
+    if (!link) continue;
+    let signature = "";
+    for (let k = i; !signature.trimEnd().endsWith("{"); k++) signature += `${lines[k]}\n`;
+    const open = signature.indexOf("(", signature.indexOf("fn "));
+    let close = open;
+    for (let depth = 0; close < signature.length; close++) {
+      if (signature[close] === "(") depth++;
+      if (signature[close] === ")" && --depth === 0) break;
+    }
+    const result = signature.slice(close + 1).replace(/\{\s*$/, "").trim();
+    found.push({ file, line: i + 1, name: fn[1], link, scope: scope + cfg, params: parameters(signature.slice(open + 1, close)), result });
+  }
+  return found;
+};
+const secondForms = (bindings: Binding[]) =>
+  bindings.flatMap((longer) => bindings
+    .filter((shorter) => shorter !== longer && shorter.file === longer.file && shorter.link === longer.link && shorter.scope === longer.scope
+      && shorter.result === longer.result && shorter.params.length < longer.params.length
+      && shorter.params.every((param, i) => param === longer.params[i]))
+    .map((shorter) => `${longer.file}:${longer.line} \`${longer.name}\` is \`${shorter.name}\` with more: give \`${shorter.name}\` each as an \`Option\``));
+
+test("a binding's optional argument is an Option of its one function", () => {
+  const crates = ["builtins/src", "webapi/src", "react/src", "node/src", "next/src"].flatMap(files).filter((f) => f.endsWith(".rs"));
+  const bindings = crates.flatMap((file) => bindingsOf(file, read(file)));
+  expect(bindings.length).toBeGreaterThan(5000);
+  expect(secondForms(bindings)).toEqual([]);
+  // The rule finds one, and leaves a signature TypeScript declares apart.
+  const planted = `impl History {
+    #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
+    pub fn push_state(&self, data: D, unused: &str) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
+    pub fn push_state_with_url(&self, data: D, unused: &str, url: &str) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    pub fn draw_image(&self, image: &Image, dx: f64, dy: f64) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    pub fn draw_image_with_sw(&self, image: &Image, sx: f64, sy: f64, sw: f64) {
+        unreachable!()
+    }
+}
+`;
+  expect(secondForms(bindingsOf("planted.rs", planted))).toEqual([
+    "planted.rs:8 `push_state_with_url` is `push_state` with more: give `push_state` each as an `Option`",
+  ]);
+});
+
 test("only recognition spells std's names", () => {
   const strays: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => !f.includes("/recognition") && !f.endsWith("/shortcuts.rs"))) {

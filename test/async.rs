@@ -130,7 +130,7 @@ pub async fn load_bytes(url: &str) -> (u32, u32, u32) {
     let copy = response.clone();
     let bytes = response.bytes().await;
     let buffer = copy.array_buffer().await;
-    let view = uint8_array::new_with_buffer(buffer);
+    let view = uint8_array::new_with_buffer(buffer, None, None);
     (bytes.length(), buffer.byte_length(), view.length())
 }
 
