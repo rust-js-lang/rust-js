@@ -577,10 +577,10 @@ test("typed arrays and their buffers are JS's", async () => {
 pub fn floats() -> (f64, Option<f64>, u32, String) {
     let a = float64_array::from(&[1.5, -2.0, 3.25]);
     a.set_index(1, 4.0);
-    let doubled = a.map(|x| x * 2.0);
+    let doubled = a.map(|x, _| x * 2.0);
     let sorted = a.to_sorted(Some(Box::new(|x, y| y.partial_cmp(&x).unwrap())));
-    let shifted = sorted.map_with_index(|x, i| x + i as f64);
-    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice(Some(1), None).join(Some("|")))
+    let shifted = sorted.map(|x, i| x + i as f64);
+    (doubled.reduce(|sum, x, _| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice(Some(1), None).join(Some("|")))
 }
 pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let buffer = array_buffer::new(8);
@@ -592,12 +592,17 @@ pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
 }
 pub fn bigs() -> (i64, bool) {
     let a = big_int64_array::from(&[1, -2, 3]);
-    (a.reduce(|sum, x| sum + x, 0), a.includes(-2, None))
+    (a.reduce(|sum, x, _| sum + x, 0), a.includes(-2, None))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const a = Float64Array.from([1.5, -2, 3.25]);\n  a[1] = 4;");
+  // One callback form, given the index (ADR 0443): a `_` it doesn't read is
+  // left out, as JS's callback leaves it.
+  expect(js).toContain("const doubled = a.map((x) => x * 2);");
+  expect(js).toContain("const shifted = sorted.map((x, i) => x + i);");
+  expect(js).toContain("doubled.reduce((sum, x) => sum + x, 0)");
   expect(js).toContain("const signed = Int8Array.of(1, -1, 127);");
   expect(js).toContain("view.setInt16(0, -2, true);");
   const lib = await import(join(dir, "lib.js"));

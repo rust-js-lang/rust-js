@@ -832,7 +832,11 @@ pub struct ListProps<C: ReactNode> {
 }
 pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let mut kept: Vec<Child<'static>> = Vec::new();
-    children::for_each(&children, |child| kept.push(child));
+    children::for_each(&children, |child, _| {
+        if let Some(child) = child {
+            kept.push(child);
+        }
+    });
     let kept: &'static [Child<'static>] = Vec::leak(kept);
     let refs = use_ref(kept.iter().map(|_| create_ref::<&HTMLButtonElement>()).collect::<Vec<_>>());
     jsx! {
@@ -846,7 +850,7 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("Children.forEach(children, (child) => {\n    kept.push(child);\n  });");
+  expect(jsx).toContain("Children.forEach(children, (child) => {\n    if (child != null) {\n      kept.push(child);\n    }\n  });");
   expect(jsx).toContain("createRef()");
   const { List } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
@@ -885,7 +889,7 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
 });
 
 // Each child with its index, `Children.forEach(children, (child, i) => ..)`,
-// as ReScript's `forEachWithIndex`, `None` of an empty one, `null`, which
+// `None` of an empty one, `null`, which
 // `forEach` gives where `toArray` leaves it out: react.dev's MDX keys its
 // wrappers so, and skips what's empty.
 test("children given with their index by Children.forEach", async () => {
@@ -897,7 +901,7 @@ pub struct ListProps<C: ReactNode> {
 }
 pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let mut keys: Vec<String> = Vec::new();
-    children::for_each_with_index(&children, |child, i| {
+    children::for_each(&children, |child, i| {
         // A child, never \`undefined\`, as a JS value of any shape.
         let typed = child.is_some_and(|child| react::js::get(react::js::unknown_of(child), "type").is_some());
         keys.push(format!("{}{i}{}", if child.is_some() { "k" } else { "n" }, if typed { "e" } else { "" }));
@@ -6537,7 +6541,10 @@ pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
     let mut hints = 0;
     let mut solutions = Vec::new();
     let mut content = Vec::new();
-    children::for_each(&children, |child| {
+    children::for_each(&children, |child, _| {
+        let Some(child) = child else {
+            return;
+        };
         let Child::Element(element) = child else {
             content.push(child);
             return;

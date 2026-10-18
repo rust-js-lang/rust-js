@@ -317,6 +317,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A callback is given the index, one function for each JS method**: a typed
+  array's `map(|x, i| ..)`, `filter`, `find`, `for_each`, `every`, `some` and
+  `reduce`, and React's `Children::for_each(children, |child, i| ..)`, each
+  as TypeScript declares it; `a.map(|x, _| x * 2)` is `a.map((x) => x * 2)`.
+  The `_with_index` forms are gone (ADR 0443).
 - **A binding's optional parameter is an `Option`**, one Rust function for
   each JS one, as TypeScript declares it: `history.push_state(data, "",
   None)` is `history.pushState(data, "")`, and `push_state_with_url`, like each
@@ -370,6 +375,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A `let .. else` is a guard first**, `if (!isValidElement(child)) { ..;
+  return; }`, after another one too, or where its `else` does more than
+  return (ADR 0432).
 - **A zero divisor panics before what's evaluated after the check**:
   `v[f()] = a % b` checked `b` only once it divided, after `f()` ran, which
   native Rust doesn't run (ADR 0372; a generated program, seed 12445863).

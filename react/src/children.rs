@@ -45,21 +45,13 @@ pub fn to_array<C: ReactNode + ?Sized>(children: &C) -> Vec<Child<'_>> {
 }
 
 /// [`Children.forEach(children, f)`](https://react.dev/reference/react/Children#children-foreach):
-/// `f` of each child, as [`to_array`] has them. Each is a JS value, kept as
-/// long as it's held, as react.dev's Challenges keeps them.
+/// `f` of each child and its index, `(child, index)`, `|child, _|` where it
+/// reads none; react.dev's MDX keys a wrapper by it. Each is a JS value,
+/// kept as long as it's held, as react.dev's Challenges keeps them. An
+/// empty child, `null`, `undefined` or a boolean, is `None`: `forEach`
+/// gives it where [`to_array`] leaves it out.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
 #[allow(unused_variables)]
-pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Child<'static>)) {
-    unreachable!()
-}
-
-/// [`Children.forEach(children, f)`](https://react.dev/reference/react/Children#children-foreach)
-/// of `f` given each child's index too, `(child, index)`, as ReScript's
-/// `forEachWithIndex`: react.dev's MDX keys a wrapper by it. An empty
-/// child, `null`, `undefined` or a boolean, is `None`: `forEach` gives it
-/// where [`to_array`] leaves it out.
-#[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
-#[allow(unused_variables)]
-pub fn for_each_with_index<C: ReactNode>(children: &C, f: impl FnMut(Option<Child<'static>>, u32)) {
+pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Option<Child<'static>>, u32)) {
     unreachable!()
 }

@@ -120,14 +120,19 @@ canvas.toDataURL();
   declared `?`; a lowering test holds a binding's trailing `None` left out,
   and `Math.max(1, undefined)`'s kept.
 
-### Not decided here
+### A callback given more than it reads
 
-- **A callback JS calls with more arguments than it needs**, `map`'s
-  `(value, index, array)`: there JS decides what's given and the Rust
-  closure what it takes, so it isn't an optional parameter of ours. The
-  js crate's `map` and `map_with_index`, `filter_with_index` and the like
-  are a decision of their own; Rust's `iter().enumerate()` is a candidate
-  for it.
+JS calls `map`'s callback with `(value, index, array)`, and a JS callback
+takes what it reads; a Rust closure's arguments are its type's, so the
+js crate had two functions for one JS method, `map(|x| ..)` and
+`map_with_index(|x, i| ..)`. Decided with the user: **one function, its
+closure given the index, as TypeScript declares it, `(value, index) =>
+..`**: `a.map(|x, _| x * 2)`, `a.reduce(|sum, x, _| sum + x, 0)`. The JS
+leaves out a trailing `_` it doesn't read, `a.map((x) => x * 2)`, as a
+person writes it. `_with_index` forms are gone: the typed arrays',
+React's `Children.for_each`, whose child is an `Option`, `None` of an
+empty one, as `forEach` gives it (the form without the index said it
+never was). The array argument, which no binding reads, isn't given.
 
 ## Why
 
