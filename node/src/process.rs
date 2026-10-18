@@ -803,12 +803,6 @@ impl ProcessReport {
     pub fn write_report(&self, file_name: Option<&str>, err: Option<&JsError>) -> String {
         unreachable!()
     }
-
-    /// `writeReport(err)`: write a report of `err`'s stack.
-    #[cfg_attr(rust_js, rust_js::link_name = "writeReport")]
-    pub fn write_report_with_err(&self, err: &JsError) -> String {
-        unreachable!()
-    }
 }
 
 /// An OS [`platform`] Node is built for.

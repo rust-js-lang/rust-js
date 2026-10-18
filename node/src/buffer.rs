@@ -276,12 +276,6 @@ impl Buffer {
         unreachable!()
     }
 
-    /// `buf.indexOf(value, encoding)`: a text `value` read as `encoding`.
-    #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    pub fn index_of_with_encoding(&self, value: impl IntoBufferFill, encoding: BufferEncoding) -> i32 {
-        unreachable!()
-    }
-
     /// [`buf.lastIndexOf(value, byteOffset, encoding)`](https://nodejs.org/api/buffer.html#buflastindexofvalue-byteoffset-encoding):
     /// where `value`'s bytes last are, up to `byte_offset`, or -1; a text
     /// one's read as `encoding`.
@@ -290,23 +284,11 @@ impl Buffer {
         unreachable!()
     }
 
-    /// `buf.lastIndexOf(value, encoding)`: a text `value` read as `encoding`.
-    #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    pub fn last_index_of_with_encoding(&self, value: impl IntoBufferFill, encoding: BufferEncoding) -> i32 {
-        unreachable!()
-    }
-
     /// [`buf.includes(value, byteOffset, encoding)`](https://nodejs.org/api/buffer.html#bufincludesvalue-byteoffset-encoding):
     /// whether `value`'s bytes are in it, from `byte_offset`; a text one's
     /// read as `encoding`.
     #[cfg_attr(rust_js, rust_js::link_name = "includes")]
     pub fn includes(&self, value: impl IntoBufferFill, byte_offset: Option<i32>, encoding: Option<BufferEncoding>) -> bool {
-        unreachable!()
-    }
-
-    /// `buf.includes(value, encoding)`: a text `value` read as `encoding`.
-    #[cfg_attr(rust_js, rust_js::link_name = "includes")]
-    pub fn includes_with_encoding(&self, value: impl IntoBufferFill, encoding: BufferEncoding) -> bool {
         unreachable!()
     }
 
