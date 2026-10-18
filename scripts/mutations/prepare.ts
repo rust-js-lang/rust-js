@@ -394,15 +394,6 @@ export const mutations: Mutation[] = [
     "snapshots": true
   },
   {
-    name: "lets-kept",
-    breaks: "`let list = []` that nothing sets again stays a `let`",
-    file: "src/prepare.rs",
-    find: "    js::constants(&mut function.body);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
-    snapshots: true,
-  },
-  {
     name: "trailing-return-written",
     breaks: "a function's last `return;` is written, where it falls off its end",
     file: "src/prepare.rs",

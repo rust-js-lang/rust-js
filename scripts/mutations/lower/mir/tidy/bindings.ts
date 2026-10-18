@@ -316,4 +316,13 @@ export const mutations: Mutation[] = [
     replace: "                let kept = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^alias_reads.rs$"],
   },
+  {
+    name: "lets-kept",
+    breaks: "`let list = []` that nothing sets again stays a `let`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "    js::constants(body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
+    snapshots: true,
+  },
 ];

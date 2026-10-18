@@ -137,7 +137,6 @@ fn prepared(function: &mut js::Function) {
             shadows(body, Some(&own));
         }
     });
-    js::constants(&mut function.body);
     tested_constants(&mut function.body);
     unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
