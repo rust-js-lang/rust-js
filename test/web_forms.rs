@@ -5,39 +5,39 @@ use js::uint8_array;
 use webapi::{Event, EventTargetExt, event, html_input_element, node, text_decoder, text_encoder, document, window};
 
 pub fn forms() -> String {
-    let input = html_input_element::unchecked_from(document.create_element_named("input"));
+    let input = html_input_element::unchecked_from(document.create_element_named("input", None));
     input.set_value("typed");
     let app = document.get_element_by_id("app").expect("the page has an #app");
     app.append(input);
     app.append("!");
-    let ping: &Event = event::new("ping");
+    let ping: &Event = event::new("ping", None);
     app.add_event_listener_named("ping", |e| e.prevent_default());
     let _ = window.dispatch_event(ping);
     app.text_content().unwrap() + &input.value()
 }
 
-/// Optional arguments give more forms: `encode_with_input(e, text)` is
-/// `e.encode(text)`, and a union takes its member as it is (ADR 0229):
-/// `decode_with_input(d, bytes)` is `d.decode(bytes)`.
+/// An optional argument is an `Option`, a trailing `None` no argument (ADR
+/// 0443): `encode(Some(text))` is `e.encode(text)`, and a union takes its
+/// member as it is (ADR 0229): `decode(Some(&bytes), None)` is `d.decode(bytes)`.
 pub fn round_trip(text: &str) -> (u32, String) {
-    let bytes = text_encoder::new().encode_with_input(text);
-    let back = text_decoder::new_with_label("utf-8").decode_with_input(bytes);
+    let bytes = text_encoder::new().encode(Some(text));
+    let back = text_decoder::new(Some("utf-8"), None).decode(Some(&bytes), None);
     (bytes.length(), back)
 }
 
 /// A `BodyInit` of a `Blob`, and a `RequestInfo` of a URL: each the value
 /// itself, as TypeScript's union takes it.
 pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static webapi::Response>) {
-    let blob = webapi::blob::new();
-    let response = webapi::response::new_with_body(blob);
-    (response, window.fetch(url))
+    let blob = webapi::blob::new(None, None);
+    let response = webapi::response::new(Some(&blob), None);
+    (response, window.fetch(url, None))
 }
 
 /// A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
 /// `BlobPart`, and the clipboard written a list of items, each `new
 /// Blob([text, "!"])` and `navigator.clipboard.write(items)`.
 pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi::Blob, js::Promise<()>) {
-    let blob = webapi::blob::new_with_blob_parts(&[text.into(), "!".into()]);
+    let blob = webapi::blob::new(Some(&[text.into(), "!".into()]), None);
     (blob, webapi::navigator.clipboard().write(items))
 }
 
@@ -52,7 +52,7 @@ pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
 /// A canvas, which a library like canvas-confetti draws on: its size, set
 /// and read, `canvas.width = 320`.
 pub fn canvas_size() -> (u32, u32) {
-    let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas"));
+    let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas", None));
     canvas.set_width(320);
     canvas.set_height(200);
     (canvas.width(), canvas.height())
@@ -95,7 +95,7 @@ pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
 
 /// A constructor of a class from a spec the crate didn't read before.
 pub fn socket(url: &str) -> &'static webapi::WebSocket {
-    webapi::web_socket::new(url)
+    webapi::web_socket::new(url, None)
 }
 
 /// A CSS property of an element's style, by its own name, as TypeScript has
@@ -140,7 +140,7 @@ pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f3
     let data = buffer.get_channel_data(0);
     let point = svg.create_svg_point();
     point.set_x(2.0);
-    let face = webapi::font_face::new("Mono", js::uint8_array::new(4));
+    let face = webapi::font_face::new("Mono", js::uint8_array::new(4), None);
     (data.get(0).unwrap_or(0.0), point.x(), face)
 }
 
@@ -153,7 +153,7 @@ pub fn texts(url: &webapi::URL, list: &webapi::DOMTokenList) -> (String, String)
 /// A static attribute, read at each call, and a static method an instance's
 /// has the name of, each its class's: `Notification.permission`, `Response.json`.
 pub fn statics_read() -> (String, &'static webapi::Response) {
-    (webapi::notification::permission(), webapi::response::json(vec![1, 2]))
+    (webapi::notification::permission(), webapi::response::json(vec![1, 2], None))
 }
 
 /// `onerror`'s closure is given an error's event, or on a window its

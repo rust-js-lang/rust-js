@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "        if callee.is_some() {\n",
     tests: binding,
   },
+  {
+    name: "js-read-made-parts-unseen",
+    breaks: "a struct given a binding in what's made of it, `Some(&options)`, has its fields said never read, as its value's type is coerced, an `Option<&dyn Any>`",
+    file: "src/lower/liveness.rs",
+    find: "        for part in parts {\n            self.gather(results, part);\n",
+    replace: "        for part in parts {\n            let _ = part;\n",
+    tests: binding,
+  },
 ];

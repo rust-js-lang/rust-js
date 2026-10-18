@@ -72,7 +72,7 @@ pub fn aborted(button: &HTMLButtonElement) {
             ..Default::default()
         },
     );
-    controller.abort();
+    controller.abort(None);
 }
 
 pub fn capture(button: &HTMLButtonElement) {

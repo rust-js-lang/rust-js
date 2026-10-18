@@ -67,10 +67,10 @@ pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
     let circle = document.create_element_ns(Svg, Circle);
     circle.set_attribute("r", "4");
     svg.append(circle);
-    (svg, circle, circle.is_point_in_fill())
+    (svg, circle, circle.is_point_in_fill(None))
 }
 pub fn named() -> &'static webapi::Element {
-    document.create_element_ns_named("http://www.w3.org/2000/svg", "g")
+    document.create_element_ns_named("http://www.w3.org/2000/svg", "g", None)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -159,7 +159,7 @@ pub fn count<'a>(values: impl IntoFloat32List + 'a) -> u32 {
 
 pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
     el.before("text");
-    (response::new_with_body(blob), window.fetch(url))
+    (response::new(Some(&blob), None), window.fetch(url, None))
 }
 `;
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
@@ -202,15 +202,15 @@ test("a binding's callback parameter is a closure", async () => {
   writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, window};
 
 pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static IntersectionObserver {
-    let observer = intersection_observer::new_with_options(
+    let observer = intersection_observer::new(
         Box::new(move |entries, _| {
             entries.iter().for_each(|entry| seen(entry.is_intersecting()));
         }),
-        IntersectionObserverInit {
+        Some(IntersectionObserverInit {
             root_margin: Some("0px 0px"),
             threshold: Some(0.0.into()),
             ..Default::default()
-        },
+        }),
     );
     observer.observe(target);
     observer
@@ -258,7 +258,7 @@ test("the global scope's functions are called bare", async () => {
 use webapi::{Response, global};
 
 pub fn codes(url: &str) -> Promise<&'static Response> {
-    global::fetch(url)
+    global::fetch(url, None)
 }
 
 pub fn later(then: &'static dyn Fn()) {
@@ -1204,7 +1204,7 @@ use node::webapi;
 
 pub fn all() -> Vec<String> {
     let file = url::path_to_file_url("/tmp/a b.txt");
-    let link = webapi::url::new("https://user:pw@example.com/p?q=1#top");
+    let link = webapi::url::new("https://user:pw@example.com/p?q=1#top", None);
     let params: &URLSearchParams = link.search_params();
     vec![
         file.href(),
@@ -1508,7 +1508,7 @@ pub struct Saved {
 // Its fields are numbers, which the browser copies.
 unsafe impl StructuredClone for Saved {}
 pub fn save(page: u32) {
-    window.history().push_state(Saved { page }, "");
+    window.history().push_state(Saved { page }, "", None);
 }
 pub fn copy(text: &str) -> Option<&'static js::Unknown> {
     window.structured_clone(text)
@@ -1517,7 +1517,7 @@ pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
     window.structured_clone((vec![Some(1.5), None], "a", blob))
 }
 pub fn send(text: String) {
-    window.post_message(Some(text), "*");
+    window.post_message(Some(text), "*", None);
 }
 pub fn report(error: &js::JsError) {
     window.report_error(error);
@@ -1709,11 +1709,11 @@ test("a window's own functions are called bare", async () => {
   writeFileSync(join(dir, "lib.rs"), `use webapi::{window, window_global};
 
 pub fn cleared() -> bool {
-    window_global::confirm_with_message("Clear all your edits?")
+    window_global::confirm(Some("Clear all your edits?"))
 }
 
 pub fn asked() -> bool {
-    window.confirm_with_message("Sure?")
+    window.confirm(Some("Sure?"))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);

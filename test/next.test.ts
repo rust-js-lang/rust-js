@@ -474,7 +474,7 @@ use react::webapi::{Response, url};
 
 // /old is /about, the browser's URL kept.
 pub fn proxy(request: &'static NextRequest) -> NextMiddlewareResult {
-    let about = url::new_with_base("/about", &request.url());
+    let about = url::new("/about", Some(&request.url()));
     let response: &Response = next_response::rewrite(about);
     Some(response)
 }

@@ -30,7 +30,7 @@ fn use_filter() -> Filter {
                 ..Default::default()
             };
             window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
-            move || controller.abort()
+            move || controller.abort(None)
         },
         (),
     );

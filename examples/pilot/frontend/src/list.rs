@@ -32,7 +32,7 @@ pub fn ContactList() -> JSX::Element {
                     Err(failure) => set_loaded.set(Loaded::Failed(failure.message())),
                 }
             }));
-            move || controller.abort()
+            move || controller.abort(None)
         },
         (query, attempt),
     );

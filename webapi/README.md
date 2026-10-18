@@ -35,20 +35,22 @@ app.append(b);                            // app.append(b)
   name they don't know is `add_event_listener_named`'s, or
   `create_element_named`'s.
 - `unchecked_from` is a cast:
-  `html_input_element::unchecked_from(document.create_element_named("input"))`.
+  `html_input_element::unchecked_from(document.create_element_named("input", None))`.
 - A result that may be `null` is an `Option`:
   `document.get_element_by_id("app").expect("the page has an #app")`.
-- A promise is a `Promise<T>`, the js crate's, to `.await`: `window.fetch(url).await`
+- A promise is a `Promise<T>`, the js crate's, to `.await`: `window.fetch(url, None).await`
   ([ADR 0029](../docs/decisions/0029-async-await.md)). `js::settle(p).await` is a `Result`.
 - Binary data is JS's `ArrayBuffer` and `Uint8Array`, the js crate's: `r.bytes().await`.
 - A union parameter takes each member as it is, `impl IntoNodeOrStr`, and a union's value is
   an untagged enum, the member itself ([ADR 0215](../docs/decisions/0215-webapi-unions.md),
   [ADR 0229](../docs/decisions/0229-union-parameters.md)): `el.before("text")` is JS's `el.before("text")`, and
-  `response::new_with_body(blob)` is `new Response(blob)`. An optional argument adds a form:
-  `window.fetch_with_init(url, init)`, `e.encode_with_input("hi")`.
+  `response::new(Some(&blob), None)` is `new Response(blob)`. An optional argument is an
+  `Option`, a union's borrowed, `Some(&value)`, and a trailing `None` is no argument
+  ([ADR 0443](../docs/decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)):
+  `window.fetch(url, Some(init))`, `e.encode(Some("hi"))`, `window.fetch(url, None)` is `window.fetch(url)`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
   `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
-- A constructor is `new`, `event::new("ping")`, and `request::new(url)`.
+- A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`.
 - A namespace is a module: `web_assembly::compile(bytes).await` is
   `await WebAssembly.compile(bytes)`. An `object` parameter takes any Rust value
   as `&dyn Any`, such as a struct for an import object.

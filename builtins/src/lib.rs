@@ -360,6 +360,13 @@ pub fn set<T>(this: &Unknown, key: &str, to: T) {
 /// implement, as its `impl` vouches they are, `unsafe impl StructuredClone for Saved {}`.
 pub unsafe trait StructuredClone {}
 
+/// Any value, as TypeScript's `unknown` and `any` take one: what an optional
+/// argument of `any` is given by reference, `Option<&dyn IntoUnknown>`, so a
+/// `None` needs no type, and a `Some(&value)` is given to JS as it is (ADR
+/// 0443).
+pub trait IntoUnknown {}
+impl<T: ?Sized> IntoUnknown for T {}
+
 /// A value that's never `undefined` nor `null` in JS, as `None` is: an
 /// `Option` of one is the value or `undefined`, not a box (ADR 0051), so
 /// one a clone copies as it is.

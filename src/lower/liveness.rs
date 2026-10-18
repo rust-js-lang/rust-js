@@ -97,9 +97,36 @@ impl<'tcx> Visitor<'tcx> for Given<'tcx> {
         };
         if callee.is_some_and(|callee| super::bindings::is_binding(self.tcx, callee)) {
             for arg in args {
-                self.structs.extend(local_structs(results.expr_ty(arg)));
+                self.gather(results, arg);
             }
         }
         intravisit::walk_expr(self, expr);
     }
+}
+
+impl<'tcx> Given<'tcx> {
+    /// The structs in `value`, given a binding, and in what it's made of,
+    /// each part's type before it's coerced: `&imports` of `Some(&imports)`,
+    /// an `Option<&dyn Any>`.
+    fn gather(&mut self, results: &'tcx ty::TypeckResults<'tcx>, value: &'tcx hir::Expr<'tcx>) {
+        self.structs.extend(local_structs(results.expr_ty(value)));
+        let parts: Vec<&hir::Expr<'_>> = match value.kind {
+            hir::ExprKind::Call(callee, args) if is_constructor(results, callee) => args.iter().collect(),
+            hir::ExprKind::AddrOf(_, _, inner) => vec![inner],
+            hir::ExprKind::Tup(parts) | hir::ExprKind::Array(parts) => parts.iter().collect(),
+            hir::ExprKind::Struct(_, fields, _) => fields.iter().map(|field| field.expr).collect(),
+            _ => Vec::new(),
+        };
+        for part in parts {
+            self.gather(results, part);
+        }
+    }
+}
+
+/// Whether `callee` is a variant's or a tuple struct's constructor, `Some`.
+fn is_constructor(results: &ty::TypeckResults<'_>, callee: &hir::Expr<'_>) -> bool {
+    matches!(
+        callee.kind,
+        hir::ExprKind::Path(ref path) if matches!(results.qpath_res(path, callee.hir_id), hir::def::Res::Def(hir::def::DefKind::Ctor(..), _))
+    )
 }

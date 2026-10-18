@@ -29,7 +29,7 @@ impl Failure {
 /// not. A rejection, a network error or an abort, is an `Err` (`settle`).
 async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failure> {
     let signal = init.signal;
-    let response = match settle(window.fetch_with_init(url, init)).await {
+    let response = match settle(window.fetch(url, Some(init))).await {
         Ok(response) => response,
         Err(_) if signal.is_some_and(AbortSignal::aborted) => return Err(Failure::Aborted),
         Err(_) => return Err(Failure::Network),
@@ -71,7 +71,7 @@ pub async fn contact(id: u32, signal: &AbortSignal) -> Result<Contact, Failure> 
 
 /// `new`, stored: the contact the server made of it.
 pub async fn create(new: &NewContact) -> Result<Contact, Failure> {
-    let json = headers::new();
+    let json = headers::new(None);
     json.set("content-type", "application/json");
     let body = serde_json::to_string(new).expect("JSON of a model");
     let init = RequestInit {

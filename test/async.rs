@@ -98,7 +98,7 @@ pub fn started() -> Rc<RefCell<Vec<u32>>> {
 
 /// `fetch`, from the webapi crate: its promises, awaited one after the other.
 pub async fn load(url: &str) -> (u16, bool, String) {
-    let response = window.fetch(url).await;
+    let response = window.fetch(url, None).await;
     let body = response.text().await;
     (response.status(), response.ok(), body)
 }
@@ -107,7 +107,7 @@ pub async fn load(url: &str) -> (u16, bool, String) {
 /// rest `..Default::default()`, which JS reads as not given.
 pub async fn post(url: &str, body: &str) -> String {
     let init = RequestInit { method: Some("POST"), body: Some(body.into()), ..Default::default() };
-    window.fetch_with_init(url, init).await.text().await
+    window.fetch(url, Some(init)).await.text().await
 }
 
 /// A listener that goes when its signal aborts: `addEventListener`'s options.
@@ -118,15 +118,15 @@ pub fn listen_until_aborted() -> u32 {
     let counted = Rc::clone(&count);
     let options = AddEventListenerOptions { signal: Some(controller.signal()), ..Default::default() };
     target.add_event_listener_named_with_options("ping", move |_| *counted.borrow_mut() += 1, options);
-    let _ = target.dispatch_event(event::new("ping"));
-    controller.abort();
-    let _ = target.dispatch_event(event::new("ping"));
+    let _ = target.dispatch_event(event::new("ping", None));
+    controller.abort(None);
+    let _ = target.dispatch_event(event::new("ping", None));
     *count.borrow()
 }
 
 /// Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer.
 pub async fn load_bytes(url: &str) -> (u32, u32, u32) {
-    let response = window.fetch(url).await;
+    let response = window.fetch(url, None).await;
     let copy = response.clone();
     let bytes = response.bytes().await;
     let buffer = copy.array_buffer().await;
@@ -155,15 +155,15 @@ fn wasm_add(this: &JsObject, a: i32, b: i32) -> i32 {
 /// WebAssembly: compile a module, instantiate it with imports from Rust
 /// (a struct, which is a JS object), and call its export, which calls back.
 pub async fn run_wasm(bytes: &Uint8Array, a: i32, b: i32) -> i32 {
-    let module = web_assembly::compile(bytes).await;
+    let module = web_assembly::compile(bytes, None).await;
     let imports = Imports { env: Env { double: Box::new(|x| x * 2) } };
-    let instance = web_assembly::instantiate_with_web_assembly_module_and_import_object(module, &imports).await;
+    let instance = web_assembly::instantiate_with_web_assembly_module(module, Some(&imports)).await;
     wasm_add(instance.exports(), a, b)
 }
 
 /// The other `instantiate`: from bytes, to a `{ module, instance }` dictionary.
 pub async fn instantiate_bytes(bytes: &Uint8Array) -> bool {
     let imports = Imports { env: Env { double: Box::new(|x| x) } };
-    let source = web_assembly::instantiate_with_import_object(bytes.buffer(), &imports).await;
-    web_assembly::validate(bytes) && wasm_add(source.instance.exports(), 1, 2) == 3
+    let source = web_assembly::instantiate(bytes.buffer(), Some(&imports), None).await;
+    web_assembly::validate(bytes, None) && wasm_add(source.instance.exports(), 1, 2) == 3
 }

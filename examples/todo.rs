@@ -40,7 +40,7 @@ struct View {
 /// An element by its tag's name: `create_element(document, Button)` is one by
 /// its tag's type, `HTMLButtonElement` (ADR 0223).
 fn create(tag: &str) -> &'static Element {
-    document.create_element_named(tag)
+    document.create_element_named(tag, None)
 }
 
 fn text(tag: &str, s: &str) -> &'static Element {
@@ -91,7 +91,7 @@ fn item(state: &Shared, view: View, todo: &Todo) -> &'static Element {
 
     let title = html_element::unchecked_from(text("span", &todo.title));
     if todo.done {
-        title.style().set_property("text-decoration", "line-through");
+        title.style().set_property("text-decoration", "line-through", None);
     }
 
     let delete = text("button", "×");
@@ -183,7 +183,7 @@ mod tests {
         let field = input(app);
         field.set_value(title);
         let init = KeyboardEventInit { key: Some(key), ..Default::default() };
-        field.dispatch_event(keyboard_event::new_with_event_init_dict("keydown", init));
+        field.dispatch_event(keyboard_event::new("keydown", Some(init)));
     }
 
     fn titles(app: &Element) -> Vec<String> {

@@ -115,7 +115,7 @@ pub fn values() -> (Vec<String>, Vec<f64>, Vec<bool>) {
     // As \`.map\`'s own argument, \`parseInt\` would be given each index too.
     let numbers = vec!["10", "10", "10"].into_iter().map(parse_int).collect();
     let controller = abort_controller::new();
-    controller.abort();
+    controller.abort(None);
     let signals = vec![controller.signal(), abort_controller::new().signal()];
     let aborted = signals.into_iter().map(AbortSignal::aborted).collect();
     (encoded, numbers, aborted)
@@ -6879,7 +6879,8 @@ pub fn NotComponent() -> u32 { 1 }
 // ADR 0440: a binding's body never runs, so its parameters are unread,
 // which rust-js allows; two modules' bindings of one JS name, each of its
 // own Rust type, are no clash rustc flags; and a struct given a binding,
-// here as a `&dyn Any`, has its fields read by JS, a struct in it too.
+// here as a `&dyn Any`, has its fields read by JS, a struct in it too, and
+// one given in what's made of it, `Some(&..)` (ADR 0443).
 // Another function's unread parameter, and a struct JS isn't given, are
 // still flagged.
 test("a binding needs no allow", () => {
@@ -6904,11 +6905,14 @@ struct Inner { depth: u32 }
 struct Kept { unread: u32 }
 #[cfg_attr(rust_js, rust_js::link_name = "configure")]
 fn configure(options: &dyn std::any::Any) -> u32 { unreachable!() }
+struct Maybe { given: u32 }
+#[cfg_attr(rust_js, rust_js::link_name = "configure")]
+fn configure_maybe(options: Option<&dyn std::any::Any>) -> u32 { unreachable!() }
 fn keep(_: &Kept) -> u32 { 0 }
 const fn sized<const N: u32>() -> u32 { N }
 pub fn configured() -> u32 {
     // A body in a body, a block given as a const argument, its own owner.
-    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } }) + sized::<{ sized::<1>() }>()
+    keep(&Kept { unread: 1 }) + configure(&Options { readonly: true, inner: Inner { depth: 2 } }) + configure_maybe(Some(&Maybe { given: 3 })) + sized::<{ sized::<1>() }>()
 }
 `);
   const built = Bun.spawnSync(args, { cwd: dir });

@@ -12,7 +12,7 @@ const URL: &str = "data:text/plain,Hello from a fetch!";
 
 async fn load(url: &str, output: &'static Element) {
     output.set_text_content("Loading…");
-    let response = window.fetch(url).await;
+    let response = window.fetch(url, None).await;
     let text = response.text().await;
     let status = response.status().to_string();
     output.set_text_content(&(status + " " + &text));

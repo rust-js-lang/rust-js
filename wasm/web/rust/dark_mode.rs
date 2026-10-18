@@ -20,7 +20,7 @@ pub fn use_dark_mode() -> bool {
                 Box::new(move |_| notify.call()),
                 controller,
             );
-            move || controller.abort()
+            move || controller.abort(None)
         },
         || DARK.with(|dark| *dark).matches(),
     )

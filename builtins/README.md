@@ -14,7 +14,7 @@ use js::{decode_uri_component, encode_uri_component, settle, spawn};
 let query = encode_uri_component("a b&c");             // encodeURIComponent("a b&c")
 let text = decode_uri_component("%E0%A4%A");           // Err: a URIError
 spawn(Box::new(async move {                            // runs, unawaited
-    match settle(webapi::window.fetch(&url)).await {
+    match settle(webapi::window.fetch(&url, None)).await {
         Ok(response) => { .. }                         // what fetch fulfils with
         Err(error) => { .. }                           // a network error: not a throw
     }

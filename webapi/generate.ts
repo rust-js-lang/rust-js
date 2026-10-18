@@ -785,28 +785,18 @@ function functionsOf(i: Interface): Fn[] {
     return { names, types };
   };
 
-  // Each optional argument, in order, gives one more form, after the
-  // required ones, named after it: `encode_with_input(this, input)`. Later
-  // ones add `_and_<name>`. The first unsupported one ends them.
-  const optionalForms = (base: string, lead: string[], sig: { names: string[]; types: string[] }, args: Arg[]) => {
-    const forms: { name: string; params: string[] }[] = [];
+  // The one form: its required arguments, then each optional one an
+  // `Option`, as TypeScript's `x?` (ADR 0443): `encode(this, input)`. The
+  // first whose type isn't bound ends them, a caller leaving it out.
+  const form = (base: string, sig: { names: string[]; types: string[] }, args: Arg[]) => {
     const params = sig.types.map((type, j) => `${sig.names[j]}: ${type}`);
-    const words: string[] = [];
     for (const a of args.filter((a) => a.optional)) {
       const type = paramType(a.idlType);
       if (!type) break;
-      words.push(snakeWords(a.name));
-      params.push(`${snake(a.name)}: ${type}`);
-      // A keyword's escape isn't needed before more: `continue_with_key`.
-      forms.push({ name: identifier(`${plain(base)}_with_${[...lead, ...words].join("_and_")}`), params: [...params] });
+      params.push(`${snake(a.name)}: Option<${type}>`);
     }
-    return forms;
+    return { name: base, params };
   };
-
-  const requiredForm = (base: string, sig: { names: string[]; types: string[] }) => ({
-    name: base,
-    params: sig.types.map((type, j) => `${sig.names[j]}: ${type}`),
-  });
 
   for (const [index, { member: m }] of i.members.entries()) {
     // A constant is a Rust one, its value written where it's read, as a
@@ -883,10 +873,9 @@ function functionsOf(i: Interface): Fn[] {
         skip(sig.skip);
         continue;
       }
-      // As ReScript names them: `new`, its optional arguments `new_with_<name>`.
-      for (const v of [requiredForm("new", sig), ...optionalForms("new", [], sig, m.arguments ?? [])]) {
-        fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`] });
-      }
+      // `new`, its optional arguments `Option`s (ADR 0443).
+      const v = form("new", sig, m.arguments ?? []);
+      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`] });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
       // each call: `notification::permission()`, `Notification.permission`.
@@ -969,15 +958,14 @@ function functionsOf(i: Interface): Fn[] {
       const lead = !first
         ? []
         : required.flatMap((a, j) =>
-            // A word of a name, `async`, not a parameter's `r#async`: `open_with_async_and_username`.
+            // A word of a name, `async`, not a parameter's `r#async`: `open_with_async`.
             !firstRequired[j] ? [snakeWords(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
       const base = lead.length > 0 ? identifier(`${plain(name)}_with_${lead.join("_and_")}`) : name;
-      for (const v of [requiredForm(base, sig), ...optionalForms(name, lead, sig, m.arguments ?? [])]) {
-        const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
-        fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
-      }
+      const v = form(base, sig, m.arguments ?? []);
+      const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
+      fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
     }
   }
 
@@ -1139,7 +1127,7 @@ line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| .
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{${[...BUILTINS, "Defined", "JsError", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
+line(`use js::{${[...BUILTINS, "Defined", "IntoUnknown", "JsError", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
@@ -1164,6 +1152,13 @@ const unionParam = (p: string): Union | undefined => unions.get(p.slice(p.indexO
 function generic(f: Fn): string {
   const names: string[] = [...(f.typeParams ?? [])];
   const params = f.params.map((p) => {
+    // An optional one by reference, so a `None` needs no type (ADR 0443):
+    // a union's `Option<&dyn IntoNodeOrStr>`, an `any`'s `Option<&dyn IntoUnknown>`.
+    const named = p.slice(0, p.indexOf(": "));
+    const optional = p.slice(named.length + 2).match(/^Option<(.*)>$/)?.[1];
+    if (optional === ANY) return `${named}: Option<&dyn IntoUnknown>`;
+    const optionalUnion = optional === undefined ? undefined : unions.get(optional.replace(/<'_>$/, ""));
+    if (optionalUnion) return `${named}: Option<&dyn Into${optionalUnion.name}>`;
     const union = unionParam(p);
     if (union) return `${p.slice(0, p.indexOf(": "))}: impl Into${union.name}`;
     if (!p.endsWith(`: ${ANY}`)) return p;
@@ -1412,8 +1407,9 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   const ts = union.ts;
   const own = `${union.name}${union.borrows ? "<'_>" : ""}`;
   line();
-  line(`/// What a \`${ts}\` parameter takes: each member as it is, and the enum (ADR 0229).`);
-  line(`#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`${ts}\`")]`);
+  line(`/// What a \`${ts}\` parameter takes: each member as it is, and the enum (ADR 0229);`);
+  line(`/// an optional one, \`Option<&dyn Into${union.name}>\`, each borrowed, \`Some(&value)\` (ADR 0443).`);
+  line(`#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`${ts}\`", note = "an optional one, \`Option<&dyn Into${union.name}>\`, takes \`Some(&value)\`")]`);
   line(`#[cfg_attr(rust_js, rust_js::types = "${ts}")]`);
   line(`pub trait Into${union.name}: sealed::Sealed {}`);
   for (const member of [...members, own]) {

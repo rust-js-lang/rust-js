@@ -278,7 +278,7 @@ pub async fn load(stat: Stat) -> Loaded {
 }
 
 async fn load_compiler(start: f64, stat: Stat) -> &'static WebAssemblyModule {
-    let module = web_assembly::compile_streaming(window.fetch("./rust-js.wasm")).await;
+    let module = web_assembly::compile_streaming(window.fetch("./rust-js.wasm", None), None).await;
     stat(
         "download + compile rust-js.wasm".to_string(),
         ms(performance.now() - start),
@@ -287,7 +287,7 @@ async fn load_compiler(start: f64, stat: Stat) -> &'static WebAssemblyModule {
 }
 
 async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFile> {
-    let names = names_json(window.fetch("./sysroot.json").await).await;
+    let names = names_json(window.fetch("./sysroot.json", None).await).await;
     // Every file's download starts before the first is awaited.
     let mut downloads = Vec::new();
     for name in names {
@@ -313,7 +313,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
 }
 
 async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
-    let response = window.fetch(format!("./sysroot/{name}").as_str()).await;
+    let response = window.fetch(format!("./sysroot/{name}").as_str(), None).await;
     let bytes = uint8_array::new_with_buffer(response.array_buffer().await);
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
@@ -321,8 +321,8 @@ async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
 /// `@rust-js/runtime` and React's modules, and the stylesheets, for a
 /// program to import (ADR 0044).
 async fn load_packages(start: f64, stat: Stat) -> (Vec<(String, String)>, Vec<(String, String)>) {
-    let runtime = window.fetch("./runtime.js").await.text();
-    let packages = packages_json(window.fetch("./packages.json").await);
+    let runtime = window.fetch("./runtime.js", None).await.text();
+    let packages = packages_json(window.fetch("./packages.json", None).await);
     let mut modules = vec![("@rust-js/runtime".to_string(), runtime.await)];
     let packages = packages.await;
     modules.extend(text_fields(packages.modules));
@@ -334,7 +334,7 @@ async fn load_packages(start: f64, stat: Stat) -> (Vec<(String, String)>, Vec<(S
 }
 
 async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static WasiFile {
-    let bytes = (window.fetch(format!("./crates/lib{name}.rmeta").as_str()).await)
+    let bytes = (window.fetch(format!("./crates/lib{name}.rmeta").as_str(), None).await)
         .array_buffer()
         .await;
     stat(
@@ -345,11 +345,11 @@ async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static Wasi
 }
 
 async fn load_examples() -> Vec<Example> {
-    examples_json(window.fetch("./examples.json").await).await
+    examples_json(window.fetch("./examples.json", None).await).await
 }
 
 async fn fetch_example_file(name: String, path: String) -> (String, String) {
-    let response = window.fetch(format!("./examples/{name}/{path}").as_str()).await;
+    let response = window.fetch(format!("./examples/{name}/{path}").as_str(), None).await;
     (path, response.text().await)
 }
 
@@ -420,7 +420,7 @@ fn directory_of(sources: &HashMap<String, String>) -> HashMap<String, &'static I
             }
             None => path.as_str(),
         };
-        let bytes = text_encoder::new().encode_with_input(text);
+        let bytes = text_encoder::new().encode(Some(text));
         folder.insert(name.to_string(), file_inode(new_plain_file(bytes)));
     }
     top
@@ -432,7 +432,7 @@ fn texts_in(folder: &WasiDirectory, prefix: &str, found: &mut HashMap<String, St
         if is_directory(entry) {
             texts_in(as_directory(entry), &format!("{prefix}{name}/"), found);
         } else if is_file(entry) {
-            let text = text_decoder::new().decode_with_input(file_data(as_file(entry)));
+            let text = text_decoder::new(None, None).decode(Some(&file_data(as_file(entry))), None);
             found.insert(format!("{prefix}{name}"), text);
         }
     }
@@ -513,7 +513,7 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
     let imports = Imports {
         wasi_snapshot_preview1: wasi_import(wasi),
     };
-    let instance = web_assembly::instantiate_with_web_assembly_module_and_import_object(loaded.module, &imports).await;
+    let instance = web_assembly::instantiate_with_web_assembly_module(loaded.module, Some(&imports)).await;
     let t1 = performance.now();
     let started = run_wasi(wasi, instance);
     let t2 = performance.now();

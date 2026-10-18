@@ -317,6 +317,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A webapi function's optional parameter is an `Option`**, one Rust function
+  for each JS one, as TypeScript declares it: `history.push_state(data, "",
+  None)` is `history.pushState(data, "")`, and `push_state_with_url`, like each
+  `_with_` form of an optional argument, is gone. A union's or an `any`'s is
+  borrowed, `Some(&blob)`; a trailing `None` is no argument, and a Rust
+  function's trailing `Option`s are declared optional, `greeting?:` (ADR 0443).
 - **Rust's world and React's each have their own names, JSX the boundary**
   ([ADR 0435](docs/decisions/0435-rust-and-react-two-worlds.md)). In JS, a
   component's props are camelCase, `onClick` of `on_click`, and a hook, a

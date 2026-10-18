@@ -811,7 +811,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A closure returning \`()\` is a block body: JS gets no return value Rust didn't have.
   expect(js).toContain('app.addEventListener("ping", (e) => {\n    e.preventDefault();\n  });');
   expect(js).toContain("window.dispatchEvent(ping);");
-  // Optional arguments: `encode_with_input`, and a union's enum.
+  // Optional arguments, each an `Option`, a trailing `None` none (ADR 0443).
   expect(js).toContain('const bytes = new TextEncoder().encode(text);');
   expect(js).toContain('const back = new TextDecoder("utf-8").decode(bytes);');
   // An iframe's window is a `Window` (a WindowProxy, in WebIDL); a message's
