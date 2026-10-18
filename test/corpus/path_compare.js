@@ -12,7 +12,7 @@ function main() {
   console.log(`${$pathEq(a, b)} ${$pathEq(b, a)} ${$pathEq(a, "a/b/d")}`);
   console.log(`${$pathEq("./a", "a")} ${$pathEq("/a", "a")}`);
   console.log(`${$pathEq(".", "./")} ${$pathEq("", ".")}`);
-  console.log(`${$pathEq("a//b", "a/b")} ${"a//b" === "a/b"}`);
+  console.log(`${$pathEq("a//b", "a/b")} false`);
   console.log(
     `${["Less", "Equal", "Greater"][$pathCmp("a/b", "a.b") + 1]} ${
       ["Less", "Equal", "Greater"][$cmp("a/b", "a.b") + 1]

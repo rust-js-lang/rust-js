@@ -1954,4 +1954,12 @@ export const mutations: Mutation[] = [
     replace: "            (false, Some(ClockType::Instant)) if false => {",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
   },
+  {
+    name: "poison-into-inner-unknown",
+    breaks: "a `PoisonError`'s `into_inner()`, uuid's, is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"into_inner\" | \"get_ref\" if is_poison_error(owner) => Std::PoisonData,\n",
+    replace: "            \"get_ref\" if is_poison_error(owner) => Std::PoisonData,\n",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+  },
 ];

@@ -250,6 +250,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself.
     js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
+    // A closure read in place, called where it's made, of what reads the
+    // same: its value of what it's given, `r._0.data`, as a call of one
+    // made in place is (ADR 0449).
+    js::each_expr_mut(body, &mut applied_arrows);
     // An element's place checked, then set: the place the check gives.
     js::statement_lists(body, &mut checked_sets);
     // A copy made of what's spread, read in place, `{ ...a, ...{ ...b } }`:

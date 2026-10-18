@@ -136,6 +136,9 @@ pub(super) enum Std {
     /// A lock's `is_poisoned()`: `false`, as nothing can catch a panic that
     /// holds it (ADR 0327).
     NotPoisoned,
+    /// A `PoisonError`'s `into_inner()` and `get_ref()`: what it holds, its
+    /// guard, which a lock never poisoned gives in its `Ok` (ADR 0449).
+    PoisonData,
     /// `RefCell::borrow`, `borrow_mut`, a `Mutex`'s `lock()` and an `RwLock`'s
     /// `read()` and `write()`, `Ok` of it: a guard, which is the cell, checked
     /// free to borrow so (ADR 0328).
@@ -1744,6 +1747,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "into_inner" | "get_mut" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Lock,
             "is_poisoned" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::NotPoisoned,
             "clear_poison" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Nothing,
+            "into_inner" | "get_ref" if is_poison_error(owner) => Std::PoisonData,
             "each_ref" | "each_mut" if owner.is_array() => Std::Same,
             "swap_remove_back" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: false }),
             "swap_remove_front" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: true }),
@@ -4449,6 +4453,16 @@ fn clock_method(clock: ClockType, name: &str) -> Option<Std> {
 /// (ADR 0447), numbers whose `+` std writes, which is compiled.
 pub(crate) fn has_number_arithmetic(ty: Ty<'_>) -> bool {
     Num::of(ty).is_some() && !is_duration_ty(ty) && clock_type_of(ty).is_none()
+}
+
+/// std's `PoisonError`, a lock's `Err`, which has no diagnostic item.
+fn is_poison_error(ty: Ty<'_>) -> bool {
+    ty::tls::with_opt(|tcx| {
+        tcx.is_some_and(|tcx| {
+            matches!(ty.kind(), ty::Adt(adt, _)
+                if tcx.crate_name(adt.did().krate) == sym::std && std_path(tcx, adt.did()) == "std::sync::PoisonError")
+        })
+    })
 }
 
 /// What std's clock has of `id` (ADR 0447): `SystemTime`, `Instant`, or

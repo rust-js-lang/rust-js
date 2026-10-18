@@ -18,6 +18,14 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A lock taken whether or not it's poisoned**,
+  `m.lock().unwrap_or_else(|e| e.into_inner())`, uuid's: its guard,
+  `$lock(m, true)`; a `PoisonError`'s `into_inner()` and `get_ref()` are
+  the guard it holds (ADR 0449).
+- **`unwrap_or_else`, `unwrap_or` and `unwrap_or_default` of an `Ok` just
+  made** are what it holds, as `unwrap()`'s is, and a closure called where
+  it's made is its value, `r._0.data`; and a comparison of two strings
+  written out is its answer, as one of two numbers is (ADR 0449).
 - **A `transmute` between a `#[repr(transparent)]` struct and its field**,
   by value or through a `&`, as uuid's `from_bytes_ref` does: the struct
   made, `[bytes]`, or its field read, `uuid[0]` (ADR 0448).

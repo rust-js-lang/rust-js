@@ -304,6 +304,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(values.remove(0));
         }
         let subject = values.remove(0);
+        if let Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault = comb
+            && let Some(value) = result::unwrapped_made(&subject, &values)
+        {
+            return Ok(value);
+        }
         // A slice's `concat` of parts written out, `[path, &[last]].concat()`:
         // an array of them, spread, `[...path, ...[last]]`.
         if comb == Comb::Concat

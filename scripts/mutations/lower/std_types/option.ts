@@ -273,4 +273,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nonzero.rs$"],
     snapshots: true,
   },
+  {
+    name: "made-ok-unwrap-or-tested",
+    breaks: "`unwrap_or(d)` of an `Ok` just made tests it, where `unwrap()` of one is its value",
+    file: "src/lower/std_types/option.rs",
+    find: "                if let Some(d) = &fallback\n",
+    replace: "                if let Some(d) = &fallback\n                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+    snapshots: true,
+  },
 ];

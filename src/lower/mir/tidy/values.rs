@@ -148,6 +148,22 @@ pub(in crate::lower::mir) fn field_path(e: &Expr) -> Option<String> {
     }
 }
 
+/// `((e) => e.data)(r._0)`, an arrow called where it's made: what
+/// `calls::apply` makes of it, its value, where it can.
+pub(super) fn applied_arrows(e: &mut Expr) {
+    if let ExprKind::Call(callee, args) = &e.kind
+        && matches!(callee.kind, ExprKind::Arrow(..))
+    {
+        let applied = crate::lower::calls::apply((**callee).clone(), args.clone());
+        if !matches!(&applied.kind, ExprKind::Call(f, _) if matches!(f.kind, ExprKind::Arrow(..))) {
+            *e = Expr {
+                span: e.span,
+                ..applied
+            };
+        }
+    }
+}
+
 /// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, a closure MIR says passes on
 /// what it's given to a function of Rust's, which takes no more: the index
 /// and the array the method gives it too change nothing (ADR 0279).

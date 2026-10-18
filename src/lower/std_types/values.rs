@@ -97,6 +97,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A lock's `into_inner` gives its value back, `get_mut` a
                     // `&mut` to it (ADR 0144).
                     | Std::Lock
+                    // A `PoisonError`'s `into_inner` gives back the guard it
+                    // holds (ADR 0449).
+                    | Std::PoisonData
                     // Moves its value into the function, which owns it then, and
                     // drops the other variant's, or passes it on (ADR 0179).
                     | Std::OptionMap
@@ -485,7 +488,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::CellUpdate
             | Std::CellFromMut
             | Std::CellItems
-            | Std::NotPoisoned => unreachable!("lowered by cell_call"),
+            | Std::NotPoisoned
+            | Std::PoisonData => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Pin(_) => unreachable!("lowered by pin_call"),

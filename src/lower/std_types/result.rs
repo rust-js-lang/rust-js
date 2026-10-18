@@ -47,6 +47,16 @@ pub(in crate::lower) fn held(result: Expr) -> Expr {
     Expr::member(result, "_0")
 }
 
+/// What unwrapping `result` gives where it's an `Ok` just made, a lock's or
+/// a `to_value` that can't fail, and what else it's given, a fallback or a
+/// message, does nothing seen: what it holds (ADRs 0144, 0449). Each way a
+/// `Result` is unwrapped, `unwrap()`, `unwrap_or(d)`, `unwrap_or_else(f)`.
+pub(in crate::lower) fn unwrapped_made(result: &Expr, given: &[Expr]) -> Option<Expr> {
+    made_ok(result)
+        .filter(|_| given.iter().all(|e| !e.has_effects()))
+        .cloned()
+}
+
 /// What an `Ok` just made holds, `{ TAG: "Ok", _0: value }`'s `value`.
 pub(in crate::lower) fn made_ok(e: &Expr) -> Option<&Expr> {
     let js::ExprKind::Object(props) = &e.kind else {

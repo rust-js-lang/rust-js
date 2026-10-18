@@ -93,6 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             Std::NotPoisoned => Expr::bool(false),
+            Std::PoisonData => self.project(arg(), tys[0].peel_refs(), 0),
             // A guard is its cell, checked free to borrow so, and counted
             // while it's held where something could ask (ADR 0328).
             // Of a field's `RefCell` never counted, the field itself, whose

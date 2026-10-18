@@ -1451,6 +1451,15 @@ impl Expr {
                 return Expr::bool(answer);
             }
         }
+        // And of two strings, a tag's test of a variant made here, `"Ok" ===
+        // "Ok"`.
+        if let (ExprKind::Str(a), ExprKind::Str(b)) = (&lhs.kind, &rhs.kind) {
+            match op {
+                Op::Eq | Op::LooseEq => return Expr::bool(a == b),
+                Op::Ne | Op::LooseNe => return Expr::bool(a != b),
+                _ => {}
+            }
+        }
         // `0 || x` is `x`: `||` gives what's after a falsy number, an
         // ordering's `Equal` before the next part's. And of `true` or
         // `false` first, `&&` and `||` are what JS gives, never running

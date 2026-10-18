@@ -55,11 +55,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsOk(ok) => result::is(arg(), ok),
             Std::UnwrapOk => {
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
-                // An `Ok(x)` just made, as a `to_value` that can't fail is: `x`.
-                if let Some(value) = result::made_ok(&list[0])
-                    && list[1..].iter().all(|e| !e.has_effects())
-                {
-                    return Ok(Some(value.clone()));
+                if let Some(value) = result::unwrapped_made(&list[0], &list[1..]) {
+                    return Ok(Some(value));
                 }
                 // The error by its own `Debug`, where `$debug`, which knows no
                 // types, would show it otherwise: `Missing { name: "ink" }`, not
@@ -97,19 +94,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::ResultOk | Std::ResultOr => {
                 let mut result = arg();
+                let fallback = (known == Std::ResultOr).then(arg);
+                if let Some(d) = &fallback
+                    && let Some(value) = result::unwrapped_made(&result, std::slice::from_ref(d))
+                {
+                    return Ok(Some(value));
+                }
                 if result.has_effects() {
                     result = self.spill("result", result, out);
                 }
-                let otherwise = match known {
-                    Std::ResultOr => {
-                        let d = arg();
-                        if d.has_effects() {
-                            self.spill("fallback", d, out)
-                        } else {
-                            d
-                        }
-                    }
-                    _ => Expr::undefined(),
+                let otherwise = match fallback {
+                    Some(d) if d.has_effects() => self.spill("fallback", d, out),
+                    Some(d) => d,
+                    None => Expr::undefined(),
                 };
                 let ok = result::is(result.clone(), true);
                 let value = result::held(result);

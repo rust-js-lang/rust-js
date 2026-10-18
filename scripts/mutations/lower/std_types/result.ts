@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    (key == \"TAG\").then_some((&**result, ok, true))\n",
     tests: ["test/snapshots.test.ts"],
   },
+  {
+    name: "unwrapped-made-effects-lost",
+    breaks: "`unwrap_or(loud())` of an `Ok` just made doesn't run `loud()`, which Rust runs first",
+    file: "src/lower/std_types/result.rs",
+    find: "        .filter(|_| given.iter().all(|e| !e.has_effects()))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+  },
 ];

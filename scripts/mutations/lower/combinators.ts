@@ -402,4 +402,13 @@ export const mutations: Mutation[] = [
     replace: "                vec![subject, next(), next()],\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "made-ok-unwrap-or-else-tested",
+    breaks: "`unwrap_or_else(f)` of an `Ok` just made, a lock's, tests it, where `unwrap()` of one is its value",
+    file: "src/lower/combinators.rs",
+    find: "        if let Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault = comb\n",
+    replace: "        if let Comb::ResultUnwrapOrDefault = comb\n",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+    snapshots: true,
+  },
 ];

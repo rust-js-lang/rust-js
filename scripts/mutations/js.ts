@@ -532,4 +532,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
   },
+  {
+    name: "string-comparison-unfolded",
+    breaks: "a test of a variant made here, `\"Ok\" === \"Ok\"`, is written, not its answer",
+    file: "src/js.rs",
+    find: "                Op::Eq | Op::LooseEq => return Expr::bool(a == b),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+    snapshots: true,
+  },
 ];

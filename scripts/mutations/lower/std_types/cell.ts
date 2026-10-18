@@ -139,4 +139,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
     snapshots: true,
   },
+  {
+    name: "poison-data-unread",
+    breaks: "a `PoisonError`'s `into_inner()` is the error, not the guard it holds",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::PoisonData => self.project(arg(), tys[0].peel_refs(), 0),\n",
+    replace: "            Std::PoisonData => arg(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+    snapshots: true,
+  },
 ];

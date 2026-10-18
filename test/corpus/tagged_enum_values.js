@@ -29,7 +29,7 @@ function main() {
   const lights = [{ kind: "On" }, { kind: "Off" }];
   const item = { kind: "Off" };
   console.log(`${lights.some((each) => each.kind === item.kind)}`);
-  console.log(`${"On" === "On"}`);
+  console.log("true");
   const seen = new $KeyMap();
   seen.set({ kind: "On" }, 1);
   seen.set({ kind: "On" }, 2);

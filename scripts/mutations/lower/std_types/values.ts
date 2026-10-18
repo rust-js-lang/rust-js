@@ -342,8 +342,8 @@ export const mutations: Mutation[] = [
     name: "lock-into-inner-refused",
     breaks: "a lock's `into_inner` of a value with a destructor is refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Lock\n                    // Moves its value",
-    replace: "                    // Moves its value",
+    find: "                    | Std::Lock\n                    // A `PoisonError`'s",
+    replace: "                    // A `PoisonError`'s",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
   },
   {
@@ -353,5 +353,13 @@ export const mutations: Mutation[] = [
     find: "            || (known == Std::IterComb(crate::lower::combinators::IterComb::Partition)\n",
     replace: "            || (false\n",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
+  },
+  {
+    name: "poison-guard-dropped",
+    breaks: "`into_inner()` of a lock's guard is refused, as if it dropped the guard it gives back",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::PoisonData\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
   },
 ];
