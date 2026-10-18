@@ -1970,4 +1970,12 @@ export const mutations: Mutation[] = [
     replace: "        ty::Adt(adt, args) if adt.did().is_local() && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
+  {
+    name: "slice-to-owned-unknown",
+    breaks: "a slice's `to_owned()`, percent-encoding's, is refused",
+    file: "src/lower/recognition.rs",
+    find: "            .or((to_owned && ty.is_slice()).then_some(Std::ToVec))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_to_owned.rs$"],
+  },
 ];

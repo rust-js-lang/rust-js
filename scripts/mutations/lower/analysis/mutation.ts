@@ -98,4 +98,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "constant element is rendered where"],
   },
+  {
+    name: "part-borrow-unchanged",
+    breaks: "a struct whose text is changed through a `&mut` of it, `copy[0].0.push('?')`, isn't copied when cloned, so the original changes too",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
+    replace: "                } if false => Some(arg),\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_changed_part.rs$"],
+  },
+  {
+    name: "part-borrow-objects",
+    breaks: "a `&mut` of a part that's an object, changed in place, counts its holder changed, so it's copied where it needn't be",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
+    replace: "                } if true => Some(arg),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_method_clones.rs$"],
+    snapshots: true,
+  },
 ];

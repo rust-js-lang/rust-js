@@ -83,3 +83,13 @@ cell holds, read straight through a `$cellOf`. The `cell_from_mut` corpus
 case writes a number, a slice's items, an array's, a whole array through a
 parameter and strings, against native Rust; rustc's
 `rfcs/rfc-1789-as-cell/from-mut.rs` passes.
+
+## Amendment: a slice's `to_owned()`, and no copy of an array made here
+
+**A slice's `to_owned()` is its `to_vec()`**, as `str`'s is its `String`:
+percent-encoding's `bytes[..n].to_owned()`, which was refused. And
+`to_vec()` of an array made where it's called, which nothing else holds,
+`$slice(bytes, 0, n)` or `words.map(f)`, is that array, not a copy of it,
+where its items need no clone; whether it's made here is
+`iterators::made_array`'s answer, which collecting asks too. A literal's
+items are made with it, so it's itself whatever they are.

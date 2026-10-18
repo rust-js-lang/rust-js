@@ -75,10 +75,20 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             {
                 mutated.insert(pointee);
             }
-            // `a[i] = ..` changes the array `a` the same way.
-            if let ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } = expr.kind
+            // `a[i] = ..` changes the array `a` the same way, and so does a
+            // `&mut` of a part that's its place, text or a number, not an
+            // object changed in place: `a.0.push('!')`'s, `a[0] += "!"`.
+            let place = match expr.kind {
+                ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => Some(lhs),
+                ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),
+                _ => None,
+            };
+            if let Some(place) = place
                 && let ExprKind::Field { lhs: object, .. } | ExprKind::Index { lhs: object, .. } =
-                    body.thir[strip(&body.thir, lhs)].kind
+                    body.thir[strip(&body.thir, place)].kind
             {
                 mutated.insert(body.thir[object].ty);
             }

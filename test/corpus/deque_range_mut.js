@@ -13,7 +13,7 @@ function main() {
     x.value = Math.imul(x.value, 10);
   }
   console.log(`[${d.map((item) => String(item)).join(", ")}]`);
-  const words = ["a", "b", "c"].map((s) => s).slice();
+  const words = ["a", "b", "c"].map((s) => s);
   Iterator.from($mutItems($view(words, 1))).forEach((w) => {
     w.value += "!";
   });

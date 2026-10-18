@@ -3,8 +3,8 @@
 //! caller's type answers.
 
 use crate::lower::recognition::{
-    Recognition, TypeFact, bound_by_any, debug_named, phantom_named, pointer_target, points_at_dyn_any,
-    points_at_dyn_debug, type_facts,
+    TypeFact, bound_by_any, debug_named, phantom_named, pointer_target, points_at_dyn_any, points_at_dyn_debug,
+    type_facts,
 };
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -21,10 +21,10 @@ use std::collections::{HashMap, HashSet};
 /// a caller gives each, after the function's dictionaries. An impl's method,
 /// called through its dictionary, asks its impl too of the impl's type
 /// parameters, which the dictionary is made with, `wrapFootprint(TSize)`,
-/// and gives its method. A trait's method called of a type naming the
-/// caller's type parameter, `stack.extend(iter)`, is its impl's, and a
-/// caller asks what each impl it gives a dictionary of for a callee's
-/// bound, or for `collect()`'s `FromIterator`, asks. A
+/// and gives its method. A caller asks what each impl it gives a dictionary
+/// of for a callee's bound asks, a trait's method's `Self: Trait` too:
+/// `stack.extend(iter)`'s `Stack<T>: Extend`, and `collect()`'s `B:
+/// FromIterator` (ADR 0445). A
 /// trait's method, an impl's of its own type parameters, and a library's
 /// function its consumers can reach, which never see this, ask none: theirs
 /// are errors.
@@ -33,7 +33,7 @@ pub(super) fn type_fact_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    (given, trait_impls): (Given<'_>, &[DefId]),
+    given: Given<'_>,
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let mut asked: HashSet<(DefId, u32, TypeFact)> = HashSet::new();
     // What a trait's dictionaries carry of its associated type, asked of
@@ -46,12 +46,6 @@ pub(super) fn type_fact_params<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
-        let recognition = Recognition {
-            tcx,
-            typing_env,
-            trait_impls,
-            foreign,
-        };
         for expr in body.thir.exprs.iter() {
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
@@ -116,23 +110,6 @@ pub(super) fn type_fact_params<'tcx>(
             if !facts.is_empty() {
                 continue;
             }
-            // A std method that only calls its bound's, `collect()` that's
-            // `FromIterator::from_iter` (ADR 0160): that one's.
-            let (callee, args) = match recognition.resolve_delegated(callee, args) {
-                Some((method, method_args, _)) => (method, method_args),
-                None => (callee, args),
-            };
-            // A trait's method of a type that names it, `stack.extend(iter)`
-            // of a `Stack<T>`: its impl's, which asks of the impl's parameters.
-            let (callee, args) = match tcx.trait_of_assoc(callee) {
-                Some(_) => match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
-                    Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
-                        (instance.def_id(), instance.args)
-                    }
-                    _ => (callee, args),
-                },
-                None => (callee, args),
-            };
             // Each impl whose dictionary it's given for a bound, `collect()`'s
             // `B: FromIterator` of an `ArrayVec<T, CAP>`: what that asks of
             // its type parameters, of a caller's given it, the caller asks.

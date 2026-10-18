@@ -377,7 +377,7 @@ const Calculator = {
     // `name = expr` assigns.
     if (tokens.length >= 2 && tokens[0].TAG === "Ident" && tokens[1] === "Assign") {
       const name = tokens[0]._0;
-      const parser = { tokens: $slice(tokens, 2).slice(), at: 0 };
+      const parser = { tokens: $slice(tokens, 2), at: 0 };
       const result = Parser.expr(parser);
       if (result.TAG === "Err") {
         return result;

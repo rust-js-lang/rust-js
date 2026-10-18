@@ -52,27 +52,11 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
   {
-    name: "trait-call-facts-unresolved",
-    breaks: "a trait's method called of a type naming the caller's `T`, arrayvec's `array.extend(iter)`, isn't taken as its impl's, so the caller isn't given `size_of::<T>()` to pass on",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "                    Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {\n",
-    replace: "                    Ok(Some(instance)) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^impl_type_facts_through_trait.rs$"],
-  },
-  {
     name: "bound-impl-facts-unasked",
     breaks: "a caller giving an impl's dictionary for a callee's bound, `C: Push<T>` of a `Stack<T>`, isn't asked what the impl asks of `T`",
     file: "src/lower/analysis/type_facts.rs",
     find: "            for bound in bounds(tcx, foreign, given, callee) {\n",
     replace: "            for bound in bounds(tcx, foreign, given, callee).into_iter().filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^impl_type_facts_through_trait.rs$"],
-  },
-  {
-    name: "delegated-facts-unasked",
-    breaks: "`collect()` into a type whose `FromIterator` impl asks `size_of::<T>()` isn't taken as `from_iter`, so its caller isn't given the size",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "                Some((method, method_args, _)) => (method, method_args),\n",
-    replace: "                Some(_) => (callee, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts_through_trait.rs$"],
   },
   {

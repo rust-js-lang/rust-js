@@ -49,7 +49,7 @@ function main() {
   $dedupByCells(tens, (a, b) => key(a) === key(b));
   console.log(`[${tens.map((item) => String(item)).join(", ")}]`);
   let s;
-  const words = ["a", "A", "b", "B", "b"].map((s) => s).slice();
+  const words = ["a", "A", "b", "B", "b"].map((s) => s);
   $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   s = [1, 2, 3];

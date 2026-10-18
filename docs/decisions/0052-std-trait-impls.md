@@ -116,3 +116,13 @@ Everything else is shared, as it is today. When a copy is needed:
 ## Amended by
 
 - [0289](0289-copy-bounds.md): A `Copy` bound takes a copy only where a copy isn't the value
+
+## Amendment: a part changed through a `&mut` of it
+
+**A struct, a tuple or an array whose part is changed through a `&mut`
+of it is changed in place**, as one whose part is assigned is: text or a
+number's `&mut` is its place, so `copy[0].0.push('?')` writes the part,
+`copy[0][0] += "?"`, and `bump(&mut copy[0].count)` too. Its clone is a
+copy, not the original shared, which the clone changed with it: a wrong
+answer, `[Token("a?")]` for `[Token("a")]`. A `&mut` of a part that's an
+object, a `Vec`'s, changes that object, not its holder.

@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A slice's `to_owned()`**, its `to_vec()`; and `to_vec()` of an array
+  made where it's called is that array, not a copy of it (ADR 0153).
 - **`{:?}` of a slice's iterator**, `Iter([2, 3])`: what's left of it, a
   derived `Debug`'s field too (ADR 0453).
 - **`{:?}` of a `PhantomData` of a type parameter**, a generic struct's
@@ -441,6 +443,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A clone of a struct whose text or number is changed through a `&mut`
+  of it**, `copy[0].0.push('?')`, is a copy: it shared the original's
+  parts, which changed with it (ADR 0052).
 - **A guard given to generic code is dropped there**, `take(cell.borrow())`:
   its cell stayed borrowed, and a later `borrow_mut()` panicked (ADR 0451).
 - **`d.len()` of a `D: Deref` returned is read before `d` is dropped**:

@@ -58,4 +58,21 @@ export const mutations: Mutation[] = [
     replace: "                Expr::call(Expr::helper(\"$retain\"), vec![v, keep])\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "to-vec-made-copied",
+    breaks: "`to_vec()` of an array made where it's called copies it again, `$slice(v, 2).slice()`",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    if crate::lower::iterators::made_array(&items)\n",
+    replace: "                    if false && crate::lower::iterators::made_array(&items)\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_to_owned.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "to-vec-made-uncloned",
+    breaks: "`to_owned()` of a slice of items that need a clone, made by `$slice`, shares them with the original",
+    file: "src/lower/std_types/vec.rs",
+    find: "                        && !self.slice_item(tys[0]).is_some_and(|item| self.needs_clone(item)) =>\n",
+    replace: "                        =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_to_owned.rs$"],
+  },
 ];

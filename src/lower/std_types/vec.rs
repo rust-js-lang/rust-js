@@ -105,8 +105,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::SliceLast => Expr::read(arg(), "at", vec![Expr::int(-1)]),
             // A copy, unless it's an array just written: `vec![3, 4].into()`.
             // Of what it borrows, `to_vec()`'s, each item a clone too.
+            // Of an array made here, itself: a literal's, whose items are
+            // made here too, or `$slice(v)`'s, of items that need no clone.
             Std::ToVec => match arg() {
                 items if matches!(items.kind, js::ExprKind::Array(_)) => items,
+                items
+                    if crate::lower::iterators::made_array(&items)
+                        && !self.slice_item(tys[0]).is_some_and(|item| self.needs_clone(item)) =>
+                {
+                    items
+                }
                 items => match self.slice_item(tys[0]) {
                     Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,
                     _ => Expr::call(Expr::member(items, "slice"), vec![]),

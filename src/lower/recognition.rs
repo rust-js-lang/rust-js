@@ -1332,8 +1332,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Std::SliceToArray { into });
         }
         let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
-        let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
-        (from_str || to_owned).then_some(Std::Same)
+        let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_);
+        // A slice's `to_owned()` is its `to_vec()`.
+        (from_str || to_owned && ty.is_str())
+            .then_some(Std::Same)
+            .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
     }
 
     /// `size_hint()` of an iterator of the crate's that keeps std's, of std's

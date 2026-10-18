@@ -135,3 +135,15 @@ is. **A type's fact of a `dyn` given to generic code is refused:** over a
 The `type_names_generic` corpus case names types holding a parameter, an
 unsized one, one passed on, and a blanket impl's, directly and through a
 `dyn`, with native Rust; rustc's `type-name-basic` passes.
+
+## Amendment: an impl's facts reach a caller one way
+
+**What an impl asks of its type parameters reaches a caller one way:
+through the dictionary the caller gives for a bound**, a trait method's
+`Self: Trait` among them, `stack.extend(iter)`'s `Stack<T>: Extend`, and
+`collect()`'s `B: FromIterator`. The analysis had two more ways to the same
+facts, resolving a trait's method call to its impl's and `collect()` to
+`from_iter`, which since `Extend` and `FromIterator` are given as
+dictionaries (ADR 0445) found nothing the bound didn't: an impl's method's
+own type parameters ask none (above). They're gone, and the mutations that
+held them, which survived.

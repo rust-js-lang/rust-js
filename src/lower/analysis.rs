@@ -554,7 +554,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         copied: &copied,
         stepped: &stepped,
     };
-    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, (given, &trait_impls));
+    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     let asks_capacity = asks_capacity(tcx, all_bodies);
