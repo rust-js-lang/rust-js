@@ -439,8 +439,8 @@ export const mutations: Mutation[] = [
     name: "mir-fold-own-of-init",
     breaks: "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
     file: "src/lower/mir/iter.rs",
-    find: "                let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));\n",
-    replace: "                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n",
+    find: "        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let mut args = vec![self.binary_callback(f, own), init];\n",
+    replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let mut args = vec![self.binary_callback(f, own), init];\n",
     tests: ["test/lowering.test.ts","-t","a fold given a function of the crate's"],
   },
   {
@@ -683,6 +683,18 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "rev_of_lazy_chains"
+    ]
+  },
+  {
+    "name": "fold-start-left-out",
+    "breaks": "`fold(None, f)`'s `reduce(f, undefined)` loses its start, so an empty slice's throws and another's starts from its first item",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        crate::lower::calls::given_to_js(&mut args);\n        Expr::call(Expr::member(it, \"reduce\"), args)\n",
+    "replace": "        Expr::call(Expr::member(it, \"reduce\"), args)\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "fold_from_none"
     ]
   },
 ];

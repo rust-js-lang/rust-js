@@ -380,6 +380,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`fold(None, f)`** kept its start, `reduce(f, undefined)`: it was left
+  out, so an empty slice's fold threw and another's started from its first
+  item (ADR 0330).
 - **A shared `Rc<RefCell<dyn T>>`**, a listener a bus and its owner both
   hold, compiles beside a `Weak` elsewhere, and shares its counts with the
   `Rc` it's made of (ADR 0320).

@@ -365,11 +365,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method("map", it, vec![f])
             }
             Some(IterMethod::Fold) => {
-                let init = arg();
-                // Given after what it starts from.
-                let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
-                let f = self.binary_callback(arg(), own);
-                method("reduce", it, vec![f, init])
+                let (init, f) = (arg(), arg());
+                self.folded(it, init, f, arg_tys)
             }
             // Each item counted, and dropped as `count` drops it.
             Some(IterMethod::Count) => {
@@ -455,6 +452,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// `it.fold(init, f)`: `it.reduce(f, init)`, `f` given after what it
+    /// starts from. JS's `reduce` counts its arguments: a start of
+    /// `undefined`, a `fold(None, ..)`'s, is given, or it starts from the
+    /// first item (ADR 0330).
+    fn folded(&mut self, it: Expr, init: Expr, f: Expr, arg_tys: &[Ty<'tcx>]) -> Expr {
+        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
+        let mut args = vec![self.binary_callback(f, own), init];
+        crate::lower::calls::given_to_js(&mut args);
+        Expr::call(Expr::member(it, "reduce"), args)
     }
 
     /// `rev()` or `peekable()` of a std iterator neither a range nor the

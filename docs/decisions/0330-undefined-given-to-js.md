@@ -1,7 +1,7 @@
 # 0330. An `undefined` given to JS is an argument
 
 Status: Accepted. Amends [0313](0313-console-forms.md); extends
-[0021](0021-js-interop.md).
+[0021](0021-js-interop.md). Amended: a `fold`'s start (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -45,3 +45,12 @@ own(1.0, None);        // own(1)
   closure, each with `None`, in node: `NaN`, `NaN`, and the omitted ones
   `own(1)` and `add(1)`. Mutations leave it out of a binding's call and a
   `dyn Fn`'s, and keep it in a closure's of the crate's.
+
+## Amendment: a `fold`'s start
+
+`fold(None, f)` is `reduce(f, undefined)`, and the trailing `undefined`
+was left out, as ADR 0313 leaves one out where only `arguments.length`
+tells. `reduce` is such a function: without a start it starts from the
+first item, and throws of an empty array, so `largest(&[])` threw. A
+`fold`'s start is given to JS, `GivenUndefined`, as a binding's argument
+is. `fold_from_none` runs it against native Rust.
