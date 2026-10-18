@@ -524,4 +524,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|dyn_auto_traits).rs$"],
     snapshots: true,
   },
+  {
+    name: "some-inequality-loose",
+    breaks: "an `Option` compared `!=` with a `Some(..)` is `!=`, where `!==` answers the same",
+    file: "src/js.rs",
+    find: "        ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
+  },
 ];

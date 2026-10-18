@@ -808,8 +808,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::bin(op, a, b));
         }
         if let Some(inner) = self.option_of(ty) {
-            // `==`, so that `null` and `undefined` are both `None`.
-            if self.js_eq(inner).is_some() {
+            // `==`, so that `null` and `undefined` are both `None`; of a
+            // `Some` that's its payload, not one boxed, an object of its own
+            // (ADR 0051), which compares by what's in it.
+            if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {
                 return Ok(Expr::bin(Op::LooseEq, a, b));
             }
         }

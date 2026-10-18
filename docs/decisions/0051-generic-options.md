@@ -156,3 +156,12 @@ holds it, a `Some(None)` written a `Some(Some(5))` and a `Some(Some(1))` a
   ? .. : r`, with the same values.
 - The `option_as_mut_generic` corpus case writes through it, of numbers,
   arrays, `()` and `Option`s, against native Rust.
+
+## Amendment: a boxed `Some` compares by what's in it
+
+`o == Some(())` was `o == { $someNone: 0 }`, two objects, which JS
+compares by which object each is: never `true`, where Rust's is. An
+`Option` whose `Some` is boxed compares by `$eq`, what's in it; one whose
+`Some` is its payload, by `==`, as before. A corpus case,
+`option_boxed_eq`, holds it against native Rust. Case C: results would
+change.

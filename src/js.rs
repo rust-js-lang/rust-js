@@ -298,6 +298,16 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
     }
 }
 
+/// `a == b`, or `a != b`, as `a === b` and `a !== b`: of what either
+/// answers the same, one side never `null` or `undefined`.
+pub(crate) fn strict_equality(e: Expr) -> Expr {
+    match e.kind {
+        ExprKind::Binary(Op::LooseEq, a, b) => Expr::bin(Op::Eq, *a, *b),
+        ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),
+        kind => Expr { kind, ..e },
+    }
+}
+
 /// `let list = [];` that nothing sets again, only changes in place, is
 /// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
 /// handle sets is set.

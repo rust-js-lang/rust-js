@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `Option` compared with a `Some(..)` is `===`**, `p === s`, as a person
+  writes it (ADR 0030).
 - **The one field a rest's pattern leaves out is `_`**, `const {currentIndex:
   _, ...meta} = ctx`, as a person writes it (ADR 0205).
 - **A `.d.ts` has each item's doc comments as JSDoc**, a function's, a
@@ -407,6 +409,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`o == Some(())`**, of an `Option` whose `Some` is boxed, compares what's
+  in it: it was never `true` (ADR 0051).
 - **`fold(None, f)`** kept its start, `reduce(f, undefined)`: it was left
   out, so an empty slice's fold threw and another's started from its first
   item (ADR 0330).

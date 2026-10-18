@@ -5043,6 +5043,33 @@ pub fn kept(error: Option<&Failure>, ready: bool) -> (bool, u32) {
     .toEqual([101, 10, 101, [true, 1]]);
 });
 
+// An `Option` compared with a `Some(..)`, of what's never `undefined` or
+// `null`, is `===`, as react.dev's getRouteMeta writes `currentRoute.path
+// === searchPath`: either answers the same (ADR 0030). Two `Option`s keep
+// `==`, as `null` and `undefined` are both `None`.
+test("an Option compared with a Some is ===", async () => {
+  const dir = fixture("option-strict-eq");
+  writeFileSync(join(dir, "lib.rs"), `pub fn same(p: &Option<String>, s: &str) -> bool {
+    p.as_deref() == Some(s)
+}
+
+pub fn other(p: Option<u32>, n: u32) -> bool {
+    p != Some(n)
+}
+
+pub fn both(p: Option<u32>, q: Option<u32>) -> bool {
+    p == q
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return p === s;\n");
+  expect(js).toContain("  return p !== n;\n");
+  expect(js).toContain("  return p == q;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.same("a", "a"), lib.same(null, "a"), lib.other(undefined, 1), lib.other(1, 1), lib.both(null, undefined)]).toEqual([true, false, true, false, true]);
+});
+
 // ADR 0299: a `return` of `undefined` is a bare `return;`, as react.dev's
 // NavigationBar ends its effect, `} else { return; }`.
 test("a return of undefined is a bare return", async () => {
@@ -8915,7 +8942,7 @@ test("a position of an array's own iterator from MIR is of the array", async () 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
+  expect(js).toContain('return $position(ids, (id) => id === path.split("#")[1]);');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
 });

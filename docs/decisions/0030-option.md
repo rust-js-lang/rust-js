@@ -130,3 +130,15 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
 
 - [0193](0193-some-of-a-unit-variant.md): `Some` of a unit variant is tested as the variant
 - [0298](0298-truthy-options.md): An Option of a value never falsy is tested by its truth
+
+## Amendment: `===` to a `Some`
+
+**An `Option` compared with a `Some(..)` is `===`**, `p.as_deref() ==
+Some(s)` `p === s`, as react.dev's getRouteMeta writes `currentRoute.path
+=== searchPath`: the `Some` is never `null` or `undefined`, so `===` and
+`==` answer the same, and `===` is what a person writes. Two `Option`s
+keep `==`, as `null` and `undefined` are both `None`. The MIR lowering
+knows the locals only ever made `Some(..)`, and a shared reference to
+one (`OptionWrites::made_some`); `eq_value` writes `==` only of a
+payload that's its `Some`, so that's the one question asked. Decided
+with the user. Case N: the same answer.

@@ -991,7 +991,7 @@ export const mutations: Mutation[] = [
     "name": "mir-null-none-coalesced",
     "breaks": "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
     "file": "src/lower/mir.rs",
-    "find": "        if state.null_nones.contains(&place.local) {\n",
+    "find": "        if state.options.null_nones.contains(&place.local) {\n",
     "replace": "        if false {\n",
     "tests": [
       "test/lowering.test.ts",
@@ -2566,5 +2566,21 @@ export const mutations: Mutation[] = [
     find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return false,\n",
     replace: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return true,\n",
     tests: ["test/corpus.test.ts", "-t", "division_check_order"],
+  },
+  {
+    name: "some-equality-loose",
+    breaks: "an `Option` compared with a `Some(..)` is `==`, where `===` answers the same",
+    file: "src/lower/mir.rs",
+    find: "            Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),\n",
+    replace: "            Value::Expr(e) if false && strict => Ok(Value::Expr(js::strict_equality(e))),\n",
+    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
+  },
+  {
+    name: "some-equality-of-any",
+    breaks: "an `==` of two `Option`s, either of which may be `null` or `undefined`, is `===`",
+    file: "src/lower/mir.rs",
+    find: "                .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))\n",
+    replace: "                .is_some_and(|place| place.projection.is_empty() || state.options.made_some.contains(&place.local))\n",
+    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
   },
 ];

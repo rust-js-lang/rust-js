@@ -29,7 +29,7 @@ export function ResultFrame({ program, onOutcome }) {
           const fromFrame = frame$1 && Object.is(e.source, frame$1.contentWindow);
           const report = readReport(e);
           if (report && fromFrame) {
-            if (report.run == run) {
+            if (report.run === run) {
               // As tall as its page, from the height it starts with.
               if (report.height != null && frame.current) {
                 const height = report.height;

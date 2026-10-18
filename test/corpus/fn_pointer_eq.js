@@ -22,6 +22,6 @@ function main() {
   const found = $position(table, (h) => h === g);
   console.log(`${found == null ? "None" : `Some(${found})`}`);
   // Through references, `PartialEq`'s, and in an `Option`.
-  console.log(`${f === table[0]} ${g == square}`);
+  console.log(`${f === table[0]} ${g === square}`);
 }
 //# sourceMappingURL=case.js.map

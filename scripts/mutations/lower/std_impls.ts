@@ -398,4 +398,12 @@ export const mutations: Mutation[] = [
     replace: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr).filter(|_| self.is_unknown(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
   },
+  {
+    name: "boxed-some-compared-as-object",
+    breaks: "`Some(())`, an object of its own, compares by which object it is, so `o == Some(())` is never true",
+    file: "src/lower/std_impls.rs",
+    find: "            if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {\n",
+    replace: "            if self.js_eq(inner).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_boxed_eq.rs$"],
+  },
 ];

@@ -207,6 +207,18 @@ struct Locals {
     user: IndexVec<Local, bool>,
 }
 
+/// What a body's writes say of its `Option`s.
+#[derive(Default)]
+struct OptionWrites {
+    /// The `Option`s made only `Some(..)` or `None` and read only by
+    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's made,
+    /// `c ? v : null` (ADR 0275).
+    null_nones: std::collections::HashSet<Local>,
+    /// The locals only ever `Some(..)`, and shared references to one: never
+    /// `None`, so `==` to one is `===` (`strictly_equal`).
+    made_some: std::collections::HashSet<Local>,
+}
+
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
@@ -295,10 +307,8 @@ struct State<'m, 'tcx> {
     /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
     /// f();`'s: kept, for tidy to destructure as the pattern reads.
     patterned: std::collections::HashSet<Local>,
-    /// The `Option`s made only `Some(..)` or `None` and read only by
-    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's made,
-    /// `c ? v : null` (ADR 0275).
-    null_nones: std::collections::HashSet<Local>,
+    /// What its writes say of its `Option`s.
+    options: OptionWrites,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
@@ -534,7 +544,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             payloads: self.mir_payloads(mir_body),
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
-            null_nones: Default::default(),
+            options: Default::default(),
             writer: None,
             builders: Default::default(),
             built: Default::default(),
@@ -554,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.let_spans.insert(place.local, self.js_span(*at));
             }
         }
-        state.null_nones = self.mir_null_nones(mir_body, &state.locals);
+        state.options = self.mir_option_writes(mir_body, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing.
         let formatter = (captures.is_none()
@@ -914,7 +924,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// The locals `State::null_nones` says: each write a `Some(..)` or a
+    /// The locals `OptionWrites::null_nones` says: each write a `Some(..)` or a
     /// `None`, one at least, and each read a nullable field's.
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
@@ -950,6 +960,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .map(|(local, _)| local)
             .collect()
+    }
+
+    /// What `body`'s writes say of its `Option`s.
+    fn mir_option_writes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> OptionWrites {
+        OptionWrites {
+            null_nones: self.mir_null_nones(body, locals),
+            made_some: self.mir_made_some(body, locals),
+        }
+    }
+
+    /// The locals `OptionWrites::made_some` says: each write a `Some(..)`, or a
+    /// shared reference to one of those, written once.
+    fn mir_made_some(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+        let mut somes: std::collections::HashMap<Local, usize> = Default::default();
+        let mut refs = Vec::new();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let mir::StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            if !assign.0.projection.is_empty() {
+                continue;
+            }
+            match &assign.1 {
+                Rvalue::Aggregate(kind, _)
+                    if let AggregateKind::Adt(did, variant, ..) = **kind
+                        && self.tcx.is_lang_item(did, LangItem::Option)
+                        && variant.as_u32() == 1 =>
+                {
+                    *somes.entry(assign.0.local).or_default() += 1;
+                }
+                Rvalue::Ref(_, BorrowKind::Shared, of) if of.projection.is_empty() => {
+                    refs.push((assign.0.local, of.local));
+                }
+                _ => {}
+            }
+        }
+        let mut made: std::collections::HashSet<Local> = (somes.into_iter())
+            .filter(|&(local, writes)| writes == locals.writes[local])
+            .map(|(local, _)| local)
+            .collect();
+        for (reference, of) in refs {
+            if made.contains(&of) && locals.writes[reference] == 1 {
+                made.insert(reference);
+            }
+        }
+        made
     }
 
     /// The locals a `let`'s struct pattern binds its fields to, through a
@@ -2331,7 +2387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `None` only nullable fields read: `null` (ADR 0275).
         if place.projection.is_empty()
-            && state.null_nones.contains(&place.local)
+            && state.options.null_nones.contains(&place.local)
             && let Rvalue::Aggregate(kind, _) = rvalue
             && let AggregateKind::Adt(_, variant, ..) = **kind
             && variant.as_u32() == 0
@@ -4243,7 +4299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !place.projection.is_empty() {
             return false;
         }
-        if state.null_nones.contains(&place.local) {
+        if state.options.null_nones.contains(&place.local) {
             return true;
         }
         if state.locals.writes[place.local] != 1 {
@@ -4564,8 +4620,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.flattened.insert(destination.local);
             return Ok(self.take_operands(state, &operands, out)?.remove(0));
         }
-        let values = self.take_operands(state, &operands, out)?;
-        self.mir_call_values(state, (def_id, generic_args), (values, &arg_tys), output, span, out)
+        self.mir_call_operands(state, (def_id, generic_args), (&operands, &arg_tys), output, span, out)
     }
 
     /// The locals each struct JSX gives a component as its props is made in,
@@ -4998,6 +5053,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Value::Expr(
             self.fmt_result_values(answer, result, message, may_fail, span, out),
         ))
+    }
+
+    /// A call of what `operands` give, each read, an `==` of an `Option`
+    /// strict where it can be (`strictly_equal`).
+    fn mir_call_operands(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        callee: (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (operands, arg_tys): (&[&Operand<'tcx>], &[Ty<'tcx>]),
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let strict = self.strictly_equal(state, callee.0, operands);
+        let values = self.take_operands(state, operands, out)?;
+        match self.mir_call_values(state, callee, (values, arg_tys), output, span, out)? {
+            Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
+            value => Ok(value),
+        }
+    }
+
+    /// Whether an `==` of an `Option` is `===`: of one side only ever
+    /// `Some(..)`, `p == Some(s)`, never `None`, so either answers the same
+    /// where `==` is written, of a payload that's its `Some` (`eq_value`),
+    /// and `===` is what a person writes (ADR 0030).
+    fn strictly_equal(
+        &self,
+        state: &State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        operands: &[&Operand<'tcx>],
+    ) -> bool {
+        self.tcx.trait_of_assoc(def_id).is_some_and(|trait_id| {
+            matches!(
+                self.recognition().trait_call(def_id, trait_id),
+                Some(TraitCall::Equality { .. })
+            )
+        }) && operands.iter().any(|operand| {
+            operand
+                .place()
+                .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))
+        })
     }
 
     fn mir_call_values(

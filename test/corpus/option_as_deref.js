@@ -5,7 +5,7 @@ export function entry() {
 }
 
 function path_is(path, want) {
-  return path == want;
+  return path === want;
 }
 
 function first(items) {
