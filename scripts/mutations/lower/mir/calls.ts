@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unit_arguments.rs$"],
     snapshots: true,
   },
+  {
+    name: "duration-assign-number",
+    breaks: "a `Duration`'s `-=` is its number's `-`, which doesn't panic past zero as std's does",
+    file: "src/lower/mir/calls.rs",
+    find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) {",
+    replace: "            } else if crate::lower::representation::Num::of(ty).is_some() {",
+    tests: ["test/corpus.test.ts", "-t", "^duration_sub_assign_panic.rs$"],
+  },
 ];

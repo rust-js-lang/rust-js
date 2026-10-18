@@ -9,6 +9,7 @@ use super::format_spec::Radix;
 use super::pointers::PointerOp;
 use super::representation::Num;
 use super::std_types::any::AnyOp;
+use super::std_types::clock::ClockOp;
 use super::std_types::cow::CowOp;
 use super::std_types::heap::HeapOp;
 use super::std_types::lazy::LazyOp;
@@ -204,6 +205,12 @@ pub(super) enum Std {
     ExactLen,
     /// A `Duration`'s own, of its nanoseconds (ADR 0188).
     Duration(DurationOp),
+    /// A clock's, `SystemTime`'s or, `instant`, `Instant`'s, of its
+    /// nanoseconds (ADR 0447).
+    Clock {
+        op: ClockOp,
+        instant: bool,
+    },
     /// `panic!("{}", x)`: a panic of `x`'s `Display` (ADR 0189).
     PanicDisplay,
     /// `<&[T; N]>::try_from(slice)`, or `<[T; N]>`'s: `Ok` of the slice where
@@ -1067,6 +1074,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Std::UnaryOperator(op));
             }
         }
+        // A clock's `+` and `-`, its only operators (ADR 0447).
+        if let Some(clock) = clock_type_of(ty.peel_refs()) {
+            return self.clock_operator(trait_, args, clock);
+        }
         // A `Duration`'s `+` and `-`, which panic past it as std's do; its
         // other operators aren't its number's (ADR 0188).
         if is_duration_ty(ty.peel_refs()) {
@@ -1500,6 +1511,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && let Some(cell) = cell_method(name.as_str(), adt(StdItem::RefCell))
         {
             return Some(cell);
+        }
+        // A clock's: of its nanoseconds (ADR 0447).
+        if let Some(clock) = clock_type_of(owner) {
+            return clock_method(clock, name.as_str());
         }
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
@@ -2363,6 +2378,58 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Some(Std::Map(MapOp::Extend))
         } else {
             None
+        }
+    }
+
+    /// `a += b` of a number whose `+` is its type's own, a `Duration`'s or
+    /// a clock's, not its number's: `a = a + b`, of that `+`. The operator's
+    /// method, its arguments, and what it is (ADRs 0188, 0447).
+    pub(super) fn assigned_by(
+        &self,
+        assign_trait: DefId,
+        ty: Ty<'tcx>,
+        rhs: Ty<'tcx>,
+    ) -> Option<(DefId, ty::GenericArgsRef<'tcx>, Std)> {
+        let tcx = self.tcx;
+        let op = assign_operator(tcx, assign_trait)?;
+        let (item, name) = [
+            (BinOp::Add, LangItem::Add, "add"),
+            (BinOp::Sub, LangItem::Sub, "sub"),
+            (BinOp::Mul, LangItem::Mul, "mul"),
+            (BinOp::Div, LangItem::Div, "div"),
+            (BinOp::Rem, LangItem::Rem, "rem"),
+        ]
+        .into_iter()
+        .find_map(|(o, item, name)| (o == op).then_some((item, name)))?;
+        let method = trait_method(tcx, tcx.lang_items().get(item)?, name);
+        let args = tcx.mk_args(&[ty.into(), rhs.into()]);
+        Some((method, args, self.classify(method, args)?))
+    }
+
+    /// A clock's operator, of its trait `trait_` and its arguments (ADR
+    /// 0447): `t + d` and `t - d` of a `Duration`, and an `Instant`'s
+    /// `a - b` of another. `t += d` is std's `*t = *t + d`, as a
+    /// `Duration`'s is (ADR 0188); its others aren't its number's.
+    fn clock_operator(&self, trait_: DefId, args: ty::GenericArgsRef<'tcx>, clock: ClockType) -> Option<Std> {
+        let tcx = self.tcx;
+        let instant = clock == ClockType::Instant;
+        let rhs = args.types().nth(1)?;
+        let shift = |sub: bool| {
+            Some(Std::Clock {
+                op: ClockOp::Shift { sub },
+                instant,
+            })
+        };
+        match (is_duration_ty(rhs), clock_type_of(rhs)) {
+            (true, _) if tcx.is_lang_item(trait_, LangItem::Add) => shift(false),
+            (true, _) if tcx.is_lang_item(trait_, LangItem::Sub) => shift(true),
+            (false, Some(ClockType::Instant)) if instant && tcx.is_lang_item(trait_, LangItem::Sub) => {
+                Some(Std::Clock {
+                    op: ClockOp::Since { checked: false },
+                    instant,
+                })
+            }
+            _ => None,
         }
     }
 
@@ -4356,6 +4423,66 @@ pub(crate) fn is_duration(id: DefId) -> bool {
 /// A `Duration` type (ADR 0188).
 pub(crate) fn is_duration_ty(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_duration(adt.did()))
+}
+
+/// A clock's method `name` (ADR 0447), of its nanoseconds.
+fn clock_method(clock: ClockType, name: &str) -> Option<Std> {
+    let op = match (clock, name) {
+        (ClockType::Error, "duration") => ClockOp::ErrorDuration,
+        (ClockType::Error, _) => return None,
+        (_, "now") => ClockOp::Now,
+        (_, "duration_since" | "saturating_duration_since") => ClockOp::Since { checked: false },
+        (_, "checked_duration_since") => ClockOp::Since { checked: true },
+        (_, "elapsed") => ClockOp::Elapsed,
+        (_, "checked_add") => ClockOp::Shift { sub: false },
+        (_, "checked_sub") => ClockOp::Shift { sub: true },
+        _ => return None,
+    };
+    Some(Std::Clock {
+        op,
+        instant: clock == ClockType::Instant,
+    })
+}
+
+/// Whether `ty`'s arithmetic is its number's, `a += b` its JS number's
+/// `+`, checked as Rust's is: not a `Duration`'s (ADR 0188) or a clock's
+/// (ADR 0447), numbers whose `+` std writes, which is compiled.
+pub(crate) fn has_number_arithmetic(ty: Ty<'_>) -> bool {
+    Num::of(ty).is_some() && !is_duration_ty(ty) && clock_type_of(ty).is_none()
+}
+
+/// What std's clock has of `id` (ADR 0447): `SystemTime`, `Instant`, or
+/// `SystemTimeError`.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum ClockType {
+    System,
+    Instant,
+    Error,
+}
+
+pub(crate) fn clock_type(id: DefId) -> Option<ClockType> {
+    ty::tls::with_opt(|tcx| {
+        let tcx = tcx?;
+        if tcx.is_diagnostic_item(Symbol::intern("Instant"), id) {
+            return Some(ClockType::Instant);
+        }
+        if tcx.crate_name(id.krate) != sym::std {
+            return None;
+        }
+        match std_path(tcx, id).as_str() {
+            "std::time::SystemTime" => Some(ClockType::System),
+            "std::time::SystemTimeError" => Some(ClockType::Error),
+            _ => None,
+        }
+    })
+}
+
+/// A clock's type, `SystemTime`, `Instant` or `SystemTimeError` (ADR 0447).
+pub(crate) fn clock_type_of(ty: Ty<'_>) -> Option<ClockType> {
+    match ty.kind() {
+        ty::Adt(adt, _) => clock_type(adt.did()),
+        _ => None,
+    }
 }
 
 /// core's `TryFromSliceError` (ADR 0189).

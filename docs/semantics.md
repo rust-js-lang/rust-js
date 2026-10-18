@@ -358,6 +358,10 @@ block or an `async` closure is an async arrow
   queue its ends share, and `recv()` of an empty one whose senders are
   alive panics, where Rust's would wait forever
   ([0142](decisions/0142-channels.md)).
+- **The time is JS's clocks'.** A `SystemTime` and an `Instant` are their
+  nanoseconds, a BigInt; `SystemTime::now()` is `Date.now()`'s, to the
+  millisecond, and `Instant::now()` is `performance`'s, which only goes
+  forward ([0447](decisions/0447-the-clock.md)).
 
 What's refused of async, threads and time is in
 [the limitations](limitations.md#async-threads-and-time).

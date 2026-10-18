@@ -367,8 +367,8 @@ export const mutations: Mutation[] = [
     name: "path-shape-object",
     breaks: "a `PathBuf` is taken for an object of its fields, so `buf.push(..)` can't change its place",
     file: "src/lower/representation.rs",
-    find: "        if self.is_std_wrapper(ty) || self.is_js_object(ty) || self.recognition().is_path_like(ty) {\n",
-    replace: "        if self.is_std_wrapper(ty) || self.is_js_object(ty) {\n",
+    find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
+    replace: "            || Num::of(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
   {
@@ -436,5 +436,21 @@ export const mutations: Mutation[] = [
     find: "        self.layout(ty).is_some_and(|layout| layout.is_zst())\n",
     replace: "        self.layout(ty).is_some_and(|layout| layout.is_zst() && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^option_as_mut_generic.rs$"],
+  },
+  {
+    name: "number-shape-fields",
+    breaks: "a `&mut Duration` is an object whose fields are written, so what's assigned through it is lost",
+    file: "src/lower/representation.rs",
+    find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
+    replace: "            || self.recognition().is_path_like(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^duration_by_mut.rs$"],
+  },
+  {
+    name: "never-falsy-duration",
+    breaks: "a `Duration` is taken for an object, so `None` of one is tested `!o`, which `ZERO` passes",
+    file: "src/lower/representation.rs",
+    find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
+    replace: "            || self.recognition().is_path_like(ty)\n",
+    tests: ["test/lowering.test.ts", "-t", "stepped by hand"],
   },
 ];

@@ -110,8 +110,7 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time)).
 
 - Spawning a thread: `let h = std::thread::spawn(|| 1); println!("{}", h.join().unwrap());`
 - Sleeping: `std::thread::sleep(std::time::Duration::from_millis(1));`
-- The time now, `Instant`: `let i = std::time::Instant::now(); let _ = i.elapsed();`
-- The time now, `SystemTime`: `let t = std::time::SystemTime::now(); let _ = t;`
+- A time's `{:?}`, its platform's fields: `println!("{:?}", std::time::Instant::now());`
 - `pin!`, which is `Pin::new_unchecked`: `let p = std::pin::pin!(async { 1 }); let _ = p;`
 - `future::ready`: `let f = std::future::ready(1); let _ = f;`
 - `future::poll_fn`: `let f = std::future::poll_fn(|_| std::task::Poll::Ready(1)); let _ = f;`

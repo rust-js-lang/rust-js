@@ -588,11 +588,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             within.pop();
             return each;
         }
-        self.option_of(ty).is_none()
-            && !any
-            // A `Duration` is its nanoseconds (ADR 0188), `0n` of `ZERO`.
-            && !crate::lower::recognition::is_duration_ty(ty)
-            && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
+        // A `NonZero` is its number (ADR 0177), never `0` or `0n`.
+        crate::lower::recognition::is_non_zero_ty(ty)
+            || self.option_of(ty).is_none()
+                && !any
+                && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
     }
 
     /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value

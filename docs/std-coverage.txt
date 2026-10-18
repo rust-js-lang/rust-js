@@ -472,6 +472,14 @@
 # Cow 2 of 2
 + Cow::into_owned
 + Cow::to_mut
+# Instant 7 of 7
++ Instant::checked_add
++ Instant::checked_duration_since
++ Instant::checked_sub
++ Instant::duration_since
++ Instant::elapsed
++ Instant::now
++ Instant::saturating_duration_since
 # OnceCell 7 of 7
 + OnceCell::get
 + OnceCell::get_mut
@@ -501,6 +509,12 @@
 + LazyLock::get
 + LazyLock::get_mut
 + LazyLock::new
+# SystemTime 5 of 5
++ SystemTime::checked_add
++ SystemTime::checked_sub
++ SystemTime::duration_since
++ SystemTime::elapsed
++ SystemTime::now
 # String 32 of 43
 + String::as_bytes
 + String::as_mut_str

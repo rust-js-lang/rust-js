@@ -91,8 +91,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rhs = crate::lower::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
             let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
                 Expr::bin(Op::Add, place.clone(), rhs)
-            } else if crate::lower::representation::Num::of(ty).is_some() {
+            } else if crate::lower::recognition::has_number_arithmetic(ty) {
                 self.binary(op, place.clone(), rhs, None, ty, span)?
+            } else if let Some((def_id, generic_args, known)) =
+                self.recognition().assigned_by(trait_id, ty, arg_tys[1].peel_refs())
+            {
+                // A `Duration`'s or a clock's: its own `+` (ADRs 0188, 0447).
+                let tys = [ty, arg_tys[1]];
+                let call = crate::lower::calls::Call {
+                    def_id,
+                    generic_args,
+                    tys: &tys,
+                    span,
+                };
+                self.std_values(known, call, vec![place.clone(), rhs], false, ty, out)?
             } else {
                 return Err(self.unsupported(
                     span,

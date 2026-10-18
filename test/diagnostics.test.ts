@@ -133,7 +133,7 @@ for (const [name, source, message, crate] of [
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
   ["a path's components", "use std::path::Path;\npub fn f(a: &Path) -> usize { a.components().count() }", "calling `std::path::Path::components`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::hash::Hasher for C { fn finish(&self) -> u64 { 0 } fn write(&mut self, _: &[u8]) {} }', "user implementations of `std::hash::Hasher`"],
-  ["comparing another crate's struct", 'pub fn f(a: std::time::Instant, b: std::time::Instant) -> bool { a < b }', "does not support"],
+  ["comparing another crate's struct", 'pub fn f(a: std::net::Ipv4Addr, b: std::net::Ipv4Addr) -> bool { a < b }', "does not support"],
   ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a `C`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],

@@ -691,6 +691,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if super::recognition::is_try_from_slice_error(self.tcx, ty) {
             return Ok(Expr::str("could not convert slice to array"));
         }
+        // std's clock's (ADR 0447): a `SystemTimeError`'s message; a time's
+        // has none.
+        if let Some(clock) = super::recognition::clock_type_of(ty) {
+            return match clock {
+                super::recognition::ClockType::Error => Ok(Expr::str("second time provided was later than self")),
+                _ => Err(self.unsupported(span, &format!("the `Display` of a `{ty}`, which std has none of"))),
+            };
+        }
         if super::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("invalid utf-16: lone surrogate found"));
         }
@@ -937,6 +945,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::var("String"), vec![value]),
                 Expr::str(" }"),
             ]));
+        }
+        // A `SystemTimeError`'s, its `Duration`'s; a time's is its platform's
+        // fields, which JS has none of (ADR 0447).
+        if let Some(clock) = super::recognition::clock_type_of(ty) {
+            if clock != super::recognition::ClockType::Error {
+                return Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`, its platform's fields")));
+            }
+            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
+                return Err(self.unsupported(span, "options for a `SystemTimeError`'s `{:?}`"));
+            }
+            let duration = Expr::call(Expr::helper("$debugDuration"), vec![value]);
+            return Ok(join(vec![Expr::str("SystemTimeError("), duration, Expr::str(")")]));
         }
         // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188). With
         // options, std rounds and pads it by its own rules: not yet.

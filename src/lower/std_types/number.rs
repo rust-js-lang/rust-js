@@ -1205,6 +1205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
+            Std::Clock { op, instant } => self.clock_values(op, instant, values, out)?,
             Std::Duration(op) => {
                 let nanos = |n: i64| Expr::bigint(i128::from(n));
                 let helper = |name: &'static str, args: Vec<Expr>| Expr::call(Expr::helper(name), args);

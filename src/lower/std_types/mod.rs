@@ -24,6 +24,7 @@
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
 //! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |
 //! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
+//! | `SystemTime`, `Instant` | its nanoseconds, a `BigInt` | `clock` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
@@ -32,6 +33,7 @@ pub(super) mod alloc;
 pub(super) mod any;
 pub(super) mod cell;
 pub(super) mod channel;
+pub(super) mod clock;
 pub(super) mod cow;
 pub(super) mod heap;
 pub(super) mod lazy;

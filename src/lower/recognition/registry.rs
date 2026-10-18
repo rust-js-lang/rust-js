@@ -28,6 +28,7 @@ const DIAGNOSTIC: &[&str] = &[
     "Mutex",
     "RwLock",
     "Cow",
+    "Instant",
 ];
 
 /// Those with no diagnostic item, by their crate and path.
@@ -36,6 +37,7 @@ const PATHS: &[(&str, &str, &[&str])] = &[
     ("LazyCell", "core", &["cell", "LazyCell"]),
     ("OnceLock", "std", &["sync", "OnceLock"]),
     ("LazyLock", "std", &["sync", "LazyLock"]),
+    ("SystemTime", "std", &["time", "SystemTime"]),
 ];
 
 /// The primitives', by their kind.

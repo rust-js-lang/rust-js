@@ -500,4 +500,20 @@ export const mutations: Mutation[] = [
     replace: "            return Err(self.unsupported(span, \"`{:?}` of a `TypeId`, its hash\"));\n",
     tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
   },
+  {
+    name: "system-time-error-message",
+    breaks: "a `SystemTimeError`'s `Display` isn't std's message",
+    file: "src/lower/display.rs",
+    find: "Ok(Expr::str(\"second time provided was later than self\"))",
+    replace: "Ok(Expr::str(\"later\"))",
+    tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
+  },
+  {
+    name: "system-time-error-debug",
+    breaks: "a `SystemTimeError`'s `{:?}` is its `Duration`'s, without its name",
+    file: "src/lower/display.rs",
+    find: "            return Ok(join(vec![Expr::str(\"SystemTimeError(\"), duration, Expr::str(\")\")]));",
+    replace: "            return Ok(duration);",
+    tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
+  },
 ];

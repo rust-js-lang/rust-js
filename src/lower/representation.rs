@@ -373,8 +373,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How a struct or tuple type looks in JS.
     pub(super) fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
-        // A path is its text, a string (ADR 0173), whatever its fields.
-        if self.is_std_wrapper(ty) || self.is_js_object(ty) || self.recognition().is_path_like(ty) {
+        // A path is its text, a string (ADR 0173), whatever its fields; and a
+        // struct of std's that's a number, a `Duration`'s nanoseconds (ADRs
+        // 0177, 0188, 0447), has none in JS.
+        if self.is_std_wrapper(ty)
+            || self.is_js_object(ty)
+            || self.recognition().is_path_like(ty)
+            || Num::of(ty).is_some()
+        {
             return Shape::Other;
         }
         match ty.kind() {
@@ -487,6 +493,12 @@ impl Num {
             ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),
             // A `Duration` is its nanoseconds (ADR 0188).
             ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,
+            // So is a clock's time, since a time before it, and a
+            // `SystemTimeError` the `Duration` it holds (ADR 0447).
+            ty::Adt(adt, _) => match super::recognition::clock_type(adt.did())? {
+                super::recognition::ClockType::Error => Num::U128,
+                _ => Num::I128,
+            },
             _ => return None,
         })
     }
@@ -888,6 +900,23 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         let secs = secs.try_to_value()?.try_to_leaf()?.to_bits_unchecked();
         let nanos = innermost(nanos.try_to_value()?)?.try_to_leaf()?.to_bits_unchecked();
         return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));
+    }
+    // A clock's is its nanoseconds, of its seconds and nanoseconds however
+    // its platform keeps them: `UNIX_EPOCH`'s, `0n` (ADR 0447).
+    if super::recognition::clock_type_of(ty).is_some() {
+        let mut leaves = Vec::new();
+        let mut pending = vec![value];
+        while let Some(part) = pending.pop() {
+            match &**part.valtree {
+                ty::ValTreeKind::Branch(items) => {
+                    pending.extend(items.iter().rev().filter_map(|item| item.try_to_value()));
+                }
+                ty::ValTreeKind::Leaf(leaf) => leaves.push(leaf.to_bits_unchecked()),
+            }
+        }
+        let [secs, nanos] = leaves[..] else { return None };
+        let nanos = i128::from(secs as u64 as i64) * 1_000_000_000 + nanos as i128;
+        return Some(Expr::bigint(nanos));
     }
     if let Some(num) = Num::of(ty) {
         // A `NonZero`'s is its number, inside std's `NonZeroU8Inner` (ADR 0177).

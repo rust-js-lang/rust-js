@@ -815,6 +815,38 @@ export function $nthDropping(it, n, drop, boxed) {
   return undefined;
 }
 
+// `SystemTime::now()`: the nanoseconds since the Unix epoch, of JS's
+// clock's milliseconds (ADR 0447).
+export function $systemNow() {
+  return BigInt(Date.now()) * 1000000n;
+}
+
+// `Instant::now()`: nanoseconds of a clock that only goes forward, JS's
+// `performance`, from when the page or process began, past the epoch as
+// a platform's own begins past its boot (ADR 0447).
+export function $instantNow() {
+  return BigInt(Math.round((performance.timeOrigin + performance.now()) * 1e6));
+}
+
+// `a.duration_since(b)` of two `SystemTime`s: `Ok` of the time from `b`
+// to `a`, or `Err` of a `SystemTimeError` of the time `b` is after (ADR
+// 0447).
+export function $timeSince(a, b) {
+  return a >= b ? { TAG: "Ok", _0: a - b } : { TAG: "Err", _0: b - a };
+}
+
+// `a.duration_since(b)` of two `Instant`s, and `a - b`: the time from `b`
+// to `a`, or zero where `b` is after, as std's saturates (ADR 0447).
+export function $instantSince(a, b) {
+  return a > b ? a - b : 0n;
+}
+
+// `a.checked_duration_since(b)` of two `Instant`s: the time from `b` to
+// `a`, or `None` where `b` is after (ADR 0447).
+export function $instantCheckedSince(a, b) {
+  return a >= b ? a - b : undefined;
+}
+
 // `it.find(test)` of items with a destructor: the first that `test` holds
 // of, each before it dropped by `drop` as it's passed, as std's `find` drops
 // each it rejects (ADR 0098); boxed where it may look like `None` (ADR 0051).

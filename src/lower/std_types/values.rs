@@ -506,6 +506,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::ToBig
             | Std::Cast { .. }
             | Std::Duration(_)
+            | Std::Clock { .. }
             | Std::SliceToArray { .. }
             | Std::TryFromInt { .. }
             | Std::FromDigit

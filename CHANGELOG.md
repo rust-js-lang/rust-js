@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **The clock**: `SystemTime::now()` and `Instant::now()`, the time between
+  two, `elapsed()`, a `Duration` added or taken, and a `SystemTimeError`,
+  each its nanoseconds, a BigInt, as a `Duration` is (ADR 0447).
 - **A `&mut dyn fmt::Write`**, a function that writes to any writer, and
   std's `fmt::write(w, args)`, anyhow's (ADR 0446).
 - **Generic code extends and collects into what it's given**: `c.extend(items)`
@@ -417,6 +420,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A `Duration` assigned through a `&mut`**, `*d = *d + one`, is the
+  caller's: it was written to fields a number hasn't, and lost; and a
+  `Duration`'s `-=` past zero panics as its `-` does (ADR 0447).
 - **`o == Some(())`**, of an `Option` whose `Some` is boxed, compares what's
   in it: it was never `true` (ADR 0051).
 - **`fold(None, f)`** kept its start, `reduce(f, undefined)`: it was left
