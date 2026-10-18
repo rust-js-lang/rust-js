@@ -37,7 +37,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   expect(js).toContain("<Todos />\n      <Clock />\n      <Themed />");
   // A context and memoized components, made once, as `const`s of the module
   // (from `thread_local!`); a provider is the context as a tag, as in React 19.
-  expect(js).toContain('const THEME = createContext("light");\nconst BADGE = memo(Badge);\nconst LOOSE_BADGE = memo(Badge, (a, b) => ');
+  expect(js).toContain('const THEME = createContext("light");\nconst BADGE = memo(Badge);\n/** Any two labels that aren\'t empty count as the same props. */\nconst LOOSE_BADGE = memo(Badge, (a, b) => ');
   expect(js).toContain("const theme = useContext(THEME);");
   expect(js).toContain("<BADGE label=\"outside\" />\n      <THEME value={dark ? \"dark\" : \"light\"}>");
   // `!` of a `&bool`, which rustc writes as `Not::not`.
