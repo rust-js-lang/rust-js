@@ -597,6 +597,7 @@ export const wrong = <Button format={format} onClick={(event: number) => event} 
 // `unknown`, as a person declares a value of any type, where it was rustc's
 // name for it, `impl js::Defined + 'a`, which isn't TypeScript.
 test("declarations give an impl Trait parameter of no TypeScript type unknown", () => {
+  buildReact();
   const dir = fixture("declarations-impl-trait");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), `pub fn size<'a>(value: &'a (impl js::Defined + 'a)) -> u32 {

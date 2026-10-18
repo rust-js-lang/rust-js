@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "let key = PropertyKey::new_static_identifier(span(f.name_span), self.name(&f.name), b);",
     replace: "let key = PropertyKey::new_static_identifier(SPAN, self.name(&f.name), b);",
-    tests: ["test/modules.test.ts", "-t", "methods across modules, in a thread-local, and camelCase"],
+    tests: ["test/modules.test.ts", "-t", "methods across modules and in a thread-local, by their Rust names"],
   },
   {
     name: "map-other-files-dropped",

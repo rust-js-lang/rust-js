@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                                methods: vec![lowered.function],\n                                export,\n",
     replace: "                                methods: vec![lowered.function],\n                                export: true,\n",
-    tests: ["test/modules.test.ts", "-t", "methods across modules, in a thread-local, and camelCase"],
+    tests: ["test/modules.test.ts", "-t", "methods across modules and in a thread-local, by their Rust names"],
   },
   {
     name: "dictionary-jsx-unmarked",

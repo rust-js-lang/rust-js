@@ -5,7 +5,7 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { copyFileSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, relative } from "node:path";
 
 import { decode, expected, same, type Outcome } from "./oracle";
 import { callInNode, type Call } from "./programs";
@@ -227,11 +227,13 @@ test("a crate split across files becomes one JS file per module", async () => {
   expect(stats).toContain("return (x / HALVES) >>> 0;");
 
   // Each file's source map points into the .rs file its module lives in.
+  // Each named from the JS's folder, wherever the build's target is.
   const sources = async (f: string) => (await Bun.file(join(out, `${f}.map`)).json()).sources;
-  expect(await sources("stats.js")).toEqual(["../../examples/modules/stats.rs"]);
-  expect(await sources("geometry/area.js")).toEqual(["../../../examples/modules/geometry/area.rs"]);
+  const from = (f: string, rs: string) => relative(dirname(join(out, f)), join(root, "examples/modules", rs));
+  expect(await sources("stats.js")).toEqual([from("stats.js", "stats.rs")]);
+  expect(await sources("geometry/area.js")).toEqual([from("geometry/area.js", "geometry/area.rs")]);
   // An inline module lives in its parent's file.
-  expect(await sources("util.js")).toEqual(["../../examples/modules/lib.rs"]);
+  expect(await sources("util.js")).toEqual([from("util.js", "lib.rs")]);
 });
 
 // ADR 0028: `#[link_name = "module#path"]` imports from a JS module.
