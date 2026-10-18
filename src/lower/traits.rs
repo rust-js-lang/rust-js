@@ -741,6 +741,22 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
     }
 }
 
+/// Whether std's trait `trait_id`'s call of `self_ty` is written in place,
+/// as recognition lowers it, where a dictionary is for generic code (ADR
+/// 0180). A writer's where its type is known, `known_here`, as it may write
+/// to one it holds: `write!(c, ..)`'s own `write_str`, a string's `+=`
+/// (ADRs 0148, 0166), an `io::Write`'s bytes (ADR 0392). A `Deref`'s, a
+/// guard's value or a `Cow`'s text, and a collection's `extend` and
+/// `from_iter`, of any items, where its own type is known, whatever it
+/// holds, a `MutexGuard<C>`'s (ADRs 0394, 0445, 0450).
+fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known_here: bool) -> bool {
+    let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite) || is_std_def(tcx, trait_id, StdItem::IoWrite);
+    let holder = tcx.is_lang_item(trait_id, LangItem::Deref)
+        || super::recognition::is_extend(tcx, trait_id)
+        || is_std_def(tcx, trait_id, StdItem::FromIterator);
+    (writer && known_here) || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))
+}
+
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
 /// 0394), and an `Extend`'s and a `FromIterator`'s (ADR 0445). Where the
@@ -2095,25 +2111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
-        // Where the writer is known, `write!(c, ..)` is its own `write_str`, or
-        // a string's `+=`, written in place (ADRs 0148, 0166): a dictionary is
-        // for generic code (ADR 0180).
-        // So is an `io::Write`'s: a stream's `print!`, a `Vec<u8>`'s bytes
-        // added (ADR 0392); and std's `Deref` of a known type, a guard's
-        // value or a `Cow`'s text, recognized as it was (ADR 0394).
-        if (is_std_def(self.tcx, trait_id, StdItem::FmtWrite)
-            || is_std_def(self.tcx, trait_id, StdItem::IoWrite)
-            || self.tcx.is_lang_item(trait_id, LangItem::Deref))
-            && known_here
-        {
-            return Ok(None);
-        }
-        // So is a known collection's `extend` or `from_iter`, a `Vec<T>`'s
-        // too, of items of any type, which it takes as any iterable: not a
-        // type parameter's (ADR 0445).
-        if (super::recognition::is_extend(self.tcx, trait_id) || is_std_def(self.tcx, trait_id, StdItem::FromIterator))
-            && !matches!(tr.self_ty().kind(), ty::Param(_) | ty::Alias(..))
-        {
+        if std_written_in_place(self.tcx, trait_id, tr.self_ty(), known_here) {
             return Ok(None);
         }
         // A std trait's dictionary has only its required methods, and those

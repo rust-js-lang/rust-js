@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **uuid compiles.** A guard of a lock of a type parameter's,
+  `MutexGuard<C>`, and a `Cow<'_, [T]>`, deref in generic code as a known
+  type's do (ADR 0450).
 - **A lock taken whether or not it's poisoned**,
   `m.lock().unwrap_or_else(|e| e.into_inner())`, uuid's: its guard,
   `$lock(m, true)`; a `PoisonError`'s `into_inner()` and `get_ref()` are

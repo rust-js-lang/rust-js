@@ -30,14 +30,18 @@ newest release its requirement allows.
 | anyhow 1.0 | refused | a `*const dyn Error` pointer, its error's type erased |
 | once_cell 1.21 | refused | `std::thread::current` called |
 | semver 1.0 | refused | `this Formatter` |
-| uuid 1.28 | refused | a pointer into what JS may hold a copy of |
-| url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; percent-encoding: `String::from_utf8_lossy` called |
+| uuid 1.28 | compiles | no probe yet |
+| url 2.5 | blocked | stable_deref_trait: `Ref`'s `Deref` as evidence; litemap: `{:?}` of a `PhantomData`; writeable: `rev` of a lazy iterator, from MIR; percent-encoding: `{:?}` of a `slice::Iter` |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
 | rust_decimal 1.38 | blocked | serde_core: `size_of` of a type parameter |
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
 
-8 of 18 compile, and each of the 7 with a probe runs as natively.
+9 of 18 compile, and each of the 7 with a probe runs as natively.
+uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
+`SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
+`&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and
+`Deref` of a `MutexGuard<C>` in its generic clock sequence.
 hashbrown and indexmap, measured 2026-10-16, run: rustc builds them, and
 their maps are a `Map` and a `Set` (ADRs 0423, 0424).
 smallvec, measured 2026-10-16, after ADRs 0417 to 0422, runs whole: its
