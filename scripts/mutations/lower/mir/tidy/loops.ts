@@ -51,22 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","arguments read out of order"],
   },
   {
-    name: "mir-tidy-loop-unrotated",
-    breaks: "`while (true) { if (c) { a; continue; } return x; }` stays, not `while (c) { a } return x;`",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            && !goes_on(exit, label.as_deref())\n",
-    replace: "            && !goes_on(exit, label.as_deref())\n            && false\n",
-    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
-  },
-  {
-    name: "mir-tidy-loop-rotated-unclosed",
-    breaks: "a path out of a rotated loop's `if` goes on to its next turn, not out",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "                looped.push(StmtKind::Break(None).at(span));\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
-  },
-  {
     name: "mir-tidy-loop-as-while",
     breaks: "a `loop` the program wrote, its first test leaving, is `while (!t)`",
     file: "src/lower/mir/tidy/loops.rs",

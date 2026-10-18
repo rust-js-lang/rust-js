@@ -323,46 +323,6 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             let n = exit.len();
             stmts.splice(i + 1..i + 1, exit);
             i += n;
-        } else if let StmtKind::While { label, cond, body } = &stmts[i].kind
-            && matches!(cond.kind, ExprKind::Bool(true))
-            && let [first, exit @ ..] = body.as_slice()
-            && let StmtKind::If(_, looped, None) = &first.kind
-            && exit
-                .last()
-                .is_some_and(|s| matches!(s.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
-            && !breaks(looped, label.as_deref())
-            && !breaks(exit, label.as_deref())
-            && !goes_on(exit, label.as_deref())
-        {
-            // `while (true) { if (c) { a } exit }`, `a` going on only by
-            // `continue`: `while (c) { a; break; } exit`, a path out of `a`
-            // the loop's end.
-            let span = stmts[i].span;
-            let StmtKind::While { label, body, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
-            else {
-                unreachable!("matched")
-            };
-            let mut body = body.into_iter();
-            let Some(Stmt {
-                kind: StmtKind::If(test, mut looped, None),
-                ..
-            }) = body.next()
-            else {
-                unreachable!("matched")
-            };
-            if !looped.last().is_some_and(ends) {
-                looped.push(StmtKind::Break(None).at(span));
-            }
-            stmts[i] = StmtKind::While {
-                label,
-                cond: test,
-                body: looped,
-            }
-            .at(span);
-            let exit: Vec<Stmt> = body.collect();
-            let n = exit.len();
-            stmts.splice(i + 1..i + 1, exit);
-            i += n;
         }
         i += 1;
     }

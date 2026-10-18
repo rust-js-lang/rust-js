@@ -4,36 +4,6 @@
 use super::*;
 use crate::lower::std_types::result;
 
-/// Whether a `continue` in `stmts` goes on with the loop they're in, labeled
-/// `label`: one of no label not inside a loop of their own, or of its label.
-pub(super) fn goes_on(stmts: &[Stmt], label: Option<&str>) -> bool {
-    stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Continue(None) => true,
-        StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
-        StmtKind::If(_, a, b) => goes_on(a, label) || b.as_deref().is_some_and(|b| goes_on(b, label)),
-        StmtKind::Labeled(_, body) => goes_on(body, label),
-        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-            label.is_some_and(|l| names_continue(body, l))
-        }
-        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => goes_on(a, label) || goes_on(b, label),
-        _ => false,
-    })
-}
-
-/// Whether a `continue` in `stmts`, however deep, names `label`.
-pub(super) fn names_continue(stmts: &[Stmt], label: &str) -> bool {
-    stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Continue(Some(l)) => l == label,
-        StmtKind::If(_, a, b) => names_continue(a, label) || b.as_deref().is_some_and(|b| names_continue(b, label)),
-        StmtKind::While { body, .. }
-        | StmtKind::ForOf { body, .. }
-        | StmtKind::For { body, .. }
-        | StmtKind::Labeled(_, body) => names_continue(body, label),
-        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_continue(a, label) || names_continue(b, label),
-        _ => false,
-    })
-}
-
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop
 /// or none, or any jump, or, where `nested`, an `if` that's of this shape
 /// too: `if (!c) { break; } a`, as a person writes an early exit; and
