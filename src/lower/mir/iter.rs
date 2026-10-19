@@ -697,7 +697,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An item with a destructor a method may leave undropped, `take`'s or
     /// `count`'s: what std drops, refused till it's dropped here. Not of one
-    /// that drops or keeps each, nor `filter`'s and `skip_while`'s, which drop
+    /// that drops or keeps each, `filter_map`'s, which gives each to its
+    /// function, nor `filter`'s and `skip_while`'s, which drop
     /// each they discard, nor of one that makes each as it's stepped,
     /// `repeat`, which leaves none behind but what its drop drops (ADR 0422).
     fn check_leaves_none(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, name: &str, span: Span) -> R<()> {
@@ -723,6 +724,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Find
                     | IterMethod::Partition
                     | IterMethod::Filter
+                    | IterMethod::FilterMap
                     | IterMethod::SkipWhile
             )
         );

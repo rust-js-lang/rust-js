@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **litemap compiles**: a `&mut V` a generic store gives inside what it
+  gives, handed on and replaced through (ADRs 0099, 0147), and
+  `filter_map` of items with a destructor (ADR 0098).
 - **`map(f)` of a `fmt::Result`** (ADR 0187), and **`checked_ilog2()` and
   `checked_ilog10()`** (ADR 0154): writeable compiles.
 - **A `&mut` given as a type parameter's value is a box**, as a generic

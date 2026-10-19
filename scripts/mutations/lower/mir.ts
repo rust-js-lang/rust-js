@@ -2624,4 +2624,20 @@ export const mutations: Mutation[] = [
     replace: "                Value::Place(object) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
+  {
+    name: "call-part-cell-refused",
+    breaks: "a `&mut V` a store's method gives in a tuple, handed on, `lm_get_mut(i).unwrap().1`, is refused",
+    file: "src/lower/mir.rs",
+    find: "                    && match &call_part(holder).kind {\n",
+    replace: "                    && match &holder.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+  },
+  {
+    name: "replaced-cell-refused",
+    breaks: "`mem::replace` through a `&mut V` a store gives, which is a cell, is refused",
+    file: "src/lower/mir.rs",
+    find: "                Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {\n",
+    replace: "                Value::Expr(e) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+  },
 ];

@@ -519,3 +519,13 @@ of them does (`heap_destructors`).
 - [0197](0197-moved-before-leaving.md): What's moved before anything can leave isn't its scope's to drop
 - [0199](0199-components-take-no-drops.md): A component takes no drop of its type parameters
 - [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made
+
+## Amendment: `filter_map` of items with a destructor
+
+**`filter_map(f)` of items with a destructor gives each to `f`, which owns
+and drops it**, as `partition` moves each into one of its two (ADR 0445):
+it leaves none undropped, so it isn't refused. One answer says which
+combinators move each item on, `IterComb::moves_each_on`, which the check
+of a call's drops and of a combinator's ask; it was a list in each.
+litemap's `other.values.lm_into_iter().filter_map(..)` of generic items
+compiles.

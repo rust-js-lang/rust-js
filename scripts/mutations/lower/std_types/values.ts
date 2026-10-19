@@ -350,8 +350,8 @@ export const mutations: Mutation[] = [
     name: "partition-moves-unseen",
     breaks: "`partition` of items with a destructor is refused, as if it dropped some",
     file: "src/lower/std_types/values.rs",
-    find: "            || (known == Std::IterComb(crate::lower::combinators::IterComb::Partition)\n",
-    replace: "            || (false\n",
+    find: "            || (matches!(known, Std::IterComb(comb) if comb.moves_each_on()) && self.ends_holding_nothing(tys[0]));\n",
+    replace: "            || false;\n",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
   {

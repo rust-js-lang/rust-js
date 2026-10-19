@@ -2307,10 +2307,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A handle on the `value` of what a variable holds, a box, a handle
             // or a cell, is that: what it's read and written through. Of what
             // a call gives, `$strPart(..)`'s, the one it gives, there.
+            // So is one a call gives in what it gives, a store's
+            // `lm_get_mut(i).unwrap().1`, made there once.
             Value::Ref(ref place)
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == js::HELD
-                    && match &holder.kind {
+                    && match &call_part(holder).kind {
                         js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
                         _ => self.locals.mir.cells.iter().any(|cell| cell.written_alike(holder)),
                     } =>
@@ -5475,10 +5477,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
                 })
         };
-        let mut values = values.enumerate().map(|(i, value)| match value {
-            Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
-            value => value,
-        });
+        let mut given = Vec::new();
+        for (i, value) in values.enumerate() {
+            given.push(match value {
+                Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
+                // A cell, a generic `&mut V` a store gives: its `value`, the
+                // place, of what's held once, as it's read and written.
+                Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {
+                    let cell = match e.reads_same() {
+                        true => e,
+                        false => self.spill("cell", e, out),
+                    };
+                    Value::Ref(Expr::held(cell))
+                }
+                value => value,
+            });
+        }
+        let mut values = given.into_iter();
         let first = values.next().expect("a `&mut`");
         let Value::Ref(a) = first else {
             // Of an object: changed in place.
@@ -6659,4 +6674,14 @@ fn split(locals: &Locals, local: Local) -> bool {
     distinct.sort();
     distinct.dedup();
     !fields.is_empty() && fields.len() == locals.reads[local] && distinct.len() == fields.len()
+}
+
+/// What `e` is a part of, through fields and constant indices, `x` of
+/// `x[1].k`: itself where it's no part.
+fn call_part(e: &Expr) -> &Expr {
+    match &e.kind {
+        js::ExprKind::Member(object, _) => call_part(object),
+        js::ExprKind::Index(object, index) if index.is_constant() => call_part(object),
+        _ => e,
+    }
 }

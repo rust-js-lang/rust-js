@@ -765,4 +765,12 @@ export const mutations: Mutation[] = [
     replace: "    if let Ok(source) = Err::<Expr, Expr>(e.clone()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_char_indices.rs$"],
   },
+  {
+    name: "filter-map-method-leaves",
+    breaks: "`filter_map` of items with a destructor, a method of a chain, is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                    | IterMethod::FilterMap\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+  },
 ];

@@ -411,4 +411,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
     snapshots: true,
   },
+  {
+    name: "filter-map-leaves-drops",
+    breaks: "`filter_map` of items with a destructor is refused, though it gives each to its function",
+    file: "src/lower/combinators.rs",
+    find: "        matches!(self, IterComb::Partition | IterComb::FilterMap)\n",
+    replace: "        matches!(self, IterComb::Partition)\n",
+    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+  },
 ];

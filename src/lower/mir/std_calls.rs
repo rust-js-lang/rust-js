@@ -680,12 +680,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
                 // Items with a destructor a combinator may leave undropped; not
-                // `skip_while`'s, each dropped as it's skipped, nor
-                // `partition`'s, each moved into one of its two (ADR 0445).
+                // `skip_while`'s, each dropped as it's skipped, nor one that
+                // moves each on, `partition`'s and `filter_map`'s.
                 let dropping = self
                     .iterator_item(iter_ty)
                     .filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-                if dropping.is_some() && !matches!(comb, IterComb::SkipWhile | IterComb::Partition) {
+                if dropping.is_some() && comb != IterComb::SkipWhile && !comb.moves_each_on() {
                     return Err(self.unsupported(
                         span,
                         "an iterator's combinator of items with a destructor, from its MIR",

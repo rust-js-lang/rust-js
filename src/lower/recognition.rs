@@ -3296,6 +3296,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "fuse" => IterMethod::Fuse,
             "map" => IterMethod::Map,
             "filter" => IterMethod::Filter,
+            "filter_map" => IterMethod::FilterMap,
             "skip_while" => IterMethod::SkipWhile,
             "flat_map" => IterMethod::FlatMap,
             "take" => IterMethod::Take,
@@ -5182,6 +5183,8 @@ pub(crate) enum IterMethod {
     Fuse,
     Map,
     Filter,
+    /// `filter_map(f)`, which gives each item to `f`.
+    FilterMap,
     SkipWhile,
     FlatMap,
     Take,

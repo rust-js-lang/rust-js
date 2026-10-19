@@ -356,3 +356,11 @@ with native Rust.
   `value_expr` asks.
 - The `option_as_mut_generic` corpus case gives a unit struct's `&mut`;
   `ref_mut_of_mut_payload` returns a reborrowed cell.
+
+## Amendment: a `&mut` a call gives inside what it gives
+
+**A `&mut` generic code has as a cell, given back inside what a call
+gives, `store.lm_get_mut(i).unwrap().1` of an `Option<(&K, &mut V)>`, is
+that cell, kept or handed on as it is**: a part of the call's result,
+through fields and constant indices, `$unwrap(..)[1]`, made there once,
+as the call's own result is. litemap's `get_mut` hands one on so.

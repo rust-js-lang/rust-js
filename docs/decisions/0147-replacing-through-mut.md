@@ -113,3 +113,10 @@ const Light = {
   as a number is: `toggle(x)` with `x = { value: l }`, then `l = x.value`.
 - `$assign` copies `v`'s fields into the object: `v`'s own parts are
   shared, which is right, as `v` was moved in.
+
+## Amendment: through a cell
+
+**`mem::replace`, `mem::swap` and `mem::take` of a `&mut` generic code has
+as a cell, a `&mut V` a method gives, is of its place, `cell.value`**,
+written as a place is, the cell held once: litemap's `mem::replace(self.
+get_mut(), value)` of its generic store, which was refused.

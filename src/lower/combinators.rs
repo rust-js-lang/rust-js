@@ -133,6 +133,15 @@ pub(super) enum IterComb {
     Inspect,
 }
 
+impl IterComb {
+    /// Whether it moves each item it takes on, `partition`'s into one of its
+    /// two (ADR 0445), `filter_map`'s to its function, so it leaves none
+    /// with a destructor undropped (ADR 0454).
+    pub(super) fn moves_each_on(self) -> bool {
+        matches!(self, IterComb::Partition | IterComb::FilterMap)
+    }
+}
+
 /// One of std's iterator sources (ADR 0128): `once` and `empty` are
 /// arrays, and the rest, which may never end, JS iterators.
 #[derive(Clone, Copy, PartialEq)]
