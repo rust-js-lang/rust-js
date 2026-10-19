@@ -2254,23 +2254,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "sort_unstable" if owner.is_slice() && self_ty.is_some_and(|t| self.ties_unseen(t)) => Std::Sort,
             "sort_by" if owner.is_slice() => Std::SortBy,
             "sort_by_key" if owner.is_slice() => Std::SortByKey,
-            "sort_unstable"
-            | "sort_unstable_by"
-            | "sort_unstable_by_key"
-            | "select_nth_unstable"
-            | "select_nth_unstable_by"
-            | "select_nth_unstable_by_key"
-                if owner.is_slice() =>
+            n if owner.is_slice()
+                && let Some(op) = unstable_sort(n) =>
             {
-                let with = match name.as_str() {
-                    n if n.ends_with("_by") => SortWith::By,
-                    n if n.ends_with("_by_key") => SortWith::Key,
-                    _ => SortWith::Order,
-                };
-                Std::Slice(match name.as_str().starts_with("select") {
-                    true => SliceOp::SelectNth { with },
-                    false => SliceOp::SortUnstable { with },
-                })
+                Std::Slice(op)
             }
             "reverse" if owner.is_slice() => Std::Method("reverse"),
             // An array's `map` is JS's: a new array of what `f` makes of each.
@@ -5559,11 +5546,14 @@ pub(crate) enum TypeFact {
     /// type says: `Map`, or `$KeyMap` of one found by value (ADR 0466).
     Map,
     Set,
+    /// What std's unstable sort picks for its items by their layout, its
+    /// small sort or partition (ADRs 0342, 0471).
+    Sort,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 7] = [
+    pub(crate) const ALL: [TypeFact; 8] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -5571,6 +5561,7 @@ impl TypeFact {
         TypeFact::NeedsDrop,
         TypeFact::Map,
         TypeFact::Set,
+        TypeFact::Sort,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -5588,6 +5579,7 @@ impl TypeFact {
             TypeFact::NeedsDrop => "NeedsDrop",
             TypeFact::Map => "Map",
             TypeFact::Set => "Set",
+            TypeFact::Sort => "Sort",
         }
     }
 }
@@ -5604,6 +5596,37 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<
     };
     let key = args.types().next()?;
     matches!(key.kind(), ty::Param(_) | ty::Alias(..)).then_some((key, fact))
+}
+
+/// A slice's unstable sort, or its `select_nth_unstable`, by its method's
+/// name, of std's algorithm (ADR 0342).
+fn unstable_sort(name: &str) -> Option<SliceOp> {
+    let with = match name {
+        "sort_unstable" | "select_nth_unstable" => SortWith::Order,
+        "sort_unstable_by" | "select_nth_unstable_by" => SortWith::By,
+        "sort_unstable_by_key" | "select_nth_unstable_by_key" => SortWith::Key,
+        _ => return None,
+    };
+    Some(match name.starts_with("select") {
+        true => SliceOp::SelectNth { with },
+        false => SliceOp::SortUnstable { with },
+    })
+}
+
+/// The items of a slice `def_id`, std's, sorts by std's unstable algorithm,
+/// of its `args`, whose order its layout picks, which a caller of a generic
+/// one gives, `TSort` (ADR 0471).
+pub(crate) fn unstable_sort_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let imp = tcx.impl_of_assoc(def_id)?;
+    (is_std_crate(tcx, def_id)
+        && tcx.type_of(imp).skip_binder().is_slice()
+        && unstable_sort(tcx.item_name(def_id).as_str()).is_some())
+    .then(|| args.types().next())
+    .flatten()
 }
 
 /// The layout `def_id` asks of its type argument, its size or alignment, and

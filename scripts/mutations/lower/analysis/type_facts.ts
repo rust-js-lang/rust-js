@@ -171,4 +171,12 @@ export const mutations: Mutation[] = [
     replace: "            (Some(_), _) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_type_facts.rs$"],
   },
+  {
+    name: "sort-fact-unasked",
+    breaks: "an unstable sort of a type parameter's items is given no `TSort`, and refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                asked.insert((caller, index, TypeFact::Sort));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
+  },
 ];

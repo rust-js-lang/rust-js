@@ -1,10 +1,11 @@
 //! What each generic function asks of its type parameters (ADR 0145):
-//! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, and the class
-//! of a map keyed by one (ADR 0466), which a caller's type answers.
+//! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, the class
+//! of a map keyed by one (ADR 0466), and what std's unstable sort of them
+//! picks (ADR 0471), which a caller's type answers.
 
 use crate::lower::recognition::{
     TypeFact, bound_by_any, debug_named, map_of_param, phantom_named, pointer_target, points_at_dyn_any,
-    points_at_dyn_debug, type_facts,
+    points_at_dyn_debug, type_facts, unstable_sort_items,
 };
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -94,6 +95,14 @@ pub(super) fn type_fact_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // An unstable sort of a type parameter's items, whose order std
+            // picks by their layout: its caller's, `TSort` (ADR 0471).
+            if let Some(item) = unstable_sort_items(tcx, callee, args)
+                && let Some(index) = slot_of(tcx, foreign, caller, item)
+            {
+                asked.insert((caller, index, TypeFact::Sort));
+                continue;
+            }
             let facts = type_facts(tcx, callee);
             for &fact in facts {
                 // `size_of_val` of an unsized `T` is the value's, not the type's:

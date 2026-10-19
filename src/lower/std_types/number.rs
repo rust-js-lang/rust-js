@@ -1447,6 +1447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Id => "the `TypeId`",
             TypeFact::NeedsDrop => "needs_drop",
             TypeFact::Map | TypeFact::Set => "a map's class",
+            TypeFact::Sort => "an unstable sort",
         };
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
@@ -1495,6 +1496,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is (ADR 0466).
         if matches!(fact, TypeFact::Map | TypeFact::Set) {
             return self.map_class(fact == TypeFact::Set, Some(of), span);
+        }
+        // What std's unstable sort of it picks by its layout (ADR 0471).
+        if fact == TypeFact::Sort {
+            return Ok(Expr::str(self.sort_kind(of, span)?));
         }
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes((fact, false), of, span)?));

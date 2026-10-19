@@ -332,4 +332,12 @@ export const mutations: Mutation[] = [
     replace: "                Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::int(2))\n",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
   },
+  {
+    name: "sort-fact-one-kind",
+    breaks: "every caller gives `TSort` the small sort of a `Copy` item of 8 bytes, which leaves a wider one's ties where std's doesn't",
+    file: "src/lower/std_types/number.rs",
+    find: "            return Ok(Expr::str(self.sort_kind(of, span)?));\n",
+    replace: "            return Ok(Expr::str(\"network\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
+  },
 ];

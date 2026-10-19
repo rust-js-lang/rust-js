@@ -539,6 +539,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0468 A lent adapter leaves its source to its lender, lent once](decisions/0468-a-lent-adapter-leaves-its-source-to-its-lender.md)
 - [0469 A function std leaves unrun is dropped there](decisions/0469-a-function-std-leaves-unrun-is-dropped-there.md)
 - [0470 A function given by value is dropped where its taker drops it](decisions/0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md)
+- [0471 A generic unstable sort is sorted as its caller's type picks](decisions/0471-a-generic-unstable-sort-is-its-callers.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

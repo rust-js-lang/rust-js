@@ -323,4 +323,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },
+  {
+    name: "sort-of-held-param-measured",
+    breaks: "an unstable sort of items that hold a type parameter asks rustc their layout, which it can't give",
+    file: "src/lower/std_types/slice.rs",
+    find: "        if item.has_param() {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
+    replace: "        if false {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an unstable sort of items that hold a type parameter"],
+  },
 ];

@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An unstable sort of a type parameter's items**, `sort_unstable`,
+  `select_nth_unstable` and their `_by` and `_by_key`, sorted as its
+  caller's type picks, given as `TSort` (ADR 0471).
 - **A closure called by `&` or `&mut` that holds a value with a
   destructor, given by value**: to std's `all`, `fold`, `sort_by` and the
   rest, dropped as they return, and to a generic function's `F: FnMut`,

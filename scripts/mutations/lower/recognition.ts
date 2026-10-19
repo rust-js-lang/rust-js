@@ -2243,4 +2243,12 @@ export const mutations: Mutation[] = [
     replace: "            .reduce(|a, b| if a.extends(b) { b } else { a }),\n",
     tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
   },
+  {
+    name: "select-nth-unrecognized",
+    breaks: "a generic `select_nth_unstable` is given no `TSort`, and refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"sort_unstable\" | \"select_nth_unstable\" => SortWith::Order,\n",
+    replace: "        \"sort_unstable\" => SortWith::Order,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
+  },
 ];

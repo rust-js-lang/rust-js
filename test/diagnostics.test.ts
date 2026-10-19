@@ -125,6 +125,8 @@ for (const [name, source, message, crate] of [
   ["an Fn given on where it's called once", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\nfn once<G: FnOnce() -> u32>(g: G) -> u32 { g() }\nfn relay<F: Fn() -> u32>(f: F) -> u32 { once(f) }\npub fn f(d: D) -> u32 { relay(move || { let r = &d; r.0 }) }', "giving `once`, which calls it once, a function called by `&` that holds a value with a destructor"],
   // A lazy adapter holds its function, dropped with it, not as `map` returns (ADR 0470).
   ["a function with a destructor a lazy map holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> u32 { v.iter().map(move |x| { let r = &d; x + r.0 }).sum() }', "a function that holds a value with a destructor, kept by what it's given to"],
+  // A caller gives a type parameter's sort, not one of a type that holds one (ADR 0471).
+  ["an unstable sort of items that hold a type parameter", 'pub fn f<T: Ord>(mut v: Vec<(T, u8)>) -> Vec<(T, u8)> { v.sort_unstable(); v }', "an unstable sort of items that hold a type parameter"],
   // `xor` of two `Some`s drops both, which it doesn't give back (ADR 0098).
   ["xor of options of values with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<D>, b: Option<D>) -> Option<D> { a.xor(b) }', "`std::option::Option::<T>::xor` of a value with a destructor"],
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.

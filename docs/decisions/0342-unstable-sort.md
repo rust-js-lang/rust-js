@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0036](0036-iterators-and-sorting.md); extends
 [0335](0335-slice-views.md); counted by [0314](0314-std-data-structures.md).
+Amended by [0471](0471-a-generic-unstable-sort-is-its-callers.md): a type
+parameter's items are sorted as its caller's type picks, `TSort`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

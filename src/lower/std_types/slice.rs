@@ -6,7 +6,7 @@ use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::recognition::trait_method;
+use crate::lower::recognition::{TypeFact, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
@@ -224,14 +224,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::arrow(vec!["a".into(), "b".into()], body)))
     }
 
-    /// What std's unstable sort picks by an item's type (ADR 0342): its
-    /// small sort, by whether it's `Freeze` and `Copy` and its size, and a
-    /// Hoare partition of one of more than 96 bytes.
-    fn sort_kind(&self, item: ty::Ty<'tcx>, span: Span) -> R<&'static str> {
+    /// What std's unstable sort picks by an item's type, of a type rustc
+    /// knows the layout of (ADR 0342): its small sort, by whether it's
+    /// `Freeze` and `Copy` and its size, and a Hoare partition of one of more
+    /// than 96 bytes. A type parameter's is its caller's (ADR 0471).
+    pub(in crate::lower) fn sort_kind(&self, item: ty::Ty<'tcx>, span: Span) -> R<&'static str> {
         if item.has_param() {
             return Err(self.unsupported(
                 span,
-                "an unstable sort of a type parameter's items, whose order std's algorithm picks by their layout",
+                "an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout",
             ));
         }
         let layout = self
@@ -271,13 +272,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         index: Option<Expr>,
         is_less: Expr,
-        kind: &str,
+        kind: Expr,
         item: ty::Ty<'tcx>,
     ) -> Expr {
         let select = matches!(op, SliceOp::SelectNth { .. });
         let mut list = vec![items];
         list.extend(index);
-        list.extend([is_less, Expr::str(kind)]);
+        list.extend([is_less, kind]);
         if select && self.is_boxable(item) {
             list.push(Expr::bool(true));
         }
@@ -315,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let item = generic_args.type_at(0);
-        let kind = self.sort_kind(item, span)?;
+        let kind = self.type_fact_value(item, TypeFact::Sort, span)?;
         let mut values = values.into_iter();
         let mut next = || values.next().expect("rustc checked the arguments");
         let items = next();
@@ -339,7 +340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let less = Expr::bin(Op::Lt, order.clone(), Expr::int(0));
                     let returned = vec![StmtKind::Return(Some(less)).at(js::Span::NONE)];
                     let is_less = Expr::arrow(params.clone(), returned);
-                    return Ok(self.unstable_sort_call(op, items, index, is_less, kind, item));
+                    return Ok(self.unstable_sort_call(op, items, index, is_less, kind.clone(), item));
                 }
                 let compare = self.named_once("compare", compare, out);
                 Expr::bin(Op::Lt, Expr::call(compare, vec![a, b]), Expr::int(0))
