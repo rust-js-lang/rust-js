@@ -541,4 +541,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
     snapshots: true,
   },
+  {
+    name: "some-mut-value-unfolded",
+    breaks: "what an `Option`'s box holds, read through a `&mut` made there, is `$someMut({ get value() .. }).value`",
+    file: "src/js.rs",
+    find: "                && callee.helper_name() == Some(\"$someMut\")\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+    snapshots: true,
+  },
 ];

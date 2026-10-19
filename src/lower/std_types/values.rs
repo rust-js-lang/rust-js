@@ -295,6 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Step(StepOp::Next | StepOp::Peek)
             // The old value, as it's kept: boxed already.
             | Std::OptionTake
+            | Std::OptionPlace(OptionPlaceOp::TakeIf)
             // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.
             | Std::Once(OnceOp::Get | OnceOp::Take)
             | Std::Lazy(LazyOp::Get)

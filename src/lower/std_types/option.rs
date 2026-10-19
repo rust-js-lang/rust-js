@@ -651,20 +651,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let mut dropped = Vec::new();
             self.drop_value(f.clone(), *f_ty, span, &mut dropped)?;
-            let assign = StmtKind::Assign(place.clone(), apply(f, Vec::new())).at(js_span);
+            let made = self.held_in_option(apply(f, Vec::new()), item);
+            let assign = StmtKind::Assign(place.clone(), made).at(js_span);
             let absent = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
             out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));
-            return Ok(match self.is_boxable(item) {
-                true => Expr::handle(place),
-                false => place,
-            });
+            return Ok(self.option_place_through(place, item));
         }
         let mut given = given.into_iter();
         let js_span = self.js_span(span);
-        let through = match self.is_boxable(item) {
-            true => Expr::handle(place.clone()),
-            false => place.clone(),
-        };
+        let through = self.option_place_through(place.clone(), item);
         let value = match op {
             OptionPlaceOp::GetOrInsert | OptionPlaceOp::Insert => given.next().expect("its value"),
             OptionPlaceOp::GetOrInsertWith => apply(given.next().expect("its function"), Vec::new()),
@@ -691,10 +686,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
-        let assign = StmtKind::Assign(place.clone(), value.clone()).at(js_span);
+        let assign = StmtKind::Assign(place.clone(), self.held_in_option(value.clone(), item)).at(js_span);
         match (op, drop) {
             (OptionPlaceOp::Insert, Some(drop)) => {
-                let dropped = StmtKind::Expr(apply(drop, vec![place.clone()])).at(js_span);
+                let old = match self.boxed_payload(item) {
+                    true => self.some_value(place.clone()),
+                    false => place.clone(),
+                };
+                let dropped = StmtKind::Expr(apply(drop, vec![old])).at(js_span);
                 out.push(StmtKind::If(present, vec![dropped], None).at(js_span));
                 out.push(assign);
             }
@@ -706,5 +705,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(through)
+    }
+
+    /// `value`, an `item`, as an `Option` of it holds it: boxed where it may
+    /// look like `None`, `$some(value)` (ADRs 0051, 0486).
+    fn held_in_option(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {
+        match self.boxed_payload(item) {
+            true => self.some(value),
+            false => value,
+        }
+    }
+
+    /// A `&mut` to what an `Option`'s place, `place`, holds, an `item`: a
+    /// handle on a number's or text's place (ADR 0030), an object itself,
+    /// and of what's boxed where it may look like `None`, a handle that
+    /// reads and writes through its box, `$someMut` (ADRs 0051, 0486).
+    fn option_place_through(&mut self, place: Expr, item: Ty<'tcx>) -> Expr {
+        if self.boxed_payload(item) {
+            return Expr::call_helper("$someMut", vec![Expr::handle(place)]);
+        }
+        match self.is_boxable(item) {
+            true => Expr::handle(place),
+            false => place,
+        }
     }
 }

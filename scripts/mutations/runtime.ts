@@ -40,4 +40,13 @@ export const mutations: Mutation[] = [
       "and_modify then or_insert"
     ]
   },
+  {
+    name: "some-mut-impure",
+    breaks: "`e.get_or_insert(None);` of an `Option<Option<T>>` leaves its unread `$someMut({ .. })` as a statement",
+    file: "src/runtime.rs",
+    find: "    \"$someMut\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+    snapshots: true,
+  },
 ];

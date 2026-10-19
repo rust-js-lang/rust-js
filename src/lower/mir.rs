@@ -2915,6 +2915,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.unsupported(span, "assigning a whole value through a `&mut`"));
         }
+        // What an `Option`'s box holds, `$someValue(o)` read through
+        // `$someMut`: the `Option` given a `Some` of it (ADR 0486).
+        if let js::ExprKind::Call(callee, args) = &target.kind
+            && callee.helper_name() == Some("$someValue")
+            && let [option] = args.as_slice()
+        {
+            let some = self.some(value);
+            out.push(StmtKind::Assign(option.clone(), some).at(js_span));
+            return Ok(());
+        }
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
     }

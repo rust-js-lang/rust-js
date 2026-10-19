@@ -921,9 +921,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => return Err(self.unsupported(span, "changing this `Option`, from its MIR")),
                 };
                 let item = self.option_of(arg_tys[0].peel_refs()).expect("an `Option`");
-                if self.boxed_payload(item) {
-                    return Err(self.unsupported(span, &format!("changing an `Option<{item}>` in place")));
-                }
                 let given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.flush(state, out)?;
                 self.option_place_values(op, place, item, (given, &arg_tys[1..]), span, out)?

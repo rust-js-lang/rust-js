@@ -2771,4 +2771,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = dropped;\n        Ok(closure)\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
+  {
+    name: "some-value-write-unfolded",
+    breaks: "`*o.insert(None) = Some(4)` of an `Option<Option<T>>` assigns to `$someValue(o)`, a crash",
+    file: "src/lower/mir.rs",
+    find: "            && callee.helper_name() == Some(\"$someValue\")\n            && let [option] = args.as_slice()\n",
+    replace: "            && false\n            && let [option] = args.as_slice()\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+  },
 ];

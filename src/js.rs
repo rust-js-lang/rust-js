@@ -1333,6 +1333,19 @@ impl Expr {
             if let ExprKind::Handle(place) = object.kind {
                 return *place;
             }
+            // And of a handle through an `Option`'s box, `$someMut`, what
+            // the box holds, `$someValue(o)` (ADR 0486).
+            if let ExprKind::Call(callee, args) = &object.kind
+                && callee.helper_name() == Some("$someMut")
+                && let [
+                    Expr {
+                        kind: ExprKind::Handle(place),
+                        ..
+                    },
+                ] = args.as_slice()
+            {
+                return Expr::call_helper("$someValue", vec![(**place).clone()]);
+            }
             if let ExprKind::Object(props) = &object.kind
                 && let [Prop::Field(name, value)] = props.as_slice()
                 && name == HELD

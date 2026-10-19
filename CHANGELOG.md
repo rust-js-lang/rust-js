@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`get_or_insert_with`, `insert`, `take_if` and the rest of an
+  `Option<Option<T>>`'s place-changing methods**, through its `Some`'s box
+  (ADR 0486).
 - **`map(f)`, `filter(p)` and `skip_while(p)` of a function holding a value
   with a destructor**, closed to drop it with the adapter (ADR 0485).
 - **A closure holding a value with a destructor given back by its maker**,

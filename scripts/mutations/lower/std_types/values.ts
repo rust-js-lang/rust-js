@@ -386,4 +386,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
   },
+  {
+    name: "boxed-take-if-refused",
+    breaks: "`take_if` of an `Option<Option<T>>` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::OptionTake\n            | Std::OptionPlace(OptionPlaceOp::TakeIf)\n            // A `OnceCell`'s",
+    replace: "            | Std::OptionTake\n            // A `OnceCell`'s",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+  },
 ];

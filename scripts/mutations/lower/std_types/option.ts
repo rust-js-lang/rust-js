@@ -164,8 +164,8 @@ export const mutations: Mutation[] = [
     name: "option-place-no-handle",
     breaks: "`*o.get_or_insert(0) += 1` writes a number's field",
     file: "src/lower/std_types/option.rs",
-    find: "            true => Expr::handle(place.clone()),\n",
-    replace: "            true => place.clone(),\n",
+    find: "            true => Expr::handle(place),\n            false => place,\n",
+    replace: "            true => place,\n            false => place,\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -298,5 +298,21 @@ export const mutations: Mutation[] = [
     find: "            out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));\n",
     replace: "            out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
+  },
+  {
+    name: "option-place-unboxed",
+    breaks: "`get_or_insert(None)` of an `Option<Option<T>>` leaves it `None`, its value held unboxed",
+    file: "src/lower/std_types/option.rs",
+    find: "            true => self.some(value),\n            false => value,\n",
+    replace: "            true => value,\n            false => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+  },
+  {
+    name: "option-place-through-box",
+    breaks: "`*o.get_or_insert(..) = None` of an `Option<Option<T>>` writes the outer `Option` `None`",
+    file: "src/lower/std_types/option.rs",
+    find: "        if self.boxed_payload(item) {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
+    replace: "        if false {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
 ];
