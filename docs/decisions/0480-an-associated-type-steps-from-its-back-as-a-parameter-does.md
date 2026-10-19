@@ -38,7 +38,7 @@ last_even($iter([1, 2, 3, 4, 5]));
 
 ## Why
 
-- **It's std's**: `generic_double_ended` reverses a generic iterator and an
+- **It's std's**: `associated_double_ended` reverses a generic iterator and an
   `I::IntoIter`, finds from the back of a `Copied`, and takes the last of an
   `Iterator + DoubleEndedIterator`, with native Rust.
 

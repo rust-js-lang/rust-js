@@ -768,7 +768,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "            ty::Alias(..) => true,\n            _ => false,\n        };\n",
     replace: "            _ => false,\n        };\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
   {
     name: "copied-not-double-ended",
@@ -776,7 +776,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "        // A copy of one, which it is (ADR 0480).\n        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.as_double_ended(value, source, span);\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
   {
     name: "extension-bound-read",
@@ -784,6 +784,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "            && !super::recognition::is_iterator_extension(tcx, tr)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
 ];
