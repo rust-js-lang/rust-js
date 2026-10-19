@@ -2050,4 +2050,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
+  {
+    name: "try-fold-unrecognized",
+    breaks: "`try_fold` isn't known, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"try_fold\" => IterMethod::TryFold,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+  },
 ];

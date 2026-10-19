@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`try_fold`** into an `Option` or a `Result`, stopped at the first
+  `None` or `Err` with the rest left to step (ADR 0458).
+- **`B::from_iter(items)`** of any collection, as `items.collect()` is:
+  `Vec::from_iter(it)`, `HashMap::from_iter(pairs)` (ADR 0160).
 - **An `IntoIterator` bound on a reference to a type parameter**, `for<'a>
   &'a mut C: IntoIterator`, as either's `iter_mut` writes it: a dictionary,
   std's or the crate's, so a `&mut C`'s items are written through and a

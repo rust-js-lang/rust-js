@@ -55,3 +55,14 @@ A collection of the crate's given where a bound on a reference goes,
 `for<'a> &'a C: IntoIterator`, isn't refused: that bound is given its
 dictionary, the collection's own `into_iter` (ADR 0457). One given where
 an `I: IntoIterator` goes still is.
+
+## Amendment: `B::from_iter(items)`
+
+`Vec::from_iter(it)`, as itertools' `sorted` writes it, was refused for
+any `B` but `String`, which had a lowering of its own. `B::from_iter`
+is what `collect()` calls, so it's lowered as `items.collect::<B>()` is,
+one way for every `B`: an array's, a `Vec`'s or a slice's items as they
+are, another's iterator as `collect` steps it, then `collected_into`.
+`Vec::from_iter([5, 4].into_iter().map(..))` is `[5, 4].map(..)`. Of
+what's neither, an `Option` say, it's refused yet. The `from_iter_called`
+corpus case makes each kind of collection so, against native Rust.

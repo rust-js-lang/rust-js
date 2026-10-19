@@ -44,6 +44,10 @@ for (const [name, source, message, crate] of [
   // One to another's number is that number (ADR 0096); to another's object,
   // whose copy `ptr::eq` would tell apart, isn't yet.
   ["static holding a reference to another's object", "pub struct P { pub x: u32 }\nstatic A: P = P { x: 1 };\nstatic B: &P = &A;\npub fn f() -> u32 { B.x }", "does not support statics of type `&'static P`"],
+  // `B::from_iter(items)` is `items.collect()` of an array or an iterator (ADR 0160); an `Option`'s isn't yet.
+  ["from_iter of an Option", "pub fn f(o: Option<u32>) -> Vec<u32> { Vec::from_iter(o) }", "calling `std::iter::FromIterator::from_iter`"],
+  // `try_fold` into an `Option` whose `Some` is boxed, of a `()` (ADR 0458).
+  ["try_fold into a boxed Option", "pub fn f(v: &[u32]) -> Option<()> { v.iter().try_fold((), |(), &x| (x > 0).then_some(())) }", "`try_fold` into a"],
   // A std trait's dictionary has what it's given, a `dyn Error`'s `source` (ADR 0141), and none of what else std provides.
   ["a provided method of a dyn io::Write", "pub fn f(w: &mut dyn std::io::Write) -> usize { w.write_vectored(&[]).unwrap() }", "`write_vectored` of a"],
   // A placeholder's options are given to what shows the value (ADR 0058), but a

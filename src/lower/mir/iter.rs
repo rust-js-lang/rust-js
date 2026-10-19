@@ -113,16 +113,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
-        // `String::from_iter(items)`, `items.collect()` into a `String`: an
-        // array's joined, or a JS iterator's items.
-        if std_method == Some(IterMethod::FromIter) && self.is_lang_adt(output, LangItem::String) {
-            let items = values.into_iter().next().expect("the items");
-            let given = receiver_ty.peel_refs();
-            let items = match given.is_array() || given.is_slice() || self.is_vec_like(given) {
-                true => items,
-                false => Expr::call(Expr::member(self.js_iterator(items), "toArray"), Vec::new()),
-            };
-            return Ok(Some(Expr::call(Expr::member(items, "join"), vec![Expr::str("")])));
+        // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).
+        if std_method == Some(IterMethod::FromIter) {
+            return self.collected_from(values, receiver_ty, output, span);
         }
         // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
         // back, stepped from it, a generic one's too (ADRs 0429, 0455).
@@ -300,8 +293,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => Expr::call_helper("$next", vec![receiver]),
             }));
         }
-        // Taken by a `&mut`, it's stepped through what can't close it.
-        let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        // Taken by a `&mut`, it's stepped through what can't close it, but by
+        // `try_fold`'s helper, which steps it as it is and closes nothing.
+        let lent =
+            matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut)) && std_method != Some(IterMethod::TryFold);
         if let Some(kept) = self.back_kept(std_method, &receiver, (iter_ty, output), (&mut values, arg_tys), span)? {
             return Ok(Some(kept));
         }
@@ -381,6 +376,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (init, f) = (arg(), arg());
                 self.folded(it, init, f, arg_tys)
             }
+            Some(IterMethod::TryFold) => {
+                let (init, f) = (arg(), arg());
+                self.try_folded(it, init, f, (arg_tys, output), span)?
+            }
             // Each item counted, and dropped as `count` drops it.
             Some(IterMethod::Count) => {
                 let n = self.fresh("n");
@@ -452,6 +451,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Err` or `None` or all; a map or a set, as a `From` of items makes one
     /// (ADR 0121). Of the `Ok` values of a fallible one, an array already,
     /// `iter_ty` is none, and an array is itself.
+    /// `B::from_iter(items)`, `output` of `items` of type `given`: an
+    /// array's, a `Vec`'s or a slice's items as they are, another's iterator
+    /// as `collect` steps it, collected into `B` as `collect` collects.
+    fn collected_from(&mut self, values: Vec<Expr>, given: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let items = values.into_iter().next().expect("the items");
+        let iter_ty = given.peel_refs();
+        if iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty) {
+            let item = match *iter_ty.kind() {
+                ty::Array(item, _) | ty::Slice(item) => Some(item),
+                ty::Adt(_, args) => args.types().next(),
+                _ => None,
+            };
+            return Ok(Some(self.collected_into(items, output, item, None, span)?));
+        }
+        if !matches!(given.kind(), ty::Param(_)) && !self.implements_iterator(given) {
+            return Ok(None);
+        }
+        let it = self.as_js_iterator(items, given, span)?;
+        let item = self.iterator_item(given);
+        Ok(Some(self.collected_into(it, output, item, Some(given), span)?))
+    }
+
     pub(in crate::lower) fn collected_into(
         &mut self,
         it: Expr,
@@ -559,6 +580,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut args = vec![self.binary_callback(f, own), init];
         crate::lower::calls::given_to_js(&mut args);
         Expr::call(Expr::member(it, "reduce"), args)
+    }
+
+    /// `it.try_fold(init, f)` into `output`, an `Option` or a `Result`: each
+    /// item folded in till `f` gives a `None` or an `Err`, the rest left to
+    /// step, `$tryFoldSome` or `$tryFoldOk` (ADR 0458).
+    fn try_folded(
+        &mut self,
+        it: Expr,
+        init: Expr,
+        f: Expr,
+        (arg_tys, output): (&[Ty<'tcx>], Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        let helper = match self.option_of(output) {
+            Some(made) if !self.boxed_payload(made) => "$tryFoldSome",
+            None if self.recognition().is_result(output) => "$tryFoldOk",
+            _ => return Err(self.unsupported(span, &format!("`try_fold` into a `{output}`, from its MIR"))),
+        };
+        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
+        let mut args = vec![it, init, self.binary_callback(f, own)];
+        crate::lower::calls::given_to_js(&mut args);
+        Ok(Expr::call_helper(helper, args))
     }
 
     /// `rev()` or `peekable()` of a std iterator neither a range nor the
@@ -791,6 +834,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 IterMethod::Map
                     | IterMethod::ForEach
                     | IterMethod::Fold
+                    | IterMethod::TryFold
                     | IterMethod::Collect
                     | IterMethod::Any
                     | IterMethod::All

@@ -3325,6 +3325,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "ne" => IterMethod::Ne,
             "enumerate" => IterMethod::Enumerate,
             "fold" => IterMethod::Fold,
+            "try_fold" => IterMethod::TryFold,
             "count" => IterMethod::Count,
             "sum" => IterMethod::Sum,
             "product" => IterMethod::Product,
@@ -5267,6 +5268,8 @@ pub(crate) enum IterMethod {
     Ne,
     Enumerate,
     Fold,
+    /// `try_fold(init, f)`, stopped at the first `None` or `Err` (ADR 0458).
+    TryFold,
     Count,
     Sum,
     Product,

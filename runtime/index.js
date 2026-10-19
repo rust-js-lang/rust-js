@@ -3453,6 +3453,30 @@ export function $findBy(s, p, last) {
   return found;
 }
 
+// `it.try_fold(init, f)` into an `Option` (ADR 0458): `f` of what's made so
+// far and each item in turn, till one gives `None`, which it gives, the rest
+// left to step; else what the last gave.
+export function $tryFoldSome(it, init, f) {
+  let made = init;
+  for (let step = it.next(); !step.done; step = it.next()) {
+    made = f(made, step.value);
+    if (made == null) return made;
+  }
+  return made;
+}
+
+// `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
+// far and each item in turn, till one gives an `Err`, which it gives, the
+// rest left to step; else the `Ok` the last gave.
+export function $tryFoldOk(it, init, f) {
+  let made = { TAG: "Ok", _0: init };
+  for (let step = it.next(); !step.done; step = it.next()) {
+    made = f(made._0, step.value);
+    if (made.TAG === "Err") return made;
+  }
+  return made;
+}
+
 // `s.starts_with(p)`, or `ends_with`, of a predicate of a `char`: whether it
 // holds for the first, or last, `char`, of which an empty string has none.
 export function $startsBy(s, p, end) {

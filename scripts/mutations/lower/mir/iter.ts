@@ -252,30 +252,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-from-iter-string-refused",
-    "breaks": "`String::from_iter(items)` from MIR is refused",
-    "file": "src/lower/mir/iter.rs",
-    "find": "        if std_method == Some(IterMethod::FromIter) && self.is_lang_adt(output, LangItem::String) {\n",
-    "replace": "        if std_method == Some(IterMethod::FromIter) && false {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string from items from MIR"
-    ]
-  },
-  {
-    "name": "mir-from-iter-iterator-joined",
-    "breaks": "`String::from_iter` of an iterator from MIR calls its `join`, which a JS iterator has none of",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            let items = match given.is_array() || given.is_slice() || self.is_vec_like(given) {\n",
-    "replace": "            let items = match true {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string from items from MIR"
-    ]
-  },
-  {
     "name": "mir-user-len-refused",
     "breaks": "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
     "file": "src/lower/mir/iter.rs",
@@ -813,5 +789,70 @@ export const mutations: Mutation[] = [
     find: "                (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {\n",
     replace: "                (Some(IterMethod::Len), None) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+  },
+  {
+    name: "from-iter-unlowered",
+    breaks: "`Vec::from_iter(items)`, which `items.collect()` is, is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "            return self.collected_from(values, receiver_ty, output, span);\n",
+    replace: "            return Ok(None);\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_called.rs$"],
+  },
+  {
+    name: "from-iter-array-stepped",
+    breaks: "`String::from_iter` of an array steps it as an iterator, which an array isn't, and JS throws",
+    file: "src/lower/mir/iter.rs",
+    find: "            return Ok(Some(self.collected_into(items, output, item, None, span)?));\n",
+    replace: "            return Ok(Some(self.collected_into(items, output, item, Some(iter_ty), span)?));\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_called.rs$"],
+  },
+  {
+    name: "from-iter-of-anything",
+    breaks: "`Vec::from_iter` of an `Option` is collected as if it were an iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "        if !matches!(given.kind(), ty::Param(_)) && !self.implements_iterator(given) {\n            return Ok(None);\n        }\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "from_iter of an Option"],
+  },
+  {
+    name: "try-fold-unlowered",
+    breaks: "`try_fold` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                self.try_folded(it, init, f, (arg_tys, output), span)?\n",
+    replace: "                return Ok(None);\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+  },
+  {
+    name: "try-fold-result-as-option",
+    breaks: "`try_fold` into a `Result` stops at a `None`, which an `Ok` never is, and goes on past an `Err`",
+    file: "src/lower/mir/iter.rs",
+    find: "            None if self.recognition().is_result(output) => \"$tryFoldOk\",\n",
+    replace: "            None if self.recognition().is_result(output) => \"$tryFoldSome\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+  },
+  {
+    name: "try-fold-boxed-some",
+    breaks: "`try_fold` into an `Option<()>`, whose `Some` is boxed, is stepped as one whose `Some` is its value",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(made) if !self.boxed_payload(made) => \"$tryFoldSome\",\n",
+    replace: "            Some(_) => \"$tryFoldSome\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "try_fold into a boxed Option"],
+  },
+  {
+    name: "try-fold-leaves-items-refused",
+    breaks: "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "                    | IterMethod::TryFold\n                    | IterMethod::Collect\n",
+    replace: "                    | IterMethod::Collect\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+  },
+  {
+    name: "try-fold-lent",
+    breaks: "`try_fold` of a `&mut` is given `$lent(it)`, which its helper, closing nothing, needn't be",
+    file: "src/lower/mir/iter.rs",
+    find: " && std_method != Some(IterMethod::TryFold);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+    snapshots: true,
   },
 ];
