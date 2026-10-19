@@ -545,6 +545,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0474 An iterator another bound reads is given as it is](decisions/0474-an-iterator-another-bound-reads-is-given-as-it-is.md)
 - [0475 A generic `into_iter()` is the iterator concrete code has](decisions/0475-a-generic-into-iter-is-the-iterator-concrete-code-has.md)
 - [0476 A generic `sum` is its caller's](decisions/0476-a-generic-sum-is-its-callers.md)
+- [0477 A generic `From::from` is its caller's](decisions/0477-a-generic-from-is-its-callers.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

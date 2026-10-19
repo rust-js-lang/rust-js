@@ -48,11 +48,10 @@ function main() {
   const key = (x) => (x.value / 10) >>> 0;
   $dedupByCells(tens, (a, b) => key(a) === key(b));
   console.log(`[${tens.map((item) => String(item)).join(", ")}]`);
-  let s;
   const words = ["a", "A", "b", "B", "b"].map((s) => s);
   $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
-  s = [1, 2, 3];
+  const s = [1, 2, 3];
   s.push(...$copyRange(s, 1));
   console.log(`[${s.map((item) => String(item)).join(", ")}]`);
   const removed = Iterator.from($splice(s, 1, 3, [7, 8, 9])).toArray();

@@ -4776,6 +4776,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
+        // `W::from(u)` of a `W: From<U>`: its dictionary's `from` (ADR 0477).
+        || tcx.is_diagnostic_item(sym::From, id)
         // A writer of the crate's own, given its text a `write!` at a time
         // (ADR 0166), and generic code that writes to any writer, a `W:
         // fmt::Write`: its dictionary's `write_str`, `write_char` and
@@ -4850,7 +4852,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         // A hand-written `Deserialize`'s visitor, its methods the reader's
         // visitor's (ADR 0459).
         || serde_visitor(tcx, id)
-        || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
         // A `&mut` to what a type keeps, called on the type itself (ADR 0169).
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)

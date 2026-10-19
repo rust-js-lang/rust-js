@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`From::from` through a bound**, `W::from(u)` of a `W: From<U>` and of an
+  associated type a trait bounds by `From`, its caller's dictionary's
+  (ADR 0477).
 - **`sum()` and `product()` into a type parameter**, and `collect()` into a
   `Result<U, E>` a bound names, through their caller's dictionaries (ADR
   0476).

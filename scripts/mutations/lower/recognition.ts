@@ -2275,4 +2275,12 @@ export const mutations: Mutation[] = [
     replace: "        \"Product\" => Some(\"sum\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
   },
+  {
+    name: "from-bound-ungiven",
+    breaks: "a generic function's `W: From<U>` is given no dictionary, and `W::from(u)` refused",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_diagnostic_item(sym::From, id)\n        // A writer of the crate's own",
+    replace: "        // A writer of the crate's own",
+    tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+  },
 ];

@@ -787,7 +787,8 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
 /// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
 /// (ADR 0162), an `IntoIterator`'s (ADR 0457), a `Hash`'s and a
-/// `Hasher`'s (ADR 0463), and a `Sum`'s and a `Product`'s (ADR 0476). Where the
+/// `Hasher`'s (ADR 0463), a `Sum`'s and a `Product`'s (ADR 0476), and a
+/// `From`'s (ADR 0477). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -801,6 +802,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || is_std_def(tcx, trait_id, StdItem::IntoIterator)
         || super::recognition::is_hashing(tcx, trait_id)
         || super::recognition::is_sum_or_product(tcx, trait_id)
+        || is_std_def(tcx, trait_id, StdItem::From)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -1705,18 +1707,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        // `x.into()` of a `T: Into<U>` (ADR 0108): std's conversion, of a `T`
-        // to itself too (ADR 0387), or the crate's `From`.
-        if is_std_def(self.tcx, tr.def_id, StdItem::Into) {
-            let into = self.tcx.associated_item_def_ids(tr.def_id)[0];
-            let target = tr.args.type_at(1);
+        // `x.into()` of a `T: Into<U>` (ADR 0108), and `W::from(u)` of a `W:
+        // From<U>` (ADR 0477): std's conversion, of a `T` to itself too (ADR
+        // 0387), or the crate's `From`.
+        let into = is_std_def(self.tcx, tr.def_id, StdItem::Into);
+        if into || is_std_def(self.tcx, tr.def_id, StdItem::From) {
+            let method = self.tcx.associated_item_def_ids(tr.def_id)[0];
+            let (target, source) = match into {
+                true => (tr.args.type_at(1), ty),
+                false => (ty, tr.args.type_at(1)),
+            };
             let from = std_item(self.tcx, StdItem::From);
             let from = self.tcx.associated_item_def_ids(from)[0];
-            let from_args = self.tcx.mk_args(&[target.into(), ty.into()]);
-            let value = if let Some(known) = self.recognition().classify(into, tr.args)
-                && let Some(f) =
-                    self.std_fn_value(known, Ty::new_fn_def(self.tcx, into, ty::Binder::dummy(tr.args)), span)?
-            {
+            let from_args = self.tcx.mk_args(&[target.into(), source.into()]);
+            let value = if let Some(known) = self.recognition().classify(method, tr.args)
+                && let Some(f) = self.std_fn_value(
+                    known,
+                    Ty::new_fn_def(self.tcx, method, ty::Binder::dummy(tr.args)),
+                    span,
+                )? {
                 f
             } else if let Some(instance) = self.resolve_instance(from, from_args)?
                 && self.is_rust_fn(instance.def_id())
@@ -1735,7 +1744,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 return Err(self.no_evidence(span, tr));
             };
-            return Ok(Expr::object(vec![Prop::Field("into".into(), value)]));
+            let name = if into { "into" } else { "from" };
+            return Ok(Expr::object(vec![Prop::Field(name.into(), value)]));
         }
         if self.tcx.is_lang_item(tr.def_id, LangItem::Copy) {
             let ty = tr.self_ty();
@@ -2273,10 +2283,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Where the types are known, `"paren".into()` and `a.add(b)` are std's,
         // written in place, as ever: a dictionary is for generic code (ADR 0108).
+        // A conversion no bound gives, `VecDeque::from(v)` of a `Vec<T>`, is
+        // std's impl wherever it's called, written in place too (ADR 0477).
+        let conversion = is_std_def(self.tcx, trait_id, StdItem::Into) || is_std_def(self.tcx, trait_id, StdItem::From);
         if (super::recognition::value_operator(self.tcx, trait_id).is_some()
             || super::recognition::assign_operator(self.tcx, trait_id).is_some()
-            || is_std_def(self.tcx, trait_id, StdItem::Into))
-            && !tr.args.has_non_region_param()
+            || conversion)
+            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))
         {
             // In a copied default, the call is the trait's, of `Self`, which std's
             // path doesn't see as the number it is here: `self - Self::one()`.

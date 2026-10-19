@@ -268,7 +268,6 @@ for (const [name, source, diagnostic] of [
   // A counted `Rc` its other owners share as what it is can't become a pair in place (ADR 0320).
   ["a counted Rc made elsewhere as an Rc<dyn>", `use std::rc::Rc; pub trait Shape { fn area(&self) -> u32; } pub struct Sq(pub u32); impl Shape for Sq { fn area(&self) -> u32 { self.0 } } impl Drop for Sq { fn drop(&mut self) {} } pub fn f() -> u32 { let r = Rc::new(Sq(1)); let d: Rc<dyn Shape> = r; d.area() }`, "made elsewhere as a"],
   ["a counted Rc<dyn> upcast", `use std::rc::Rc; pub trait Sup { fn a(&self) -> u32; } pub trait Sub: Sup {} pub struct Sq(pub u32); impl Sup for Sq { fn a(&self) -> u32 { self.0 } } impl Sub for Sq {} impl Drop for Sq { fn drop(&mut self) {} } pub fn f() -> u32 { let s: Rc<dyn Sup> = Rc::new(Sq(1)) as Rc<dyn Sub>; s.a() }`, "as a `std::rc::Rc<dyn Sup>`"],
-  ["generic From", `pub fn f<T: From<u32>>() -> T { T::from(1) }`, "calling \`std::convert::From::from\`"],
   ["colliding methods", `pub trait T { fn first(&self); #[rust_js::name = "first"] fn other(&self); }`, "dictionary names collide"],
   ["reserved method", `pub trait T { fn __proto__(&self); }`, "reserved"],
 ] as [string, string, string | null][]) {
