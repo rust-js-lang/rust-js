@@ -2344,12 +2344,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         bytes.then_some("$vecWriter")
     }
 
-    /// `io::Result<()>`, which a write gives: always `Ok`, as nothing rust-js
-    /// writes to fails (ADR 0132), and so nothing, as a `fmt::Result` is.
+    /// A write's result, `fmt::Result` or `io::Result<()>` (`is_write_result_type`).
+    pub(super) fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
+        is_write_result_type(self.tcx, ty)
+    }
+
+    /// `io::Result<()>`, a write's result (`is_write_result_type`).
     pub(super) fn is_io_unit_result(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result)
-            && args.type_at(0).is_unit()
-            && self.is_io_error(args.type_at(1)))
+        is_io_unit_result_type(self.tcx, ty)
     }
 
     /// `Layout`, `{ size, align }` (ADR 0417), `Some(true)`; or
@@ -5553,6 +5555,20 @@ pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
 }
 
 /// Is `ty` a `fmt::Result` (ADR 0054)?
+/// A write's result, `fmt::Result` or `io::Result<()>`: `undefined` where
+/// it's `Ok` (ADRs 0054, 0132), its error thrown where it's an `Err` (ADRs
+/// 0187, 0462), so `?` of one never breaks.
+pub(crate) fn is_write_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    is_fmt_result_type(tcx, ty) || is_io_unit_result_type(tcx, ty)
+}
+
+/// `io::Result<()>`, a write's result.
+pub(crate) fn is_io_unit_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(result, args) if is_std_def(tcx, result.did(), StdItem::Result)
+        && args.type_at(0).is_unit()
+        && matches!(args.type_at(1).kind(), ty::Adt(error, _) if std_path(tcx, error.did()) == "std::io::Error"))
+}
+
 pub(crate) fn is_fmt_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     fmt_result(tcx).is_some_and(|result| tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(result))
 }

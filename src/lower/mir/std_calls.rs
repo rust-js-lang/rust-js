@@ -140,7 +140,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => super::super::mut_refs::boxed(receiver),
                 };
                 exprs.insert(0, receiver);
-                Expr::call(Expr::member(dictionary, bindings::fn_name(tcx, def_id)), exprs)
+                let call = Expr::call(Expr::member(dictionary, bindings::fn_name(tcx, def_id)), exprs);
+                // std's `write_all` of the crate's own `write`, which may fail
+                // where any of the crate's may: its result a value (ADR 0462).
+                match self.krate.any_failing {
+                    true => self.fmt_try(vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),
+                    false => call,
+                }
             }
             _ => return Ok(None),
         })))

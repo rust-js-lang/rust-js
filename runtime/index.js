@@ -3724,91 +3724,6 @@ export function $floatMidpoint(a, b) {
   return a / 2 + b / 2;
 }
 
-// An `io::Error` (ADR 0462): its kind, an `ErrorKind`'s name, and the
-// error it holds, a `dyn Error` pair, `{ value, impl }`, where it was made
-// of one. A class, as a `fmt::Error` is, so that it's thrown where an
-// `io::Result<()>` is an `Err` and told apart from a panic.
-export class $IoError extends Error {
-  constructor(kind, error) {
-    super();
-    this.kind = kind;
-    this.error = error;
-  }
-}
-// What each `ErrorKind` says it is, std's `as_str`.
-export const $ioKinds = {
-  AddrInUse: "address in use",
-  AddrNotAvailable: "address not available",
-  AlreadyExists: "entity already exists",
-  ArgumentListTooLong: "argument list too long",
-  BrokenPipe: "broken pipe",
-  ConnectionAborted: "connection aborted",
-  ConnectionRefused: "connection refused",
-  ConnectionReset: "connection reset",
-  CrossesDevices: "cross-device link or rename",
-  Deadlock: "deadlock",
-  DirectoryNotEmpty: "directory not empty",
-  ExecutableFileBusy: "executable file busy",
-  FileTooLarge: "file too large",
-  FilesystemLoop: "filesystem loop or indirection limit (e.g. symlink loop)",
-  HostUnreachable: "host unreachable",
-  InProgress: "in progress",
-  InputOutputError: "input/output error",
-  Interrupted: "operation interrupted",
-  InvalidData: "invalid data",
-  InvalidFilename: "invalid filename",
-  InvalidInput: "invalid input parameter",
-  IsADirectory: "is a directory",
-  NetworkDown: "network down",
-  NetworkUnreachable: "network unreachable",
-  NotADirectory: "not a directory",
-  NotConnected: "not connected",
-  NotFound: "entity not found",
-  NotSeekable: "seek on unseekable file",
-  Other: "other error",
-  OutOfMemory: "out of memory",
-  PermissionDenied: "permission denied",
-  QuotaExceeded: "quota exceeded",
-  ReadOnlyFilesystem: "read-only filesystem or storage medium",
-  ResourceBusy: "resource busy",
-  StaleNetworkFileHandle: "stale network file handle",
-  StorageFull: "no storage space",
-  TimedOut: "timed out",
-  TooManyLinks: "too many links",
-  TooManyOpenFiles: "too many open files",
-  Uncategorized: "uncategorized error",
-  UnexpectedEof: "unexpected end of file",
-  Unsupported: "unsupported",
-  WouldBlock: "operation would block",
-  WriteZero: "write zero",
-};
-// `{}` of an `ErrorKind`: its words.
-export function $ioKindText(kind) {
-  return $ioKinds[kind];
-}
-// `{}` of an `io::Error`: what its error shows, or its kind's words.
-export function $ioErrorDisplay(e) {
-  return e.error === undefined ? $ioKindText(e.kind) : e.error.impl.Display().fmt(e.error.value);
-}
-// `{:?}` of one, std's `Custom { kind, error }` or `Kind(..)`, pretty
-// where `options` say.
-export function $ioErrorDebug(e, options) {
-  if (e.error === undefined) return options?.alternate ? $pretty("Kind(", [e.kind], ")") : `Kind(${e.kind})`;
-  const error = e.error.impl.Debug().fmt(e.error.value, options);
-  return options?.alternate
-    ? $pretty("Custom {", [`kind: ${e.kind}`, `error: ${error}`], "}")
-    : `Custom { kind: ${e.kind}, error: ${error} }`;
-}
-// An `io::Error` as a `dyn Error`'s dictionary (ADR 0141).
-export function $ioErrorDyn() {
-  return {
-    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
-    Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
-    // Its error's own `source`, as std's is.
-    source: (e) => e.error?.impl.source(e.error.value),
-  };
-}
-
 // A lazy iterator made `peekable()` (ADR 0164): a JS iterator that steps
 // it only when asked, and keeps the step `peek` took for the next `next`,
 // as Rust's `Peekable` does. One of an array's items is its `$iter`, which
@@ -4736,9 +4651,12 @@ export function $ioWriteAll(write) {
   return (w, bytes) => {
     for (let at = 0; at < bytes.length; ) {
       const written = write(w, at === 0 ? bytes : bytes.slice(at));
-      if (written.TAG === "Err" || written._0 === 0) {
-        throw new Error("rust-js does not support a write that fails, whose `io::Error` JS has no value of");
+      // std's: an interrupted write again, another's error thrown (ADR 0462).
+      if (written.TAG === "Err") {
+        if (written._0.kind === "Interrupted") continue;
+        throw written._0;
       }
+      if (written._0 === 0) throw new $IoError("WriteZero", undefined, "failed to write whole buffer");
       at += written._0;
     }
   };
@@ -8009,11 +7927,14 @@ export function $trimEnd(s) {
   return s.replace(/\p{White_Space}+$/u, "");
 }
 
-// A writer's `Err(fmt::Error)` (ADR 0187): thrown, with what was written
-// before it, which each writer it passes out of puts its own in front of.
-// `Ok` is `undefined`, as it was (ADR 0054), and an `Err` caught is the error.
-// One no consumer took, of a library's generic code, is `format!`'s panic.
-export class $FmtError extends Error {
+// A write's error: a `fmt::Error` (ADR 0187), or an `io::Error` (ADR 0462),
+// thrown where its `fmt::Result` or `io::Result<()>` is an `Err`. `Ok` is
+// `undefined`, as it was (ADRs 0054, 0132), and an `Err` caught is the error.
+export class $WriteError extends Error {}
+// A writer's `Err(fmt::Error)`: thrown, with what was written before it,
+// which each writer it passes out of puts its own in front of. One no
+// consumer took, of a library's generic code, is `format!`'s panic.
+export class $FmtError extends $WriteError {
   written = "";
   constructor() {
     super("a formatting trait implementation returned an error when the underlying stream did not: Error");
@@ -8027,33 +7948,39 @@ export function $fmtWritten(error, f) {
   if (error instanceof $FmtError) error.written = f + error.written;
   return error;
 }
-// A `fmt::Result` as a value: what `write` returns, `undefined`, or its error.
-export function $fmtTry(write) {
+// A write's result as a value: what `write` returns, `undefined`, or its error.
+export function $writeTry(write) {
   try {
     return write();
   } catch (error) {
-    if (error instanceof $FmtError) return error;
+    if (error instanceof $WriteError) return error;
     throw error;
   }
 }
 // One where generic code has a `Result` (ADR 0461): `Ok`, or `Err` of the
 // error `write` threw.
-export function $fmtResult(write) {
+export function $writeResult(write) {
   try {
     write();
     return { TAG: "Ok" };
   } catch (error) {
-    if (error instanceof $FmtError) return { TAG: "Err", _0: error };
+    if (error instanceof $WriteError) return { TAG: "Err", _0: error };
     throw error;
   }
 }
-// A generic `Result` of a `fmt::Error`, as a `fmt::Result` is a value:
+// A generic `Result` of a write's error, as a write's result is a value:
 // `undefined`, or its error.
-export function $fmtOf(result) {
+export function $writeOf(result) {
   return result.TAG === "Ok" ? undefined : result._0;
 }
+// What a function that gives a value's `Result` caught: a write's error,
+// its `Err`'s; anything else thrown on (ADR 0462).
+export function $writeCaught(error) {
+  if (error instanceof $WriteError) return error;
+  throw error;
+}
 // `?` of one: its error, on.
-export function $fmtCheck(result) {
+export function $writeCheck(result) {
   if (result !== undefined) throw result;
 }
 // `to_string()` and `format!` of what fails: std's panic, `message`.
@@ -8071,9 +7998,11 @@ export function $fmtPrintFailed(error, text, stderr) {
   $write(text + error.written, stderr);
   throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
 }
-// `unwrap()` and `expect(..)` of one: `()`, or std's panic.
-export function $fmtExpect(result, message) {
-  if (result !== undefined) throw new Error(message + ": Error");
+// `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's
+// `{:?}`.
+export function $writeExpect(result, message) {
+  if (result === undefined) return;
+  throw new Error(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
 }
 // What a write to a `String` had written before it failed, taken from the
 // error, as the string has it now.
@@ -8082,6 +8011,108 @@ export function $fmtPartial(error) {
   const written = error.written;
   error.written = "";
   return written;
+}
+
+// An `io::Error` (ADR 0462): its kind, an `ErrorKind`'s name, and the
+// error it holds, a `dyn Error` pair, `{ value, impl }`, where it was made
+// of one, or std's own message, `write_all`'s. A class, as a `fmt::Error`
+// is, so that it's thrown where an `io::Result<()>` is an `Err` and told
+// apart from a panic.
+export class $IoError extends $WriteError {
+  constructor(kind, error, message) {
+    super();
+    this.kind = kind;
+    this.error = error;
+    this.message = message;
+  }
+}
+// An `io::Result<()>`'s `Err`: its error, thrown.
+export function $ioThrow(error) {
+  throw error;
+}
+// What each `ErrorKind` says it is, std's `as_str`.
+export const $ioKinds = {
+  AddrInUse: "address in use",
+  AddrNotAvailable: "address not available",
+  AlreadyExists: "entity already exists",
+  ArgumentListTooLong: "argument list too long",
+  BrokenPipe: "broken pipe",
+  ConnectionAborted: "connection aborted",
+  ConnectionRefused: "connection refused",
+  ConnectionReset: "connection reset",
+  CrossesDevices: "cross-device link or rename",
+  Deadlock: "deadlock",
+  DirectoryNotEmpty: "directory not empty",
+  ExecutableFileBusy: "executable file busy",
+  FileTooLarge: "file too large",
+  FilesystemLoop: "filesystem loop or indirection limit (e.g. symlink loop)",
+  HostUnreachable: "host unreachable",
+  InProgress: "in progress",
+  InputOutputError: "input/output error",
+  Interrupted: "operation interrupted",
+  InvalidData: "invalid data",
+  InvalidFilename: "invalid filename",
+  InvalidInput: "invalid input parameter",
+  IsADirectory: "is a directory",
+  NetworkDown: "network down",
+  NetworkUnreachable: "network unreachable",
+  NotADirectory: "not a directory",
+  NotConnected: "not connected",
+  NotFound: "entity not found",
+  NotSeekable: "seek on unseekable file",
+  Other: "other error",
+  OutOfMemory: "out of memory",
+  PermissionDenied: "permission denied",
+  QuotaExceeded: "quota exceeded",
+  ReadOnlyFilesystem: "read-only filesystem or storage medium",
+  ResourceBusy: "resource busy",
+  StaleNetworkFileHandle: "stale network file handle",
+  StorageFull: "no storage space",
+  TimedOut: "timed out",
+  TooManyLinks: "too many links",
+  TooManyOpenFiles: "too many open files",
+  Uncategorized: "uncategorized error",
+  UnexpectedEof: "unexpected end of file",
+  Unsupported: "unsupported",
+  WouldBlock: "operation would block",
+  WriteZero: "write zero",
+};
+// `{}` of an `ErrorKind`: its words.
+export function $ioKindText(kind) {
+  return $ioKinds[kind];
+}
+// `{}` of an `io::Error`: what its error shows, or its kind's words.
+export function $ioErrorDisplay(e) {
+  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);
+  return e.message || $ioKindText(e.kind);
+}
+// `{:?}` of one, std's `Custom { kind, error }` or `Kind(..)`, pretty
+// where `options` say.
+export function $ioErrorDebug(e, options) {
+  if (e.message) {
+    const fields = [`kind: ${e.kind}`, `message: ${$debugStr(e.message)}`];
+    return options?.alternate ? $pretty("Error {", fields, "}") : `Error { ${fields.join(", ")} }`;
+  }
+  if (e.error === undefined) return options?.alternate ? $pretty("Kind(", [e.kind], ")") : `Kind(${e.kind})`;
+  const error = e.error.impl.Debug().fmt(e.error.value, options);
+  return options?.alternate
+    ? $pretty("Custom {", [`kind: ${e.kind}`, `error: ${error}`], "}")
+    : `Custom { kind: ${e.kind}, error: ${error} }`;
+}
+// `{:?}` of an `io::Result<()>`, `undefined` or its error.
+export function $ioResultDebug(result, options) {
+  if (result === undefined) return "Ok(())";
+  const error = $ioErrorDebug(result, options);
+  return options?.alternate ? $pretty("Err(", [error], ")") : `Err(${error})`;
+}
+// An `io::Error` as a `dyn Error`'s dictionary (ADR 0141).
+export function $ioErrorDyn() {
+  return {
+    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
+    Display: () => ({ fmt: (e) => $ioErrorDisplay(e) }),
+    // Its error's own `source`, as std's is.
+    source: (e) => e.error?.impl.source(e.error.value),
+  };
 }
 
 // A `Duration` is its nanoseconds, a BigInt (ADR 0188): std's `MAX` is

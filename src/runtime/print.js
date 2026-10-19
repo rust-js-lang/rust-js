@@ -72,9 +72,12 @@ function $ioWriteAll(write) {
   return (w, bytes) => {
     for (let at = 0; at < bytes.length; ) {
       const written = write(w, at === 0 ? bytes : bytes.slice(at));
-      if (written.TAG === "Err" || written._0 === 0) {
-        throw new Error("rust-js does not support a write that fails, whose `io::Error` JS has no value of");
+      // std's: an interrupted write again, another's error thrown (ADR 0462).
+      if (written.TAG === "Err") {
+        if (written._0.kind === "Interrupted") continue;
+        throw written._0;
       }
+      if (written._0 === 0) throw new $IoError("WriteZero", undefined, "failed to write whole buffer");
       at += written._0;
     }
   };

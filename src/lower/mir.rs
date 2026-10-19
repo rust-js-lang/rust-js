@@ -318,6 +318,10 @@ struct State<'m, 'tcx> {
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
     writer: Option<(Vec<Local>, String)>,
+    /// In a function that gives a value's `Result`, what `?` of a write's
+    /// result throws on (ADR 0462): its error's type, and how it's made the
+    /// function's error, which its end catches and gives as its `Err`.
+    thrown_writes: Option<(Ty<'tcx>, Option<super::std_types::result::Conversion>)>,
     /// A writer's `Debug` builders (ADR 0136): each local that's one, to
     /// the one its `Formatter` made, and what that's been given.
     builders: HashMap<Local, Local>,
@@ -558,6 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             jsx_props: self.mir_jsx_props(mir_body),
             options: Default::default(),
             writer: None,
+            thrown_writes: None,
             builders: Default::default(),
             built: Default::default(),
             let_spans: Default::default(),
@@ -875,9 +880,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         tidy::destructured_params(&mut params, &mut out);
         tidy::named(&params, &mut out, &flags);
-        if let Some((_, name)) = &state.writer {
-            self.writer_epilogue(name, &mut out);
-        }
+        self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }
 
@@ -2606,18 +2609,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             value => value,
         };
-        // A writer's `fmt::Result`, of what it called last, that may hold
-        // an `Err`, `$fmtTry(..)`'s or `$fmtOf(..)`'s: thrown on, as `?` of
-        // it is (ADR 0187). A call's own throws it.
-        if state.writer.is_some()
-            && place == Place::from(mir::RETURN_PLACE)
+        // A write's result a function gives, of what it called last, that
+        // may hold an `Err`, `$writeTry(..)`'s or `$writeOf(..)`'s: thrown on,
+        // as `?` of it is, and `undefined` given (ADRs 0187, 0462). A call's
+        // own throws it.
+        if place == Place::from(mir::RETURN_PLACE)
+            && self
+                .recognition()
+                .is_write_result(state.body.local_decls[mir::RETURN_PLACE].ty)
             && let Value::Expr(value) = &value
             && let js::ExprKind::Call(callee, _) = &value.kind
-            && matches!(callee.helper_name(), Some("$fmtTry" | "$fmtOf"))
+            && matches!(callee.helper_name(), Some("$writeTry" | "$writeOf"))
         {
             self.flush(state, out)?;
             self.fmt_check(value.clone(), self.js_span(span), out);
-            return Ok(());
+            if state.writer.is_some() {
+                return Ok(());
+            }
+            return self.mir_store(state, place, Value::Expr(Expr::undefined()), span, out);
         }
         // A union's field written: the one it holds now (ADR 0406).
         if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
@@ -3131,7 +3140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((tried, ty)) = state.branches.get(&place.local).cloned() {
             return match place.projection.as_slice() {
                 [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 0 => {
-                    Ok(match self.never_fails(ty) {
+                    Ok(match self.is_write_result(ty) {
                         true => Expr::undefined(),
                         false => self.tried_value(tried, ty),
                     })
@@ -3375,6 +3384,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 if bindings::is_untagged(self.tcx, adt.did()) {
                     return Ok(base);
+                }
+                // A write's result's `Err`'s, its error itself; its `Ok`'s, `()`
+                // (ADRs 0187, 0462).
+                if self.is_write_result(ty.ty) {
+                    return Ok(match variant.as_u32() {
+                        0 => Expr::undefined(),
+                        _ => base,
+                    });
                 }
                 // A `Cell` it holds, as a struct's (ADR 0288): a handle on it.
                 let variant = adt.variant(variant);
@@ -4511,15 +4528,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether what `?` tried returns early; a write's never does (ADRs
     /// 0054, 0132).
     fn branch_failed(&self, tried: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.never_fails(ty) {
+        match self.is_write_result(ty) {
             true => Expr::bool(false),
             false => self.tried_failed(tried, ty),
         }
-    }
-
-    /// A write's result, which never fails (ADRs 0054, 0132).
-    fn never_fails(&self, ty: Ty<'tcx>) -> bool {
-        self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty)
     }
 
     /// That `subject` is `variant` of its enum, as a pattern tests it
@@ -5119,11 +5131,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `?`'s.
     fn of_never_failing(&self, def_id: rustc_span::def_id::DefId, arg_tys: &[Ty<'tcx>]) -> bool {
         let tcx = self.tcx;
-        arg_tys.first().is_some_and(|ty| self.never_fails(ty.peel_refs()))
+        arg_tys.first().is_some_and(|ty| self.is_write_result(ty.peel_refs()))
             && tcx.def_kind(def_id) == DefKind::AssocFn
             && tcx
                 .impl_of_assoc(def_id)
                 .is_some_and(|imp| self.recognition().is_result(tcx.type_of(imp).skip_binder()))
+    }
+
+    /// `?` of a write's result that may be an `Err`, what's tried: its error
+    /// thrown on, `fmt_check` (ADR 0187), and what's left never breaks. In a
+    /// function that gives a value's `Result`, its end catches it and gives
+    /// it as its `Err`, converted (ADR 0462).
+    fn tried_write(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        values: Vec<Value<'tcx>>,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let tried = self.value_expr(values.into_iter().next().expect("what's tried"), span)?;
+        self.flush(state, out)?;
+        let output = state.body.local_decls[mir::RETURN_PLACE].ty;
+        if !self.is_write_result(output) && self.is_std_type(output, StdItem::Result) {
+            match &state.thrown_writes {
+                Some((thrown, _)) if *thrown != ty => {
+                    return Err(self.unsupported(span, "`?` of two writes' results of different errors"));
+                }
+                Some(_) => {}
+                None => state.thrown_writes = Some((ty, self.tried_conversion(ty, Some(output), span)?)),
+            }
+        }
+        self.fmt_check(tried, self.js_span(span), out);
+        Ok(Value::Branch(Expr::undefined(), ty))
+    }
+
+    /// `?`'s residual given back as a write's result, `output`: its error,
+    /// thrown, as its `Err` is (ADRs 0187, 0462).
+    fn thrown_residual(&self, residual: Expr, output: Ty<'tcx>) -> Expr {
+        match self.is_fmt_result(output) {
+            true => Expr::call(Expr::helper("$fmtError"), Vec::new()),
+            false => Expr::call_helper("$ioThrow", vec![Expr::member(residual, "_0")]),
+        }
     }
 
     /// A method of a write's result: an `Ok` `fmt::Result` is nothing in JS
@@ -5145,8 +5194,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let result = self.value_expr(values.next().expect("the result"), span)?;
         let message = values.next().map(|v| self.value_expr(v, span)).transpose()?;
         // Only in a crate where a `fmt::Result` may be an `Err` is one tested:
-        // what `$fmtTry` caught (ADR 0187).
-        let may_fail = self.krate.any_failing && self.is_fmt_result(arg_tys[0].peel_refs());
+        // what `$writeTry` caught (ADR 0187).
+        let may_fail = self.krate.any_failing && self.is_write_result(arg_tys[0].peel_refs());
         if may_fail || result.has_effects() || message.as_ref().is_some_and(Expr::has_effects) {
             self.flush(state, out)?;
         }
@@ -5275,13 +5324,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = arg_tys[0];
             // Of one that may be an `Err`: its error thrown on, `fmt_check`
             // (ADR 0187), and what's left never breaks.
-            if self.is_fmt_result(ty) && self.krate.any_failing {
-                let tried = self.value_expr(values.into_iter().next().expect("what's tried"), span)?;
-                self.flush(state, out)?;
-                self.fmt_check(tried, self.js_span(span), out);
-                return Ok(Value::Branch(Expr::undefined(), ty));
+            if self.is_write_result(ty) && self.krate.any_failing {
+                return self.tried_write(state, values, ty, span, out);
             }
-            if !self.never_fails(ty) && self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
+            if !self.is_write_result(ty) && self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
                 return Err(self.unsupported(span, &format!("`?` on a `{ty}`, from its MIR")));
             }
             let tried = self.value_expr(values.into_iter().next().expect("the value tried"), span)?;
@@ -5308,6 +5354,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`?` returning a `{ty}`, from its MIR")));
             }
             let residual = self.value_expr(values.into_iter().next().expect("the residual"), span)?;
+            if self.is_write_result(output) {
+                return Ok(Value::Expr(self.thrown_residual(residual, output)));
+            }
             let convert = self.tried_conversion(ty, Some(output), span)?;
             let converted = convert.map(|conversion| conversion.of(Expr::member(residual.clone(), "_0")));
             return Ok(Value::Expr(self.tried_returned(residual, ty, converted)));

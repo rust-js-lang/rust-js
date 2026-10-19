@@ -5,6 +5,24 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A body's end: a writer's, `writer_epilogue`; and of a function that
+    /// gives a value's `Result`, what `?` of a write's result threw on,
+    /// caught and given as its `Err` (ADR 0462).
+    pub(super) fn body_epilogue(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) {
+        if let Some((_, name)) = &state.writer {
+            let name = name.clone();
+            self.writer_epilogue(&name, out);
+        }
+        if let Some((_, conversion)) = state.thrown_writes.take() {
+            let error = self.fresh("error");
+            let caught = Expr::call_helper("$writeCaught", vec![Expr::var(&error)]);
+            let converted = conversion.map_or_else(|| caught.clone(), |conversion| conversion.of(caught.clone()));
+            let handler =
+                vec![StmtKind::Return(Some(crate::lower::std_types::result::err(converted))).at(js::Span::NONE)];
+            *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
+        }
+    }
+
     /// A writer's body's end, `name` the string it writes to: one that may
     /// fail gives what it wrote before, in front of what what it called did
     /// (ADR 0187), `let f = ""; try { .. } catch (error) { .. } return f;`;

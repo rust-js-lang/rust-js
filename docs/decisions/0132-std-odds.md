@@ -4,6 +4,8 @@ Status: Accepted. Extends [0023](0023-strings-references-shared-state.md) and [0
 Amended by [0392](0392-a-writer-of-bytes.md): a write through a generic or
 `dyn` `io::Write`, `write_all` and `write` are supported, and `ok()` of an
 `io::Result<()>`.
+(Amended by [0462](0462-io-error-values.md): an `io::Result<()>`'s `Err` is
+thrown, as a `fmt::Result`'s is, and may be matched.)
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -251,7 +251,6 @@ for (const [name, source, diagnostic] of [
   // `skip_while` (ADR 0098), not one that leaves some, as `take` does.
   // A chain whose stages do what can be seen runs lazily (ADR 0139), and a JS
   // iterator can't run from its other end, as `rev` would have it.
-  ["peekable after a closure with effects", `pub fn f(v: &[i32]) -> Option<i32> { let mut p = v.iter().map(|x| { println!("{}", x); *x }).peekable(); p.peek().copied() }`, "\`peekable\` of a lazy iterator"],
   // `rev` of a `map` or a `filter` over a slice is the chain over its items reversed (ADR 0164); an index made after a closure is not.
   ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, "\`rposition\` of a lazy iterator"],
   ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "\`rev\` of a lazy iterator"],

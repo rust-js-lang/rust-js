@@ -5,9 +5,9 @@ import {
   $fmtError,
   $fmtPartial,
   $fmtPrintFailed,
-  $fmtTry,
   $fmtWritten,
   $print,
+  $writeTry,
 } from "@rust-js/runtime";
 
 var $hoursDisplay, $spanDisplay;
@@ -70,7 +70,7 @@ function show(s, h) {
 
 function main() {
   let t = ">";
-  const r = $fmtTry(() => {
+  const r = $writeTry(() => {
     try {
       t += spanDisplay_fmt([[9], [17]]);
       t += " and ";
@@ -84,7 +84,7 @@ function main() {
   let u = "";
   console.log(
     `${
-      $fmtTry(() => {
+      $writeTry(() => {
         try {
           u += hoursDisplay_fmt([5]);
         } catch (error) {
@@ -98,10 +98,10 @@ function main() {
   );
   let v = "";
   const s = { value: v };
-  const value = $fmtTry(() => show(s, [7]));
+  const value = $writeTry(() => show(s, [7]));
   v = s.value;
   const s$1 = { value: v };
-  const value$1 = $fmtTry(() => show(s$1, [70]));
+  const value$1 = $writeTry(() => show(s$1, [70]));
   v = s$1.value;
   console.log(
     `${value === undefined ? "Ok(())" : "Err(Error)"} ${value$1 === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(v)}`,

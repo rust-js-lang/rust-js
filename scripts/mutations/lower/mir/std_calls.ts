@@ -618,4 +618,12 @@ export const mutations: Mutation[] = [
     replace: "                let given = vec![dest, Value::Expr(source)];\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
+  {
+    name: "own-write-all-unwrapped",
+    breaks: "std's `write_all` of the crate's writer that fails throws out of where its result is a value",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    true => self.fmt_try(vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),\n",
+    replace: "                    true => call,\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
 ];

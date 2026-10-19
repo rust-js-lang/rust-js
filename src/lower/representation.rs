@@ -40,6 +40,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.absent(subject, inner),
             };
         }
+        // A write's result's `Ok`, `undefined`, and its `Err`, the error it
+        // caught (ADRs 0187, 0462).
+        if self.is_write_result(ty) {
+            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };
+            return Expr::bin(op, subject, Expr::undefined());
+        }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
             return self.untagged_variant_test(ty, def, &subject);

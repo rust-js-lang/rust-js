@@ -58,10 +58,10 @@ function formatterSinkSink_write_encoded(formatterSink, encoded) {
 `fmt::Result` it is where it's read again, `is_generic_fmt_result`.**
 
 - **An impl's, given through a dictionary whose trait method gives
-  `Result<(), Self::Error>`**, is `$fmtResult(() => ..)`: `{ TAG: "Ok"
+  `Result<(), Self::Error>`**, is `$writeResult(() => ..)`: `{ TAG: "Ok"
   }`, or `Err` of the error thrown.
 - **A generic function's `Result<.., S::Error>` read where it's a
-  `fmt::Result`**, `generic_result_values`'s, is `$fmtOf(..)`: `undefined`,
+  `fmt::Result`**, `generic_result_values`'s, is `$writeOf(..)`: `undefined`,
   or its error.
 - **A call of one may fail where any of the crate's may**: its
   dictionary's calls give its error, so the analysis of what fails takes
@@ -71,7 +71,7 @@ function formatterSinkSink_write_encoded(formatterSink, encoded) {
 
 **A writer's last call, its `fmt::Result` returned, is checked**, as
 `?` of it is: `check(n)` throws where it fails, which the writer passes
-on, `$fmtCheck($fmtOf(encode(..)))` of a generic one. It gave `Ok`.
+on, `$writeCheck($writeOf(encode(..)))` of a generic one. It gave `Ok`.
 
 ## Why
 

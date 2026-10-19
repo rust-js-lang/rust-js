@@ -57,14 +57,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("an ADT's value")
         };
         let variant = adt_def.variant(variant_index);
-        // A `fmt::Result`'s `Ok` is nothing (ADR 0054), and so is an
-        // `io::Result<()>`'s (ADR 0132); a `fmt::Error` is thrown (ADR 0187).
-        if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
-            return match variant.name.as_str() {
-                "Ok" => Ok(Expr::undefined()),
-                _ if self.is_fmt_result(ty) => Ok(Expr::call(Expr::helper("$fmtError"), Vec::new())),
-                _ => Err(self.unsupported(span, "an `io::Error`")),
-            };
+        // A write's result's `Ok` is nothing (ADRs 0054, 0132); its error is
+        // thrown, a `fmt::Error` (ADR 0187) or the `io::Error` (ADR 0462).
+        if self.is_write_result(ty) {
+            return Ok(match variant.name.as_str() {
+                "Ok" => Expr::undefined(),
+                _ if self.is_fmt_result(ty) => Expr::call(Expr::helper("$fmtError"), Vec::new()),
+                _ => Expr::call_helper("$ioThrow", fields),
+            });
         }
         if let Some(inner) = self.option_of(ty) {
             return Ok(match fields.into_iter().next() {

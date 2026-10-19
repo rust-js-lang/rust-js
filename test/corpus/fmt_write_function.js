@@ -4,9 +4,9 @@ import {
   $byteLen,
   $debugStr,
   $fmtError,
-  $fmtExpect,
-  $fmtTry,
   $stringWriter,
+  $writeExpect,
+  $writeTry,
 } from "@rust-js/runtime";
 
 var $bufWrite;
@@ -31,18 +31,18 @@ function bufWrite_write_str(buf, s) {
 }
 
 function put(w, n) {
-  return $fmtTry(() => w.impl.write_fmt(w, `<${n}>`));
+  w.impl.write_fmt(w, `<${n}>`);
 }
 
 function main() {
   const buf = { text: "", cap: 8 };
   const receiver = { value: buf, impl: bufWrite() };
-  const short = $fmtTry(() =>
+  const short = $writeTry(() =>
     receiver.impl.write_fmt(receiver, `[${[1, 2].map((item) => String(item)).join(", ")}]`),
   );
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
   const receiver$1 = { value: buf, impl: bufWrite() };
-  const long = $fmtTry(() => receiver$1.impl.write_fmt(receiver$1, "too long"));
+  const long = $writeTry(() => receiver$1.impl.write_fmt(receiver$1, "too long"));
   console.log(`${long === undefined} ${$debugStr(buf.text)}`);
   let s = ">";
   const receiver$2 = {
@@ -54,10 +54,10 @@ function main() {
       s = value;
     },
   };
-  const result = $fmtTry(() => receiver$2.impl.write_fmt(receiver$2, "3-x"));
-  $fmtExpect(result, "called `Result::unwrap()` on an `Err` value");
+  const result = $writeTry(() => receiver$2.impl.write_fmt(receiver$2, "3-x"));
+  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s}`);
-  const result$1 = $fmtTry(() =>
+  const result$1 = $writeTry(() =>
     put(
       {
         impl: $stringWriter,
@@ -71,10 +71,10 @@ function main() {
       7,
     ),
   );
-  $fmtExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
   const wide = { text: "", cap: 99 };
-  const result$2 = $fmtTry(() => put({ value: wide, impl: bufWrite() }, 8));
-  $fmtExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  const result$2 = $writeTry(() => put({ value: wide, impl: bufWrite() }, 8));
+  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s} ${wide.text}`);
 }
 //# sourceMappingURL=case.js.map

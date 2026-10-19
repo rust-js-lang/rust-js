@@ -5,6 +5,9 @@ and [0166](0166-user-fmt-write.md); extends [0100](0100-separate-crates.md).
 Amended: a `fmt::Result`'s `map_err(f)` is `Ok(())`, or `Err` of `f`'s
 value, a `Result` of its own, `fmt_result_values`' answer as the others'
 are: arrayvec's `ArrayString::try_from` (`test/corpus/fmt_result_map_err.rs`).
+(Amended by [0462](0462-io-error-values.md): an `io::Result<()>`'s `Err` is
+thrown too, and the helpers that take either are `$writeTry`,
+`$writeCheck`, `$writeExpect`, `$writeResult` and `$writeOf`.)
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -3340,7 +3340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => {
                     let made = call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone()));
                     Some(Expr::call_helper(
-                        "$fmtResult",
+                        "$writeResult",
                         vec![Expr::arrow(
                             Vec::new(),
                             vec![js::StmtKind::Return(Some(made)).at(js::Span::NONE)],

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  v.push(...[...text].map((c) => c.charCodeAt(0)));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
+  {
+    name: "io-write-all-error-refused",
+    breaks: "std's `write_all` of a writer whose `write` fails panics, not giving its error",
+    file: "src/runtime/print.js",
+    find: "        throw written._0;\n",
+    replace: "        throw new Error(\"a write that fails\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
 ];

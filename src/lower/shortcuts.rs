@@ -37,6 +37,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `fmt::Result`, as `Display::fmt` returns it.
+    /// A write's result, `fmt::Result` or `io::Result<()>` (ADR 0462).
+    pub(super) fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().is_write_result(ty)
+    }
+
     pub(super) fn is_fmt_result(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_fmt_result(ty)
     }

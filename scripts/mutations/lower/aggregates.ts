@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "adt-value-fmt-ok-thrown",
     breaks: "a `fmt::Result`'s `Ok` from MIR is thrown as an `Err` is",
     file: "src/lower/aggregates.rs",
-    find: "=> Ok(Expr::u",
-    replace: "if false => Ok(Expr::u",
+    find: "                \"Ok\" => Expr::undefined(),\n",
+    replace: "                \"Ok\" if false => Expr::undefined(),\n",
     tests: ["test/corpus.test.ts","-t","write_to_string"],
   },
   {
@@ -69,5 +69,13 @@ export const mutations: Mutation[] = [
       "-t",
       "a nullable field's None is null"
     ]
+  },
+  {
+    name: "io-unit-err-not-thrown",
+    breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
+    file: "src/lower/aggregates.rs",
+    find: "                _ => Expr::call_helper(\"$ioThrow\", fields),\n",
+    replace: "                _ => Expr::undefined(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
 ];

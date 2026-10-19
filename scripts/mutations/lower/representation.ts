@@ -469,4 +469,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(iter_by_ref|iter_next_back|dyn_iterators).rs$"],
   },
+  {
+    name: "write-result-variant-by-tag",
+    breaks: "a `match` of an `io::Result<()>` reads its `TAG`, which `undefined` hasn't",
+    file: "src/lower/representation.rs",
+    find: "        if self.is_write_result(ty) {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
+    replace: "        if false {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
 ];

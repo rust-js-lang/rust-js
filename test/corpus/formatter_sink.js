@@ -3,15 +3,15 @@
 import {
   $assign,
   $debugStr,
-  $fmtCheck,
   $fmtError,
-  $fmtOf,
   $fmtPartial,
   $fmtPrintFailed,
-  $fmtResult,
-  $fmtTry,
   $fmtWritten,
   $print,
+  $writeCheck,
+  $writeOf,
+  $writeResult,
+  $writeTry,
 } from "@rust-js/runtime";
 
 var $formatterSinkSink, $encodedDisplay, $stringSinkSink, $checkedDisplay;
@@ -34,7 +34,7 @@ function formatterSinkSink() {
   if ($formatterSinkSink === undefined) {
     $formatterSinkSink = {
       write_encoded: (arg0, arg1) =>
-        $fmtResult(() => formatterSinkSink_write_encoded(arg0.value, arg1)),
+        $writeResult(() => formatterSinkSink_write_encoded(arg0.value, arg1)),
     };
   }
   return $formatterSinkSink;
@@ -69,7 +69,7 @@ function encodedDisplay_fmt(encoded) {
       },
     };
     const sink$1 = { value: sink };
-    $fmtCheck($fmtOf(encode(encoded[0], sink$1, formatterSinkSink())));
+    $writeCheck($writeOf(encode(encoded[0], sink$1, formatterSinkSink())));
     $assign(sink, sink$1.value);
   } catch (error) {
     throw $fmtWritten(error, f);
@@ -81,7 +81,7 @@ function stringSinkSink() {
   if ($stringSinkSink === undefined) {
     $stringSinkSink = {
       write_encoded: (arg0, arg1) =>
-        $fmtResult(() => stringSinkSink_write_encoded(arg0.value, arg1)),
+        $writeResult(() => stringSinkSink_write_encoded(arg0.value, arg1)),
     };
   }
   return $stringSinkSink;
@@ -125,7 +125,7 @@ function main() {
   }
   $print(text);
   let out = "";
-  const failed = $fmtTry(() => {
+  const failed = $writeTry(() => {
     try {
       out += "[";
       out += encodedDisplay_fmt(["a bad c"]);
@@ -149,12 +149,12 @@ function main() {
     },
   };
   const sink = { value };
-  const written = $fmtOf(encode("x y", sink, stringSinkSink()));
+  const written = $writeOf(encode("x y", sink, stringSinkSink()));
   $assign(value, sink.value);
   console.log(`${written === undefined ? "Ok(())" : "Err(Error)"} ${s}`);
 
   let checked = "";
-  const fine = $fmtTry(() => {
+  const fine = $writeTry(() => {
     try {
       checked += checkedDisplay_fmt([2]);
     } catch (error) {
@@ -162,7 +162,7 @@ function main() {
       throw error;
     }
   });
-  const not = $fmtTry(() => {
+  const not = $writeTry(() => {
     try {
       checked += checkedDisplay_fmt([5]);
     } catch (error) {

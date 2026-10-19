@@ -19,8 +19,9 @@ released any more: `rust-js build` is the one way to build an app.
 ### New
 
 - **An `io::Error` is a value**: `io::Error::new(kind, e)`, `other(e)`,
-  `kind.into()`, its `kind()`, and its `{}` and `{:?}` as std shows them
-  (ADR 0462).
+  `kind.into()`, its `kind()`, and its `{}` and `{:?}` as std shows them;
+  **an `io::Result<()>` may be an `Err`**, thrown as a `fmt::Result`'s is,
+  and a crate's writer may fail (ADR 0462).
 - **`rev()` of a lazy chain over a range**, `(1..4).map(f).rev()`, its
   closures called from the back as Rust calls them (ADR 0164).
 - **`peekable()` of a lazy iterator**, `chars().filter(f).peekable()`, its

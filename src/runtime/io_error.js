@@ -1,13 +1,19 @@
 // An `io::Error` (ADR 0462): its kind, an `ErrorKind`'s name, and the
 // error it holds, a `dyn Error` pair, `{ value, impl }`, where it was made
-// of one. A class, as a `fmt::Error` is, so that it's thrown where an
-// `io::Result<()>` is an `Err` and told apart from a panic.
-class $IoError extends Error {
-  constructor(kind, error) {
+// of one, or std's own message, `write_all`'s. A class, as a `fmt::Error`
+// is, so that it's thrown where an `io::Result<()>` is an `Err` and told
+// apart from a panic.
+class $IoError extends $WriteError {
+  constructor(kind, error, message) {
     super();
     this.kind = kind;
     this.error = error;
+    this.message = message;
   }
+}
+// An `io::Result<()>`'s `Err`: its error, thrown.
+function $ioThrow(error) {
+  throw error;
 }
 // What each `ErrorKind` says it is, std's `as_str`.
 const $ioKinds = {
@@ -62,16 +68,27 @@ function $ioKindText(kind) {
 }
 // `{}` of an `io::Error`: what its error shows, or its kind's words.
 function $ioErrorDisplay(e) {
-  return e.error === undefined ? $ioKindText(e.kind) : e.error.impl.Display().fmt(e.error.value);
+  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);
+  return e.message || $ioKindText(e.kind);
 }
 // `{:?}` of one, std's `Custom { kind, error }` or `Kind(..)`, pretty
 // where `options` say.
 function $ioErrorDebug(e, options) {
+  if (e.message) {
+    const fields = [`kind: ${e.kind}`, `message: ${$debugStr(e.message)}`];
+    return options?.alternate ? $pretty("Error {", fields, "}") : `Error { ${fields.join(", ")} }`;
+  }
   if (e.error === undefined) return options?.alternate ? $pretty("Kind(", [e.kind], ")") : `Kind(${e.kind})`;
   const error = e.error.impl.Debug().fmt(e.error.value, options);
   return options?.alternate
     ? $pretty("Custom {", [`kind: ${e.kind}`, `error: ${error}`], "}")
     : `Custom { kind: ${e.kind}, error: ${error} }`;
+}
+// `{:?}` of an `io::Result<()>`, `undefined` or its error.
+function $ioResultDebug(result, options) {
+  if (result === undefined) return "Ok(())";
+  const error = $ioErrorDebug(result, options);
+  return options?.alternate ? $pretty("Err(", [error], ")") : `Err(${error})`;
 }
 // An `io::Error` as a `dyn Error`'s dictionary (ADR 0141).
 function $ioErrorDyn() {

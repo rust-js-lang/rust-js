@@ -1,11 +1,13 @@
-//! Which of the crate's functions may return `Err(fmt::Error)` (ADR 0187):
-//! one that makes one, as chrono's formatting does, or that calls or formats
-//! what may, of the crate's or a library's. Only one that returns a
-//! `fmt::Result` passes one on; a crate none of whose functions do is
-//! lowered as one whose writes never fail (ADR 0054).
+//! Which of the crate's functions may return a write's result's `Err`, a
+//! `fmt::Error` (ADR 0187) or an `io::Error` (ADR 0462): one that makes one,
+//! as chrono's formatting does, `?` of a value's `Result` of a write's
+//! error, or that calls or formats what may, of the crate's or a library's,
+//! a crate's own writer through std's `write_all`. Only one that returns a
+//! write's result passes one on; a crate none of whose functions do is
+//! lowered as one whose writes never fail (ADRs 0054, 0132).
 
 use crate::lower::library::Foreign;
-use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_fmt_result_type, is_generic_fmt_result};
+use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_generic_fmt_result, is_write_result_type};
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -33,7 +35,7 @@ pub(super) fn failing_fns<'tcx>(
         for expr in body.thir.exprs.iter() {
             match expr.kind {
                 ExprKind::Adt(ref adt)
-                    if is_fmt_result_type(tcx, expr.ty)
+                    if is_write_result_type(tcx, expr.ty)
                         && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id) =>
                 {
                     failing.insert(caller);
@@ -42,6 +44,16 @@ pub(super) fn failing_fns<'tcx>(
                     let Some((callee, args)) = fn_def(expr.ty) else {
                         continue;
                     };
+                    // `?` of a value's `Result` of a write's error,
+                    // `parse(s)?` of an `io::Result<u32>`: its `Err`, given on.
+                    if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitBranch)
+                        && let Some(tried) = args.types().next()
+                        && !is_write_result_type(tcx, tried)
+                        && of_write_error(tcx, tried)
+                    {
+                        failing.insert(caller);
+                        continue;
+                    }
                     // `{}` of a value, or its `to_string()`: its trait's `fmt`,
                     // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
                     if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
@@ -78,10 +90,16 @@ pub(super) fn failing_fns<'tcx>(
                         .skip_normalization()
                         .skip_binder()
                         .output();
-                    if is_fmt_result_type(tcx, output)
+                    if is_write_result_type(tcx, output)
                         && let Some(callee) = resolve(tcx, typing_env, callee, args)
                     {
-                        calls.push((caller, callee));
+                        // std's own, `write_all`, of a crate's writer, whose
+                        // `write` may fail as any of the crate's may.
+                        let own_writer = matches!(callee, Callee::Known(id) if !id.is_local())
+                            && args.types().next().is_some_and(
+                                |this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if adt.did().is_local()),
+                            );
+                        calls.push((caller, if own_writer { Callee::Unknown } else { callee }));
                     }
                 }
                 _ => {}
@@ -103,11 +121,11 @@ pub(super) fn failing_fns<'tcx>(
             }
         }
     }
-    // Only one that returns a `fmt::Result` passes its error on; another
+    // Only one that returns a write's result passes its error on; another
     // that formats one panics, as std's `format!` does.
     failing.retain(|&id| {
         tcx.def_kind(id).is_fn_like()
-            && is_fmt_result_type(
+            && is_write_result_type(
                 tcx,
                 tcx.fn_sig(id)
                     .instantiate_identity()
@@ -135,4 +153,15 @@ fn resolve<'tcx>(
         Ok(None) if args.has_param() => Some(Callee::Unknown),
         _ => None,
     }
+}
+
+/// Whether `ty` is a `Result` of a write's error, a `fmt::Error` or an
+/// `io::Error`.
+fn of_write_error<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+    let unit_result = |error: ty::Ty<'tcx>| match ty.kind() {
+        ty::Adt(result, _) => ty::Ty::new_adt(tcx, *result, tcx.mk_args(&[tcx.types.unit.into(), error.into()])),
+        _ => ty,
+    };
+    matches!(ty.kind(), ty::Adt(_, args) if args.len() == 2
+        && args[1].as_type().is_some_and(|error| is_write_result_type(tcx, unit_result(error))))
 }

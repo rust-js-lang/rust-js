@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "                if !of_alias && !given && mentions_locals",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
+  {
+    name: "thrown-write-uncaught",
+    breaks: "`?` of an `io::Result<()>` in a function that gives a value's `Result` throws out of it, uncaught",
+    file: "src/lower/mir/writer.rs",
+    find: "        if let Some((_, conversion)) = state.thrown_writes.take() {\n",
+    replace: "        if let Some((_, conversion)) = state.thrown_writes.take().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
 ];

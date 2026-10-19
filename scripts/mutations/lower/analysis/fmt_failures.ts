@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "                        continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
+  {
+    name: "value-result-tried-never-fails",
+    breaks: "a function whose only `?` is of a value's `Result` of an `io::Error` isn't known to fail: its error escapes uncaught",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        && of_write_error(tcx, tried)\n                    {\n                        failing.insert(caller);\n",
+    replace: "                        && of_write_error(tcx, tried)\n                    {\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+  {
+    name: "own-writer-write-all-known",
+    breaks: "a function that only gives std's `write_all` of the crate's writer isn't known to fail",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        calls.push((caller, if own_writer { Callee::Unknown } else { callee }));\n",
+    replace: "                        let _ = own_writer;\n                        calls.push((caller, callee));\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
 ];

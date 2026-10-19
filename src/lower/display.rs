@@ -114,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A call's value, of a function that returns a `fmt::Result` and may
-    /// fail, the crate's or a library's: `$fmtTry(() => show(s, h))`, the
+    /// fail, the crate's or a library's: `$writeTry(() => show(s, h))`, the
     /// `fmt::Error` it threw caught (ADR 0187). A writer's write, given its
     /// `Formatter`, is its writer's to pass on.
     pub(super) fn fmt_result_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
@@ -125,23 +125,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder()
             .output();
-        if !self.is_fmt_result(output) || self.formatter_param(def_id).is_some() || !self.call_may_fail(def_id, args) {
+        if !self.is_write_result(output) || self.formatter_param(def_id).is_some() || !self.call_may_fail(def_id, args)
+        {
             return value;
         }
         self.fmt_try(vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
     }
 
     /// `?` of a `fmt::Result`: its error, on, thrown (ADR 0187). What
-    /// `$fmtTry` would catch runs as it is; another may be the error.
+    /// `$writeTry` would catch runs as it is; another may be the error.
     pub(super) fn fmt_check(&mut self, value: Expr, js_span: js::Span, out: &mut Vec<Stmt>) {
         if matches!(value.kind, js::ExprKind::Undefined) {
             return;
         }
         let tried = matches!(&value.kind, js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$fmtTry")
+            if callee.helper_name() == Some("$writeTry")
                 && matches!(args.first().map(|a| &a.kind), Some(js::ExprKind::Arrow(params, _)) if params.is_empty()));
         if !tried {
-            out.push(StmtKind::Expr(Expr::call(Expr::helper("$fmtCheck"), vec![value])).at(js_span));
+            out.push(StmtKind::Expr(Expr::call(Expr::helper("$writeCheck"), vec![value])).at(js_span));
             return;
         }
         let js::ExprKind::Call(_, mut args) = value.kind else {
@@ -159,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A method of a `fmt::Result`, `result`, in a crate where one may be
-    /// an `Err` (ADR 0187): of what `$fmtTry` caught, or a variable it's in,
+    /// an `Err` (ADR 0187): of what `$writeTry` caught, or a variable it's in,
     /// tested against `undefined`; another's, its constant answer. `message`
     /// is `expect`'s, or `map`'s or `map_err`'s function.
     pub(in crate::lower) fn fmt_result_values(
@@ -183,11 +184,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 super::std_types::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
             }
         };
-        // Only what `$fmtTry` caught may be an `Err`, or a variable it's in,
+        // Only what `$writeTry` caught may be an `Err`, or a variable it's in,
         // and only where one may fail.
         let may_be_err = may_fail
             && match &result.kind {
-                js::ExprKind::Call(callee, _) => callee.helper_name() == Some("$fmtTry"),
+                js::ExprKind::Call(callee, _) => callee.helper_name() == Some("$writeTry"),
                 js::ExprKind::Var(_) => true,
                 _ => false,
             };
@@ -218,15 +219,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
                 let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
-                Expr::call(Expr::helper("$fmtExpect"), vec![result, message])
+                Expr::call(Expr::helper("$writeExpect"), vec![result, message])
             }
         }
     }
 
-    /// `$fmtTry(() => { .. })`: what `body` writes, as a `fmt::Result`,
+    /// `$writeTry(() => { .. })`: what `body` writes, as a `fmt::Result`,
     /// `undefined` or the `fmt::Error` it failed with (ADR 0187).
     pub(super) fn fmt_try(&mut self, body: Vec<Stmt>) -> Expr {
-        Expr::call(Expr::helper("$fmtTry"), vec![Expr::arrow(Vec::new(), body)])
+        Expr::call(Expr::helper("$writeTry"), vec![Expr::arrow(Vec::new(), body)])
     }
 
     /// `is_generic_fmt_result` in this body's typing environment.
@@ -1012,14 +1013,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = rustc_const_eval::util::type_name(self.tcx, ty);
             return Ok(Expr::str(&name[name.find("MaybeUninit").unwrap_or(0)..]));
         }
-        // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
-        // (ADR 0187), and a `fmt::Error`, which holds nothing.
-        if self.is_fmt_result(ty) {
+        // A write's result: `undefined`, `Ok`, or the error it caught, a
+        // `fmt::Error`, which holds nothing (ADR 0187), or an `io::Error`
+        // (ADR 0462).
+        if self.is_write_result(ty) {
             let ok = Expr::str("Ok(())");
-            return Ok(match value.kind {
-                js::ExprKind::Undefined => ok,
-                _ => Expr::cond(Expr::bin(Op::Eq, value, Expr::undefined()), ok, Expr::str("Err(Error)")),
-            });
+            if matches!(value.kind, js::ExprKind::Undefined) {
+                return Ok(ok);
+            }
+            if !self.is_fmt_result(ty) {
+                let mut list = vec![value];
+                if pretty.known() != Some(false) {
+                    list.push(pretty.options());
+                }
+                return Ok(Expr::call_helper("$ioResultDebug", list));
+            }
+            return Ok(Expr::cond(
+                Expr::bin(Op::Eq, value, Expr::undefined()),
+                ok,
+                Expr::str("Err(Error)"),
+            ));
         }
         if self.recognition().is_fmt_error(ty) {
             return Ok(Expr::str("Error"));
