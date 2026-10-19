@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`borrow_mut()` through a bound, and `borrow()` through a `BorrowMut`
+  supertrait**, as itertools' `PoolIndex` has (ADR 0483).
 - **A slice's pointer cast between `MaybeUninit<T>` and `T`**, the slice
   itself (ADR 0482).
 - **`*b = other` of a `&mut` to an iterator given as it is**, written in

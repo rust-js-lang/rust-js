@@ -4769,8 +4769,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || is_std_def(tcx, id, StdItem::AsRef)
         || is_std_def(tcx, id, StdItem::AsMut)
         // `key.borrow()` of a `K: Borrow<Q>`, as a map's lookup is: its
-        // dictionary's `borrow` (ADR 0167).
+        // dictionary's `borrow` (ADR 0167); and `v.borrow_mut()` of a `V:
+        // BorrowMut<Q>`, its `borrow_mut`, a supertrait's too (ADR 0483).
         || is_std_def(tcx, id, StdItem::Borrow)
+        || is_std_def(tcx, id, StdItem::BorrowMut)
         // `{:x}`, `{:e}` and `{:p}` of the crate's types (ADR 0165), and of a
         // `T: LowerHex` or `T: Pointer` (ADR 0174).
         || is_other_fmt_trait(tcx, id)
@@ -4854,8 +4856,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         // visitor's (ADR 0459).
         || serde_visitor(tcx, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
-        // A `&mut` to what a type keeps, called on the type itself (ADR 0169).
-        || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never lowered (ADRs 0168, 0425).
         || unlowered_trait(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:
@@ -6200,6 +6200,7 @@ pub(crate) enum StdItem {
     Atomic,
     BinaryHeap,
     Borrow,
+    BorrowMut,
     BoxNew,
     BTreeEntry,
     BTreeMap,
@@ -6266,6 +6267,7 @@ impl StdItem {
             StdItem::Atomic => Symbol::intern("Atomic"),
             StdItem::BinaryHeap => Symbol::intern("BinaryHeap"),
             StdItem::Borrow => Symbol::intern("Borrow"),
+            StdItem::BorrowMut => Symbol::intern("BorrowMut"),
             StdItem::BoxNew => Symbol::intern("box_new"),
             StdItem::BTreeEntry => Symbol::intern("BTreeEntry"),
             StdItem::BTreeMap => Symbol::intern("BTreeMap"),

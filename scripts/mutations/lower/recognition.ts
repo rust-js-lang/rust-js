@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "user-borrow-mut-refused",
     breaks: "a type's own `impl BorrowMut` is an error",
     file: "src/lower/recognition.rs",
-    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"BorrowMut\"), id)\n",
+    find: "        || is_std_def(tcx, id, StdItem::BorrowMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
   },
@@ -2282,5 +2282,13 @@ export const mutations: Mutation[] = [
     find: "        || tcx.is_diagnostic_item(sym::From, id)\n        // A writer of the crate's own",
     replace: "        // A writer of the crate's own",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+  },
+  {
+    name: "borrow-mut-bound-ungiven",
+    breaks: "a `BorrowMut` supertrait gives its trait's dictionary no entry, so `self.borrow()` of a trait's own default finds no `Borrow`",
+    file: "src/lower/recognition.rs",
+    find: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || is_std_def(tcx, id, StdItem::BorrowMut)\n",
+    replace: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || serde_visitor(tcx, id) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
 ];

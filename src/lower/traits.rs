@@ -806,8 +806,8 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
 /// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
 /// (ADR 0162), an `IntoIterator`'s (ADR 0457), a `Hash`'s and a
-/// `Hasher`'s (ADR 0463), a `Sum`'s and a `Product`'s (ADR 0476), and a
-/// `From`'s (ADR 0477). Where the
+/// `Hasher`'s (ADR 0463), a `Sum`'s and a `Product`'s (ADR 0476), a
+/// `From`'s (ADR 0477), and a `BorrowMut`'s (ADR 0483). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -818,6 +818,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator)
         || is_std_def(tcx, trait_id, StdItem::AsMut)
+        || is_std_def(tcx, trait_id, StdItem::BorrowMut)
         || is_std_def(tcx, trait_id, StdItem::IntoIterator)
         || super::recognition::is_hashing(tcx, trait_id)
         || super::recognition::is_sum_or_product(tcx, trait_id)
@@ -1655,6 +1656,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("borrow".into(), same)]));
+        }
+        // And its `BorrowMut` of what's an object, a `Vec` as a slice, which a
+        // `&mut` to is it: the same array, and its `Borrow`'s entry (ADR 0483).
+        if is_std_def(self.tcx, tr.def_id, StdItem::BorrowMut)
+            && !self.has_user_impl(tr.def_id, ty)
+            && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
+            && self.is_object(tr.args.type_at(1))
+        {
+            let same = Expr::arrow(
+                vec!["value".into()],
+                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+            );
+            let mut props = vec![Prop::Field("borrow_mut".into(), same)];
+            props.extend(self.supertrait_entries(tr, span)?);
+            return Ok(Expr::object(props));
         }
         // std's `FromStr` of a number, a `bool`, a `char` or a `String`: what
         // `s.parse()` of it is (ADR 0161).
