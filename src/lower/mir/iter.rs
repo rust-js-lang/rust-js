@@ -7,13 +7,13 @@
 //! closes in its place, as Rust leaves the iterator to go on.
 
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::ty::{self, Mutability, Ty};
+use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
-use crate::lower::recognition::{IterMethod, StdItem, TypeFact, is_std_def, std_item};
+use crate::lower::recognition::{IterMethod, StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
@@ -458,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             Some(IterMethod::ByRef) => it,
-            Some(IterMethod::Fuse) => self.fused(it, iter_ty, span)?,
+            Some(IterMethod::Fuse) => self.fused(it, iter_ty),
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
@@ -473,15 +473,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `it.fuse()`, of an `iter_ty`: `$fuse(it)`, which steps it till it
-    /// ends, then never again, and of a `FusedIterator`, `$fuse(it, true)`,
-    /// keeps it (ADR 0473).
-    fn fused(&mut self, it: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// ends, then never again, and of a `FusedIterator` rustc knows whole,
+    /// `$fuse(it, true)`, keeps it; a generic one's, which may be any, is
+    /// cleared as it ends, as most are (ADR 0473).
+    fn fused(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
         let mut list = vec![it];
-        let fused = self.type_fact_value(iter_ty, TypeFact::Fused, span)?;
-        if !matches!(fused.kind, js::ExprKind::Bool(false)) {
-            list.push(fused);
+        if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {
+            list.push(Expr::bool(true));
         }
-        Ok(Expr::call_helper("$fuse", list))
+        Expr::call_helper("$fuse", list)
     }
 
     /// `it.collect()` into `output`: a heap of its items in heap order,

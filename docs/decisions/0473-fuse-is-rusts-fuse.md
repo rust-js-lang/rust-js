@@ -1,11 +1,12 @@
 # 0473. `fuse()` is Rust's `Fuse`
 
 Status: Accepted. Amends [0055](0055-iterator.md); extends
-[0465](0465-dropping-an-adapter-is-closing-it.md),
-[0170](0170-size-hint.md) and [0145](0145-type-facts.md).
+[0465](0465-dropping-an-adapter-is-closing-it.md) and
+[0170](0170-size-hint.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's stepped, what's
-dropped and when, and what's shown, as std's.
+dropped and when, and what's shown, as std's; B for generic code's
+`FusedIterator`, below.
 
 ## Context
 
@@ -26,9 +27,9 @@ ends, then never again; of what isn't a `FusedIterator`, closed as it ends,
 which drops it (ADR 0465), and `undefined` then; of a `FusedIterator`,
 `$fuse(it, true)`, kept.
 
-- **Whether it's a `FusedIterator` is a fact of the iterator's type**:
-  rustc's of one it knows whole, and a caller's of a type parameter's,
-  `IFused`, or of a std associated type's of one (ADRs 0145, 0466).
+- **Whether it's a `FusedIterator` is rustc's of a type it knows whole**;
+  generic code's, which may be any, and of a library its callers never
+  give a fact (ADR 0145), is cleared as it ends, as most iterators'.
 - **Stepped in place by what steps it till it ends**, a JS helper, a
   consumer or a `for`, it's what it steps, `x`, which steps the same: tidy
   writes no `$fuse` there, `iterators::consumed_fuses`.
@@ -63,3 +64,8 @@ const total = $closing($iterator(["summed", 4], loudIterator_next), drop).map((n
   and `Debug` of an iterator over an array.
 - **What was wrong is right**: `fuse()` of an iterator that starts again,
   and a crate iterator's `Drop` under an adapter.
+- **Case B, rare and harmless**: generic code's `fuse()` of what's a
+  `FusedIterator` clears it as it ends, where std's keeps it: a `Debug` of
+  the `Fuse` once it's ended shows `None`, not `Some` of the ended one, and
+  a crate's `FusedIterator` with a `Drop` of its own is dropped as it ends,
+  not with the `Fuse`. What it steps is std's either way.

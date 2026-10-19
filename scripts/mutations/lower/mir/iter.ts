@@ -907,7 +907,7 @@ export const mutations: Mutation[] = [
     name: "fuse-as-itself",
     breaks: "`fuse()` of the crate's iterator is it, which starts again after its `None`",
     file: "src/lower/mir/iter.rs",
-    find: "            Some(IterMethod::Fuse) => self.fused(it, iter_ty, span)?,\n",
+    find: "            Some(IterMethod::Fuse) => self.fused(it, iter_ty),\n",
     replace: "            Some(IterMethod::Fuse) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
@@ -925,6 +925,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
     replace: "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
+  {
+    name: "fused-iterator-unknown",
+    breaks: "a `FusedIterator`'s `Fuse` drops it as it ends, where std's keeps it till the `Fuse` is dropped",
+    file: "src/lower/mir/iter.rs",
+    find: "        if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {\n",
+    replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
 ];

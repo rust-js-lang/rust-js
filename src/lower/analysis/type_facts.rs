@@ -105,17 +105,6 @@ pub(super) fn type_fact_params<'tcx>(
             }
             let facts = type_facts(tcx, callee);
             for &fact in facts {
-                // Whether an iterator is a `FusedIterator`, of a type
-                // parameter's or a std associated type's of one, its slot's
-                // (ADR 0473).
-                if fact == TypeFact::Fused {
-                    if let Some(of) = args.types().last()
-                        && let Some(index) = slot_of(tcx, foreign, caller, of)
-                    {
-                        asked.insert((caller, index, fact));
-                    }
-                    continue;
-                }
                 // `size_of_val` of an unsized `T` is the value's, not the type's:
                 // a size or an alignment is asked of a sized one, and its name
                 // of any, a `T: ?Sized`'s too.

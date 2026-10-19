@@ -5587,14 +5587,11 @@ pub(crate) enum TypeFact {
     /// What std's unstable sort picks for its items by their layout, its
     /// small sort or partition (ADRs 0342, 0471).
     Sort,
-    /// Whether it's a `FusedIterator`, whose `Fuse` keeps it as it ends
-    /// (ADR 0473).
-    Fused,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 9] = [
+    pub(crate) const ALL: [TypeFact; 8] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -5603,7 +5600,6 @@ impl TypeFact {
         TypeFact::Map,
         TypeFact::Set,
         TypeFact::Sort,
-        TypeFact::Fused,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -5622,7 +5618,6 @@ impl TypeFact {
             TypeFact::Map => "Map",
             TypeFact::Set => "Set",
             TypeFact::Sort => "Sort",
-            TypeFact::Fused => "Fused",
         }
     }
 }
@@ -5700,8 +5695,6 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
     match std_path(tcx, def_id).as_str() {
         "std::any::type_name" | "std::any::type_name_of_val" => return &[TypeFact::Name],
         "std::any::TypeId::of" => return &[TypeFact::Id],
-        // Whether its iterator is a `FusedIterator` (ADR 0473).
-        "std::iter::Iterator::fuse" => return &[TypeFact::Fused],
         "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
         // Its size and its alignment (ADR 0417).
         "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],
