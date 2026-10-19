@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "        if !self.is_rust_fn(def_id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_assoc_through_dictionary.rs$"],
   },
+  {
+    name: "bound-mut-self-walked",
+    breaks: "a `for<'a> &'a mut C: IntoIterator` bound's own `&mut C`, which isn't a value, refuses a caller given a `&mut Vec` as one inside generic code's parameters",
+    file: "src/lower/mut_refs.rs",
+    find: "                ty::Ref(_, inner, Mutability::Mut) => todo.push(inner),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
+  },
 ];

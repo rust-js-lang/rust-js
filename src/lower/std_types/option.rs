@@ -404,6 +404,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let (place, cell) = match option.kind {
             js::ExprKind::Handle(place) => (*place.clone(), Expr::handle(*place)),
+            // A name, which reads the same each time: itself.
+            js::ExprKind::Var(_) => (Expr::held(option.clone()), option),
             _ => {
                 let cell = self.spill("option", option, out);
                 (Expr::held(cell.clone()), cell)

@@ -2034,4 +2034,20 @@ export const mutations: Mutation[] = [
     replace: "        self.is_string_like(from) && to.is_str()\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_as_ref|as_mut_generic).rs$"],
   },
+  {
+    name: "into-iter-by-dictionary-of-params",
+    breaks: "an `I: IntoIterator` on a type parameter itself is taken as given a dictionary",
+    file: "src/lower/recognition.rs",
+    find: "        && matches!(self_ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Param(_) | ty::Alias(..)))\n",
+    replace: "        && matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_method_drops|std_projection_drops|into_iter_of_ref_param).rs$"],
+  },
+  {
+    name: "into-iter-not-operational",
+    breaks: "`IntoIterator` has no dictionaries, and a `for<'a> &'a mut C: IntoIterator` bound's `for x in c` is refused",
+    file: "src/lower/recognition.rs",
+    find: "        // dictionary's `into_iter` (ADR 0457).\n        || tcx.is_diagnostic_item(sym::IntoIterator, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
+  },
 ];

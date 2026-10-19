@@ -282,4 +282,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
     snapshots: true,
   },
+  {
+    name: "option-items-name-spilled",
+    breaks: "a `&mut Option`'s items, of a name, name it again, `const option = cell`",
+    file: "src/lower/std_types/option.rs",
+    find: "            js::ExprKind::Var(_) => (Expr::held(option.clone()), option),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
+    snapshots: true,
+  },
 ];

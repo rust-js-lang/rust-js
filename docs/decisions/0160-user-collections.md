@@ -48,3 +48,10 @@ error, as an impl of a std trait rust-js doesn't call is (ADR 0049).
   refusals of a cart given to `extend` and to generic code. Without them,
   `v.extend(cart)` gave nothing and generic code threw.
 - **It's the JS a person writes:** the type's functions, called by name.
+
+## Amendment: through a reference bound
+
+A collection of the crate's given where a bound on a reference goes,
+`for<'a> &'a C: IntoIterator`, isn't refused: that bound is given its
+dictionary, the collection's own `into_iter` (ADR 0457). One given where
+an `I: IntoIterator` goes still is.

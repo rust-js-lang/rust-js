@@ -4018,6 +4018,17 @@ pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
         .contains(&tcx.item_name(id))
 }
 
+/// Whether a bound of `trait_id` on `self_ty` is given a dictionary as
+/// `IntoIterator`'s: one on a reference to a type only a caller knows,
+/// `for<'a> &'a mut C: IntoIterator`, whose generic code keeps `C` and
+/// iterates it through a `&` or a `&mut` with what its caller gives (ADR
+/// 0457). One on a type parameter itself, `I: IntoIterator`, is given the
+/// JS iterator (ADR 0061).
+pub(crate) fn into_iter_by_dictionary(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>) -> bool {
+    tcx.is_diagnostic_item(sym::IntoIterator, trait_id)
+        && matches!(self_ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Param(_) | ty::Alias(..)))
+}
+
 pub(super) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
     tcx.crate_name(trait_id.krate) == rustc_span::sym::core && tcx.item_name(trait_id) == Symbol::intern("Extend")
 }
@@ -4161,6 +4172,9 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // FromIterator<A>`: its dictionary's `extend` or `from_iter` (ADR 0445).
         || is_extend(tcx, id)
         || tcx.is_diagnostic_item(sym::FromIterator, id)
+        // `for x in c` of a `for<'a> &'a mut C: IntoIterator`: its
+        // dictionary's `into_iter` (ADR 0457).
+        || tcx.is_diagnostic_item(sym::IntoIterator, id)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -4192,11 +4206,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never lowered (ADRs 0168, 0425).
         || unlowered_trait(tcx, id)
-        // A collection of the crate's: what `for`, `collect()`, `extend`,
-        // `sum()` and `product()` call (ADR 0160).
-        || tcx.is_diagnostic_item(sym::IntoIterator, id)
-        || tcx.is_diagnostic_item(sym::FromIterator, id)
-        || is_extend(tcx, id)
+        // A collection of the crate's: what `sum()` and `product()` call
+        // (ADR 0160); `for`, `collect()` and `extend`'s are `operational`.
         || is_sum_or_product(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:
         // what `rev()`, `next_back()` and `len()` call (ADR 0164).

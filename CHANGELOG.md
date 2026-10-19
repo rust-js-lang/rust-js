@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `IntoIterator` bound on a reference to a type parameter**, `for<'a>
+  &'a mut C: IntoIterator`, as either's `iter_mut` writes it: a dictionary,
+  std's or the crate's, so a `&mut C`'s items are written through and a
+  crate's collection is taken through a `&C` too (ADR 0457).
 - **A `P: DerefMut` in generic code**: a dictionary, `{ Deref, deref_mut
   }`, std's of a `Box`, text, a `Vec`, a `&mut` or a guard (ADR 0394).
 - **`as_mut()` of a generic `T: AsMut<str>` or `T: AsMut<[U]>`**: a

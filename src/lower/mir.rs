@@ -5341,7 +5341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
-        let known = self.recognition().classify(def_id, generic_args);
+        let known = self.known_trait_call(def_id, generic_args);
         let rust_impl = tcx.trait_of_assoc(def_id).is_some()
             && self
                 .resolve_instance(def_id, generic_args)?
@@ -5552,7 +5552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std function of its arguments' values, lowered once they're values
     /// (`std_values`).
     #[allow(clippy::too_many_arguments)]
-    fn std_by_values(
+    pub(in crate::lower) fn std_by_values(
         &mut self,
         known: Std,
         def_id: rustc_span::def_id::DefId,

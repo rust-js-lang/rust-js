@@ -525,6 +525,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0454 A `&mut` given as a type parameter's value is a box](decisions/0454-a-mut-given-as-a-type-parameter.md)
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](decisions/0455-stepping-from-the-back.md)
 - [0456 A generic `ExactSizeIterator` knows its length](decisions/0456-a-generic-exact-size-iterator.md)
+- [0457 An `IntoIterator` bound on a reference is given its dictionary](decisions/0457-an-into-iterator-bound-on-a-reference.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

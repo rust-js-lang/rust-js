@@ -5,8 +5,9 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, error_default, in_std_dictionary, io_write_default,
-    is_clone_from, is_std_def, is_std_method, is_writer_default, known_derive, std_item, tracks_caller,
+    Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, error_default, in_std_dictionary,
+    into_iter_by_dictionary, io_write_default, is_clone_from, is_std_def, is_std_method, is_writer_default,
+    known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -272,7 +273,7 @@ pub(super) fn drop_items<'tcx>(
             continue;
         };
         let self_ty = bound.self_ty();
-        if !matches!(self_ty.kind(), ty::Param(_)) || operational(tcx, foreign, bound.def_id()) {
+        if !matches!(self_ty.kind(), ty::Param(_)) || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {
             continue;
         }
         for tr in supertrait_def_ids(tcx, bound.def_id()) {
@@ -364,7 +365,21 @@ fn bound_of<'tcx>(
     {
         return given.stepped.contains(&(id, param.index)).then_some(tr);
     }
-    (operational(tcx, foreign, tr.def_id) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
+    (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
+}
+
+/// Whether a bound of `trait_id` on `self_ty` is given a dictionary: one of
+/// a trait that has them, but an `IntoIterator` on a type parameter, which
+/// is given the JS iterator itself, where one on a reference to one, `for<'a>
+/// &'a mut C: IntoIterator`, is given its dictionary (ADRs 0061, 0457).
+pub(super) fn has_dictionary_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+    self_ty: Ty<'tcx>,
+) -> bool {
+    operational(tcx, foreign, trait_id)
+        && (!is_std_def(tcx, trait_id, StdItem::IntoIterator) || into_iter_by_dictionary(tcx, trait_id, self_ty))
 }
 
 /// A trait of the crate's or a library's with nothing in it: no items, and
@@ -749,20 +764,25 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 /// (ADRs 0148, 0166), an `io::Write`'s bytes (ADR 0392). A `Deref`'s, a
 /// guard's value or a `Cow`'s text, and a collection's `extend` and
 /// `from_iter`, of any items, where its own type is known, whatever it
-/// holds, a `MutexGuard<C>`'s (ADRs 0394, 0445, 0450).
+/// holds, a `MutexGuard<C>`'s (ADRs 0394, 0445, 0450). An `IntoIterator`'s
+/// but one of a reference to a type only a caller knows (ADR 0457).
 fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known_here: bool) -> bool {
     let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite) || is_std_def(tcx, trait_id, StdItem::IoWrite);
     let holder = tcx.is_lang_item(trait_id, LangItem::Deref)
         || tcx.is_lang_item(trait_id, LangItem::DerefMut)
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator);
-    (writer && known_here) || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))
+    let into_iter =
+        is_std_def(tcx, trait_id, StdItem::IntoIterator) && !into_iter_by_dictionary(tcx, trait_id, self_ty);
+    (writer && known_here)
+        || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))
+        || into_iter
 }
 
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
-/// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), and an
-/// `AsMut`'s (ADR 0162). Where the
+/// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
+/// (ADR 0162), and an `IntoIterator`'s (ADR 0457). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -773,6 +793,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator)
         || is_std_def(tcx, trait_id, StdItem::AsMut)
+        || is_std_def(tcx, trait_id, StdItem::IntoIterator)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -807,6 +828,12 @@ fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         // as a where clause's bound of one is `TArrayDefault`.
         ty::Array(item, _) => format!("{}Array", evidence_word(tcx, *item)),
         ty::Slice(item) => format!("{}Slice", evidence_word(tcx, *item)),
+        // A reference's, of what it's to: `CRefMut` of `&'a mut C`, as a
+        // bound on one, `CRefMutIntoIterator` (ADR 0457).
+        ty::Ref(_, inner, mutability) => {
+            let kind = if mutability.is_mut() { "RefMut" } else { "Ref" };
+            format!("{}{kind}", evidence_word(tcx, *inner))
+        }
         // A struct's or an enum's own name, `String`, not its path.
         ty::Adt(..) => type_word(tcx, ty),
         _ => ty.to_string(),
@@ -1453,6 +1480,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::object(props));
             }
         }
+        // std's `IntoIterator` of a `&C` or a `&mut C` a bound gives generic
+        // code (ADR 0457): the JS iterator `into_iter` of it is where its type
+        // is known, given what generic code has, a `&mut` to an object in a
+        // box (ADR 0454): a handle on each item of a `&mut`, as `for x in &mut
+        // v` makes, or std's own of what it's given.
+        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
+            && let ty::Ref(_, pointee, mutability) = *ty.kind()
+            && !self.has_user_impl(tr.def_id, ty)
+        {
+            let into_iter = super::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
+            let known = self
+                .recognition()
+                .classify(into_iter, tr.args)
+                .ok_or_else(|| self.no_evidence(span, tr))?;
+            let into_iter_ty = super::recognition::trait_method(self.tcx, tr.def_id, "IntoIter");
+            let output = Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, tr.args);
+            let output = (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+                .unwrap_or(output);
+            // A `&mut`'s, the cell generic code has, a box of an object's.
+            let name = match mutability {
+                Mutability::Mut => "cell",
+                Mutability::Not => self.parameter_name(pointee),
+            };
+            let given = match self.iterated_from_box(ty) {
+                true => Expr::held(Expr::var(name)),
+                false => Expr::var(name),
+            };
+            let mut body = Vec::new();
+            let handles = match mutability {
+                Mutability::Mut => self.item_handles_of(known, vec![given.clone()], pointee, span, &mut body)?,
+                Mutability::Not => None,
+            };
+            let items = match handles {
+                Some(handles) => handles,
+                None => self.std_by_values(known, into_iter, tr.args, &[ty], vec![given], output, span, &mut body)?,
+            };
+            body.push(StmtKind::Return(Some(self.std_iterator(items, output))).at(js::Span::NONE));
+            let f = Expr::arrow(vec![name.into()], body);
+            return Ok(Expr::object(vec![Prop::Field("into_iter".into(), f)]));
+        }
         // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
         // standard stream, written to it (ADR 0392).
         if is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
@@ -1783,18 +1851,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.tcx.trait_of_assoc(def_id) == Some(into_iterator) {
             return None;
         }
+        let declared = self.tcx.clauses_of(def_id).instantiate_identity(self.tcx);
         let clauses = self.tcx.clauses_of(def_id).instantiate(self.tcx, generic_args);
-        clauses.clauses.iter().find_map(|clause| {
-            // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
-            // erased one: a type rustc can select an impl for.
-            let bound = self
-                .tcx
-                .instantiate_bound_regions_with_erased(clause.skip_normalization().as_trait_clause()?)
-                .trait_ref;
-            (bound.def_id == into_iterator)
-                .then(|| bound.self_ty())
-                .filter(|&ty| self.user_into_iter(ty).is_some())
-        })
+        clauses
+            .clauses
+            .iter()
+            .zip(declared.clauses.iter())
+            .find_map(|(clause, declared)| {
+                // One on a reference to a type parameter is given its dictionary,
+                // the collection's own `into_iter` (ADR 0457).
+                let declared = declared.skip_normalization().as_trait_clause()?.skip_binder().trait_ref;
+                if into_iter_by_dictionary(self.tcx, declared.def_id, declared.self_ty()) {
+                    return None;
+                }
+                // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
+                // erased one: a type rustc can select an impl for.
+                let bound = self
+                    .tcx
+                    .instantiate_bound_regions_with_erased(clause.skip_normalization().as_trait_clause()?)
+                    .trait_ref;
+                (bound.def_id == into_iterator)
+                    .then(|| bound.self_ty())
+                    .filter(|&ty| self.user_into_iter(ty).is_some())
+            })
     }
 
     /// What's refused of a call of `def_id`: a collection of the crate's
@@ -2813,6 +2892,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::var(&name))
     }
 
+    /// What recognition knows of a call of the trait method `def_id`, of
+    /// `generic_args`: nothing of `into_iter` of a `&C` or a `&mut C`, which
+    /// its bound's dictionary gives (ADR 0457), in its impl's terms where
+    /// it's a copied default. Nothing but a bound makes one `IntoIterator`:
+    /// a `&mut I` of an `I: Iterator` is an iterator, stepped as it is.
+    pub(super) fn known_trait_call(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
+            && into_iter_by_dictionary(self.tcx, trait_id, self.in_impl_terms(generic_args).type_at(0))
+        {
+            return None;
+        }
+        self.recognition().classify(def_id, generic_args)
+    }
+
+    /// Whether an `IntoIterator` dictionary of `self_ty` is given the box
+    /// generic code has: of a `&mut` to an object, `for x in c` of a `c: &mut
+    /// C` (ADRs 0454, 0457). A `&C` is the value, and a `&mut` to a number
+    /// or text its cell.
+    fn iterated_from_box(&self, self_ty: Ty<'tcx>) -> bool {
+        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.is_cell_pointee(pointee))
+    }
+
     /// The entries of `tr`'s dictionary that give its supertraits', of those
     /// that have one, each made where it's asked: `Display: () =>
     /// innerDisplay()` of an `Error`'s.
@@ -3112,10 +3213,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
                 .collect();
             // A `&mut self` its caller through the dictionary gives in a box,
-            // as a generic `&mut Self` is (ADR 0099), to a method that takes the
-            // object itself: what's in it.
+            // as a generic `&mut Self` is (ADR 0099), or an `IntoIterator`'s
+            // `self` of a `&mut` to an object, an impl for `&mut Bag`'s (ADR
+            // 0457), to a method that takes the object itself: what's in it.
+            let into_iter_boxed =
+                is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator) && self.iterated_from_box(tr.self_ty());
             for (i, value) in values.iter_mut().enumerate() {
-                if self.param_is_box(item.def_id, i) && !self.param_is_box(method, i) {
+                let boxed = self.param_is_box(item.def_id, i) || (i == 0 && into_iter_boxed);
+                if boxed && !self.param_is_box(method, i) {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
             }

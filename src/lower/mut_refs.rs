@@ -193,10 +193,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 todo.extend(projection.term.as_type());
             }
         }
-        // A bound's own type is walked past itself, `Vec<D>: Trait`'s `D`.
+        // A bound's own type is walked past itself, `Vec<D>: Trait`'s `D`; a
+        // `&mut` one's, `for<'a> &'a mut C: IntoIterator`'s, from what it's
+        // to, its dictionary taking the box generic code has (ADR 0457).
         for ty in given {
-            if !matches!(ty.kind(), ty::Param(_)) {
-                todo.push(ty);
+            match *ty.kind() {
+                ty::Param(_) => {}
+                ty::Ref(_, inner, Mutability::Mut) => todo.push(inner),
+                _ => todo.push(ty),
             }
         }
         let mut seen = HashSet::new();
