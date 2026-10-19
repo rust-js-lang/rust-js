@@ -2673,6 +2673,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .is_some())
     }
 
+    /// The crate's impl of serde's `Visitor` for `ty`, a hand-written
+    /// `Deserialize`'s (ADR 0459).
+    pub(super) fn serde_visitor_impl(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        let visitor = (self.tcx.all_traits_including_private()).find(|&id| serde_visitor(self.tcx, id))?;
+        // `Visitor<'de>` of `ty`: its `Self`, and its lifetime erased.
+        let args = ty::GenericArgs::for_item(self.tcx, visitor, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+            _ => ty.into(),
+        });
+        let tr = ty::TraitRef::new_from_args(self.tcx, visitor, args);
+        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+            Ok(ImplSource::UserDefined(imp)) if self.trait_impls.contains(&imp.impl_def_id) => Some(imp.impl_def_id),
+            _ => None,
+        }
+    }
+
     pub(super) fn is_user_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
         let tr = self.tcx.erase_and_anonymize_regions(tr);
         matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
@@ -2736,9 +2752,28 @@ pub(super) enum SerdeOp {
     Serialize,
     /// `T::deserialize(d)` of a `Deserialize`: its reader's, a `Result`.
     Deserialize,
+    /// `d.deserialize_any(v)` and the other hints, of a hand-written
+    /// visitor: what's there, given to the `visit_*` of its kind the hint
+    /// takes.
+    Visit(SerdeHint),
     /// `S::Error::custom(msg)` and `D::Error::custom(msg)`: an error of what
     /// `msg` shows.
     Custom,
+    /// `E::invalid_type(unexpected, &self)` and serde's other errors of a
+    /// deserializer, its messages.
+    DeError(SerdeError),
+}
+
+/// serde's `de::Error`s but `custom`, each its message.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeError {
+    InvalidType,
+    InvalidValue,
+    InvalidLength,
+    UnknownVariant,
+    UnknownField,
+    MissingField,
+    DuplicateField,
 }
 
 /// What a writer writes itself, of serde's scalars.
@@ -2755,6 +2790,52 @@ pub(super) enum SerdeScalar {
     Null,
 }
 
+/// What a `deserialize_*` hint takes, of the kinds a JSON value is: any
+/// of them, a `bool`, a number, a string, or `null`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeHint {
+    Any,
+    Bool,
+    Number,
+    Str,
+    Unit,
+}
+
+/// A hand-written visitor's method, of those serde_json calls: what it's
+/// expecting, and a `visit_*` of each kind of JSON value.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum VisitorMethod {
+    Expecting,
+    Unit,
+    Bool,
+    U64,
+    I64,
+    F64,
+    Str,
+    BorrowedStr,
+}
+
+/// The methods of serde's `Visitor` the impl `imp` writes, of those
+/// serde_json calls, each with its function (ADR 0459).
+pub(super) fn visitor_methods(tcx: TyCtxt<'_>, imp: DefId) -> Vec<(VisitorMethod, DefId)> {
+    (tcx.associated_items(imp).in_definition_order())
+        .filter_map(|item| {
+            let method = match item.name().as_str() {
+                "expecting" => VisitorMethod::Expecting,
+                "visit_unit" => VisitorMethod::Unit,
+                "visit_bool" => VisitorMethod::Bool,
+                "visit_u64" => VisitorMethod::U64,
+                "visit_i64" => VisitorMethod::I64,
+                "visit_f64" => VisitorMethod::F64,
+                "visit_str" => VisitorMethod::Str,
+                "visit_borrowed_str" => VisitorMethod::BorrowedStr,
+                _ => return None,
+            };
+            Some((method, item.def_id))
+        })
+        .collect()
+}
+
 /// What a `serialize_*` begins: a sequence, a tuple, a tuple struct, a map
 /// or a struct.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -2764,6 +2845,21 @@ pub(super) enum SerdeCompound {
     TupleStruct,
     Map,
     Struct,
+}
+
+/// Is `ty` a `dyn` of serde's `de::Expected`, what a deserializer's error
+/// says it expected, which rust-js holds as its text (ADR 0459)?
+pub(super) fn is_dyn_expected(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), ty::Dynamic(traits, ..)
+        if traits.principal_def_id().is_some_and(|id| matches!(tcx.crate_name(id.krate).as_str(), "serde" | "serde_core")
+            && tcx.item_name(id).as_str() == "Expected"))
+}
+
+/// Is `id` serde's `de::Visitor`?
+pub(super) fn serde_visitor(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.crate_name(id.krate).as_str(), "serde" | "serde_core")
+        && tcx.def_kind(id) == DefKind::Trait
+        && tcx.item_name(id).as_str() == "Visitor"
 }
 
 /// `def_id` as a call of serde's data model a hand-written impl makes (ADR
@@ -2786,6 +2882,17 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
     Some(match (trait_name.as_str(), method.as_str()) {
         ("Serialize", "serialize") => SerdeOp::Serialize,
         ("Deserialize", "deserialize") => SerdeOp::Deserialize,
+        ("Deserializer", name) => SerdeOp::Visit(match name {
+            "deserialize_any" => SerdeHint::Any,
+            "deserialize_bool" => SerdeHint::Bool,
+            "deserialize_i8" | "deserialize_i16" | "deserialize_i32" | "deserialize_i64" | "deserialize_u8"
+            | "deserialize_u16" | "deserialize_u32" | "deserialize_u64" | "deserialize_f32" | "deserialize_f64" => {
+                SerdeHint::Number
+            }
+            "deserialize_str" | "deserialize_string" | "deserialize_identifier" => SerdeHint::Str,
+            "deserialize_unit" => SerdeHint::Unit,
+            _ => return None,
+        }),
         ("Serializer", name) => match name {
             "serialize_bool" => SerdeOp::Write(SerdeScalar::Bool),
             "serialize_i8" | "serialize_i16" | "serialize_i32" | "serialize_i64" | "serialize_i128"
@@ -2817,6 +2924,16 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
         ("SerializeMap", "serialize_key") => SerdeOp::Key,
         ("SerializeMap", "serialize_value") => SerdeOp::Value,
         ("Error", "custom") if matches!(tcx.item_name(tcx.parent(trait_id)).as_str(), "ser" | "de") => SerdeOp::Custom,
+        ("Error", name) if tcx.item_name(tcx.parent(trait_id)).as_str() == "de" => SerdeOp::DeError(match name {
+            "invalid_type" => SerdeError::InvalidType,
+            "invalid_value" => SerdeError::InvalidValue,
+            "invalid_length" => SerdeError::InvalidLength,
+            "unknown_variant" => SerdeError::UnknownVariant,
+            "unknown_field" => SerdeError::UnknownField,
+            "missing_field" => SerdeError::MissingField,
+            "duplicate_field" => SerdeError::DuplicateField,
+            _ => return None,
+        }),
         _ => return None,
     })
 }
@@ -4344,6 +4461,9 @@ pub(super) fn value_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<Result<BinOp,
 
 pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
     operational(tcx, foreign, id)
+        // A hand-written `Deserialize`'s visitor, its methods the reader's
+        // visitor's (ADR 0459).
+        || serde_visitor(tcx, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
         // A `&mut` to what a type keeps, called on the type itself (ADR 0169).

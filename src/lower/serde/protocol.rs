@@ -5,7 +5,9 @@
 //! to a string does; an error thrown in it is the codec's, as a derived one's.
 
 use crate::js::{Expr, StmtKind};
-use crate::lower::recognition::{SerdeCompound, SerdeOp, SerdeScalar};
+use crate::lower::recognition::{
+    SerdeCompound, SerdeError, SerdeHint, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
+};
 use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
@@ -39,6 +41,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if op == SerdeOp::Deserialize {
             let reader = self.json_reader(args.type_at(0), span)?;
             return Ok(Expr::call(Expr::helper("$jsonRead"), vec![values.remove(0), reader]));
+        }
+        if let SerdeOp::DeError(error) = op {
+            return Ok(self.serde_error(error, values));
+        }
+        if let SerdeOp::Visit(hint) = op {
+            let visitor = values.remove(1);
+            // Its visitor's type, after the deserializer's and its lifetime.
+            let visitor_ty = args.types().nth(1).expect("`deserialize_*::<V>`");
+            return self.serde_visit(hint, values.remove(0), (visitor, visitor_ty), span, out);
         }
         let json = match op {
             SerdeOp::Element | SerdeOp::Field | SerdeOp::SkipField | SerdeOp::Entry | SerdeOp::Key | SerdeOp::Value => {
@@ -123,7 +134,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let writer = values.remove(0);
                 self.serde_write(json, args.type_at(0), &writer, span, out)?;
             }
-            SerdeOp::Custom | SerdeOp::Deserialize => unreachable!("made above"),
+            SerdeOp::Custom | SerdeOp::Deserialize | SerdeOp::Visit(_) | SerdeOp::DeError(_) => {
+                unreachable!("made above")
+            }
         }
         Ok(done)
     }
@@ -146,5 +159,111 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let writer = self.json_writer(ty, span)?;
         out.push(StmtKind::Expr(Expr::call(writer, vec![value, json.clone()])).at(crate::js::Span::NONE));
         Ok(())
+    }
+
+    /// `d.deserialize_any(visitor)`, or another hint: `$jsonVisit(d,
+    /// expected, { u64, str, .. })`, the visitor's `visit_*` of the kinds
+    /// the hint takes, each its function of the visitor, and what its
+    /// `expecting` says, which an invalid type's error ends with.
+    fn serde_visit(
+        &mut self,
+        hint: SerdeHint,
+        json: Expr,
+        (visitor, visitor_ty): (Expr, ty::Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<Expr> {
+        let Some(imp) = self.recognition().serde_visitor_impl(visitor_ty) else {
+            return Err(self.unsupported(span, &format!("a `{visitor_ty}` visitor, not the crate's own")));
+        };
+        let visitor = match visitor.reads_same() {
+            true => visitor,
+            false => self.spill("visitor", visitor, out),
+        };
+        let mut expected = None;
+        let mut props = Vec::new();
+        for (method, def_id) in visitor_methods(self.tcx, imp) {
+            let key = match (method, hint) {
+                (VisitorMethod::Expecting, _) => {
+                    expected = Some(Expr::call(self.fn_ref(def_id), vec![visitor.clone()]));
+                    continue;
+                }
+                (VisitorMethod::Unit, SerdeHint::Any | SerdeHint::Unit) => "unit",
+                (VisitorMethod::Bool, SerdeHint::Any | SerdeHint::Bool) => "bool",
+                (VisitorMethod::U64, SerdeHint::Any | SerdeHint::Number) => "u64",
+                (VisitorMethod::I64, SerdeHint::Any | SerdeHint::Number) => "i64",
+                (VisitorMethod::F64, SerdeHint::Any | SerdeHint::Number) => "f64",
+                (VisitorMethod::Str, SerdeHint::Any | SerdeHint::Str) => "str",
+                (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => "borrowedStr",
+                _ => continue,
+            };
+            let value = self.fresh("v");
+            let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone(), Expr::var(&value)]);
+            let f = Expr::arrow(
+                vec![value.into()],
+                vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)],
+            );
+            props.push(crate::js::Prop::Field(key.into(), f));
+        }
+        let expected = expected.expect("a `Visitor` writes its `expecting`");
+        Ok(Expr::call(
+            Expr::helper("$jsonVisit"),
+            vec![json, expected, Expr::object(props)],
+        ))
+    }
+
+    /// serde's `error`, of its arguments' `values`: its message, as serde
+    /// writes it, a `$jsonError`. What's expected, a `&dyn Expected`, is its
+    /// text (`expected_text`).
+    fn serde_error(&mut self, error: SerdeError, mut values: Vec<Expr>) -> Expr {
+        let texts = |parts: &[&str]| parts.iter().map(|part| part.to_string()).collect::<Vec<_>>();
+        let message = match error {
+            SerdeError::InvalidType | SerdeError::InvalidValue => {
+                let what = if error == SerdeError::InvalidType {
+                    "invalid type: "
+                } else {
+                    "invalid value: "
+                };
+                let unexpected = Expr::call(Expr::helper("$jsonUnexpected"), vec![values.remove(0)]);
+                Expr::template(texts(&[what, ", expected ", ""]), vec![unexpected, values.remove(0)])
+            }
+            SerdeError::InvalidLength => {
+                let len = values.remove(0);
+                Expr::template(
+                    texts(&["invalid length ", ", expected ", ""]),
+                    vec![len, values.remove(0)],
+                )
+            }
+            SerdeError::UnknownVariant | SerdeError::UnknownField => {
+                let what = if error == SerdeError::UnknownVariant {
+                    "variant"
+                } else {
+                    "field"
+                };
+                let (name, names) = (values.remove(0), values.remove(0));
+                return Expr::call(Expr::helper("$jsonUnknown"), vec![Expr::str(what), name, names]);
+            }
+            SerdeError::MissingField => Expr::template(texts(&["missing field `", "`"]), vec![values.remove(0)]),
+            SerdeError::DuplicateField => Expr::template(texts(&["duplicate field `", "`"]), vec![values.remove(0)]),
+        };
+        Expr::call(Expr::helper("$jsonError"), vec![message])
+    }
+
+    /// A `&dyn Expected` made of a `value` of type `ty`: its text, a string's
+    /// itself, a hand-written visitor's what its `expecting` says.
+    pub(in crate::lower) fn expected_text(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = ty.peel_refs();
+        if self.is_string_like(ty) {
+            return Ok(value);
+        }
+        let expecting = (self.recognition().serde_visitor_impl(ty)).and_then(|imp| {
+            visitor_methods(self.tcx, imp)
+                .into_iter()
+                .find(|&(m, _)| m == VisitorMethod::Expecting)
+        });
+        match expecting {
+            Some((_, f)) => Ok(Expr::call(self.fn_ref(f), vec![value])),
+            None => Err(self.unsupported(span, &format!("a `{ty}` as what a deserializer expected"))),
+        }
     }
 }

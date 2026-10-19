@@ -2082,4 +2082,20 @@ export const mutations: Mutation[] = [
     replace: "\"ser\") => SerdeOp::Custom,",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
   },
+  {
+    name: "serde-visitor-unimplementable",
+    breaks: "a hand-written `Visitor` is refused",
+    file: "src/lower/recognition.rs",
+    find: "        || serde_visitor(tcx, id)\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
+  },
+  {
+    name: "serde-hint-number-unknown",
+    breaks: "`deserialize_u64` of a visitor is refused",
+    file: "src/lower/recognition.rs",
+    find: "            | \"deserialize_u16\" | \"deserialize_u32\" | \"deserialize_u64\" | \"deserialize_f32\" | \"deserialize_f64\" => {\n",
+    replace: "            | \"deserialize_u16\" | \"deserialize_u32\" | \"deserialize_f32\" | \"deserialize_f64\" => {\n",
+    tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
+  },
 ];

@@ -3489,6 +3489,82 @@ export function $jsonRead(json, read) {
   }
 }
 
+// `d.deserialize_any(visitor)` and the other hints, of a hand-written
+// `Visitor` (ADR 0459): what's there given to its `visit_*` of that kind,
+// whose `Result` is what this gives; a number to its `u64`, `i64` or `f64` by
+// its kind, as serde_json gives one; of a kind it has none for, serde's
+// "invalid type", expecting what its `expecting` says.
+export function $jsonVisit(json, expected, { unit, bool, u64, i64, f64, str, borrowedStr }) {
+  const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);
+  const visitor = {};
+  if (unit) visitor.unit = $jsonCodec(unit);
+  if (bool) visitor.bool = $jsonCodec(bool);
+  if (u64 || i64 || f64) {
+    visitor.number = (n) => {
+      const visit = n.kind === "u" ? u64 : n.kind === "i" ? i64 : f64;
+      if (!visit) throw invalid($jsonUnexpectedNumber(n));
+      // A `u64` or an `i64` is a BigInt, as rust-js holds one; an `f64` a number.
+      return $jsonCodec(visit)(n.kind === "f" ? Number(n.value) : BigInt(n.value));
+    };
+  }
+  if (str || borrowedStr) {
+    visitor.string = (s, borrowed) => {
+      const visit = borrowed ? (borrowedStr ?? str) : str;
+      if (!visit) throw invalid(`string ${$debugStr(s)}`);
+      return $jsonCodec(visit)(s);
+    };
+  }
+  return $jsonRead(json, (reader) => reader.deserializeAny(expected, visitor));
+}
+
+// serde's `de::Unexpected`, as its `Display` shows it: `integer `3``,
+// `string "x"`, `unit value` (ADR 0459).
+export function $jsonUnexpected(u) {
+  if (typeof u === "string") {
+    return {
+      Unit: "unit value",
+      Option: "Option value",
+      NewtypeStruct: "newtype struct",
+      Seq: "sequence",
+      Map: "map",
+      Enum: "enum",
+      UnitVariant: "unit variant",
+      NewtypeVariant: "newtype variant",
+      TupleVariant: "tuple variant",
+      StructVariant: "struct variant",
+    }[u];
+  }
+  switch (u.TAG) {
+    case "Bool":
+      return `boolean \`${u._0}\``;
+    case "Unsigned":
+    case "Signed":
+      return `integer \`${u._0}\``;
+    case "Float": {
+      // A float with a decimal point, as serde's `WithDecimalPoint` shows one.
+      const shown = $displayF64(u._0);
+      return `floating point \`${Number.isFinite(u._0) && !shown.includes(".") ? `${shown}.0` : shown}\``;
+    }
+    case "Char":
+      return `character \`${u._0}\``;
+    case "Str":
+      return `string ${$debugStr(u._0)}`;
+    case "Bytes":
+      return "byte array";
+    default:
+      return u._0;
+  }
+}
+
+// serde's `OneOf` of names given in this order: `` `a` ``, `` `a` or `b` ``,
+// `` one of `a`, `b`, `c` ``; `what`'s `there are no variants` of none.
+export function $jsonUnknown(what, name, names) {
+  if (names.length === 0) return $jsonError(`unknown ${what} \`${name}\`, there are no ${what}s`);
+  const quoted = names.map((n) => `\`${n}\``);
+  const expected = names.length === 1 ? quoted[0] : names.length === 2 ? `${quoted[0]} or ${quoted[1]}` : `one of ${quoted.join(", ")}`;
+  return $jsonError(`unknown ${what} \`${name}\`, expected ${expected}`);
+}
+
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
 // far and each item in turn, till one gives an `Err`, which it gives, the
 // rest left to step; else the `Ok` the last gave.

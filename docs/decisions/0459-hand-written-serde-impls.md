@@ -96,6 +96,42 @@ function pointSerialize_serialize(point, s) {
 
 ## Consequences
 
-- A hand-written `Visitor`, and the `Deserializer` calls that take one,
-  `deserialize_any` and the rest, are refused yet: the next step.
+- `visit_seq`, `visit_map`, `visit_some` and `visit_none`, and the hints
+  that call them, are refused yet.
 - `serialize_tuple_variant` and `serialize_struct_variant` are refused yet.
+
+## Amendment: a hand-written `Visitor`
+
+A `Deserialize` that reads by its own `Visitor`, `d.deserialize_any(LevelVisitor)`,
+was refused. Its visitor is given what's there, as serde_json gives it:
+
+```js
+function levelDeserialize_deserialize(d) {
+  return $jsonVisit(d, levelVisitorVisitor_expecting(undefined), {
+    u64: (v) => levelVisitorVisitor_visit_u64(undefined, v),
+    str: (v) => levelVisitorVisitor_visit_str(undefined, v),
+  });
+}
+```
+
+- **Its methods are its impl's functions**, each of the visitor:
+  `visitor_methods` says which of serde_json's it writes.
+- **`$jsonVisit` gives each its kind of value**, the reader's
+  `deserializeAny`'s: a number to `visit_u64`, `visit_i64` or `visit_f64`
+  by its kind, a `u64` or `i64` as a BigInt; a string to
+  `visit_borrowed_str`, or `visit_str` where it was escaped, copied; and of
+  a kind it has no method for, serde's "invalid type", expecting what its
+  `expecting` says, as serde's default `visit_*` says it.
+- **A hint is `deserialize_any` of the methods of its kinds**:
+  `deserialize_str` gives only strings, `deserialize_u64` only numbers, as
+  serde_json's, whose error for anything else is the same.
+- **serde's errors are its messages**: `invalid_type`, `invalid_value`,
+  `invalid_length`, `unknown_variant`, `unknown_field`, `missing_field`
+  and `duplicate_field`, `$jsonUnexpected` showing an `Unexpected` as serde
+  does, a float with its decimal point.
+- **A `&dyn Expected` is its text**, as a `&dyn Debug` is (ADR 0060): a
+  string's itself, a visitor's what its `expecting` says.
+
+The serde test of a hand-written `Visitor` gives one each kind of value
+and makes each error, through `deserialize_any`, `deserialize_str` and
+`deserialize_u64`, against native serde_json.

@@ -117,8 +117,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_json_error(ty) || self.is_json_number(ty) => return None,
             // `{ file, line, column }` (ADR 0427).
             ty::Adt(..) if self.recognition().is_location(ty) => return None,
-            // `dyn Debug` is the string it shows (ADR 0060).
-            ty::Dynamic(..) if self.is_dyn_debug(ty) => return None,
+            // `dyn Debug` is the string it shows (ADR 0060), and serde's `dyn
+            // Expected` its text (ADR 0459).
+            ty::Dynamic(..) if self.is_dyn_debug(ty) || super::recognition::is_dyn_expected(self.tcx, ty) => {
+                return None;
+            }
             // A `HashMap` or `HashSet` (ADR 0059): keys JS compares by value.
             ty::Adt(_, args) if self.is_map(ty) => {
                 let key = args.type_at(0);

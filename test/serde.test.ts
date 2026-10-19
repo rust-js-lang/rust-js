@@ -566,3 +566,120 @@ pub fn report() -> String {
   // Its impl's function, once: not a derived codec of it beside.
   expect(readFileSync(join(dir, "cases.js"), "utf8").match(/function centsDeserialize_deserialize\b/g)).toHaveLength(1);
 });
+
+// A hand-written `Visitor` (ADR 0459): what's there given to its `visit_*` of
+// that kind, a number by its kind, a borrowed string or a copied one, and
+// serde's errors of `Unexpected` and what's expected, `&self` its
+// `expecting`, at the place serde_json gives them.
+test("serde: a hand-written Visitor is given what serde_json gives it", async () => {
+  const dir = fixture("serde-hand-written-visitor");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::de::{self, Unexpected, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+
+#[derive(Debug, PartialEq)]
+pub struct Level(pub u8);
+
+struct LevelVisitor;
+
+impl<'de> Visitor<'de> for LevelVisitor {
+    type Value = Level;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a level from 0 to 9, or its name")
+    }
+    fn visit_u64<E: de::Error>(self, v: u64) -> Result<Level, E> {
+        if v <= 9 { Ok(Level(v as u8)) } else { Err(E::invalid_value(Unexpected::Unsigned(v), &self)) }
+    }
+    fn visit_i64<E: de::Error>(self, v: i64) -> Result<Level, E> {
+        Err(E::invalid_value(Unexpected::Signed(v), &"a level of no sign"))
+    }
+    fn visit_f64<E: de::Error>(self, v: f64) -> Result<Level, E> {
+        Err(E::invalid_type(Unexpected::Float(v), &self))
+    }
+    fn visit_bool<E: de::Error>(self, v: bool) -> Result<Level, E> {
+        Err(E::invalid_type(Unexpected::Bool(v), &self))
+    }
+    fn visit_unit<E: de::Error>(self) -> Result<Level, E> {
+        Err(E::invalid_length(0, &self))
+    }
+    fn visit_str<E: de::Error>(self, v: &str) -> Result<Level, E> {
+        match v {
+            "low" => Ok(Level(1)),
+            "high" => Ok(Level(9)),
+            "" => Err(E::missing_field("name")),
+            "twice" => Err(E::duplicate_field("name")),
+            "field" => Err(E::unknown_field(v, &[])),
+            _ => Err(E::unknown_variant(v, &["low", "high", "mid"])),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Level {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_any(LevelVisitor)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Name(pub String);
+
+struct NameVisitor;
+
+impl<'de> Visitor<'de> for NameVisitor {
+    type Value = Name;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "a name")
+    }
+    fn visit_borrowed_str<E: de::Error>(self, v: &'de str) -> Result<Name, E> {
+        Ok(Name(format!("borrowed {v}")))
+    }
+    fn visit_str<E: de::Error>(self, v: &str) -> Result<Name, E> {
+        Ok(Name(format!("copied {v}")))
+    }
+}
+
+impl<'de> Deserialize<'de> for Name {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_str(NameVisitor)
+    }
+}
+
+pub struct Count(pub u64);
+
+struct CountVisitor;
+
+impl<'de> Visitor<'de> for CountVisitor {
+    type Value = Count;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a count")
+    }
+    fn visit_u64<E: de::Error>(self, v: u64) -> Result<Count, E> {
+        Ok(Count(v))
+    }
+    // Never given one by deserialize_u64.
+    fn visit_str<E: de::Error>(self, v: &str) -> Result<Count, E> {
+        Ok(Count(v.len() as u64))
+    }
+}
+
+impl<'de> Deserialize<'de> for Count {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_u64(CountVisitor)
+    }
+}
+
+pub fn report() -> String {
+    let level = |text: &str| match serde_json::from_str::<Level>(text) { Ok(l) => format!("{l:?}"), Err(e) => e.to_string() };
+    let name = |text: &str| match serde_json::from_str::<Name>(text) { Ok(l) => format!("{l:?}"), Err(e) => e.to_string() };
+    let count = |text: &str| match serde_json::from_str::<Count>(text) { Ok(c) => c.0.to_string(), Err(e) => e.to_string() };
+    [
+        level("3"), level("12"), level("-2"), level("2.5"), level("1e3"), level("true"), level("null"),
+        level("\"low\""), level("\"\""), level("\"twice\""), level("\"field\""), level("\"wat\""), level("[1]"),
+        name("\"ada\""), name("\"a\\u0064a\""), name("7"),
+        count("18446744073709551615"), count("\"9\""), count("-1"),
+    ].join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
