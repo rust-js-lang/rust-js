@@ -2640,4 +2640,12 @@ export const mutations: Mutation[] = [
     replace: "                Value::Expr(e) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
   },
+  {
+    name: "clone-from-through-dictionary",
+    breaks: "std's `clone_from` is asked of a `Clone` dictionary, which has only `clone`, and refused",
+    file: "src/lower/mir.rs",
+    find: "            && (rust_impl || known != Some(Std::CloneFrom))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+  },
 ];

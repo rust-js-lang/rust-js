@@ -120,3 +120,15 @@ const Light = {
 as a cell, a `&mut V` a method gives, is of its place, `cell.value`**,
 written as a place is, the cell held once: litemap's `mem::replace(self.
 get_mut(), value)` of its generic store, which was refused.
+
+## Amendment: `clone_from`
+
+**`dest.clone_from(&source)`, std's provided method, is `mem::replace` of
+`dest` with a clone of `source`**, written as `mem::replace` writes, what
+was there dropped, as `*dest = source.clone()` drops it: either's `Either`
+forwards it. Of a generic `T`, the clone is its `Clone` dictionary's;
+std's `clone_from` isn't asked of the dictionary, which has only `clone`,
+but written in place, as std documents it's equivalent to. A crate's impl
+known to have its own is called. A clone of an array made where it's
+cloned, `$slice(v, 0, n)`'s, is that array (`clone_items`), as is one moved
+into a collection, `[..].map(f).into()`.

@@ -275,6 +275,9 @@ pub(super) enum Std {
     /// each written in turn.
     Swap,
     Replace,
+    /// `dest.clone_from(&source)`: `mem::replace(dest, source.clone())`'s
+    /// write, of a clone of the source.
+    CloneFrom,
     /// `opt.take()`, `opt.replace(v)` and `mem::take(&mut x)`: `mem::replace`
     /// with `None`, `Some(v)` and `x`'s default (ADR 0136).
     OptionTake,
@@ -783,6 +786,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if diagnostic("mem_replace") {
             return Some(Some(Std::Replace));
+        }
+        // `Clone::clone_from`, std's own: `*dest = source.clone()`. A crate's
+        // impl of its own is its own.
+        if tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
+            && tcx.item_name(def_id).as_str() == "clone_from"
+        {
+            return Some(Some(Std::CloneFrom));
         }
         if tcx.crate_name(def_id.krate) == sym::core && std_path(tcx, def_id) == "std::mem::take" {
             return Some(Some(Std::MemTake));

@@ -263,7 +263,6 @@ for (const [name, source, diagnostic] of [
   ["Fn closure given away", `pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }`, "given away without being called once"],
   ["closure assigned", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let r = R; let c; c = move || drop(r); c(); }`, "assigning a closure that holds a value with a destructor"],
   // `Clone`, `Default` and `From` are supported (ADR 0052), but not all of them.
-  ["clone_from", `#[derive(Clone)] pub struct P { pub v: Vec<u32> } pub fn f(a: &mut P, b: &P) { a.clone_from(b); }`, "calling \`std::clone::Clone::clone_from\`"],
   // A `&dyn Debug` is the string it shows (ADR 0060): one made plain is shown plain (ADR 0137).
   ["{:#?} of a kept &dyn Debug", `pub fn f(x: &[u8]) -> String { let d: &dyn std::fmt::Debug = &x; format!("{:#?}", d) }`, "\`{:#?}\` of a \`&dyn Debug\` made elsewhere"],
   ["fmt::Result methods", `use std::fmt; pub struct P; impl fmt::Display for P { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { f.write_str("a").and_then(|()| Ok(())) } }`, "methods of a \`fmt::Result\`"],

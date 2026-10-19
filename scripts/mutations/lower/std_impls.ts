@@ -406,4 +406,13 @@ export const mutations: Mutation[] = [
     replace: "            if self.js_eq(inner).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_boxed_eq.rs$"],
   },
+  {
+    name: "clone-items-made-copied",
+    breaks: "a clone of an array made here, `$slice(v, 0, n)`, copies it again",
+    file: "src/lower/std_impls.rs",
+    find: "            if super::iterators::made_array(&items) {\n                return Ok(items);\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|clone_from).rs$"],
+    snapshots: true,
+  },
 ];

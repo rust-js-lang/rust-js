@@ -602,4 +602,20 @@ export const mutations: Mutation[] = [
     replace: "if dropping.is_some() && comb != IterComb::SkipWhile {",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
+  {
+    name: "clone-from-old-undropped",
+    breaks: "`clone_from` doesn't drop what was there, as `*dest = source.clone()` does",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    self.drop_value(old, ty, span, out)?;\n",
+    replace: "                    let _ = old;\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+  },
+  {
+    name: "clone-from-shared",
+    breaks: "`clone_from` writes the source itself, not a clone, so a change to one is seen in the other",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let clone = self.clone_value(source, ty, span, out)?;\n                let given = vec![dest, Value::Expr(clone)];\n",
+    replace: "                let given = vec![dest, Value::Expr(source)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+  },
 ];

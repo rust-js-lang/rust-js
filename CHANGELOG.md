@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`clone_from`**, std's `*dest = source.clone()`, of any type, a
+  generic one's too (ADR 0147).
 - **`nth_back(n)`, `rfold(init, f)` and `rfind(p)`** of any double-ended
   iterator, a generic one's too, and `find_map` of items with a destructor
   (ADR 0455).

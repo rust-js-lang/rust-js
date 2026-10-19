@@ -829,6 +829,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .mir_swap_or_replace(state, (known, def_id), values, arg_tys, span, out)
                     .map(Some);
             }
+            // `dest.clone_from(&source)`: `mem::replace` of `dest` with a clone
+            // of `source`, written as it writes, what it gives back dropped,
+            // as `*dest = source.clone()` drops it.
+            Std::CloneFrom => {
+                let ty = arg_tys[1].peel_refs();
+                let dest = values.next().expect("the destination");
+                let source = values.next().expect("the source");
+                let source = self.value_expr(source, span)?;
+                let clone = self.clone_value(source, ty, span, out)?;
+                let given = vec![dest, Value::Expr(clone)];
+                let old = self.mir_swap_or_replace(state, (Std::Replace, def_id), given, arg_tys, span, out)?;
+                let old = self.value_expr(old, span)?;
+                if self.drops(ty) != crate::lower::drops::Drops::Nothing {
+                    let old = self.droppable(old, ty, out);
+                    self.drop_value(old, ty, span, out)?;
+                } else if old.has_effects() {
+                    out.push(StmtKind::Expr(old).at(self.js_span(span)));
+                }
+                Expr::undefined()
+            }
             // `Rc::make_mut(&mut rc)` of a local `Rc` of this body: the local
             // given the one `$makeMut` gives. Through a reference the place
             // isn't here, which a variable given another would leave.

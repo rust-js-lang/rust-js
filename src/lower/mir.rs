@@ -5352,8 +5352,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not one that's a binding, a default method's `get ruleId` called
         // through a generic's bound: the binding, below.
         // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor
-        // std's that's the same JS value, a `Box`'s `as_ref()` (ADR 0331).
+        // std's that's the same JS value, a `Box`'s `as_ref()` (ADR 0331);
+        // nor std's `clone_from`, `*dest = source.clone()` written in place,
+        // where the crate's impl isn't known to have its own.
         if !matches!(known, Some(Std::Any(_) | Std::Same))
+            && (rust_impl || known != Some(Std::CloneFrom))
             && !bindings::is_binding(tcx, def_id)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
@@ -5968,6 +5971,7 @@ fn lowered_from_values(known: Std) -> bool {
         known,
         Std::Swap
             | Std::Replace
+            | Std::CloneFrom
             | Std::OptionTake
             | Std::OptionReplace
             | Std::MemTake
