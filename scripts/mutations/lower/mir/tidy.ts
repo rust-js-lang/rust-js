@@ -56,7 +56,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| continued(stmts, continues));\n    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));\n    js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));\n",
     replace: "    js::statement_lists(body, &mut |stmts| continued(stmts, continues));\n    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-named-temporaries-off",
