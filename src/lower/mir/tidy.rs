@@ -118,6 +118,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
+        // `?` of an `Ok` made here: the branch it takes, before what's past
+        // a jump goes.
+        js::statement_lists(body, &mut made_ok_tried);
         js::statement_lists(body, &mut |stmts| {
             returned(stmts, result);
             unreachable_after(stmts);
@@ -129,6 +132,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
         js::statement_lists(body, &mut unlabeled);
     }
+    // What a label's block, gone, left past a jump.
+    js::statement_lists(body, &mut unreachable_after);
     bottom_up(body, &mut or_tests);
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     let mut read = HashSet::new();

@@ -97,4 +97,12 @@ export const mutations: Mutation[] = [
     replace: "            let next = next.max(top(next));\n",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
+  {
+    name: "moved-tokens-unsorted",
+    breaks: "a source map's tokens a pairing moved out of order are written so, and the encoder panics",
+    file: "src/format.rs",
+    find: "    placed.sort_by_key(|&(at, _)| at);\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
+  },
 ];

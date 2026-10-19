@@ -191,7 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A generic one's, with the readers of its type's arguments.
             ty::Adt(_, args) if let Some(deserialize) = self.deserialize_fn(ty) => {
-                let callee = self.fn_ref(deserialize);
+                let callee = self.codec_callee(deserialize);
                 let readers = args.types().map(|t| self.json_reader(t, span)).collect::<R<Vec<_>>>()?;
                 if readers.is_empty() {
                     return Ok(callee);

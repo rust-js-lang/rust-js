@@ -5203,7 +5203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_iter()
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
-            return Ok(Value::Expr(self.json_call_values(operation, exprs, span)?));
+            return Ok(Value::Expr(self.json_call_values(operation, exprs, span, out)?));
         }
         // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
         // of what they point at (ADR 0099), not the handles.

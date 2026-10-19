@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "            true => ty::TypingEnv::fully_monomorphized(),\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
   },
+  {
+    name: "hand-written-serde-as-derived",
+    breaks: "a hand-written serde impl is written as a derived codec too, two functions of one name",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))\n",
+    replace: "        .filter(|&&id| serde_impl(tcx, id).is_some())\n",
+    tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
+  },
 ];

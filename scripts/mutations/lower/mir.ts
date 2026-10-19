@@ -1963,7 +1963,7 @@ export const mutations: Mutation[] = [
     name: "mir-json-calls-refused",
     breaks: "MIR's `serde_json::Value` operations and `to_value` are refused",
     file: "src/lower/mir.rs",
-    find: "            return Ok(Value::Expr(self.json_call_values(operation, exprs, span)?));\n",
+    find: "            return Ok(Value::Expr(self.json_call_values(operation, exprs, span, out)?));\n",
     replace: "            return Err(self.unsupported(span, &format!(\"serde_json of {}, from its MIR\", exprs.len())));\n",
     tests: ["test/serde.test.ts", "-t", "f32 is written"],
   },

@@ -3465,6 +3465,30 @@ export function $tryFoldSome(it, init, f) {
   return made;
 }
 
+// A hand-written `Serialize` or `Deserialize`'s function, which gives a
+// `Result`, as a codec, which throws its error as serde_json's reader and
+// writer do theirs (ADR 0459).
+export function $jsonCodec(f) {
+  return (...given) => {
+    const result = f(...given);
+    if (result.TAG === "Ok") return result._0;
+    const e = result._0;
+    throw e instanceof $JsonError ? e : new $JsonError(e.message, e.line, e.column);
+  };
+}
+
+// `T::deserialize(d)` in a hand-written `Deserialize`: what `read` reads
+// from the reader, `Ok`, or the error it throws, `Err`, which `?` gives on
+// with its place as serde_json found it (ADR 0459).
+export function $jsonRead(json, read) {
+  try {
+    return { TAG: "Ok", _0: read(json) };
+  } catch (e) {
+    if (e instanceof $JsonError) return { TAG: "Err", _0: e };
+    throw e;
+  }
+}
+
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
 // far and each item in turn, till one gives an `Err`, which it gives, the
 // rest left to step; else the `Ok` the last gave.

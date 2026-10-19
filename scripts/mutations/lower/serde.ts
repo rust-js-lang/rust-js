@@ -45,4 +45,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = index;\n                    let test = Expr::bin(Op::Eq, Expr::member(value.clone(), \"TAG\"), Expr::str(variant.name.to_string()));\n",
     tests: ["test/serde.test.ts", "-t", "discriminated union"],
   },
+  {
+    name: "hand-written-codec-unadapted",
+    breaks: "a hand-written impl's function, which gives a `Result`, is called as a codec, and what's written is the `Result`",
+    file: "src/lower/serde.rs",
+    find: "            false => Expr::call(Expr::helper(\"$jsonCodec\"), vec![callee]),\n",
+    replace: "            false => callee,\n",
+    tests: ["test/serde.test.ts", "-t", "hand-written"],
+  },
 ];

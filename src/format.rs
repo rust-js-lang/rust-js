@@ -171,10 +171,15 @@ fn moved(
     }
     tokens.extend(carried);
     tokens.sort_by_key(|&(offset, _)| offset);
-    for (offset, t) in tokens {
-        let Some((line, col)) = moved_to(offset) else {
-            continue;
-        };
+    // In the order of where they are in the text, as a map's tokens are: a
+    // node paired with one the formatter moved before its neighbour's would
+    // otherwise come after it, and the map be one the encoder can't write.
+    let mut placed: Vec<_> = tokens
+        .into_iter()
+        .filter_map(|(offset, t)| moved_to(offset).map(|at| (at, t)))
+        .collect();
+    placed.sort_by_key(|&(at, _)| at);
+    for ((line, col), t) in placed {
         out.add_token(
             line,
             col,

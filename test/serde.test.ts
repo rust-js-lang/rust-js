@@ -395,3 +395,174 @@ test("serde: numbers are written and read as serde_json does", async () => {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 }, 120_000);
+
+// A hand-written `Serialize` (ADR 0459): its serializer is the JSON writer,
+// a struct, a sequence or a map it begins the writer too, a value it hands
+// on written by its own writer, and an error it makes the codec's.
+test("serde: a hand-written Serialize writes as serde_json does", async () => {
+  const dir = fixture("serde-hand-written-serialize");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct};
+use serde::{Serialize, Serializer};
+use std::fmt;
+
+pub struct Cents(pub u64);
+
+impl Serialize for Cents {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("{}.{:02}", self.0 / 100, self.0 % 100))
+    }
+}
+
+pub struct Point {
+    pub x: i32,
+    pub y: f64,
+    pub tag: Option<String>,
+}
+
+impl Serialize for Point {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut state = s.serialize_struct("Point", 3)?;
+        state.serialize_field("x", &self.x)?;
+        state.serialize_field("y", &self.y)?;
+        if let Some(tag) = &self.tag {
+            state.serialize_field("tag", tag)?;
+        } else {
+            state.skip_field("tag")?;
+        }
+        state.end()
+    }
+}
+
+pub struct Bag(pub Vec<Cents>);
+
+impl Serialize for Bag {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut seq = s.serialize_seq(Some(self.0.len()))?;
+        for c in &self.0 {
+            seq.serialize_element(c)?;
+        }
+        seq.end()
+    }
+}
+
+pub struct Counts(pub Vec<(u8, bool)>);
+
+impl Serialize for Counts {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut map = s.serialize_map(None)?;
+        for (k, v) in &self.0 {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
+}
+
+pub enum Shape {
+    Dot,
+    Circle(f64),
+}
+
+impl Serialize for Shape {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Shape::Dot => s.serialize_unit_variant("Shape", 0, "Dot"),
+            Shape::Circle(r) => s.serialize_newtype_variant("Shape", 1, "Circle", r),
+        }
+    }
+}
+
+pub struct Shown(pub u32);
+
+impl fmt::Display for Shown {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#{}", self.0)
+    }
+}
+
+impl Serialize for Shown {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_str(self)
+    }
+}
+
+pub struct Ratio(pub f32);
+
+impl Serialize for Ratio {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_f32(self.0)
+    }
+}
+
+pub struct Labeled<T>(pub &'static str, pub T);
+
+impl<T: Serialize> Serialize for Labeled<T> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        if self.0.is_empty() {
+            return Err(serde::ser::Error::custom("no label"));
+        }
+        self.1.serialize(s)
+    }
+}
+
+pub fn report() -> String {
+    let point = Point { x: -3, y: 1.5, tag: None };
+    let tagged = Point { x: 1, y: 2.0, tag: Some("t".into()) };
+    format!(
+        "{} {} {} {} {} {} {} {} {} {} {}",
+        serde_json::to_string(&Cents(1234)).unwrap(),
+        serde_json::to_string(&point).unwrap(),
+        serde_json::to_string_pretty(&tagged).unwrap(),
+        serde_json::to_string(&Bag(vec![Cents(5), Cents(250)])).unwrap(),
+        serde_json::to_string(&Counts(vec![(1, true), (2, false)])).unwrap(),
+        serde_json::to_string(&vec![Shape::Dot, Shape::Circle(0.5)]).unwrap(),
+        serde_json::to_string(&Shown(7)).unwrap(),
+        serde_json::to_string(&Labeled("n", 9u8)).unwrap(),
+        serde_json::to_string(&Labeled("c", Cents(1))).unwrap(),
+        serde_json::to_string(&Labeled("", 1u8)).unwrap_err(),
+        serde_json::to_string(&Ratio(0.1)).unwrap(),
+    )
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
+// A hand-written `Deserialize` (ADR 0459): what it reads through another's,
+// a `Result`, and an error it makes, at the place serde_json gives it.
+test("serde: a hand-written Deserialize reads as serde_json does", async () => {
+  const dir = fixture("serde-hand-written-deserialize");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::{Deserialize, Deserializer};
+
+#[derive(Debug, PartialEq)]
+pub struct Cents(pub u64);
+
+impl<'de> Deserialize<'de> for Cents {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let text = String::deserialize(d)?;
+        let (whole, part) = text.split_once('.').ok_or_else(|| serde::de::Error::custom("no point"))?;
+        let whole: u64 = whole.parse().map_err(serde::de::Error::custom)?;
+        let part: u64 = part.parse().map_err(serde::de::Error::custom)?;
+        Ok(Cents(whole * 100 + part))
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct Order {
+    pub price: Cents,
+    pub qty: u32,
+}
+
+pub fn report() -> String {
+    let show = |text: &str| match serde_json::from_str::<Cents>(text) { Ok(l) => format!("{l:?}"), Err(e) => e.to_string() };
+    let order = |text: &str| match serde_json::from_str::<Order>(text) { Ok(o) => format!("{o:?}"), Err(e) => e.to_string() };
+    format!("{} {} {} {} {} {} {}", show("\"12.34\""), show("3"), show("\"1.x\""), show("\"12\""), show("true"),
+        order("{\"price\": \"2.50\", \"qty\": 3}"), order("{\"price\": \"2\", \"qty\": 3}"))
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+  // Its impl's function, once: not a derived codec of it beside.
+  expect(readFileSync(join(dir, "cases.js"), "utf8").match(/function centsDeserialize_deserialize\b/g)).toHaveLength(1);
+});

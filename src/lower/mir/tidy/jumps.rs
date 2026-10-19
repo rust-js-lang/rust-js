@@ -711,6 +711,85 @@ pub(super) fn tried_first(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// `?` of an `Ok` just made, `const r = { TAG: "Ok", _0: 3 }; if (r.TAG ===
+/// "Err") { return r; }`, or `if (r.TAG !== "Err") { a } else { b }`, past
+/// the `let`s its branches assign, or first in a labeled block: no `Err`, so
+/// the branch it takes in its place, and what it holds, a constant or a name,
+/// read where `r._0` is, `r` gone once nothing reads it.
+/// `serialize_field(..)?` of a hand-written `Serialize` (ADR 0459), and
+/// `Ok(3)?` as it's written.
+pub(super) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Const(name, made) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let Some(payload) = result::made_ok_payload(made) else {
+            i += 1;
+            continue;
+        };
+        let (name, payload) = (name.clone(), payload.cloned());
+        // The `if` that tests it: next, past the `let`s declared for its
+        // branches, or first in a labeled block there.
+        let mut at = i + 1;
+        while matches!(stmts.get(at).map(|s| &s.kind), Some(StmtKind::Let(_, None))) {
+            at += 1;
+        }
+        let folded = match stmts.get_mut(at).map(|s| &mut s.kind) {
+            Some(StmtKind::Labeled(_, body)) => taken_in_place(body, 0, &name),
+            Some(_) => taken_in_place(stmts, at, &name),
+            None => false,
+        };
+        if !folded {
+            i += 1;
+            continue;
+        }
+        // What it holds, read in its place, where reading it there is the same.
+        if let Some(value) = payload.filter(|value| value.is_constant() || matches!(value.kind, ExprKind::Var(_))) {
+            js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Member(of, field)
+                    if field == "_0" && matches!(&of.kind, ExprKind::Var(r) if *r == name))
+                {
+                    *e = value.clone();
+                }
+            });
+        }
+        let mut read = false;
+        js::visit_stmts(&stmts[i + 1..], &mut |n| read |= n == name);
+        let StmtKind::Const(_, made) = &stmts[i].kind else {
+            unreachable!("matched")
+        };
+        if !read && !made.has_effects() {
+            stmts.remove(i);
+        }
+        // What the branch taken holds, a `?` of its own too, looked at next.
+    }
+}
+
+/// `stmts[at]`, an `if` testing whether `name`, an `Ok`, is one: the branch it
+/// takes, in its place. Whether it was one.
+fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
+    let Some(StmtKind::If(test, _, _)) = stmts.get(at).map(|s| &s.kind) else {
+        return false;
+    };
+    let Some((of, ok, equal)) = result::tested(test) else {
+        return false;
+    };
+    if !matches!(&of.kind, ExprKind::Var(r) if r == name) {
+        return false;
+    }
+    let StmtKind::If(_, then, otherwise) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
+        unreachable!("matched")
+    };
+    let taken = match ok == equal {
+        true => then,
+        false => otherwise.unwrap_or_default(),
+    };
+    stmts.splice(at..=at, taken);
+    true
+}
+
 /// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
 /// `a` always leaving, and `rest` leaving, or going round again at the
 /// body's end where `a` is more than one exit, a guard's: `if (!t) { rest

@@ -437,4 +437,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "made-ok-tried-kept",
+    breaks: "`?` of an `Ok` made where it's tried keeps its test, `const r = { TAG: \"Ok\", _0: 3 }; if (r.TAG === \"Err\") ..`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            Some(_) => taken_in_place(stmts, at, &name),\n",
+    replace: "            Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "made-ok-wrong-branch",
+    breaks: "`?` of an `Ok` made where it's tried takes the `Err` branch, and gives it back",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    let taken = match ok == equal {\n",
+    replace: "    let taken = match ok != equal {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
+  },
 ];

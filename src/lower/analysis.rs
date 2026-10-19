@@ -47,6 +47,7 @@ use validation::{in_thread_local, init_of, reject_flatten_misuse, reject_static_
 /// rust-js writes each type's JSON codec itself (ADR 0077).
 pub(super) use super::recognition::from_serde_derive;
 
+use super::recognition::serde_derived;
 /// Is `id` serde's derived `impl Serialize` (`Some(true)`) or `impl
 /// Deserialize` (`Some(false)`)?
 /// Only the impls for the crate's own types: the derive's helpers inside
@@ -474,9 +475,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
+    // A derived serde impl's method is a codec rust-js writes; a hand-written
+    // one's is its body (ADR 0459).
     let codecs: Vec<DefId> = trait_impls
         .iter()
-        .filter(|&&id| serde_impl(tcx, id).is_some())
+        .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))
         .map(|&id| tcx.associated_item_def_ids(id)[0])
         .collect();
     // What gets a JS name: functions and methods, `const`s, dictionaries,

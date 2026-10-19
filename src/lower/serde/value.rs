@@ -25,8 +25,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         operation: JsonCall<'tcx>,
         mut values: Vec<Expr>,
         span: Span,
+        out: &mut Vec<js::Stmt>,
     ) -> R<Expr> {
         match operation {
+            JsonCall::Serde(op, args) => self.serde_call(op, args, values, span, out),
             JsonCall::ToValue(ty) => {
                 let value = values.remove(0);
                 // Of a string, a number, a `bool` or `()`, it can't fail: `Ok` of it.

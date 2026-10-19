@@ -2066,4 +2066,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
   },
+  {
+    name: "serde-op-unknown",
+    breaks: "a hand-written `Serialize`'s `s.serialize_str(..)` isn't known, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if let Some(op) = serde_op(tcx, def_id) {\n",
+    replace: "        if let Some(op) = None::<SerdeOp> {\n",
+    tests: ["test/serde.test.ts", "-t", "hand-written"],
+  },
+  {
+    name: "serde-de-custom-unknown",
+    breaks: "`de::Error::custom(msg)` isn't known, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "\"ser\" | \"de\") => SerdeOp::Custom,",
+    replace: "\"ser\") => SerdeOp::Custom,",
+    tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
+  },
 ];

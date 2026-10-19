@@ -59,14 +59,21 @@ pub(in crate::lower) fn unwrapped_made(result: &Expr, given: &[Expr]) -> Option<
 
 /// What an `Ok` just made holds, `{ TAG: "Ok", _0: value }`'s `value`.
 pub(in crate::lower) fn made_ok(e: &Expr) -> Option<&Expr> {
+    made_ok_payload(e).flatten()
+}
+
+/// Whether `e` is an `Ok` just made, and what it holds: `{ TAG: "Ok", _0:
+/// value }`'s `value`, or nothing of an `Ok(())`'s, `{ TAG: "Ok" }`.
+pub(in crate::lower) fn made_ok_payload(e: &Expr) -> Option<Option<&Expr>> {
     let js::ExprKind::Object(props) = &e.kind else {
         return None;
     };
-    let [Prop::Field(tag, name), Prop::Field(field, value)] = props.as_slice() else {
-        return None;
-    };
-    ((tag.as_str(), field.as_str()) == ("TAG", "_0") && matches!(&name.kind, js::ExprKind::Str(s) if s == "Ok"))
-        .then_some(value)
+    let ok = |tag: &str, name: &Expr| tag == "TAG" && matches!(&name.kind, js::ExprKind::Str(s) if s == "Ok");
+    match props.as_slice() {
+        [Prop::Field(tag, name)] if ok(tag, name) => Some(None),
+        [Prop::Field(tag, name), Prop::Field(field, value)] if ok(tag, name) && field == "_0" => Some(Some(value)),
+        _ => None,
+    }
 }
 
 /// Of a test `is` makes, or its negation, `r.TAG !== "Err"`: what it tests,

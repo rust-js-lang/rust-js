@@ -2700,6 +2700,127 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 }
 
+/// A call of serde's data model a hand-written `Serialize` or `Deserialize`
+/// makes, over the JSON writer and reader (ADR 0459).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeOp {
+    /// `s.serialize_bool(b)` and the like: a value the writer writes itself.
+    Write(SerdeScalar),
+    /// `serialize_some(&v)` and `serialize_newtype_struct(name, &v)`: `v`, as
+    /// it is, its argument at `at`.
+    WriteValue {
+        at: usize,
+    },
+    /// `serialize_unit_variant(name, index, variant)`: its name.
+    UnitVariant,
+    /// `serialize_newtype_variant(name, index, variant, &v)`: `{ variant: v }`.
+    NewtypeVariant,
+    /// `collect_str(&v)`: what `v` shows, as a string.
+    CollectStr,
+    /// `serialize_seq(len)` and the rest: the writer, begun.
+    Begin(SerdeCompound),
+    /// `serialize_element(&v)`, of a sequence or a tuple: its next.
+    Element,
+    /// `serialize_field(key, &v)` of a struct: its key, then it.
+    Field,
+    /// `skip_field(key)`: nothing.
+    SkipField,
+    /// `serialize_entry(&k, &v)`, `serialize_key(&k)` and `serialize_value(&v)`
+    /// of a map.
+    Entry,
+    Key,
+    Value,
+    /// `end()`: the compound closed.
+    End(SerdeCompound),
+    /// `v.serialize(s)` of a `Serialize`: its writer's.
+    Serialize,
+    /// `T::deserialize(d)` of a `Deserialize`: its reader's, a `Result`.
+    Deserialize,
+    /// `S::Error::custom(msg)` and `D::Error::custom(msg)`: an error of what
+    /// `msg` shows.
+    Custom,
+}
+
+/// What a writer writes itself, of serde's scalars.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeScalar {
+    Bool,
+    Int,
+    Float {
+        single: bool,
+    },
+    Char,
+    Str,
+    /// `()`, `None` and a unit struct: `null`.
+    Null,
+}
+
+/// What a `serialize_*` begins: a sequence, a tuple, a tuple struct, a map
+/// or a struct.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeCompound {
+    Seq,
+    Tuple,
+    TupleStruct,
+    Map,
+    Struct,
+}
+
+/// `def_id` as a call of serde's data model a hand-written impl makes (ADR
+/// 0459), or `None`.
+pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
+    let trait_id = tcx.trait_of_assoc(def_id)?;
+    if !matches!(tcx.crate_name(trait_id.krate).as_str(), "serde" | "serde_core") {
+        return None;
+    }
+    let method = tcx.item_name(def_id);
+    let compound = |name: &str| match name {
+        "SerializeSeq" => Some(SerdeCompound::Seq),
+        "SerializeTuple" => Some(SerdeCompound::Tuple),
+        "SerializeTupleStruct" => Some(SerdeCompound::TupleStruct),
+        "SerializeMap" => Some(SerdeCompound::Map),
+        "SerializeStruct" => Some(SerdeCompound::Struct),
+        _ => None,
+    };
+    let trait_name = tcx.item_name(trait_id);
+    Some(match (trait_name.as_str(), method.as_str()) {
+        ("Serialize", "serialize") => SerdeOp::Serialize,
+        ("Deserialize", "deserialize") => SerdeOp::Deserialize,
+        ("Serializer", name) => match name {
+            "serialize_bool" => SerdeOp::Write(SerdeScalar::Bool),
+            "serialize_i8" | "serialize_i16" | "serialize_i32" | "serialize_i64" | "serialize_i128"
+            | "serialize_u8" | "serialize_u16" | "serialize_u32" | "serialize_u64" | "serialize_u128" => {
+                SerdeOp::Write(SerdeScalar::Int)
+            }
+            "serialize_f32" => SerdeOp::Write(SerdeScalar::Float { single: true }),
+            "serialize_f64" => SerdeOp::Write(SerdeScalar::Float { single: false }),
+            "serialize_char" => SerdeOp::Write(SerdeScalar::Char),
+            "serialize_str" => SerdeOp::Write(SerdeScalar::Str),
+            "serialize_unit" | "serialize_none" | "serialize_unit_struct" => SerdeOp::Write(SerdeScalar::Null),
+            "serialize_some" => SerdeOp::WriteValue { at: 1 },
+            "serialize_newtype_struct" => SerdeOp::WriteValue { at: 2 },
+            "serialize_unit_variant" => SerdeOp::UnitVariant,
+            "serialize_newtype_variant" => SerdeOp::NewtypeVariant,
+            "collect_str" => SerdeOp::CollectStr,
+            "serialize_seq" => SerdeOp::Begin(SerdeCompound::Seq),
+            "serialize_tuple" => SerdeOp::Begin(SerdeCompound::Tuple),
+            "serialize_tuple_struct" => SerdeOp::Begin(SerdeCompound::TupleStruct),
+            "serialize_map" => SerdeOp::Begin(SerdeCompound::Map),
+            "serialize_struct" => SerdeOp::Begin(SerdeCompound::Struct),
+            _ => return None,
+        },
+        (name, "end") => SerdeOp::End(compound(name)?),
+        (name, "serialize_element") if compound(name).is_some() => SerdeOp::Element,
+        (name, "serialize_field") if compound(name).is_some() => SerdeOp::Field,
+        (name, "skip_field") if compound(name).is_some() => SerdeOp::SkipField,
+        ("SerializeMap", "serialize_entry") => SerdeOp::Entry,
+        ("SerializeMap", "serialize_key") => SerdeOp::Key,
+        ("SerializeMap", "serialize_value") => SerdeOp::Value,
+        ("Error", "custom") if matches!(tcx.item_name(tcx.parent(trait_id)).as_str(), "ser" | "de") => SerdeOp::Custom,
+        _ => return None,
+    })
+}
+
 /// Recognized serde_json calls carry type facts, never lowered operands.
 pub(super) enum JsonCall<'tcx> {
     ToValue(Ty<'tcx>),
@@ -2717,11 +2838,17 @@ pub(super) enum JsonCall<'tcx> {
     },
     Default,
     Method(JsonMethod),
+    /// serde's data model, of a hand-written impl (ADR 0459), its call's
+    /// arguments' types.
+    Serde(SerdeOp, ty::GenericArgsRef<'tcx>),
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn json_call(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<JsonCall<'tcx>> {
         let tcx = self.tcx;
+        if let Some(op) = serde_op(tcx, def_id) {
+            return Some(JsonCall::Serde(op, generic_args));
+        }
         let name = tcx.item_name(def_id);
         if tcx.crate_name(def_id.krate).as_str() == "serde_json" && tcx.trait_of_assoc(def_id).is_none() {
             match name.as_str() {
@@ -3977,6 +4104,16 @@ pub(super) fn serde_impl(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
     let own = matches!(tr.self_ty().kind(), ty::Adt(adt, _)
         if adt.did().as_local().is_some_and(|local| !from_serde_derive(tcx, local)));
     serde_trait(tcx, tr.def_id).filter(|_| own)
+}
+
+/// Whether serde impl `id` is serde's derive's, a codec rust-js writes by
+/// its `#[serde]` attributes (ADR 0077), not a hand-written one, whose body
+/// is the crate's (ADR 0459). A library's, by its `#[automatically_derived]`.
+pub(super) fn serde_derived(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    match id.as_local() {
+        Some(local) => from_serde_derive(tcx, local),
+        None => tcx.is_automatically_derived(id),
+    }
 }
 
 /// Is `id` core's `Sum` or `Product`, of `sum()` and `product()`, which

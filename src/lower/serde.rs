@@ -23,6 +23,7 @@
 //! in `de`.
 
 mod de;
+mod protocol;
 mod value;
 
 pub(super) use super::recognition::Json;
@@ -335,6 +336,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// A type's codec, `method`, as it's called: a derived one's function, or
+    /// a hand-written one's, which gives a `Result`, made one that throws its
+    /// error, `$jsonCodec(f)` (ADR 0459).
+    pub(super) fn codec_callee(&mut self, method: DefId) -> Expr {
+        let callee = self.fn_ref(method);
+        match super::recognition::serde_derived(self.tcx, self.tcx.parent(method)) {
+            true => callee,
+            false => Expr::call(Expr::helper("$jsonCodec"), vec![callee]),
+        }
+    }
+
     /// A derived `serialize` or `deserialize`.
     pub(super) fn lower_codec(&mut self, method: DefId) -> R<js::Function> {
         match super::analysis::serde_impl(self.tcx, self.tcx.parent(method)) {
@@ -421,7 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && args.types().next().is_none()
             && let Some(f) = self.serialize_fn(ty)
         {
-            return Ok(self.fn_ref(f));
+            return Ok(self.codec_callee(f));
         }
         let (item, json) = (self.fresh("value"), self.fresh("json"));
         let mut body = Vec::new();
@@ -436,7 +448,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The steps that write `value`, a `ty`, as serde would.
-    fn write_json(&mut self, value: Expr, json: &str, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
+    pub(super) fn write_json(
+        &mut self,
+        value: Expr,
+        json: &str,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
         let ty = ty.peel_refs();
         // A type parameter: its writer's call.
         if let Some(writer) = self.serde_evidence(ty, true).or_else(|| self.json_value_writer(ty)) {
@@ -564,7 +583,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(())
             }
             ty::Adt(_, args) if let Some(serialize) = self.serialize_fn(ty) => {
-                let callee = self.fn_ref(serialize);
+                let callee = self.codec_callee(serialize);
                 let mut call_args = vec![value, Expr::var(json)];
                 for t in args.types() {
                     call_args.push(self.json_writer(t, span)?);
@@ -608,7 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A map's key, as serde_json writes one: a string, or a number or a
     /// `bool` in quotes.
-    fn json_key(&mut self, key: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn json_key(&mut self, key: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = ty.peel_refs();
         if self.is_string_like(ty) {
             return Ok(key);

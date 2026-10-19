@@ -18,6 +18,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A hand-written `Serialize`**, its serializer's calls the JSON writer's,
+  and **a hand-written `Deserialize`** that reads through another's,
+  `String::deserialize(d)?`, with `de::Error::custom` (ADR 0459).
+- **`?` of an `Ok` made where it's tried**, `Ok(3)?`, is what it holds: no
+  test of an object just made (ADR 0459).
 - **`hint::assert_unchecked`, `unchecked_add`, `_sub` and `_mul`**, promises
   a right program keeps (ADR 0399), and **`saturating_neg` and
   `saturating_abs`** (ADR 0155).
@@ -480,6 +485,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A hand-written serde impl** was written twice, once as if derived: a
+  `Deserialize` read the wrong shape, or called a function that isn't there
+  (ADR 0459).
 - **A type of a const parameter, `Buffer<SIZE>`, given to generic code or
   in a trait's default its impl copies** compiles: rust-js crashed (ADR 0107).
 - **A value read in a branch, then a drop after it**, a map's `len()` in a
