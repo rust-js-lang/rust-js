@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`into_iter()` of a type parameter's associated type**, `H::Item:
+  IntoIterator`, itertools' (ADR 0061).
 - **A number's `LowerExp` and `UpperExp` called by a type's own**, deranged's
   `{:e}` (ADR 0165).
 - **A `Formatter` kept in a struct**, base64's `FormatterSink`, that

@@ -74,3 +74,15 @@ rust-js knows. A generic `I` could be either form, depending on the caller.
   adapters, `for`, and what consumes one.
 - A range handed over as a value (`total(0..3)`) is still an error, as a
   range in a variable is (ADR 0036).
+
+## Amendment: a type parameter's associated type too
+
+`i.into_iter()` of `H::Item: IntoIterator`, itertools'
+`multi_cartesian_product`'s, was refused: only a type parameter was
+taken for what its caller gives. An associated type only a caller knows
+is the same, an array or a JS iterator, stepped by `Iterator.from`:
+`is_given_iterable` answers it, for `into_iter`. A generic iterator's
+value of an associated type stays as it is: a dictionary gives it, a JS
+iterator already.
+`test/corpus/associated_into_iter.rs` steps them against native Rust.
+

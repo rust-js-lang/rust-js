@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     name: "generic-into-iter-refused",
     breaks: "`items.into_iter()` of a generic `I: IntoIterator` is an error",
     file: "src/lower/recognition.rs",
-    find: "                || self.is_vec_like(ty.peel_refs())\n                || matches!(ty.peel_refs().kind(), ty::Param(_)))",
+    find: "                || self.is_vec_like(ty.peel_refs())\n                || self.is_given_iterable(ty.peel_refs()))",
     replace: "                || self.is_vec_like(ty.peel_refs()))",
     tests: ["test/corpus.test.ts","-t","hrtb_into_iter"],
   },
@@ -2153,5 +2153,13 @@ export const mutations: Mutation[] = [
     find: "            || self.is_formatter_type(ty)\n            || self.is_rc(ty)\n",
     replace: "            || self.is_rc(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
+  {
+    name: "given-iterable-param-only",
+    breaks: "`into_iter()` of an associated type, `H::Item: IntoIterator`, is refused: only a type parameter is what its caller gives",
+    file: "src/lower/recognition.rs",
+    find: "    pub(super) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {\n        self.is_unknown(ty)\n",
+    replace: "    pub(super) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {\n        matches!(ty.kind(), ty::Param(_))\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iter.rs$"],
   },
 ];

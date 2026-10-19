@@ -1242,14 +1242,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::ExactLen);
         }
-        // Of a type parameter too: a generic one is an array or a JS iterator
-        // (ADR 0061), never a collection of the crate's (ADR 0160).
+        // Of what only a caller knows too, `I` or `H::Item`: an array or a JS
+        // iterator (ADR 0061), never a collection of the crate's (ADR 0160).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
             && (ty.peel_refs().is_array()
                 || ty.peel_refs().is_slice()
                 || self.is_vec_like(ty.peel_refs())
-                || matches!(ty.peel_refs().kind(), ty::Param(_)))
+                || self.is_given_iterable(ty.peel_refs()))
         {
             return Some(Std::Same);
         }
@@ -5044,6 +5044,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .filter(|_| unknown)
             .filter_map(|clause| clause.as_trait_clause().map(|bound| bound.def_id()))
             .collect()
+    }
+
+    /// A type only a caller knows, a type parameter or one's associated
+    /// type, `H::Item: IntoIterator`: what it's given is an array or a JS
+    /// iterator, which `Iterator.from` steps either of (ADR 0061).
+    pub(super) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.is_unknown(ty)
     }
 
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
