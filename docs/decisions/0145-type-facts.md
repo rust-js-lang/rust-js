@@ -27,6 +27,9 @@ dictionary's, `AArray.ItemSize`: each impl's dictionary carries it of its
 type for it, `T`'s of `type Item = T`, which its factory is given
 (`test/corpus/associated_type_facts.rs`). A type's layout fact is
 `type_fact_value`'s alone, `size_of_val` of a value's bytes apart.
+Extended by [0466](0466-a-generic-maps-class-is-its-callers.md): a map's
+class, of a trait's generic method's own type parameters and of a std
+associated type of one.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

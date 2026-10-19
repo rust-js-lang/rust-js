@@ -1041,10 +1041,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The fact of its type parameter `index` this function was given,
     /// `TSize` (ADR 0145).
     pub(super) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
-        self.given
-            .type_facts
-            .iter()
-            .find(|&&(at, given, _)| at == index && given == fact)
+        (self.given.type_facts.iter())
+            .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)
+            .map(|(_, _, value)| value.clone())
+    }
+
+    /// The fact of `of`, a std associated type of a type parameter, this
+    /// function was given, `IItemMap` (ADR 0466).
+    pub(super) fn given_fact_of(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
+        let of = self.tcx.erase_and_anonymize_regions(of);
+        (self.given.type_facts.iter())
+            .find(|&&(at, given, _)| self.tcx.erase_and_anonymize_regions(at) == of && given == fact)
             .map(|(_, _, value)| value.clone())
     }
 
@@ -1088,9 +1095,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         // Then each fact it asks of a type parameter, `TSize` (ADR 0145).
         for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
-            let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
-            let name = self.fresh(&format!("{}{}", param_word(param.name), fact.word()));
-            self.given.type_facts.push((index, fact, Expr::var(&name)));
+            let of = drop_slot(self.tcx, self.krate.foreign, id, index);
+            let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+            self.given.type_facts.push((of, fact, Expr::var(&name)));
             params.push(name.into());
         }
         // Then a drop function for each type parameter a caller gives a value
@@ -1113,8 +1120,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = ty::EarlyBinder::bind(self.tcx, drop_slot(self.tcx, self.krate.foreign, id, index))
             .instantiate(self.tcx, args)
             .skip_normalization();
+        // In a copied default, in the impl's terms, where its bounds and the
+        // default's hold.
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         self.tcx
-            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
     }
 
@@ -1242,11 +1252,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
-        // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`.
+        // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`;
+        // in a copied default, where the impl's bounds and its own hold, in
+        // the impl's terms: `K: Hash` of `<Map<T, F> as Iterator>::Item`.
         let tr = self
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))
             .unwrap_or(tr);
+        let tr = match self.impl_typing_env() {
+            Some(typing_env) => self
+                .tcx
+                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(tr))
+                .unwrap_or(tr),
+            None => tr,
+        };
         // serde's: the function that writes or reads the type (ADR 0081).
         match super::serde::serde_trait(self.tcx, tr.def_id) {
             Some(true) => return self.json_writer(tr.self_ty(), span),
@@ -1722,8 +1741,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        // The crate's own impl's accessor, or one a library exports (ADR 0100).
-        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, self.typing_env, tr)
+        // The crate's own impl's accessor, or one a library exports (ADR 0100):
+        // in a copied default, of the impl's terms, where its bounds and the
+        // default's hold, `Map<T, F>: Counting` of a blanket impl's.
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)
             && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.item(impl_id).is_some())
         {
             let callee = self.fn_ref(impl_id);
@@ -1961,12 +1983,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Each fact it asks of a type parameter, of the type given for it,
         // a library's as its manifest says (ADR 0145).
-        let facts = match id.is_local() {
-            true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
-            false => self.krate.foreign.type_facts(id),
-        };
-        for (index, fact) in facts {
-            let of = args.type_at(index as usize);
+        for (index, fact) in self.facts_asked(id) {
+            let of = self.drop_slot_of(id, index, args);
             // Of a `dyn`, generic code over a `T: ?Sized` resolves a blanket
             // impl's method where rustc calls the `dyn`'s own, its value's
             // type's (ADR 0145): refused, as its answer would be another's.
@@ -1998,6 +2016,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
         Ok(values)
+    }
+
+    /// What `id` asks of its type parameters, `TSize` and `KMap`, by their
+    /// index: the crate's, or a library's as its manifest says (ADR 0145).
+    pub(super) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
+        match id.is_local() {
+            true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
+            false => self.krate.foreign.type_facts(id),
+        }
     }
 
     /// Select user code before std intrinsics, so custom implementations win.
@@ -2318,6 +2345,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )?,
             );
         }
+        // Then what it asks of its own type parameters, `KMap`, of the types
+        // given for them (ADR 0466).
+        let parent = self.tcx.generics_of(id).parent_count as u32;
+        for (index, fact) in self.facts_asked(id) {
+            if index >= parent {
+                let of = self.drop_slot_of(id, index, generic_args);
+                values.push(self.type_fact_value(of, fact, span)?);
+            }
+        }
         // Then a drop for each of its own type parameters the trait declares
         // one for, of the type given for it: none, left out at the end, for
         // one with nothing to drop (ADR 0163).
@@ -2374,6 +2410,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 values.push(self.dictionary(here, span)?);
             }
+        }
+        // What it asks of its type parameters: of the impl's, this
+        // dictionary's, and of its own, its caller's (ADRs 0145, 0466).
+        for (index, fact) in self.facts_asked(method) {
+            let of = self.drop_slot_of(method, index, args);
+            values.push(self.type_fact_value(of, fact, span)?);
         }
         // Its drops are the impl's type parameters' (ADR 0098): its own, a
         // caller through a dictionary gives none of, are refused (`validate`).
@@ -3319,6 +3361,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 replaced.push(self.lend_drop_param(index, name.clone(), ty));
                 drop_names.push(name);
             }
+            // The facts its caller gives of its own type parameters, `KMap`,
+            // which it passes on as the method's (ADR 0466), as the trait
+            // method's are named.
+            let parent = self.tcx.generics_of(item.def_id).parent_count as u32;
+            let own_facts: Vec<(u32, TypeFact)> = (self.krate.type_facts.get(&item.def_id).into_iter().flatten())
+                .copied()
+                .filter(|&(index, _)| index >= parent)
+                .collect();
+            let fact_mark = self.given.type_facts.len();
+            let mut fact_names = Vec::new();
+            for (index, fact) in own_facts {
+                let of = drop_slot(self.tcx, self.krate.foreign, item.def_id, index);
+                if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
+                    return Err(self.unsupported(span, "a trait method's type parameter's fact here"));
+                }
+                let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+                self.given.type_facts.push((of, fact, Expr::var(&name)));
+                fact_names.push(name);
+            }
             // Everything the method takes that its caller through the dictionary
             // doesn't give: its dictionaries, then its drops (ADR 0098), which
             // are this impl's own, and its own type parameters' it's given.
@@ -3327,11 +3388,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.method_evidence(method, instance.args, &declared, &names, location, span),
             };
             self.given.const_params.truncate(mark);
+            self.given.type_facts.truncate(fact_mark);
             for lent in replaced {
                 self.return_drop_param(lent);
             }
             let evidence = evidence?;
             params.extend(names);
+            params.extend(fact_names);
             params.extend(drop_names);
             values.extend(evidence);
             // What generic code takes for an associated type bound by
@@ -3562,6 +3625,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             drops.insert(index as u32, name);
         }
+        // And of each std associated type of one, `Self::Item`, the drop the
+        // impl has of it, of its terms, `T::Item`'s `dropTItem`, as the body
+        // asks (ADR 0421).
+        let mut items = HashMap::new();
+        for (at, item) in drop_items(self.tcx, self.krate.foreign, id).into_iter().enumerate() {
+            let index = (generics.count() + at) as u32;
+            let concrete = ty::EarlyBinder::bind(self.tcx, item)
+                .instantiate(self.tcx, args)
+                .skip_normalization();
+            if self.given_drop(concrete).is_none() {
+                continue;
+            }
+            if let Some(Expr {
+                kind: js::ExprKind::Var(name),
+                ..
+            }) = self.drop_function(concrete, span)?
+                && let Some(concrete) = alias_of(concrete)
+            {
+                drops.insert(index, name);
+                items.insert(concrete, index);
+            }
+        }
         // Its trait's const parameters are the impl's arguments for them, `10`
         // of `Scaled<10>` or the impl's own `K`, and its own are given after
         // its arguments (ADR 0135).
@@ -3605,6 +3690,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let outer_consts = std::mem::replace(&mut self.given.const_params, consts);
+        // The facts its caller gives of its own type parameters, `KMap`,
+        // after its dictionaries (ADR 0466).
+        let fact_mark = self.given.type_facts.len();
+        let mut fact_names = Vec::new();
+        for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
+            if index < generics.parent_count as u32 {
+                continue;
+            }
+            let of = drop_slot(self.tcx, self.krate.foreign, id, index);
+            if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
+                self.given.const_params = outer_consts;
+                return Err(self.unsupported(span, "a trait default's type parameter's fact here"));
+            }
+            let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+            self.given.type_facts.push((of, fact, Expr::var(&name)));
+            // And in the impl's terms, as the body asks: `T::Item` of the
+            // trait's `Self::Item`.
+            let concrete = ty::EarlyBinder::bind(self.tcx, of)
+                .instantiate(self.tcx, args)
+                .skip_normalization();
+            if concrete != of {
+                self.given.type_facts.push((concrete, fact, Expr::var(&name)));
+            }
+            fact_names.push(name);
+        }
         // A method's, or a constant's initializer, a trait's default (ADR 0176).
         let body = match self.krate.bodies.get(&id) {
             Some(body) => *body,
@@ -3619,6 +3729,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             typing_env: ty::TypingEnv::post_analysis(self.tcx, id),
             drops,
             unsupported,
+            items,
         };
         // Where it's called, after its arguments, of one that takes it, which
         // `Location::caller()` in it reads (ADR 0427).
@@ -3645,10 +3756,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.given.const_params = outer_consts;
         self.given.caller_location = outer_location;
+        self.given.type_facts.truncate(fact_mark);
         let (mut params, is_async) = signature?;
         params.extend(location.map(Into::into));
         params.extend(const_names.into_iter().map(Into::into));
         params.extend(own_params.into_iter().map(Into::into));
+        params.extend(fact_names.into_iter().map(Into::into));
         // Only the drops it uses: most defaults drop nothing of their `Self`.
         let used = self.used_drops();
         rest.splice(0..0, self.leave_body(enclosing));

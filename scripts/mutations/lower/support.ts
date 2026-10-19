@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "                if predicates.principal_def_id().is_some_and(|id| {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
   },
+  {
+    name: "generic-map-refused",
+    breaks: "a hash map of a type parameter's keys is refused",
+    file: "src/lower/support.rs",
+    find: "                let given = matches!(key.kind(), ty::Param(_) | ty::Alias(..)) && !self.is_sorted(ty);\n",
+    replace: "                let given = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
+  },
 ];

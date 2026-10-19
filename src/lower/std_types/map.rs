@@ -4,7 +4,7 @@
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
-use crate::lower::recognition::{StdItem, std_item, trait_method};
+use crate::lower::recognition::{StdItem, TypeFact, std_item, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -285,29 +285,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// path, `$PathMap` and `$PathSet` (ADR 0401), and for a `Cow`,
     /// `$CowMap` and `$CowSet` (ADR 0402). One of no key type, serde_json's
     /// `Map`, is of strings.
-    pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
+    pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        // A type parameter's, or a std associated type's of one, its
+        // caller's, `KMap` (ADR 0466).
+        if let Some(key) = key
+            && matches!(
+                key.kind(),
+                ty::Param(_)
+                    | ty::Alias(
+                        _,
+                        ty::AliasTy {
+                            kind: ty::Projection { .. },
+                            ..
+                        }
+                    )
+            )
+        {
+            let fact = if set { TypeFact::Set } else { TypeFact::Map };
+            let given = match key.kind() {
+                ty::Param(param) => self.given_type_fact(param.index, fact),
+                _ => self.given_fact_of(key, fact),
+            };
+            return given
+                .ok_or_else(|| self.unsupported(span, &format!("a map of `{key}` keys, whose class isn't given")));
+        }
         let name = match key {
             // Paths, each kept under its components (ADR 0401).
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
             // `Cow`s, each kept under what it borrows (ADR 0402).
             Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
-            _ => return Expr::var(["Map", "Set"][usize::from(set)]),
+            _ => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
         };
-        Expr::helper(name)
+        Ok(Expr::helper(name))
     }
 
     /// What a call makes: a map or a set of what its key is, as its type
     /// arguments have it, the map's among them, as `collect` and `From`
     /// have it, or else the first, `HashMap::<K, V>::new`'s; serde_json's
     /// `Map::new()` has none.
-    fn made(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>) -> Expr {
+    fn made(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
         let key = match map.map(|t| t.peel_refs().kind()) {
             Some(ty::Adt(_, args)) => args.types().next(),
             _ => generic_args.types().next(),
         };
-        self.map_class(set, key)
+        self.map_class(set, key, span)
     }
 
     /// A map or a set made of `items`, `collect`'s or `from`'s, of what its
@@ -315,21 +338,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it finds others by keeps the last of equal ones, as std sorts what
     /// it's made of and keeps the last, where `insert` keeps the first:
     /// `$treeFrom(new $PathSet(), items, true)` (ADRs 0401, 0402).
-    pub(in crate::lower) fn made_of(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>, items: Expr) -> Expr {
-        let class = self.made(set, generic_args);
+    pub(in crate::lower) fn made_of(
+        &mut self,
+        set: bool,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        items: Expr,
+        span: Span,
+    ) -> R<Expr> {
+        let class = self.made(set, generic_args, span)?;
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
         let last_of_equal = map.is_some_and(|map| {
             self.is_sorted(map)
                 && matches!(map.peel_refs().kind(), ty::Adt(_, args)
                     if args.types().next().is_some_and(|key| self.finds_others(key)))
         });
-        match last_of_equal {
+        Ok(match last_of_equal {
             true => Expr::call(
                 Expr::helper("$treeFrom"),
                 vec![Expr::new_(class, Vec::new()), items, Expr::bool(set)],
             ),
             false => Expr::new_(class, vec![items]),
-        }
+        })
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
@@ -462,11 +491,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
             }
-            MapOp::New { set } => Expr::new_(self.made(set, generic_args), Vec::new()),
+            MapOp::New { set } => Expr::new_(self.made(set, generic_args, span)?, Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
                 let items = self.items_of(items, tys[0], span, out)?;
-                self.made_of(set, generic_args, items)
+                self.made_of(set, generic_args, items, span)?
             }
             MapOp::ByPlace(op) => match op {
                 PlaceOp::Of => helper("$indexOf", vec![arg(), arg()]),

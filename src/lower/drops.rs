@@ -108,7 +108,11 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
 
 /// A copied default's drops: the drop functions of its trait's type
 /// parameters, by index, and those it can't make, with why (ADR 0098).
-pub(super) type DefaultDrops<'tcx> = (HashMap<u32, String>, HashMap<u32, (Ty<'tcx>, &'static str)>);
+pub(super) type DefaultDrops<'tcx> = (
+    HashMap<u32, String>,
+    HashMap<u32, (Ty<'tcx>, &'static str)>,
+    HashMap<ty::AliasTy<'tcx>, u32>,
+);
 
 /// What a body inside another, a closure's or a copied default's, takes
 /// from the drops of the one it's in while it's lowered, given back as it
@@ -843,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         default: Option<DefaultDrops<'tcx>>,
         frame: bool,
     ) -> R<EnclosingDrops<'tcx>> {
-        let swapped = default.map(|(drops, unsupported)| self.swap_drops(drops, unsupported));
+        let swapped = default.map(|(drops, unsupported, items)| self.swap_drops(drops, unsupported, items));
         self.drop_facts()?;
         Ok(EnclosingDrops {
             swapped,
@@ -946,14 +950,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         drops: HashMap<u32, String>,
         unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
+        items: HashMap<ty::AliasTy<'tcx>, u32>,
     ) -> SwappedDrops<'tcx> {
         let cache = std::mem::take(&mut *self.drop_state.types.cache.borrow_mut());
         let sizes = std::mem::take(&mut *self.drop_state.sizes.borrow_mut());
-        let given = drops.keys().copied().collect();
+        let given = (drops.keys().copied())
+            .filter(|index| !items.values().any(|at| at == index))
+            .collect();
         SwappedDrops {
             params: std::mem::replace(&mut self.drop_state.param_drops, drops),
             given: std::mem::replace(&mut self.drop_state.types.given, given),
-            items: std::mem::take(&mut self.drop_state.types.items),
+            items: std::mem::replace(&mut self.drop_state.types.items, items),
             used: std::mem::take(&mut self.drop_state.used_drops),
             unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,

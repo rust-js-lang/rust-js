@@ -5553,16 +5553,22 @@ pub(crate) enum TypeFact {
     /// `mem::needs_drop::<T>()`: whether dropping one runs code, as rustc
     /// says (ADR 0145).
     NeedsDrop,
+    /// The class of a `HashMap` of it, and of a `HashSet`, keyed as its
+    /// type says: `Map`, or `$KeyMap` of one found by value (ADR 0466).
+    Map,
+    Set,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 5] = [
+    pub(crate) const ALL: [TypeFact; 7] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
         TypeFact::Id,
         TypeFact::NeedsDrop,
+        TypeFact::Map,
+        TypeFact::Set,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -5578,8 +5584,24 @@ impl TypeFact {
             TypeFact::Name => "Name",
             TypeFact::Id => "Id",
             TypeFact::NeedsDrop => "NeedsDrop",
+            TypeFact::Map => "Map",
+            TypeFact::Set => "Set",
         }
     }
+}
+
+/// A `HashMap` or a `HashSet` of a type parameter's keys, or a std
+/// associated type's of one, `ty` itself: its key, and its class's fact,
+/// `Map` or `Set`, which a caller gives (ADR 0466).
+pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, TypeFact)> {
+    let ty::Adt(adt, args) = ty.kind() else { return None };
+    let fact = match () {
+        _ if is_std_def(tcx, adt.did(), StdItem::HashMap) => TypeFact::Map,
+        _ if is_std_def(tcx, adt.did(), StdItem::HashSet) => TypeFact::Set,
+        _ => return None,
+    };
+    let key = args.types().next()?;
+    matches!(key.kind(), ty::Param(_) | ty::Alias(..)).then_some((key, fact))
 }
 
 /// The layout `def_id` asks of its type argument, its size or alignment, and

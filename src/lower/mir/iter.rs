@@ -524,7 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.collect_fallible(it, output, item, span)?
         } else if self.is_map(output) {
             let set = self.is_set(output);
-            self.made_of(set, self.tcx.mk_args(&[output.into()]), it)
+            self.made_of(set, self.tcx.mk_args(&[output.into()]), it, span)?
         } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
             made
         } else if let ty::Param(_) = output.kind()
@@ -815,7 +815,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if method.is_some_and(IterMethod::holds_its_source) && !lent {
             return self.closing(it, iter_ty, span);
         }
-        self.check_leaves_none(method, iter_ty, name, span)?;
+        self.check_leaves_none(method, name, span)?;
         Ok(it)
     }
 
@@ -931,9 +931,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `count`'s: what std drops, refused till it's dropped here. Not of one
     /// that drops or keeps each, or moves each on, `filter_map`'s and
     /// `find_map`'s to its function, nor `filter`'s and `skip_while`'s, which drop
-    /// each they discard, nor of one that makes each as it's stepped,
-    /// `repeat`, which leaves none behind but what its drop drops (ADR 0422).
-    fn check_leaves_none(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, name: &str, span: Span) -> R<()> {
+    /// each they discard; an adapter, which holds its source closed to drop
+    /// it, is `dropping_source`'s (ADRs 0422, 0465).
+    fn check_leaves_none(&self, method: Option<IterMethod>, name: &str, span: Span) -> R<()> {
         let keeps_each = matches!(
             method,
             Some(
@@ -964,10 +964,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::SkipWhile
             )
         );
-        if keeps_each
-            || crate::lower::recognition::leaves_none(name)
-            || self.recognition().closed_on_drop(iter_ty).is_some()
-        {
+        if keeps_each || crate::lower::recognition::leaves_none(name) {
             return Ok(());
         }
         Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))

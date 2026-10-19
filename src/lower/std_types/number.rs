@@ -1439,13 +1439,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
-    pub(in crate::lower) fn type_fact_value(&self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
         let what = match fact {
             TypeFact::Size => "size_of",
             TypeFact::Align => "align_of",
             TypeFact::Name => "type_name",
             TypeFact::Id => "the `TypeId`",
             TypeFact::NeedsDrop => "needs_drop",
+            TypeFact::Map | TypeFact::Set => "a map's class",
         };
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
@@ -1468,6 +1469,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 super::super::traits::item_fact_key(self.tcx, *def_id, fact),
             ));
         }
+        // A std associated type's of a type parameter, `IItemMap` (ADR 0466).
+        if let ty::Alias(..) = of.kind()
+            && let Some(given) = self.given_fact_of(of, fact)
+        {
+            return Ok(given);
+        }
         if let ty::Param(param) = of.kind() {
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if fact == TypeFact::Id
@@ -1483,6 +1490,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if fact == TypeFact::NeedsDrop {
             return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));
+        }
+        // The class of a map keyed by it, as one made where its type's known
+        // is (ADR 0466).
+        if matches!(fact, TypeFact::Map | TypeFact::Set) {
+            return self.map_class(fact == TypeFact::Set, Some(of), span);
         }
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes((fact, false), of, span)?));

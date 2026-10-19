@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "mir-takes-drops-unchecked",
     breaks: "`ok_or_else` of a function that holds a value with a destructor, which it may never call, is lowered, and drops it unrun",
     file: "src/lower/mir.rs",
-    find: "        self.check_takes_drops(known, def_id, arg_tys, drained, span)?;\n",
+    find: "        self.check_takes_drops(known, def_id, arg_tys, span)?;\n",
     replace: "",
     tests: ["test/diagnostics.test.ts","-t","ok_or_else whose function holds a value with a destructor"],
   },
@@ -1902,14 +1902,6 @@ export const mutations: Mutation[] = [
     find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))\n",
     replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars()))\n",
     tests: ["test/corpus.test.ts", "-t", "future_sizes"],
-  },
-  {
-    name: "mir-skip-while-takes-refused",
-    breaks: "MIR's `skip_while` of an owning iterator of what has a destructor is refused",
-    file: "src/lower/mir.rs",
-    find: "        let drained = known == Std::IterComb(IterComb::SkipWhile);\n",
-    replace: "        let drained = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
   },
   {
     name: "mir-closure-unmade",

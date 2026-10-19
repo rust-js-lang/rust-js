@@ -27,13 +27,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// place that holds one, must keep or give back what it takes: these
     /// do. Another might drop it, which JS wouldn't (ADR 0098); one of a type
     /// parameter's only is one its callers give none of (ADR 0190). `tys`:
-    /// its arguments' types; `drained`: a chain it takes owns its items.
+    /// its arguments' types.
     pub(in crate::lower) fn check_takes_drops(
         &mut self,
         known: Std,
         def_id: DefId,
         tys: &[Ty<'tcx>],
-        drained: bool,
         span: Span,
     ) -> R<()> {
         let holds_drops = |ty: Ty<'tcx>| self.drops(ty) == Drops::Runs;
@@ -58,7 +57,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
             || matches!(known, Std::IterComb(comb) if comb.holds_its_sources());
         if takes_drops
-            && !drained
             && !keeps_value
             && !moves_all
             && !matches!(

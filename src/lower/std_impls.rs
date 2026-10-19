@@ -285,7 +285,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_map(ty) => {
                 let set = self.is_set(ty);
                 let key = args.types().next();
-                let class = self.map_class(set, key);
+                let class = self.map_class(set, key, span)?;
                 let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));
                 let value = args.types().nth(1).filter(|&v| !set && self.needs_clone(v));
                 if key.is_none() && value.is_none() {
@@ -553,7 +553,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.is_lang_adt(ty, LangItem::String) => Expr::str(""),
             _ if self.is_vec_like(ty) => Expr::array(Vec::new()),
             ty::Adt(_, args) if self.is_map(ty) => {
-                let class = self.map_class(self.is_set(ty), args.types().next());
+                let class = self.map_class(self.is_set(ty), args.types().next(), span)?;
                 Expr::new_(class, Vec::new())
             }
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {

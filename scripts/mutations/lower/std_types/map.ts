@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     name: "path-tree-made-as-inserted",
     breaks: "a B-tree of paths made of items keeps the first of equal ones, as `insert` does",
     file: "src/lower/std_types/map.rs",
-    find: "        match last_of_equal {\n            true => Expr::call(\n",
-    replace: "        match false {\n            true => Expr::call(\n",
+    find: "        Ok(match last_of_equal {\n            true => Expr::call(\n",
+    replace: "        Ok(match false {\n            true => Expr::call(\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
   },
   {
@@ -342,5 +342,13 @@ export const mutations: Mutation[] = [
       "-t",
       "and_modify then or_insert"
     ]
-  }
+  },
+  {
+    name: "generic-map-class-plain",
+    breaks: "a map of a type parameter's keys is a `Map`, whatever its caller's keys are",
+    file: "src/lower/std_types/map.rs",
+    find: "                _ => self.given_fact_of(key, fact),\n",
+    replace: "                _ => Some(Expr::var(\"Map\")),\n",
+    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
+  },
 ];

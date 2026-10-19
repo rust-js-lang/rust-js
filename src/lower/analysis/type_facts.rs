@@ -1,10 +1,10 @@
 //! What each generic function asks of its type parameters (ADR 0145):
-//! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, which a
-//! caller's type answers.
+//! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, and the class
+//! of a map keyed by one (ADR 0466), which a caller's type answers.
 
 use crate::lower::recognition::{
-    TypeFact, bound_by_any, debug_named, phantom_named, pointer_target, points_at_dyn_any, points_at_dyn_debug,
-    type_facts,
+    TypeFact, bound_by_any, debug_named, map_of_param, phantom_named, pointer_target, points_at_dyn_any,
+    points_at_dyn_debug, type_facts,
 };
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -43,10 +43,26 @@ pub(super) fn type_fact_params<'tcx>(
     let mut passed_carried: Vec<(DefId, (DefId, u32))> = Vec::new();
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
+    // A call of the crate's function, with its arguments: what its callee asks
+    // of a slot, instantiated, is of the caller's own where it's one of its
+    // slots, `Self::Item` of `self.map(f).counts()`'s `K` (ADR 0466).
+    let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)> = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
         for expr in body.thir.exprs.iter() {
+            // A map or a set of a type parameter's keys a std call makes,
+            // `HashMap::new()`'s or `collect()`'s: its class, its caller's
+            // (ADR 0466).
+            if let ExprKind::Call { fun, .. } = expr.kind
+                && let Some((callee, _)) = fn_def(body.thir[fun].ty)
+                && !callee.is_local()
+                && !foreign.in_library(callee)
+                && let Some((key, fact)) = map_of_param(tcx, expr.ty)
+                && let Some(index) = slot_of(tcx, foreign, caller, key)
+            {
+                asked.insert((caller, index, fact));
+            }
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
             if let ExprKind::PointerCoercion {
@@ -165,15 +181,14 @@ pub(super) fn type_fact_params<'tcx>(
                 }
                 continue;
             }
-            if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {
+            // A trait's method of the crate's, called through its dictionary
+            // or resolved, of its own type parameters (ADR 0466).
+            let trait_method = callee.is_local() && tcx.trait_of_assoc(callee).is_some();
+            if !trait_method && (!fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some()) {
                 continue;
             }
+            calls.push((caller, callee, args));
             for (index, arg) in args.iter().enumerate() {
-                if let Some(ty) = arg.as_type()
-                    && let ty::Param(param) = ty.kind()
-                {
-                    passed.push(((caller, param.index), (callee, index as u32)));
-                }
                 if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(ty)) {
                     passed_carried.push((assoc, (callee, index as u32)));
                 }
@@ -193,6 +208,40 @@ pub(super) fn type_fact_params<'tcx>(
             .collect();
         for fact in lifted {
             changed |= asked.insert(fact);
+        }
+        // A trait method's own type parameter's fact is the trait's, and each
+        // impl's of it, as a caller through its dictionary gives it (ADR 0466).
+        let own: Vec<_> = (asked.iter())
+            .filter_map(|&(id, index, fact)| {
+                let method = own_method(tcx, id)?;
+                let generics = tcx.generics_of(id);
+                let parent = generics.parent_count as u32;
+                (index >= parent && index < generics.count() as u32).then(|| (method, index - parent, fact))
+            })
+            .collect();
+        for (method, at, fact) in own {
+            for id in implementors(tcx, method) {
+                changed |= asked.insert((id, tcx.generics_of(id).parent_count as u32 + at, fact));
+            }
+        }
+        for &(caller, callee, args) in &calls {
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
+            let facts: Vec<(u32, TypeFact)> = (asked.iter())
+                .filter(|&&(id, _, _)| id == callee)
+                .map(|&(_, index, fact)| (index, fact))
+                .collect();
+            for (index, fact) in facts {
+                let slot = crate::lower::traits::drop_slot(tcx, foreign, callee, index);
+                let of = ty::EarlyBinder::bind(tcx, slot)
+                    .instantiate(tcx, args)
+                    .skip_normalization();
+                let of = tcx
+                    .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(of))
+                    .unwrap_or(of);
+                if let Some(at) = slot_of(tcx, foreign, caller, of) {
+                    changed |= asked.insert((caller, at, fact));
+                }
+            }
         }
         for &((caller, from), (callee, to)) in &passed {
             for fact in TypeFact::ALL {
@@ -232,17 +281,18 @@ pub(super) fn type_fact_params<'tcx>(
     }
     let mut params: HashMap<DefId, Vec<(u32, TypeFact)>> = HashMap::new();
     for (id, index, fact) in asked {
-        if tcx.trait_of_assoc(id).is_some() {
-            continue;
-        }
-        match tcx.trait_impl_of_assoc(id) {
-            // Of the impl's own parameters: the method's, which its
-            // dictionary, asked them above, gives it of its own.
-            Some(impl_id) if (index as usize) < tcx.generics_of(impl_id).count() => {
-                params.entry(id).or_default().push((index, fact));
-            }
-            Some(_) => {}
-            None => params.entry(id).or_default().push((index, fact)),
+        // A trait's method's of its own type parameters, and an impl's
+        // method's, its caller's through the dictionary (ADR 0466); and of
+        // the impl's own parameters, the method's, which its dictionary,
+        // asked them above, gives it of its own.
+        let own = index >= tcx.generics_of(id).parent_count as u32;
+        let ask = match (tcx.trait_of_assoc(id), tcx.trait_impl_of_assoc(id)) {
+            (Some(_), _) => own,
+            (None, Some(impl_id)) => own || (index as usize) < tcx.generics_of(impl_id).count(),
+            (None, None) => true,
+        };
+        if ask {
+            params.entry(id).or_default().push((index, fact));
         }
     }
     // An associated type's own entry: what its trait's dictionaries carry.
@@ -267,6 +317,53 @@ fn carried_by(ty: ty::Ty<'_>) -> Option<DefId> {
                 ..
             },
         ) if def_id.is_local() => Some(*def_id),
+        _ => None,
+    }
+}
+
+/// The trait method of the crate's `id` is, or implements: `None` of a
+/// function that's neither.
+fn own_method(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
+    if !id.is_local() {
+        return None;
+    }
+    if tcx.trait_of_assoc(id).is_some() {
+        return Some(id);
+    }
+    tcx.trait_impl_of_assoc(id)?;
+    tcx.associated_item(id)
+        .trait_item_def_id()
+        .filter(|method| method.is_local())
+}
+
+/// A trait method of the crate's, and each of its impls' methods of it.
+fn implementors(tcx: TyCtxt<'_>, method: DefId) -> Vec<DefId> {
+    let trait_id = tcx.trait_of_assoc(method).expect("a trait's method");
+    std::iter::once(method)
+        .chain(
+            tcx.all_impls(trait_id)
+                .filter(|imp| imp.is_local())
+                .filter_map(|imp| tcx.impl_item_implementor_ids(imp).get(&method).copied()),
+        )
+        .collect()
+}
+
+/// Which of `id`'s slots `ty` is (`drop_slot`): a type parameter's index, or
+/// a std associated type of one's, after them, `Self::Item` (ADR 0466).
+fn slot_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    id: DefId,
+    ty: ty::Ty<'tcx>,
+) -> Option<u32> {
+    match ty.kind() {
+        ty::Param(param) => Some(param.index),
+        ty::Alias(..) => {
+            let alias = crate::lower::traits::alias_of(ty)?;
+            let at = (crate::lower::traits::drop_items(tcx, foreign, id).into_iter())
+                .position(|item| crate::lower::traits::alias_of(item) == Some(alias))?;
+            Some((tcx.generics_of(id).count() + at) as u32)
+        }
         _ => None,
     }
 }

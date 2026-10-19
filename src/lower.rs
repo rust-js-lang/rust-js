@@ -214,6 +214,9 @@ enum Nested<'tcx> {
         /// make one for, and why.
         drops: HashMap<u32, String>,
         unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
+        /// And of a std associated type of one, `Self::Item`, its slot's
+        /// (`drop_slot`), the impl's (ADR 0421).
+        items: HashMap<ty::AliasTy<'tcx>, u32>,
     },
 }
 
@@ -367,8 +370,9 @@ struct Given<'tcx> {
     evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
     /// Each const parameter it's given, by its index: `N` (ADR 0107).
     const_params: Vec<(u32, Expr)>,
-    /// Each fact of a type parameter it's given, `TSize` (ADR 0145).
-    type_facts: Vec<(u32, TypeFact, Expr)>,
+    /// Each fact it's given, `TSize` (ADR 0145), of the type it's of: a type
+    /// parameter, or a std associated type of one, `IItem` (ADR 0466).
+    type_facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
     /// In a trait's default body copied into an impl (ADR 0049): the impl's
     /// arguments for the trait's parameters, `Self` among them.
     self_args: Option<ty::GenericArgsRef<'tcx>>,

@@ -5733,10 +5733,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A value with a destructor taken, refused; a chain that owns its items
         // is `mir_iter_call`'s, so none here does.
-        // `skip_while` drops what it skips (below), and what's left of it,
-        // undrained, is refused where it's dropped.
-        let drained = known == Std::IterComb(IterComb::SkipWhile);
-        self.check_takes_drops(known, def_id, arg_tys, drained, span)?;
+        self.check_takes_drops(known, def_id, arg_tys, span)?;
         self.keep_capacity(state, def_id, &mut values, span, out)?;
         // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
         // fails: unchecked.

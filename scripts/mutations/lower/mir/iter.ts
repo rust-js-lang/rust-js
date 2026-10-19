@@ -582,14 +582,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
   },
   {
-    name: "take-of-repeat-refused",
-    breaks: "`take(n)` of a `repeat` of a value with a destructor is refused, as if it left items behind",
-    file: "src/lower/mir/iter.rs",
-    find: "            || self.recognition().closed_on_drop(iter_ty).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
-  },
-  {
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter.rs",
@@ -745,8 +737,8 @@ export const mutations: Mutation[] = [
     name: "filter-map-method-leaves",
     breaks: "`filter_map` of items with a destructor, a method of a chain, is refused",
     file: "src/lower/mir/iter.rs",
-    find: "            || crate::lower::recognition::leaves_none(name)\n",
-    replace: "",
+    find: "        if keeps_each || crate::lower::recognition::leaves_none(name) {\n",
+    replace: "        if keeps_each {\n",
     tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
   },
   {

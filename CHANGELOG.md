@@ -21,6 +21,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).
+- **A map or a set of a type parameter's keys**, in a generic function, a
+  trait's generic method and its default, `HashMap<K, V>` and
+  `HashMap<Self::Item, usize>`: of the class its caller's keys say, given as
+  `KMap`; and `type_name` of a trait method's own type parameter (ADR 0466).
 - **std's lazy adapters of items with a destructor**: `map`, `filter`,
   `zip`, `chain`, `enumerate`, `take_while`, `skip_while`, `step_by`,
   `inspect` and `fuse` drop what they haven't given when they're dropped,
@@ -536,6 +540,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A library's trait default that gives `Self::Item` to its own generic
+  method** read a drop of a dictionary entry that isn't there, and threw as
+  it ran (ADR 0466).
 - **`max_by(compare)` and `min_by(compare)`** called `compare(item, kept)`,
   where std calls `compare(kept, item)`, and **`max_by_key(key)`** made each
   item's key again for each comparison, where std makes it once: a
