@@ -5146,6 +5146,9 @@ pub(super) enum FmtResultAnswer {
     MapErr,
     /// `unwrap_or(())`, `unwrap_or_default()`: `()` either way.
     UnwrapOr,
+    /// `map(f)`: `Ok(f(()))`, or the `Err`, writeable's
+    /// `write_to(sink).map(Ok)`.
+    Map,
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
@@ -5157,6 +5160,7 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
         "is_err" => FmtResultAnswer::Is(false),
         "ok" => FmtResultAnswer::Ok,
         "map_err" => FmtResultAnswer::MapErr,
+        "map" => FmtResultAnswer::Map,
         "unwrap_or" | "unwrap_or_default" => FmtResultAnswer::UnwrapOr,
         _ => return None,
     })

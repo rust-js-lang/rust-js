@@ -161,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A method of a `fmt::Result`, `result`, in a crate where one may be
     /// an `Err` (ADR 0187): of what `$fmtTry` caught, or a variable it's in,
     /// tested against `undefined`; another's, its constant answer. `message`
-    /// is `expect`'s, or `map_err`'s function.
+    /// is `expect`'s, or `map`'s or `map_err`'s function.
     pub(in crate::lower) fn fmt_result_values(
         &mut self,
         answer: FmtResultAnswer,
@@ -176,6 +176,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
             FmtResultAnswer::Ok => self.some(Expr::undefined()),
             FmtResultAnswer::MapErr => super::std_types::result::ok(Expr::undefined()),
+            // Its function given `()`, `undefined`, which one that takes
+            // it as a value reads, `map(Ok)`'s.
+            FmtResultAnswer::Map => {
+                let f = message.clone().expect("`map`'s function");
+                super::std_types::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
+            }
         };
         // Only what `$fmtTry` caught may be an `Err`, or a variable it's in,
         // and only where one may fail.
@@ -202,6 +208,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match answer {
             FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
             FmtResultAnswer::UnwrapOr => Expr::undefined(),
+            FmtResultAnswer::Map => Expr::cond(ok, constant, super::std_types::result::err(result)),
             FmtResultAnswer::MapErr => {
                 let f = message.expect("`map_err`'s function");
                 let mapped = super::std_types::result::err(self.applied(f, result));

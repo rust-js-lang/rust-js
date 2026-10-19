@@ -37,6 +37,18 @@ function make(cap, args) {
   return { TAG: "Ok", _0: v.text };
 }
 
+function counted(cap, text) {
+  const v = { text: "", cap };
+  const result = $fmtTry(() => smallWrite_write_str(v, text));
+  return result === undefined ? { TAG: "Ok", _0: $byteLen(v.text) } : { TAG: "Err", _0: result };
+}
+
+function nested(cap) {
+  const v = { text: "", cap };
+  const result = $fmtTry(() => smallWrite_write_str(v, "abc"));
+  return result === undefined ? { TAG: "Ok", _0: { TAG: "Ok" } } : { TAG: "Err", _0: result };
+}
+
 function main() {
   const value = make(8, "1-2");
   console.log(
@@ -45,6 +57,16 @@ function main() {
   const value$1 = make(2, "10-20");
   console.log(
     `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${fullDebug_fmt(value$1._0, { fmt: (value) => "Error" })})`}`,
+  );
+  const value$2 = counted(8, "four");
+  const value$3 = counted(2, "four");
+  console.log(
+    `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : "Err(Error)"} ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : "Err(Error)"}`,
+  );
+  const value$4 = nested(8);
+  const value$5 = nested(2);
+  console.log(
+    `${value$4.TAG === "Ok" ? `Ok(${value$4._0.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$4._0._0)})`})` : "Err(Error)"} ${value$5.TAG === "Ok" ? `Ok(${value$5._0.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$5._0._0)})`})` : "Err(Error)"}`,
   );
 }
 //# sourceMappingURL=case.js.map

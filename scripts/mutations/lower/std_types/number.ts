@@ -276,4 +276,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
   },
+  {
+    name: "checked-ilog-unchecked",
+    breaks: "`checked_ilog10()` is `ilog10()`, which panics of zero",
+    file: "src/lower/std_types/number.rs",
+    find: "    if checked {\n        given.push(Expr::bool(true));\n    }\n    Expr::call_helper(\"$ilog\", given)\n",
+    replace: "    let _ = checked;\n    Expr::call_helper(\"$ilog\", given)\n",
+    tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
+  },
 ];

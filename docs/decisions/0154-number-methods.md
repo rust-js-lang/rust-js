@@ -68,3 +68,10 @@ rust-js answered `InvalidDigit` for both.
 ## Consequences
 
 - `parse` errors of strings both too long and wrong, `"999x"`, are Rust's.
+
+## Amendment: `checked_ilog2()` and `checked_ilog10()`
+
+**`checked_ilog10()` is `ilog10()`'s, but `None` of what isn't positive**,
+where `ilog10()` panics, `$ilog(x, 10, true)`: writeable counts a number's
+digits so. One function writes `$ilog` of a number and of a BigInt,
+`number::ilog`, where each kind's list wrote it again.

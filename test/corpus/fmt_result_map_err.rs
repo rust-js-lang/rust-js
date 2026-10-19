@@ -1,6 +1,7 @@
 // `map_err(f)` of a `fmt::Result` that may be an `Err`, a writer's that
 // fails when it's full (ADR 0187): `Ok(())`, or `Err(f(error))`, a
 // `Result` of its own, as arrayvec's `ArrayString::try_from` makes one.
+// And `map(f)`: `Ok(f(()))`, or the `Err`, writeable's `.map(Ok)`.
 use std::fmt::{self, Write};
 
 #[derive(Debug)]
@@ -27,7 +28,19 @@ fn make(cap: usize, args: fmt::Arguments<'_>) -> Result<String, Full<fmt::Error>
     Ok(v.text)
 }
 
+fn counted(cap: usize, text: &str) -> Result<usize, fmt::Error> {
+    let mut v = Small { text: String::new(), cap };
+    v.write_str(text).map(|()| v.text.len())
+}
+
+fn nested(cap: usize) -> Result<Result<(), String>, fmt::Error> {
+    let mut v = Small { text: String::new(), cap };
+    v.write_str("abc").map(Ok)
+}
+
 fn main() {
     println!("{:?}", make(8, format_args!("{}-{}", 1, 2)));
     println!("{:?}", make(2, format_args!("{}-{}", 10, 20)));
+    println!("{:?} {:?}", counted(8, "four"), counted(2, "four"));
+    println!("{:?} {:?}", nested(8), nested(2));
 }

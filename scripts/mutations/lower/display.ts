@@ -540,4 +540,21 @@ export const mutations: Mutation[] = [
     replace: "            let in_place = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
   },
+  {
+    name: "fmt-result-map-err-kept-ok",
+    breaks: "`map(f)` of a `fmt::Result` that's an `Err` is `Ok(f(()))`",
+    file: "src/lower/display.rs",
+    find: "            FmtResultAnswer::Map => Expr::cond(ok, constant, super::std_types::result::err(result)),\n",
+    replace: "            FmtResultAnswer::Map => constant,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
+  },
+  {
+    name: "fmt-result-map-unit-left-out",
+    breaks: "`map(Ok)` of a `fmt::Result` calls `Ok` with nothing, written as an arrow called where it's made",
+    file: "src/lower/display.rs",
+    find: "                super::std_types::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))\n",
+    replace: "                super::std_types::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
+    snapshots: true,
+  },
 ];

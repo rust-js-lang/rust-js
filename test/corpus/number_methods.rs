@@ -50,6 +50,9 @@ fn main() {
     // Integer logarithms, roots, midpoints and zeros.
     println!("{} {} {} {}", 1000u32.ilog10(), 999u32.ilog10(), 8u32.ilog2(), 255u8.ilog2());
     println!("{} {} {}", 1u64.ilog10(), u64::MAX.ilog2(), 12345i64.ilog10());
+    // `checked_`, writeable's digit count: `None` of what isn't positive.
+    let digits = |n: u8| n.checked_ilog10().unwrap_or(0) + 1;
+    println!("{:?} {:?} {:?} {}", 0u32.checked_ilog10(), (-4i32).checked_ilog2(), 1024u64.checked_ilog2(), digits(205));
     println!("{} {} {} {}", 17u32.isqrt(), 0u8.isqrt(), 99i32.isqrt(), 10u64.pow(18).isqrt());
     println!(
         "{} {} {} {} {}",

@@ -31,7 +31,7 @@ newest release its requirement allows.
 | once_cell 1.21 | refused | `std::thread::current` called |
 | semver 1.0 | refused | `this Formatter` |
 | uuid 1.28 | compiles | no probe yet |
-| url 2.5 | blocked | litemap: a `&mut` of a number kept; writeable: `u8::checked_ilog10` called; yoke: raw pointers to erase lifetimes |
+| url 2.5 | blocked | litemap: a `&mut` of a number kept; yoke: raw pointers to erase lifetimes |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
 | rust_decimal 1.38 | blocked | serde_core: `size_of` of a type parameter |
 | chrono 0.4 (`alloc`) | compiles | no probe yet |

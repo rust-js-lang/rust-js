@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    for (; x > base; x = Math.floor(x / base)) log++;",
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
   },
+  {
+    name: "checked-ilog-panics",
+    breaks: "`checked_ilog10()` of zero panics, not `None`",
+    file: "src/runtime/ilog.js",
+    find: "    if (checked) return undefined;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
+  },
 ];

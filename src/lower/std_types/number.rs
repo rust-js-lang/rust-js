@@ -126,9 +126,11 @@ pub(in crate::lower) enum NumOp {
     SignNegative {
         negated: bool,
     },
-    /// `ilog2()` or `ilog10()`: how often `base` divides into it.
+    /// `ilog2()` or `ilog10()`: how often `base` divides into it; `None`
+    /// of what isn't positive, `checked`, `checked_ilog10()`'s.
     Ilog {
         base: u32,
+        checked: bool,
     },
     Isqrt,
     Midpoint,
@@ -529,7 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     negative
                 }
             }
-            NumOp::Ilog { base } => helper("$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Ilog { base, checked } => ilog(arg(), base, checked),
             NumOp::Isqrt => helper("$isqrt", vec![arg()]),
             // Rounded toward zero, as Rust's integer division is: exact, as the
             // sum of two 32-bit integers is.
@@ -761,7 +763,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::FromStrRadix => helper("$parseBig", vec![arg(), lo, hi, arg()]),
             NumOp::DivCeil => helper("$divCeil", vec![arg(), arg()]),
-            NumOp::Ilog { base } => helper("$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Ilog { base, checked } => ilog(arg(), base, checked),
             NumOp::Isqrt => helper("$isqrt", vec![arg()]),
             // Rounded toward zero, as a BigInt's division is.
             NumOp::Midpoint => Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::bigint(2)),
@@ -1505,4 +1507,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Ok(bytes as i128)
     }
+}
+
+/// `x.ilog10()`, `$ilog(x, 10)`, a number's or a BigInt's, of `base`;
+/// `checked_ilog10()`'s, `None` of what isn't positive.
+fn ilog(x: Expr, base: u32, checked: bool) -> Expr {
+    let mut given = vec![x, Expr::int(base.into())];
+    if checked {
+        given.push(Expr::bool(true));
+    }
+    Expr::call_helper("$ilog", given)
 }

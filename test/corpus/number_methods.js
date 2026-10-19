@@ -64,6 +64,14 @@ function main() {
   // Integer logarithms, roots, midpoints and zeros.
   console.log(`${$ilog(1000, 10)} ${$ilog(999, 10)} ${$ilog(8, 2)} ${$ilog(255, 2)}`);
   console.log(`${$ilog(1n, 10)} ${$ilog(18446744073709551615n, 2)} ${$ilog(12345n, 10)}`);
+  // `checked_`, writeable's digit count: `None` of what isn't positive.
+  const digits = (n) => (($ilog(n, 10, true) ?? 0) + 1) >>> 0;
+  const value$3 = $ilog(0, 10, true);
+  const value$4 = $ilog(-4, 2, true);
+  const value$5 = $ilog(1024n, 2, true);
+  console.log(
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${digits(205)}`,
+  );
   console.log(
     `${$isqrt(17)} ${$isqrt(0)} ${$isqrt(99)} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)))}`,
   );

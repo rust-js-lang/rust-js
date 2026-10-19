@@ -86,3 +86,12 @@ function spanDisplay_fmt(span) {
   panic, whichever consumer it was.
 - **What may fail is written with `try`s,** a writer's and its consumers',
   where it was a template.
+
+## Amendment: `map(f)` of a `fmt::Result`
+
+**`map(f)` of a `fmt::Result` is `Ok(f(()))`, or its `Err` kept**,
+writeable's `write_to(sink).map(Ok)`: its function given `()`,
+`undefined`, so a function that takes it as a value, `Ok`'s, is put in
+place, `{ TAG: "Ok", _0: { TAG: "Ok" } }`. Where no writer fails, its
+answer is constant; else what `$fmtTry` caught is tested, as `map_err`'s
+is.

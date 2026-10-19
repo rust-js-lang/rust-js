@@ -158,8 +158,19 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "to_degrees" if float => NumOp::Angle { radians: false },
         "is_sign_negative" if float => NumOp::SignNegative { negated: false },
         "is_sign_positive" if float => NumOp::SignNegative { negated: true },
-        "ilog2" if !float => NumOp::Ilog { base: 2 },
-        "ilog10" if !float => NumOp::Ilog { base: 10 },
+        "ilog2" if !float => NumOp::Ilog {
+            base: 2,
+            checked: false,
+        },
+        "ilog10" if !float => NumOp::Ilog {
+            base: 10,
+            checked: false,
+        },
+        "checked_ilog2" if !float => NumOp::Ilog { base: 2, checked: true },
+        "checked_ilog10" if !float => NumOp::Ilog {
+            base: 10,
+            checked: true,
+        },
         "isqrt" if !float => NumOp::Isqrt,
         "midpoint" if !float => NumOp::Midpoint,
         "count_zeros" if !float => NumOp::CountZeros,

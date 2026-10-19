@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`map(f)` of a `fmt::Result`** (ADR 0187), and **`checked_ilog2()` and
+  `checked_ilog10()`** (ADR 0154): writeable compiles.
 - **A `&mut` given as a type parameter's value is a box**, as a generic
   `&mut T`'s is: an `impl Trait for &mut T` used through generic code,
   std's `impl Write for &mut W` of any writer, and stable_deref_trait's

@@ -1978,4 +1978,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_to_owned.rs$"],
   },
+  {
+    name: "fmt-result-map-unknown",
+    breaks: "`map(f)` of a `fmt::Result`, writeable's, is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"map\" => FmtResultAnswer::Map,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_map.rs$"],
+  },
 ];
