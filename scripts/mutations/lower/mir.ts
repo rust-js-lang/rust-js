@@ -2755,4 +2755,12 @@ export const mutations: Mutation[] = [
     replace: "            && self.is_object(pointee)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_written_through.rs$"],
   },
+  {
+    name: "slice-pointer-cast-numeric",
+    breaks: "a cast of a slice's raw pointer is taken for a number's, and refused",
+    file: "src/lower/mir.rs",
+    find: "                if super::pointers::raw_pointee(tcx, operand.ty(decls, tcx)).is_some()\n                    || super::pointers::raw_pointee(tcx, *to).is_some() =>\n",
+    replace: "                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^uninit_slice_cast.rs$"],
+  },
 ];

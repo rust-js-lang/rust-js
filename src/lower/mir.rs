@@ -4208,8 +4208,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // Of or to a raw pointer, a handle on a place or a slice (ADR 0407):
+            // `pointer_cast`'s.
             Rvalue::Cast(kind, operand, to)
-                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>
+                if super::pointers::raw_pointee(tcx, operand.ty(decls, tcx)).is_some()
+                    || super::pointers::raw_pointee(tcx, *to).is_some() =>
             {
                 let from = operand.ty(decls, tcx);
                 let value = self.mir_expr(state, operand, out)?;

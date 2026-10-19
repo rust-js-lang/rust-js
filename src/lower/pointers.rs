@@ -745,6 +745,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         match kind {
+            // A slice's as one of what's at the same place, `*mut
+            // [MaybeUninit<T>]` as `*mut [T]` (ADR 0332): the slice itself
+            // (ADR 0482).
+            mir::CastKind::PtrToPtr
+                if let (Some((a, _)), Some((b, _))) = (raw_pointee(self.tcx, from), raw_pointee(self.tcx, to))
+                    && let (ty::Slice(a), ty::Slice(b)) = (a.kind(), b.kind())
+                    && self.same_place(*a, *b) =>
+            {
+                Ok(Some(value))
+            }
             // A slice's, which is the slice, as its first item's: `$ptr(items, 0)`.
             mir::CastKind::PtrToPtr
                 if let (Some((ty::Slice(item), _)), Some((b, _))) = (

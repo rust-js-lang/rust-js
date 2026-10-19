@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A slice's pointer cast between `MaybeUninit<T>` and `T`**, the slice
+  itself (ADR 0482).
 - **`*b = other` of a `&mut` to an iterator given as it is**, written in
   place, as of any object (ADR 0481).
 - **An `I::IntoIter: DoubleEndedIterator` stepped from its back**, `rev()`

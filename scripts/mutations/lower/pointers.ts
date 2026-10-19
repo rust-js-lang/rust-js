@@ -396,4 +396,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
   },
+  {
+    name: "uninit-slice-cast-refused",
+    breaks: "a `*mut [MaybeUninit<T>]` cast to a `*mut [T]` is refused, where it's the slice itself",
+    file: "src/lower/pointers.rs",
+    find: "                    && let (ty::Slice(a), ty::Slice(b)) = (a.kind(), b.kind())\n                    && self.same_place(*a, *b) =>\n",
+    replace: "                    && let (ty::Slice(a), ty::Slice(b)) = (a.kind(), b.kind())\n                    && false && self.same_place(*a, *b) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^uninit_slice_cast.rs$"],
+  },
 ];
