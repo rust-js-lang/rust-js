@@ -258,8 +258,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SliceGet
             | Std::OptionCloned
             | Std::Comb(Comb::Then | Comb::ThenSome)
-            // An `Option` of the same type, or the closure's own.
+            // An `Option` of the same type, or the closure's own, `find_map`'s
+            // too, one of what its function gives.
             | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
+            | Std::IterComb(crate::lower::combinators::IterComb::FindMap)
             | Std::Last
             // What a pointer points to, boxed as it's given (ADR 0407).
             | Std::Pointer(PointerOp::AsRef | PointerOp::AsMut)

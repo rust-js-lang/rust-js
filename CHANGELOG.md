@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`len()` of a generic `ExactSizeIterator`**: the JS iterator it's given
+  knows its length (ADR 0456).
 - **`clone_from`**, std's `*dest = source.clone()`, of any type, a
   generic one's too (ADR 0147).
 - **`nth_back(n)`, `rfold(init, f)` and `rfind(p)`** of any double-ended
@@ -460,6 +462,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **An iterator a variable holds, given to generic code as a
+  `DoubleEndedIterator`**, `last(it)`, is that iterator: it was wrapped
+  again and stepped nothing (ADR 0456).
 - **`f(&mut v)` of a `f<D: Trait>` where `Trait` is implemented for
   `&mut T`** reads `v`: it threw (ADR 0454).
 - **A clone of a struct whose text or number is changed through a `&mut`

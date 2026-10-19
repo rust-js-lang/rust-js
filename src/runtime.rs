@@ -89,6 +89,7 @@ helpers! {
     NextSome,
     NextBack,
     BackSteps,
+    RangeLen,
     NextBackSome,
     PeekSome,
     Scan,
@@ -796,6 +797,7 @@ impl Helper {
             // `it.next_back()` of one that knows where it is: its last item left.
             Helper::NextBack => include_str!("runtime/next_back.js"),
             Helper::BackSteps => include_str!("runtime/back_steps.js"),
+            Helper::RangeLen => include_str!("runtime/range_len.js"),
             Helper::NextBackSome => include_str!("runtime/next_back_some.js"),
             // A `Peekable`'s `peek()` of a generic `T`'s, boxed as `$nextSome` boxes.
             Helper::PeekSome => include_str!("runtime/peek_some.js"),

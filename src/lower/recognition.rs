@@ -3985,6 +3985,12 @@ pub(crate) fn is_double_ended(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "DoubleEndedIterator"
 }
 
+/// Is `id` core's `ExactSizeIterator`, whose `len()` a JS iterator given for
+/// one knows (ADR 0456)?
+pub(crate) fn is_exact_size(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "ExactSizeIterator"
+}
+
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
 /// no diagnostic items?
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {

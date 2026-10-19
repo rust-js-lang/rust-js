@@ -178,6 +178,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 (Some(IterMethod::NextBack), None) if array && boxed => Expr::call_helper("$nextBackSome", vec![it]),
                 (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),
+                // A generic one's, a JS iterator that knows it, which may be a
+                // range's (ADR 0456).
+                (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {
+                    Expr::call(Expr::member(it, "len"), Vec::new())
+                }
                 (Some(IterMethod::Len), None) if array => self.items_left(it, made),
                 // A chain made here of an array's items, which nothing else
                 // steps, skipped or taken from, no closure of its to run: its
@@ -619,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a `dyn` one that knows its back (ADR 0429).
     /// What keeps `receiver`'s back, of type `iter_ty`, where it knows its
     /// back (ADR 0455): `by_ref()`'s, itself, a `$iter` or a `$iterator`,
-    /// which closing doesn't end, not lent; a map's, `$mapBack`, which steps
+    /// which closing doesn't end, not lent; a map's, `$mapEnds`, which steps
     /// it from either end and doesn't close it. `None` of another.
     fn back_kept(
         &mut self,
@@ -633,11 +638,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
-            Some(IterMethod::Map) if self.knows_its_back(output) => {
-                let it = self.as_double_ended(receiver.clone(), iter_ty, span)?;
+            // A map of one that knows its length, too (ADR 0456).
+            Some(IterMethod::Map) if self.knows_its_back(output) || self.knows_its_length(output) => {
+                let it = receiver.clone();
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
-                Expr::call_helper("$mapBack", vec![it, f])
+                Expr::call_helper("$mapEnds", vec![it, f])
             }
             _ => return Ok(None),
         }))

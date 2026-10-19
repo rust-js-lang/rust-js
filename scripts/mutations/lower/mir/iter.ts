@@ -805,4 +805,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(IterMethod::ByRef) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
+  {
+    name: "known-length-as-array",
+    breaks: "`len()` of a generic iterator that knows its back and its length reads it as an array's, `it.end - it.at`, which a range's has not",
+    file: "src/lower/mir/iter.rs",
+    find: "                (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {\n",
+    replace: "                (Some(IterMethod::Len), None) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+  },
 ];

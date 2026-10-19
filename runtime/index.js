@@ -446,8 +446,9 @@ export function $pop(items) {
 // adapters, so an endless one is fine until something wants all of it. A
 // generic `next` may box its `Some` (ADR 0051): `boxed` unboxes it. `of`
 // is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
-// it knows its back, which `$nextBack` steps.
-export function $iterator(iterator, next, boxed = false, nextBack) {
+// it knows its back, which `$nextBack` steps; given its `len`, its length,
+// an `ExactSizeIterator`'s (ADR 0456).
+export function $iterator(iterator, next, boxed = false, nextBack, len) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = Iterator.from({
     next() {
@@ -457,6 +458,9 @@ export function $iterator(iterator, next, boxed = false, nextBack) {
   it.of = iterator;
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
+  }
+  if (len !== undefined) {
+    it.len = () => len(iterator);
   }
   return it;
 }
@@ -974,6 +978,9 @@ export function $removeOpt(items, index) {
 // `Iterator`, whose helpers, `map` and the like, step it as Rust's adapters
 // do.
 export function $iter(items) {
+  // One already, a variable's that holds its own `$iter`: itself, where it
+  // is, which an array's iterator given on may be (ADRs 0429, 0456).
+  if (!Array.isArray(items) && items.back !== undefined) return items;
   const it = Object.create(Iterator.prototype);
   it.items = items;
   it.at = 0;
@@ -985,6 +992,10 @@ export function $iter(items) {
   // Its last item, as `next()` gives its first: what `$nextBack` steps.
   it.back = function () {
     return this.at < this.end ? { value: this.items[--this.end], done: false } : { value: undefined, done: true };
+  };
+  // How many are left, `len()` of an `ExactSizeIterator` (ADR 0456).
+  it.len = function () {
+    return this.end - this.at;
   };
   return it;
 }
@@ -1039,13 +1050,22 @@ export function $findBack(it, p, found = (item) => item, drop) {
   return undefined;
 }
 
-// A map of a double-ended iterator, `it.map(f)`, which knows its back: each
-// of its source's items, `f`'s, from either end, as Rust's `Map` steps them.
-export function $mapBack(it, f) {
+// A map of a JS iterator that knows its back or its length, `it.map(f)`,
+// which knows them too, as Rust's `Map` is double-ended and exact-sized
+// where its source is: each of its source's items, `f`'s, from either end
+// (ADRs 0455, 0456).
+export function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   const map = Iterator.from({ next: () => mapped(it.next()) });
-  map.back = () => mapped(it.back());
+  if (it.back !== undefined) map.back = () => mapped(it.back());
+  if (it.len !== undefined) map.len = () => it.len();
   return map;
+}
+
+// How many numbers an exclusive range, `a..b`, has left: an
+// `ExactSizeIterator`'s `len()`, of its state (ADR 0456).
+export function $rangeLen(range) {
+  return range.start < range.end ? range.end - range.start : 0;
 }
 
 export function $nextBackSome(it) {

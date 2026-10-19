@@ -29,6 +29,10 @@ fn last_big<I: DoubleEndedIterator<Item = u32>>(mut it: I) -> (Option<u32>, Opti
     (found, it.next())
 }
 
+fn first_some<I: Iterator<Item = u32>, B>(mut it: I, f: impl FnMut(u32) -> Option<B>) -> Option<B> {
+    it.find_map(f)
+}
+
 fn main() {
     println!("{}", digits_back(vec![1, 2, 3].into_iter()));
     println!("{:?} {:?}", last_even(vec![2, 4, 5].into_iter()), last_even(1..4));
@@ -41,4 +45,6 @@ fn main() {
     println!("{:?} {:?}", last_some(vec![Some(5), None, Some(1)].into_iter()), last_some(vec![Some(1)].into_iter()));
     println!("{} {:?}", tagged(vec![1, 2].into_iter()), last_big(vec![1, 2, 3].into_iter()));
     println!("{:?}", [5u32, 6, 7].iter().map(|n| n * 10).rfind(|n| *n < 70));
+    let found: Option<Option<u32>> = first_some(vec![1, 2, 3].into_iter(), |n| (n > 1).then_some((n != 2).then_some(n)));
+    println!("{found:?}");
 }

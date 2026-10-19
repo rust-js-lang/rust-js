@@ -31,11 +31,14 @@ function $findBack(it, p, found = (item) => item, drop) {
   return undefined;
 }
 
-// A map of a double-ended iterator, `it.map(f)`, which knows its back: each
-// of its source's items, `f`'s, from either end, as Rust's `Map` steps them.
-function $mapBack(it, f) {
+// A map of a JS iterator that knows its back or its length, `it.map(f)`,
+// which knows them too, as Rust's `Map` is double-ended and exact-sized
+// where its source is: each of its source's items, `f`'s, from either end
+// (ADRs 0455, 0456).
+function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   const map = Iterator.from({ next: () => mapped(it.next()) });
-  map.back = () => mapped(it.back());
+  if (it.back !== undefined) map.back = () => mapped(it.back());
+  if (it.len !== undefined) map.len = () => it.len();
   return map;
 }

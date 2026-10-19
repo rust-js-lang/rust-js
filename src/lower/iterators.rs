@@ -23,11 +23,26 @@ use rustc_span::def_id::DefId;
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
+    stepped_ends(value, next, boxed, back, None)
+}
+
+/// `stepped`'s, given `len` too, its length, one that knows it, an
+/// `ExactSizeIterator`'s (ADR 0456).
+pub(in crate::lower) fn stepped_ends(
+    value: Expr,
+    next: Expr,
+    boxed: bool,
+    back: Option<Expr>,
+    len: Option<Expr>,
+) -> Expr {
     let mut list = vec![value, next];
-    if boxed || back.is_some() {
+    if boxed || back.is_some() || len.is_some() {
         list.push(Expr::bool(boxed));
     }
-    list.extend(back);
+    if back.is_some() || len.is_some() {
+        list.push(back.unwrap_or_else(Expr::undefined));
+    }
+    list.extend(len);
     Expr::call(Expr::helper("$iterator"), list)
 }
 
@@ -251,12 +266,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
             let (input, given) = match *input.kind() {
-                ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
+                ty::Ref(_, inner, _) => (inner, given.peel_refs()),
                 _ => (input, given),
             };
+            // One that asks its length, a JS iterator that knows it, its back
+            // too where it steps it from there (ADR 0456).
+            if self.exact_size_param(callee, input) {
+                let held = std::mem::replace(value, Expr::undefined());
+                let back = self.double_ended_param(callee, input);
+                *value = self.as_exact_size(held, given, back, span)?;
             // One that steps it from its back, a JS iterator that knows it
             // (ADR 0429).
-            if self.double_ended_param(callee, input) {
+            } else if self.double_ended_param(callee, input) {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_double_ended(held, given, span)?;
             } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
@@ -337,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its callers give it.
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        // A map of one, made one that knows its back too, `$mapBack` (ADR 0455).
+        // A map of one, made one that knows its back too, `$mapEnds` (ADR 0455).
         if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {
             return self.knows_its_back(source);
         }
@@ -350,13 +371,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty` is `id`'s type parameter bound by `DoubleEndedIterator`,
     /// given a JS iterator that knows its back (`knows_its_back`).
     fn double_ended_param(&self, id: DefId, ty: ty::Ty<'tcx>) -> bool {
+        self.extension_param(id, ty, super::recognition::is_double_ended)
+    }
+
+    /// Whether `ty` is `id`'s type parameter bound by `ExactSizeIterator`,
+    /// given a JS iterator that knows its length (`knows_its_length`).
+    fn exact_size_param(&self, id: DefId, ty: ty::Ty<'tcx>) -> bool {
+        self.extension_param(id, ty, super::recognition::is_exact_size)
+    }
+
+    /// Whether `ty` is `id`'s type parameter bound by an iterator's
+    /// extension trait, `is`'s, given a JS iterator (ADR 0061), not as it is
+    /// (ADR 0411).
+    fn extension_param(&self, id: DefId, ty: ty::Ty<'tcx>, is: fn(ty::TyCtxt<'tcx>, DefId) -> bool) -> bool {
         let ty::Param(param) = ty.kind() else {
             return false;
         };
         let env = ty::TypingEnv::post_analysis(self.tcx, id);
         !given_as_it_is(self.tcx, id, *param)
-            && (self.declared_bounds(ty, env.param_env).into_iter())
-                .any(|bound| super::recognition::is_double_ended(self.tcx, bound))
+            && (self.declared_bounds(ty, env.param_env).into_iter()).any(|bound| is(self.tcx, bound))
+    }
+
+    /// Whether a value of `ty` is a JS iterator that knows its length, its
+    /// `len()` (ADR 0456): a type parameter's bound by `ExactSizeIterator`,
+    /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
+    /// the length of and what its callers give it.
+    pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {
+            return self.knows_its_length(source);
+        }
+        if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
+            return super::recognition::is_exact_size(self.tcx, id);
+        }
+        self.exact_size_param(self.tcx.typeck_root_def_id(self.item), ty)
+    }
+
+    /// `value`, an iterator of type `ty`, given where generic code asks its
+    /// length, an `ExactSizeIterator`'s, and its back, `back` (ADR 0456): a
+    /// JS iterator that knows them, an array's, its `$iter`; a range's of
+    /// numbers, `$iterator(range, $rangeNext, false, $rangeNextBack,
+    /// $rangeLen)`; one already, itself.
+    pub(in crate::lower) fn as_exact_size(&mut self, value: Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
+            return Ok(value);
+        }
+        if let Some(kind) = self.range_kind(ty)
+            && kind == super::std_types::range::RangeKind::Exclusive
+            && let (Some(next), Some(from_back)) = (kind.step(false), kind.step(true))
+        {
+            let from_back = back.then(|| Expr::helper(from_back));
+            return Ok(stepped_ends(
+                value,
+                Expr::helper(next),
+                false,
+                from_back,
+                Some(Expr::helper("$rangeLen")),
+            ));
+        }
+        if self.steps_an_array(ty) {
+            return Ok(self.std_iterator(value, ty));
+        }
+        Err(self.unsupported(
+            span,
+            &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count"),
+        ))
     }
 
     /// `value`, a double-ended iterator of type `ty`, as a JS iterator that
@@ -387,7 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let [f] = args.as_slice()
         {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-            return Ok(Expr::call_helper("$mapBack", vec![source_value, f.clone()]));
+            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
         if let Some(double_ended) = self.own_next_back(ty)? {
             let iterator = std_item(self.tcx, StdItem::Iterator);

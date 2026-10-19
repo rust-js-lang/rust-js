@@ -38,8 +38,16 @@ export const mutations: Mutation[] = [
     name: "map-back-unmapped",
     breaks: "a map stepped from its back gives its source's items, not their `f`'s",
     file: "src/runtime/back_steps.js",
-    find: "  map.back = () => mapped(it.back());\n",
-    replace: "  map.back = () => it.back();\n",
+    find: "  if (it.back !== undefined) map.back = () => mapped(it.back());\n",
+    replace: "  if (it.back !== undefined) map.back = () => it.back();\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
+  {
+    name: "map-ends-length-lost",
+    breaks: "a map of an iterator that knows its length has no `len()`",
+    file: "src/runtime/back_steps.js",
+    find: "  if (it.len !== undefined) map.len = () => it.len();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
 ];

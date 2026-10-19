@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "                && self.ends_holding_nothing(tys[0]));\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
+  {
+    name: "find-map-boxed-refused",
+    breaks: "`find_map` of a function giving an `Option` of what could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::IterComb(crate::lower::combinators::IterComb::FindMap)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];

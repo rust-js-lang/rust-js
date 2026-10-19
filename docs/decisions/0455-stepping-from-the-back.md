@@ -47,7 +47,7 @@ otherwise, a range's of its bounds.
 ## Amendment: a map of one knows its back
 
 **A map of an iterator that knows its back knows its back**, as Rust's
-`Map` is double-ended where its source is: `$mapBack(it, f)`, which steps
+`Map` is double-ended where its source is: `$mapEnds(it, f)`, which steps
 its source from either end, `f` of each item, `knows_its_back`'s answer,
 so a generic one's `it.map(f).rfind(p)` is stepped from its back, as
 either's `Either` steps the map it wraps. A map made in place of an

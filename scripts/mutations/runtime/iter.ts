@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "    return this.end > 0 ? { value: this.items[--this.end]",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "iter-of-iter-rewrapped",
+    breaks: "an iterator a variable holds, given on, is wrapped again, a `$iter` of it, so it steps nothing",
+    file: "src/runtime/iter.js",
+    find: "  if (!Array.isArray(items) && items.back !== undefined) return items;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+  },
+  {
+    name: "iter-len-whole",
+    breaks: "a `$iter`'s `len()` is its whole array's, not what's left",
+    file: "src/runtime/iter.js",
+    find: "    return this.end - this.at;\n",
+    replace: "    return this.items.length;\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+  },
 ];
