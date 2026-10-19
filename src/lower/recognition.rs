@@ -2756,6 +2756,9 @@ pub(super) enum SerdeOp {
     /// visitor: what's there, given to the `visit_*` of its kind the hint
     /// takes.
     Visit(SerdeHint),
+    /// `seq.next_element::<T>()`, and a map's `next_key`, `next_value` and
+    /// `next_entry`: what's next, a `Result` of an `Option` but a value's.
+    Next(SerdeNext),
     /// `S::Error::custom(msg)` and `D::Error::custom(msg)`: an error of what
     /// `msg` shows.
     Custom,
@@ -2799,6 +2802,20 @@ pub(super) enum SerdeHint {
     Number,
     Str,
     Unit,
+    /// A sequence, `deserialize_seq`'s and a tuple's.
+    Seq,
+    Map,
+    /// `deserialize_struct`'s, a map or a sequence of its fields.
+    Struct,
+}
+
+/// What a `SeqAccess` or a `MapAccess` reads next.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum SerdeNext {
+    Element,
+    Key,
+    Value,
+    Entry,
 }
 
 /// A hand-written visitor's method, of those serde_json calls: what it's
@@ -2813,6 +2830,8 @@ pub(super) enum VisitorMethod {
     F64,
     Str,
     BorrowedStr,
+    Seq,
+    Map,
 }
 
 /// The methods of serde's `Visitor` the impl `imp` writes, of those
@@ -2829,6 +2848,8 @@ pub(super) fn visitor_methods(tcx: TyCtxt<'_>, imp: DefId) -> Vec<(VisitorMethod
                 "visit_f64" => VisitorMethod::F64,
                 "visit_str" => VisitorMethod::Str,
                 "visit_borrowed_str" => VisitorMethod::BorrowedStr,
+                "visit_seq" => VisitorMethod::Seq,
+                "visit_map" => VisitorMethod::Map,
                 _ => return None,
             };
             Some((method, item.def_id))
@@ -2891,8 +2912,15 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
             }
             "deserialize_str" | "deserialize_string" | "deserialize_identifier" => SerdeHint::Str,
             "deserialize_unit" => SerdeHint::Unit,
+            "deserialize_seq" | "deserialize_tuple" | "deserialize_tuple_struct" => SerdeHint::Seq,
+            "deserialize_map" => SerdeHint::Map,
+            "deserialize_struct" => SerdeHint::Struct,
             _ => return None,
         }),
+        ("SeqAccess", "next_element") => SerdeOp::Next(SerdeNext::Element),
+        ("MapAccess", "next_key") => SerdeOp::Next(SerdeNext::Key),
+        ("MapAccess", "next_value") => SerdeOp::Next(SerdeNext::Value),
+        ("MapAccess", "next_entry") => SerdeOp::Next(SerdeNext::Entry),
         ("Serializer", name) => match name {
             "serialize_bool" => SerdeOp::Write(SerdeScalar::Bool),
             "serialize_i8" | "serialize_i16" | "serialize_i32" | "serialize_i64" | "serialize_i128"

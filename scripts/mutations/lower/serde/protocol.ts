@@ -74,4 +74,28 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => Err(self.unsupported(span, \"what's expected\")),\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
+  {
+    name: "serde-struct-hint-map-only",
+    breaks: "`deserialize_struct` of a sequence isn't given to the visitor's `visit_seq`, where serde_json gives it",
+    file: "src/lower/serde/protocol.rs",
+    find: "                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => \"seq\",\n",
+    replace: "                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq) => \"seq\",\n",
+    tests: ["test/serde.test.ts", "-t", "sequence and a map"],
+  },
+  {
+    name: "serde-next-unboxed-access",
+    breaks: "`seq.next_element()`'s `&mut self`, a box in generic code, is taken as the access, and JS throws",
+    file: "src/lower/serde/protocol.rs",
+    find: "            let access = Expr::held(values.remove(0));\n",
+    replace: "            let access = values.remove(0);\n",
+    tests: ["test/serde.test.ts", "-t", "sequence and a map"],
+  },
+  {
+    name: "serde-hint-errors-as-any",
+    breaks: "`deserialize_map` of a sequence errs where it's read, not where it's peeked at, as serde_json does",
+    file: "src/lower/serde/protocol.rs",
+    find: "            \"$jsonVisitHint\"\n",
+    replace: "            \"$jsonVisit\"\n",
+    tests: ["test/serde.test.ts", "-t", "sequence and a map"],
+  },
 ];

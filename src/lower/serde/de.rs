@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An object's key, from inside its quotes: a string, a number or a `bool`.
-    fn json_key_reader(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn json_key_reader(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let key = |name: &str| Expr::member(Expr::member(Expr::helper("$json"), "key"), name);
         if self.is_lang_adt(ty, LangItem::String) {
             return Ok(key("string"));

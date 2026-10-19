@@ -683,3 +683,92 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A hand-written visitor's `visit_seq` and `visit_map` (ADR 0459): what
+// it reads next of a sequence or a map, `deserialize_struct` given either,
+// and a hint's error of what it peeks at, where serde_json gives it.
+test("serde: a hand-written visitor reads a sequence and a map as serde_json does", async () => {
+  const dir = fixture("serde-hand-written-seq-map");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::de::{self, MapAccess, SeqAccess, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+
+#[derive(Debug)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+struct PointVisitor;
+
+impl<'de> Visitor<'de> for PointVisitor {
+    type Value = Point;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a point")
+    }
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Point, A::Error> {
+        let x = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+        let y = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+        Ok(Point { x, y })
+    }
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Point, A::Error> {
+        let (mut x, mut y) = (None, None);
+        while let Some(key) = map.next_key::<String>()? {
+            match key.as_str() {
+                "x" if x.is_some() => return Err(de::Error::duplicate_field("x")),
+                "x" => x = Some(map.next_value()?),
+                "y" => y = Some(map.next_value()?),
+                other => return Err(de::Error::unknown_field(other, &["x", "y"])),
+            }
+        }
+        Ok(Point {
+            x: x.ok_or_else(|| de::Error::missing_field("x"))?,
+            y: y.ok_or_else(|| de::Error::missing_field("y"))?,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Point {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_struct("Point", &["x", "y"], PointVisitor)
+    }
+}
+
+#[derive(Debug)]
+pub struct Totals(pub Vec<(String, u32)>);
+
+struct TotalsVisitor;
+
+impl<'de> Visitor<'de> for TotalsVisitor {
+    type Value = Totals;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("totals")
+    }
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Totals, A::Error> {
+        let mut all = Vec::new();
+        while let Some((name, n)) = map.next_entry::<String, u32>()? {
+            all.push((name, n));
+        }
+        Ok(Totals(all))
+    }
+}
+
+impl<'de> Deserialize<'de> for Totals {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_map(TotalsVisitor)
+    }
+}
+
+pub fn report() -> String {
+    let point = |text: &str| match serde_json::from_str::<Point>(text) { Ok(p) => format!("{p:?}"), Err(e) => e.to_string() };
+    let totals = |text: &str| match serde_json::from_str::<Totals>(text) { Ok(t) => format!("{t:?}"), Err(e) => e.to_string() };
+    [
+        point("{\"x\": 1, \"y\": 2}"), point("[3, 4]"), point("[5]"), point("{\"y\": 1}"), point("{\"x\": 1, \"x\": 2}"),
+        point("{\"z\": 1}"), point("{\"x\": \"a\"}"), point("7"),
+        totals("{\"a\": 1, \"b\": 2}"), totals("{}"), totals("[1]"), totals("{\"a\": -1}"),
+    ].join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});

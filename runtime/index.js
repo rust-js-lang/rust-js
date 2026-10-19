@@ -3497,7 +3497,38 @@ export function $jsonRead(json, read) {
 // whose `Result` is what this gives; a number to its `u64`, `i64` or `f64` by
 // its kind, as serde_json gives one; of a kind it has none for, serde's
 // "invalid type", expecting what its `expecting` says.
-export function $jsonVisit(json, expected, { unit, bool, u64, i64, f64, str, borrowedStr }) {
+export function $jsonVisit(json, expected, methods) {
+  return $jsonRead(json, (reader) => reader.deserializeAny(expected, $jsonVisitor(expected, methods)));
+}
+
+// `deserialize_str(visitor)` and the other hints but `deserialize_any`: of a
+// kind it has no method for, serde_json's error of what it peeks at, before
+// it's read, a sequence's or a map's where it starts.
+export function $jsonVisitHint(json, expected, methods) {
+  const visitor = $jsonVisitor(expected, methods);
+  return $jsonRead(json, (reader) => {
+    const peek = reader.parseWhitespace();
+    const kind =
+      peek === 110
+        ? "unit"
+        : peek === 116 || peek === 102
+          ? "bool"
+          : peek === 45 || (peek >= 48 && peek <= 57)
+            ? "number"
+            : peek === 34
+              ? "string"
+              : peek === 91
+                ? "seq"
+                : peek === 123
+                  ? "map"
+                  : undefined;
+    if (kind !== undefined && !visitor[kind]) throw reader.peekInvalidType(expected);
+    return reader.deserializeAny(expected, visitor);
+  });
+}
+
+// The reader's visitor of a hand-written one's methods.
+export function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, seq, map }) {
   const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);
   const visitor = {};
   if (unit) visitor.unit = $jsonCodec(unit);
@@ -3517,7 +3548,10 @@ export function $jsonVisit(json, expected, { unit, bool, u64, i64, f64, str, bor
       return $jsonCodec(visit)(s);
     };
   }
-  return $jsonRead(json, (reader) => reader.deserializeAny(expected, visitor));
+  // A sequence or a map, its access given, `SeqAccess` or `MapAccess`.
+  if (seq) visitor.seq = $jsonCodec(seq);
+  if (map) visitor.map = $jsonCodec(map);
+  return visitor;
 }
 
 // serde's `de::Unexpected`, as its `Display` shows it: `integer `3``,
@@ -3581,6 +3615,23 @@ export function $padIntegral(nonNegative, prefix, digits, options) {
   if (options.zero) return head + digits.padStart(width - [...head].length, "0");
   const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? ">";
   return $pad(head + digits, width, align, options.fill);
+}
+
+// A hand-written visitor's `SeqAccess` and `MapAccess` (ADR 0459): what's
+// next, a `Result` of an `Option`, `None` past the last, an element or a
+// key given as `Some` boxed where it looks like `None` (ADR 0051).
+export function $jsonNextElement(seq, read, boxed) {
+  return $jsonRead(seq, (s) => (s.next() ? (boxed ? $some(s.value(read)) : s.value(read)) : undefined));
+}
+export function $jsonNextKey(map, read, boxed) {
+  return $jsonRead(map, (m) => (m.next() ? (boxed ? $some(read(m.key())) : read(m.key())) : undefined));
+}
+export function $jsonNextValue(map, read) {
+  return $jsonRead(map, (m) => m.value(read));
+}
+// `next_entry`: its key and value, a pair, or `None` past the last.
+export function $jsonNextEntry(map, readKey, read) {
+  return $jsonRead(map, (m) => (m.next() ? [readKey(m.key()), m.value(read)] : undefined));
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so

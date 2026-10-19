@@ -6,7 +6,7 @@
 
 use crate::js::{Expr, StmtKind};
 use crate::lower::recognition::{
-    SerdeCompound, SerdeError, SerdeHint, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
+    SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };
 use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
@@ -45,8 +45,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let SerdeOp::DeError(error) = op {
             return Ok(self.serde_error(error, values));
         }
+        // `seq.next_element::<T>()` and a map's: of the access its `&mut
+        // self`'s box holds (ADR 0454), each type after its own and the
+        // deserializer's lifetime.
+        if let SerdeOp::Next(next) = op {
+            let access = Expr::held(values.remove(0));
+            let mut own = args.types().skip(1);
+            return self.serde_next(next, access, (own.next(), own.next()), span);
+        }
         if let SerdeOp::Visit(hint) = op {
-            let visitor = values.remove(1);
+            // The visitor is a hint's last argument, after `deserialize_struct`'s
+            // name and fields.
+            let visitor = values.pop().expect("a visitor");
             // Its visitor's type, after the deserializer's and its lifetime.
             let visitor_ty = args.types().nth(1).expect("`deserialize_*::<V>`");
             return self.serde_visit(hint, values.remove(0), (visitor, visitor_ty), span, out);
@@ -134,7 +144,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let writer = values.remove(0);
                 self.serde_write(json, args.type_at(0), &writer, span, out)?;
             }
-            SerdeOp::Custom | SerdeOp::Deserialize | SerdeOp::Visit(_) | SerdeOp::DeError(_) => {
+            SerdeOp::Custom | SerdeOp::Deserialize | SerdeOp::Visit(_) | SerdeOp::DeError(_) | SerdeOp::Next(_) => {
                 unreachable!("made above")
             }
         }
@@ -195,6 +205,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (VisitorMethod::F64, SerdeHint::Any | SerdeHint::Number) => "f64",
                 (VisitorMethod::Str, SerdeHint::Any | SerdeHint::Str) => "str",
                 (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => "borrowedStr",
+                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => "seq",
+                (VisitorMethod::Map, SerdeHint::Any | SerdeHint::Map | SerdeHint::Struct) => "map",
                 _ => continue,
             };
             let value = self.fresh("v");
@@ -206,8 +218,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             props.push(crate::js::Prop::Field(key.into(), f));
         }
         let expected = expected.expect("a `Visitor` writes its `expecting`");
+        // A hint but `deserialize_any`'s errors of a kind it has no method for
+        // where it peeks.
+        let helper = if hint == SerdeHint::Any {
+            "$jsonVisit"
+        } else {
+            "$jsonVisitHint"
+        };
         Ok(Expr::call(
-            Expr::helper("$jsonVisit"),
+            Expr::helper(helper),
             vec![json, expected, Expr::object(props)],
         ))
     }
@@ -265,5 +284,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some((_, f)) => Ok(Expr::call(self.fn_ref(f), vec![value])),
             None => Err(self.unsupported(span, &format!("a `{ty}` as what a deserializer expected"))),
         }
+    }
+
+    /// What `access` reads next, of a `next_element::<T>()`'s `T` or a map's
+    /// key and value types: `$jsonNext(access, readT, boxed)` and the like, a
+    /// `Result` of an `Option`, `Some` boxed where `T` looks like `None`.
+    fn serde_next(
+        &mut self,
+        next: SerdeNext,
+        access: Expr,
+        (first, second): (Option<ty::Ty<'tcx>>, Option<ty::Ty<'tcx>>),
+        span: Span,
+    ) -> R<Expr> {
+        let (first, second) = (first.expect("a type to read"), second);
+        let boxed = |cx: &Self, t: ty::Ty<'tcx>| Expr::bool(cx.boxed_payload(t));
+        Ok(match next {
+            SerdeNext::Element => {
+                let read = self.json_reader(first, span)?;
+                Expr::call(Expr::helper("$jsonNextElement"), vec![access, read, boxed(self, first)])
+            }
+            SerdeNext::Key => {
+                let read = self.json_key_reader(first, span)?;
+                Expr::call(Expr::helper("$jsonNextKey"), vec![access, read, boxed(self, first)])
+            }
+            SerdeNext::Value => {
+                let read = self.json_reader(first, span)?;
+                Expr::call(Expr::helper("$jsonNextValue"), vec![access, read])
+            }
+            SerdeNext::Entry => {
+                let value = second.expect("`next_entry::<K, V>`");
+                let (key, read) = (self.json_key_reader(first, span)?, self.json_reader(value, span)?);
+                Expr::call(Expr::helper("$jsonNextEntry"), vec![access, key, read])
+            }
+        })
     }
 }

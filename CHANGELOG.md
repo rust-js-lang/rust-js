@@ -24,7 +24,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **A hand-written `Serialize`**, its serializer's calls the JSON writer's,
   and **a hand-written `Deserialize`** that reads through another's,
   `String::deserialize(d)?`, or by its own `Visitor`, `deserialize_any` and
-  the other hints, with serde's errors (ADR 0459).
+  the other hints, its `visit_seq` and `visit_map` too, with serde's
+  errors (ADR 0459).
 - **`?` of an `Ok` made where it's tried**, `Ok(3)?`, is what it holds: no
   test of an object just made (ADR 0459).
 - **`hint::assert_unchecked`, `unchecked_add`, `_sub` and `_mul`**, promises

@@ -96,8 +96,7 @@ function pointSerialize_serialize(point, s) {
 
 ## Consequences
 
-- `visit_seq`, `visit_map`, `visit_some` and `visit_none`, and the hints
-  that call them, are refused yet.
+- `visit_some` and `visit_none`, and `deserialize_option`, are refused yet.
 - `serialize_tuple_variant` and `serialize_struct_variant` are refused yet.
 
 ## Amendment: a hand-written `Visitor`
@@ -135,3 +134,28 @@ function levelDeserialize_deserialize(d) {
 The serde test of a hand-written `Visitor` gives one each kind of value
 and makes each error, through `deserialize_any`, `deserialize_str` and
 `deserialize_u64`, against native serde_json.
+
+## Amendment: a visitor's sequence and map
+
+A visitor that reads a struct by hand, `visit_seq` and `visit_map`, was
+refused, and with it `deserialize_struct`, `deserialize_seq` and
+`deserialize_map`.
+
+- **Its access is the reader's**, `$JsonSeq` or `$JsonMap`, given where
+  serde_json gives one: `seq.next_element::<T>()` is
+  `$jsonNextElement(seq, readT, boxed)`, a `Result` of an `Option`, `None`
+  past the last, `Some` boxed where `T` looks like `None` (ADR 0051); a
+  map's `next_key`, `next_value` and `next_entry` the same, a key read by
+  its key reader. Each takes `&mut self`, a box in generic code (ADR
+  0454), the access in it.
+- **A hint takes its kinds**: `deserialize_seq` and a tuple's a sequence,
+  `deserialize_map` a map, `deserialize_struct` either, as serde_json's
+  does. Its visitor is its last argument.
+- **A hint but `deserialize_any` errs where it peeks**,
+  `$jsonVisitHint`: of a kind it has no method for, serde_json's
+  `peek_invalid_type`, before it's read, a sequence's or a map's where it
+  starts, column 0 of `[1]`, not 1.
+
+The serde test of a hand-written visitor's sequence and map reads a
+struct from either, misses, repeats and mistakes fields, and reads a map
+by its entries, against native serde_json.

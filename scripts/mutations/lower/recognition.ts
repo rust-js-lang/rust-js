@@ -2106,4 +2106,12 @@ export const mutations: Mutation[] = [
     replace: "                    \"splitn\" => TextOp::SplitN,\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
   },
+  {
+    name: "serde-next-entry-unknown",
+    breaks: "`map.next_entry()` of a visitor is refused",
+    file: "src/lower/recognition.rs",
+    find: "        (\"MapAccess\", \"next_entry\") => SerdeOp::Next(SerdeNext::Entry),\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "sequence and a map"],
+  },
 ];
