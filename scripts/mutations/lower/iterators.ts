@@ -676,4 +676,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "lent-lent-again",
+    breaks: "an iterator already lent, `by_ref()`'s, is lent again, `$lent($lent(it))`",
+    file: "src/lower/iterators.rs",
+    find: "        if is_lent(&it) {\n            return it;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_chains.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "lent-made-iterator",
+    breaks: "a lent iterator, already a JS one, is made one again, `Iterator.from($lent(it))`",
+    file: "src/lower/iterators.rs",
+    find: "        if is_lent(&value) {\n            return value;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(by_ref_chains|take_destructors).rs$"],
+    snapshots: true,
+  },
 ];

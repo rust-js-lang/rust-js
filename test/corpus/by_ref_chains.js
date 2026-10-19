@@ -19,37 +19,37 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
   const it = $iter(v);
-  const first = $lent($lent(it)).take(2).toArray();
-  const small = Iterator.from($lazyTakeWhile($lent($lent(it)), (x) => x < 5)).toArray();
+  const first = $lent(it).take(2).toArray();
+  const small = Iterator.from($lazyTakeWhile($lent(it), (x) => x < 5)).toArray();
   const arg = $next(it);
   console.log(
     `[${first.map((item) => String(item)).join(", ")}] [${small.map((item) => String(item)).join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`,
   );
-  const found = $lent($lent(it)).find((x) => x % 7 === 0);
+  const found = $lent(it).find((x) => x % 7 === 0);
   const arg$1 = it.items.slice(it.at, it.end);
   console.log(
     `${found == null ? "None" : `Some(${found})`} [${arg$1.map((item) => String(item)).join(", ")}]`,
   );
 
   const words = $iter("one two three four five".split(" "));
-  const sum = $lent($lent(words))
+  const sum = $lent(words)
     .map((w) => $byteLen(w))
     .take(3)
     .reduce((a, b) => (a + b) >>> 0, 0);
-  const any = $lent($lent(words)).some((w) => w.startsWith("f"));
+  const any = $lent(words).some((w) => w.startsWith("f"));
   const arg$2 = $next(words);
   console.log(`${sum} ${any} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
 
   const chars = $iter(Array.from("abcdef"));
-  const skipped = $next($lent($lent(chars)).drop(1));
-  const pos = $position($lent($lent(chars)), (c) => c === "e");
+  const skipped = $next($lent(chars).drop(1));
+  const pos = $position($lent(chars), (c) => c === "e");
   const arg$3 = $restStr(chars);
   console.log(
     `${skipped == null ? "None" : `Some(${$debugStr(skipped, "'")})`} ${pos == null ? "None" : `Some(${pos})`} ${$debugStr(arg$3)}`,
   );
 
   const nums = $iter($range(10, 20));
-  const evens = $lent($lent(nums))
+  const evens = $lent(nums)
     .filter((n) => n % 2 === 0)
     .take(2)
     .reduce((n) => n + 1, 0);

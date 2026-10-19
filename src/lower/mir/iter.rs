@@ -799,8 +799,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// destructor, `dropping`, is called on, `lent` or not: of an adapter,
     /// `take`'s or `map`'s, of one that owns them, moved into it,
     /// `$closing`, whose closing drops what it hasn't given, as the adapter
-    /// closes it when it ends or is dropped (ADRs 0422, 0465); else one that
-    /// may leave some is refused.
+    /// closes it when it ends or is dropped (ADRs 0422, 0465), and of one
+    /// lent, `by_ref().take(n)`, itself, what it hasn't given its lender's
+    /// (ADR 0468); else one that may leave some is refused.
     fn dropping_source(
         &mut self,
         it: Expr,
@@ -812,8 +813,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if dropping.is_none() {
             return Ok(it);
         }
-        if method.is_some_and(IterMethod::holds_its_source) && !lent {
-            return self.closing(it, iter_ty, span);
+        if method.is_some_and(IterMethod::holds_its_source) {
+            return match lent {
+                true => Ok(it),
+                false => self.closing(it, iter_ty, span),
+            };
         }
         self.check_leaves_none(method, name, span)?;
         Ok(it)

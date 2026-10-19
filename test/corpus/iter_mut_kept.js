@@ -33,7 +33,7 @@ function main() {
     last.value = Math.imul(last.value, 10);
   }
   console.log(`${it.end - it.at}`);
-  for (const x of $lent($lent(it)).take(2)) {
+  for (const x of $lent(it).take(2)) {
     x.value = (x.value + 100) | 0;
   }
   console.log(`${it.reduce((n) => n + 1, 0)}`);

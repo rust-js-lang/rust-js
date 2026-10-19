@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`by_ref().take(n)` of items with a destructor**, in generic code too:
+  what it hasn't given is its lender's, stepped and dropped after; and an
+  iterator is lent once, `$lent(it).take(2)` (ADR 0468).
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).

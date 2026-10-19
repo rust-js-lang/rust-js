@@ -4,7 +4,9 @@ Status: Accepted. Extends [0098](0098-destructors.md) and
 [0421](0421-std-associated-type-drops-are-given.md), and amends
 [0190](0190-generic-no-destructor.md). Extended by
 [0465](0465-dropping-an-adapter-is-closing-it.md): every std lazy adapter
-is closed to drop, and `$closing` closes by its source's own drop.
+is closed to drop, and `$closing` closes by its source's own drop. Amended
+by [0468](0468-a-lent-adapter-leaves-its-source-to-its-lender.md): a `take`
+of a lent iterator is no longer refused, what it hasn't given its lender's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for what's dropped and
 how many times; B for when, where a `take` is stepped past its end before

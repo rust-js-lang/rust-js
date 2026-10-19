@@ -2,12 +2,17 @@
 // moved into it: what it hasn't given is dropped when it ends or is dropped,
 // as Rust's is, and what `skip` passes over as it's first stepped. Its
 // source is `$closing`, which JS's `take` closes, or `$skipDropping`
-// (ADR 0422).
+// (ADR 0422). Of a lent one, `by_ref().take(n)`, what it hasn't given is
+// its lender's, stepped on after (ADR 0468).
 struct N(u32);
 impl Drop for N {
     fn drop(&mut self) {
         println!("drop {}", self.0);
     }
+}
+fn split_first<I: Iterator>(mut iter: I, k: usize) -> (Vec<I::Item>, usize) {
+    let first: Vec<I::Item> = iter.by_ref().take(k).collect();
+    (first, iter.count())
 }
 fn main() {
     let v: Vec<N> = (1..=5).map(N).collect();
@@ -51,5 +56,19 @@ fn main() {
     let both: Vec<N> = (60..=64).map(N).collect();
     let kept: Vec<N> = both.into_iter().skip(1).take(2).collect();
     println!("kept {}", kept.len());
+    let mut made = (70..=74).map(N);
+    let lent: Vec<N> = made.by_ref().take(2).collect();
+    println!("lent {}", lent.len());
+    let next = made.next();
+    println!("next {:?}", next.as_ref().map(|n| n.0));
+    drop(next);
+    drop(lent);
+    let (first, rest) = split_first((80..=83).map(N).collect::<Vec<N>>().into_iter(), 1);
+    println!("first {} rest {rest}", first.len());
+    let mut owned = (90..=93).map(N).collect::<Vec<N>>().into_iter();
+    for n in owned.by_ref().take(2) {
+        println!("lent got {}", n.0);
+    }
+    println!("left {}", owned.count());
     println!("end");
 }

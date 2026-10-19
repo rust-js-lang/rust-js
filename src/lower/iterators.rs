@@ -133,6 +133,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
     /// steps either (ADR 0061).
     pub(super) fn js_iterator(&self, value: Expr) -> Expr {
+        if is_lent(&value) {
+            return value;
+        }
         Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![value])
     }
 
@@ -189,8 +192,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `$lent(it)`: a generic iterator lent as a `&mut`, which steps `it` and
-    /// can't close it, as its lender goes on stepping it (ADR 0071).
+    /// can't close it, as its lender goes on stepping it (ADR 0071); of one
+    /// already lent, `by_ref()`'s, itself, a JS iterator nothing closes.
     pub(super) fn lent_iterator(&mut self, it: Expr) -> Expr {
+        if is_lent(&it) {
+            return it;
+        }
         Expr::call(Expr::helper("$lent"), vec![it])
     }
 
@@ -1335,6 +1342,11 @@ fn is_iterator_from(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, args) if args.len() == 1
         && matches!(&callee.kind, js::ExprKind::Member(object, from)
             if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")))
+}
+
+/// Whether `e` is `$lent(x)`, a JS iterator nothing closes.
+fn is_lent(e: &Expr) -> bool {
+    !std::ptr::eq(unlent(e), e)
 }
 
 /// What `$lent(e)` lends, `e`, made for this call alone, which no one else
