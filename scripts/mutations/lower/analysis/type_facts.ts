@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
+  {
+    name: "fused-fact-unasked",
+    breaks: "generic code's `fuse()` of a type parameter's iterator is given no `IFused`, and refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        asked.insert((caller, index, fact));\n                    }\n                    continue;\n",
+    replace: "                    }\n                    continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

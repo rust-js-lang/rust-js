@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "it.items.length - it.at",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "fuse-size-hint-unknown",
+    breaks: "`size_hint()` of a `Fuse` is a lazy iterator's, `(0, None)`",
+    file: "src/runtime/size_hint.js",
+    find: "  if (it.fused !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

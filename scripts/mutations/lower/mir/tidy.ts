@@ -665,8 +665,8 @@ export const mutations: Mutation[] = [
     name: "late-eager-chains-off",
     breaks: "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
     file: "src/lower/mir/tidy.rs",
-    find: "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n",
-    replace: "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n",
+    find: "    iterators::consumed_fuses(body);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    // Of each, a callback",
+    replace: "    iterators::consumed_fuses(body);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    // Of each, a callback",
     tests: ["test/lowering.test.ts", "-t", "an array's iterator read in place late"],
   },
   {

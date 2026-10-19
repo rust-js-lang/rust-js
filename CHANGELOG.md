@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Fuse`'s `size_hint`, `Clone` and `Debug`**, std's, in generic code
+  too, and `Debug` of an iterator over an array, `IntoIter([2, 3])` (ADR
+  0473).
 - **What a `Some` holds, an `Option` of a type parameter**, by `unwrap`,
   `unwrap_or_else` and the rest, and `max_by`'s and `min_by`'s pick of one;
   and no `Iterator.from` around a lazy adapter's generator (ADR 0472).
@@ -558,6 +561,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`fuse()` of an iterator that starts again after its `None`** stepped it
+  again: it's std's `Fuse`, ended for good; and a crate iterator with a
+  `Drop` under an adapter, `map` or `fuse`, is dropped as std drops it
+  (ADR 0473).
 - **`into_iter()` of an `Option` of another iterator's item, collected**,
   `option::IntoIter<I::Item>`, threw: it's made a JS iterator (ADR 0472).
 - **A function an `Option`'s or a `Result`'s method leaves unrun is

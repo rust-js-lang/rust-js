@@ -3686,6 +3686,44 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()).starts_with("std::iter::"))
     }
 
+    /// The name std's `Debug` gives an iterator over an array, which shows
+    /// the slice it has left, `IntoIter([2, 3])`: a slice's `Iter`, and a
+    /// `Vec`'s and an array's `IntoIter` and `Drain` (ADR 0473).
+    pub(crate) fn shows_its_slice(&self, ty: Ty<'tcx>) -> Option<&'static str> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        if self.is_std_type(ty, StdItem::SliceIter) {
+            return Some("Iter");
+        }
+        if self.is_std_type(ty, StdItem::ArrayIntoIter) {
+            return Some("IntoIter");
+        }
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::vec::IntoIter" => Some("IntoIter"),
+            "std::vec::Drain" => Some("Drain"),
+            _ => None,
+        }
+    }
+
+    /// What a `Fuse` steps, its `I`, of a `Fuse<I>` (ADR 0473).
+    pub(crate) fn fuse_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        (std_path(self.tcx, adt.did()) == "std::iter::Fuse").then(|| args.type_at(0))
+    }
+
+    /// Whether `ty`, a type rustc knows whole, is a `FusedIterator`, whose
+    /// `Fuse` keeps it as it ends, as std's does (ADR 0473).
+    pub(crate) fn is_fused_iterator(&self, ty: Ty<'tcx>) -> bool {
+        let fused = self
+            .tcx
+            .require_lang_item(LangItem::FusedIterator, rustc_span::DUMMY_SP);
+        let tr = self
+            .tcx
+            .erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, fused, [ty]));
+        self.tcx
+            .codegen_select_candidate(self.typing_env.as_query_input(tr))
+            .is_ok()
+    }
+
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
     /// value; and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
@@ -5549,11 +5587,14 @@ pub(crate) enum TypeFact {
     /// What std's unstable sort picks for its items by their layout, its
     /// small sort or partition (ADRs 0342, 0471).
     Sort,
+    /// Whether it's a `FusedIterator`, whose `Fuse` keeps it as it ends
+    /// (ADR 0473).
+    Fused,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 8] = [
+    pub(crate) const ALL: [TypeFact; 9] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -5562,6 +5603,7 @@ impl TypeFact {
         TypeFact::Map,
         TypeFact::Set,
         TypeFact::Sort,
+        TypeFact::Fused,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -5580,6 +5622,7 @@ impl TypeFact {
             TypeFact::Map => "Map",
             TypeFact::Set => "Set",
             TypeFact::Sort => "Sort",
+            TypeFact::Fused => "Fused",
         }
     }
 }
@@ -5657,6 +5700,8 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
     match std_path(tcx, def_id).as_str() {
         "std::any::type_name" | "std::any::type_name_of_val" => return &[TypeFact::Name],
         "std::any::TypeId::of" => return &[TypeFact::Id],
+        // Whether its iterator is a `FusedIterator` (ADR 0473).
+        "std::iter::Iterator::fuse" => return &[TypeFact::Fused],
         "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
         // Its size and its alignment (ADR 0417).
         "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],

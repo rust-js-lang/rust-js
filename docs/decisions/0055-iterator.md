@@ -1,6 +1,8 @@
 # 0055. The crate's own `Iterator` is a JS iterator
 
-Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0052](0052-std-trait-impls.md).
+Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0052](0052-std-trait-impls.md). Amended by
+[0473](0473-fuse-is-rusts-fuse.md): `fuse()` is std's `Fuse`, not the
+iterator itself.
 
 Case: C, A, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

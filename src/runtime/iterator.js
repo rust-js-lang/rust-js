@@ -14,6 +14,8 @@ function $iterator(iterator, next, boxed = false, nextBack, len) {
     }
   });
   it.of = iterator;
+  // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }

@@ -2251,4 +2251,12 @@ export const mutations: Mutation[] = [
     replace: "        \"sort_unstable\" => SortWith::Order,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
+  {
+    name: "array-iterator-debug-misnamed",
+    breaks: "a `Vec`'s `IntoIter` shows as a slice's `Iter`",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::vec::IntoIter\" => Some(\"IntoIter\"),\n",
+    replace: "            \"std::vec::IntoIter\" => Some(\"Iter\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

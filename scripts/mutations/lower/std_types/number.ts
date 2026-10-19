@@ -340,4 +340,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::str(\"network\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
+  {
+    name: "fused-iterator-unknown",
+    breaks: "every iterator is taken for one that isn't a `FusedIterator`, whose `Fuse` drops it as it ends",
+    file: "src/lower/std_types/number.rs",
+    find: "            return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));\n",
+    replace: "            return Ok(Expr::bool(false));\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

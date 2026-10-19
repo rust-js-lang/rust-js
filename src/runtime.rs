@@ -47,6 +47,9 @@ helpers! {
     Iterator,
     Insert,
     Add,
+    Fuse,
+    IteratorValue,
+    IteratorWith,
     Remove,
     Repeat,
     OrInsert,
@@ -720,6 +723,9 @@ impl Helper {
             Helper::Insert => include_str!("runtime/insert.js"),
             // A set's `insert` for its value: whether it wasn't there yet.
             Helper::Add => include_str!("runtime/add.js"),
+            Helper::Fuse => include_str!("runtime/fuse.js"),
+            Helper::IteratorValue => include_str!("runtime/iterator_value.js"),
+            Helper::IteratorWith => include_str!("runtime/iterator_with.js"),
             // A map's `remove` for its value: the one it took out, or `None`.
             Helper::Remove => include_str!("runtime/remove.js"),
             // `v.extend(items)` (ADR 0062): a `push` of each, not of an array

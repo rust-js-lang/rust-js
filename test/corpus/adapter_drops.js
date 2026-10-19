@@ -4,6 +4,7 @@ import {
   $checked,
   $closing,
   $dropEach,
+  $fuse,
   $iter,
   $iterEq,
   $iterator,
@@ -354,7 +355,7 @@ function main() {
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`inspect ${total}`);
 
-  const fused = $closing($iter(louds(120, 2)), $dropEach(loudDrop_drop));
+  const fused = $fuse($closing($iter(louds(120, 2)), $dropEach(loudDrop_drop)), true);
   let fused$live;
   try {
     const tmp = $next(fused);

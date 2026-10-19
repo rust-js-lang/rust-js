@@ -393,6 +393,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {
                 Ok(Expr::call(Expr::member(place, "slice"), Vec::new()))
             }
+            // A `Fuse`, `$fuse(..)`: one of a clone of what it steps, or of
+            // none once it's ended (ADR 0473).
+            ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {
+                let iter = Expr::member(place.clone(), "iter");
+                let clone = self.clone_fn("value", inner, span)?;
+                let copy = Expr::call_helper("$iteratorWith", vec![iter.clone(), clone]);
+                let fused = Expr::member(place, "fused");
+                Ok(Expr::call_helper("$fuse", vec![Expr::bin(Op::And, iter, copy), fused]))
+            }
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left.
             ty::Adt(..) if let Some(owns) = self.array_source(ty) => {

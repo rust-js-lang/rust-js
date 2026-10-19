@@ -629,4 +629,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
   },
+  {
+    name: "fuse-debug-unended",
+    breaks: "a `Fuse` that's ended shows `Some` of nothing",
+    file: "src/lower/display.rs",
+    find: "                let held = Expr::cond(Expr::bin(Op::Eq, iter, Expr::undefined()), Expr::str(\"None\"), some);\n",
+    replace: "                let held = some;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

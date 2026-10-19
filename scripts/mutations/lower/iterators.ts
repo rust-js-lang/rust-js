@@ -720,4 +720,13 @@ export const mutations: Mutation[] = [
     replace: "            if zip.helper_name() == Some(\"$lazyZipped\")\n",
     tests: ["test/lowering.test.ts", "-t", "MIR"],
   },
+  {
+    name: "consumed-fuse-kept",
+    breaks: "a `Fuse` stepped in place by a JS helper or a `for` keeps its `$fuse(..)`",
+    file: "src/lower/iterators.rs",
+    find: "        *e = given[0].clone();\n",
+    replace: "        let _ = given;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
+    snapshots: true,
+  },
 ];

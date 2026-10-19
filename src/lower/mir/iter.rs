@@ -13,7 +13,7 @@ use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
-use crate::lower::recognition::{IterMethod, StdItem, is_std_def, std_item};
+use crate::lower::recognition::{IterMethod, StdItem, TypeFact, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
@@ -270,7 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let known = match mapped {
                 true => crate::lower::iterators::is_stepped_items(&it),
-                false => self.array_source(iter_ty).is_some() || self.is_unknown(iter_ty),
+                false => self.hints_its_size(iter_ty),
             };
             if !known {
                 return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
@@ -460,10 +460,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             Some(IterMethod::ByRef) => it,
-            Some(IterMethod::Fuse) => it,
+            Some(IterMethod::Fuse) => self.fused(it, iter_ty, span)?,
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// Whether `$sizeHint` finds an `iter_ty`'s size: a `$iter`'s, exact, a
+    /// generic one's, as it finds it (ADR 0170), and a `Fuse`'s of one, what
+    /// it steps, or none once it's ended (ADR 0473).
+    fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
+        let stepped = self.recognition().fuse_of(iter_ty).unwrap_or(iter_ty);
+        self.array_source(stepped).is_some() || self.is_unknown(stepped)
+    }
+
+    /// `it.fuse()`, of an `iter_ty`: `$fuse(it)`, which steps it till it
+    /// ends, then never again, and of a `FusedIterator`, `$fuse(it, true)`,
+    /// keeps it (ADR 0473).
+    fn fused(&mut self, it: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let mut list = vec![it];
+        let fused = self.type_fact_value(iter_ty, TypeFact::Fused, span)?;
+        if !matches!(fused.kind, js::ExprKind::Bool(false)) {
+            list.push(fused);
+        }
+        Ok(Expr::call_helper("$fuse", list))
     }
 
     /// `it.collect()` into `output`: a heap of its items in heap order,
@@ -637,6 +657,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
+        // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
+        // it steps reversed (ADR 0473).
+        if std_method == Some(IterMethod::Rev)
+            && let Some(inner) = self.recognition().fuse_of(iter_ty)
+            && let js::ExprKind::Call(callee, given) = &receiver.kind
+            && callee.helper_name() == Some("$fuse")
+        {
+            let mut given = given.clone();
+            given[0] = self.rev_or_peekable_items(given[0].clone(), inner, std_method, name, span)?;
+            return Ok(Expr::call_helper("$fuse", given));
+        }
         let items = match self.array_source(iter_ty) {
             // One a variable or a field holds, its `$iter`, stepped or
             // not: what's left of it.
@@ -795,13 +826,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The iterator `it`, of type `iter_ty`, a method of items with a
-    /// destructor, `dropping`, is called on, `lent` or not: of an adapter,
-    /// `take`'s or `map`'s, of one that owns them, moved into it,
-    /// `$closing`, whose closing drops what it hasn't given, as the adapter
-    /// closes it when it ends or is dropped (ADRs 0422, 0465), and of one
-    /// lent, `by_ref().take(n)`, itself, what it hasn't given its lender's
-    /// (ADR 0468); else one that may leave some is refused.
+    /// The iterator `it`, of type `iter_ty`, a method is called on, of items
+    /// with a destructor, `dropping`, or not, `lent` or not: of an adapter,
+    /// `take`'s or `map`'s, of one that owns what has one, its items or
+    /// itself, a crate's iterator with a `Drop`, moved into it, `$closing`,
+    /// whose closing drops it, as the adapter closes it when it ends or is
+    /// dropped (ADRs 0422, 0465, 0473), and of one lent, `by_ref().take(n)`,
+    /// itself, its lender's (ADR 0468); else one that may leave some items
+    /// with a destructor is refused.
     fn dropping_source(
         &mut self,
         it: Expr,
@@ -810,14 +842,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
-        if dropping.is_none() {
-            return Ok(it);
-        }
         if method.is_some_and(IterMethod::holds_its_source) {
             return match lent {
                 true => Ok(it),
                 false => self.closing(it, iter_ty, span),
             };
+        }
+        if dropping.is_none() {
+            return Ok(it);
         }
         self.check_leaves_none(method, name, span)?;
         Ok(it)

@@ -1338,6 +1338,44 @@ fn is_iterator_from(e: &Expr) -> bool {
             if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")))
 }
 
+/// Of a `Fuse` stepped in place by what steps it till it ends, `$fuse(x,
+/// true).map(f)` or `for (const n of $fuse(x))`, as each JS consumer and
+/// helper does: `x`, which steps the same (ADR 0473). Each statement's: a
+/// `for`'s iterable, and each expression's.
+pub(in crate::lower) fn consumed_fuses(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::ForOf { iterable, .. } = &mut stmt.kind {
+                unfused(iterable);
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let js::ExprKind::Call(callee, _) = &mut e.kind
+            && let js::ExprKind::Member(object, method) = &mut callee.kind
+            && STEPPED_TILL_DONE.contains(&method.as_str())
+        {
+            unfused(object);
+        }
+    });
+}
+
+/// What a JS iterator's own methods step till its first `done`, and no more:
+/// its helpers and its consumers.
+const STEPPED_TILL_DONE: [&str; 11] = [
+    "map", "filter", "take", "drop", "flatMap", "toArray", "reduce", "forEach", "some", "every", "find",
+];
+
+/// `e`, a `$fuse(x, ..)` stepped till it ends: `x`, which steps the same,
+/// and is closed where the `Fuse` would be.
+fn unfused(e: &mut Expr) {
+    if let js::ExprKind::Call(callee, given) = &e.kind
+        && callee.helper_name() == Some("$fuse")
+    {
+        *e = given[0].clone();
+    }
+}
+
 /// Whether `e` is `$lent(x)`, a JS iterator nothing closes.
 fn is_lent(e: &Expr) -> bool {
     !std::ptr::eq(unlent(e), e)
@@ -1485,11 +1523,12 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator`, and each of
-/// its generators, which the runtime package's test holds this list to; a
-/// range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 9] = [
+/// The runtime's helpers that make a JS iterator: `$iterator` and `$fuse`,
+/// and each of its generators, which the runtime package's test holds this
+/// list to; a range's, its own.
+pub(crate) const ITERATOR_HELPERS: [&str; 10] = [
     "$iterator",
+    "$fuse",
     "$cycle",
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",

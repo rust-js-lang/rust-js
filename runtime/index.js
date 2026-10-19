@@ -477,6 +477,8 @@ export function $iterator(iterator, next, boxed = false, nextBack, len) {
     }
   });
   it.of = iterator;
+  // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -505,6 +507,49 @@ export function $add(set, item, drop) {
   set.add(item);
   if (!added) drop?.(item);
   return added;
+}
+
+// `it.fuse()`, Rust's `Fuse`: `iter` stepped till it ends, then never
+// again. Of one that isn't a `FusedIterator`, not `fused`, `iter` is closed
+// as it ends, which drops it as std's does, and `undefined` then, as its
+// `Debug` shows it; a `FusedIterator`'s, which stays ended, is kept, and
+// stepped again, as std's is (ADR 0473).
+export function $fuse(iter, fused = false) {
+  const it = Iterator.from({
+    next() {
+      if (it.iter === undefined) {
+        return { done: true, value: undefined };
+      }
+      const step = it.iter.next();
+      if (step.done && !fused) {
+        it.iter.return?.();
+        it.iter = undefined;
+      }
+      return step;
+    },
+    return() {
+      it.iter?.return?.();
+      it.iter = undefined;
+      return { done: true, value: undefined };
+    },
+  });
+  it.iter = iter;
+  it.fused = fused;
+  return it;
+}
+
+// What a JS iterator steps, as its Rust type has it: a `$iterator`'s value,
+// `of`, the crate's own iterator or a range; or the JS iterator itself, std's
+// (ADR 0473).
+export function $iteratorValue(it) {
+  return "of" in it ? it.of : it;
+}
+
+// A JS iterator of `f` of what `it` steps, `$iteratorValue`'s, stepped as
+// `it` is: a `$iterator`'s made again, `with`, of a clone of its value
+// (ADR 0473).
+export function $iteratorWith(it, f) {
+  return "of" in it ? it.with(f(it.of)) : f(it);
 }
 
 // A map's `remove(k)`: `Some` of the value it had, boxed where it looks
@@ -7760,6 +7805,10 @@ export function $bytesAsciiEq(a, b) {
 // std's `(0, None)` of a lazy one, which may be any length; Rust lets a hint
 // be any bounds that hold.
 export function $sizeHint(it) {
+  // A `Fuse`'s, what it steps, or none once it's ended (ADR 0473).
+  if (it.fused !== undefined) {
+    return it.iter === undefined ? [0, 0] : $sizeHint(it.iter);
+  }
   const left = Array.isArray(it.items) ? it.end - it.at : undefined;
   return left === undefined ? [0, undefined] : [left, left];
 }
