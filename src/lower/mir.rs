@@ -5208,10 +5208,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(key) if fused => self.std_drop_function(key, span)?,
             _ => None,
         };
+        // And of `or_insert_with`, its function's, its own type parameter,
+        // which drops it where it's left unrun, there (ADR 0469).
+        let make_drop = match (op, generic_args.types().last()) {
+            (MapOp::OrInsertWith, Some(make)) if self.drops_unrun(make) => self.std_drop_function(make, span)?,
+            _ => None,
+        };
         if op == MapOp::OrInsert && (value_drop.is_some() || key_drop.is_some()) {
             list.push(value_drop.unwrap_or_else(Expr::undefined));
         }
-        list.extend(key_drop);
+        if key_drop.is_some() || make_drop.is_some() {
+            list.push(key_drop.unwrap_or_else(Expr::undefined));
+        }
+        list.extend(make_drop);
         Ok(Expr::call(Expr::helper(name), list))
     }
 
@@ -5579,7 +5588,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_crate_call(state, (def_id, generic_args), values, &arg_tys, span, out);
         }
         if let Some(known) = known {
-            let value = self.mir_std_call(
+            return self.std_call_dropping_unrun(
                 state,
                 (known, def_id),
                 generic_args,
@@ -5588,10 +5597,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 output,
                 span,
                 out,
-            )?;
-            return Ok(self.std_value_as(value, output, &arg_tys));
+            );
         }
         Err(refuse(self.tcx, span, Refused::Call(def_id)))
+    }
+
+    /// A std call, `mir_std_call`'s, its value as its `output` is held, and
+    /// each function it left unrun with a destructor dropped where it was,
+    /// as std drops it (ADR 0469).
+    #[allow(clippy::too_many_arguments)]
+    fn std_call_dropping_unrun(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (known, def_id): (Std, rustc_span::def_id::DefId),
+        generic_args: ty::GenericArgsRef<'tcx>,
+        arg_tys: &[Ty<'tcx>],
+        mut values: Vec<Value<'tcx>>,
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let unrun = self.unrun_drops(known, arg_tys);
+        let subject = match unrun.first() {
+            Some(&(_, when)) => Some(self.held_value(&mut values, 0, when.subject(), span, out)?),
+            None => None,
+        };
+        let mut held = Vec::new();
+        for (at, when) in unrun {
+            let f = self.held_value(&mut values, at, "f", span, out)?;
+            held.push((when, f, arg_tys[at]));
+        }
+        let value = self.mir_std_call(state, (known, def_id), generic_args, arg_tys, values, output, span, out)?;
+        let value = self.std_value_as(value, output, arg_tys);
+        let Some(subject) = subject else {
+            return Ok(value);
+        };
+        let value = self.value_expr(value, span)?;
+        let value = self.spill("value", value, out);
+        self.dropped_unrun(subject, held, span, out)?;
+        Ok(Value::Expr(value))
+    }
+
+    /// `values[at]` held in a variable, which it's left as.
+    fn held_value(
+        &mut self,
+        values: &mut [Value<'tcx>],
+        at: usize,
+        base: &str,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let value = std::mem::replace(&mut values[at], Value::Expr(Expr::undefined()));
+        let value = self.value_expr(value, span)?;
+        let value = match value.kind {
+            js::ExprKind::Var(_) => value,
+            _ => self.spill(base, value, out),
+        };
+        values[at] = Value::Expr(value.clone());
+        Ok(value)
     }
 
     /// A std call's value as its `output` is held. A std iterator

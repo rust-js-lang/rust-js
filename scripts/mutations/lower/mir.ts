@@ -236,11 +236,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-takes-drops-unchecked",
-    breaks: "`ok_or_else` of a function that holds a value with a destructor, which it may never call, is lowered, and drops it unrun",
+    breaks: "`xor` of two `Option`s of values with a destructor is lowered, and drops neither where both are `Some`",
     file: "src/lower/mir.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts","-t","ok_or_else whose function holds a value with a destructor"],
+    tests: ["test/diagnostics.test.ts","-t","xor of options of values with a destructor"],
   },
   {
     name: "mir-mut-borrowed-unchanged",
@@ -1801,11 +1801,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-variable-drops-unchecked",
-    breaks: "MIR's set of keys with a destructor says only that it's of a type JS can't hold",
+    breaks: "a variable of a `Cell` of a value with a destructor is lowered, and never drops it",
     file: "src/lower/mir.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_value_ty(ty, span)\n",
-    tests: ["test/corpus.test.ts", "-t", "map_key_drops"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Cell of a value with a destructor"],
   },
   {
     name: "mir-flush-discriminant",
@@ -2722,5 +2722,13 @@ export const mutations: Mutation[] = [
     find: "            Some(key) if fused => self.std_drop_function(key, span)?,\n",
     replace: "            Some(key) => self.std_drop_function(key, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
+  },
+  {
+    name: "or-insert-with-function-ungiven",
+    breaks: "`or_insert_with` of a key that's there leaves its function, and what it holds, undropped",
+    file: "src/lower/mir.rs",
+    find: "        list.extend(make_drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
 ];

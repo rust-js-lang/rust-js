@@ -13,6 +13,53 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
+/// The variant of its subject on which a std call leaves a function it's
+/// given unrun: `map`'s of a `None`, `unwrap_or_else`'s of a `Some`.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum Unrun {
+    None,
+    Some,
+    Ok,
+    Err,
+    /// `bool::then`'s, of `false`.
+    False,
+}
+
+impl Unrun {
+    /// What its subject's called, held to be tested.
+    pub(super) fn subject(self) -> &'static str {
+        match self {
+            Unrun::None | Unrun::Some => "option",
+            Unrun::Ok | Unrun::Err => "result",
+            Unrun::False => "condition",
+        }
+    }
+}
+
+/// The functions `known` is given, by their argument, each with the variant
+/// of its subject it leaves it unrun on, where std drops it unrun, with what
+/// it holds (ADR 0469). One it runs drops what it holds as it ends. Of an
+/// `Option` or a `Result` it takes by value, tested once it's done; what
+/// writes a place, `get_or_insert_with`, or a map's entry, `or_insert_with`,
+/// drops it where it branches.
+pub(super) fn unrun_functions(known: super::recognition::Std) -> &'static [(usize, Unrun)] {
+    use super::recognition::Std;
+    match known {
+        Std::OptionMap | Std::Comb(Comb::AndThen | Comb::Filter | Comb::IsSomeAnd | Comb::IsNoneOr) => {
+            &[(1, Unrun::None)]
+        }
+        Std::Comb(Comb::MapOr) => &[(2, Unrun::None)],
+        Std::Comb(Comb::UnwrapOrElse | Comb::OkOrElse | Comb::OrElse) => &[(1, Unrun::Some)],
+        Std::Comb(Comb::Then) => &[(1, Unrun::False)],
+        Std::Comb(Comb::MapOrElse) => &[(1, Unrun::Some), (2, Unrun::None)],
+        Std::Comb(Comb::ResultMap | Comb::ResultAndThen | Comb::IsOkAnd) => &[(1, Unrun::Err)],
+        Std::Comb(Comb::ResultMapOr) => &[(2, Unrun::Err)],
+        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd | Comb::ResultOrElse) => &[(1, Unrun::Ok)],
+        Std::Comb(Comb::ResultMapOrElse) => &[(1, Unrun::Ok), (2, Unrun::Err)],
+        _ => &[],
+    }
+}
+
 /// An `Option`, `Result` or `Vec` method (ADR 0062).
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Comb {
@@ -1260,5 +1307,61 @@ fn inserted(subject: Expr, at: Expr, value: Expr) -> Expr {
     match at.as_int() {
         Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
         _ => Expr::call(Expr::helper("$insertAt"), vec![subject, at, value]),
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The functions a std call `known`, of arguments of types `tys`, may
+    /// leave unrun with a destructor, which std drops (ADR 0469): each by its
+    /// argument, with the variant it's left on. A type parameter's whose drop
+    /// this function isn't given, none, one its callers give none with a
+    /// destructor (ADR 0190).
+    pub(super) fn unrun_drops(&self, known: super::recognition::Std, tys: &[Ty<'tcx>]) -> Vec<(usize, Unrun)> {
+        (unrun_functions(known).iter())
+            .filter(|&&(at, _)| self.drops_unrun(tys[at]))
+            .copied()
+            .collect()
+    }
+
+    /// Whether a function of type `ty` a std call may leave unrun is dropped
+    /// there, as std drops it (ADR 0469): one that holds a value with a
+    /// destructor, or a type parameter's whose drop this function is given.
+    /// Of one it isn't given, its callers give none with a destructor (ADR
+    /// 0190).
+    pub(super) fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
+        if self.drops(ty) == Drops::Nothing {
+            return false;
+        }
+        if self.drop_query().drops_but_params(ty) == Drops::Nothing && self.given_drop(ty).is_none() {
+            self.require_no_drops(ty);
+            return false;
+        }
+        true
+    }
+
+    /// Each function `f`, of type `ty`, a std call of `subject` left unrun,
+    /// dropped where it was, `unrun_drops`' variant: `if (option == null) {
+    /// loudDrop_drop(a); }`.
+    pub(super) fn dropped_unrun(
+        &mut self,
+        subject: Expr,
+        unrun: Vec<(Unrun, Expr, Ty<'tcx>)>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let js_span = self.js_span(span);
+        for (when, f, ty) in unrun {
+            let test = match when {
+                Unrun::None => Expr::bin(Op::LooseEq, subject.clone(), Expr::null()),
+                Unrun::Some => Expr::bin(Op::LooseNe, subject.clone(), Expr::null()),
+                Unrun::Ok => result::is(subject.clone(), true),
+                Unrun::Err => result::is(subject.clone(), false),
+                Unrun::False => Expr::unary(js::UnaryOp::Not, subject.clone()),
+            };
+            let mut dropped = Vec::new();
+            self.drop_value(f, ty, span, &mut dropped)?;
+            out.push(StmtKind::If(test, dropped, None).at(js_span));
+        }
+        Ok(())
     }
 }

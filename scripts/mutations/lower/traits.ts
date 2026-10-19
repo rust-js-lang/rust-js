@@ -1656,7 +1656,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "            items.insert(alias, index);\n",
     replace: "            let _ = (alias, index);\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
   {
     name: "default-item-drops-ungiven",

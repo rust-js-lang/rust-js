@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`ok_or_else`, `or_else` and `then` of a function that holds a value
+  with a destructor**, dropped where it's left unrun (ADR 0469).
 - **`by_ref().take(n)` of items with a destructor**, in generic code too:
   what it hasn't given is its lender's, stepped and dropped after; and an
   iterator is lent once, `$lent(it).take(2)` (ADR 0468).
@@ -546,6 +548,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A function an `Option`'s or a `Result`'s method leaves unrun is
+  dropped**, with what it holds, as std drops it: `map`'s of a `None`,
+  `unwrap_or_else`'s of a `Some`, `entry().or_insert_with`'s of a key that's
+  there, in generic code too (ADR 0469).
 - **A library's trait default that gives `Self::Item` to its own generic
   method** read a drop of a dictionary entry that isn't there, and threw as
   it ran (ADR 0466).

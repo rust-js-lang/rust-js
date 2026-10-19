@@ -291,4 +291,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
     snapshots: true,
   },
+  {
+    name: "get-or-insert-with-unrun-kept",
+    breaks: "`get_or_insert_with` of a `Some` leaves its function, and what it holds, undropped",
+    file: "src/lower/std_types/option.rs",
+    find: "            out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));\n",
+    replace: "            out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
+    tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
+  },
 ];

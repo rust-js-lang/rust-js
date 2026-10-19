@@ -626,16 +626,39 @@ pub(in crate::lower) enum OptionPlaceOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option`'s method that writes its place, of the place, a variable
-    /// or a field, its item's type and what's given.
+    /// or a field, its item's type and what's given, of types `given_tys`.
+    #[allow(clippy::too_many_arguments)]
     pub(in crate::lower) fn option_place_values(
         &mut self,
         op: OptionPlaceOp,
         place: Expr,
         item: Ty<'tcx>,
-        given: Vec<Expr>,
+        (given, given_tys): (Vec<Expr>, &[Ty<'tcx>]),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // `get_or_insert_with`'s function, left unrun where it holds one, is
+        // dropped there, as std drops it (ADR 0469).
+        if op == OptionPlaceOp::GetOrInsertWith
+            && let [f_ty] = given_tys
+            && self.drops_unrun(*f_ty)
+        {
+            let js_span = self.js_span(span);
+            let f = given.into_iter().next().expect("its function");
+            let f = match f.kind {
+                js::ExprKind::Var(_) => f,
+                _ => self.spill("f", f, out),
+            };
+            let mut dropped = Vec::new();
+            self.drop_value(f.clone(), *f_ty, span, &mut dropped)?;
+            let assign = StmtKind::Assign(place.clone(), apply(f, Vec::new())).at(js_span);
+            let absent = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
+            out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));
+            return Ok(match self.is_boxable(item) {
+                true => Expr::handle(place),
+                false => place,
+            });
+        }
         let mut given = given.into_iter();
         let js_span = self.js_span(span);
         let through = match self.is_boxable(item) {

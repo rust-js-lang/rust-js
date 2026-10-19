@@ -537,6 +537,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0466 A generic map's class is its caller's, a type fact of its key](decisions/0466-a-generic-maps-class-is-its-callers.md)
 - [0467 A map's keys with a destructor drop as Rust's do](decisions/0467-a-maps-keys-drop-as-rusts-do.md)
 - [0468 A lent adapter leaves its source to its lender, lent once](decisions/0468-a-lent-adapter-leaves-its-source-to-its-lender.md)
+- [0469 A function std leaves unrun is dropped there](decisions/0469-a-function-std-leaves-unrun-is-dropped-there.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

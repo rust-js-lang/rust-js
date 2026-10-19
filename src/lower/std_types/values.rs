@@ -41,9 +41,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Ref(..) => false,
             _ => holds_drops(ty),
         });
-        // Its value moves into the `Ok`; its function, run only for a `None`,
-        // would be dropped unrun, so it mustn't hold one.
-        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(tys[1]);
         // `v.extend(items)` moves each into `v`, and drops `items` once it's
         // given them all: that, of what holds nothing then, is nothing;
         // `it.partition(f)` each into one of its two (ADR 0445), and
@@ -57,7 +54,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
             || matches!(known, Std::IterComb(comb) if comb.holds_its_sources());
         if takes_drops
-            && !keeps_value
             && !moves_all
             && !matches!(
                 known,
@@ -112,7 +108,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // holds (ADR 0449).
                     | Std::PoisonData
                     // Moves its value into the function, which owns it then, and
-                    // drops the other variant's, or passes it on (ADR 0179).
+                    // drops the other variant's, or passes it on (ADR 0179); a
+                    // function it leaves unrun is dropped there (ADR 0469).
                     | Std::OptionMap
                     | Std::Comb(
                         Comb::ResultMap
@@ -131,6 +128,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Comb::IsOkAnd
                             | Comb::IsErrAnd
                             | Comb::Err
+                            | Comb::OkOrElse
+                            | Comb::OrElse
+                            | Comb::ResultOrElse
+                            | Comb::Then
                     )
                     | Std::ResultOk
                     | Std::VecMacro

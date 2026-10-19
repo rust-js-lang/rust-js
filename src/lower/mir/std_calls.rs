@@ -926,7 +926,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.flush(state, out)?;
-                self.option_place_values(op, place, item, given, span, out)?
+                self.option_place_values(op, place, item, (given, &arg_tys[1..]), span, out)?
             }
             _ => return Ok(None),
         })))
