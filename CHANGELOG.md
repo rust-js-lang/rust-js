@@ -21,6 +21,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).
+- **Hashing is std's**: `DefaultHasher` and `SipHasher`, a crate's own
+  `Hasher`, derived and hand-written `Hash` impls, and generic code's `T:
+  Hash` and `H: Hasher`, each `finish()` as native Rust's for `wasm32`
+  (ADR 0463).
 - **An `io::Error` is a value**: `io::Error::new(kind, e)`, `other(e)`,
   `kind.into()`, its `kind()`, and its `{}` and `{:?}` as std shows them;
   **an `io::Result<()>` may be an `Err`**, thrown as a `fmt::Result`'s is,

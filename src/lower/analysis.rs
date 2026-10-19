@@ -22,7 +22,7 @@ use super::{Body, FnInfo, TestFn, module_path};
 use crate::lower::recognition::{
     Recognition, StdItem, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
-use debug::{derived_debug, uses_format_options, uses_pretty_debug};
+use debug::{uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
@@ -66,6 +66,24 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     bodies
 }
 
+/// A derived impl whose methods are lowered, written only where they're
+/// reached: `Debug`'s, how `{:?}` shows its type (ADR 0060), and `Hash`'s,
+/// what a hasher is given of it (ADR 0463).
+fn lowered_derive(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    known_derive(tcx, id)
+        && matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+        && [StdItem::Debug, StdItem::Hash].into_iter().any(|item| {
+            is_std_def(
+                tcx,
+                tcx.impl_trait_ref(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id,
+                item,
+            )
+        })
+}
+
 /// The crate's functions a body is lowered of, each with its THIR.
 fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     let items = tcx.hir_crate_items(());
@@ -79,11 +97,12 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             DefKind::Fn => !is_binding(tcx, def_id.to_def_id()),
             // A method of an `impl Type` block (ADR 0047).
             // A derived impl's is never called, but a derived `Debug`'s is
-            // how `{:?}` shows its type (ADR 0060).
+            // how `{:?}` shows its type (ADR 0060), and a derived `Hash`'s
+            // what a hasher is given (ADR 0463).
             DefKind::AssocFn => {
                 let parent = tcx.parent(def_id.to_def_id());
                 tcx.hir_maybe_body_owned_by(def_id).is_some()
-                    && (!known_derive(tcx, parent) || derived_debug(tcx, parent))
+                    && (!known_derive(tcx, parent) || lowered_derive(tcx, parent))
                     && !is_unlowered_impl(tcx, parent)
                     && !is_js_object_deref(tcx, parent)
                     && !is_binding(tcx, def_id.to_def_id())
@@ -425,7 +444,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|&id| {
             matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
                 && (!known_derive(tcx, id.to_def_id())
-                    || derived_debug(tcx, id.to_def_id())
+                    || lowered_derive(tcx, id.to_def_id())
                     || serde_impl(tcx, id.to_def_id()).is_some())
                 && (!from_serde_derive(tcx, id) || serde_impl(tcx, id.to_def_id()).is_some())
         })

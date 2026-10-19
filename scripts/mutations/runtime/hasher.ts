@@ -1,0 +1,77 @@
+// Mutations of src/runtime/hasher.js (ADR 0463).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "sip-round-rotation",
+    breaks: "a SipHash round rotates `v1` by 17 where std's rotates it by 13",
+    file: "src/runtime/hasher.js",
+    find: "      this.v1 = rotl(this.v1, 13n) ^ this.v0;\n",
+    replace: "      this.v1 = rotl(this.v1, 17n) ^ this.v0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "sip-finish-without-length",
+    breaks: "`finish()` leaves out how many bytes were written, so `[0]` and `[]` hash alike",
+    file: "src/runtime/hasher.js",
+    find: "    const last = (BigInt(this.length & 0xff) << 56n) | this.tail;\n",
+    replace: "    const last = this.tail;\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "sip-finish-ends-it",
+    breaks: "`finish()` changes the hasher, so what's written after it hashes from its end",
+    file: "src/runtime/hasher.js",
+    find: "    Object.assign(this, { v0, v1, v2, v3 });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "sip-clone-shared",
+    breaks: "a cloned `DefaultHasher` is the same one, written by what's written to the other",
+    file: "src/runtime/hasher.js",
+    find: "    return Object.assign(Object.create($SipHasher.prototype), this);\n",
+    replace: "    return this;\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "hasher-usize-eight-bytes",
+    breaks: "a `usize` is written as 8 bytes, a 64-bit target's, not rust-js's 4",
+    file: "src/runtime/hasher.js",
+    find: "  write_usize(n) {\n    this.write($toBytes(n, 4, true));\n",
+    replace: "  write_usize(n) {\n    this.write($toBytes(BigInt(n), 8, true));\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "hasher-signed-past-unsigned",
+    breaks: "std's `write_i64` writes its bytes, not through the hasher's own `write_u64`",
+    file: "src/runtime/hasher.js",
+    find: "    this.write_u64(BigInt.asUintN(64, n));\n",
+    replace: "    this.write($toBytes(n, 8, true));\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
+  },
+  {
+    name: "hasher-str-unterminated",
+    breaks: "`write_str` writes no `0xff` after the text, so `(\"ab\", \"c\")` and `(\"a\", \"bc\")` hash alike",
+    file: "src/runtime/hasher.js",
+    find: "    this.write(Array.from(new TextEncoder().encode(s)));\n    this.write_u8(0xff);\n",
+    replace: "    this.write(Array.from(new TextEncoder().encode(s)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "hasher-provided-over-std",
+    breaks: "a crate's hasher's provided methods call std's others, not its own `write_u64`",
+    file: "src/runtime/hasher.js",
+    find: "      for (const other of [\"write\", ...$hasherProvided]) {\n",
+    replace: "      for (const other of [\"write\"]) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
+  },
+  {
+    name: "hash-slice-first-only",
+    breaks: "std's `hash_slice` of a crate's type hashes its first item alone",
+    file: "src/runtime/hasher.js",
+    find: "    for (const item of items) hash(item, state, H);\n",
+    replace: "    hash(items[0], state, H);\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+];

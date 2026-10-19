@@ -319,6 +319,22 @@ test("a library's private type's impl is given to its generic code by a consumer
   expect(printed(join(dir, "app.js"))).toBe("AB\n");
 }, 300_000);
 
+// A library's `Hash` impls, derived and its own, and its hasher, are given
+// to its consumer's code, and the consumer's type to the library's generic
+// code, as any impl is (ADR 0463): each hash std's, as native Rust's.
+test("a library's Hash impls and hasher hash in its consumer", () => {
+  const dir = fixture("library-hash");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "use std::hash::{DefaultHasher, Hash, Hasher};\n\n#[derive(Hash)]\npub struct Key {\n    pub id: u32,\n    pub name: String,\n}\n\npub struct Folded(pub String);\n\nimpl Hash for Folded {\n    fn hash<H: Hasher>(&self, state: &mut H) {\n        self.0.to_lowercase().hash(state);\n    }\n}\n\n#[derive(Default)]\npub struct Sum(u64);\n\nimpl Hasher for Sum {\n    fn finish(&self) -> u64 {\n        self.0\n    }\n\n    fn write(&mut self, bytes: &[u8]) {\n        for &b in bytes {\n            self.0 = self.0 * 31 + u64::from(b);\n        }\n    }\n}\n\npub fn digest<T: Hash>(value: &T) -> u64 {\n    let mut hasher = DefaultHasher::new();\n    value.hash(&mut hasher);\n    hasher.finish()\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use std::hash::{DefaultHasher, Hash, Hasher};\n\n#[derive(Hash)]\nstruct Mine(u8, &'static str);\n\nfn sum<T: Hash>(value: &T) -> u64 {\n    let mut hasher = dep::Sum::default();\n    value.hash(&mut hasher);\n    hasher.finish()\n}\n\npub fn main() {\n    let key = dep::Key { id: 1, name: \"a\".into() };\n    let mut hasher = DefaultHasher::new();\n    key.hash(&mut hasher);\n    println!(\"{} {}\", hasher.finish(), dep::digest(&key));\n    println!(\"{}\", dep::digest(&dep::Folded(\"AbC\".into())) == dep::digest(&dep::Folded(\"abc\".into())));\n    println!(\"{} {}\", dep::digest(&Mine(2, \"b\")), sum(&Mine(2, \"b\")));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("18401673941424689880 18401673941424689880\ntrue\n5997443710218998710 5215\n");
+}, 300_000);
+
 // A library's function that asks the size of its type parameter is told it
 // by its consumer, as its manifest says (ADR 0145), directly or through the
 // consumer's own generic function, and a library's impl's dictionary too.

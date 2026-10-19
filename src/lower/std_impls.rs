@@ -384,6 +384,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
+            // A std hasher, a `$SipHasher`: one of its state (ADR 0463).
+            ty::Adt(..) if self.recognition().std_hasher(ty).is_some() => {
+                Ok(Expr::call(Expr::member(place, "clone"), Vec::new()))
+            }
             // A C-variadic function's `VaList`, the array of what it hasn't
             // read: a copy, read on its own (ADR 0428).
             ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {
@@ -573,6 +577,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .default_variant(default, ty)
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
                 super::bindings::unit_variant(self.tcx, adt.did(), adt.variant_with_ctor_id(variant))
+            }
+            // A std hasher's, as its `new()` (ADR 0463).
+            ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {
+                super::std_types::hash::new_hasher(which, Vec::new())
             }
             ty::Adt(adt, _) if self.is_std(adt.did()) => {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));

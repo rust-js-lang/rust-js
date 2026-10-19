@@ -339,6 +339,7 @@ pub fn lower_crate<'tcx>(
 
     // What's written only where it's reached: derived Debug implementations,
     // a marker trait's dictionaries, which only a `dyn` reads (ADR 0307),
+    // a `Hash`'s and a `Hasher`'s, which a map never calls (ADR 0463),
     // and those only generic code reads, their methods called as they are
     // anywhere else (`read_only_generically`).
     // Adjacency lists rather than scanning every edge again for every reached
@@ -351,7 +352,9 @@ pub fn lower_crate<'tcx>(
                 .instantiate_identity()
                 .skip_normalization()
                 .def_id;
-            super::recognition::known_derive(tcx, id) || super::traits::is_marker(tcx, &foreign, trait_id)
+            super::recognition::known_derive(tcx, id)
+                || super::traits::is_marker(tcx, &foreign, trait_id)
+                || super::recognition::is_hashing(tcx, trait_id)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .chain(trait_impls.iter().copied().filter(|&id| {

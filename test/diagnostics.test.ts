@@ -135,7 +135,7 @@ for (const [name, source, message, crate] of [
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
   ["a path's components", "use std::path::Path;\npub fn f(a: &Path) -> usize { a.components().count() }", "calling `std::path::Path::components`"],
-  ["a user impl of a std trait", 'pub struct C;\nimpl std::hash::Hasher for C { fn finish(&self) -> u64 { 0 } fn write(&mut self, _: &[u8]) {} }', "user implementations of `std::hash::Hasher`"],
+  ["a user impl of a std trait", 'pub struct C;\nimpl std::net::ToSocketAddrs for C { type Iter = std::vec::IntoIter<std::net::SocketAddr>; fn to_socket_addrs(&self) -> std::io::Result<Self::Iter> { Ok(Vec::new().into_iter()) } }', "user implementations of `std::net::ToSocketAddrs`"],
   ["comparing another crate's struct", 'pub fn f(a: std::net::Ipv4Addr, b: std::net::Ipv4Addr) -> bool { a < b }', "does not support"],
   ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a `C`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],

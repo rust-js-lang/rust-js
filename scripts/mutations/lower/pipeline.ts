@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "marker-dictionary-written",
     breaks: "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
     file: "src/lower/pipeline.rs",
-    find: "            super::recognition::known_derive(tcx, id) || super::traits::is_marker(tcx, &foreign, trait_id)\n",
+    find: "            super::recognition::known_derive(tcx, id)\n                || super::traits::is_marker(tcx, &foreign, trait_id)\n",
     replace: "            super::recognition::known_derive(tcx, id)\n",
     tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
   },
@@ -350,5 +350,14 @@ export const mutations: Mutation[] = [
     find: "            if export == \"*\" {\n",
     replace: "            if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub use of a JS module's namespace"],
+  },
+  {
+    name: "hash-impls-written-unreached",
+    breaks: "a `Hash` impl nothing calls is written, where a map never calls it",
+    file: "src/lower/pipeline.rs",
+    find: "                || super::recognition::is_hashing(tcx, trait_id)\n        })\n",
+    replace: "        })\n",
+    tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
+    snapshots: true,
   },
 ];

@@ -2706,4 +2706,21 @@ export const mutations: Mutation[] = [
     replace: "                Value::Expr(e)\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
+  {
+    name: "hash-dictionary-hasher-unboxed",
+    breaks: "a hasher given through a `T: Hash`'s dictionary isn't boxed, where its `Hasher`'s reads a box's `value`",
+    file: "src/lower/mir.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash) && self.is_unknown(generic_args.type_at(0)))\n",
+    replace: "                    || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "hash-hasher-boxed-where-known",
+    breaks: "a hasher given to a known type's `Hash` is boxed and copied back, as for a dictionary's",
+    file: "src/lower/mir.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash) && self.is_unknown(generic_args.type_at(0)))\n",
+    replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash))\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+    snapshots: true,
+  },
 ];

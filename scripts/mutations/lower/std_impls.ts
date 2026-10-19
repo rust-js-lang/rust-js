@@ -440,4 +440,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
     snapshots: true,
   },
+  {
+    name: "std-hasher-clone-shared",
+    breaks: "a cloned std hasher is the same one",
+    file: "src/lower/std_impls.rs",
+    find: "                Ok(Expr::call(Expr::member(place, \"clone\"), Vec::new()))\n",
+    replace: "                Ok(place)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
 ];

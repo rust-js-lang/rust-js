@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0168](0168-user-hash.md), whose `Hash` impls
 are allowed and never lowered, and [0029](0029-async-await.md), whose
-futures are JS promises.
+futures are JS promises. Amended by
+[0463](0463-hashing-is-stds.md): `Hash` is lowered now, and no longer
+`unlowered_trait`'s; these four still are.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)): an impl nothing
 calls is no JS a program can see; what would call one, or await one as a

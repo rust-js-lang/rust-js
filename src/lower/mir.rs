@@ -42,7 +42,7 @@ use super::combinators::{IterComb, StepOp};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{
-    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, pure_std, std_item, trait_method,
+    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, pure_std, std_item, trait_method,
 };
 use super::refusal::{Refused, refuse};
 use super::representation::{const_js, variant_field};
@@ -2909,12 +2909,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Vec<Expr>> {
         // What's called: a trait's method resolved to its impl's, whose
         // parameters say which are boxes, or the crate's trait's own, a
-        // dictionary's; not a `dyn`'s, whose pair is its `&mut`, nor std's.
+        // dictionary's, and `Hash`'s of a type only a caller knows, whose
+        // hasher is a `&mut H` of its own (ADR 0463); not a `dyn`'s, whose
+        // pair is its `&mut`, nor std's.
         let callee = match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
-                None if self.is_rust_trait(trait_id) && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) => {
+                None if (self.is_rust_trait(trait_id)
+                    || is_std_def(self.tcx, trait_id, StdItem::Hash) && self.is_unknown(generic_args.type_at(0)))
+                    && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) =>
+                {
                     Some((def_id, generic_args))
                 }
                 None => None,

@@ -343,6 +343,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.io_error_call(known, call, &mut values)? {
             return Ok(js);
         }
+        if let Some(js) = self.hash_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.location_call(known, call, &mut values) {
             return Ok(js);
         }
@@ -387,7 +390,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its variant's discriminant, of the enum it's a reference to.
             Std::Discriminant => {
                 let of = generic_args.types().next().expect("`discriminant`'s type argument");
-                self.discriminant_value(arg(), of, out)
+                let big = crate::lower::Num::of(output).is_some_and(crate::lower::Num::big);
+                self.discriminant_value(arg(), of, big, out)
             }
             Std::Leak => self.leaked(arg(), output),
             Std::Pointee => self.through_refs(arg(), tys[0]).0,
@@ -505,6 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Process(_) => unreachable!("lowered by process_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
             Std::IoError(_) => unreachable!("lowered by io_error_call"),
+            Std::Hash(_) => unreachable!("lowered by hash_call"),
             Std::Alloc(_) => unreachable!("lowered by alloc_call"),
             Std::Capacity(_) => unreachable!("lowered by vec_call"),
             Std::Path(_) => unreachable!("lowered by path_call"),

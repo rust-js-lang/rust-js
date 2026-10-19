@@ -3,6 +3,9 @@
 Status: Accepted. Extends [0121](0121-value-keys.md). Extended by
 [0425](0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md):
 `Future`, `io::Read`, `BufRead` and `Seek` are allowed and never lowered too.
+Superseded in part by [0463](0463-hashing-is-stds.md): a `Hash` impl is
+lowered, written only where it's reached, and `hash` called with std's
+hashers or a crate's own; a map still keys by value and never calls it.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

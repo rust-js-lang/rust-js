@@ -11,6 +11,7 @@ use super::representation::Num;
 use super::std_types::any::AnyOp;
 use super::std_types::clock::ClockOp;
 use super::std_types::cow::CowOp;
+use super::std_types::hash::{HashOp, Hashed, StdHasher};
 use super::std_types::heap::HeapOp;
 use super::std_types::io_error::IoErrorOp;
 use super::std_types::lazy::LazyOp;
@@ -170,6 +171,9 @@ pub(super) enum Std {
     Location(super::std_types::location::LocationOp),
     /// An `io::Error`'s: made, or its kind asked (ADR 0462).
     IoError(IoErrorOp),
+    /// Hashing's (ADR 0463): a std hasher made, or its own method called, or
+    /// a std type's `Hash`.
+    Hash(HashOp),
     /// A path's own method (ADR 0405).
     Path(PathOp),
     /// std's of a raw pointer, a handle on its place (ADR 0407).
@@ -657,7 +661,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::NeedsDrop));
         }
         // An enum's variant's discriminant (ADR 0393).
-        if std_path(tcx, def_id) == "std::mem::discriminant" {
+        // And as a derived `Hash` hashes it (ADR 0463).
+        if matches!(
+            std_path(tcx, def_id).as_str(),
+            "std::mem::discriminant" | "std::intrinsics::discriminant_value"
+        ) {
             return Some(Some(Std::Discriminant));
         }
         if diagnostic("mem_drop") {
@@ -721,6 +729,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if let Some(op) = self.io_error_op(def_id, args) {
             return Some(Some(Std::IoError(op)));
+        }
+        if let Some(op) = self.hash_op(def_id, args) {
+            return Some(Some(Std::Hash(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
         let utf8 = match std_path(tcx, def_id).as_str() {
@@ -2410,6 +2421,104 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_io_error(to) && self.is_io_error_kind(from)).then_some(IoErrorOp::FromKind)
     }
 
+    /// Which of hashing's functions `def_id` is (ADR 0463): a std hasher's
+    /// `new` and `new_with_keys`, its own `Hasher` methods, and a std type's
+    /// `Hash`.
+    fn hash_op(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<HashOp> {
+        let tcx = self.tcx;
+        match std_path(tcx, def_id).as_str() {
+            "std::hash::DefaultHasher::new" => return Some(HashOp::New(StdHasher::Default)),
+            "std::hash::SipHasher::new" => return Some(HashOp::New(StdHasher::Sip)),
+            "std::hash::SipHasher::new_with_keys" => return Some(HashOp::NewWithKeys),
+            _ => {}
+        }
+        let tr = tcx.trait_of_assoc(def_id)?;
+        let self_ty = args.types().next()?;
+        if is_hasher(tcx, tr) && self.std_hasher(self_ty).is_some() {
+            return Some(HashOp::Own);
+        }
+        // A crate's hasher's provided method that its impl doesn't write,
+        // `count.write_i32(n)`: its dictionary's, std's over its own.
+        if is_hasher(tcx, tr) && self.left_to_std(def_id, self_ty) {
+            return Some(HashOp::Provided);
+        }
+        if !is_std_def(tcx, tr, StdItem::Hash) {
+            return None;
+        }
+        let std = self.hashed_as(self_ty).is_some();
+        match tcx.item_name(def_id).as_str() {
+            "hash" if std => Some(HashOp::Hash),
+            // Of a crate's type too, whose impl leaves it to std: its
+            // dictionary's, `$hashSlice`'s.
+            "hash_slice" if std || self.left_to_std(def_id, self_ty) => Some(HashOp::HashSlice),
+            _ => None,
+        }
+    }
+
+    /// Whether `self_ty`'s impl of the trait of provided method `def_id`
+    /// leaves it to std's: a crate's type's whose impl doesn't write it.
+    fn left_to_std(&self, def_id: DefId, self_ty: Ty<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let Some(tr) = tcx.trait_of_assoc(def_id) else {
+            return false;
+        };
+        matches!(self_ty.kind(), ty::Adt(..))
+            && matches!(
+                tcx.codegen_select_candidate(
+                    self.typing_env
+                        .as_query_input(tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [self_ty]))),
+                ),
+                Ok(ImplSource::UserDefined(imp))
+                    if !tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)
+            )
+    }
+
+    /// std's `Hasher`, found among the traits, as it has no diagnostic item.
+    pub(super) fn hasher_trait(&self) -> Option<DefId> {
+        self.tcx
+            .all_traits_including_private()
+            .find(|&id| is_hasher(self.tcx, id))
+    }
+
+    /// Which of std's hashers `ty` is, a `$SipHasher` (ADR 0463).
+    pub(super) fn std_hasher(&self, ty: Ty<'tcx>) -> Option<StdHasher> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::hash::DefaultHasher" => Some(StdHasher::Default),
+            "std::hash::SipHasher" => Some(StdHasher::Sip),
+            _ => None,
+        }
+    }
+
+    /// What std's `Hash` of a `ty` writes, where it's std's (ADR 0463):
+    /// `None` of a crate's type, a type parameter, or one rust-js doesn't
+    /// hash.
+    pub(super) fn hashed_as(&self, ty: Ty<'tcx>) -> Option<Hashed<'tcx>> {
+        Some(match *ty.kind() {
+            ty::Int(_) | ty::Uint(_) => Hashed::Number(ty),
+            // A `NonZero` is its number (ADR 0177), and an `Ordering` its
+            // `i8`, `-1`, `0` or `1`, as its derived `Hash` writes it.
+            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(args.type_at(0)),
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::OrderingEnum) => Hashed::Number(self.tcx.types.i8),
+            ty::Bool => Hashed::Bool,
+            ty::Char => Hashed::Char,
+            ty::Str => Hashed::Text,
+            ty::Ref(_, pointee, _) => Hashed::Pointer(pointee),
+            ty::Tuple(parts) => Hashed::Tuple(parts.to_vec()),
+            ty::Slice(item) | ty::Array(item, _) => Hashed::Slice(item),
+            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => Hashed::Pointer(args.type_at(0)),
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec) => Hashed::Slice(args.type_at(0)),
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) => Hashed::Items(args.type_at(0)),
+            ty::Adt(_, args) if self.option_of(ty).is_some() => Hashed::Option(args.type_at(0)),
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result) && !self.is_write_result(ty) => {
+                Hashed::Result(args.type_at(0), args.type_at(1))
+            }
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::String) => Hashed::Text,
+            ty::Adt(..) if self.is_std_type(ty, StdItem::PhantomData) => Hashed::Tuple(Vec::new()),
+            _ => return None,
+        })
+    }
+
     /// Which of std's ranges `ty` is, if it's one (ADR 0129).
     pub(super) fn range_kind(&self, ty: Ty<'tcx>) -> Option<RangeKind> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
@@ -3920,6 +4029,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .into_iter()
         .any(|item| is_std_def(self.tcx, id, item))
             || any_trait(self.tcx) == Some(id)
+            // A `dyn Hasher`, its dictionary a hasher's (ADR 0463).
+            || is_hasher(self.tcx, id)
     }
 
     /// A `dyn` of `predicates` that's a pair: of a pair trait, or of no
@@ -4589,6 +4700,21 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // `for x in c` of a `for<'a> &'a mut C: IntoIterator`: its
         // dictionary's `into_iter` (ADR 0457).
         || tcx.is_diagnostic_item(sym::IntoIterator, id)
+        // `value.hash(state)` of a `T: Hash`, and a hasher's writes of an `H:
+        // Hasher`: their dictionaries' `hash`, and `write`, `write_u32`, ...
+        // and `finish` (ADR 0463).
+        || is_hashing(tcx, id)
+}
+
+/// `Hash` or `Hasher`: hashing's traits, whose impls a map never calls
+/// (ADR 0463).
+pub(crate) fn is_hashing(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_def(tcx, id, StdItem::Hash) || is_hasher(tcx, id)
+}
+
+/// `std::hash::Hasher`, which has no diagnostic item (ADR 0463).
+pub(crate) fn is_hasher(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id) == "std::hash::Hasher"
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -4645,13 +4771,11 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
 }
 
 /// A std trait whose impls, the crate's own, rust-js allows and never
-/// lowers: what would call one is refused where it would. `Hash`, as a
-/// map keys by value and never calls `hash` (ADRs 0121, 0168); `Future`,
-/// as `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead`
-/// and `Seek`, which JS has no stream of (ADR 0425). The one list.
+/// lowers: what would call one is refused where it would. `Future`, as
+/// `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead` and
+/// `Seek`, which JS has no stream of (ADR 0425). The one list.
 pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    is_std_def(tcx, id, StdItem::Hash)
-        || tcx.is_lang_item(id, LangItem::Future)
+    tcx.is_lang_item(id, LangItem::Future)
         || matches!(
             std_path(tcx, id).as_str(),
             "std::io::Read" | "std::io::BufRead" | "std::io::Seek"
@@ -6213,6 +6337,10 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || is_writer_default(tcx, id)
         || is_std_method(tcx, id, StdItem::IoWrite, "write_all")
         || is_std_method(tcx, id, StdItem::IoWrite, "write_fmt")
+        // A crate's `Hasher`'s provided methods, `$hasher`'s, and `Hash`'s
+        // `hash_slice`, `$hashSlice`'s (ADR 0463).
+        || tcx.trait_of_assoc(id).is_some_and(|tr| is_hasher(tcx, tr))
+        || is_std_method(tcx, id, StdItem::Hash, "hash_slice")
 }
 
 /// `Error`'s deprecated `cause`, `Some(true)`, std's its `source`, or

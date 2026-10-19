@@ -351,8 +351,8 @@ export const mutations: Mutation[] = [
     name: "discriminant-chain-last-zero",
     breaks: "an enum with fields' last variant's discriminant is 0, its first's, not its own",
     file: "src/lower/representation.rs",
-    find: "fold(Expr::int(last),",
-    replace: "fold(Expr::int(0),",
+    find: "fold(literal(last),",
+    replace: "fold(literal(0),",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
   {
@@ -476,5 +476,13 @@ export const mutations: Mutation[] = [
     find: "        if self.is_write_result(ty) {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
     replace: "        if false {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+  {
+    name: "discriminant-big-as-number",
+    breaks: "a 64-bit `repr`'s discriminant, as a derived `Hash` reads it, is a number, not a BigInt",
+    file: "src/lower/representation.rs",
+    find: "            true => Expr::bigint(n),\n",
+    replace: "            true => Expr::int(n),\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
 ];

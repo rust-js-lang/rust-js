@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return unreached;\n",
     tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
   },
+  {
+    name: "derived-hash-unlowered",
+    breaks: "a derived `Hash`'s method isn't lowered, so hashing it is refused",
+    file: "src/lower/analysis.rs",
+    find: "        && [StdItem::Debug, StdItem::Hash].into_iter().any(|item| {\n",
+    replace: "        && [StdItem::Debug].into_iter().any(|item| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
 ];

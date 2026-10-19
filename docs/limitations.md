@@ -87,12 +87,13 @@ depends on what the program does:
 
 ## Hashing
 
-A `HashMap` or a `HashSet` keys by value and never hashes
-([ADR 0168](decisions/0168-user-hash.md)), so there's no `Hasher` in JS.
+std's hashers and a crate's own hash as native Rust's
+([ADR 0463](decisions/0463-hashing-is-stds.md)); a `HashMap` or a `HashSet`
+keys by value and never hashes ([ADR 0121](decisions/0121-value-keys.md)).
 
-- `DefaultHasher`, so calling `hash`: `use std::hash::{Hash, Hasher}; let mut h = std::collections::hash_map::DefaultHasher::new(); 1u32.hash(&mut h); println!("{}", h.finish());`
-- `SipHasher`: `#[allow(deprecated)] let h = std::hash::SipHasher::new(); drop(h);`
-- A `Hasher` of the crate's: `struct H(u64); impl std::hash::Hasher for H { fn finish(&self) -> u64 { self.0 } fn write(&mut self, b: &[u8]) { self.0 += b.len() as u64; } } use std::hash::Hash; let mut h = H(0); 5u32.hash(&mut h);`
+- A `BuildHasher`, `RandomState`'s: `use std::hash::BuildHasher; let s = std::hash::RandomState::new(); println!("{}", s.hash_one(5u32) == s.hash_one(5u32));`
+- `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
+- Hashing a std type rust-js doesn't write: `use std::hash::{Hash, Hasher}; let mut h = std::hash::DefaultHasher::new(); std::time::Duration::from_secs(1).hash(&mut h); println!("{}", h.finish());`
 
 ## Panics, processes and I/O
 

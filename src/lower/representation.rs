@@ -81,19 +81,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Which variant `subject` is, of its enum `ty`, as rustc numbers it, its
     /// discriminant (ADR 0393): by its variant's name where its value says
     /// it once (`named_discriminant`), else each variant's test in turn, the
-    /// last one's the rest. Of a type that's no enum, `0`, as Rust's is.
-    pub(in crate::lower) fn discriminant_value(&mut self, subject: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+    /// last one's the rest. Of a type that's no enum, `0`, as Rust's is. Each
+    /// a BigInt where `big`, a 64-bit `repr`'s as a derived `Hash` reads it.
+    pub(in crate::lower) fn discriminant_value(
+        &mut self,
+        subject: Expr,
+        ty: Ty<'tcx>,
+        big: bool,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let literal = |n: i128| match big {
+            true => Expr::bigint(n),
+            false => Expr::int(n),
+        };
         let ty::Adt(adt, _) = ty.kind() else {
             if subject.has_effects() {
                 out.push(StmtKind::Expr(subject).at(js::Span::NONE));
             }
-            return Expr::int(0);
+            return literal(0);
         };
         let adt = *adt;
         if !adt.is_enum() {
-            return Expr::int(0);
+            return literal(0);
         }
-        let subject = match self.named_discriminant(subject, adt, false) {
+        let subject = match self.named_discriminant(subject, adt, big) {
             Ok(named) => return named,
             Err(subject) => subject,
         };
@@ -102,14 +113,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(variant, (_, n))| (variant, n))
             .collect();
         let Some((_, last)) = variants.pop() else {
-            return Expr::int(0);
+            return literal(0);
         };
         let subject = match subject.reads_same() || variants.is_empty() {
             true => subject,
             false => self.spill("value", subject, out),
         };
-        variants.into_iter().rev().fold(Expr::int(last), |rest, (variant, n)| {
-            Expr::cond(self.variant_test(subject.clone(), ty, adt, variant), Expr::int(n), rest)
+        variants.into_iter().rev().fold(literal(last), |rest, (variant, n)| {
+            Expr::cond(self.variant_test(subject.clone(), ty, adt, variant), literal(n), rest)
         })
     }
 

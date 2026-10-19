@@ -6,7 +6,7 @@ use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
     Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, error_default, in_std_dictionary,
-    into_iter_by_dictionary, io_write_default, is_clone_from, is_std_def, is_std_method, is_writer_default,
+    into_iter_by_dictionary, io_write_default, is_clone_from, is_hasher, is_std_def, is_std_method, is_writer_default,
     known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
@@ -765,9 +765,13 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 /// guard's value or a `Cow`'s text, and a collection's `extend` and
 /// `from_iter`, of any items, where its own type is known, whatever it
 /// holds, a `MutexGuard<C>`'s (ADRs 0394, 0445, 0450). An `IntoIterator`'s
-/// but one of a reference to a type only a caller knows (ADR 0457).
+/// but one of a reference to a type only a caller knows (ADR 0457). A
+/// hasher's, and a `Hash`'s, where its types are known: a std hasher's own
+/// method, a crate's hasher's provided one, a std type's writes (ADR 0463).
 fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known_here: bool) -> bool {
-    let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite) || is_std_def(tcx, trait_id, StdItem::IoWrite);
+    let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite)
+        || is_std_def(tcx, trait_id, StdItem::IoWrite)
+        || super::recognition::is_hashing(tcx, trait_id);
     let holder = tcx.is_lang_item(trait_id, LangItem::Deref)
         || tcx.is_lang_item(trait_id, LangItem::DerefMut)
         || super::recognition::is_extend(tcx, trait_id)
@@ -782,7 +786,8 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
 /// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
-/// (ADR 0162), and an `IntoIterator`'s (ADR 0457). Where the
+/// (ADR 0162), an `IntoIterator`'s (ADR 0457), and a `Hash`'s and a
+/// `Hasher`'s (ADR 0463). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -794,6 +799,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || is_std_def(tcx, trait_id, StdItem::FromIterator)
         || is_std_def(tcx, trait_id, StdItem::AsMut)
         || is_std_def(tcx, trait_id, StdItem::IntoIterator)
+        || super::recognition::is_hashing(tcx, trait_id)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -836,6 +842,11 @@ fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         }
         // A struct's or an enum's own name, `String`, not its path.
         ty::Adt(..) => type_word(tcx, ty),
+        // A derive's own, `__H` of `#[derive(Hash)]`'s `hash<__H: Hasher>`:
+        // `H`, as it's written by hand (ADR 0463).
+        ty::Param(p) if p.name.as_str().starts_with('_') && !p.name.as_str().trim_start_matches('_').is_empty() => {
+            p.name.as_str().trim_start_matches('_').to_string()
+        }
         _ => ty.to_string(),
     }
 }
@@ -1249,6 +1260,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_std_def(self.tcx, tr.def_id, StdItem::Error)
             && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())
         {
+            return Ok(dictionary);
+        }
+        // A std hasher's `Hasher`, and a std type's `Hash` (ADR 0463).
+        if let Some(dictionary) = self.std_hash_dictionary(tr, span)? {
             return Ok(dictionary);
         }
         // An `Iterator`'s, of a type that isn't a parameter given one (ADR
@@ -3086,6 +3101,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 continue;
             }
+            // A `Hasher`'s provided method its impl doesn't write: `$hasher`'s,
+            // std's over the dictionary's own (ADR 0463).
+            if is_hasher(self.tcx, tr.def_id)
+                && self.tcx.defaultness(item.def_id).has_value()
+                && !self.tcx.impl_item_implementor_ids(id).contains_key(&item.def_id)
+            {
+                continue;
+            }
             // The method's own parameters: lifetimes, `fn bar<'b>`, are erased,
             // as they aren't in the JS, but rustc resolves with them; a type,
             // `describe<T>`, is its caller's, the trait method's own (ADR 0106).
@@ -3163,6 +3186,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(
                     bindings::fn_name(self.tcx, item.def_id),
                     Expr::call(Expr::helper(helper), vec![write]),
+                ));
+                continue;
+            }
+            // std's own `hash_slice` of a `Hash` of the crate's: each item's
+            // `hash`, as std's (ADR 0463).
+            if is_std_method(self.tcx, item.def_id, StdItem::Hash, "hash_slice")
+                && !self.krate.fns.contains_key(&method)
+            {
+                let hash = self.shared_entry(&mut props, &mut shared, "hash", span)?;
+                props.push(Prop::Field(
+                    bindings::fn_name(self.tcx, item.def_id),
+                    Expr::call(Expr::helper("$hashSlice"), vec![hash]),
                 ));
                 continue;
             }
@@ -3376,7 +3411,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props.extend(self.dictionary_drop(tr.self_ty(), span)?);
         props.extend(self.item_drops(tr, span)?);
         props.extend(self.item_facts(tr, span)?);
-        let object = Expr::object(props);
+        let object = match is_hasher(self.tcx, tr.def_id) {
+            true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),
+            false => Expr::object(props),
+        };
         let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());
         let mut body = Vec::new();
         if params.is_empty() {
