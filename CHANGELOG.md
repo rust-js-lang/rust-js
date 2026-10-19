@@ -561,6 +561,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **The crate's iterator given to a generic `I: Iterator + Clone` or
+  `Debug`** was cloned and shown as its JS iterator: it's given as it is
+  (ADR 0474).
 - **`fuse()` of an iterator that starts again after its `None`** stepped it
   again: it's std's `Fuse`, ended for good; and a crate iterator with a
   `Drop` under an adapter, `map` or `fuse`, is dropped as std drops it

@@ -49,23 +49,41 @@ pub(in crate::lower) fn stepped_ends(
 /// Whether `id`'s type parameter `param`, bound by `Iterator`, is given as it
 /// is (ADR 0411): one an impl's type holds, `I` of `Doubled<I>`, or the
 /// function's signature has in anything but itself, `Wrap<I>` or a result,
-/// whose value its caller may read as its own type, and so stepped by its
-/// `Iterator` dictionary, `{ next }`, where it's stepped. One given only
-/// itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
+/// or another bound reads as its own type, `I: Clone`'s `clone(&it)` (ADR
+/// 0474), whose value its caller may read as its own type, and so stepped
+/// by its `Iterator` dictionary, `{ next }`, where it's stepped. One given
+/// only itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
     // Bound by `Iterator` itself, as `bounds` reads its clauses, which make
     // its evidence: not by a trait it's a supertrait of.
     let iterator = std_item(tcx, StdItem::Iterator);
-    let bound = tcx
+    let of_param: Vec<DefId> = tcx
         .clauses_of(id)
         .instantiate_identity(tcx)
         .into_iter()
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-        .any(|p| p.def_id() == iterator && p.self_ty().skip_binder() == Ty::new_param(tcx, param.index, param.name));
-    if !bound {
+        .filter(|p| p.self_ty().skip_binder() == Ty::new_param(tcx, param.index, param.name))
+        .map(|p| p.def_id())
+        .collect();
+    if !of_param.contains(&iterator) {
         return false;
     }
+    // A bound whose methods read its value as its own type, `Clone`'s or
+    // `Debug`'s: not a marker's, nor the trait `id` is of, whose `Self:
+    // Trait` is how it's called, an extension trait's of any iterator.
+    let own_trait = match tcx.def_kind(id) {
+        rustc_hir::def::DefKind::Impl { .. } => Some(id),
+        _ => tcx.impl_of_assoc(id),
+    }
+    .and_then(|imp| tcx.impl_opt_trait_ref(imp))
+    .map(|tr| tr.skip_binder().def_id)
+    .or_else(|| tcx.trait_of_assoc(id));
+    let read = of_param.iter().any(|&tr| {
+        tr != iterator
+            && Some(tr) != own_trait
+            && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
+    });
     // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
     // projection isn't given back.
     let has = |ty: Ty<'tcx>| {
@@ -96,7 +114,7 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
                     !matches!(input.peel_refs().kind(), ty::Param(p) if p.index == param.index) && has(input)
                 })
         };
-    held || signature
+    held || signature || read
 }
 
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if

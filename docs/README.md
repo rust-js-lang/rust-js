@@ -542,6 +542,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0471 A generic unstable sort is sorted as its caller's type picks](decisions/0471-a-generic-unstable-sort-is-its-callers.md)
 - [0472 An `Option` an `Option` holds is given as it's held](decisions/0472-an-options-option-is-given-as-its-held.md)
 - [0473 `fuse()` is Rust's `Fuse`](decisions/0473-fuse-is-rusts-fuse.md)
+- [0474 An iterator another bound reads is given as it is](decisions/0474-an-iterator-another-bound-reads-is-given-as-it-is.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

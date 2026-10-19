@@ -729,4 +729,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
     snapshots: true,
   },
+  {
+    name: "iterator-read-as-js",
+    breaks: "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
+    file: "src/lower/iterators.rs",
+    find: "    held || signature || read\n",
+    replace: "    held || signature\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_read_as_itself.rs$"],
+  },
+  {
+    name: "own-trait-read",
+    breaks: "an extension trait's blanket impl's `Self: Trait` is taken for a bound that reads its iterator, and its default refused",
+    file: "src/lower/iterators.rs",
+    find: "            && Some(tr) != own_trait\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
+  },
 ];
