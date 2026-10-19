@@ -34,10 +34,13 @@ function dDisplay_fmt(d) {
 
 export function dError() {
   if ($dError === undefined) {
+    const source = () => undefined;
     $dError = {
       Debug: () => dDebug(),
       Display: () => dDisplay(),
-      source: () => undefined,
+      source,
+      description: () => "description() is deprecated; use Display",
+      cause: source,
       $drop: dDrop_drop,
     };
   }

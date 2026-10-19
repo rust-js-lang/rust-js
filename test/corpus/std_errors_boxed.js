@@ -47,10 +47,13 @@ function negativeDisplay_fmt(negative) {
 
 export function negativeError() {
   if ($negativeError === undefined) {
+    const source = () => undefined;
     $negativeError = {
       Debug: () => negativeDebug(),
       Display: () => negativeDisplay(),
-      source: () => undefined,
+      source,
+      description: () => "description() is deprecated; use Display",
+      cause: source,
     };
   }
   return $negativeError;

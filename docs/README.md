@@ -230,7 +230,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0159 A type's own `FromStr` is what `parse` calls](decisions/0159-user-from-str.md)
 - [0160 A collection of the crate's: its own `IntoIterator`, `FromIterator`, `Extend`, `Sum` and `Product`](decisions/0160-user-collections.md)
 - [0161 `T: FromStr` in generic code: a dictionary, std's or the crate's](decisions/0161-generic-from-str.md)
-- [0162 `AsRef` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md)
+- [0162 `AsRef` and `AsMut` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md)
 - [0163 A trait's generic method is given drops for its own type parameters, as its trait declares them](decisions/0163-trait-method-drops.md)
 - [0164 An iterator of the crate's from both ends, and of a known length](decisions/0164-double-ended-iterators.md)
 - [0165 `{:x}`, `{:e}` and `{:p}` of the crate's types call its own impls](decisions/0165-other-fmt-traits.md)

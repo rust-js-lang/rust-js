@@ -51,10 +51,13 @@ function appErrorDisplay_fmt(appError) {
 
 export function appErrorError() {
   if ($appErrorError === undefined) {
+    const source = () => undefined;
     $appErrorError = {
       Debug: () => appErrorDebug(),
       Display: () => appErrorDisplay(),
-      source: () => undefined,
+      source,
+      description: () => "description() is deprecated; use Display",
+      cause: source,
     };
   }
   return $appErrorError;

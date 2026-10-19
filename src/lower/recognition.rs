@@ -4109,8 +4109,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || serde_trait(tcx, id).is_some()
         // `parse` of a `T: FromStr`: its dictionary's `from_str` (ADR 0161).
         || is_from_str(tcx, id)
-        // `s.as_ref()` of an `S: AsRef<str>`: its dictionary's `as_ref` (ADR 0162).
+        // `s.as_ref()` of an `S: AsRef<str>`: its dictionary's `as_ref`, and
+        // `s.as_mut()` of an `S: AsMut<str>` its `as_mut` (ADR 0162).
         || is_std_def(tcx, id, StdItem::AsRef)
+        || is_std_def(tcx, id, StdItem::AsMut)
         // `key.borrow()` of a `K: Borrow<Q>`, as a map's lookup is: its
         // dictionary's `borrow` (ADR 0167).
         || is_std_def(tcx, id, StdItem::Borrow)
@@ -4170,7 +4172,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
         // A `&mut` to what a type keeps, called on the type itself (ADR 0169).
-        || tcx.is_diagnostic_item(Symbol::intern("AsMut"), id)
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never lowered (ADRs 0168, 0425).
         || unlowered_trait(tcx, id)
@@ -5347,6 +5348,7 @@ pub(crate) enum StdItem {
     Any,
     Arc,
     ArrayIntoIter,
+    AsMut,
     AsRef,
     Atomic,
     BinaryHeap,
@@ -5412,6 +5414,7 @@ impl StdItem {
             StdItem::Any => Symbol::intern("Any"),
             StdItem::Arc => sym::Arc,
             StdItem::ArrayIntoIter => Symbol::intern("ArrayIntoIter"),
+            StdItem::AsMut => Symbol::intern("AsMut"),
             StdItem::AsRef => sym::AsRef,
             StdItem::Atomic => Symbol::intern("Atomic"),
             StdItem::BinaryHeap => Symbol::intern("BinaryHeap"),
@@ -5696,9 +5699,21 @@ pub(crate) fn is_clone_from(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `io::Write`'s `write_all` and `write_fmt` (ADR 0392).
 pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_method(tcx, id, StdItem::Error, "source")
+        || error_default(tcx, id).is_some()
         || is_writer_default(tcx, id)
         || is_std_method(tcx, id, StdItem::IoWrite, "write_all")
         || is_std_method(tcx, id, StdItem::IoWrite, "write_fmt")
+}
+
+/// `Error`'s deprecated `cause`, `Some(true)`, std's its `source`, or
+/// `description`, `Some(false)`, std's a constant text, which generic code
+/// calls through its dictionary (ADR 0141).
+pub(crate) fn error_default(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
+    match () {
+        _ if is_std_method(tcx, id, StdItem::Error, "cause") => Some(true),
+        _ if is_std_method(tcx, id, StdItem::Error, "description") => Some(false),
+        _ => None,
+    }
 }
 
 /// `io::Write`'s `write_all`, `Some(true)`, or `write_fmt`, `Some(false)`,

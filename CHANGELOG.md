@@ -18,6 +18,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`as_mut()` of a generic `T: AsMut<str>` or `T: AsMut<[U]>`**: a
+  dictionary, std's the text or the array a `&mut` reaches (ADR 0162).
+- **`description()` and `cause()` of a generic `E: Error` or a `dyn
+  Error`**: each `Error` dictionary holds them, std's the deprecation
+  text and the error's `source` (ADR 0141).
 - **`len()` of a generic `ExactSizeIterator`**: the JS iterator it's given
   knows its length (ADR 0456).
 - **`clone_from`**, std's `*dest = source.clone()`, of any type, a

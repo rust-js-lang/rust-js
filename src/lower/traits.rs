@@ -5,8 +5,8 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, io_write_default, is_clone_from,
-    is_std_def, is_std_method, is_writer_default, known_derive, std_item, tracks_caller,
+    Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, error_default, in_std_dictionary, io_write_default,
+    is_clone_from, is_std_def, is_std_method, is_writer_default, known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -759,7 +759,8 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
 
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
-/// 0394), and an `Extend`'s and a `FromIterator`'s (ADR 0445). Where the
+/// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), and an
+/// `AsMut`'s (ADR 0162). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -768,6 +769,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || tcx.is_lang_item(trait_id, LangItem::Deref)
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator)
+        || is_std_def(tcx, trait_id, StdItem::AsMut)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -1449,6 +1451,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(writer) = self.recognition().io_writer(ty)
         {
             return Ok(Expr::helper(writer));
+        }
+        // std's `AsMut` of text as a `str`, or of a sequence as a slice, given
+        // the cell generic code's `&mut self` is: a `&mut str`'s the cell
+        // itself, its text (ADR 0334); a `&mut [T]`'s the array in it.
+        // Of a `&mut` to one, std's `impl AsMut<U> for &mut T`, that one's,
+        // through the cell the `&mut` is: one `value` further for each.
+        if is_std_def(self.tcx, tr.def_id, StdItem::AsMut) && !self.has_user_impl(tr.def_id, ty) {
+            let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
+            let mut cell = Expr::var("cell");
+            let mut at = ty;
+            while let ty::Ref(_, inner, Mutability::Mut) = *at.kind() {
+                cell = Expr::held(cell);
+                at = inner;
+            }
+            let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
+            let given = match (
+                self.is_string_like(from) && to.is_str(),
+                sequence(from) && to.is_slice(),
+            ) {
+                (true, _) => Some(cell),
+                (_, true) => Some(Expr::held(cell)),
+                _ => None,
+            };
+            if let Some(given) = given {
+                let f = Expr::arrow(
+                    vec!["cell".into()],
+                    vec![StmtKind::Return(Some(given)).at(js::Span::NONE)],
+                );
+                return Ok(Expr::object(vec![Prop::Field("as_mut".into(), f)]));
+            }
         }
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef) && !self.has_user_impl(tr.def_id, ty) {
             let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
@@ -2768,15 +2800,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::object(props))
     }
 
-    /// A dictionary's `method`, which std's defaults of a writer write
-    /// with, named once where it's more than a name: `{ write_str,
+    /// A dictionary's `method`, which a std default given as another entry
+    /// is, a writer's `write_char` its `write_str` or an error's `cause` its
+    /// `source`, named once where it's more than a name: `{ write_str,
     /// write_char: write_str, .. }`.
-    fn writer_method(&mut self, props: &mut [Prop], shared: &mut Vec<js::Stmt>, method: &str, span: Span) -> R<Expr> {
+    fn shared_entry(&mut self, props: &mut [Prop], shared: &mut Vec<js::Stmt>, method: &str, span: Span) -> R<Expr> {
         let value = props.iter().find_map(|prop| match prop {
             Prop::Field(name, value) if name == method => Some(value.clone()),
             _ => None,
         });
-        let value = value.ok_or_else(|| self.unsupported(span, &format!("a writer without its `{method}`")))?;
+        let value = value.ok_or_else(|| self.unsupported(span, &format!("a dictionary without its `{method}`")))?;
         if matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)) {
             return Ok(value);
         }
@@ -2951,10 +2984,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), none));
                 continue;
             }
+            // std's own `Error::description`, deprecated: its text; and
+            // `cause`, its `source` (ADR 0141).
+            if let Some(cause) = error_default(self.tcx, item.def_id)
+                && !self.krate.fns.contains_key(&method)
+            {
+                let entry = match cause {
+                    true => self.shared_entry(&mut props, &mut shared, "source", span)?,
+                    false => Expr::arrow(
+                        Vec::new(),
+                        vec![
+                            StmtKind::Return(Some(Expr::str("description() is deprecated; use Display")))
+                                .at(js::Span::NONE),
+                        ],
+                    ),
+                };
+                props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), entry));
+                continue;
+            }
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
             // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
-                let write_str = self.writer_method(&mut props, &mut shared, "write_str", span)?;
+                let write_str = self.shared_entry(&mut props, &mut shared, "write_str", span)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
                 continue;
             }
@@ -2963,7 +3014,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(all) = io_write_default(self.tcx, item.def_id)
                 && !self.krate.fns.contains_key(&method)
             {
-                let write = self.writer_method(&mut props, &mut shared, "write", span)?;
+                let write = self.shared_entry(&mut props, &mut shared, "write", span)?;
                 let helper = match all {
                     true => "$ioWriteAll",
                     false => "$ioWriteFmt",

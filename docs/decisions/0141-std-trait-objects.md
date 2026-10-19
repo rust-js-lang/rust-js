@@ -120,3 +120,26 @@ each pair keeps it, as Rust's vtable does: a crate type's `Display` or
 - The `dyn_std_destructors` corpus case drops a `Box<dyn Any>`, a `Vec` of
   them, a `Box<dyn Display>` and a `Box<dyn Error>` from `?`, against
   native Rust.
+
+## Amendment: an `Error`'s `description` and `cause`
+
+Generic code over an `E: Error`, and a `dyn Error`, that calls the
+deprecated `description()` or `cause()`, as either's `Either<L, R>` does
+of each side, was refused: a std trait's dictionary held only `source` of
+what std provides. Now an `Error` dictionary holds both, as rustc's
+vtable does. Case N ([0262](0262-when-rust-and-js-disagree.md)): the same
+text and the same error.
+
+- **An impl's own** is its method, as any is.
+- **std's `description`** is its text, `() => "description() is
+  deprecated; use Display"`, and **std's `cause`** is its `source`, the
+  same entry named once: `{ source, cause: source, .. }`. Which method is
+  which is `recognition::error_default`'s answer, and the entry named
+  once `shared_entry`'s, the one a writer's `write_char` is named by.
+- **In every `Error` dictionary**, not only where the crate calls one: a
+  crate's generic code calls them through another crate's dictionaries,
+  which can't see that call. Three lines in each.
+- The `error_description_cause` corpus case calls both, overridden and
+  not, through a generic `E: Error` and a `dyn Error`, against native
+  Rust. A provided method of a `dyn io::Write`, `write_vectored`, is
+  still refused, held by `diagnostics.test.ts`.

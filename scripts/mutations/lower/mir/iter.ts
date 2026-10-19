@@ -775,11 +775,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "back-step-receiver-wrapped",
-    breaks: "`nth_back` and `rfold` of an iterator step a copy of it: through a `&mut` its `next_back()` after gives the same item again, and an iterator made by `into_iter()` is stepped empty",
+    breaks: "`nth_back` and `rfold` of an iterator that knows its back wrap it again, `$nthBack($iter(it), ..)`, which `$iter` gives back as it is (ADR 0456)",
     file: "src/lower/mir/iter.rs",
     find: "        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) {\n",
     replace: "        let it = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+    snapshots: true,
   },
   {
     name: "back-step-unboxed",

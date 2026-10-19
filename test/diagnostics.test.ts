@@ -44,8 +44,8 @@ for (const [name, source, message, crate] of [
   // One to another's number is that number (ADR 0096); to another's object,
   // whose copy `ptr::eq` would tell apart, isn't yet.
   ["static holding a reference to another's object", "pub struct P { pub x: u32 }\nstatic A: P = P { x: 1 };\nstatic B: &P = &A;\npub fn f() -> u32 { B.x }", "does not support statics of type `&'static P`"],
-  // A `dyn Error`'s dictionary has its `source`, and none of what else std provides (ADR 0141).
-  ["a deprecated method of a dyn Error", '#![allow(deprecated)]\npub fn f(e: &dyn std::error::Error) -> String { e.description().to_string() }', "`description` of a"],
+  // A std trait's dictionary has what it's given, a `dyn Error`'s `source` (ADR 0141), and none of what else std provides.
+  ["a provided method of a dyn io::Write", "pub fn f(w: &mut dyn std::io::Write) -> usize { w.write_vectored(&[]).unwrap() }", "`write_vectored` of a"],
   // A placeholder's options are given to what shows the value (ADR 0058), but a
   // `&dyn Debug` is the string it shows already, and serde_json's `fmt`s are rust-js's.
   ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],

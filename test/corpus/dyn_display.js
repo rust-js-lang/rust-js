@@ -54,10 +54,13 @@ function missingDisplay_fmt(missing) {
 
 export function missingError() {
   if ($missingError === undefined) {
+    const source = () => undefined;
     $missingError = {
       Debug: () => missingDebug(),
       Display: () => missingDisplay(),
-      source: () => undefined,
+      source,
+      description: () => "description() is deprecated; use Display",
+      cause: source,
     };
   }
   return $missingError;
