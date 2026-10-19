@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-items-eager",
     breaks: "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
     file: "src/lower/std_types/range.rs",
-    find: "    Some(Expr::call_helper(\"$lazyRange\", vec![range.start.clone(), end]))\n",
+    find: "    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))\n",
     replace: "    Some(Expr::call_helper(\"$iter\", vec![Expr::call_helper(\"$range\", vec![range.start.clone(), end])]))\n",
     tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
   },

@@ -9,6 +9,9 @@ use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
+/// A range made as stepped, lazily, its runtime's generator (ADR 0472).
+pub(crate) const LAZY_RANGE: &str = "$lazyRange";
+
 /// Which of std's ranges a type is.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(in crate::lower) enum RangeKind {
@@ -232,7 +235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = if num.big() { "$bigRange" } else { "$range" };
                 Expr::call(Expr::helper(name), vec![start.clone(), end])
             }
-            (RangeKind::From, [start]) => Expr::call(Expr::helper("$lazyRange"), vec![start.clone()]),
+            (RangeKind::From, [start]) => Expr::call(Expr::helper(LAZY_RANGE), vec![start.clone()]),
             _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
         })
     }
@@ -402,7 +405,7 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
         },
         false => range.end.clone(),
     };
-    Some(Expr::call_helper("$lazyRange", vec![range.start.clone(), end]))
+    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))
 }
 
 /// A range's bounds, each read once: of `{ start: a, end: b }` made there,

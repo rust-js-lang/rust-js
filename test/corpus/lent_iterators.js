@@ -97,9 +97,7 @@ function main() {
   const x = word(words);
   const y = word(words);
   console.log(`${x} ${y} ${word(words)}`);
-  const lazy = Iterator.from($successors(1, (n) => Math.imul(n, 2) >>> 0)).map(
-    (n) => (n + 1) >>> 0,
-  );
+  const lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
   const a$1 = take2(lazy);
   console.log(
     `[${a$1.map((item) => String(item)).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,

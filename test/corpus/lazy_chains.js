@@ -117,45 +117,36 @@ function main() {
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);
   console.log(`${counted.reduce((n) => n + 1, 0)}`);
-  const value$5 = $slice(v, 0, 2)
-    .values()
-    .map((x) => noisy("left", x));
-  const pairs = Iterator.from(
-    $lazyZip(
-      value$5,
-      v.values().map((x) => noisy("right", x)),
-    ),
+  const pairs = $lazyZip(
+    $slice(v, 0, 2)
+      .values()
+      .map((x) => noisy("left", x)),
+    v.values().map((x) => noisy("right", x)),
   ).toArray();
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const value$6 = $iter($slice(v, 0, 2));
-  const short = Iterator.from(
-    $lazyZip(
-      value$6,
-      v.values().map((x) => noisy("other", x)),
-    ),
+  const short = $lazyZip(
+    $iter($slice(v, 0, 2)),
+    v.values().map((x) => noisy("other", x)),
   ).toArray();
   console.log(`[${short.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const back = doubled(v).toArray();
   console.log(`[${back.map((item) => String(item)).join(", ")}]`);
-  const value$7 = $iter($slice(v, 0, 1));
-  const joined = Iterator.from(
-    $lazyChain(
-      value$7,
-      v.values().map((x) => noisy("joined", x)),
-    ),
+  const joined = $lazyChain(
+    $iter($slice(v, 0, 1)),
+    v.values().map((x) => noisy("joined", x)),
   )
     .take(2)
     .toArray();
   console.log(`[${joined.map((item) => String(item)).join(", ")}]`);
 
   // `next()` takes one item, of a chain made there or kept to step through.
-  const value$8 = $next(v.values().map((x) => noisy("next", x)));
-  console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
+  const value$5 = $next(v.values().map((x) => noisy("next", x)));
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   const stepped = v.values().map((x) => noisy("stepped", x));
-  const value$9 = $next(stepped);
-  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
-  const value$10 = $next(stepped);
-  console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
+  const value$6 = $next(stepped);
+  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
+  const value$7 = $next(stepped);
+  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
 
   // Closures that do nothing that can be seen keep arrays.
   const doubled$1 = v

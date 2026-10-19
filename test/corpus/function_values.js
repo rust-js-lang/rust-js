@@ -38,7 +38,7 @@ function main() {
   console.log(
     `[${found.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}] [${checked.map((item) => (item.TAG === "Ok" ? `Ok(${item._0})` : `Err(${$debugStr(item._0)})`)).join(", ")}] [${lengths.map((item) => metersDebug_fmt(item)).join(", ")}] [${circles.map((item) => shapeDebug_fmt(item)).join(", ")}]`,
   );
-  const pairs = Iterator.from($lazyZip($iter([1, 2]), ["a", "b"]))
+  const pairs = $lazyZip($iter([1, 2]), ["a", "b"])
     .map(([n, s]) => [n, s])
     .toArray();
   console.log(`[${pairs.map((item) => pairDebug_fmt(item)).join(", ")}]`);

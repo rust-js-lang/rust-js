@@ -20,7 +20,7 @@ function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
   const it = $iter(v);
   const first = $lent(it).take(2).toArray();
-  const small = Iterator.from($lazyTakeWhile($lent(it), (x) => x < 5)).toArray();
+  const small = $lazyTakeWhile($lent(it), (x) => x < 5).toArray();
   const arg = $next(it);
   console.log(
     `[${first.map((item) => String(item)).join(", ")}] [${small.map((item) => String(item)).join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`,

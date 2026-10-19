@@ -58,9 +58,7 @@ function zip(i, j, dropJ, dropIItem, dropIIntoIter) {
     }
     throw error;
   }
-  return Iterator.from(
-    $lazyZip($closing(tmp, dropIIntoIter), $closing(Iterator.from(j), dropJ), dropIItem),
-  );
+  return $lazyZip($closing(tmp, dropIIntoIter), $closing(Iterator.from(j), dropJ), dropIItem);
 }
 
 function chain(i, j, dropJ, dropIIntoIter) {
@@ -121,12 +119,10 @@ function main() {
     }
     throw error;
   }
-  const zipped = Iterator.from(
-    $lazyZip(
-      $closing(value, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(tmp), $dropEach(loudDrop_drop)),
-      loudDrop_drop,
-    ),
+  const zipped = $lazyZip(
+    $closing(value, $dropEach(loudDrop_drop)),
+    $closing(Iterator.from(tmp), $dropEach(loudDrop_drop)),
+    loudDrop_drop,
   );
   let pair;
   let pair$live;
@@ -181,11 +177,9 @@ function main() {
     }
     throw error;
   }
-  const chained = Iterator.from(
-    $lazyChain(
-      $closing(value$1, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(tmp$1), $dropEach(loudDrop_drop)),
-    ),
+  const chained = $lazyChain(
+    $closing(value$1, $dropEach(loudDrop_drop)),
+    $closing(Iterator.from(tmp$1), $dropEach(loudDrop_drop)),
   );
   let chained$live;
   try {
@@ -252,16 +246,16 @@ function main() {
     numbered.return();
   }
 
-  const value$4 = $iter(louds(80, 4));
-  const value$5 = (l) => l[0] < 82;
-  const skipping = Iterator.from(
-    $lazySkipWhile($closing(value$4, $dropEach(loudDrop_drop)), (item) => {
-      if (value$5(item)) {
+  const value$4 = (l) => l[0] < 82;
+  const skipping = $lazySkipWhile(
+    $closing($iter(louds(80, 4)), $dropEach(loudDrop_drop)),
+    (item) => {
+      if (value$4(item)) {
         loudDrop_drop(item);
         return true;
       }
       return false;
-    }),
+    },
   );
   let skipping$live;
   try {
@@ -278,17 +272,14 @@ function main() {
     skipping.return();
   }
 
-  const value$6 = $iter(louds(90, 4));
-  const value$7 = (l) => l[0] < 91;
-  const taking = Iterator.from(
-    $lazyTakeWhile($closing(value$6, $dropEach(loudDrop_drop)), (item) => {
-      if (value$7(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
-  );
+  const value$5 = (l) => l[0] < 91;
+  const taking = $lazyTakeWhile($closing($iter(louds(90, 4)), $dropEach(loudDrop_drop)), (item) => {
+    if (value$5(item)) {
+      return true;
+    }
+    loudDrop_drop(item);
+    return false;
+  });
   let ended;
   let taking$live;
   try {
@@ -311,9 +302,9 @@ function main() {
   }
   console.log(`take_while ended ${ended}`);
 
-  const value$8 = $iter(louds(100, 5));
+  const value$6 = $iter(louds(100, 5));
   const stepped = Iterator.from(
-    $closing(value$8, $dropEach(loudDrop_drop)).filter((item, i) => {
+    $closing(value$6, $dropEach(loudDrop_drop)).filter((item, i) => {
       if (i % 2 === 0) {
         return true;
       }
@@ -344,22 +335,22 @@ function main() {
     stepped.return();
   }
 
-  const value$9 = $iter(louds(110, 3));
-  const value$10 = (l) => {
+  const value$7 = $iter(louds(110, 3));
+  const value$8 = (l) => {
     console.log(`see ${l[0]}`);
   };
-  const value$11 = (l) => {
+  const value$9 = (l) => {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   };
   const total = Iterator.from(
-    $closing(value$9, $dropEach(loudDrop_drop)).map((item) => {
-      value$10(item);
+    $closing(value$7, $dropEach(loudDrop_drop)).map((item) => {
+      value$8(item);
       return item;
     }),
   )
-    .map((item) => value$11(item))
+    .map((item) => value$9(item))
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`inspect ${total}`);
 
@@ -1110,12 +1101,12 @@ function main() {
     }
     throw error;
   }
-  const value$12 = { left: 3, _tag: [999] };
+  const value$10 = { left: 3, _tag: [999] };
   let tmp$13;
   try {
     tmp$13 = louds(240, 2);
   } catch (error) {
-    loudDrop_drop(value$12._tag);
+    loudDrop_drop(value$10._tag);
     if (fused$live) {
       fused.return();
     }
@@ -1148,7 +1139,7 @@ function main() {
   let counted;
   try {
     counted = chain(
-      $iterator(value$12, countdownIterator_next),
+      $iterator(value$10, countdownIterator_next),
       tmp$13,
       $dropEach(loudDrop_drop),
       (it) => {
@@ -1324,12 +1315,12 @@ function main() {
     }
     throw error;
   }
-  const value$13 = { left: 3, _tag: [998] };
+  const value$11 = { left: 3, _tag: [998] };
   let tmp$17;
   try {
     tmp$17 = louds(250, 2);
   } catch (error) {
-    loudDrop_drop(value$13._tag);
+    loudDrop_drop(value$11._tag);
     if (fused$live) {
       fused.return();
     }
@@ -1361,13 +1352,11 @@ function main() {
   }
   let own;
   try {
-    own = Iterator.from(
-      $lazyChain(
-        $closing($iterator(value$13, countdownIterator_next), (it) => {
-          loudDrop_drop(it.of._tag);
-        }),
-        $closing(Iterator.from(tmp$17), $dropEach(loudDrop_drop)),
-      ),
+    own = $lazyChain(
+      $closing($iterator(value$11, countdownIterator_next), (it) => {
+        loudDrop_drop(it.of._tag);
+      }),
+      $closing(Iterator.from(tmp$17), $dropEach(loudDrop_drop)),
     );
   } catch (error) {
     if (fused$live) {
@@ -1743,11 +1732,11 @@ function main() {
     }
     throw error;
   }
-  const value$14 = [1, 2, 3];
-  const value$15 = [4];
+  const value$12 = [1, 2, 3];
+  const value$13 = [4];
   let plain;
   try {
-    plain = zip(value$14, value$15);
+    plain = zip(value$12, value$13);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -2085,12 +2074,12 @@ function main() {
     }
     throw error;
   }
-  const value$16 = [[210], [5], [212]];
+  const value$14 = [[210], [5], [212]];
   let tmp$32;
   try {
     tmp$32 = $iterEq(
       $closing(tmp$31, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(value$16), $dropEach(loudDrop_drop)),
+      $closing(Iterator.from(value$14), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,

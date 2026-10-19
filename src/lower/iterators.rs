@@ -1222,12 +1222,10 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     };
     // Of an array, `$iter(xs)`; or two side by side, `$lazyZip` of each's,
     // `$zip(a, b)`, whose items pairing them make nothing else do.
-    let source = match &args[..] {
-        [source] if is_stepped_items(at) => source.clone(),
-        [zipped]
-            if is_iterator_from(at)
-                && let js::ExprKind::Call(zip, sides) = &zipped.kind
-                && zip.helper_name() == Some("$lazyZip")
+    let source = match (&args[..], &at.kind) {
+        ([source], _) if is_stepped_items(at) => source.clone(),
+        (_, js::ExprKind::Call(zip, sides))
+            if zip.helper_name() == Some("$lazyZip")
                 && let [a, b] = &sides[..]
                 && is_stepped_items(a)
                 && is_stepped_items(b) =>
@@ -1312,7 +1310,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
     eager_items(&sourced(chain)?, true, None).map(|(items, _)| items)
 }
 
-/// Of `Iterator.from($lazyChain(a, b))`, a `chain` MIR makes: what each part
+/// Of `$lazyChain(a, b)`, a `chain` MIR makes: what each part
 /// steps, `a` and `b`, which spread in turn as it steps them, `[...a, ...b]`;
 /// of a part `Iterator.from(xs)`, or `cloned()`'s `xs.map((x) => x)`, `xs`.
 fn chained(e: &Expr) -> Option<Vec<Expr>> {
@@ -1327,14 +1325,10 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
             _ => vec![e.clone()],
         }
     }
-    let js::ExprKind::Call(_, args) = &e.kind else {
+    let js::ExprKind::Call(callee, _) = &e.kind else {
         return None;
     };
-    let [chain] = args.as_slice() else { return None };
-    let js::ExprKind::Call(callee, _) = &chain.kind else {
-        return None;
-    };
-    (is_iterator_from(e) && callee.helper_name() == Some("$lazyChain")).then(|| part(chain))
+    (callee.helper_name() == Some("$lazyChain")).then(|| part(e))
 }
 
 /// Whether `e` is `Iterator.from(x)`.
@@ -1491,16 +1485,31 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
+/// The runtime's helpers that make a JS iterator: `$iterator`, and each of
+/// its generators, which the runtime package's test holds this list to; a
+/// range's, its own.
+pub(crate) const ITERATOR_HELPERS: [&str; 9] = [
+    "$iterator",
+    "$cycle",
+    super::std_types::range::LAZY_RANGE,
+    "$lazyTakeWhile",
+    "$lazySkipWhile",
+    "$lazyChain",
+    "$lazyZip",
+    "$repeatingWith",
+    "$successors",
+];
+
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
-/// `$iter` or a range's `$iterator`, a `$cycle`'s generator, a
-/// collection's `values()`, `keys()` or `entries()`, or an iterator
-/// helper's of one, `.map(f)` of a range's.
+/// `$iter`, an `ITERATOR_HELPERS`' own, a range's `$iterator` or a
+/// `$lazyChain`'s generator, a collection's `values()`, `keys()` or
+/// `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
 pub(super) fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };
-    if callee.helper_name().is_some() {
-        return matches!(callee.helper_name(), Some("$iterator" | "$cycle")) || is_stepped_items(e);
+    if let Some(helper) = callee.helper_name() {
+        return ITERATOR_HELPERS.contains(&helper) || is_stepped_items(e);
     }
     match &callee.kind {
         // Not `Object.keys(o)`'s, an array.

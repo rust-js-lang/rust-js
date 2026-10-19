@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **What a `Some` holds, an `Option` of a type parameter**, by `unwrap`,
+  `unwrap_or_else` and the rest, and `max_by`'s and `min_by`'s pick of one;
+  and no `Iterator.from` around a lazy adapter's generator (ADR 0472).
 - **An unstable sort of a type parameter's items**, `sort_unstable`,
   `select_nth_unstable` and their `_by` and `_by_key`, sorted as its
   caller's type picks, given as `TSort` (ADR 0471).
@@ -555,6 +558,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`into_iter()` of an `Option` of another iterator's item, collected**,
+  `option::IntoIter<I::Item>`, threw: it's made a JS iterator (ADR 0472).
 - **A function an `Option`'s or a `Result`'s method leaves unrun is
   dropped**, with what it holds, as std drops it: `map`'s of a `None`,
   `unwrap_or_else`'s of a `Some`, `entry().or_insert_with`'s of a key that's

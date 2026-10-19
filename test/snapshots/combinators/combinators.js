@@ -97,10 +97,10 @@ export function iters(n) {
       .values()
       .flatMap((x) => [x, x])
       .toArray(),
-    Iterator.from($lazyZip($iter(v), ["a", "b", "c"])).toArray(),
+    $lazyZip($iter(v), ["a", "b", "c"]).toArray(),
     [...$iter(v), 100, 200],
-    Iterator.from($lazyTakeWhile($iter(v), (x) => x < 3)).toArray(),
-    Iterator.from($lazySkipWhile($iter(v), (x) => x < 3))
+    $lazyTakeWhile($iter(v), (x) => x < 3).toArray(),
+    $lazySkipWhile($iter(v), (x) => x < 3)
       .filter((_, i) => i % 2 === 0)
       .toArray(),
   ];

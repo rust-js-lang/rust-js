@@ -301,6 +301,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::OptionReplace
             // The inner `Option`, box and all.
             | Std::OptionFlatten
+            // What a `Some` or an `Ok` holds, an `Option` itself, as it's
+            // held, box and all (ADR 0472).
+            | Std::Unwrap
+            | Std::UnwrapOr
+            | Std::UnwrapUnchecked
+            | Std::UnwrapOk
+            | Std::Comb(
+                Comb::UnwrapOrElse | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault
+            )
+            // The pick of `max_by` and the like, boxed as `$maxBy` makes it
+            // (ADR 0464).
+            | Std::IterComb(crate::lower::combinators::IterComb::MaxBy(_) | crate::lower::combinators::IterComb::MaxByKey(_))
             )
     }
 

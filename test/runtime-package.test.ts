@@ -23,6 +23,23 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/runtime", version]);
 });
 
+// The helpers the compiler takes for a JS iterator as they're made, and
+// writes no `Iterator.from` around, are `$iterator` and each of the
+// runtime's generators (ADR 0472): the compiler's list, held to the runtime.
+test("the compiler's iterator helpers are $iterator and the runtime's generators", () => {
+  const printed = run([compiler, "--runtime-module"]);
+  const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
+  const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
+  const list = source.match(/pub\(crate\) const ITERATOR_HELPERS: \[&str; \d+\] = \[([^\]]*)\]/)![1];
+  // A range's, named where ranges are.
+  const range = readFileSync(join(root, "src", "lower", "std_types", "range.rs"), "utf8");
+  const lazyRange = range.match(/pub\(crate\) const LAZY_RANGE: &str = "(\$\w+)";/)![1];
+  const listed = [...list.replace("super::std_types::range::LAZY_RANGE", `"${lazyRange}"`).matchAll(/"(\$[\w$]+)"/g)].map(
+    (m) => m[1],
+  );
+  expect(listed.toSorted()).toEqual(["$iterator", ...generators].toSorted());
+});
+
 // Each helper is a file of its own, `src/runtime/<name>.js`, that the
 // compiler reads in: JS that parses as JS, and none left behind unread.
 test("each helper's file parses as JavaScript, and the compiler reads each", () => {

@@ -13,15 +13,13 @@ function fragmentDrop_drop(fragment) {
 function main() {
   const fragments = [[1], [2], [3]];
   const skip = (f) => f[0] < 2;
-  const kept = Iterator.from(
-    $lazySkipWhile($closing($iter(fragments), $dropEach(fragmentDrop_drop)), (item) => {
-      if (skip(item)) {
-        fragmentDrop_drop(item);
-        return true;
-      }
-      return false;
-    }),
-  ).toArray();
+  const kept = $lazySkipWhile($closing($iter(fragments), $dropEach(fragmentDrop_drop)), (item) => {
+    if (skip(item)) {
+      fragmentDrop_drop(item);
+      return true;
+    }
+    return false;
+  }).toArray();
   try {
     console.log(`kept ${kept.length}`);
   } finally {

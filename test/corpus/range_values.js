@@ -109,8 +109,9 @@ function main() {
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const ids = $iterator({ start: 1 }, $rangeFromNext).take(3).toArray();
-  const numbered = Iterator.from(
-    $lazyZip($iterator({ start: 1 }, $rangeFromNext), $iter(Array.from("abc"))),
+  const numbered = $lazyZip(
+    $iterator({ start: 1 }, $rangeFromNext),
+    $iter(Array.from("abc")),
   ).toArray();
   console.log(
     `[${ids.map((item) => String(item)).join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,

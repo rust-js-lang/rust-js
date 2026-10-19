@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "mir-std-iterator-array",
     breaks: "`text.bytes()` is an array MIR steps as an iterator",
     file: "src/lower/mir.rs",
-    find: "                if self.implements_iterator(output)\n",
-    replace: "                if false && self.implements_iterator(output)\n",
+    find: "                if (self.implements_iterator(output) || std_iterator)\n",
+    replace: "                if false && (self.implements_iterator(output) || std_iterator)\n",
     tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
   {
@@ -2730,5 +2730,13 @@ export const mutations: Mutation[] = [
     find: "        list.extend(make_drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
+  },
+  {
+    name: "std-iterator-of-item-unmade",
+    breaks: "std's iterator of another's items, `option::IntoIter<I::Item>`, is left the array it's made as, which `collect` can't step",
+    file: "src/lower/mir.rs",
+    find: "                if (self.implements_iterator(output) || std_iterator)\n",
+    replace: "                if self.implements_iterator(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
   },
 ];

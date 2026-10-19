@@ -5695,9 +5695,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// method makes of a value's, `map` of an `io::Result<usize>`: `undefined`
     /// or its error, `$writeOf(..)` (ADR 0462).
     fn std_value_as(&mut self, value: Value<'tcx>, output: Ty<'tcx>, arg_tys: &[Ty<'tcx>]) -> Value<'tcx> {
+        // std's own iterator, of whatever items, `option::IntoIter<I::Item>`.
+        let std_iterator = matches!(output.kind(), ty::Adt(adt, _) if super::recognition::is_std_crate(self.tcx, adt.did()))
+            && self.iterator_item(output).is_some();
         match value {
             Value::Expr(e)
-                if self.implements_iterator(output)
+                if (self.implements_iterator(output) || std_iterator)
                     && !matches!(output.kind(), ty::Param(_))
                     && !output.is_box()
                     && self.range_kind(output).is_none()

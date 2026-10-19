@@ -370,4 +370,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
+  {
+    name: "boxed-unwrap-refused",
+    breaks: "`unwrap_or_else` of an `Option` of an `Option` of a type parameter is refused, where it gives the inner one as it's held",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::Comb(\n                Comb::UnwrapOrElse | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault\n            )\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
+  },
+  {
+    name: "boxed-max-by-refused",
+    breaks: "`min_by` of a type parameter's items is refused, where `$minBy` boxes its pick",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::IterComb(crate::lower::combinators::IterComb::MaxBy(_) | crate::lower::combinators::IterComb::MaxByKey(_))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
+  },
 ];

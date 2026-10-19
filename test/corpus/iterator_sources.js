@@ -31,17 +31,15 @@ function counterIterator_next(counter) {
 }
 
 function repeated(first, n, TClone) {
-  return Iterator.from($successors($some(first), (item) => $some(TClone.clone(item)), true))
+  return $successors($some(first), (item) => $some(TClone.clone(item)), true)
     .take(n)
     .toArray();
 }
 
 function powers_of_two(limit) {
-  return Iterator.from(
-    $lazyTakeWhile(
-      Iterator.from($successors(1, (n) => $checked(n * 2, 0, 4294967295))),
-      (n) => n <= limit,
-    ),
+  return $lazyTakeWhile(
+    $successors(1, (n) => $checked(n * 2, 0, 4294967295)),
+    (n) => n <= limit,
   ).toArray();
 }
 
@@ -59,8 +57,7 @@ function countdown(from) {
 }
 
 function with_header(header, lines) {
-  const value = $iter([header]);
-  return Iterator.from($lazyChain(value, $iter(lines)))
+  return $lazyChain($iter([header]), $iter(lines))
     .map((line) => line.toUpperCase())
     .toArray();
 }
@@ -97,7 +94,7 @@ function main() {
   const dashes = Iterator.from($repeating("-")).take(5).toArray().join("");
   const words = Iterator.from($repeating("hi")).take(3).toArray();
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
-  const padded = Iterator.from($lazyChain($iter([1, 2]), Iterator.from($repeating(0))))
+  const padded = $lazyChain($iter([1, 2]), Iterator.from($repeating(0)))
     .take(5)
     .toArray();
   console.log(`[${padded.map((item) => String(item)).join(", ")}]`);
@@ -120,19 +117,15 @@ function main() {
   console.log(
     `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => $debugStr(item, "'")).join(", ")}]`,
   );
-  const squares = Iterator.from($successors(2n, (n) => BigInt.asUintN(64, n * n)))
+  const squares = $successors(2n, (n) => BigInt.asUintN(64, n * n))
     .take(4)
     .toArray();
   console.log(`[${squares.map((item) => String(item)).join(", ")}]`);
 
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
-  const zipped = Iterator.from(
-    $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))),
-  ).toArray();
-  const labelled = Iterator.from(
-    $lazyZip($iter(Array.from("xyz")), Iterator.from($repeating(7))),
-  ).toArray();
+  const zipped = $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))).toArray();
+  const labelled = $lazyZip($iter(Array.from("xyz")), Iterator.from($repeating(7))).toArray();
   console.log(
     `[${chained.map((item) => String(item)).join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
@@ -144,9 +137,7 @@ function main() {
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.map((item) => String(item)).join(", ")}]`,
   );
-  const short = Iterator.from(
-    $lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2),
-  ).toArray();
+  const short = $lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2).toArray();
   console.log(
     `[${short.map((item) => String(item)).join(", ")}] [${repeated(undefined, 2, {
       clone: (value) => value,
@@ -159,12 +150,10 @@ function main() {
     .toArray();
   $index(rows, 0).push(1);
   let k = 0;
-  const squares$1 = Iterator.from(
-    $repeatingWith(() => {
-      k = (k + 1) | 0;
-      return Math.imul(k, k);
-    }),
-  )
+  const squares$1 = $repeatingWith(() => {
+    k = (k + 1) | 0;
+    return Math.imul(k, k);
+  })
     .take(3)
     .toArray();
   console.log(
@@ -172,12 +161,10 @@ function main() {
   );
   // `successors` finds the next item before it gives this one.
   let calls = 0;
-  const taken = Iterator.from(
-    $successors(1, (n) => {
-      calls = (calls + 1) | 0;
-      return (n + 1) | 0;
-    }),
-  )
+  const taken = $successors(1, (n) => {
+    calls = (calls + 1) | 0;
+    return (n + 1) | 0;
+  })
     .take(3)
     .reduce((n) => n + 1, 0);
   console.log(`${taken} ${calls}`);

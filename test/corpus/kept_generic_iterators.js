@@ -57,7 +57,7 @@ function countdownIterator_next(countdown) {
 function main() {
   const v = [1, 2, 3, 4, 5];
   console.log(
-    `${sum($iter(v))} ${sum($iterator([4], countdownIterator_next))} ${sum(Iterator.from($successors(1, (n) => (n < 4 ? (n + 1) >>> 0 : undefined))))}`,
+    `${sum($iter(v))} ${sum($iterator([4], countdownIterator_next))} ${sum($successors(1, (n) => (n < 4 ? (n + 1) >>> 0 : undefined)))}`,
   );
   console.log(
     `[${pairs($iter(v))

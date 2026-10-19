@@ -73,8 +73,7 @@ function main() {
     .map((x, i) => [i, x])
     .filter((_, i) => i % 2 === 0);
   console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
-  const value = $iter(units);
-  const zipped = Iterator.from($lazyZip(value, $cycle(items$1)))
+  const zipped = $lazyZip($iter(units), $cycle(items$1))
     .map(([u, i]) => String(u) + i)
     .toArray();
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);

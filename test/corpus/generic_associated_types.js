@@ -70,7 +70,7 @@ function countdownContainer() {
 }
 
 function countdownContainer_items(countdown) {
-  return Iterator.from($successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295)));
+  return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
 }
 
 function count(c, CContainer) {

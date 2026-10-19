@@ -26,15 +26,13 @@ function main() {
     const w = [["x"], ["y"], ["z"]];
     const tmp = $iter(w);
     const tmp$1 = (n) => n[0] !== "y";
-    const tmp$2 = Iterator.from(
-      $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
-        if (tmp$1(item)) {
-          noisyDrop_drop(item);
-          return true;
-        }
-        return false;
-      }),
-    );
+    const tmp$2 = $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
+      if (tmp$1(item)) {
+        noisyDrop_drop(item);
+        return true;
+      }
+      return false;
+    });
     const rest = tmp$2.toArray();
     try {
       console.log(`rest ${rest.length}`);
@@ -45,15 +43,13 @@ function main() {
       try {
         const tmp = $iter(old);
         const tmp$1 = () => true;
-        const tmp$2 = Iterator.from(
-          $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
-            if (tmp$1(item)) {
-              noisyDrop_drop(item);
-              return true;
-            }
-            return false;
-          }),
-        );
+        const tmp$2 = $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
+          if (tmp$1(item)) {
+            noisyDrop_drop(item);
+            return true;
+          }
+          return false;
+        });
         const none = tmp$2.toArray();
         const length = none.length;
         const length$1 = fragments.length;
