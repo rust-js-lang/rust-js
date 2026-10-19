@@ -97,3 +97,21 @@ where Rust's pushed: a wrong answer. Case R
 - The `mut_assoc_through_dictionary` corpus case reads, pushes to and
   replaces through a crate trait's `&mut Self::Out` of a `Vec`, a number
   and a generic impl's `T`, against native Rust.
+
+## Amendment: a `&mut` to a `&mut` of an object
+
+rust_decimal's `impl AddAssign for &mut Decimal` has a `&mut self` that's a
+`&mut &mut Decimal`, refused: a `&mut` to a value was a cell only where
+that value was one, and a `&mut Decimal` is the object. A write of the
+whole through it, `*r = &mut other`, makes it another, so it's a cell
+too, `{ value: decimal }`, as a `&mut` to a number is. Not of an iterator
+or a function, each the JS one (ADRs 0071, 0099), nor of a slice, which
+may be a view of part of an array, refused as before.
+
+Generic code holds a `Self` that's such a `&mut` in a box, as above, and
+its `&mut self` in a cell of that box: each box a dictionary's entry is
+given past what its method takes, a cell for each `&mut` it can't hold as
+the object, is taken off, by `held_in_box`, the one question
+`IntoIterator`'s entries ask too (ADR 0457). The
+`mut_ref_to_object_impl` corpus case adds through such an impl where its
+type is known and through generic code, against native Rust.

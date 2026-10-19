@@ -1878,11 +1878,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_str" | "as_mut_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim { start: true, end: true },
             // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
-            "split" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
-                Std::Text(if name.as_str() == "split" {
-                    TextOp::SplitBy
-                } else {
-                    TextOp::ContainsBy
+            "split" | "splitn" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
+                Std::Text(match name.as_str() {
+                    "split" => TextOp::SplitBy,
+                    "splitn" => TextOp::SplitNBy,
+                    _ => TextOp::ContainsBy,
                 })
             }
             "find" | "rfind" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
@@ -3160,6 +3160,9 @@ pub(super) enum WriteCall {
     Text,
     /// `f.pad(s)`: `s`, given the `Formatter`'s options (ADR 0143).
     Pad,
+    /// `f.pad_integral(non_negative, prefix, digits)`: a number's digits, as
+    /// a number's are given the `Formatter`'s options.
+    PadIntegral,
     Display,
     Debug,
     /// `LowerHex::fmt(x, f)` and the like: of a type of the crate's, its impl's
@@ -3236,6 +3239,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         match tcx.item_name(def_id).as_str() {
             "write_fmt" | "write_str" | "write_char" if on_formatter || is_trait("FmtWrite") => WriteCall::Text,
             "pad" if on_formatter => WriteCall::Pad,
+            "pad_integral" if on_formatter => WriteCall::PadIntegral,
             "fmt" if is_trait("Display") => WriteCall::Display,
             "fmt" if is_trait("Debug") => WriteCall::Debug,
             "fmt" if trait_id.is_some_and(|t| is_other_fmt_trait(tcx, t)) => WriteCall::OtherFmt,

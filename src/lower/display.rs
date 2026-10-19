@@ -366,6 +366,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.formatted(text.clone(), (Std::FmtDisplay, str_ty), &pretty)
                     .unwrap_or(text)
             }
+            // A number's digits, `-` before them where it's negative and its
+            // prefix where `{:#}` asks; given options, as std writes it,
+            // `$padIntegral`, a `+`, zeros past the prefix, padding (ADR 0143).
+            WriteCall::PadIntegral => {
+                let (non_negative, prefix, digits) = (values.remove(0), values.remove(0), values.remove(0));
+                match &pretty {
+                    Pretty::When(options) if self.krate.format_options => Expr::call(
+                        Expr::helper("$padIntegral"),
+                        vec![non_negative, prefix, digits, options.clone()],
+                    ),
+                    _ => {
+                        let sign = Expr::cond(non_negative, Expr::str(""), Expr::str("-"));
+                        let prefix = Expr::cond(pretty.alternate(), prefix, Expr::str(""));
+                        Expr::bin(Op::Add, Expr::bin(Op::Add, sign, prefix), digits)
+                    }
+                }
+            }
             WriteCall::Display => {
                 let ty = generic_args.type_at(0);
                 self.display_string_with(values.remove(0), ty, span, &pretty)?

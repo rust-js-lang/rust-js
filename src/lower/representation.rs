@@ -206,9 +206,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return !pointer.is_ref() && self.is_boxable(pointer);
         }
         // A `&mut` to a value JS can't change in place is a cell, which can't
-        // be changed in place either: a `&mut` to it, a cell of the cell.
+        // be changed in place either: a `&mut` to it, a cell of the cell. A
+        // `&mut` to a plain object is the object, which a write of the whole
+        // through a `&mut` to it, `*r = &mut other`, makes another: a cell
+        // too, rust_decimal's `impl AddAssign for &mut Decimal`'s `&mut self`.
+        // Not of an iterator or a function, each the JS one it steps or calls
+        // (ADRs 0071, 0099), nor of a slice, which may be a view of part of
+        // an array, split through a held `&mut` as it is.
         if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
-            return self.is_cell_pointee(inner);
+            let plain_object = self.is_object(inner)
+                && !inner.is_slice()
+                && !self.is_callable(inner)
+                && !self.implements_iterator(inner)
+                && !self.is_generic_iter(inner);
+            return self.is_cell_pointee(inner) || plain_object;
         }
         !self.is_unknown(ty)
             && !self.is_object(ty)

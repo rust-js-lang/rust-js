@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-mut-self-boxed",
     breaks: "an object impl's `&mut self` method in its dictionary is given the box generic code calls it with",
     file: "src/lower/traits.rs",
-    find: "                let boxed = self.param_is_box(item.def_id, i) || (i == 0 && into_iter_boxed);\n",
-    replace: "                let boxed = false && (self.param_is_box(item.def_id, i) || (i == 0 && into_iter_boxed));\n",
+    find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
+    replace: "                let given = usize::from(i == 0 && self_held);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref"],
   },
   {
@@ -1537,14 +1537,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
-    name: "into-iter-crate-self-boxed",
-    breaks: "a crate's `IntoIterator` for `&mut Bag` is given generic code's box as its `Bag`",
-    file: "src/lower/traits.rs",
-    find: "                let boxed = self.param_is_box(item.def_id, i) || (i == 0 && into_iter_boxed);\n",
-    replace: "                let boxed = self.param_is_box(item.def_id, i);\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
-  },
-  {
     name: "into-iter-crate-collection-refused",
     breaks: "a crate's collection given where a `for<'a> &'a C: IntoIterator` bound is, a dictionary, is refused as one where any `IntoIterator` goes",
     file: "src/lower/traits.rs",
@@ -1568,5 +1560,13 @@ export const mutations: Mutation[] = [
     find: "(impl_env.param_env.caller_bounds().iter()).chain(self.typing_env.param_env.caller_bounds().iter());\n",
     replace: "impl_env.param_env.caller_bounds().iter();\n",
     tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
+  },
+  {
+    name: "self-held-not-unboxed",
+    breaks: "an impl for `&mut Money` through a dictionary is given generic code's box of a box, and reads the box as the object",
+    file: "src/lower/traits.rs",
+    find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
+    replace: "                let given = usize::from(self.param_is_box(item.def_id, i));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_to_object_impl|into_iter_of_ref_param).rs$"],
   },
 ];

@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "std-radix-unpadded",
     breaks: "`{:04x}` through a delegating impl isn't padded",
     file: "src/lower/display.rs",
-    find: "self.krate.format_options =",
-    replace: "false && self.krate.format_options =",
+    find: "            Pretty::When(options) if self.krate.format_options => Expr::call(\n                Expr::helper(\"$formatted\"),\n                vec![text, options.clone(), Expr::bool(true)],\n",
+    replace: "            Pretty::When(options) if false && self.krate.format_options => Expr::call(\n                Expr::helper(\"$formatted\"),\n                vec![text, options.clone(), Expr::bool(true)],\n",
     tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
   },
   {
@@ -556,5 +556,13 @@ export const mutations: Mutation[] = [
     replace: "                super::std_types::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
     snapshots: true,
+  },
+  {
+    name: "pad-integral-unsigned",
+    breaks: "`f.pad_integral(false, ..)` of a negative number, without options, writes no `-`",
+    file: "src/lower/display.rs",
+    find: "                        let sign = Expr::cond(non_negative, Expr::str(\"\"), Expr::str(\"-\"));\n",
+    replace: "                        let sign = Expr::str(\"\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^pad_integral_plain.rs$"],
   },
 ];

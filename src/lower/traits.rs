@@ -1515,7 +1515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Mutability::Mut => "cell",
                 Mutability::Not => self.parameter_name(pointee),
             };
-            let given = match self.iterated_from_box(ty) {
+            let given = match self.held_in_box(ty) {
                 true => Expr::held(Expr::var(name)),
                 false => Expr::var(name),
             };
@@ -2923,11 +2923,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().classify(def_id, generic_args)
     }
 
-    /// Whether an `IntoIterator` dictionary of `self_ty` is given the box
-    /// generic code has: of a `&mut` to an object, `for x in c` of a `c: &mut
-    /// C` (ADRs 0454, 0457). A `&C` is the value, and a `&mut` to a number
+    /// Whether generic code holds a value of `self_ty` in a box: a `&mut` to
+    /// an object, given for a type parameter (ADR 0454), `for x in c` of a `c:
+    /// &mut C`'s (ADR 0457). A `&C` is the value, and a `&mut` to a number
     /// or text its cell.
-    fn iterated_from_box(&self, self_ty: Ty<'tcx>) -> bool {
+    fn held_in_box(&self, self_ty: Ty<'tcx>) -> bool {
         matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.is_cell_pointee(pointee))
     }
 
@@ -3229,15 +3229,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.fresh(&js_word(&word))
                 })
                 .collect();
-            // A `&mut self` its caller through the dictionary gives in a box,
-            // as a generic `&mut Self` is (ADR 0099), or an `IntoIterator`'s
-            // `self` of a `&mut` to an object, an impl for `&mut Bag`'s (ADR
-            // 0457), to a method that takes the object itself: what's in it.
-            let into_iter_boxed =
-                is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator) && self.iterated_from_box(tr.self_ty());
+            // What its caller through the dictionary gives in a box for each:
+            // a generic `&mut Self` (ADR 0099), and a `Self` that's a `&mut` to
+            // an object, an impl for `&mut Bag`'s (ADRs 0454, 0457); to a method
+            // that takes a cell for each `&mut` it can't hold as the object,
+            // `&mut u32`'s or `&mut &mut Money`'s: what's in each box more.
+            let self_held = self.held_in_box(tr.self_ty());
             for (i, value) in values.iter_mut().enumerate() {
-                let boxed = self.param_is_box(item.def_id, i) || (i == 0 && into_iter_boxed);
-                if boxed && !self.param_is_box(method, i) {
+                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);
+                for _ in usize::from(self.param_is_box(method, i))..given {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
             }

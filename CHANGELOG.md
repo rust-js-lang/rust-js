@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **rust_decimal compiles**: `splitn` of a set of `char`s or a closure
+  (ADR 0157), `Formatter::pad_integral` (ADR 0143), and an impl for
+  `&mut Decimal`, whose `&mut self` is a cell of the object (ADR 0454).
 - **A hand-written `Serialize`**, its serializer's calls the JSON writer's,
   and **a hand-written `Deserialize`** that reads through another's,
   `String::deserialize(d)?`, or by its own `Visitor`, `deserialize_any` and

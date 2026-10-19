@@ -61,7 +61,7 @@ double_all(c, { into_iter: (cell) => $iter($mutItems(cell.value)) });
    is known**: a handle on each item of a `&mut`, `$mutItems`,
    `$mutEntries`, an `Option`'s place; a `&`'s, std's own iterator of
    it. It's given what generic code has, a box of a `&mut` to an object,
-   `cell.value` (ADR 0454), asked of `iterated_from_box`.
+   `cell.value` (ADR 0454), asked of `held_in_box`.
 3. **The crate's is its impl's**: `impl IntoIterator for &mut Bag`'s
    method, given the `Bag` in that box. It's written only where generic
    code reads it.

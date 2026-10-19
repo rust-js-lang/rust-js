@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: "            false => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
+  {
+    name: "splitn-set-pattern-unmade",
+    breaks: "`splitn(2, ['e', 'E'])`'s set isn't made a predicate, and JS calls the array",
+    file: "src/lower/std_types/text.rs",
+    find: "        let at = if op == TextOp::SplitNBy { 2 } else { 1 };\n",
+    replace: "        let at = 1;\n",
+    tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
+  },
 ];

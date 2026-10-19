@@ -392,8 +392,8 @@ export const mutations: Mutation[] = [
     name: "mut-ref-to-mut-ref-refused",
     breaks: "a `&mut &mut u32`, arrayvec's `ScopeExitGuard`'s, is refused, where it's a cell of the cell",
     file: "src/lower/representation.rs",
-    find: "            return self.is_cell_pointee(inner);\n",
-    replace: "            return false;\n",
+    find: "            return self.is_cell_pointee(inner) || plain_object;\n",
+    replace: "            return plain_object;\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
   },
   {
@@ -452,5 +452,21 @@ export const mutations: Mutation[] = [
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || self.recognition().is_path_like(ty)\n",
     tests: ["test/lowering.test.ts", "-t", "stepped by hand"],
+  },
+  {
+    name: "mut-ref-to-object-uncelled",
+    breaks: "a `&mut` to a `&mut Money`, an impl for `&mut Money`'s `&mut self`, is refused",
+    file: "src/lower/representation.rs",
+    find: "            return self.is_cell_pointee(inner) || plain_object;\n",
+    replace: "            return self.is_cell_pointee(inner);\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_object_impl.rs$"],
+  },
+  {
+    name: "mut-ref-to-iterator-celled",
+    breaks: "a `&mut` to a `&mut` iterator is a cell, where it's the JS iterator, and `it.next` isn't one",
+    file: "src/lower/representation.rs",
+    find: "                && !self.implements_iterator(inner)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(iter_by_ref|iter_next_back|dyn_iterators).rs$"],
   },
 ];

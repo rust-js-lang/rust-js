@@ -2098,4 +2098,12 @@ export const mutations: Mutation[] = [
     replace: "            | \"deserialize_u16\" | \"deserialize_u32\" | \"deserialize_f32\" | \"deserialize_f64\" => {\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
+  {
+    name: "splitn-by-unknown",
+    breaks: "`splitn` of a set of `char`s or a closure is refused",
+    file: "src/lower/recognition.rs",
+    find: "                    \"splitn\" => TextOp::SplitNBy,\n",
+    replace: "                    \"splitn\" => TextOp::SplitN,\n",
+    tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
+  },
 ];

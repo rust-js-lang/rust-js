@@ -65,6 +65,8 @@ pub(in crate::lower) enum TextOp {
     BytesPointer,
     /// `s.split(|c| ..)` and `s.contains(|c| ..)`: a closure as the pattern.
     SplitBy,
+    /// `s.splitn(n, |c| ..)`: of a closure, its first pieces and the rest whole.
+    SplitNBy,
     ContainsBy,
     /// `find(p)` or `rfind(p)`, `starts_with(p)` or `ends_with(p)`, of a
     /// predicate of a `char` (ADR 0157).
@@ -306,20 +308,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         // A set of `char`s as a pattern is the predicate of being one of
         // them, as a closure or a function is a predicate (ADR 0157).
+        // Its pattern's argument, after `splitn`'s count.
+        let at = if op == TextOp::SplitNBy { 2 } else { 1 };
         if matches!(
             op,
             TextOp::SplitBy
+                | TextOp::SplitNBy
                 | TextOp::ContainsBy
                 | TextOp::FindBy(_)
                 | TextOp::StartsBy { .. }
                 | TextOp::TrimMatches { .. }
-        ) && let Some(pattern) = tys.get(1)
+        ) && let Some(pattern) = tys.get(at)
             && let ty::Array(item, _) | ty::Slice(item) = pattern.peel_refs().kind()
             && item.is_char()
         {
-            let set = values[1].clone();
+            let set = values[at].clone();
             let one_of = Expr::call(Expr::member(set, "includes"), vec![Expr::var("c")]);
-            values[1] = Expr::arrow(
+            values[at] = Expr::arrow(
                 vec!["c".into()],
                 vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)],
             );
@@ -372,6 +377,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![mapped])
             }
             TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
+            TextOp::SplitNBy => {
+                let (s, n, matches) = (arg(), arg(), arg());
+                Expr::call(Expr::helper("$splitBy"), vec![s, matches, n])
+            }
             TextOp::ContainsBy => {
                 let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]);
                 method(chars, "some", vec![arg()])

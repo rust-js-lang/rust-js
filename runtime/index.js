@@ -669,10 +669,13 @@ export function $lines(s) {
   return ended;
 }
 
-export function $splitBy(s, matches) {
+// `s.split(p)`, or `s.splitn(n, p)`, of a predicate of a `char`: its
+// pieces, of `splitn` at most `n`, the last what's left whole.
+export function $splitBy(s, matches, n = Infinity) {
+  if (n === 0) return [];
   const pieces = [""];
   for (const c of s) {
-    if (matches(c)) {
+    if (pieces.length < n && matches(c)) {
       pieces.push("");
     } else {
       pieces[pieces.length - 1] += c;
@@ -3563,6 +3566,21 @@ export function $jsonUnknown(what, name, names) {
   const quoted = names.map((n) => `\`${n}\``);
   const expected = names.length === 1 ? quoted[0] : names.length === 2 ? `${quoted[0]} or ${quoted[1]}` : `one of ${quoted.join(", ")}`;
   return $jsonError(`unknown ${what} \`${name}\`, expected ${expected}`);
+}
+
+// `f.pad_integral(nonNegative, prefix, digits)`, as std writes it given a
+// `Formatter`'s options: its sign, a `+` where `{:+}` asks; its prefix where
+// `{:#}` does; zeros between them and the digits where `{:0}` does, else
+// padding as a number's (ADR 0143).
+export function $padIntegral(nonNegative, prefix, digits, options) {
+  if (options === undefined) return (nonNegative ? "" : "-") + digits;
+  const sign = !nonNegative ? "-" : options.plus ? "+" : "";
+  const head = sign + (options.alternate ? prefix : "");
+  const width = options.width;
+  if (width === undefined) return head + digits;
+  if (options.zero) return head + digits.padStart(width - [...head].length, "0");
+  const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? ">";
+  return $pad(head + digits, width, align, options.fill);
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so

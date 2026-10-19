@@ -123,3 +123,13 @@ applies it, as a `str`'s `Display` does:
   unpadded: the width is known only at run time, after it was made.
 - `f.width()`, `f.precision()`, `f.pad()` and the other ways to read a
   `Formatter` are still errors.
+
+## Amendment: `pad_integral`
+
+`f.pad_integral(non_negative, prefix, digits)`, which rust_decimal's
+`Display` writes with, was refused. Given the `Formatter`'s options, it's
+`$padIntegral`, as std writes it: its sign, a `+` where `{:+}` asks, its
+prefix where `{:#}` does, zeros past the prefix where `{:0}` does, else
+padded as a number. Where the crate formats with no options, the sign,
+the prefix where `{:#}` is known, and the digits. The `pad_integral` and
+`pad_integral_plain` corpus cases show each, against native Rust.

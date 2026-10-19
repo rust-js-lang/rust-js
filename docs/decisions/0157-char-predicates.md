@@ -62,3 +62,12 @@ one `char`,** which each method tries on each `char` in turn:
   tests on all 256 bytes.
 - **It's the JS a person writes:** `(c) => [";", ","].includes(c)`, the
   predicate a closure would be.
+
+## Amendment: `splitn` of a predicate
+
+`s.splitn(n, ['e', 'E'])`, rust_decimal's split of an exponent, was
+refused. It's `$splitBy(s, matches, n)`, `split`'s helper given its
+count: at most `n` pieces, the last what's left whole, a set of `char`s
+made the predicate of being one, as `split`'s is. The `splitn_by` corpus
+case splits by a set and a closure, of none and of more than there are,
+against native Rust.
