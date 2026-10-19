@@ -1,13 +1,17 @@
-// An iterator that owns its items, given to a `take`, which closes what it
-// steps as it ends, or is dropped: each item it hasn't given dropped by
-// `drop`, as Rust's drops them with it (ADR 0422).
+// An iterator an adapter holds, closed when the adapter ends early or is
+// dropped: `drop`, its own drop, given what it hasn't given, once, as Rust
+// drops it with the adapter (ADRs 0422, 0465).
 function $closing(it, drop) {
+  let closed = false;
   return Iterator.from({
     next() {
       return it.next();
     },
     return() {
-      for (let step = it.next(); !step.done; step = it.next()) drop(step.value);
+      if (!closed) {
+        closed = true;
+        drop?.(it);
+      }
       return { done: true, value: undefined };
     },
   });

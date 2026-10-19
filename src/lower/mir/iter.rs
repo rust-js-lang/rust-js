@@ -57,8 +57,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then
     /// dropped, by its own drop, the crate's own, arrayvec's `Drain`, or its
     /// caller's, a generic iterator's it's given (ADRs 0421, 0464). One whose
-    /// result holds it, `map(f)`, is refused; of a generic one given no drop,
-    /// its callers give none with a destructor (ADR 0190).
+    /// result holds it, `map(f)`, is the result's to drop, closed to drop it
+    /// (ADR 0465), or refused; of a generic one given no drop, its callers
+    /// give none with a destructor (ADR 0190).
     fn dropped_after(
         &mut self,
         def_id: DefId,
@@ -81,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if params_only {
             self.require_consumed_drops_none(receiver, output);
-        } else if self.is_user_iterator(receiver) && given {
+        } else if self.is_user_iterator(receiver) && given && self.recognition().closed_on_drop(output).is_none() {
             let name = self.tcx.item_name(def_id);
             return Err(self.unsupported(
                 span,
@@ -354,7 +355,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::FlatMap) => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Take) => method("take", it, vec![arg()]),
-            Some(IterMethod::Skip) => skipped(it, arg()),
+            // Of items with a destructor, each it skips dropped as it's
+            // skipped, as Rust's `nth` drops it (ADRs 0422, 0465).
+            Some(IterMethod::Skip) => self.skipped(it, arg(), dropping, span)?,
             Some(IterMethod::ForEach) => method("forEach", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Any) => method("some", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::All) => method("every", it, vec![self.unary_callback(arg(), own)]),
@@ -372,16 +375,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Each item of both in turn, till one differs or either ends, as
             // Rust's `eq` steps them; `ne` its negation.
-            Some(IterMethod::Eq | IterMethod::Ne) => {
+            // Of items with a destructor, each pair dropped as it's compared,
+            // and each closed as it ends, as std's are dropped (ADR 0465).
+            Some(method @ (IterMethod::Eq | IterMethod::Ne)) => {
                 let Some(item) = item else { return Ok(None) };
-                let other = arg();
-                let mut list = vec![it, other];
-                list.extend(self.item_eq(item, span)?);
-                let same = Expr::call_helper("$iterEq", list);
-                match std_method {
-                    Some(IterMethod::Eq) => same,
-                    _ => Expr::unary(js::UnaryOp::Not, same),
-                }
+                let ne = method == IterMethod::Ne;
+                self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), (lent, ne), span)?
             }
             // The pairing, `(x, i) => [i, x]`, in place of which a
             // callback that takes the pair apart is given each item and its
@@ -797,10 +796,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The iterator `it`, of type `iter_ty`, a method of items with a
-    /// destructor, `dropping`, is called on, `lent` or not: of a `take` of
-    /// one that owns them, moved into it, `$closing`, whose closing drops
-    /// what it hasn't given, as the `take` closes it when it ends or is
-    /// dropped (ADR 0422); else one that may leave some is refused.
+    /// destructor, `dropping`, is called on, `lent` or not: of an adapter,
+    /// `take`'s or `map`'s, of one that owns them, moved into it,
+    /// `$closing`, whose closing drops what it hasn't given, as the adapter
+    /// closes it when it ends or is dropped (ADRs 0422, 0465); else one that
+    /// may leave some is refused.
     fn dropping_source(
         &mut self,
         it: Expr,
@@ -809,16 +809,95 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
-        let Some(item) = dropping else {
+        if dropping.is_none() {
             return Ok(it);
-        };
-        let owned = self.recognition().owned_items(iter_ty).is_some();
-        if matches!(method, Some(IterMethod::Take | IterMethod::Skip)) && !lent && owned {
-            let drop = self.std_drop_function(item, span)?.expect("a destructor");
-            return Ok(Expr::call_helper("$closing", vec![it, drop]));
+        }
+        if method.is_some_and(IterMethod::holds_its_source) && !lent {
+            return self.closing(it, iter_ty, span);
         }
         self.check_leaves_none(method, iter_ty, name, span)?;
         Ok(it)
+    }
+
+    /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to
+    /// drop what it hasn't given, `$closing(it, drop)`, where `closing_drop`
+    /// says (ADRs 0422, 0465); else itself.
+    pub(in crate::lower) fn closing(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        Ok(match self.closing_drop(ty, span)? {
+            Some(drop) => Expr::call_helper("$closing", vec![it, drop]),
+            None => it,
+        })
+    }
+
+    /// What closes a `ty` an adapter holds, its own drop: of one that owns
+    /// items with a destructor, a generic one whose drop its caller gives,
+    /// or the crate's own with one, stepped as `$iterator(value, next)`.
+    /// `None` of one with nothing to drop.
+    pub(in crate::lower) fn closing_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let owns = match self.recognition().owned_into_items(ty) {
+            Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
+            None => {
+                self.given_drop(ty).is_some()
+                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing
+            }
+        };
+        match owns {
+            // The crate's own is stepped as `$iterator(value, next)`, which
+            // drops its `value` (ADR 0421).
+            true => self.held_drop_function(ty, self.is_user_iterator(ty), span),
+            false => Ok(None),
+        }
+    }
+
+    /// `a.eq(b)`, or `a.ne(b)`, of `a`, of `item`s, an `iter_ty`, `lent` or
+    /// not, and `b`, an `IntoIterator` of type `other`: `$iterEq`, each pair compared as
+    /// Rust steps them; of items with a destructor, each pair dropped as it's
+    /// compared, and each closed as it ends, as std's are dropped (ADR 0465).
+    fn iterators_eq(
+        &mut self,
+        (it, other): (Expr, Expr),
+        (item, iter_ty, other_ty): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        (lent, ne): (bool, bool),
+        span: Span,
+    ) -> R<Expr> {
+        let other = match self.closing_drop(other_ty, span)? {
+            Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(other), drop]),
+            None => other,
+        };
+        let it = match lent {
+            true => it,
+            false => self.closing(it, iter_ty, span)?,
+        };
+        let other_item = self.iterable_item(other_ty);
+        let compare = self.item_eq((item, other_item), span)?;
+        let drop_a = self.std_drop_function(item, span)?;
+        let drop_b = self.std_drop_function(other_item, span)?;
+        let mut list = vec![it, other];
+        if compare.is_some() || drop_a.is_some() || drop_b.is_some() {
+            list.push(compare.unwrap_or_else(Expr::undefined));
+        }
+        if drop_a.is_some() || drop_b.is_some() {
+            list.push(drop_a.unwrap_or_else(Expr::undefined));
+        }
+        list.extend(drop_b);
+        let same = Expr::call_helper("$iterEq", list);
+        Ok(match ne {
+            true => Expr::unary(js::UnaryOp::Not, same),
+            false => same,
+        })
+    }
+
+    /// `skip(n)` of `it`: JS's `drop(n)`; of items with a destructor,
+    /// `$skipDropping`, each it skips dropped as it's skipped, as Rust's `nth`
+    /// drops it (ADRs 0422, 0465).
+    fn skipped(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        Ok(match dropping {
+            Some(item) => {
+                let drop = self.std_drop_function(item, span)?.expect("a destructor");
+                Expr::call_helper("$skipDropping", vec![it, n, drop])
+            }
+            None => Expr::call(Expr::member(it, "drop"), vec![n]),
+        })
     }
 
     /// The one item of `it` a method picks, of items of type `item`, which
@@ -875,6 +954,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Count
                     | IterMethod::Max
                     | IterMethod::Min
+                    | IterMethod::Eq
+                    | IterMethod::Ne
                     | IterMethod::Last
                     | IterMethod::Nth
                     | IterMethod::Find
@@ -1137,20 +1218,6 @@ fn counted_chain(e: &Expr) -> bool {
         at = source;
     }
     stages > 0 && crate::lower::iterators::is_stepped_items(at)
-}
-
-/// `skip(n)` of `it`: JS's `drop(n)`; of `$closing`'s, an iterator that owns
-/// items with a destructor, `$skipDropping`, which drops each it skips
-/// (ADR 0422).
-fn skipped(it: Expr, n: Expr) -> Expr {
-    match it.kind {
-        js::ExprKind::Call(callee, mut list) if callee.helper_name() == Some("$closing") => {
-            let drop = list.pop().expect("its drop");
-            let source = list.pop().expect("its source");
-            Expr::call_helper("$skipDropping", vec![source, n, drop])
-        }
-        kind => Expr::call(Expr::member(Expr { kind, ..it }, "drop"), vec![n]),
-    }
 }
 
 /// `$iter(v).map(f).filter(p)`, a lazy chain over an array's items whose

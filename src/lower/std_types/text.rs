@@ -490,7 +490,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::ParseErrorKind => call("$parseErrorKind", vec![arg()]),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
-                let eq = self.item_eq(generic_args.type_at(0), span)?;
+                let eq = self.item_eq((generic_args.type_at(0), generic_args.type_at(0)), span)?;
                 if end || eq.is_some() {
                     list.push(Expr::bool(end));
                 }

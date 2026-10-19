@@ -533,6 +533,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0462 An `io::Error` is a value: its kind, and the error it holds](decisions/0462-io-error-values.md)
 - [0463 Hashing is std's: its hashers, and what `Hash` writes to one](decisions/0463-hashing-is-stds.md)
 - [0464 A pick drops what it passes over, and a consumed iterator is dropped after](decisions/0464-a-pick-drops-what-it-passes-over.md)
+- [0465 Dropping a std adapter is closing it, and what it holds is closed by its own drop](decisions/0465-dropping-an-adapter-is-closing-it.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

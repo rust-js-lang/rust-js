@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-no-drops-unlisted",
-    breaks: "a library's generic map is given a destructor by its consumer",
+    breaks: "a library's generic peekable is given a destructor by its consumer",
     file: "src/lower/library.rs",
     find: "            no_drops: no_drops\n                .get(&id)\n                .map(|params| params.iter().copied().collect())\n                .unwrap_or_default(),",
     replace: "            no_drops: Vec::new(),",
-    tests: ["test/crates.test.ts","-t","its map is given no destructor"],
+    tests: ["test/crates.test.ts","-t","its peekable is given no destructor"],
   },
   {
     name: "library-drops-unlisted",

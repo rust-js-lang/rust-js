@@ -50,10 +50,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `it.partition(f)` each into one of its two (ADR 0445), and
         // `it.filter_map(f)` each to `f`, which owns it then, and `max_by`
         // drops each it passes over; through a `&mut`, `find_map`'s, what it
-        // doesn't reach stays in the iterator.
+        // doesn't reach stays in the iterator. A lazy adapter, `zip`, moves
+        // what it's given into what it makes, which its type says is closed
+        // to drop it, or is refused (ADR 0465).
         let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
             || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
-                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])));
+                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
+            || matches!(known, Std::IterComb(comb) if comb.holds_its_sources());
         if takes_drops
             && !drained
             && !keeps_value

@@ -443,4 +443,20 @@ export const mutations: Mutation[] = [
     replace: "                        Expr::call(Expr::helper(helper), vec![items, f])\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
+  {
+    name: "zip-holds-none",
+    breaks: "`zip` of items with a destructor is refused",
+    file: "src/lower/combinators.rs",
+    find: "            IterComb::Zip\n                | IterComb::Chain\n                | IterComb::TakeWhile\n",
+    replace: "            IterComb::Chain\n                | IterComb::TakeWhile\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+  },
+  {
+    name: "step-by-passed-undropped",
+    breaks: "what `step_by` steps over isn't dropped",
+    file: "src/lower/combinators.rs",
+    find: "                        StmtKind::Expr(Expr::call(drop, vec![Expr::var(\"item\")])).at(js::Span::NONE),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+  },
 ];

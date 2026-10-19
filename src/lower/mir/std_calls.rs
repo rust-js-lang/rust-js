@@ -686,12 +686,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
                 // Items with a destructor a combinator may leave undropped; not
-                // `skip_while`'s, each dropped as it's skipped, nor one that
-                // leaves none, `partition`'s and `max_by`'s.
+                // one that leaves none, `partition`'s and `max_by`'s, nor an
+                // adapter that holds what it steps, closed to drop it, which
+                // drops each it discards (ADR 0465).
                 let dropping = self
                     .iterator_item(iter_ty)
                     .filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-                if dropping.is_some() && comb != IterComb::SkipWhile && !comb.leaves_none() {
+                if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {
                     return Err(self.unsupported(
                         span,
                         "an iterator's combinator of items with a destructor, from its MIR",
@@ -708,20 +709,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = self.as_js_iterator(receiver, iter_ty, span)?;
                 let it = match lent {
                     true => self.lent_iterator(it),
+                    false if comb.holds_its_sources() => self.closing(it, iter_ty, span)?,
                     false => it,
                 };
                 // Another iterator it's given, `chain(Counter(0))`'s, the
-                // crate's: stepped by its own `next`, not its fields.
+                // crate's: stepped by its own `next`, not its fields; one that
+                // owns items with a destructor, `zip(v)`'s, `$closing`.
                 let mut exprs = (exprs.into_iter().zip(&arg_tys[1..]))
-                    .map(|(e, &ty)| match self.is_user_iterator(ty) {
-                        true => self.as_js_iterator(e, ty.peel_refs(), span),
-                        false => Ok(e),
+                    .map(|(e, &ty)| {
+                        let user = self.is_user_iterator(ty);
+                        let e = match user {
+                            true => self.as_js_iterator(e, ty.peel_refs(), span)?,
+                            false => e,
+                        };
+                        if !matches!(comb, IterComb::Zip | IterComb::Chain) {
+                            return Ok(e);
+                        }
+                        Ok(match self.closing_drop(ty, span)? {
+                            Some(drop) if user => Expr::call_helper("$closing", vec![e, drop]),
+                            Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(e), drop]),
+                            None => e,
+                        })
                     })
                     .collect::<R<Vec<_>>>()?;
-                if let Some(item) = dropping.filter(|_| comb == IterComb::SkipWhile) {
+                if let Some(item) = dropping
+                    && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)
+                {
                     let test = exprs.remove(0);
                     self.flush(state, out)?;
-                    exprs.insert(0, self.dropping_discarded(test, item, true, span, out)?);
+                    let discard_when = comb == IterComb::SkipWhile;
+                    exprs.insert(0, self.dropping_discarded(test, item, discard_when, span, out)?);
                 }
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }

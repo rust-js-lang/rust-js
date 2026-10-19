@@ -1,7 +1,6 @@
-// `skip(n)` of an iterator that owns items with a destructor, moved into
-// it: the first `n` dropped by `drop` as it's first stepped, as Rust's `nth`
-// drops what it skips, and what it hasn't given dropped when it's closed,
-// as `$closing`'s is (ADR 0422).
+// `skip(n)` of items with a destructor: the first `n` dropped by `drop` as
+// it's first stepped, as Rust's `nth` drops what it skips; closing it closes
+// what it steps, which drops what it holds (ADRs 0422, 0465).
 function $skipDropping(it, n, drop) {
   let skipping = n;
   return Iterator.from({
@@ -17,7 +16,7 @@ function $skipDropping(it, n, drop) {
       return it.next();
     },
     return() {
-      for (let step = it.next(); !step.done; step = it.next()) drop(step.value);
+      it.return?.();
       return { done: true, value: undefined };
     },
   });

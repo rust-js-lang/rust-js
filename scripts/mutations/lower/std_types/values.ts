@@ -366,8 +366,8 @@ export const mutations: Mutation[] = [
     name: "find-map-lent-refused",
     breaks: "`find_map` through a `&mut` of items with a destructor is refused, as if it took the iterator whole",
     file: "src/lower/std_types/values.rs",
-    find: "                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])));\n",
-    replace: "                && self.ends_holding_nothing(tys[0]));\n",
+    find: "                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))\n",
+    replace: "                && self.ends_holding_nothing(tys[0]))\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
   {

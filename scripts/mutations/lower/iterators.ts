@@ -667,4 +667,13 @@ export const mutations: Mutation[] = [
     replace: "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
+  {
+    name: "eager-closing-kept",
+    breaks: "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed",
+    file: "src/lower/iterators.rs",
+    find: "                && whole\n                && stages.iter().all(|(name, _)| matches!(*name, \"map\" | \"filter\")) =>\n",
+    replace: "                && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_drops.rs$"],
+    snapshots: true,
+  },
 ];

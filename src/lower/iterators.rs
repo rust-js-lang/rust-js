@@ -606,6 +606,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok()
     }
 
+    /// What an `IntoIterator` of type `ty` gives, its `Item`.
+    pub(in crate::lower) fn iterable_item(&self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        let item = trait_method(self.tcx, into_iterator, "Item");
+        let projection = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, item, [ty]);
+        (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            .unwrap_or(projection)
+    }
+
     /// `test`, a stage's predicate, as one that drops the `item` it
     /// discards: one `filter` doesn't keep, or one `skip_while` skips.
     pub(in crate::lower) fn dropping_discarded(
@@ -1187,6 +1197,19 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         return None;
     }
     let at = unlent(at);
+    // An owning source closed to drop what it hasn't given, `$closing($iter(xs),
+    // drop)`, which a chain of `map`s and `filter`s run over every item never
+    // closes (ADR 0465): its items.
+    let at = match &at.kind {
+        js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$closing")
+                && whole
+                && stages.iter().all(|(name, _)| matches!(*name, "map" | "filter")) =>
+        {
+            &args[0]
+        }
+        _ => at,
+    };
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };

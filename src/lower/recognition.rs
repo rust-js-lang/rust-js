@@ -3700,26 +3700,69 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
-    /// what it holds that its closing drops (ADR 0422): `iter::repeat`'s
-    /// value, and that of a `take` or a `skip` of one, JS's helpers, which
-    /// close what they step; and a `take` or a `skip` of an iterator that
-    /// owns its items, given it as `$closing` or `$skipDropping`, whose
-    /// closing drops what it hasn't given.
+    /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
+    /// value; and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
+    /// of what its sources hold, each closable, an iterator that owns its
+    /// items given it as `$closing`, whose closing drops what it hasn't given,
+    /// or one that holds nothing, a slice's or a range's. The one list of
+    /// what's closed to drop.
     pub(super) fn closed_on_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        let path = std_path(self.tcx, adt.did());
-        let inner = args.types().next();
-        match path.as_str() {
-            "std::iter::Repeat" => inner,
-            "std::iter::Take" | "std::iter::Skip"
-                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) =>
-            {
-                Some(item)
+        let mut sources = args.types();
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Repeat" => sources.next(),
+            "std::iter::Take"
+            | "std::iter::Skip"
+            | "std::iter::Map"
+            | "std::iter::Filter"
+            | "std::iter::Enumerate"
+            | "std::iter::SkipWhile"
+            | "std::iter::TakeWhile"
+            | "std::iter::StepBy"
+            | "std::iter::Inspect"
+            | "std::iter::Fuse" => self.closing_source(sources.next()?)?,
+            "std::iter::Zip" | "std::iter::Chain" => {
+                let held: Vec<Option<Ty<'tcx>>> = sources
+                    .take(2)
+                    .map(|source| self.closing_source(source))
+                    .collect::<Option<_>>()?;
+                match held.as_slice() {
+                    [Some(a), Some(b)] => Some(Ty::new_tup(self.tcx, &[*a, *b])),
+                    [Some(one), None] | [None, Some(one)] => Some(*one),
+                    _ => None,
+                }
             }
-            "std::iter::Take" | "std::iter::Skip" => self.closed_on_drop(inner?),
             _ => None,
         }
+    }
+
+    /// What closing an adapter's `source` drops: `Some` of what it holds, an
+    /// owning iterator's items or what one closed to drop holds, a generic
+    /// one itself, closed by its caller's drop, or the crate's, by its own,
+    /// `Some(None)`
+    /// of one that holds nothing, a slice's or a range's, `None` of another.
+    fn closing_source(&self, source: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
+        if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {
+            return Some(Some(held));
+        }
+        // A generic one, closed by the drop its caller gives, and the crate's
+        // own, by its own drop.
+        let generic = matches!(
+            source.kind(),
+            ty::Param(_)
+                | ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Projection { .. },
+                        ..
+                    }
+                )
+        );
+        if generic || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {
+            return Some(Some(source));
+        }
+        (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)
     }
 
     /// What an iterator that owns its items gives, `vec::IntoIter`'s,
@@ -3737,6 +3780,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
         }
         args.types().next()
+    }
+
+    /// What a value given as an iterable owns and drops with what it hasn't
+    /// given, `zip(v)`'s `Vec`: an owning iterator's items, or a `Vec`'s, a
+    /// `VecDeque`'s or an array's, given by value.
+    pub(super) fn owned_into_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        if let Some(item) = self.owned_items(ty) {
+            return Some(item);
+        }
+        match ty.kind() {
+            ty::Array(item, _) => Some(*item),
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec) || self.is_std_type(ty, StdItem::VecDeque) => {
+                args.types().next()
+            }
+            _ => None,
+        }
     }
 
     /// An iterator that owns the one item it may give, `Some(x).into_iter()`
@@ -5615,9 +5674,10 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
 }
 
 /// Whether the `Iterator` method `name`, an `IterComb`, leaves no item with
-/// a destructor undropped (`IterComb::leaves_none`).
+/// a destructor undropped (`IterComb::leaves_none`), or holds what it steps,
+/// closed to drop it (`IterComb::holds_its_sources`).
 pub(crate) fn leaves_none(name: &str) -> bool {
-    methods::iterator(name).is_some_and(|comb| comb.leaves_none())
+    methods::iterator(name).is_some_and(|comb| comb.leaves_none() || comb.holds_its_sources())
 }
 
 /// The type parameters whose names `{:?}` of `ty` shows, each a
@@ -5884,6 +5944,24 @@ pub(crate) enum IterMethod {
     Nth,
     Partition,
     Collect,
+}
+
+impl IterMethod {
+    /// A lazy adapter that holds what it steps, so an owning source given it
+    /// is `$closing`, dropping what it hasn't given as the adapter's closed
+    /// (ADR 0465): `map`'s, `filter`'s, `take`'s and the rest.
+    pub(crate) fn holds_its_source(self) -> bool {
+        matches!(
+            self,
+            IterMethod::Map
+                | IterMethod::Filter
+                | IterMethod::SkipWhile
+                | IterMethod::Take
+                | IterMethod::Skip
+                | IterMethod::Enumerate
+                | IterMethod::Fuse
+        )
+    }
 }
 
 /// A `Debug` builder of std's, by its type, which a `Formatter`'s

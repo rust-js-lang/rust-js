@@ -886,25 +886,28 @@ export function $findDropping(it, test, drop, boxed) {
   return undefined;
 }
 
-// An iterator that owns its items, given to a `take`, which closes what it
-// steps as it ends, or is dropped: each item it hasn't given dropped by
-// `drop`, as Rust's drops them with it (ADR 0422).
+// An iterator an adapter holds, closed when the adapter ends early or is
+// dropped: `drop`, its own drop, given what it hasn't given, once, as Rust
+// drops it with the adapter (ADRs 0422, 0465).
 export function $closing(it, drop) {
+  let closed = false;
   return Iterator.from({
     next() {
       return it.next();
     },
     return() {
-      for (let step = it.next(); !step.done; step = it.next()) drop(step.value);
+      if (!closed) {
+        closed = true;
+        drop?.(it);
+      }
       return { done: true, value: undefined };
     },
   });
 }
 
-// `skip(n)` of an iterator that owns items with a destructor, moved into
-// it: the first `n` dropped by `drop` as it's first stepped, as Rust's `nth`
-// drops what it skips, and what it hasn't given dropped when it's closed,
-// as `$closing`'s is (ADR 0422).
+// `skip(n)` of items with a destructor: the first `n` dropped by `drop` as
+// it's first stepped, as Rust's `nth` drops what it skips; closing it closes
+// what it steps, which drops what it holds (ADRs 0422, 0465).
 export function $skipDropping(it, n, drop) {
   let skipping = n;
   return Iterator.from({
@@ -920,7 +923,7 @@ export function $skipDropping(it, n, drop) {
       return it.next();
     },
     return() {
-      for (let step = it.next(); !step.done; step = it.next()) drop(step.value);
+      it.return?.();
       return { done: true, value: undefined };
     },
   });
@@ -8250,6 +8253,14 @@ export const $sipHasher = Object.fromEntries(
   ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
 );
 
+// What drops each item an iterator, or an array, hasn't given, by `drop`,
+// as Rust's drops an owning iterator's (ADRs 0098, 0465).
+export function $dropEach(drop) {
+  return (items) => {
+    for (const item of items) drop(item);
+  };
+}
+
 // A `Duration` is its nanoseconds, a BigInt (ADR 0188): std's `MAX` is
 // `u64::MAX` seconds and 999,999,999 nanoseconds, and past it, std panics.
 export function $durationNew(secs, nanos) {
@@ -8502,19 +8513,34 @@ export function $skipWhile(items, skip) {
   return start < 0 ? [] : items.slice(start);
 }
 
+// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; both closed as it
+// ends, which drops what each holds (ADR 0465).
 export function* $lazyChain(a, b) {
-  yield* a;
-  yield* b;
+  try {
+    yield* a;
+    yield* b;
+  } finally {
+    a.return?.();
+    b.return?.();
+  }
 }
 
-export function* $lazyZip(a, b) {
+// `a.zip(b)`, lazy: a pair of each's next, till either ends; an item of
+// `a`'s stepped where `b`'s run out given to `dropA`, as Rust drops it, and
+// `b` closed as it ends, which drops what it holds (ADR 0465).
+export function* $lazyZip(a, b, dropA) {
   const right = b[Symbol.iterator]();
-  for (const item of a) {
-    const other = right.next();
-    if (other.done) {
-      return;
+  try {
+    for (const item of a) {
+      const other = right.next();
+      if (other.done) {
+        dropA?.(item);
+        return;
+      }
+      yield [item, other.value];
     }
-    yield [item, other.value];
+  } finally {
+    right.return?.();
   }
 }
 
@@ -8815,15 +8841,30 @@ export function $cmpItems(a, b, cmp) {
   return $cmp(a.length, b.length);
 }
 // `a.eq(b)` of two iterators: each item in turn, as Rust steps them, till
-// one differs or either ends; by `eq`, or `===` of what JS compares so.
-export function $iterEq(a, b, eq) {
+// one differs or either ends; by `eq`, or `===` of what JS compares so. Of
+// items with a destructor, each compared pair dropped, `b`'s first, and one
+// left where the other ended; each closed as it ends, which drops what it
+// holds, `b` first, as std's are dropped (ADR 0465).
+export function $iterEq(a, b, eq, dropA, dropB) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
-  for (;;) {
-    const p = x.next();
-    const q = y.next();
-    if (p.done || q.done) return p.done === q.done;
-    if (!(eq ? eq(p.value, q.value) : p.value === q.value)) return false;
+  try {
+    for (;;) {
+      const p = x.next();
+      const q = y.next();
+      if (p.done || q.done) {
+        if (!q.done) dropB?.(q.value);
+        if (!p.done) dropA?.(p.value);
+        return p.done === q.done;
+      }
+      const same = eq ? eq(p.value, q.value) : p.value === q.value;
+      dropB?.(q.value);
+      dropA?.(p.value);
+      if (!same) return false;
+    }
+  } finally {
+    y.return?.();
+    x.return?.();
   }
 }
 

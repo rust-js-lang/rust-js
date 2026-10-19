@@ -5724,7 +5724,7 @@ impl Drop for Noisy {
 }
 pub fn run() {
     let v = vec![Noisy("a"), Noisy("b")];
-    drop(v.into_iter().map(|n| n));
+    drop(v.into_iter().peekable());
 }
 `);
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
@@ -5737,7 +5737,7 @@ pub fn run() {
 // What JS can't do soundly is refused: each compiled to output that ran
 // unlike Rust, found running them both.
 for (const [name, source, message] of [
-  ["a destructor given where a generic map takes none", "pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn doubled<I: Iterator<Item = u32>>(items: I) -> impl Iterator<Item = u32> { items.map(|x| x * 2) }\npub fn f() -> u32 { doubled(Counter(0)).sum() }", "giving `doubled`'s `I` a type with a destructor, where it takes none"],
+  ["a destructor given where a generic peekable takes none", "pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn peeked<I: Iterator<Item = u32>>(items: I) -> std::iter::Peekable<I> { items.peekable() }\npub fn f() -> u32 { peeked(Counter(0)).sum() }", "giving `peeked`'s `I` a type with a destructor, where it takes none"],
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "as what its own `Borrow` gives"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "whose `IntoIterator` is the crate's"],
   ["an untagged enum's variants of one kind, matched", "#[rust_js::untagged] pub enum E { A(&'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "which JS can't tell apart"],

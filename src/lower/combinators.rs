@@ -134,6 +134,21 @@ pub(super) enum IterComb {
 }
 
 impl IterComb {
+    /// A lazy adapter that holds what it steps, and what it's given to step
+    /// after, `zip`'s and `chain`'s: an owning one given it is `$closing`,
+    /// and it drops each it discards as it discards it (ADR 0465).
+    pub(in crate::lower) fn holds_its_sources(self) -> bool {
+        matches!(
+            self,
+            IterComb::Zip
+                | IterComb::Chain
+                | IterComb::TakeWhile
+                | IterComb::SkipWhile
+                | IterComb::StepBy
+                | IterComb::Inspect
+        )
+    }
+
     /// Whether it leaves no item with a destructor undropped (ADR 0098): it
     /// moves each it takes on, `partition`'s into one of its two (ADR 0445),
     /// `filter_map`'s and `find_map`'s to its function; or it drops each it
@@ -1012,6 +1027,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.js_eq(ty) == Some(super::std_impls::JsEq::SameValue)
     }
 
+    /// The drop of a `receiver`'s items, an iterator's, where they have a
+    /// destructor.
+    fn item_drop_of(&mut self, receiver: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        match self.iterator_item(receiver.peel_refs()) {
+            Some(item) => self.std_drop_function(item, span),
+            None => Ok(None),
+        }
+    }
+
     /// One of `IterComb`'s, on `items`: an array, or a JS iterator if `lazy`.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn iter_comb(
@@ -1084,9 +1108,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             // `chain` and `zip` are lazy when either side is (ADR 0128):
             // `iterator_call` says so in `lazy`.
+            // Of items with a destructor, each of its own it steps where the
+            // other's run out dropped (ADR 0465).
             IterComb::Zip if lazy => {
-                let other = next();
-                Expr::call(Expr::helper("$lazyZip"), vec![items, other])
+                let mut args = vec![items, next()];
+                args.extend(self.item_drop_of(receiver_ty, span)?);
+                Expr::call(Expr::helper("$lazyZip"), args)
             }
             IterComb::Zip => Expr::call(Expr::helper("$zip"), vec![items, next()]),
             IterComb::Chain if lazy => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
@@ -1104,15 +1131,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (init, f) = (next(), next());
                 Expr::call(Expr::helper("$scan"), vec![items, init, f])
             }
+            // Of items with a destructor, each it steps over dropped as it's
+            // passed, as std's `nth` drops it (ADR 0465).
             IterComb::StepBy => {
                 let n = next();
                 let n = if n.reads_same() { n } else { self.spill("step", n, out) };
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
-                let f = Expr::arrow(
-                    vec!["_".into(), "i".into()],
-                    vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
-                );
-                method(items, "filter", vec![f])
+                let body = match self.item_drop_of(receiver_ty, span)? {
+                    Some(drop) => vec![
+                        StmtKind::If(
+                            keep,
+                            vec![StmtKind::Return(Some(Expr::bool(true))).at(js::Span::NONE)],
+                            None,
+                        )
+                        .at(js::Span::NONE),
+                        StmtKind::Expr(Expr::call(drop, vec![Expr::var("item")])).at(js::Span::NONE),
+                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),
+                    ],
+                    None => vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
+                };
+                let param = if body.len() > 1 { "item" } else { "_" };
+                method(items, "filter", vec![Expr::arrow(vec![param.into(), "i".into()], body)])
             }
             // Each passed over dropped as it's passed, of items with a
             // destructor (ADR 0098); a key made once for each, as std's.

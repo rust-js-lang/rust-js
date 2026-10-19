@@ -4,6 +4,7 @@ import {
   $bigChecked,
   $checked,
   $debugParseError,
+  $dropEach,
   $iter,
   $iterator,
   $parseBig,
@@ -86,11 +87,7 @@ function main() {
   );
   console.log(`${product == null ? "None" : `Some(${product})`}`);
   const louds = [[1], [2], [10], [3]];
-  const value$4 = sum_below($iter(louds), 5, (intoIter) => {
-    for (const item of intoIter) {
-      loudDrop_drop(item);
-    }
-  });
+  const value$4 = sum_below($iter(louds), 5, $dropEach(loudDrop_drop));
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -4,6 +4,7 @@ import {
   $checked,
   $cmp,
   $debugStr,
+  $dropEach,
   $iterator,
   $lastDropping,
   $maxBy,
@@ -139,11 +140,7 @@ function main() {
     loud(),
     { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
     loudDrop_drop,
-    (intoIter) => {
-      for (const item of intoIter) {
-        loudDrop_drop(item);
-      }
-    },
+    $dropEach(loudDrop_drop),
   );
   try {
     console.log(`${value$7 == null ? "None" : `Some(${loudDebug_fmt(value$7)})`}`);
@@ -164,11 +161,7 @@ function main() {
   console.log(
     `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`}`,
   );
-  const value$10 = final_one(loud(), loudDrop_drop, (intoIter) => {
-    for (const item of intoIter) {
-      loudDrop_drop(item);
-    }
-  });
+  const value$10 = final_one(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
   try {
     console.log(`${value$10 == null ? "None" : `Some(${loudDebug_fmt(value$10)})`}`);
   } finally {

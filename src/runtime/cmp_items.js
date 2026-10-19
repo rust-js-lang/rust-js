@@ -9,14 +9,29 @@ function $cmpItems(a, b, cmp) {
   return $cmp(a.length, b.length);
 }
 // `a.eq(b)` of two iterators: each item in turn, as Rust steps them, till
-// one differs or either ends; by `eq`, or `===` of what JS compares so.
-function $iterEq(a, b, eq) {
+// one differs or either ends; by `eq`, or `===` of what JS compares so. Of
+// items with a destructor, each compared pair dropped, `b`'s first, and one
+// left where the other ended; each closed as it ends, which drops what it
+// holds, `b` first, as std's are dropped (ADR 0465).
+function $iterEq(a, b, eq, dropA, dropB) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
-  for (;;) {
-    const p = x.next();
-    const q = y.next();
-    if (p.done || q.done) return p.done === q.done;
-    if (!(eq ? eq(p.value, q.value) : p.value === q.value)) return false;
+  try {
+    for (;;) {
+      const p = x.next();
+      const q = y.next();
+      if (p.done || q.done) {
+        if (!q.done) dropB?.(q.value);
+        if (!p.done) dropA?.(p.value);
+        return p.done === q.done;
+      }
+      const same = eq ? eq(p.value, q.value) : p.value === q.value;
+      dropB?.(q.value);
+      dropA?.(p.value);
+      if (!same) return false;
+    }
+  } finally {
+    y.return?.();
+    x.return?.();
   }
 }

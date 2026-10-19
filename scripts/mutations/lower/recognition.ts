@@ -1533,8 +1533,8 @@ export const mutations: Mutation[] = [
     name: "skip-of-repeat-unclosed",
     breaks: "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
     file: "src/lower/recognition.rs",
-    find: "            \"std::iter::Take\" | \"std::iter::Skip\" => self.closed_on_drop(inner?),\n",
-    replace: "            \"std::iter::Take\" => self.closed_on_drop(inner?),\n",
+    find: "            | \"std::iter::Skip\"\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
@@ -1749,8 +1749,8 @@ export const mutations: Mutation[] = [
     name: "take-of-owned-unclosed",
     breaks: "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped",
     file: "src/lower/recognition.rs",
-    find: "                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)) =>\n",
-    replace: "                if let Some(item) = inner.and_then(|inner| self.owned_items(inner)).filter(|_| false) =>\n",
+    find: "        if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {\n",
+    replace: "        if let Some(held) = self.owned_items(source).filter(|_| false).or_else(|| self.closed_on_drop(source)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
   {
@@ -2218,5 +2218,21 @@ export const mutations: Mutation[] = [
     find: "            || is_hasher(self.tcx, id)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
+  },
+  {
+    name: "map-not-closed",
+    breaks: "a `map` of an iterator of items with a destructor is refused, not closed to drop them",
+    file: "src/lower/recognition.rs",
+    find: "            | \"std::iter::Map\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+  },
+  {
+    name: "generic-source-unclosed",
+    breaks: "an adapter of a generic iterator, generic code's `zip`, is refused, not closed by its caller's drop",
+    file: "src/lower/recognition.rs",
+    find: "        if generic || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {\n",
+    replace: "        if matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
 ];

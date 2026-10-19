@@ -2,9 +2,11 @@
 
 import {
   $append,
+  $closing,
   $cmp,
   $dedupBy,
   $dequeInsert,
+  $dropEach,
   $insertAt,
   $iter,
   $lastDropping,
@@ -374,7 +376,7 @@ function main() {
                 }
                 return n;
               };
-              const tmp$2 = tmp.map((item) => tmp$1(item));
+              const tmp$2 = $closing(tmp, $dropEach(noisyDrop_drop)).map((item) => tmp$1(item));
               const last = $lastDropping(tmp$2, noisyDrop_drop);
               const value$1 = (n) => n[0];
               try {

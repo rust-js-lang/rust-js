@@ -21,6 +21,11 @@ released any more: `rust-js build` is the one way to build an app.
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).
+- **std's lazy adapters of items with a destructor**: `map`, `filter`,
+  `zip`, `chain`, `enumerate`, `take_while`, `skip_while`, `step_by`,
+  `inspect` and `fuse` drop what they haven't given when they're dropped,
+  and each they discard as they discard it; in generic code too, of what
+  its caller gives; and `eq` drops each pair it compares (ADR 0465).
 - **`max`, `min`, `max_by`, `min_by` and their `_by_key` forms of items
   with a destructor**, each passed over dropped as std's fold drops it; and
   generic code that consumes an iterator of them, `fold`, `last`, `count`

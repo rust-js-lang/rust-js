@@ -64,7 +64,8 @@ depends on what the program does:
 - A map key whose `PartialEq` is the crate's own: `use std::collections::HashMap; #[derive(Hash)] struct K(u32); impl PartialEq for K { fn eq(&self, o: &K) -> bool { self.0 % 10 == o.0 % 10 } } impl Eq for K {} let mut m = HashMap::new(); m.insert(K(1), 1); println!("{}", m.contains_key(&K(11)));`
 - A `&mut` to an object given for a type parameter inside what generic code takes or gives, an `Option`, which it has as a box and its caller as the object: `fn some<D>(d: Option<D>) -> Option<D> { d } let mut v = vec![1]; if let Some(r) = some(Some(&mut v)) { r.push(2); }`
 - A `&mut` to an object given for a type parameter that's a closure's parameter: `fn apply<D, F: Fn(D) -> usize>(d: D, f: F) -> usize { f(d) } let mut v = vec![1]; println!("{}", apply(&mut v, |w: &mut Vec<i32>| w.len()));`
-- Generic code given a type with a destructor where it takes none, a lazy adapter of an iterator of it that it gives back: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } fn firsts<I: Iterator<Item = D>>(it: I) -> impl Iterator<Item = u32> { it.map(|d| d.0) } println!("{}", firsts(vec![D(1), D(2)].into_iter()).count());`
+- A `peekable`, `rev`, `flat_map` or `scan` of items with a destructor, which holds one it has stepped, or steps from the back: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } let mut p = vec![D(1), D(2)].into_iter().peekable(); p.peek(); drop(p);`
+- Generic code given a type with a destructor where it takes none, a `peekable` of an iterator of it that it gives back: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } fn peeked<I: Iterator<Item = D>>(it: I) -> std::iter::Peekable<I> { it.peekable() } println!("{}", peeked(vec![D(1), D(2)].into_iter()).count());`
 
 ## Closures
 

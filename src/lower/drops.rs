@@ -1049,6 +1049,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Some((**callee).clone()));
         }
+        // `(intoIter) => { for (const item of intoIter) nDrop_drop(item); }`,
+        // what drops each an iterator hasn't given, is `$dropEach(nDrop_drop)`.
+        if let [
+            Stmt {
+                kind:
+                    StmtKind::ForOf {
+                        label: None,
+                        pattern: js::Pattern::Name(item),
+                        iterable,
+                        body: each,
+                        ..
+                    },
+                ..
+            },
+        ] = body.as_slice()
+            && matches!(&iterable.kind, js::ExprKind::Var(name) if *name == param)
+            && let [
+                Stmt {
+                    kind: StmtKind::Expr(call),
+                    ..
+                },
+            ] = each.as_slice()
+            && let js::ExprKind::Call(callee, args) = &call.kind
+            && let [arg] = args.as_slice()
+            && matches!(&arg.kind, js::ExprKind::Var(name) if name == item)
+            && matches!(&callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_))
+        {
+            return Ok(Some(Expr::call_helper("$dropEach", vec![(**callee).clone()])));
+        }
         Ok(Some(Expr::arrow(vec![param.into()], body)))
     }
 

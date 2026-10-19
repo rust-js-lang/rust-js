@@ -359,15 +359,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         })
     }
-
-    /// What an `IntoIterator` of type `ty` gives, its `Item`.
-    fn iterable_item(&self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
-        let into_iterator =
-            crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::IntoIterator);
-        let item = crate::lower::recognition::trait_method(self.tcx, into_iterator, "Item");
-        let projection = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, item, [ty]);
-        (self.tcx)
-            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
-            .unwrap_or(projection)
-    }
 }

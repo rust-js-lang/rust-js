@@ -52,11 +52,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "no-drops-unrequired",
-    breaks: "a generic map that takes no destructor of its iterator is given one by a caller, and drops nothing of it",
+    breaks: "a generic peekable that takes no destructor of its iterator is given one by a caller, and drops nothing of it",
     file: "src/lower/drops.rs",
     find: "            .extend(params);\n        true",
     replace: "            .extend(params.into_iter().filter(|_| false));\n        true",
-    tests: ["test/diagnostics.test.ts","-t","a destructor given where a generic map takes none"],
+    tests: ["test/diagnostics.test.ts","-t","a destructor given where a generic peekable takes none"],
   },
   {
     name: "no-drops-not-passed-on",
@@ -333,5 +333,14 @@ export const mutations: Mutation[] = [
     find: "                typing_env: ty::TypingEnv::post_analysis(tcx, owner),\n",
     replace: "                typing_env: self.typing_env,\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drop_cells.rs$"],
+  },
+  {
+    name: "drop-each-written-out",
+    breaks: "what drops each item an iterator hasn't given is an arrow of a loop, not `$dropEach(drop)`",
+    file: "src/lower/drops.rs",
+    find: "            return Ok(Some(Expr::call_helper(\"$dropEach\", vec![(**callee).clone()])));\n",
+    replace: "            let _ = callee;\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    snapshots: true,
   },
 ];

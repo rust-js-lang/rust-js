@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "      }\n      return it.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
+  {
+    name: "skip-dropping-unclosed",
+    breaks: "closing a `skip` of items with a destructor doesn't close what it steps",
+    file: "src/runtime/skip_dropping.js",
+    find: "      it.return?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+  },
 ];
