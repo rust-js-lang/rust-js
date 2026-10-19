@@ -549,6 +549,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0478 An associated type of one is given its drop too](decisions/0478-an-associated-type-of-one-is-given-its-drop-too.md)
 - [0479 `reduce` is std's](decisions/0479-reduce-is-std-s.md)
 - [0480 An associated type steps from its back as a type parameter does](decisions/0480-an-associated-type-steps-from-its-back-as-a-parameter-does.md)
+- [0481 An iterator given as it is is written in place](decisions/0481-an-iterator-given-as-it-is-is-written-in-place.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

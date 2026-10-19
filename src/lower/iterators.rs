@@ -426,6 +426,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         js_iterator && (self.declared_bounds(ty, env.param_env).into_iter()).any(|bound| is(self.tcx, bound))
     }
 
+    /// Whether `ty` is a type parameter of the function being lowered given
+    /// as it is (ADR 0411): its caller's own value, an object, the crate's
+    /// iterator or a `$iter`, which `*it = other` writes in place, `$assign`
+    /// (ADR 0481).
+    pub(in crate::lower) fn iterator_given_as_it_is(&self, ty: ty::Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Param(param)
+            if given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param))
+    }
+
     /// Whether a value of `ty` is a JS iterator that knows its length, its
     /// `len()` (ADR 0456): a type parameter's bound by `ExactSizeIterator`,
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks

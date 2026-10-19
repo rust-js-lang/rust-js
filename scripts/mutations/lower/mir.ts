@@ -294,8 +294,8 @@ export const mutations: Mutation[] = [
     name: "mir-object-replace-rebinds",
     breaks: "`*self = v` through a `&mut` to an object rebinds `self`, not the object",
     file: "src/lower/mir.rs",
-    find: "            && self.is_object(pointee)\n",
-    replace: "            && false && self.is_object(pointee)\n",
+    find: "            && (self.is_object(pointee) || self.iterator_given_as_it_is(pointee))\n",
+    replace: "            && false\n",
     tests: ["test/corpus.test.ts","-t","replace_through_mut"],
   },
   {
@@ -2746,5 +2746,13 @@ export const mutations: Mutation[] = [
     find: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || super::recognition::is_extend(self.tcx, trait_id))\n",
     replace: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash))\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
+  },
+  {
+    name: "given-iterator-written-refused",
+    breaks: "`*b = b_orig.clone()` of a `&mut` to an iterator given as it is is refused",
+    file: "src/lower/mir.rs",
+    find: "            && (self.is_object(pointee) || self.iterator_given_as_it_is(pointee))\n",
+    replace: "            && self.is_object(pointee)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_written_through.rs$"],
   },
 ];

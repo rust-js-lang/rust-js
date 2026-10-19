@@ -2864,7 +2864,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
             && let pointee = place.ty(decls, self.tcx).ty
             && !self.is_cell_pointee(pointee)
-            && self.is_object(pointee)
+            && (self.is_object(pointee) || self.iterator_given_as_it_is(pointee))
         {
             // An `Rc` or a `Weak` is a pointer its owners share: the place
             // given another, not the one it holds changed, which every

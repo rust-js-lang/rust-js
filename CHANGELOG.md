@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`*b = other` of a `&mut` to an iterator given as it is**, written in
+  place, as of any object (ADR 0481).
 - **An `I::IntoIter: DoubleEndedIterator` stepped from its back**, `rev()`
   and `rfind`, and a `Copied` of a slice's iterator given as one (ADR 0480).
 - **`reduce`**, std's, `None` of none (ADR 0479); and values of an
