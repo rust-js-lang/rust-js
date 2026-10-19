@@ -625,14 +625,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","drop_generic"],
   },
   {
-    name: "std-error-dictionary-missing",
-    breaks: "a `ParseIntError` given where an `E: Error` goes, as thiserror's `transparent` does, has no dictionary",
-    file: "src/lower/traits.rs",
-    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {",
-    replace: "        if false && is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {",
-    tests: ["test/corpus.test.ts","-t","std_errors_boxed"],
-  },
-  {
     name: "std-error-dictionary-markers",
     breaks: "std's `Error` dictionary asks one of `MetaSized`, which has none",
     file: "src/lower/traits.rs",
@@ -1584,5 +1576,13 @@ export const mutations: Mutation[] = [
     find: "        if is_std_def(self.tcx, tr.def_id, StdItem::Error)\n            && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())\n",
     replace: "        if false\n            && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
+  },
+  {
+    name: "text-as-ref-bytes-refused",
+    breaks: "text given where `T: AsRef<[u8]>` goes has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "            && matches!(tr.args.type_at(1).kind(), ty::Slice(item) if *item == self.tcx.types.u8)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_bytes.rs$"],
   },
 ];

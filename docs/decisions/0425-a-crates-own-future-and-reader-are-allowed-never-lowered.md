@@ -91,3 +91,13 @@ of one, and `is_unlowered_impl` keeps its methods out of what's lowered.
   before: the call that gives it a crate's future is what's refused.
 - either compiles past its impls. Its next refusal is generic code calling
   `Extend::extend` on an `L: Extend<A>` (`docs/crate-corpus.md`).
+
+## Amendment: what only an unlowered impl calls
+
+base64's `DecoderReader` reads its delegate in a private helper,
+`read_from_delegate`, that only its own `io::Read::read` calls: its call
+of `R::read` was refused, though no JS could reach it. A private
+function only an unlowered impl's methods call, or only functions found
+so, is never lowered either (`reached_only_unlowered`): it's no JS, as
+the impl is. One a consumer may call, or that nothing calls, is lowered
+as it was. `test/corpus/unlowered_helpers.rs` holds it.

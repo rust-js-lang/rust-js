@@ -50,4 +50,21 @@ export const mutations: Mutation[] = [
     replace: "                        let _ = own_writer;\n                        calls.push((caller, callee));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
+  {
+    name: "result-method-write-result-never-fails",
+    breaks: "a function that gives `map` of an `io::Result<usize>` isn't known to fail: its error escapes uncaught",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))\n                    {\n                        failing.insert(caller);\n",
+    replace: "                        && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))\n                    {\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+  {
+    name: "from-residual-of-write-error-fails",
+    breaks: "every function that `?`s a write's result is taken to fail, its writes caught in a `try` though none fails",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        && !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
+    snapshots: true,
+  },
 ];

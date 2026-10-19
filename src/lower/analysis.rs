@@ -59,6 +59,15 @@ pub(super) use super::recognition::serde_impl;
 /// Must run *before* `analysis`: building MIR for borrowck consumes ("steals")
 /// the THIR, so this is our only chance to read it.
 pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+    let mut bodies = lowered_bodies(tcx);
+    // What only an unlowered impl reaches is no JS either (ADR 0425).
+    let unreached = reached_only_unlowered(tcx, &bodies);
+    bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id.to_def_id())));
+    bodies
+}
+
+/// The crate's functions a body is lowered of, each with its THIR.
+fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     let items = tcx.hir_crate_items(());
     items
         .definitions()
@@ -108,6 +117,58 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             })
         })
         .collect()
+}
+
+/// The crate's private functions only an unlowered impl's methods call
+/// (ADR 0425), a type's own `io::Read`'s helpers, or only what's found so:
+/// what no JS calls, and so never lowered. One a consumer may call, or none
+/// calls, is lowered as it was.
+fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> HashSet<DefId> {
+    // Each function's callers, by the function each call is in.
+    let mut callers: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    let mut calls_in = |caller: DefId, thir: &rustc_middle::thir::Thir<'_>| {
+        for expr in thir.exprs.iter() {
+            if let ty::FnDef(callee, _) = *expr.ty.kind()
+                && callee.is_local()
+            {
+                callers.entry(callee).or_default().insert(caller);
+            }
+        }
+    };
+    for body in bodies {
+        calls_in(tcx.typeck_root_def_id(body.def_id.to_def_id()), &body.thir);
+    }
+    let unlowered: HashSet<DefId> = (tcx.hir_crate_items(()).definitions())
+        .filter(|&def_id| {
+            tcx.def_kind(def_id) == DefKind::AssocFn
+                && is_unlowered_impl(tcx, tcx.parent(def_id.to_def_id()))
+                && tcx.hir_maybe_body_owned_by(def_id).is_some()
+        })
+        .map(|def_id| def_id.to_def_id())
+        .collect();
+    for &method in &unlowered {
+        if let Ok((thir, _)) = tcx.thir_body(method.expect_local()) {
+            calls_in(method, &thir.borrow());
+        }
+    }
+    let mut unreached: HashSet<DefId> = HashSet::new();
+    loop {
+        let found = (callers.iter())
+            .filter(|&(callee, by)| {
+                !unreached.contains(callee)
+                    && matches!(tcx.def_kind(*callee), DefKind::Fn | DefKind::AssocFn)
+                    && !tcx.effective_visibilities(()).is_reachable(callee.expect_local())
+                    && by
+                        .iter()
+                        .all(|caller| unlowered.contains(caller) || unreached.contains(caller))
+            })
+            .map(|(&callee, _)| callee)
+            .collect::<Vec<_>>();
+        if found.is_empty() {
+            return unreached;
+        }
+        unreached.extend(found);
+    }
 }
 
 /// Each body's MIR, as borrowck reads it (ADR 0364), read once every

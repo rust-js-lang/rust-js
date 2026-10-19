@@ -5499,24 +5499,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 out,
             )?;
-            // A std iterator `mir_std_call` makes an array of, `bytes()`'s: a
-            // JS iterator, which MIR steps. Not one that's the string it shows,
-            // an escape's; nor a `T` it gives, `unwrap_or`'s, its value.
-            return Ok(match value {
-                Value::Expr(e)
-                    if self.implements_iterator(output)
-                        && !matches!(output.kind(), ty::Param(_))
-                        && !output.is_box()
-                        && self.range_kind(output).is_none()
-                        && !self.is_user_iterator(output)
-                        && !super::recognition::is_text_escape(tcx, output) =>
-                {
-                    Value::Expr(self.std_iterator(e, output))
-                }
-                value => value,
-            });
+            return Ok(self.std_value_as(value, output, &arg_tys));
         }
         Err(refuse(self.tcx, span, Refused::Call(def_id)))
+    }
+
+    /// A std call's value as its `output` is held. A std iterator
+    /// `mir_std_call` makes an array of, `bytes()`'s: a JS iterator, which
+    /// MIR steps; not one that's the string it shows, an escape's, nor a `T`
+    /// it gives, `unwrap_or`'s, its value. A write's result a `Result`'s
+    /// method makes of a value's, `map` of an `io::Result<usize>`: `undefined`
+    /// or its error, `$writeOf(..)` (ADR 0462).
+    fn std_value_as(&mut self, value: Value<'tcx>, output: Ty<'tcx>, arg_tys: &[Ty<'tcx>]) -> Value<'tcx> {
+        match value {
+            Value::Expr(e)
+                if self.implements_iterator(output)
+                    && !matches!(output.kind(), ty::Param(_))
+                    && !output.is_box()
+                    && self.range_kind(output).is_none()
+                    && !self.is_user_iterator(output)
+                    && !super::recognition::is_text_escape(self.tcx, output) =>
+            {
+                Value::Expr(self.std_iterator(e, output))
+            }
+            Value::Expr(e)
+                if self.is_write_result(output)
+                    && arg_tys
+                        .first()
+                        .is_some_and(|&from| self.recognition().is_result(from) && !self.is_write_result(from)) =>
+            {
+                Value::Expr(Expr::call_helper("$writeOf", vec![e]))
+            }
+            value => value,
+        }
     }
 
     /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and

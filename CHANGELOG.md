@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
+  what only a type's own `io::Read` calls is never lowered (ADR 0425);
+  every trait impl of a library is exported (ADR 0100).
 - **An `io::Error` is a value**: `io::Error::new(kind, e)`, `other(e)`,
   `kind.into()`, its `kind()`, and its `{}` and `{:?}` as std shows them;
   **an `io::Result<()>` may be an `Err`**, thrown as a `fmt::Result`'s is,
@@ -692,6 +695,9 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **A function written in a trait's default**, of an impl in another
+  module, crashed the compiler, its copy calling what wasn't there (ADR
+  0308).
 - **Two structs that each held a map or a set**, of a derived `PartialEq`,
   were equal whatever their maps held (ADR 0059).
 - **A struct of a const parameter with a destructor**, itertools'

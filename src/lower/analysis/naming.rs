@@ -415,6 +415,12 @@ pub(super) fn local_functions<'a, 'tcx: 'a>(
                         tcx.def_kind(tcx.typeck_root_def_id(tcx.local_parent(local).to_def_id())),
                         DefKind::Fn | DefKind::AssocFn
                     )
+                    // Not of a trait's default, whose body each impl's
+                    // dictionary copies into its own module (ADR 0185): the
+                    // trait's module's, which each copy imports.
+                    && tcx
+                        .trait_of_assoc(tcx.typeck_root_def_id(tcx.local_parent(local).to_def_id()))
+                        .is_none()
             })
         })
         .collect();

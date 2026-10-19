@@ -302,6 +302,23 @@ test("a library's writer is given its Formatter's options as its own crate takes
   expect(app("none", "use std::fmt;\n\nstruct Shown(String);\n\nimpl fmt::Display for Shown {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        padded::show(&self.0, f)\n    }\n}\n\npub fn main() {\n    println!(\"[{}] [{}] [{}]\", plain::Kebab(\"a b\"), padded::Pad(String::from(\"x\")), Shown(String::from(\"y\")));\n}\n")).toBe("[a-b] [x] [y]\n");
 }, 300_000);
 
+// A library's generic code may ask a consumer that instantiates it for an
+// impl of a type of its own the consumer can't name, as base64's
+// `EncoderStringWriter` asks for its private `Utf8SingleCodeUnitWriter`'s
+// `io::Write`: every trait impl is exported (ADR 0100).
+test("a library's private type's impl is given to its generic code by a consumer", () => {
+  const dir = fixture("library-private-impl");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub trait Sink {\n    fn put(&mut self, s: &str);\n}\n\nstruct Upper(String);\n\nimpl Sink for Upper {\n    fn put(&mut self, s: &str) {\n        self.0.push_str(&s.to_uppercase());\n    }\n}\n\npub struct Writer<S> {\n    sink: S,\n}\n\nimpl<S: Sink> Writer<S> {\n    pub fn write(&mut self, s: &str) {\n        self.sink.put(s);\n    }\n}\n\npub fn shouting() -> Writer<impl Sink> {\n    Writer { sink: Upper(String::new()) }\n}\n\nimpl Writer<Upper> {\n    pub fn text(&self) -> &str {\n        &self.sink.0\n    }\n}\n\npub fn shout(words: &[&str]) -> String {\n    let mut w = Writer { sink: Upper(String::new()) };\n    for word in words {\n        w.write(word);\n    }\n    w.text().to_string()\n}\n");
+  writeFileSync(join(dir, "app.rs"), "pub fn main() {\n    let mut w = dep::shouting();\n    w.write(\"hi \");\n    w.write(\"there\");\n    println!(\"{}\", dep::shout(&[\"a\", \"b\"]));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("AB\n");
+}, 300_000);
+
 // A library's function that asks the size of its type parameter is told it
 // by its consumer, as its manifest says (ADR 0145), directly or through the
 // consumer's own generic function, and a library's impl's dictionary too.

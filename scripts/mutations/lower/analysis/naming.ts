@@ -164,4 +164,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
+  {
+    name: "default-local-function-local",
+    breaks: "a function written in a trait's default is declared in each impl's copy, where what it calls isn't imported, and the copy calls the trait module's, which isn't there",
+    file: "src/lower/analysis/naming.rs",
+    find: "                    && tcx\n                        .trait_of_assoc(tcx.typeck_root_def_id(tcx.local_parent(local).to_def_id()))\n                        .is_none()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^default_inner_fn.rs$"],
+  },
 ];

@@ -268,3 +268,13 @@ by their types, `(n) => duplicate(n, ..)`. It's that arrow now, and its
 import by name where that's all it is: the crate's own functions keep
 theirs. Found by the check's mutations, two of which no longer told the
 two ways apart.
+
+## Amendment: every trait impl is exported
+
+A library's generic code may ask a consumer that instantiates it for an
+impl of a type of its own the consumer can't name: base64's
+`EncoderStringWriter<S>`'s `io::Write` asks for its private
+`Utf8SingleCodeUnitWriter<S>`'s, by a bound, of the `S` the consumer
+gives. Only the impls a consumer could reach by visibility were exported.
+Every trait impl is now, and its methods (`library::reachable`).
+`crates.test.ts` holds it.

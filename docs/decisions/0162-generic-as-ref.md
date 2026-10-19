@@ -78,3 +78,10 @@ shout("hi", { as_mut: (cell) => cell });
   `&mut String` and a `&mut Vec` to generic functions, against native
   Rust; `user_as_mut` holds that a crate's impl writes no dictionary
   where nothing generic reads it.
+
+## Amendment: text as `AsRef<[u8]>`
+
+base64's `decode<T: AsRef<[u8]>>(input: T)` is given text. Its
+dictionary's `as_ref` is the text's UTF-8 bytes, as `as_bytes()` gives
+them, `utf8_bytes`, the one place both are made.
+`test/corpus/as_ref_bytes.rs` holds it.

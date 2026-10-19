@@ -389,9 +389,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Array.from(new TextEncoder().encode(s))`: an array of `u8`s, as a
             // slice of them is.
             TextOp::Bytes | TextOp::BytesPointer => {
-                let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
-                let encoded = Expr::call(Expr::member(encoder, "encode"), vec![arg()]);
-                let bytes = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded]);
+                let bytes = utf8_bytes(arg());
                 match op {
                     TextOp::BytesPointer => call("$ptr", vec![bytes, Expr::int(0)]),
                     _ => bytes,
@@ -831,4 +829,12 @@ pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
         TextOp::Splice => TextOp::Drain,
         _ => TextOp::Slice,
     }
+}
+
+/// Text's UTF-8 bytes, `Array.from(new TextEncoder().encode(s))`: an array
+/// of `u8`s, as a slice of them is, `as_bytes()`'s and `AsRef<[u8]>`'s.
+pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
+    let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
+    let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
+    Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
 }

@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|&&id| serde_impl(tcx, id).is_some())\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
   },
+  {
+    name: "unlowered-helpers-lowered",
+    breaks: "a private function only a type's own `io::Read` calls is lowered, and its `read` of the delegate refused",
+    file: "src/lower/analysis.rs",
+    find: "        if found.is_empty() {\n            return unreached;\n",
+    replace: "        if true {\n            return unreached;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
+  },
 ];

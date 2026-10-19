@@ -13,7 +13,7 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-19, after ADR 0461, Rust 1.99.0, each crate at the
+Measured 2026-10-19, after ADR 0462, Rust 1.99.0, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -37,11 +37,11 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
-| base64 0.22 | refused | `io::Read::read`, `io::Error` |
+| base64 0.22 | runs | an `io::Error` a value, its writer's errors thrown (ADR 0462) |
 | hex 0.4 | compiles | no probe yet |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-14 of 22 compile, and each of the 8 with a probe runs as natively.
+15 of 22 compile, and each of the 9 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and

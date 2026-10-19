@@ -15,6 +15,8 @@ import {
   $stringError,
   $utf8Lossy,
   $writeCaught,
+  $writeCheck,
+  $writeOf,
   $writeTry,
 } from "@rust-js/runtime";
 
@@ -115,6 +117,19 @@ function put_twice(w) {
   put(w);
 }
 
+// A `Result`'s method that makes a write's result of a value's: `map`.
+function written(r) {
+  const map = (n) => {
+    console.log(`wrote ${n}`);
+  };
+  $writeCheck($writeOf(r.TAG === "Ok" ? { TAG: "Ok", _0: map(r._0) } : r));
+}
+
+function written_twice(n) {
+  written({ TAG: "Ok", _0: n });
+  written({ TAG: "Err", _0: new $IoError("Other", { value: "refused", impl: $stringError() }) });
+}
+
 function main() {
   for (const s of ["2", "x", "9"]) {
     const e = $writeTry(() => run(s));
@@ -145,16 +160,24 @@ function main() {
   console.log(
     `${$ioResultDebug($writeTry(() => put_twice(room)))} ${$debugStr($utf8Lossy(room.out)._0)}`,
   );
+  const value$1 = $writeTry(() => written({ TAG: "Ok", _0: 3 }));
+  const result$2 = $writeTry(() => written_twice(4));
+  console.log(
+    `${$ioResultDebug(value$1)} ${((result) =>
+      result.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(result._0)})`)(
+      result$2 === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(result$2) },
+    )}`,
+  );
   const e = $writeTry(() => check(7));
   if (e !== undefined) {
     console.log(`caught ${$ioErrorDisplay(e)}`);
   }
-  const result$2 = $writeTry(() => check(1));
-  const result$3 = $writeTry(() => check(8));
-  const value$1 =
-    result$3 === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(result$3) };
+  const result$3 = $writeTry(() => check(1));
+  const result$4 = $writeTry(() => check(8));
+  const value$2 =
+    result$4 === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(result$4) };
   console.log(
-    `${result$2 === undefined} ${value$1.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$1._0)})`}`,
+    `${result$3 === undefined} ${value$2.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$2._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

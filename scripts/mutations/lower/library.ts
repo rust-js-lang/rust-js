@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "        self.item(id).is_some_and(|item| false && item.takes_location)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
   },
+  {
+    name: "private-trait-impl-unexported",
+    breaks: "a library's private type's impl its generic code asks a consumer for isn't exported",
+    file: "src/lower/library.rs",
+    find: "    matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true })\n        || id\n",
+    replace: "    id\n",
+    tests: ["test/crates.test.ts", "-t", "private type's impl"],
+  },
 ];

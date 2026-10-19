@@ -99,6 +99,10 @@ function doubled(s) {
   an interrupted one tried again, and `Ok(0)` std's own, `Error { kind:
   WriteZero, message: "failed to write whole buffer" }`.
 
+- **A `Result`'s method that makes a write's result of a value's**, `map`
+  of an `io::Result<usize>`, gives `$writeOf(..)`, a write's result's own
+  form, and may fail as `?` of one may.
+
 `test/corpus/io_unit_result.rs` and its `_expect` and `_panic` cases run
 each against native Rust.
 

@@ -78,3 +78,13 @@ const onLint = linter(async (props) => {
   reaches it, as it reaches a closure's (`js::each_block_mut`).
   (Amended: they passed it over, `s = s + t` left so; `nested_fn_prepared`
   runs it against native Rust.)
+
+## Amendment: not of a trait's default
+
+A function written in a trait's default method, base64's `Engine::encode`'s
+`inner`, was declared in the default's body; but each impl's dictionary
+copies that body into its own module (ADR 0185), where what `inner` calls
+wasn't imported, and the copy called an `inner` its trait's module never
+had. One written in a trait's default is the trait module's, which each
+copy imports. `test/corpus/default_inner_fn.rs` holds it, of an impl in
+another module.

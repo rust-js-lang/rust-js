@@ -69,6 +69,16 @@ fn put_twice(w: &mut Limited) -> io::Result<()> {
     put(w)
 }
 
+// A `Result`'s method that makes a write's result of a value's: `map`.
+fn written(r: io::Result<usize>) -> io::Result<()> {
+    r.map(|n| println!("wrote {n}"))
+}
+
+fn written_twice(n: usize) -> io::Result<()> {
+    written(Ok(n))?;
+    written(Err(io::Error::other("refused")))
+}
+
 fn main() {
     for s in ["2", "x", "9"] {
         match run(s) {
@@ -86,6 +96,7 @@ fn main() {
     println!("{:?}", put(&mut full));
     let mut room = Limited { room: 4, out: Vec::new() };
     println!("{:?} {:?}", put_twice(&mut room), String::from_utf8_lossy(&room.out));
+    println!("{:?} {:?}", written(Ok(3)), written_twice(4).map_err(|e| e.to_string()));
     if let Err(e) = check(7) {
         println!("caught {e}");
     }

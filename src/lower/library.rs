@@ -14,11 +14,16 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
 }
 
 /// Can another crate reach `id`, a local item? rustc's own answer, which
-/// follows `pub use`: for an impl's method, whether it can reach the impl.
+/// follows `pub use`; and every trait impl, and its methods: the library's
+/// generic code may ask a consumer that instantiates it for an impl of a
+/// type of its own it can't name, base64's `Utf8SingleCodeUnitWriter`'s
+/// `io::Write`, by a bound (ADR 0100).
 pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);
-    id.as_local()
-        .is_some_and(|local| tcx.effective_visibilities(()).is_reachable(local))
+    matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true })
+        || id
+            .as_local()
+            .is_some_and(|local| tcx.effective_visibilities(()).is_reachable(local))
 }
 
 /// What each function's contract says, of what a consumer can't work out

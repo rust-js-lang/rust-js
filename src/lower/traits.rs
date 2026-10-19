@@ -1343,18 +1343,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let kind = kind.ok_or_else(|| self.no_evidence(span, tr))?;
             return Ok(Expr::member(Expr::helper("$sliceIndexes"), kind));
         }
-        // std's `Error` of one of its parse errors: its `Display` and `Debug`, as
-        // a crate's impl's dictionary has them, and no `source`, which none of
-        // them has (ADR 0186).
-        if is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {
-            let mut props = self.supertrait_entries(tr, span)?;
-            let none = Expr::arrow(
-                Vec::new(),
-                vec![StmtKind::Return(Some(Expr::undefined())).at(js::Span::NONE)],
-            );
-            props.push(Prop::Field("source".into(), none));
-            return Ok(Expr::object(props));
-        }
         // std's `LowerHex` and the like of an integer: its digits, given the
         // options its caller is, as std's `Debug` of one is (ADR 0185).
         if let Some(num) = Num::of(ty).filter(|n| !n.float())
@@ -1571,6 +1559,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
+        }
+        // std's `AsRef<[u8]>` of text: its UTF-8 bytes, as `as_bytes()` gives
+        // them (ADR 0162).
+        if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
+            && !self.has_user_impl(tr.def_id, ty)
+            && self.is_string_like(ty)
+            && matches!(tr.args.type_at(1).kind(), ty::Slice(item) if *item == self.tcx.types.u8)
+        {
+            let bytes = super::std_types::text::utf8_bytes(Expr::var("value"));
+            let as_ref = Expr::arrow(
+                vec!["value".into()],
+                vec![StmtKind::Return(Some(bytes)).at(js::Span::NONE)],
+            );
+            return Ok(Expr::object(vec![Prop::Field("as_ref".into(), as_ref)]));
         }
         // std's `Borrow` where it's the same JS value: a value as itself, text
         // as a `str`, a `Vec` as a slice (ADR 0167).

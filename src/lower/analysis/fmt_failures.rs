@@ -90,6 +90,26 @@ pub(super) fn failing_fns<'tcx>(
                         .skip_normalization()
                         .skip_binder()
                         .output();
+                    // A `Result`'s method that makes one of a value's `Result`
+                    // of a write's error, `map` of an `io::Result<usize>`: its
+                    // `Err`, given on.
+                    let receiver = (tcx
+                        .fn_sig(callee)
+                        .instantiate(tcx, args)
+                        .skip_normalization()
+                        .skip_binder())
+                    .inputs()
+                    .first()
+                    .copied();
+                    // Not `?`'s own `from_residual`, which `Try::branch` says.
+                    if is_write_result_type(tcx, output)
+                        && !callee.is_local()
+                        && !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+                        && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))
+                    {
+                        failing.insert(caller);
+                        continue;
+                    }
                     if is_write_result_type(tcx, output)
                         && let Some(callee) = resolve(tcx, typing_env, callee, args)
                     {
