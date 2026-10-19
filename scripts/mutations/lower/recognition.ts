@@ -2171,4 +2171,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "io-error-from-kind-refused",
+    breaks: "`kind.into()` of an `ErrorKind` as an `io::Error` is refused",
+    file: "src/lower/recognition.rs",
+    find: "        (self.is_io_error(to) && self.is_io_error_kind(from)).then_some(IoErrorOp::FromKind)\n",
+    replace: "        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
+  },
 ];

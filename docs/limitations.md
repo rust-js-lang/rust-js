@@ -101,7 +101,6 @@ A `HashMap` or a `HashSet` keys by value and never hashes
 - `process::abort`: `std::process::abort();`
 - Standard input: `let mut s = String::new(); let _ = std::io::stdin().read_line(&mut s);`
 - The file system: `let _ = std::fs::read_to_string("x");`
-- An `io::Error`'s value: `let e = std::io::Error::other("x"); println!("{:?}", e);`
 
 ## Async, threads and time
 

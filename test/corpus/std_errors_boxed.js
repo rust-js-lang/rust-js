@@ -2,7 +2,6 @@
 
 import {
   $debugF64,
-  $debugParseError,
   $debugStr,
   $index,
   $parseBig,
@@ -142,38 +141,14 @@ function main() {
     }
   }
   const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  console.log(`${describe(err, $parseErrorDyn("ParseIntError"))}`);
+  const receiver$1 = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
+  const receiver = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
+  const value = !receiver.impl.source(receiver.value);
+  console.log(`${receiver$1.impl.Display().fmt(receiver$1.value)} ${value}`);
   console.log(
-    `${describe(err, {
-      Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
-      Display: () => ({ fmt: (value) => value }),
-      source: () => undefined,
-    })}`,
+    `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("TryFromIntError"))}`,
   );
-  const receiver$1 = tAsDyn_as_dyn(err, {
-    Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
-    Display: () => ({ fmt: (value) => value }),
-    source: () => undefined,
-  });
-  const receiver = tAsDyn_as_dyn(err, {
-    Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
-    Display: () => ({ fmt: (value) => value }),
-    source: () => undefined,
-  });
-  const value$1 = !receiver.impl.source(receiver.value);
-  console.log(`${receiver$1.impl.Display().fmt(receiver$1.value)} ${value$1}`);
-  console.log(
-    `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
-      Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),
-      Display: () => ({ fmt: (value) => value }),
-      source: () => undefined,
-    })}`,
-  );
-  console.log(
-    `${describe($unwrapErr($parseBool("maybe")), {
-      Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseBoolError") }),
-      Display: () => ({ fmt: (value) => value }),
-      source: () => undefined,
-    })}`,
-  );
+  console.log(`${describe($unwrapErr($parseBool("maybe")), $parseErrorDyn("ParseBoolError"))}`);
 }
 //# sourceMappingURL=case.js.map

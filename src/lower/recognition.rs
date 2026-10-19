@@ -12,6 +12,7 @@ use super::std_types::any::AnyOp;
 use super::std_types::clock::ClockOp;
 use super::std_types::cow::CowOp;
 use super::std_types::heap::HeapOp;
+use super::std_types::io_error::IoErrorOp;
 use super::std_types::lazy::LazyOp;
 use super::std_types::map::{MapOp, MapOwner, Part, map_method};
 use super::std_types::number::{DurationOp, NumOp};
@@ -167,6 +168,8 @@ pub(super) enum Std {
     Process(ProcessOp),
     /// `panic::Location`'s (ADR 0427).
     Location(super::std_types::location::LocationOp),
+    /// An `io::Error`'s: made, or its kind asked (ADR 0462).
+    IoError(IoErrorOp),
     /// A path's own method (ADR 0405).
     Path(PathOp),
     /// std's of a raw pointer, a handle on its place (ADR 0407).
@@ -715,6 +718,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // Where a call is, `Location::caller()`, and its parts (ADR 0427).
         if let Some(op) = location_of(tcx, def_id) {
             return Some(Some(Std::Location(op)));
+        }
+        if let Some(op) = self.io_error_op(def_id, args) {
+            return Some(Some(Std::IoError(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
         let utf8 = match std_path(tcx, def_id).as_str() {
@@ -2367,10 +2373,39 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(empty, _) if std_path(self.tcx, empty.did()) == "std::iter::Empty")
     }
 
-    /// `io::Error`, which no write of rust-js's gives (ADR 0392): a type a
-    /// writer of the crate's names, `io::Result<usize>`, of no value.
+    /// `io::Error`, a `$IoError` (ADR 0462).
     pub(super) fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
+    }
+
+    /// `io::ErrorKind`, its variant's name (ADR 0462).
+    pub(super) fn is_io_error_kind(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(kind, _) if std_path(self.tcx, kind.did()) == "std::io::ErrorKind")
+    }
+
+    /// Which of `io::Error`'s functions `def_id` is: its `new`, `other` and
+    /// `kind`, and `From<ErrorKind>`'s, or `Into`'s of one.
+    fn io_error_op(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<IoErrorOp> {
+        let tcx = self.tcx;
+        if let Some(imp) = tcx.inherent_impl_of_assoc(def_id)
+            && self.is_io_error(tcx.type_of(imp).instantiate_identity().skip_normalization())
+        {
+            return match tcx.item_name(def_id).as_str() {
+                "new" => Some(IoErrorOp::New),
+                "other" => Some(IoErrorOp::Other),
+                "kind" => Some(IoErrorOp::Kind),
+                _ => None,
+            };
+        }
+        let tr = tcx.trait_of_assoc(def_id)?;
+        let mut types = args.types();
+        let (first, second) = (types.next()?, types.next()?);
+        let (to, from) = match () {
+            _ if is_std_def(tcx, tr, StdItem::From) => (first, second),
+            _ if is_std_def(tcx, tr, StdItem::Into) => (second, first),
+            _ => return None,
+        };
+        (self.is_io_error(to) && self.is_io_error_kind(from)).then_some(IoErrorOp::FromKind)
     }
 
     /// Which of std's ranges `ty` is, if it's one (ADR 0129).

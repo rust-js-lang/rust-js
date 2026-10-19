@@ -621,4 +621,12 @@ export const mutations: Mutation[] = [
     replace: "                            let precision = Expr::undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
+  {
+    name: "io-error-kind-display-refused",
+    breaks: "`{}` of an `ErrorKind` is refused",
+    file: "src/lower/display.rs",
+    find: "        if self.recognition().is_io_error_kind(ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
+  },
 ];

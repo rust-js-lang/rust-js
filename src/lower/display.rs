@@ -824,6 +824,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
         }
+        // An `io::Error`'s, as std shows it, and an `ErrorKind`'s words (ADR 0462).
+        if self.recognition().is_io_error(ty) {
+            return Ok(Expr::call_helper("$ioErrorDisplay", vec![value]));
+        }
+        if self.recognition().is_io_error_kind(ty) {
+            return Ok(Expr::call_helper("$ioKindText", vec![value]));
+        }
         // `file:line:column` (ADR 0427).
         if self.recognition().is_location(ty) {
             return self.location_shown(value, false, span);
@@ -1149,6 +1156,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$debugJsonError"), vec![value]));
+        }
+        // An `io::Error`'s, std's `Custom { kind, error }` or `Kind(..)`, as
+        // pretty as it's asked (ADR 0462).
+        if self.recognition().is_io_error(ty) {
+            let mut list = vec![value];
+            if pretty.known() != Some(false) {
+                list.push(pretty.options());
+            }
+            return Ok(Expr::call_helper("$ioErrorDebug", list));
         }
         // Their derived `Debug`s (ADR 0172).
         if let Some(owned) = self.recognition().utf8_error(ty) {

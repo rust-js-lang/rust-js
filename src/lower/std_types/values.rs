@@ -340,6 +340,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.process_call(known, &mut values) {
             return Ok(js);
         }
+        if let Some(js) = self.io_error_call(known, call, &mut values)? {
+            return Ok(js);
+        }
         if let Some(js) = self.location_call(known, call, &mut values) {
             return Ok(js);
         }
@@ -501,6 +504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
+            Std::IoError(_) => unreachable!("lowered by io_error_call"),
             Std::Alloc(_) => unreachable!("lowered by alloc_call"),
             Std::Capacity(_) => unreachable!("lowered by vec_call"),
             Std::Path(_) => unreachable!("lowered by path_call"),

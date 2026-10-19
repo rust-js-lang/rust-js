@@ -25,6 +25,7 @@
 //! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |
 //! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
 //! | `SystemTime`, `Instant` | its nanoseconds, a `BigInt` | `clock` |
+//! | `io::Error` | a `$IoError`, its kind and what it holds | `io_error` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
@@ -36,6 +37,7 @@ pub(super) mod channel;
 pub(super) mod clock;
 pub(super) mod cow;
 pub(super) mod heap;
+pub(super) mod io_error;
 pub(super) mod lazy;
 pub(super) mod location;
 pub(super) mod map;

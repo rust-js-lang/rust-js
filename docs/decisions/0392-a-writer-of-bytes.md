@@ -1,6 +1,7 @@
 # 0392. A writer of bytes, `io::Write`, generic and `dyn`
 
-Status: Accepted. Amends [0132](0132-std-odds.md); extends
+Status: Accepted, amended by [0462](0462-io-error-values.md): an
+`io::Error` is a value. Amends [0132](0132-std-odds.md); extends
 [0180](0180-generic-writers.md), [0141](0141-std-trait-objects.md) and
 [0108](0108-generic-operators-and-into.md). Amended: a writer of bytes of
 the crate's, `impl io::Write`, arrayvec's `ArrayVec<u8, CAP>`, has a
