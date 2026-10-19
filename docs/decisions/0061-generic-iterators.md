@@ -81,8 +81,9 @@ rust-js knows. A generic `I` could be either form, depending on the caller.
 `multi_cartesian_product`'s, was refused: only a type parameter was
 taken for what its caller gives. An associated type only a caller knows
 is the same, an array or a JS iterator, stepped by `Iterator.from`:
-`is_given_iterable` answers it, for `into_iter`. A generic iterator's
-value of an associated type stays as it is: a dictionary gives it, a JS
-iterator already.
+`is_given_iterable` answers it, for `into_iter`: a type parameter, or an
+associated type that isn't an iterator. One that is, `I::IntoIter`, and a
+generic iterator's value of an associated type, stay as they are: a JS
+iterator already, as `into_iter` or a dictionary gave it.
 `test/corpus/associated_into_iter.rs` steps them against native Rust.
 

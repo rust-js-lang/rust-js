@@ -5048,9 +5048,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A type only a caller knows, a type parameter or one's associated
     /// type, `H::Item: IntoIterator`: what it's given is an array or a JS
-    /// iterator, which `Iterator.from` steps either of (ADR 0061).
+    /// iterator, which `Iterator.from` steps either of (ADR 0061). Not an
+    /// associated type that's an iterator, `I::IntoIter`, a JS iterator
+    /// already.
     pub(super) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {
-        self.is_unknown(ty)
+        match ty.kind() {
+            ty::Param(_) => true,
+            _ => self.is_unknown(ty) && !self.is_generic_iter(ty),
+        }
     }
 
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
