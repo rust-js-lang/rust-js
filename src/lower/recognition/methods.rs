@@ -110,6 +110,8 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "wrapping_abs" if signed => NumOp::Abs,
         "wrapping_pow" if !float => NumOp::Pow,
         "wrapping_neg" if !float => NumOp::WrappingNeg,
+        "saturating_neg" if signed => NumOp::SaturatingNeg { abs: false },
+        "saturating_abs" if signed => NumOp::SaturatingNeg { abs: true },
         "wrapping_div" if !float => NumOp::WrappingDiv,
         "wrapping_rem" if !float => NumOp::WrappingRem,
         "wrapping_shl" if !float => NumOp::Wrapping(BinOp::Shl),
@@ -147,6 +149,11 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "wrapping_add" if !float => NumOp::Wrapping(BinOp::Add),
         "wrapping_sub" if !float => NumOp::Wrapping(BinOp::Sub),
         "wrapping_mul" if !float => NumOp::Wrapping(BinOp::Mul),
+        // A promise it doesn't overflow, which a program that's right keeps:
+        // what `a + b` is (ADR 0399).
+        "unchecked_add" if !float => NumOp::Wrapping(BinOp::Add),
+        "unchecked_sub" if !float => NumOp::Wrapping(BinOp::Sub),
+        "unchecked_mul" if !float => NumOp::Wrapping(BinOp::Mul),
         "rem_euclid" if !float => NumOp::RemEuclid,
         "div_euclid" if !float => NumOp::DivEuclid,
         "signum" if signed || float => NumOp::Signum,

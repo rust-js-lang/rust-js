@@ -68,3 +68,21 @@ named for its item, `TArrayDefault`, and of a struct by its name,
 `WrappingMul`, not by the type as rustc prints it. The `array_defaults`
 corpus case compares them with native Rust; rustc's
 `const-generics/type-dependent/issue-69816.rs` passes.
+
+## Amendment: a const parameter's type asked about where it's known
+
+Whether dropping a type runs something is asked of rustc, which needs the
+type's const parameters where it's asked. Two questions asked it where they
+weren't, and rustc crashed, on powerfmt's `WriteBuffer<SIZE>`:
+
+- **A type a caller gives a generic function**, `keep(Buffer::<SIZE>::new())`,
+  was asked about crate-wide, where `SIZE` isn't (ADR 0451's `drop_runs`).
+  It's asked where the caller is.
+- **A copied default's type in its impl's terms** was asked about where the
+  trait's method is, which has the method's own parameters but not the
+  impl's `SIZE`. It's asked where both are: the impl's bounds and the
+  method's.
+
+The `const_param_drops` corpus case gives a `Copy` buffer of a const
+parameter to generic code and copies a default into its impl, against native
+Rust; `array_defaults` holds the method's own const parameter.

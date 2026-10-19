@@ -977,6 +977,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `ty` of a copied default's body in the impl's terms, normalized there
     /// where it can be: its `Self::Item<'a>` the impl's `&String`.
+    /// Where a copied default's types in its impl's terms are known: both
+    /// the impl's parameters and the method's own, `Buffer<SIZE>` or the
+    /// method's `N`, the bounds of each (ADR 0107). `None` elsewhere.
+    pub(super) fn impl_typing_env(&self) -> Option<ty::TypingEnv<'tcx>> {
+        let impl_env = self.given.self_env?;
+        let bounds =
+            (impl_env.param_env.caller_bounds().iter()).chain(self.typing_env.param_env.caller_bounds().iter());
+        let param_env = ty::ParamEnv::new(self.tcx.mk_clauses_from_iter(bounds));
+        Some(ty::TypingEnv::new(param_env, impl_env.typing_mode()))
+    }
+
     pub(super) fn impl_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         if self.given.self_args.is_none() {
             return ty;

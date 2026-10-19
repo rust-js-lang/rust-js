@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
   },
+  {
+    name: "unchecked-add-unknown",
+    breaks: "`unchecked_add` isn't known, and is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"unchecked_add\" if !float => NumOp::Wrapping(BinOp::Add),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
+  },
+  {
+    name: "saturating-neg-unknown",
+    breaks: "`saturating_neg` isn't known, and is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"saturating_neg\" if signed => NumOp::SaturatingNeg { abs: false },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
+  },
 ];

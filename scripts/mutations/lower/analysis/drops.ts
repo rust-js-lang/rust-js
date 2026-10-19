@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     name: "guard-given-generic-undropped",
     breaks: "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
     file: "src/lower/analysis/drops.rs",
-    find: "                if runs(ty) {\n",
-    replace: "                if false && runs(ty) {\n",
+    find: "                if runs(ty, caller) {\n",
+    replace: "                if false && runs(ty, caller) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
   },
 ];

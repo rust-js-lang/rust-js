@@ -22,7 +22,7 @@ pub(super) fn drop_params<'tcx>(
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
-    runs: impl Fn(Ty<'tcx>) -> bool,
+    runs: impl Fn(Ty<'tcx>, DefId) -> bool,
 ) -> HashMap<DefId, Vec<u32>> {
     let mut given: HashSet<(DefId, u32)> = HashSet::new();
     // A crate none of whose values drops anything, a destructor, a counted
@@ -34,7 +34,7 @@ pub(super) fn drop_params<'tcx>(
         body.thir
             .exprs
             .iter()
-            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty))
+            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id.to_def_id()))
     });
     if !library && !drops_any {
         return HashMap::new();
@@ -134,7 +134,7 @@ pub(super) fn drop_params<'tcx>(
             if crate::lower::bindings::is_component(tcx, callee) {
                 for (index, arg) in args.iter().enumerate() {
                     if let Some(ty) = arg.as_type()
-                        && runs(ty)
+                        && runs(ty, caller)
                     {
                         let (name, param) = (tcx.item_name(callee), tcx.generics_of(callee).param_at(index, tcx).name);
                         let what = format!("giving component `{name}`'s `{param}` a type with a destructor");
@@ -147,7 +147,7 @@ pub(super) fn drop_params<'tcx>(
             for (index, arg) in args.iter().enumerate() {
                 let Some(ty) = arg.as_type() else { continue };
                 let index = index as u32;
-                if runs(ty) {
+                if runs(ty, caller) {
                     given.insert((callee, index));
                 }
                 for part in ty.walk() {

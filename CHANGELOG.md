@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`hint::assert_unchecked`, `unchecked_add`, `_sub` and `_mul`**, promises
+  a right program keeps (ADR 0399), and **`saturating_neg` and
+  `saturating_abs`** (ADR 0155).
 - **`try_fold`** into an `Option` or a `Result`, stopped at the first
   `None` or `Err` with the rest left to step (ADR 0458).
 - **`B::from_iter(items)`** of any collection, as `items.collect()` is:
@@ -477,6 +480,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A type of a const parameter, `Buffer<SIZE>`, given to generic code or
+  in a trait's default its impl copies** compiles: rust-js crashed (ADR 0107).
 - **A value read in a branch, then a drop after it**, a map's `len()` in a
   loop and a value dropped after the loop, ran: JS threw a `ReferenceError`
   (ADR 0451).

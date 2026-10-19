@@ -51,6 +51,8 @@ pub(super) fn drop_runs<'tcx>(
         counted,
         state: &state,
     };
+    // Its type parameters, of no drop given here, drop nothing: their drops
+    // are their callers', passed on as they are.
     query.drops(ty) == Drops::Runs
 }
 
@@ -168,13 +170,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What dropping a `ty` runs.
-    /// Of a copied default's type, the impl's (ADR 0176).
+    /// Of a copied default's type, the impl's (ADR 0176), asked where the
+    /// impl is, as it may name the impl's own parameters, `SIZE` of a
+    /// `WriteBuffer<SIZE>`, which the trait's method doesn't have.
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.drop_query().drops(self.impl_type(ty))
+        self.impl_drop_query().drops(self.impl_type(ty))
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
-        self.drop_query().has_drops(self.impl_type(ty))
+        self.impl_drop_query().has_drops(self.impl_type(ty))
+    }
+
+    /// `drop_query`, in a copied default asked where its types in the
+    /// impl's terms are known (`impl_typing_env`).
+    fn impl_drop_query(&self) -> DropQuery<'_, 'tcx> {
+        let mut query = self.drop_query();
+        if let Some(typing_env) = self.impl_typing_env() {
+            query.recognition.typing_env = typing_env;
+        }
+        query
     }
 
     /// A call of `callee` of `args`: the type parameters it takes no

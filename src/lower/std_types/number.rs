@@ -144,6 +144,11 @@ pub(in crate::lower) enum NumOp {
     /// `checked_shl(n)` or `checked_shr(n)`: `None` from the width on.
     CheckedShift(BinOp),
     WrappingNeg,
+    /// `x.saturating_neg()` and `x.saturating_abs()`: past the range, `MAX`,
+    /// as only `-MIN` is.
+    SaturatingNeg {
+        abs: bool,
+    },
     WrappingDiv,
     WrappingRem,
     /// `overflowing_add`, `_sub` and `_mul`, and `overflowing_neg()`.
@@ -427,6 +432,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
+            NumOp::SaturatingNeg { abs } => {
+                let exact = match abs {
+                    true => math("abs", vec![arg()]),
+                    false => Expr::unary(UnaryOp::Neg, arg()),
+                };
+                math("min", vec![exact, Expr::int(hi)])
+            }
             NumOp::WrappingDiv => helper("$wrappingDiv", vec![arg(), arg(), Expr::int(lo)]),
             NumOp::WrappingRem => helper("$wrappingRem", vec![arg(), arg(), Expr::int(lo)]),
             // What wrapping gives, and the exact result, which a product past
@@ -715,6 +727,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
+            NumOp::SaturatingNeg { abs } => {
+                let exact = match abs {
+                    true => helper("$bigAbs", vec![arg()]),
+                    false => Expr::unary(UnaryOp::Neg, arg()),
+                };
+                helper("$clamp", vec![exact, lo, hi])
+            }
             NumOp::WrappingDiv => {
                 let min = if num.signed() { lo.clone() } else { Expr::undefined() };
                 helper("$wrappingDiv", vec![arg(), arg(), min])

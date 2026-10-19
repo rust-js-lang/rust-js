@@ -318,4 +318,12 @@ export const mutations: Mutation[] = [
     replace: "                        if false && let ty::Dynamic(..) = field.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
+  {
+    name: "default-drops-asked-in-trait",
+    breaks: "a copied default's type in its impl's terms, `Buffer<SIZE>`, is asked about where the trait's method is, which hasn't `SIZE`, and rustc crashes",
+    file: "src/lower/drops.rs",
+    find: "        if let Some(typing_env) = self.impl_typing_env() {\n",
+    replace: "        if let Some(typing_env) = None::<ty::TypingEnv<'tcx>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
+  },
 ];

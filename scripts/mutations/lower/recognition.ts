@@ -2058,4 +2058,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
+  {
+    name: "assert-unchecked-unknown",
+    breaks: "`hint::assert_unchecked(c)` isn't known, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if std_path(tcx, def_id) == \"std::hint::assert_unchecked\" {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
+  },
 ];

@@ -1561,4 +1561,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
     snapshots: true,
   },
+  {
+    name: "default-drops-without-method-bounds",
+    breaks: "a copied default's type naming the trait method's own const parameter is asked about where only the impl's are, and rustc crashes",
+    file: "src/lower/traits.rs",
+    find: "(impl_env.param_env.caller_bounds().iter()).chain(self.typing_env.param_env.caller_bounds().iter());\n",
+    replace: "impl_env.param_env.caller_bounds().iter();\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
+  },
 ];

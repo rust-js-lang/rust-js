@@ -284,4 +284,28 @@ export const mutations: Mutation[] = [
     replace: "    let _ = checked;\n    Expr::call_helper(\"$ilog\", given)\n",
     tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
   },
+  {
+    name: "saturating-neg-past-max",
+    breaks: "`i8::MIN.saturating_neg()` is 128, past `MAX`",
+    file: "src/lower/std_types/number.rs",
+    find: "                math(\"min\", vec![exact, Expr::int(hi)])\n            }\n            NumOp::WrappingDiv",
+    replace: "                exact\n            }\n            NumOp::WrappingDiv",
+    tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
+  },
+  {
+    name: "saturating-abs-as-neg",
+    breaks: "`(-9i32).saturating_abs()` is its negation, not its absolute value",
+    file: "src/lower/std_types/number.rs",
+    find: "                    true => math(\"abs\", vec![arg()]),\n",
+    replace: "                    true => Expr::unary(UnaryOp::Neg, arg()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
+  },
+  {
+    name: "big-saturating-neg-unclamped",
+    breaks: "`i64::MIN.saturating_neg()` is past `MAX`",
+    file: "src/lower/std_types/number.rs",
+    find: "                helper(\"$clamp\", vec![exact, lo, hi])\n",
+    replace: "                exact\n",
+    tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
+  },
 ];

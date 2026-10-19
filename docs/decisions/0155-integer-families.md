@@ -55,3 +55,12 @@ both, `saturating_*` it clamped.
 
 - `swap_bytes`, `reverse_bits`, `leading_ones`, `trailing_ones` and the
   `overflowing_` shifts are still errors.
+
+## Amendment: `saturating_neg` and `saturating_abs`
+
+`x.saturating_neg()` and `x.saturating_abs()` of a signed integer, which
+deranged writes, were refused. Each is the negation or the absolute value,
+held at `MAX`, as only `-MIN` is past it: `Math.min(-x, 127)` of an `i8`,
+`$clamp(-x, MIN, MAX)` of a BigInt one. The `unchecked_and_saturating_neg`
+corpus case shows `MIN`'s and others' of an `i8`, an `i32`, an `i64` and an
+`i128` against native Rust.

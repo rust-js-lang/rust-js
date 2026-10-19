@@ -540,13 +540,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What a caller gives generic code whose drop runs something, a value
     // of a destructor, a counted `Rc`'s or a guard's: the one answer the
     // lowering's drops give (ADR 0451).
-    let drop_recognition = Recognition {
-        tcx,
-        typing_env: ty::TypingEnv::fully_monomorphized(),
-        trait_impls: &trait_impls,
-        foreign: &foreign,
+    // Asked where `owner` is, as a type it gives may name its own type
+    // parameters, whose drops are passed on as they are.
+    let runs = |ty: Ty<'tcx>, owner: DefId| {
+        let typing_env = match ty.has_param() {
+            true => ty::TypingEnv::non_body_analysis(tcx, owner),
+            false => ty::TypingEnv::fully_monomorphized(),
+        };
+        let recognition = Recognition {
+            tcx,
+            typing_env,
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        };
+        super::drops::drop_runs(recognition, library, &counted, ty)
     };
-    let runs = |ty: Ty<'tcx>| super::drops::drop_runs(drop_recognition, library, &counted, ty);
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, library);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns);

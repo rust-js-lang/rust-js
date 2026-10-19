@@ -35,3 +35,19 @@ function digit(c) {
 
 - **It's tested**: the corpus's `unreachable_hint.rs` runs with native
   Rust; the rustc test passes. A mutation leaves the throw out.
+
+## Amendment: `assert_unchecked` and `unchecked_add`
+
+Two more promises a program that's right keeps, as deranged's ranged
+integers make them, were refused. Case N
+([0262](0262-when-rust-and-js-disagree.md)): a program that keeps them
+can't tell; one that breaks them is undefined behaviour, which Rust's
+release build doesn't check either.
+
+- **`hint::assert_unchecked(c)`** is nothing: its `c` is made as it's
+  given, so `assert_unchecked(loud(x) <= 9)` still calls `loud`, and a
+  condition of no effect, `MIN <= value && value <= MAX`, is gone.
+- **`unchecked_add`, `_sub` and `_mul`** are what `a + b` is, `wrapping_*`'s
+  form: in range, the same number.
+- The `assert_unchecked` and `unchecked_and_saturating_neg` corpus cases
+  run against native Rust.

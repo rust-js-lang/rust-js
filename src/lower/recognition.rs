@@ -657,6 +657,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if std_path(tcx, def_id) == "std::thread::yield_now" {
             return Some(Some(Std::Nothing));
         }
+        // `hint::assert_unchecked(c)`, a promise that `c` holds, which a
+        // program that's right keeps: nothing, its `c` made as it's given
+        // (ADR 0399).
+        if std_path(tcx, def_id) == "std::hint::assert_unchecked" {
+            return Some(Some(Std::Nothing));
+        }
         // Plain data's bytes as another type's, and all zero (ADR 0408).
         match std_path(tcx, def_id).as_str() {
             "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {
