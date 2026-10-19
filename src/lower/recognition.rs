@@ -3501,6 +3501,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_rust_trait(id) || self.is_std_pair_trait(id)
     }
 
+    /// Whether a dictionary of `id`'s holds its supertraits': a pair trait's,
+    /// as a `dyn` calls them, and `DerefMut`'s, its `Deref` (ADR 0394).
+    pub(super) fn holds_supertraits(&self, id: DefId) -> bool {
+        self.is_pair_trait(id) || self.tcx.is_lang_item(id, LangItem::DerefMut)
+    }
+
     /// Of those, std's.
     pub(super) fn is_std_pair_trait(&self, id: DefId) -> bool {
         [
@@ -3704,6 +3710,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// points at, shared (ADR 0023).
     pub(super) fn is_rc(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Arc)
+    }
+
+    /// Is std's `AsRef<to>` or `AsMut<to>` of a `from`, through as many
+    /// references as it's behind, the same JS value (ADR 0162): text as a
+    /// `str`, and a `Vec`, an array or a slice as a slice.
+    pub(super) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+        let from = from.peel_refs();
+        let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);
+        (self.is_string_like(from) && to.is_str()) || (sequence && to.is_slice())
     }
 
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a
@@ -4136,8 +4151,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || is_std_def(tcx, id, StdItem::RangeBounds)
         // `v[i]` of an `I: SliceIndex<[T]>`: its dictionary's (ADR 0418).
         || is_std_def(tcx, id, StdItem::SliceIndex)
-        // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394).
+        // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394), and
+        // `&mut *p` of a `P: DerefMut` its `deref_mut`.
         || tcx.is_lang_item(id, LangItem::Deref)
+        || tcx.is_lang_item(id, LangItem::DerefMut)
         // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).
         || assign_operator(tcx, id).is_some()
         // `c.extend(items)` of a `C: Extend<A>`, and `collect` into a `B:
@@ -4578,12 +4595,12 @@ pub(super) fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<BinOp> {
 }
 
 /// An operator's trait, which the crate may implement: a value's, `a + b`,
-/// an assignment's, `a += b`, each in its one list, indexing, and `*p = x`'s
-/// `DerefMut` (`Deref` is `operational`, ADR 0394).
+/// an assignment's, `a += b`, each in its one list, and indexing (`Deref`
+/// and `DerefMut` are `operational`, ADR 0394).
 pub(super) fn is_operator(tcx: TyCtxt<'_>, id: DefId) -> bool {
     value_operator(tcx, id).is_some()
         || assign_operator(tcx, id).is_some()
-        || [LangItem::Index, LangItem::IndexMut, LangItem::DerefMut]
+        || [LangItem::Index, LangItem::IndexMut]
             .into_iter()
             .any(|item| tcx.is_lang_item(id, item))
 }

@@ -679,8 +679,9 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
             return Some(Vec::new());
         }
         // A std trait's dictionary, like `Copy`'s, has no supertraits in it,
-        // but `Error`'s has its `Display` and `Debug` (ADR 0141).
-        if !self.recognition.is_pair_trait(from.def_id) {
+        // but `Error`'s has its `Display` and `Debug` (ADR 0141), and
+        // `DerefMut`'s its `Deref`.
+        if !self.recognition.holds_supertraits(from.def_id) {
             return None;
         }
         supertraits(self.recognition.tcx, from.def_id, from.args)
@@ -752,6 +753,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known_here: bool) -> bool {
     let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite) || is_std_def(tcx, trait_id, StdItem::IoWrite);
     let holder = tcx.is_lang_item(trait_id, LangItem::Deref)
+        || tcx.is_lang_item(trait_id, LangItem::DerefMut)
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator);
     (writer && known_here) || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))
@@ -767,6 +769,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     super::recognition::value_operator(tcx, trait_id).is_some()
         || super::recognition::assign_operator(tcx, trait_id).is_some()
         || tcx.is_lang_item(trait_id, LangItem::Deref)
+        || tcx.is_lang_item(trait_id, LangItem::DerefMut)
         || super::recognition::is_extend(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::FromIterator)
         || is_std_def(tcx, trait_id, StdItem::AsMut)
@@ -1234,16 +1237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // type parameter made a `dyn`, `Box::new(value)` of a `T: Marker`.
         // What its impl's would have, its drop and its supertraits', made here.
         if tr.self_ty().has_param() && is_marker(self.tcx, self.krate.foreign, tr.def_id) {
-            let mut props = Vec::new();
-            for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
-                if operational(self.tcx, self.krate.foreign, supertrait.def_id) {
-                    let dictionary = self.dictionary(supertrait, span)?;
-                    props.push(Prop::Field(
-                        name,
-                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
-                    ));
-                }
-            }
+            let mut props = self.supertrait_entries(tr, span)?;
             props.extend(self.dictionary_drop(tr.self_ty(), span)?);
             return Ok(Expr::object(props));
         }
@@ -1313,17 +1307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a crate's impl's dictionary has them, and no `source`, which none of
         // them has (ADR 0186).
         if is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {
-            let mut props = Vec::new();
-            for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
-                if !operational(self.tcx, self.krate.foreign, supertrait.def_id) {
-                    continue;
-                }
-                let dictionary = self.dictionary(supertrait, span)?;
-                props.push(Prop::Field(
-                    name,
-                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
-                ));
-            }
+            let mut props = self.supertrait_entries(tr, span)?;
             let none = Expr::arrow(
                 Vec::new(),
                 vec![StmtKind::Return(Some(Expr::undefined())).at(js::Span::NONE)],
@@ -1445,6 +1429,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::object(vec![Prop::Field("deref".into(), f)]));
             }
         }
+        // std's `DerefMut` of a `P: DerefMut` in generic code, given the cell
+        // its `&mut self` is and giving the one its `&mut Self::Target` is
+        // (ADR 0454): of a pointer whose target is the same JS value, a
+        // `Box`, text, a `Vec` or a JS object, that cell; of a `&mut` or a
+        // guard, which holds a cell of its target, what's in it (ADR 0394).
+        if self.tcx.is_lang_item(tr.def_id, LangItem::DerefMut) && !self.has_user_impl(tr.def_id, ty) {
+            let deref_mut = super::recognition::trait_method(self.tcx, tr.def_id, "deref_mut");
+            let target = match self.recognition().classify(deref_mut, tr.args) {
+                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var("cell"))),
+                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var("cell"))),
+                Some(Std::Same) => Some(Expr::var("cell")),
+                _ if ty.is_box() => Some(Expr::var("cell")),
+                _ => None,
+            };
+            if let Some(target) = target {
+                let f = Expr::arrow(
+                    vec!["cell".into()],
+                    vec![StmtKind::Return(Some(target)).at(js::Span::NONE)],
+                );
+                let mut props = self.supertrait_entries(tr, span)?;
+                props.push(Prop::Field("deref_mut".into(), f));
+                return Ok(Expr::object(props));
+            }
+        }
         // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
         // standard stream, written to it (ADR 0392).
         if is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
@@ -1453,45 +1461,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::helper(writer));
         }
         // std's `AsMut` of text as a `str`, or of a sequence as a slice, given
-        // the cell generic code's `&mut self` is: a `&mut str`'s the cell
-        // itself, its text (ADR 0334); a `&mut [T]`'s the array in it.
-        // Of a `&mut` to one, std's `impl AsMut<U> for &mut T`, that one's,
-        // through the cell the `&mut` is: one `value` further for each.
+        // the cell generic code's `&mut self` is, and giving the one its `&mut
+        // T` is (ADR 0454): that cell, as a `&mut str` is its text's (ADR
+        // 0334) and a `&mut [T]`'s holds its array. Of a `&mut` to one, std's
+        // `impl AsMut<U> for &mut T`, that one's, through the cell the `&mut`
+        // is: one `value` further for each.
         if is_std_def(self.tcx, tr.def_id, StdItem::AsMut) && !self.has_user_impl(tr.def_id, ty) {
-            let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
             let mut cell = Expr::var("cell");
             let mut at = ty;
             while let ty::Ref(_, inner, Mutability::Mut) = *at.kind() {
                 cell = Expr::held(cell);
                 at = inner;
             }
-            let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
-            let given = match (
-                self.is_string_like(from) && to.is_str(),
-                sequence(from) && to.is_slice(),
-            ) {
-                (true, _) => Some(cell),
-                (_, true) => Some(Expr::held(cell)),
-                _ => None,
-            };
-            if let Some(given) = given {
+            if self.recognition().views_as_itself(ty, tr.args.type_at(1)) {
                 let f = Expr::arrow(
                     vec!["cell".into()],
-                    vec![StmtKind::Return(Some(given)).at(js::Span::NONE)],
+                    vec![StmtKind::Return(Some(cell)).at(js::Span::NONE)],
                 );
                 return Ok(Expr::object(vec![Prop::Field("as_mut".into(), f)]));
             }
         }
-        if is_std_def(self.tcx, tr.def_id, StdItem::AsRef) && !self.has_user_impl(tr.def_id, ty) {
-            let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
-            let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
-            if (self.is_string_like(from) && to.is_str()) || (sequence(from) && to.is_slice()) {
-                let same = Expr::arrow(
-                    vec!["value".into()],
-                    vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
-                );
-                return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
-            }
+        if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
+            && !self.has_user_impl(tr.def_id, ty)
+            && self.recognition().views_as_itself(ty, tr.args.type_at(1))
+        {
+            let same = Expr::arrow(
+                vec!["value".into()],
+                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+            );
+            return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
         }
         // std's `Borrow` where it's the same JS value: a value as itself, text
         // as a `str`, a `Vec` as a slice (ADR 0167).
@@ -1699,18 +1697,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let principal = self
             .dyn_trait_ref(tr.self_ty(), tr.self_ty())
             .ok_or_else(|| self.no_evidence(span, tr))?;
-        let mut props = Vec::new();
-        let returning = |value: Expr| Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
-        for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
-            if operational(self.tcx, self.krate.foreign, supertrait.def_id) {
-                props.push(Prop::Field(name, returning(self.dictionary(supertrait, span)?)));
-            }
-        }
-        for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
-            if operational(self.tcx, self.krate.foreign, bound.def_id) {
-                props.push(Prop::Field(name, returning(self.dictionary(bound, span)?)));
-            }
-        }
+        let mut props = self.supertrait_entries(tr, span)?;
+        props.extend(self.item_bound_entries(tr, span)?);
         for item in self.tcx.associated_items(tr.def_id).in_definition_order() {
             // What a `dyn` can't be called with, and what a std trait's
             // dictionary hasn't got, as `lower_dictionary` leaves out.
@@ -2825,27 +2813,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::var(&name))
     }
 
-    pub(super) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<js::Function> {
-        let span = self.tcx.def_span(id);
-        // An impl of a generic trait, `Convert<f64>`, or of a std one,
-        // `PartialEq<Rhs>`, is for its arguments: a dictionary of its own.
-        let tr = self.tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
-        let params = self.evidence_params(id);
+    /// The entries of `tr`'s dictionary that give its supertraits', of those
+    /// that have one, each made where it's asked: `Display: () =>
+    /// innerDisplay()` of an `Error`'s.
+    fn supertrait_entries(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+        let found = supertraits(self.tcx, tr.def_id, tr.args)
+            .into_iter()
+            .map(|(name, tr, _)| (name, tr));
+        self.entries_of(found.collect(), span)
+    }
+
+    /// The entries of `tr`'s dictionary that give the bounds its trait
+    /// declares on an associated type, the impl's: `LabelDisplay` of `type
+    /// Label = u32` is `u32`'s `Display` (ADR 0106).
+    fn item_bound_entries(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+        self.entries_of(item_bounds(self.tcx, tr.def_id, tr.args), span)
+    }
+
+    /// An entry giving each of `bounds`' dictionaries, of those that have one.
+    fn entries_of(&mut self, bounds: Vec<(String, ty::TraitRef<'tcx>)>, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
-        // What the dictionary's entries share, named once before it's made.
-        let mut shared = Vec::new();
-        for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
-            if operational(self.tcx, self.krate.foreign, supertrait.def_id) {
-                let dictionary = self.dictionary(supertrait, span)?;
-                props.push(Prop::Field(
-                    name,
-                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
-                ));
-            }
-        }
-        // And each bound its trait declares on an associated type, the impl's:
-        // `LabelDisplay` of `type Label = u32` is `u32`'s `Display`.
-        for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
+        for (name, bound) in bounds {
             if operational(self.tcx, self.krate.foreign, bound.def_id) {
                 let dictionary = self.dictionary(bound, span)?;
                 props.push(Prop::Field(
@@ -2854,6 +2842,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         }
+        Ok(props)
+    }
+
+    pub(super) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<js::Function> {
+        let span = self.tcx.def_span(id);
+        // An impl of a generic trait, `Convert<f64>`, or of a std one,
+        // `PartialEq<Rhs>`, is for its arguments: a dictionary of its own.
+        let tr = self.tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+        let params = self.evidence_params(id);
+        // What the dictionary's entries share, named once before it's made.
+        let mut shared = Vec::new();
+        let mut props = self.supertrait_entries(tr, span)?;
+        props.extend(self.item_bound_entries(tr, span)?);
         for item in self.tcx.associated_items(tr.def_id).in_definition_order() {
             // A constant, the impl's or the trait's default, as rustc computed
             // it: read on each use where it's of a type changed in place, so
@@ -3176,6 +3177,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let call = match iterates {
                 true => Some(self.as_js_iterator(call, output, span)?),
                 false => None,
+            };
+            // A `&mut` generic code has in a box by the trait's signature, `&mut
+            // Self::Target` of a `Vec`, which the method gives as the object:
+            // a box of it, which a write of the whole changes in place (ADR
+            // 0454), as the caller through the dictionary takes it out. Of an
+            // impl's own type parameter, the trait's is generic too, and the
+            // method's box is it.
+            let call = match self.boxed_in_call(item.def_id, declared_output, args) {
+                Some(_) => Some(Expr::call(
+                    Expr::helper("$cellOf"),
+                    vec![call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone()))],
+                )),
+                None => call,
             };
             // One that passes on just what it's given, in order, is the method.
             let passed = call.is_none()

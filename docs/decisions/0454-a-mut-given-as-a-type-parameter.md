@@ -75,3 +75,25 @@ $assign(items, items$1.value);
   back, `$assign(items, items$1.value)`, where the object was given before.
 - `Option<D>` of `Some(&mut v)`, which generic code passed through as the
   object, is refused, listed in [the limitations](../limitations.md).
+
+## Amendment: a trait method's `&mut` result through a dictionary
+
+A crate trait's `fn get(&mut self) -> &mut Self::Out`, called through a
+dictionary, was read two ways: generic code that knew `Out = Vec<u32>`
+took the result as the array, and generic code that didn't, as a box,
+while the impl's entry gave the array. `push(&mut holder)` threw in JS
+where Rust's pushed: a wrong answer. Case R
+([0262](0262-when-rust-and-js-disagree.md)), now Rust's.
+
+- **The trait's signature decides**, as it does for a function's: its
+  `&mut Self::Out` is a box in generic code. A call through a dictionary
+  takes `.value` of it where the caller knows the object, as a call of a
+  generic function does, `generic_result_values`.
+- **The entry gives that box**: an impl whose method gives the object,
+  `&mut self.0` of a `Vec`, is `$cellOf(holderGet_get(arg0.value))`, a box
+  a write of the whole changes in place, as `Cell::from_mut`'s is (ADR
+  0153). A generic impl's own type parameter gives the box itself.
+- std's `AsMut` and `DerefMut` give the box their signature says too.
+- The `mut_assoc_through_dictionary` corpus case reads, pushes to and
+  replaces through a crate trait's `&mut Self::Out` of a `Vec`, a number
+  and a generic impl's `T`, against native Rust.

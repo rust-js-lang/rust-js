@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "nested-mut-object-accepted",
     breaks: "`to_vec(c)` of an object gives a `Vec` of handles, which the caller takes for the objects",
     file: "src/lower/mut_refs.rs",
-    find: "        if let Some(here) = self.nested_mut_object(def_id, generic_args) {\n",
-    replace: "        if let Some(here) = None::<Ty<'tcx>> {\n",
+    find: "            && let Some(here) = self.nested_mut_object(def_id, generic_args)\n",
+    replace: "            && let Some(here) = None::<Ty<'tcx>>\n",
     tests: ["test/diagnostics.test.ts","-t","generic &mut T"],
   },
   {
@@ -122,5 +122,13 @@ export const mutations: Mutation[] = [
     find: "                todo.extend(args.types().skip(1));\n                given.push(args.type_at(0));\n",
     replace: "                todo.extend(args.types());\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
+  },
+  {
+    name: "dictionary-result-unread",
+    breaks: "a call through a dictionary of a `&mut Self::Out` of an object takes the box its entry gives as the object",
+    file: "src/lower/mut_refs.rs",
+    find: "        if !self.is_rust_fn(def_id) && self.tcx.trait_of_assoc(def_id).is_none() {\n",
+    replace: "        if !self.is_rust_fn(def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_assoc_through_dictionary.rs$"],
   },
 ];

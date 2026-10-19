@@ -28,7 +28,7 @@ function double(t, TAsMutU32Slice) {
       set value(value) {
         t = value;
       },
-    }),
+    }).value,
   )) {
     x.value = Math.imul(x.value, 2) >>> 0;
   }
@@ -38,12 +38,12 @@ function double(t, TAsMutU32Slice) {
 function main() {
   console.log(`${shout("hi", { as_mut: (cell) => cell })}`);
   console.log(
-    `[${double([1, 2], { as_mut: (cell) => cell.value })
+    `[${double([1, 2], { as_mut: (cell) => cell })
       .map((item) => String(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${double([3, 4], { as_mut: (cell) => cell.value })
+    `[${double([3, 4], { as_mut: (cell) => cell })
       .map((item) => String(item))
       .join(", ")}]`,
   );
@@ -54,7 +54,7 @@ function main() {
   console.log(`${s}`);
   const v = [5, 6];
   const t$1 = { value: v };
-  double(t$1, { as_mut: (cell) => cell.value.value }).value;
+  double(t$1, { as_mut: (cell) => cell.value }).value;
   $assign(v, t$1.value);
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
 }

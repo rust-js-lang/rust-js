@@ -64,10 +64,13 @@ function shout(t, TAsMutStr) {
 shout("hi", { as_mut: (cell) => cell });
 ```
 
-- **std's** is what rustc's `&mut str` or `&mut [T]` is: text's is the
-  cell itself, which a `&mut str` is (ADR 0334); a sequence's, the array
-  in it, `cell.value`. Of a `&mut` to one, std's `impl AsMut<U> for &mut
-  T`, one `value` further for each `&mut`. Others are errors.
+- **std's** is the cell it's given, as the `&mut T` of `as_mut`'s
+  signature is a box in generic code (ADR 0454): a `&mut str` is its
+  text's cell (ADR 0334), and a `&mut [T]`'s box holds its array, which
+  a caller that knows it's a slice takes out, `.value`. Of a `&mut` to
+  one, std's `impl AsMut<U> for &mut T`, one `value` further for each
+  `&mut`. Others are errors. Whether std's `AsRef` or `AsMut` is the
+  same JS value is one question, `views_as_itself`, which both ask.
 - **The crate's is its impl's**, written only where generic code reads it
   (`read_only_generically`), as an operator's is: where the type is
   known, its method is called as it is.

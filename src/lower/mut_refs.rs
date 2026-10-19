@@ -268,16 +268,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What the call of `def_id`, given `generic_args`, gives, `value`, as
     /// its caller has it: a `&mut` generic code boxes, its `value` (ADR 0099).
+    /// A trait's method, called through a dictionary, by the trait's
+    /// signature, which its dictionary's entry gives (ADR 0454).
     pub(in crate::lower) fn generic_result_values(
         &self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         value: Expr,
         span: Span,
     ) -> R<Expr> {
-        if !self.is_rust_fn(def_id) {
+        if !self.is_rust_fn(def_id) && self.tcx.trait_of_assoc(def_id).is_none() {
             return Ok(value);
         }
-        if let Some(here) = self.nested_mut_object(def_id, generic_args) {
+        if self.is_rust_fn(def_id)
+            && let Some(here) = self.nested_mut_object(def_id, generic_args)
+        {
             let what = format!("a `{here}` inside a generic function's parameters or result");
             return Err(self.unsupported(span, &what));
         }

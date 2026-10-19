@@ -102,9 +102,9 @@ for (const [name, source, message, crate] of [
   ["== on maps", 'pub fn f(a: &std::collections::HashMap<u32, u32>, b: &std::collections::HashMap<u32, u32>) -> bool { a == b }', "`==` on"],
   ["parse to a type without FromStr support", 'pub fn f(s: &str) -> bool { s.parse::<std::net::IpAddr>().is_ok() }', "does not support"],
   // A string's byte offsets are counted (ADR 0138), but not yet of a closure's matches.
-  // `a += b` of a `T: AddAssign` is its dictionary's (ADR 0396), and `*p` of
-  // a `P: Deref` (ADR 0394); a `P: DerefMut`'s isn't yet.
-  ["a DerefMut in generic code", 'pub fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }', "does not support calling `std::ops::DerefMut::deref_mut`"],
+  // `*p` of a `P: DerefMut` is its dictionary's (ADR 0394), std's of a pointer
+  // whose target is a cell or the same JS value: not a `LazyCell`'s, made when read.
+  ["a LazyCell given as a DerefMut", 'fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }\npub fn g() { f(std::cell::LazyCell::new(|| 1u32)) }', "implementation evidence for `<std::cell::LazyCell"],
   ["an Rc's raw pointer", 'pub fn f(r: &std::rc::Rc<u32>) -> bool { std::rc::Rc::as_ptr(r).is_null() }', "does not support"],
   // A heap's `pop` of an item that could look like `None`, as any such `Option` (ADR 0051).
   ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "this call, for an `Option` of what could look like `None`"],

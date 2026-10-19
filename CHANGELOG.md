@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `P: DerefMut` in generic code**: a dictionary, `{ Deref, deref_mut
+  }`, std's of a `Box`, text, a `Vec`, a `&mut` or a guard (ADR 0394).
 - **`as_mut()` of a generic `T: AsMut<str>` or `T: AsMut<[U]>`**: a
   dictionary, std's the text or the array a `&mut` reaches (ADR 0162).
 - **`description()` and `cause()` of a generic `E: Error` or a `dyn
@@ -467,6 +469,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A trait method's `&mut Self::Out` of an object, called through a
+  dictionary**, `g.get().push(1)` of a `G: Get<Out = Vec<u32>>`, is the
+  impl's `Vec`: it threw (ADR 0454).
 - **An iterator a variable holds, given to generic code as a
   `DoubleEndedIterator`**, `last(it)`, is that iterator: it was wrapped
   again and stepped nothing (ADR 0456).
