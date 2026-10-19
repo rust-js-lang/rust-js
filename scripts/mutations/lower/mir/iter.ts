@@ -415,8 +415,8 @@ export const mutations: Mutation[] = [
     name: "mir-fold-own-of-init",
     breaks: "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
     file: "src/lower/mir/iter.rs",
-    find: "        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let mut args = vec![self.binary_callback(f, own), init];\n",
-    replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let mut args = vec![self.binary_callback(f, own), init];\n",
+    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
+    replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
     tests: ["test/lowering.test.ts","-t","a fold given a function of the crate's"],
   },
   {
@@ -810,8 +810,8 @@ export const mutations: Mutation[] = [
     name: "try-fold-unlowered",
     breaks: "`try_fold` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                self.try_folded(it, init, f, (arg_tys, output), span)?\n",
-    replace: "                return Ok(None);\n",
+    find: "            Some(IterMethod::TryFold) => self.try_folded(it, (arg(), arg()), (arg_tys, output), span)?,\n",
+    replace: "            Some(IterMethod::TryFold) => return Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
   {
@@ -942,5 +942,21 @@ export const mutations: Mutation[] = [
     find: "        if output.has_param()\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
     replace: "        if false\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
+  {
+    name: "reduce-unboxed",
+    breaks: "`reduce`'s `Some` of what may look like `None` isn't boxed",
+    file: "src/lower/mir/iter.rs",
+    find: "            if item.is_some_and(|item| self.boxed_payload(item)) {\n                args.push(Expr::bool(true));\n            }\n            return Expr::call_helper(\"$reduce\", args);\n",
+    replace: "            return Expr::call_helper(\"$reduce\", args);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
+  },
+  {
+    name: "reduce-of-drops-refused",
+    breaks: "`reduce` of items with a destructor is refused, though it moves each into its function",
+    file: "src/lower/mir/iter.rs",
+    find: "                    | IterMethod::Reduce\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
   },
 ];

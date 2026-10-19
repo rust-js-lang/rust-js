@@ -171,18 +171,24 @@ pub(super) fn drop_params<'tcx>(
     }
     // A std trait's associated type of a type parameter given a drop,
     // `<I as IntoIterator>::IntoIter`, holds what it does: given one too
-    // (ADR 0421).
+    // (ADR 0421); and so, in turn, one of that, `<I::Item as
+    // IntoIterator>::IntoIter` (ADR 0478).
     let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
-    for (id, index) in given.clone() {
+    let mut work: Vec<(DefId, u32)> = given.iter().copied().collect();
+    while let Some((id, index)) = work.pop() {
         let count = tcx.generics_of(id).count() as u32;
         let held = items
             .entry(id)
             .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, id));
+        // What the slot given is of: its type parameter, or its item.
+        let of = index.checked_sub(count).map(|at| held[at as usize]);
         for (at, &item) in held.iter().enumerate() {
-            if crate::lower::traits::alias_of(item)
-                .is_some_and(|alias| matches!(alias.self_ty().kind(), ty::Param(p) if p.index == index))
-            {
-                given.insert((id, count + at as u32));
+            let holds = crate::lower::traits::alias_of(item).is_some_and(|alias| match of {
+                None => matches!(alias.self_ty().kind(), ty::Param(p) if p.index == index),
+                Some(of) => alias.self_ty() == of,
+            });
+            if holds && given.insert((id, count + at as u32)) {
+                work.push((id, count + at as u32));
             }
         }
     }

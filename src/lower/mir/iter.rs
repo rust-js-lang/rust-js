@@ -391,14 +391,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method("map", it, vec![f])
             }
-            Some(IterMethod::Fold) => {
-                let (init, f) = (arg(), arg());
-                self.folded(it, init, f, arg_tys)
-            }
-            Some(IterMethod::TryFold) => {
-                let (init, f) = (arg(), arg());
-                self.try_folded(it, init, f, (arg_tys, output), span)?
-            }
+            Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
+            Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
+            Some(IterMethod::TryFold) => self.try_folded(it, (arg(), arg()), (arg_tys, output), span)?,
             // Each item counted, and dropped as `count` drops it.
             Some(IterMethod::Count) => {
                 let n = self.fresh("n");
@@ -645,9 +640,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// starts from. JS's `reduce` counts its arguments: a start of
     /// `undefined`, a `fold(None, ..)`'s, is given, or it starts from the
     /// first item (ADR 0330).
-    fn folded(&mut self, it: Expr, init: Expr, f: Expr, arg_tys: &[Ty<'tcx>]) -> Expr {
-        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
-        let mut args = vec![self.binary_callback(f, own), init];
+    fn folded(
+        &mut self,
+        it: Expr,
+        (init, f): (Option<Expr>, Expr),
+        (arg_tys, item): (&[Ty<'tcx>], Option<Ty<'tcx>>),
+    ) -> Expr {
+        let own = arg_tys.last().is_some_and(|ty| self.is_crate_fn_item(*ty));
+        let callback = self.binary_callback(f, own);
+        let Some(init) = init else {
+            // `reduce(f)`: from its first item, `None` of none (ADR 0479).
+            let mut args = vec![it, callback];
+            if item.is_some_and(|item| self.boxed_payload(item)) {
+                args.push(Expr::bool(true));
+            }
+            return Expr::call_helper("$reduce", args);
+        };
+        let mut args = vec![callback, init];
         crate::lower::calls::given_to_js(&mut args);
         Expr::call(Expr::member(it, "reduce"), args)
     }
@@ -658,8 +667,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn try_folded(
         &mut self,
         it: Expr,
-        init: Expr,
-        f: Expr,
+        (init, f): (Expr, Expr),
         (arg_tys, output): (&[Ty<'tcx>], Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
@@ -1005,6 +1013,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 IterMethod::Map
                     | IterMethod::ForEach
                     | IterMethod::Fold
+                    | IterMethod::Reduce
                     | IterMethod::TryFold
                     | IterMethod::Collect
                     | IterMethod::Any

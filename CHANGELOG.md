@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`reduce`**, std's, `None` of none (ADR 0479); and values of an
+  associated type of an associated type, `<I::Item as IntoIterator>::Item`,
+  dropped as std drops them (ADR 0478).
 - **`From::from` through a bound**, `W::from(u)` of a `W: From<U>` and of an
   associated type a trait bounds by `From`, its caller's dictionary's
   (ADR 0477).

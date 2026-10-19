@@ -538,6 +538,18 @@ export function $fuse(iter, fused = false) {
   return it;
 }
 
+// `it.reduce(f)`: its first item, folded with each after it by `f`, or
+// `None` of none, where JS's `reduce` throws; boxed where it may look like
+// `None` (ADRs 0051, 0479).
+export function $reduce(it, f, boxed = false) {
+  const first = it.next();
+  if (first.done) {
+    return undefined;
+  }
+  const value = it.reduce(f, first.value);
+  return boxed ? $some(value) : value;
+}
+
 // `items.into_iter()` of a generic `IntoIterator`, as its caller gives it:
 // of an array, a `$iter` of it, std's iterator over an array as concrete
 // code has it, which knows where it is; else JS's iterator of it, a map's,

@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "item-drops-not-given",
     breaks: "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
     file: "src/lower/analysis/drops.rs",
-    find: "                given.insert((id, count + at as u32));\n",
-    replace: "",
+    find: "            if holds && given.insert((id, count + at as u32)) {\n",
+    replace: "            if false && holds && given.insert((id, count + at as u32)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
   {
@@ -82,5 +82,13 @@ export const mutations: Mutation[] = [
     find: "                if runs(ty, caller) {\n",
     replace: "                if false && runs(ty, caller) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
+  },
+  {
+    name: "nested-item-drop-ungiven",
+    breaks: "a drop slot of an associated type of one isn't given, though its caller's type has a destructor",
+    file: "src/lower/analysis/drops.rs",
+    find: "                Some(of) => alias.self_ty() == of,\n",
+    replace: "                Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
 ];

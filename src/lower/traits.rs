@@ -256,7 +256,9 @@ pub(super) fn drop_slot<'tcx>(
 }
 
 /// The associated types of a function's type parameters it may be given a
-/// drop for, after its type parameters' (`drop_slot`).
+/// drop for, after its type parameters' (`drop_slot`); and of those a bound
+/// names, `<I::Item as IntoIterator>::IntoIter` of an `I::Item: IntoIterator`
+/// (ADR 0478), each found in turn.
 pub(super) fn drop_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
@@ -264,6 +266,22 @@ pub(super) fn drop_items<'tcx>(
 ) -> Vec<Ty<'tcx>> {
     let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
     let mut items: Vec<Ty<'tcx>> = Vec::new();
+    loop {
+        let found = items.len();
+        drop_items_of(tcx, foreign, (id, typing_env), &mut items);
+        if items.len() == found {
+            return items;
+        }
+    }
+}
+
+/// `drop_items`' of each bound on a type parameter, or on one of `items`.
+fn drop_items_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    (id, typing_env): (DefId, ty::TypingEnv<'tcx>),
+    items: &mut Vec<Ty<'tcx>>,
+) {
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         let Some(bound) = clause
             .skip_normalization()
@@ -273,7 +291,9 @@ pub(super) fn drop_items<'tcx>(
             continue;
         };
         let self_ty = bound.self_ty();
-        if !matches!(self_ty.kind(), ty::Param(_)) || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {
+        let slotted = matches!(self_ty.kind(), ty::Param(_))
+            || (alias_of(self_ty).is_some() && items.iter().any(|&t| alias_of(t) == alias_of(self_ty)));
+        if !slotted || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {
             continue;
         }
         for tr in supertrait_def_ids(tcx, bound.def_id()) {
@@ -300,7 +320,6 @@ pub(super) fn drop_items<'tcx>(
             }
         }
     }
-    items
 }
 
 /// A drop's type as a word of its name: a type parameter's, `T` of

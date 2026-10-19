@@ -48,6 +48,7 @@ helpers! {
     Insert,
     Add,
     Fuse,
+    Reduce,
     IntoIter,
     IteratorValue,
     IteratorWith,
@@ -725,6 +726,7 @@ impl Helper {
             // A set's `insert` for its value: whether it wasn't there yet.
             Helper::Add => include_str!("runtime/add.js"),
             Helper::Fuse => include_str!("runtime/fuse.js"),
+            Helper::Reduce => include_str!("runtime/reduce.js"),
             Helper::IntoIter => include_str!("runtime/into_iter.js"),
             Helper::IteratorValue => include_str!("runtime/iterator_value.js"),
             Helper::IteratorWith => include_str!("runtime/iterator_with.js"),

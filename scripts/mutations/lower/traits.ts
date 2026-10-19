@@ -1089,8 +1089,8 @@ export const mutations: Mutation[] = [
     name: "item-drops-of-dictionary-traits",
     breaks: "an associated type of a trait whose dictionary has its drop takes a drop of its own too",
     file: "src/lower/traits.rs",
-    find: "        if !matches!(self_ty.kind(), ty::Param(_)) || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {\n",
-    replace: "        if !matches!(self_ty.kind(), ty::Param(_)) {\n",
+    find: "        if !slotted || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {\n",
+    replace: "        if !slotted {\n",
     tests: ["test/crates.test.ts", "-t", "consumer's iterator"],
   },
   {
@@ -1715,5 +1715,13 @@ export const mutations: Mutation[] = [
     find: "            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))\n",
     replace: "            && !tr.args.has_non_region_param()\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+  },
+  {
+    name: "nested-item-unslotted",
+    breaks: "an associated type of one a bound names, `<I::Item as IntoIterator>::Item`, has no drop slot, and its values are refused",
+    file: "src/lower/traits.rs",
+    find: "            || (alias_of(self_ty).is_some() && items.iter().any(|&t| alias_of(t) == alias_of(self_ty)));\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
 ];

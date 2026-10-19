@@ -2910,14 +2910,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What's called: a trait's method resolved to its impl's, whose
         // parameters say which are boxes, or the crate's trait's own, a
         // dictionary's, and `Hash`'s of a type only a caller knows, whose
-        // hasher is a `&mut H` of its own (ADR 0463); not a `dyn`'s, whose
-        // pair is its `&mut`, nor std's.
+        // hasher is a `&mut H` of its own (ADR 0463), and `Extend`'s, whose
+        // `&mut Self` its dictionary takes in a box, an `I::Item`'s that's an
+        // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
+        // `&mut`, nor std's.
         let callee = match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
                 None if (self.is_rust_trait(trait_id)
-                    || is_std_def(self.tcx, trait_id, StdItem::Hash) && self.is_unknown(generic_args.type_at(0)))
+                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)
+                        || super::recognition::is_extend(self.tcx, trait_id))
+                        && self.is_unknown(generic_args.type_at(0)))
                     && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) =>
                 {
                     Some((def_id, generic_args))
