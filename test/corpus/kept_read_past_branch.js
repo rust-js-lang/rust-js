@@ -12,7 +12,8 @@ function id(x) {
   return x;
 }
 
-function main() {
+// Dropped after the loop only.
+function dropped_after() {
   const loud = [5];
   let w = 0;
   while (true) {
@@ -27,14 +28,10 @@ function main() {
       break;
     }
     w = (w + 1) >>> 0;
-    // Dropped at the end of each pass, where the next one's `len()` is a
-    // new value, not one to read before it.
-    const _each = [(w + 10) >>> 0];
     let tmp$1;
     try {
       tmp$1 = new Map();
     } catch (error) {
-      loudDrop_drop(_each);
       loudDrop_drop(loud);
       throw error;
     }
@@ -42,7 +39,6 @@ function main() {
     try {
       tmp$2 = [tmp$1.size, id(1)];
     } catch (error) {
-      loudDrop_drop(_each);
       loudDrop_drop(loud);
       throw error;
     }
@@ -55,7 +51,6 @@ function main() {
       try {
         tmp = id(false);
       } catch (error) {
-        loudDrop_drop(_each);
         loudDrop_drop(loud);
         throw error;
       }
@@ -69,13 +64,6 @@ function main() {
     try {
       console.log(`${size}`);
     } catch (error) {
-      loudDrop_drop(_each);
-      loudDrop_drop(loud);
-      throw error;
-    }
-    try {
-      loudDrop_drop(_each);
-    } catch (error) {
       loudDrop_drop(loud);
       throw error;
     }
@@ -85,5 +73,58 @@ function main() {
   } finally {
     loudDrop_drop(loud);
   }
+}
+
+// Dropped at the end of each pass too, where the next one's `len()` is a
+// new value, not one to read before it.
+function dropped_each_pass() {
+  let w = 0;
+  while (w < id(2)) {
+    w = (w + 1) >>> 0;
+    const _each = [(w + 10) >>> 0];
+    let tmp;
+    try {
+      tmp = new Map();
+    } catch (error) {
+      loudDrop_drop(_each);
+      throw error;
+    }
+    let tmp$1;
+    try {
+      tmp$1 = [tmp.size, id(1)];
+    } catch (error) {
+      loudDrop_drop(_each);
+      throw error;
+    }
+    let size;
+    if (tmp$1[0] === 7) {
+      size = 1;
+    } else {
+      const y = tmp$1[1];
+      let tmp;
+      try {
+        tmp = id(false);
+      } catch (error) {
+        loudDrop_drop(_each);
+        throw error;
+      }
+      if (tmp) {
+        const y = tmp$1[1];
+        size = y;
+      } else {
+        size = 2;
+      }
+    }
+    try {
+      console.log(`${size}`);
+    } finally {
+      loudDrop_drop(_each);
+    }
+  }
+}
+
+function main() {
+  dropped_after();
+  dropped_each_pass();
 }
 //# sourceMappingURL=case.js.map
