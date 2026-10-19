@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rev()` of a lazy chain over a range**, `(1..4).map(f).rev()`, its
+  closures called from the back as Rust calls them (ADR 0164).
 - **`peekable()` of a lazy iterator**, `chars().filter(f).peekable()`, its
   closures run in Rust's order (ADR 0164).
 - **`==` of two maps or two sets**, `$mapEq(a, b)` (ADR 0059).

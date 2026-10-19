@@ -1148,6 +1148,19 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
             vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
         ));
     }
+    // A range made here, stepped from its start, `$iterator({ start, end },
+    // $rangeNext)`: stepped from its end, `$rangeNextBack`, as Rust's range
+    // is by `next_back`.
+    if let Some(range) = crate::lower::iterators::stepped_range(e)
+        && !range.back
+    {
+        let kind = match range.inclusive {
+            true => crate::lower::std_types::range::RangeKind::Inclusive,
+            false => crate::lower::std_types::range::RangeKind::Exclusive,
+        };
+        let back = Expr::helper(kind.step(true)?);
+        return Some(Expr::call((**callee).clone(), vec![args[0].clone(), back]));
+    }
     // `Iterator.from(x)` of what JS steps, a string's `$charIndices(s)`: its
     // items, listed and reversed, as `Array.from(x)` lists a whole chain's,
     // stepped as an array's are, `$iter(Array.from(x).toReversed())`.

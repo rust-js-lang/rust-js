@@ -99,3 +99,14 @@ closure, `char_indices()`'s, is still its array's `$iter`.
 `next_if_eq`, tokenizes, and records where its closure ran, against
 native Rust.
 
+## Amendment: `rev()` of a lazy chain over a range
+
+`(1..4).map(f).rev()` was refused: a chain is reversed inward only over
+an array's items. A range made where it's stepped, `$iterator({ start,
+end }, $rangeNext)`, steps from its end too, `$rangeNextBack`, as Rust's
+does by `next_back`: the chain over it reversed is the chain over the
+range stepped from its end, each `map` and `filter` called from the back,
+on the same numbers, in the same order. `test/corpus/rev_lazy_range.rs`
+reverses chains over `a..b` and `a..=b`, and takes from one, its closure
+called only as often as Rust calls it, against native Rust.
+

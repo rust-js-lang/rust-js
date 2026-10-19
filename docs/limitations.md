@@ -72,7 +72,6 @@ depends on what the program does:
 
 ## Iterators and collections
 
-- `rev` of a lazy iterator: `let v: Vec<_> = (1..4).map(|x| x * 2).rev().collect(); println!("{v:?}");`
 - A clone of a lazy iterator: `let it = (1..4).map(|x| x * 2); let v: Vec<_> = it.clone().collect(); println!("{v:?} {}", it.count());`
 - Looking a key up by what the crate's own `Borrow` gives: `use std::borrow::Borrow; use std::collections::HashMap; #[derive(PartialEq, Eq, Hash)] struct K(String); impl Borrow<str> for K { fn borrow(&self) -> &str { &self.0 } } let mut m = HashMap::new(); m.insert(K("a".into()), 1); println!("{:?}", m.get("a"));`
 

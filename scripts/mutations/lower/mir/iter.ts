@@ -863,4 +863,20 @@ export const mutations: Mutation[] = [
     replace: "                Err(lazy) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^peekable_lazy.rs$"],
   },
+  {
+    name: "rev-range-chain-refused",
+    breaks: "`rev()` of a lazy chain over a range is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "    if let Some(range) = crate::lower::iterators::stepped_range(e)\n        && !range.back\n    {\n",
+    replace: "    if let Some(range) = crate::lower::iterators::stepped_range(e)\n        && false\n    {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
+  },
+  {
+    name: "rev-range-chain-inclusive-as-exclusive",
+    breaks: "`rev()` of a chain over `a..=b` steps it from `b - 1`, leaving `b` out",
+    file: "src/lower/mir/iter.rs",
+    find: "            true => crate::lower::std_types::range::RangeKind::Inclusive,\n",
+    replace: "            true => crate::lower::std_types::range::RangeKind::Exclusive,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
+  },
 ];
