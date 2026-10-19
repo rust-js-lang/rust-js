@@ -415,25 +415,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method("reduce", it, vec![Expr::arrow(params, body), Expr::int(0)])
             }
             Some(IterMethod::Sum | IterMethod::Product) => {
-                let num = Num::of(output)
-                    .ok_or_else(|| self.unsupported(span, &format!("`{name}` of a `{output}`, from its MIR")))?;
-                let (op, start) = match std_method {
-                    Some(IterMethod::Sum) => (Op::Add, 0),
-                    _ => (Op::Mul, 1),
-                };
-                let (a, b) = (self.fresh("a"), self.fresh("b"));
-                let total = num.wrap(Expr::bin(op, Expr::var(&a), Expr::var(&b)));
-                let f = Expr::arrow(
-                    vec![a.into(), b.into()],
-                    vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
-                );
-                // Rust's float `Sum` starts at -0.0, an empty sum's and one of
-                // negative zeros' sign kept.
-                let start = match (std_method, num.float()) {
-                    (Some(IterMethod::Sum), true) => Expr::num(-0.0),
-                    _ => num.literal(start),
-                };
-                method("reduce", it, vec![f, start])
+                let sum = std_method == Some(IterMethod::Sum);
+                self.accumulated((it, def_id), (output, item), sum, span)?
             }
             Some(IterMethod::Copied) => it,
             Some(IterMethod::Cloned) => match item {
@@ -470,6 +453,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
         let stepped = self.recognition().fuse_of(iter_ty).unwrap_or(iter_ty);
         self.array_source(stepped).is_some() || self.is_unknown(stepped)
+    }
+
+    /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
+    /// number, `reduce` by its operation; of a type parameter's, its
+    /// dictionary's, `SSum.sum(it)`, its caller's (ADR 0476).
+    fn accumulated(
+        &mut self,
+        (it, method): (Expr, DefId),
+        (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
+        sum: bool,
+        span: Span,
+    ) -> R<Expr> {
+        let name = if sum { "sum" } else { "product" };
+        if let Some(num) = Num::of(output) {
+            return Ok(self.accumulated_numbers(it, num, sum));
+        }
+        let unsupported = || self.unsupported(span, &format!("`{name}` of a `{output}`, from its MIR"));
+        let (Some(item), Some(accumulation)) = (item, crate::lower::recognition::accumulation_of(self.tcx, method))
+        else {
+            return Err(unsupported());
+        };
+        let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, accumulation, [output, item]), span)?;
+        Ok(Expr::call(Expr::member(dictionary, name), vec![it]))
+    }
+
+    /// `it.sum()`, or `product()`, `sum`, of numbers of `num`'s type:
+    /// `reduce` by its wrapping operation, from its zero or one; a float's
+    /// sum from -0.0, as Rust's keeps an empty sum's and one of negative
+    /// zeros' sign.
+    pub(in crate::lower) fn accumulated_numbers(&mut self, it: Expr, num: Num, sum: bool) -> Expr {
+        let (op, start) = match sum {
+            true => (Op::Add, 0),
+            false => (Op::Mul, 1),
+        };
+        let (a, b) = (self.fresh("a"), self.fresh("b"));
+        let total = num.wrap(Expr::bin(op, Expr::var(&a), Expr::var(&b)));
+        let f = Expr::arrow(
+            vec![a.into(), b.into()],
+            vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
+        );
+        let start = match (sum, num.float()) {
+            (true, true) => Expr::num(-0.0),
+            _ => num.literal(start),
+        };
+        Expr::call(Expr::member(it, "reduce"), vec![f, start])
     }
 
     /// `it.fuse()`, of an `iter_ty`: `$fuse(it)`, which steps it till it
@@ -525,6 +553,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => method("toArray", it, Vec::new()),
             None => it,
         };
+        // Into what holds a type parameter that a bound says it's collected
+        // into, a `B: FromIterator<A>` or a `Result<U, E>`'s: its
+        // dictionary's `from_iter`, its caller's (ADRs 0445, 0476).
+        if output.has_param()
+            && let Some(item) = item
+            && let Some(dictionary) = self.collected_evidence(output, item)
+        {
+            return Ok(Expr::call(Expr::member(dictionary, "from_iter"), vec![it]));
+        }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
             self.heap_values(HeapOp::From, vec![items(it)], output, span)?
         } else if self.is_vec_like(output) {
@@ -545,12 +582,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it, span)?
         } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
             made
-        } else if let ty::Param(_) = output.kind()
-            && let Some(item) = item
-            && let Some(dictionary) = self.collected_evidence(output, item)
-        {
-            // A type parameter's, its dictionary's `from_iter` (ADR 0445).
-            Expr::call(Expr::member(dictionary, "from_iter"), vec![it])
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })
@@ -558,8 +589,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `items` made a collection of the crate's own, `output`, by its
     /// `FromIterator<item>`'s `from_iter`, the function rust-js compiled.
-    /// The `FromIterator<item>` evidence of a type parameter `output` that
-    /// generic code collects into (ADR 0445).
+    /// The `FromIterator<item>` evidence of what holds a type parameter,
+    /// `output`, that generic code collects into (ADRs 0445, 0476).
     fn collected_evidence(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Option<Expr> {
         let from_iterator = std_item(self.tcx, StdItem::FromIterator);
         self.evidence_for(ty::TraitRef::new(self.tcx, from_iterator, [output, item]))

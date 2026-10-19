@@ -4584,9 +4584,28 @@ pub(super) fn serde_derived(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// Is `id` core's `Sum` or `Product`, of `sum()` and `product()`, which
 /// have no diagnostic items?
 pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.crate_name(id.krate) == sym::core
-        && tcx.def_kind(id) == DefKind::Trait
-        && [Symbol::intern("Sum"), Symbol::intern("Product")].contains(&tcx.item_name(id))
+    accumulation(tcx, id).is_some()
+}
+
+/// The `Sum` or the `Product` `Iterator::sum` or `product`, `method`, bounds
+/// what it makes by, `S: Sum<Self::Item>`.
+pub(crate) fn accumulation_of(tcx: TyCtxt<'_>, method: DefId) -> Option<DefId> {
+    (tcx.clauses_of(method).clauses.iter())
+        .filter_map(|(clause, _)| clause.as_trait_clause())
+        .map(|bound| bound.def_id())
+        .find(|&tr| accumulation(tcx, tr).is_some())
+}
+
+/// std's `Sum` or `Product`, by its method's name, `sum` or `product`.
+pub(crate) fn accumulation(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
+    if tcx.crate_name(id.krate) != sym::core || tcx.def_kind(id) != DefKind::Trait {
+        return None;
+    }
+    match tcx.item_name(id).as_str() {
+        "Sum" => Some("sum"),
+        "Product" => Some("product"),
+        _ => None,
+    }
 }
 
 /// The `fmt` traits of a placeholder's other than `{}` and `{:?}`: `{:x}`'s
@@ -4788,6 +4807,10 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // Hasher`: their dictionaries' `hash`, and `write`, `write_u32`, ...
         // and `finish` (ADR 0463).
         || is_hashing(tcx, id)
+        // `items.sum()` into an `S: Sum<A>`, and `product()` into a `P:
+        // Product<A>`: its dictionary's `sum` or `product` (ADR 0476), the
+        // crate's collection's too (ADR 0160).
+        || is_sum_or_product(tcx, id)
 }
 
 /// `Hash` or `Hasher`: hashing's traits, whose impls a map never calls
@@ -4833,9 +4856,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never lowered (ADRs 0168, 0425).
         || unlowered_trait(tcx, id)
-        // A collection of the crate's: what `sum()` and `product()` call
-        // (ADR 0160); `for`, `collect()` and `extend`'s are `operational`.
-        || is_sum_or_product(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:
         // what `rev()`, `next_back()` and `len()` call (ADR 0164).
         || is_iterator_extension(tcx, id)

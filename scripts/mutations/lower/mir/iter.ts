@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "mir-sum-from-one",
     breaks: "`sum` of an iterator starts from one",
     file: "src/lower/mir/iter.rs",
-    find: "                    Some(IterMethod::Sum) => (Op::Add, 0),\n",
-    replace: "                    Some(IterMethod::Sum) => (Op::Add, 1),\n",
+    find: "            true => (Op::Add, 0),\n",
+    replace: "            true => (Op::Add, 1),\n",
     tests: ["test/corpus.test.ts", "-t", "assert_failure"],
   },
   {
@@ -195,8 +195,8 @@ export const mutations: Mutation[] = [
     "name": "mir-float-sum-from-zero",
     "breaks": "a float's sum from MIR starts at 0, an empty sum `0`, not Rust's -0.0",
     "file": "src/lower/mir/iter.rs",
-    "find": "(Some(IterMethod::Sum), true) => Expr::num(-0.0),",
-    "replace": "(Some(IterMethod::Sum), true) => Expr::num(0.0),",
+    "find": "(true, true) => Expr::num(-0.0),",
+    "replace": "(true, true) => Expr::num(0.0),",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -934,5 +934,13 @@ export const mutations: Mutation[] = [
     find: "        if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
+  {
+    name: "collect-into-held-param-unbound",
+    breaks: "`collect()` into a `Result<U, E>` a bound says it's collected into is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "        if output.has_param()\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
+    replace: "        if false\n            && let Some(item) = item\n            && let Some(dictionary) = self.collected_evidence(output, item)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
   },
 ];

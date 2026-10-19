@@ -1666,4 +1666,21 @@ export const mutations: Mutation[] = [
     replace: "        for (at, (alias, name)) in self.given_item_drops().into_iter().take(0).enumerate() {\n",
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
+  {
+    name: "sum-dictionary-written-everywhere",
+    breaks: "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
+    file: "src/lower/traits.rs",
+    find: "        || super::recognition::is_sum_or_product(tcx, trait_id)\n}\n",
+    replace: "}\n",
+    tests: ["test/corpus.test.ts", "-t", "^user_collections.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "std-product-dictionary-sums",
+    breaks: "std's `Product` dictionary of a number sums",
+    file: "src/lower/traits.rs",
+    find: "            let made = self.accumulated_numbers(items, num, name == \"sum\");\n",
+    replace: "            let made = self.accumulated_numbers(items, num, true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
 ];

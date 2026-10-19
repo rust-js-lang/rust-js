@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`sum()` and `product()` into a type parameter**, and `collect()` into a
+  `Result<U, E>` a bound names, through their caller's dictionaries (ADR
+  0476).
 - **A `Fuse`'s `size_hint`, `Clone` and `Debug`**, std's, in generic code
   too, and `Debug` of an iterator over an array, `IntoIter([2, 3])` (ADR
   0473).

@@ -2259,4 +2259,20 @@ export const mutations: Mutation[] = [
     replace: "            \"std::vec::IntoIter\" => Some(\"Iter\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
+  {
+    name: "sum-bound-ungiven",
+    breaks: "a generic function's `S: Sum<A>` is given no dictionary, and its `sum()` refused",
+    file: "src/lower/recognition.rs",
+    find: "        || is_sum_or_product(tcx, id)\n}\n",
+    replace: "}\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
+  {
+    name: "product-as-sum",
+    breaks: "std's `Product` is taken for `Sum`, its dictionary's `product` named `sum`",
+    file: "src/lower/recognition.rs",
+    find: "        \"Product\" => Some(\"product\"),\n",
+    replace: "        \"Product\" => Some(\"sum\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
 ];

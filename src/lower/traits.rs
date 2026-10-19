@@ -786,8 +786,8 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
 /// Whether only generic code reads a dictionary of `trait_id`'s: an
 /// operator's, `a + b` and `a += b` (ADRs 0108, 0396), a `Deref`'s (ADR
 /// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
-/// (ADR 0162), an `IntoIterator`'s (ADR 0457), and a `Hash`'s and a
-/// `Hasher`'s (ADR 0463). Where the
+/// (ADR 0162), an `IntoIterator`'s (ADR 0457), a `Hash`'s and a
+/// `Hasher`'s (ADR 0463), and a `Sum`'s and a `Product`'s (ADR 0476). Where the
 /// type is known, the impl's method is called as it is, so a crate's impl's
 /// dictionary is written only where it's reached.
 pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
@@ -800,6 +800,7 @@ pub(super) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
         || is_std_def(tcx, trait_id, StdItem::AsMut)
         || is_std_def(tcx, trait_id, StdItem::IntoIterator)
         || super::recognition::is_hashing(tcx, trait_id)
+        || super::recognition::is_sum_or_product(tcx, trait_id)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -1351,6 +1352,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("from_iter".into(), from_iter)]));
+        }
+        // std's `Sum` or `Product` of a number, `{ sum(items) }`: what
+        // `sum()` of them makes (ADR 0476).
+        if let Some(name) = super::recognition::accumulation(self.tcx, tr.def_id)
+            && let Some(num) = Num::of(ty)
+            && !self.has_user_impl(tr.def_id, ty)
+        {
+            let items = self.js_iterator(Expr::var("items"));
+            let made = self.accumulated_numbers(items, num, name == "sum");
+            let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
+            return Ok(Expr::object(vec![Prop::Field(
+                name.into(),
+                Expr::arrow(vec!["items".into()], body),
+            )]));
         }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
         if super::recognition::is_extend(self.tcx, tr.def_id)
