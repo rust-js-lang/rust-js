@@ -170,6 +170,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "div_euclid" if float => NumOp::FloatEuclid { rem: false },
         "abs_sub" if float => NumOp::AbsSub,
         "copysign" if float => NumOp::CopySign,
+        "midpoint" if float => NumOp::FloatMidpoint,
         "to_radians" if float => NumOp::Angle { radians: true },
         "to_degrees" if float => NumOp::Angle { radians: false },
         "is_sign_negative" if float => NumOp::SignNegative { negated: false },

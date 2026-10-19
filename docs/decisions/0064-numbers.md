@@ -123,6 +123,10 @@ each was refused.
   `fdim`, `0` where `a <= b`.
 - **`x.copysign(y)` reads `y`'s sign bit**, `$signNegative`, so a `-0.0`
   gives a negative.
+- **A float's `midpoint`** is std's: an `f64`'s, `$floatMidpoint`, halves
+  the sum where it can't overflow, else each first; std keeps a tiny one
+  whole beside a huge one, whose half absorbs it either way. An `f32`'s
+  is `f64`s' sum halved, rounded.
 
 Case: N for each but the transcendental functions, which are the case
 under Consequences: neither JS's `Math` nor the C library Rust calls is

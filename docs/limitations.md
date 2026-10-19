@@ -77,7 +77,6 @@ depends on what the program does:
 
 ## Numbers and text
 
-- A float's `midpoint`: `println!("{}", 1.0f64.midpoint(3.0));`
 - A C string, a `c"..."` literal: `let c = c"hi"; println!("{:?}", c);`
 - `CString` and `CStr`: `let c = std::ffi::CString::new("hi").unwrap(); println!("{:?}", c);`
 

@@ -43,4 +43,15 @@ fn main() {
         (-7.5f32).div_euclid(2.0),
         3f32.copysign(-0.0)
     );
+    // `midpoint`: halfway, an `f64`'s without going past its largest, a
+    // tiny one kept whole; an `f32`'s, `f64`s' sum halved.
+    println!(
+        "{} {:e} {:e} {:e} {} {}",
+        1.0f64.midpoint(3.0),
+        f64::MAX.midpoint(f64::MAX),
+        5e-324f64.midpoint(f64::MAX),
+        f64::MAX.midpoint(-5e-324),
+        (-1.5f32).midpoint(2.5),
+        1.0f32.midpoint(1.0000001) == 1.0
+    );
 }

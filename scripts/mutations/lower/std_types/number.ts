@@ -324,4 +324,12 @@ export const mutations: Mutation[] = [
     replace: "                let negative = Expr::bin(Op::Lt, arg(), Expr::num(0.0));\n                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)\n",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
   },
+  {
+    name: "f32-midpoint-unrounded",
+    breaks: "an `f32`'s `midpoint` is the `f64` halfway, not rounded to an `f32`",
+    file: "src/lower/std_types/number.rs",
+    find: "            NumOp::FloatMidpoint if num == Num::F32 => rounded(",
+    replace: "            NumOp::FloatMidpoint if num == Num::F32 => (",
+    tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
+  },
 ];

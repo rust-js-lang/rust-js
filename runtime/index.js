@@ -3715,6 +3715,15 @@ export function $absSub(a, b) {
   return a > b ? a - b : 0;
 }
 
+// An `f64`'s `midpoint(b)`, as std finds it: the sum halved where it can't
+// go past the largest `f64`, else each halved first. std keeps a tiny one
+// whole beside a huge one, which the huge one's half absorbs either way.
+export function $floatMidpoint(a, b) {
+  const hi = Number.MAX_VALUE / 2;
+  if (Math.abs(a) <= hi && Math.abs(b) <= hi) return (a + b) / 2;
+  return a / 2 + b / 2;
+}
+
 // A lazy iterator made `peekable()` (ADR 0164): a JS iterator that steps
 // it only when asked, and keeps the step `peek` took for the next `next`,
 // as Rust's `Peekable` does. One of an array's items is its `$iter`, which

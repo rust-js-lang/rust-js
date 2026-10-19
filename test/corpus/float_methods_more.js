@@ -4,7 +4,11 @@ import {
   $absSub,
   $debugF32,
   $debugF64,
+  $displayF32,
+  $displayF64,
   $floatEuclid,
+  $floatMidpoint,
+  $lowerExp,
   $signNegative,
   $toFixed,
 } from "@rust-js/runtime";
@@ -45,6 +49,15 @@ function main() {
   const x$4 = Math.abs(3);
   console.log(
     `${$debugF32(value$1)} ${$debugF32(Math.fround($floatEuclid(-7.5, 2, false)))} ${$debugF32($signNegative(-0) ? -x$4 : x$4)}`,
+  );
+  // `midpoint`: halfway, an `f64`'s without going past its largest, a
+  // tiny one kept whole; an `f32`'s, `f64`s' sum halved.
+  const value$2 = $floatMidpoint(1, 3);
+  const value$3 = $floatMidpoint(1.7976931348623157e308, 1.7976931348623157e308);
+  const value$4 = $floatMidpoint(5e-324, 1.7976931348623157e308);
+  const value$5 = $floatMidpoint(1.7976931348623157e308, -5e-324);
+  console.log(
+    `${$displayF64(value$2)} ${$lowerExp(value$3)} ${$lowerExp(value$4)} ${$lowerExp(value$5)} ${$displayF32(Math.fround((-1.5 + 2.5) / 2))} ${Math.fround((1 + Math.fround(1.0000001)) / 2) === 1}`,
   );
 }
 //# sourceMappingURL=case.js.map

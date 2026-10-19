@@ -130,6 +130,9 @@ pub(in crate::lower) enum NumOp {
     AbsSub,
     /// `copysign(sign)`: its magnitude, given `sign`'s sign.
     CopySign,
+    /// A float's `midpoint(other)`: halfway, which an `f64`'s finds without
+    /// going past its largest; an `f32`'s is `f64`s' sum halved, as std's is.
+    FloatMidpoint,
     /// `to_radians()`, or `to_degrees()`.
     Angle {
         radians: bool,
@@ -547,6 +550,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::FloatEuclid { rem } => rounded(helper("$floatEuclid", vec![arg(), arg(), Expr::bool(rem)])),
             NumOp::AbsSub => rounded(helper("$absSub", vec![arg(), arg()])),
+            NumOp::FloatMidpoint if num == Num::F32 => {
+                rounded(Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::int(2)))
+            }
+            NumOp::FloatMidpoint => helper("$floatMidpoint", vec![arg(), arg()]),
             // The sign of `sign`, `-0`'s too, by `$signNegative`.
             NumOp::CopySign => {
                 let x = math("abs", vec![arg()]);
