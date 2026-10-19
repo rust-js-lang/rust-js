@@ -440,6 +440,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **Nested loops read as written**: a `let` in an inner loop is declared
+  there, `const score = ..`, not before the outer one; an inner loop's
+  way out that ends the outer turn is its `break`, not `continue bb4`; and
+  a labeled block's jump to the jump after it is that one (ADR 0364).
 - **A callback is given the index, one function for each JS method**: a typed
   array's `map(|x, i| ..)`, `filter`, `find`, `for_each`, `every`, `some` and
   `reduce`, and React's `Children::for_each(children, |child, i| ..)`, each

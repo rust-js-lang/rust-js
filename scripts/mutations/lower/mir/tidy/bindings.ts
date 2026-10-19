@@ -325,4 +325,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
     snapshots: true,
   },
+  {
+    name: "let-not-sunk-through-loop",
+    breaks: "a `let` of an inner loop is declared before the outer one, `let score;`, assigned in the inner",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name)\n",
+    replace: "            false\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "let-not-sunk-through-labeled-block",
+    breaks: "a `let` first assigned in a labeled block is declared before the loop around it",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        StmtKind::Labeled(_, body) => alone && assigned_first(body, name),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|range_values|or_bindings|interpreter).rs$"],
+    snapshots: true,
+  },
 ];

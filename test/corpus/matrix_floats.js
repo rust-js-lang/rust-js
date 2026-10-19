@@ -74,9 +74,6 @@ function main() {
     -Infinity,
     NaN,
   ];
-  let tmp;
-  let tmp$1;
-  let tmp$2;
   for (const a of values) {
     console.log(
       `f64 ${f64_bits(a)}: round ${f64_bits(Math.floor(a))} ${f64_bits(Math.ceil(a))} ${f64_bits($round(a))} ${f64_bits(Math.trunc(a))} ${f64_bits(a - Math.trunc(a))} abs ${f64_bits(Math.abs(a))} ${f64_bits($signum(a))} ${f64_bits(a * (180 / Math.PI))} sqrt ${f64_bits(Math.sqrt(a))} powi ${f64_bits($powi(a, 3))} ${f64_bits($powi(a, -2))} recip ${f64_bits(1 / a)} neg ${f64_bits(-a)} clamp ${f64_bits($clampFloat(a, -1, 1, $debugF64))}`,
@@ -101,13 +98,13 @@ function main() {
       const value$4 = f64_bits(a * b);
       const value$5 = f64_bits(a / b);
       const value$6 = f64_bits(a % b);
-      tmp = a === b && a === 0 ? "±0" : f64_bits($f64Min(a, b));
-      tmp$1 = a === b && a === 0 ? "±0" : f64_bits($f64Max(a, b));
-      tmp$2 = b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f64_bits($powf(a, b));
-      const value$7 = $totalCmp(a, b);
+      const value$7 = a === b && a === 0 ? "±0" : f64_bits($f64Min(a, b));
+      const value$8 = a === b && a === 0 ? "±0" : f64_bits($f64Max(a, b));
+      const value$9 = b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f64_bits($powf(a, b));
+      const value$10 = $totalCmp(a, b);
       console.log(
-        `f64 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${tmp} max ${tmp$1} pow ${tmp$2} cmp ${
-          ["Less", "Equal", "Greater"][value$7 + 1]
+        `f64 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${value$7} max ${value$8} pow ${value$9} cmp ${
+          ["Less", "Equal", "Greater"][value$10 + 1]
         } ${((value) =>
           value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
           $partialCmp(a, b),
@@ -135,9 +132,6 @@ function main() {
     -Infinity,
     NaN,
   ];
-  let tmp$3;
-  let tmp$4;
-  let tmp$5;
   for (const a of values$1) {
     console.log(
       `f32 ${f32_bits(a)}: round ${f32_bits(Math.floor(a))} ${f32_bits(Math.ceil(a))} ${f32_bits($round(a))} ${f32_bits(Math.trunc(a))} ${f32_bits(a - Math.trunc(a))} abs ${f32_bits(Math.abs(a))} ${f32_bits($signum(a))} ${f32_bits(Math.fround(a * 57.295780181884766))} sqrt ${f32_bits(Math.fround(Math.sqrt(a)))} powi ${f32_bits($powiF32(a, 3))} ${f32_bits($powiF32(a, -2))} recip ${f32_bits(Math.fround(1 / a))} neg ${f32_bits(-a)} clamp ${f32_bits($clampFloat(a, -1, 1, $debugF32))}`,
@@ -162,14 +156,14 @@ function main() {
       const value$4 = f32_bits(Math.fround(a * b));
       const value$5 = f32_bits(Math.fround(a / b));
       const value$6 = f32_bits(a % b);
-      tmp$3 = a === b && a === 0 ? "±0" : f32_bits($f64Min(a, b));
-      tmp$4 = a === b && a === 0 ? "±0" : f32_bits($f64Max(a, b));
-      tmp$5 =
+      const value$7 = a === b && a === 0 ? "±0" : f32_bits($f64Min(a, b));
+      const value$8 = a === b && a === 0 ? "±0" : f32_bits($f64Max(a, b));
+      const value$9 =
         b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f32_bits(Math.fround($powf(a, b)));
-      const value$7 = $totalCmp(a, b);
+      const value$10 = $totalCmp(a, b);
       console.log(
-        `f32 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${tmp$3} max ${tmp$4} pow ${tmp$5} cmp ${
-          ["Less", "Equal", "Greater"][value$7 + 1]
+        `f32 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${value$7} max ${value$8} pow ${value$9} cmp ${
+          ["Less", "Equal", "Greater"][value$10 + 1]
         } ${((value) =>
           value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
           $partialCmp(a, b),

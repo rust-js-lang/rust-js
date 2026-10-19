@@ -477,6 +477,100 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, kept: &[js::Spa
     }
 }
 
+/// A labeled block MIR made followed by a labeled jump, `l: { .. break l;
+/// .. } continue m;`: each `break l` that jump, which goes on from there
+/// anyway; `unlabeled` then leaves the block, which nothing names.
+pub(super) fn jumps_past_blocks(stmts: &mut [Stmt]) {
+    fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
+                StmtKind::If(_, a, b) => {
+                    rejump(a, label, jump);
+                    if let Some(b) = b {
+                        rejump(b, label, jump);
+                    }
+                }
+                StmtKind::While { body, .. }
+                | StmtKind::ForOf { body, .. }
+                | StmtKind::For { body, .. }
+                | StmtKind::Labeled(_, body) => rejump(body, label, jump),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    rejump(a, label, jump);
+                    rejump(b, label, jump);
+                }
+                _ => {}
+            }
+        }
+    }
+    for i in 0..stmts.len().saturating_sub(1) {
+        let jump = match &stmts[i + 1].kind {
+            jump @ (StmtKind::Continue(Some(_)) | StmtKind::Break(Some(_))) => jump.clone(),
+            _ => continue,
+        };
+        if let StmtKind::Labeled(label, body) = &mut stmts[i].kind
+            && crate::lower::mir::is_block_label(label)
+        {
+            let label = label.clone();
+            rejump(body, &label, &jump);
+        }
+    }
+}
+
+/// A loop that ends the body of loop `l` around it, one the program names
+/// no label, as `loops` say, not `'rows`, whose `continue 'rows` it wrote:
+/// each `continue l` of its own, not a loop's inside it, its `break`, which
+/// ends `l`'s turn as well, as Rust's `break` of a loop that ends
+/// another's does.
+pub(super) fn outer_continues(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    fn broken(stmts: &mut [Stmt], looped: &str) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
+                StmtKind::If(_, a, b) => {
+                    broken(a, looped);
+                    if let Some(b) = b {
+                        broken(b, looped);
+                    }
+                }
+                StmtKind::Labeled(_, body) => broken(body, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    broken(a, looped);
+                    broken(b, looped);
+                }
+                _ => {}
+            }
+        }
+    }
+    for stmt in stmts {
+        let named = matches!(written_loop(loops, stmt.span), Some((_, _, Some(_))));
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &mut stmt.kind
+            && !named
+            && let Some(
+                StmtKind::While { body: inner, .. }
+                | StmtKind::ForOf { body: inner, .. }
+                | StmtKind::For { body: inner, .. },
+            ) = body.last_mut().map(|s| &mut s.kind)
+        {
+            broken(inner, label);
+        }
+    }
+}
+
 /// A `continue l` or a `break l` of loop `l` where it's the innermost
 /// loop: `continue` or `break`, as JS's unlabeled ones go there.
 pub(super) fn innermost_jumps(stmts: &mut [Stmt]) {
@@ -857,8 +951,7 @@ pub(super) fn written_order_steps(stmts: &mut [Stmt]) {
 /// its head whose `rest`, what's after it, always leaves elsewhere: `while
 /// (c) { body } rest`, where nothing else jumps in it
 /// to the loop, as `rest`'s jumps would go to another once it's outside.
-pub(super) fn while_heads(stmts: &mut Vec<Stmt>) -> bool {
-    let mut headed = false;
+pub(super) fn while_heads(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
@@ -879,11 +972,9 @@ pub(super) fn while_heads(stmts: &mut Vec<Stmt>) -> bool {
             };
             let rest = rest.to_vec();
             stmts.splice(i..=i, std::iter::once(looped.at(span)).chain(rest));
-            headed = true;
         }
         i += 1;
     }
-    headed
 }
 
 /// Whether `stmts` jump for loop `label`: an unnamed `break` or `continue`
@@ -1494,7 +1585,7 @@ pub(super) fn named_labels(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<
                 _ => continue,
             };
             if let Some(from) = label.clone()
-                && from.starts_with("bb")
+                && crate::lower::mir::is_block_label(&from)
                 && let Some((_, _, Some(to))) = written_loop(loops, span)
                 && !around.contains(to)
             {

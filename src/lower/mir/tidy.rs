@@ -275,6 +275,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A value a block MIR made gives where nothing else does: given first,
     // and the block's `break`s that go where it ends anyway, gone.
     js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));
+    // What jumps left past them; and, once each block's `else` is made of
+    // its `break`s, a block's jumps to one after it, that one.
+    js::statement_lists(body, &mut unreachable_after);
+    js::statement_lists(body, &mut |stmts| jumps_past_blocks(stmts));
     settle_jumps(body);
     declarations(body);
     // `x != null && typeof x === "string"`: the `typeof` test, which says it.
@@ -393,16 +397,16 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A `const` nothing reads, of a value made only to be dropped, `drop(vec![..])`'s:
     // what making it does.
     js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));
-    // Its jumps then, of the loop they're now in, unnamed.
-    let mut headed = false;
-    js::statement_lists(body, &mut |stmts| headed |= while_heads(stmts));
+    js::statement_lists(body, &mut while_heads);
     js::statement_lists(body, &mut |stmts| written_order_steps(stmts));
     js::statement_lists(body, &mut let_else_first);
     js::statement_lists(body, &mut tried_first);
-    if headed {
-        js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
-        settle_jumps(body);
-    }
+    // A loop's jumps to the end of the loop it ends, once what's after each
+    // loop is placed by them: its own, where the program names it no label;
+    // and the early exits those `break`s now make.
+    js::statement_lists(body, &mut |stmts| outer_continues(stmts, written));
+    js::statement_lists(body, &mut |stmts| early_breaks(stmts, false));
+    settle_jumps(body);
     // `!(b >= 48)` of what's never `NaN`: `b < 48`.
     js::each_expr_mut(body, &mut |e| turned(e, numbers));
     // An `if` of `false`, a check that can't fail once what it reads is

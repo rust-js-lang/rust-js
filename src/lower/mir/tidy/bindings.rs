@@ -928,7 +928,9 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
 /// Whether `stmts` assign `name` before anything reads it, each way through
 /// them that names it: first `name = e`, or a branch of an `if` that does
 /// so, which is all that names it; or an `if` each of whose branches does
-/// so or leaves the turn first, `let y = match x { 0 => continue, .. }`'s.
+/// so or leaves the turn first, `let y = match x { 0 => continue, .. }`'s;
+/// or a loop or a labeled block that is all that names it, whose body does
+/// so.
 pub(super) fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
     let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
     let Some(at) = stmts.iter().position(names) else {
@@ -945,6 +947,13 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
                 && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)
                     || assigned_on(then, name) && otherwise.as_deref().is_some_and(|o| assigned_on(o, name)))
         }
+        // A loop inside, all that names it, whose body assigns it first each
+        // turn: nothing reads it but there.
+        StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } => {
+            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name)
+        }
+        // A labeled block, all that names it, that does so.
+        StmtKind::Labeled(_, body) => alone && assigned_first(body, name),
         _ => false,
     }
 }

@@ -133,13 +133,6 @@ function main() {
       .join(", ")}]`,
   );
   const iter = w.rows;
-  let a;
-  let ids$1;
-  let tmp;
-  let numbers;
-  let tmp$1;
-  let kept;
-  let iter$1;
   while (true) {
     const row = $rangeNext(iter);
     if (row == null) {
@@ -163,15 +156,15 @@ function main() {
           console.log(`${big}`);
 
           // A clone of a range stepped through is its own.
-          a = { start: 0, end: 3 };
+          const a = { start: 0, end: 3 };
           $rangeNext(a);
           const b = { start: a.start, end: a.end };
           $rangeNext(a);
-          ids$1 = { start: 100 };
-          const firstId = $rangeFromNext(ids$1);
-          const secondId = $rangeFromNext(ids$1);
+          const ids = { start: 100 };
+          const firstId = $rangeFromNext(ids);
+          const secondId = $rangeFromNext(ids);
           console.log(
-            `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
+            `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
           );
 
           const labelled = { span: { start: 2, end: 5 }, name: "x" };
@@ -179,12 +172,10 @@ function main() {
             ...labelled,
             span: { start: labelled.span.start, end: labelled.span.end },
           };
-          tmp = undefined;
-          tmp = [
+          const spans = [
             { start: 0, end: 2 },
             { start: 3, end: 5 },
           ];
-          const spans = tmp;
           const lens = spans.map((s) => Math.max(s.end - s.start, 0));
           const value = $eq(labelled, copy);
           console.log(
@@ -201,9 +192,7 @@ function main() {
             )} ${shown_twice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
           );
 
-          tmp$1 = undefined;
-          tmp$1 = [1, 2, 3, 4, 5];
-          numbers = tmp$1;
+          const numbers = [1, 2, 3, 4, 5];
           const cut = { start: 1, end: 3 };
           const gone = $drain(numbers, cut.start, cut.end);
           console.log(
@@ -219,11 +208,11 @@ function main() {
           // `char`s step past the surrogates, which no `char` is.
           const letters = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
           const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
-          kept = new Set();
+          const kept = new Set();
           $extendMap(kept, $charRange("퟾", "", true), true);
-          iter$1 = { start: "x", end: "z" };
+          const iter = { start: "x", end: "z" };
           while (true) {
-            const c = $rangeInclusiveNext(iter$1);
+            const c = $rangeInclusiveNext(iter);
             if (c == null) {
               break;
             }

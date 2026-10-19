@@ -148,3 +148,30 @@ case tests, and does something as it's made, is held first, `const n =
 note(15, x);`, as Rust makes it once; one that only reads, `i % 3`, is
 read by each test, as before. `test/corpus/match_call_once.rs` runs it
 against native Rust; a mutation calls it again.
+
+## Amendment: nested loops read as written
+
+heck's word splitter, a `while let` with a `peek()` inside a `for`,
+read as no one writes it: `let nextMode;` declared before the outer loop,
+the inner loop in a labeled block, `bb103: { .. break bb103; return f; }
+continue bb3;`, and a `return` after the `break` that nothing reached.
+Each rule below changes no meaning:
+
+- **A `let` sinks through a loop or a labeled block** that is all that
+  names it, whose body assigns it before anything reads it: the variable
+  Rust declares inside, `const nextMode = ..` where it's made.
+- **A labeled block followed by a labeled jump**, `l: { .. break l; .. }
+  continue m;`: each `break l` is that jump, which goes on from there
+  anyway, and the label nothing names then goes.
+- **A loop that ends the body of loop `l`**, one the program names no
+  label: each `continue l` of its own, not a loop's inside it, is its
+  `break`, as Rust's `break` there is, and `l`'s label goes; then an
+  early exit, `if (!value) { break; }`, as before. A `continue 'rows` the
+  program wrote stays. This runs once what's after each loop is placed,
+  which reads where its `continue l` goes.
+- **What those jumps leave past them goes**, as it did before them.
+
+`test/corpus/nested_loop_jumps.rs` and heck's `transform`, in
+`writer_callables.rs`, hold each, against native Rust; a mutation of each
+is caught.
+

@@ -99,13 +99,13 @@ function main() {
   }
 
   // Nested, with a guard that reads what's bound.
-  let r;
-  let r$1;
   let r$2;
   for (const o of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
     bb66: {
       if (o) {
         bb84: {
+          let r;
+          let r$1;
           if (o.TAG === "Circle") {
             r$1 = o._0;
             if (!(r$1 > 1)) {
@@ -137,8 +137,8 @@ function main() {
     const w = value$3.w;
     console.log(`width ${$displayF64(w)}`);
   }
-  const r$3 = { TAG: "Err", _0: 9 };
-  const n = r$3.TAG === "Ok" ? r$3._0 : r$3._0;
+  const r = { TAG: "Err", _0: 9 };
+  const n = r.TAG === "Ok" ? r._0 : r._0;
   console.log(`${n}`);
 
   // Through a `&mut`, where it's the same place in each: written there.

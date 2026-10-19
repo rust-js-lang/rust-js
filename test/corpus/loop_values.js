@@ -14,7 +14,6 @@ function pick(x) {
 
 function main() {
   let n = 0;
-  let m;
   while (true) {
     n = (n + 1) | 0;
     if (n === 3) {
@@ -23,7 +22,7 @@ function main() {
         for (let i = 0; i < 100; i++) {
           if (Math.imul(i, i) > 20) {
             const found = i;
-            m = 0;
+            let m = 0;
             while (true) {
               m = (m + 1) & 255;
               if (m > 2) {

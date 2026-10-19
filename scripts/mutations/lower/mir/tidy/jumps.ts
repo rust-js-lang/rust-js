@@ -454,4 +454,22 @@ export const mutations: Mutation[] = [
     replace: "    let taken = match ok != equal {\n",
     tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
   },
+  {
+    name: "block-jump-not-forwarded",
+    breaks: "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "                StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|interpreter|rc_counted_uses|loop_drops).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "outer-continue-kept",
+    breaks: "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "                StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
+    snapshots: true,
+  },
 ];

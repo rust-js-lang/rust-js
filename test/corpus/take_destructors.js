@@ -19,7 +19,6 @@ function main() {
   let tmp$1;
   let t;
   let one;
-  let iter$2;
   let tmp$2;
   let skipped;
   while (true) {
@@ -242,8 +241,9 @@ function main() {
           }
           throw error;
         }
+        let tmp$6;
         try {
-          iter$2 = $skipDropping(tmp$5, 2, nDrop_drop);
+          tmp$6 = $skipDropping(tmp$5, 2, nDrop_drop);
         } catch (error) {
           for (const item of all) {
             nDrop_drop(item);
@@ -253,11 +253,12 @@ function main() {
           }
           throw error;
         }
+        const iter = tmp$6;
         while (true) {
           try {
-            tmp$2 = $next(iter$2);
+            tmp$2 = $next(iter);
           } catch (error) {
-            iter$2.return();
+            iter.return();
             for (const item of all) {
               nDrop_drop(item);
             }
@@ -280,7 +281,7 @@ function main() {
               console.log(`after skip ${n[0]}`);
             } catch (error) {
               nDrop_drop(n);
-              iter$2.return();
+              iter.return();
               for (const item of all) {
                 nDrop_drop(item);
               }
@@ -301,7 +302,7 @@ function main() {
               try {
                 nDrop_drop(n);
               } catch (error) {
-                iter$2.return();
+                iter.return();
                 for (const item of all) {
                   nDrop_drop(item);
                 }
@@ -322,7 +323,7 @@ function main() {
               try {
                 nDrop_drop(n);
               } catch (error) {
-                iter$2.return();
+                iter.return();
                 for (const item of all) {
                   nDrop_drop(item);
                 }
@@ -343,7 +344,7 @@ function main() {
             }
           }
           try {
-            iter$2.return();
+            iter.return();
           } catch (error) {
             for (const item of all) {
               nDrop_drop(item);

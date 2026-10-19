@@ -6086,6 +6086,13 @@ fn label(block: BasicBlock) -> String {
     format!("bb{}", block.as_usize())
 }
 
+/// Whether `name` is a label `label` made, of a block, not one the program
+/// writes, `'rows`.
+pub(in crate::lower::mir) fn is_block_label(name: &str) -> bool {
+    name.strip_prefix("bb")
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
 /// Of a bounds check `msg`, the index whose element `target` reads or
 /// writes first, and whether it writes it: there, `$index(xs, i)` or
 /// `xs[$at(xs, i)]`, the check.

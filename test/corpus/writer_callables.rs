@@ -19,16 +19,64 @@ fn capitalize(s: &str, f: &mut fmt::Formatter) -> fmt::Result {
     Ok(())
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum WordMode {
+    Boundary,
+    Lowercase,
+    Uppercase,
+}
+
+// heck's: each word, where the case changes too, given to `with_word`,
+// and `boundary` between them.
 fn transform<F, G>(s: &str, mut with_word: F, mut boundary: G, f: &mut fmt::Formatter) -> fmt::Result
 where
     F: FnMut(&str, &mut fmt::Formatter) -> fmt::Result,
     G: FnMut(&mut fmt::Formatter) -> fmt::Result,
 {
-    for (i, word) in s.split_whitespace().enumerate() {
-        if i > 0 {
-            boundary(f)?;
+    let mut first_word = true;
+    for word in s.split(|c: char| !c.is_alphanumeric()) {
+        let mut char_indices = word.char_indices().peekable();
+        let mut init = 0;
+        let mut mode = WordMode::Boundary;
+        while let Some((i, c)) = char_indices.next() {
+            if let Some(&(next_i, next)) = char_indices.peek() {
+                let next_mode = if c.is_lowercase() {
+                    WordMode::Lowercase
+                } else if c.is_uppercase() {
+                    WordMode::Uppercase
+                } else {
+                    mode
+                };
+                if next_mode == WordMode::Lowercase && next.is_uppercase() {
+                    if !first_word {
+                        boundary(f)?;
+                    }
+                    with_word(&word[init..next_i], f)?;
+                    first_word = false;
+                    init = next_i;
+                    mode = WordMode::Boundary;
+                } else if mode == WordMode::Uppercase && c.is_uppercase() && next.is_lowercase() {
+                    if !first_word {
+                        boundary(f)?;
+                    } else {
+                        first_word = false;
+                    }
+                    with_word(&word[init..i], f)?;
+                    init = i;
+                    mode = WordMode::Boundary;
+                } else {
+                    mode = next_mode;
+                }
+            } else {
+                if !first_word {
+                    boundary(f)?;
+                } else {
+                    first_word = false;
+                }
+                with_word(&word[init..], f)?;
+                break;
+            }
         }
-        with_word(word, f)?;
     }
     Ok(())
 }
@@ -74,7 +122,7 @@ impl fmt::Display for Columns<'_> {
 }
 
 fn main() {
-    println!("{}", Kebab("Hello Big WORLD"));
+    println!("{}", Kebab("Hello Big WORLD XMLHttpRequest"));
     println!("{}", Title("the ßtraße of heck"));
     println!("{}", Numbered("one two three", 4));
     println!("{:>4} {:<3}.", Columns("a bc"), Columns("x y"));
