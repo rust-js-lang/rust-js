@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    if (p(step.value)) return found(step.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
+  {
+    name: "map-back-unmapped",
+    breaks: "a map stepped from its back gives its source's items, not their `f`'s",
+    file: "src/runtime/back_steps.js",
+    find: "  map.back = () => mapped(it.back());\n",
+    replace: "  map.back = () => it.back();\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];

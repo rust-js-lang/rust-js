@@ -5,6 +5,8 @@ import {
   $foldBack,
   $iter,
   $iterator,
+  $mapBack,
+  $next,
   $nextBack,
   $nthBack,
   $rangeNext,
@@ -31,6 +33,22 @@ function second_last(it) {
 
 function last_some(it) {
   return $findBack(it, (item) => item == null || item > 1, $some);
+}
+
+function tagged(it) {
+  return $foldBack(
+    $mapBack(it, (n) => (n + 100) >>> 0),
+    0,
+    (a, b) => ((Math.imul(a, 1000) >>> 0) + b) >>> 0,
+  );
+}
+
+function last_big(it) {
+  const found = $findBack(
+    $mapBack(it, (n) => Math.imul(n, 2) >>> 0),
+    (n) => n > 2,
+  );
+  return [found, $next(it)];
 }
 
 function main() {
@@ -67,5 +85,16 @@ function main() {
   console.log(
     `${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`} ${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`}`,
   );
+  console.log(
+    `${tagged($iter([1, 2]))} ${((tuple) =>
+      `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(
+      last_big($iter([1, 2, 3])),
+    )}`,
+  );
+  const value$12 = $findBack(
+    $mapBack($iter([5, 6, 7]), (n) => Math.imul(n, 10) >>> 0),
+    (n) => n < 70,
+  );
+  console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
 }
 //# sourceMappingURL=case.js.map

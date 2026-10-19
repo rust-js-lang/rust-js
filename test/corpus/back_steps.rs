@@ -1,7 +1,9 @@
 // `nth_back(n)`, `rfold(init, f)` and `rfind(p)` of a double-ended
 // iterator, a generic one's too, stepped from its back as `next_back`
 // steps it (ADRs 0429, 0455): of items that could look like `None`, their
-// `Some`. Of items with a destructor, `back_steps_drop`.
+// `Some`. A map of one, a `by_ref()` too, is stepped from either end, its
+// function called from the back as Rust's `Map` calls it. Of items with a
+// destructor, `back_steps_drop`.
 fn digits_back<I: DoubleEndedIterator<Item = u32>>(it: I) -> u32 {
     it.rfold(0, |a, b| a * 10 + b)
 }
@@ -18,6 +20,15 @@ fn last_some<I: DoubleEndedIterator<Item = Option<u32>>>(mut it: I) -> Option<Op
     it.rfind(|item| item.is_none_or(|n| n > 1))
 }
 
+fn tagged<I: DoubleEndedIterator<Item = u32>>(it: I) -> u32 {
+    it.map(|n| n + 100).rfold(0, |a, b| a * 1000 + b)
+}
+
+fn last_big<I: DoubleEndedIterator<Item = u32>>(mut it: I) -> (Option<u32>, Option<u32>) {
+    let found = it.by_ref().map(|n| n * 2).rfind(|n| *n > 2);
+    (found, it.next())
+}
+
 fn main() {
     println!("{}", digits_back(vec![1, 2, 3].into_iter()));
     println!("{:?} {:?}", last_even(vec![2, 4, 5].into_iter()), last_even(1..4));
@@ -28,4 +39,6 @@ fn main() {
     let mut it = v.iter();
     println!("{:?} {:?}", it.nth_back(0), it.next_back());
     println!("{:?} {:?}", last_some(vec![Some(5), None, Some(1)].into_iter()), last_some(vec![Some(1)].into_iter()));
+    println!("{} {:?}", tagged(vec![1, 2].into_iter()), last_big(vec![1, 2, 3].into_iter()));
+    println!("{:?}", [5u32, 6, 7].iter().map(|n| n * 10).rfind(|n| *n < 70));
 }

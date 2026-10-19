@@ -1039,6 +1039,15 @@ export function $findBack(it, p, found = (item) => item, drop) {
   return undefined;
 }
 
+// A map of a double-ended iterator, `it.map(f)`, which knows its back: each
+// of its source's items, `f`'s, from either end, as Rust's `Map` steps them.
+export function $mapBack(it, f) {
+  const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
+  const map = Iterator.from({ next: () => mapped(it.next()) });
+  map.back = () => mapped(it.back());
+  return map;
+}
+
 export function $nextBackSome(it) {
   const step = it.back();
   return step.done ? undefined : $some(step.value);

@@ -337,6 +337,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its callers give it.
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
+        // A map of one, made one that knows its back too, `$mapBack` (ADR 0455).
+        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {
+            return self.knows_its_back(source);
+        }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
             return super::recognition::is_double_ended(self.tcx, id);
         }
@@ -372,6 +376,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
+        }
+        // A map made here of one that knows its back, `src.map(f)`: its
+        // source's items, each `f`'s, from either end, as Rust's `Map` steps
+        // them (ADR 0455).
+        if let Some(source) = super::recognition::mapped_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "map"
+            && let [f] = args.as_slice()
+        {
+            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+            return Ok(Expr::call_helper("$mapBack", vec![source_value, f.clone()]));
         }
         if let Some(double_ended) = self.own_next_back(ty)? {
             let iterator = std_item(self.tcx, StdItem::Iterator);

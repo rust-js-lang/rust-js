@@ -797,4 +797,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
+  {
+    name: "by-ref-back-lost",
+    breaks: "`by_ref()` of an iterator that knows its back is lent without it, so a map of it can't be stepped from its back",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {\n",
+    replace: "            Some(IterMethod::ByRef) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];

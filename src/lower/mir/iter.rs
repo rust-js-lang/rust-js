@@ -297,6 +297,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Taken by a `&mut`, it's stepped through what can't close it.
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        if let Some(kept) = self.back_kept(std_method, &receiver, (iter_ty, output), (&mut values, arg_tys), span)? {
+            return Ok(Some(kept));
+        }
         let it = self.as_js_iterator(receiver, iter_ty, span)?;
         let it = match lent {
             true => self.lent_iterator(it),
@@ -614,6 +617,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
     /// a `$iter`, of an array's iterator or a `Peekable` of one, or a generic
     /// or a `dyn` one that knows its back (ADR 0429).
+    /// What keeps `receiver`'s back, of type `iter_ty`, where it knows its
+    /// back (ADR 0455): `by_ref()`'s, itself, a `$iter` or a `$iterator`,
+    /// which closing doesn't end, not lent; a map's, `$mapBack`, which steps
+    /// it from either end and doesn't close it. `None` of another.
+    fn back_kept(
+        &mut self,
+        method: Option<IterMethod>,
+        receiver: &Expr,
+        (iter_ty, output): (Ty<'tcx>, Ty<'tcx>),
+        (values, arg_tys): (&mut std::vec::IntoIter<Expr>, &[Ty<'tcx>]),
+        span: Span,
+    ) -> R<Option<Expr>> {
+        Ok(Some(match method {
+            Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
+                self.as_double_ended(receiver.clone(), iter_ty, span)?
+            }
+            Some(IterMethod::Map) if self.knows_its_back(output) => {
+                let it = self.as_double_ended(receiver.clone(), iter_ty, span)?;
+                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+                let f = self.unary_callback(values.next().expect("the function"), own);
+                Expr::call_helper("$mapBack", vec![it, f])
+            }
+            _ => return Ok(None),
+        }))
+    }
+
     /// `it.nth_back(n)`, `it.rfold(init, f)` or `it.rfind(p)`, of its
     /// values, the iterator first, of type `iter_ty`, giving `output`: its
     /// helper, stepping `it` from its back (ADR 0455). Of items with a

@@ -43,3 +43,14 @@ otherwise, a range's of its bounds.
   array's, through a `&mut` and by value, of numbers, of `Option`s, and
   of items with a destructor, against native Rust; a mutation of each
   part is caught.
+
+## Amendment: a map of one knows its back
+
+**A map of an iterator that knows its back knows its back**, as Rust's
+`Map` is double-ended where its source is: `$mapBack(it, f)`, which steps
+its source from either end, `f` of each item, `knows_its_back`'s answer,
+so a generic one's `it.map(f).rfind(p)` is stepped from its back, as
+either's `Either` steps the map it wraps. A map made in place of an
+array's items, `v.iter().map(f)`, is made one where it's stepped from its
+back. `by_ref()` of one that knows its back is itself, its back kept: a
+`$iter` or a `$iterator`, which closing doesn't end, not lent.

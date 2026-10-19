@@ -21,8 +21,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **`clone_from`**, std's `*dest = source.clone()`, of any type, a
   generic one's too (ADR 0147).
 - **`nth_back(n)`, `rfold(init, f)` and `rfind(p)`** of any double-ended
-  iterator, a generic one's too, and `find_map` of items with a destructor
-  (ADR 0455).
+  iterator, a generic one's too, a map of one too, and `find_map` of items
+  with a destructor (ADR 0455).
 - **litemap compiles**: a `&mut V` a generic store gives inside what it
   gives, handed on and replaced through (ADRs 0099, 0147), and
   `filter_map` of items with a destructor (ADR 0098).

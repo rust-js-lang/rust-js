@@ -619,4 +619,20 @@ export const mutations: Mutation[] = [
     replace: "vec![Expr::int(0), Expr::member(it, \"end\")],",
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
+  {
+    name: "map-back-unknown",
+    breaks: "a map of an iterator that knows its back doesn't, so `rfind` of a generic one's map is refused",
+    file: "src/lower/iterators.rs",
+    find: "        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {\n            return self.knows_its_back(source);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
+  {
+    name: "map-made-unstepped",
+    breaks: "`rfind` of an array's map made in place, `v.iter().map(f)`, is refused",
+    file: "src/lower/iterators.rs",
+    find: "            && method == \"map\"\n",
+    replace: "            && method == \"unmapped\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];
