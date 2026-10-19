@@ -2,8 +2,8 @@
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
 abi/c-stack-returning-int64.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support addressable memory yet: a `transmute` of `for<'a> extern "C" fn(&'a isize) -> std::option::Option<&'a isize>` as `for<'a> extern "C" fn(&'a isize) -> &'a isize`, which 
-associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<impl Tr1 + std::clone::Clone + std::iter::Iterator + std::ops::Add<u8> + std::convert::Into<u8> as Tr1>::As1` yet
-associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
+associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<<impl Tr1 + std::clone::Clone + std::iter::Iterator + std::ops::Add<u8> + std::convert::Into<u8> as Tr1>::As1 as std::iter::Iterator>::Item` yet
+associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "issue_28983")] fn issue_28983(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
 associated-types/associated-item-long-paths.rs	error: rust-js does not support `size_of` of a type parameter yet
 async-await/async-fn-size-moved-locals.rs	error: rust-js does not support `BigFut` as a promise yet: its `Future` is the crate's own, which rust-js never compiles (ADR 0425)
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::pin_new_unchecked_in_helper` yet
@@ -13,7 +13,6 @@ binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable
 binop/augmented-assignment.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
-borrowck/two-phase-multiple-activations.rs	error: rust-js does not support `{:?}` of a `std::io::Error` yet
 cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
@@ -24,9 +23,9 @@ closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does n
 codegen/box-str-drop-glue.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<[u8]>` as `std::boxed::Box<str>`, which aren't numbers alone
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet
-const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support this `const` block yet
+const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support `type_name` of a type parameter yet
 const_prop/dont-propagate-generic-instance.rs	error: rust-js does not support a type's fact of `dyn Trait` given to generic code yet
-const-generics/type-dependent/issue-61936.rs	error: rust-js does not support a zeroed `[T; N]`, which may be no value of it yet
+const-generics/type-dependent/issue-61936.rs	error: rust-js does not support a zeroed `T`, which may be no value of it yet
 const-generics/type-dependent/issue-71805.rs	error: rust-js does not support this trait implementation yet
 consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support this constant, from its MIR yet
@@ -36,11 +35,11 @@ consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory 
 consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
-consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support calling `std::slice::from_raw_parts` yet
+consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
-consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
-consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
+consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
+consts/oncecell-const-init-57781.rs	error: rust-js does not support values of type `K` yet
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 derives/debug/derive-debug.rs	error: rust-js does not support addressable memory yet: values of type `*const (dyn std::marker::Send + 'static)`
@@ -49,7 +48,7 @@ derives/deriving-hash.rs	error: rust-js does not support user implementations of
 derives/deriving-with-repr-packed-3.rs	error: rust-js does not support addressable memory yet: a pointer's address
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
 drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
-dst/dst-coerce-rc.rs	error: rust-js does not support a counted `std::rc::Rc<std::cell::RefCell<dyn Baz>>` yet
+dst/dst-coerce-rc.rs	error: rust-js does not support a counted `std::rc::Rc<i32>` made elsewhere as a `std::rc::Rc<dyn Baz>` yet
 dst/dst-coercions.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn T`
 dst/dst-field-align.rs	node: ended {"panic":"rust-js does not support showing a pointer's address, which JS hasn't"}
 dst/dst-raw.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Trait`
@@ -60,28 +59,27 @@ fn/dyn-fn-alignment.rs	error: rust-js does not support addressable memory yet: a
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
-liveness/var-defined-after-early-return.rs	error: rust-js does not support addressable memory yet: values of type `(*const core::io::error::Custom) is !null`
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
-methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support `&mut` to a `&mut [u8]` yet
+methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support values of type `&mut &mut [u8]` yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 mir/mir_autoderef.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 mir/mir_misc_casts.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
-mir/mir_raw_fat_ptr.rs	error: rust-js does not support addressable memory yet: values of type `*const S<[u8]>`
-packed/dyn-trait.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
-packed/issue-118537-field-offset-ice.rs	error: rust-js does not support addressable memory yet: values of type `*const PackedUnsized`
-packed/issue-118537-field-offset.rs	error: rust-js does not support addressable memory yet: values of type `*const PackedUnsized`
+mir/mir_raw_fat_ptr.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Foo`
+packed/dyn-trait.rs	error: rust-js does not support `size_of_val` of a value without one size yet
+packed/issue-118537-field-offset-ice.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
+packed/issue-118537-field-offset.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
 packed/misaligned-reference-drop-field-99838.rs	error: rust-js does not support addressable memory yet: a pointer's address
 packed/packed-struct-address-of-element.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::const_ptr::<impl *const T>::read_unaligned`
 packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a pointer's address
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet
-rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
-rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
-rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
+rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "rust_track_caller_ffi_test_tracked")] fn rust_track_caller_ffi_test_tracked(..) { unreachable
+rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support this constant, from its MIR yet
+rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support this constant, from its MIR yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet
 statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<ArenaSet<std::vec::Vec<u8>, [u8]>>` as `*const ArenaSet<std::vec::Vec<u8>, [u8]>`, which aren't numbers alone
 statics/static-recursive.rs	error: rust-js does not support addressable memory yet: statics of type `*const u8`
-stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support addressable memory yet: values of type `*const [u8]`
+stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support addressable memory yet: a pointer's address
 structs-enums/align-struct.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 structs-enums/enum-alignment.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
@@ -95,7 +93,7 @@ traits/encoder-trait-bounds-regression.rs	error: rust-js does not support callin
 traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
 traits/principal-less-objects.rs	error: rust-js does not support `size_of_val` of a value without one size yet
-try-trait/try-operator-various-contexts.rs	error: rust-js does not support addressable memory yet: values of type `(*const core::io::error::Custom) is !null`
+try-trait/try-operator-various-contexts.rs	error: rust-js does not support calling `std::fs::File::open` yet
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*const T`, which aren't numbers alone
 union/union-const-eval-field.rs	node: ended {"panic":"rust-js does not support reading a union's `field3` while it holds `field1`, which reads its bytes as another type's"}
