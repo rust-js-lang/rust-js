@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
   },
+  {
+    name: "unreachable-display-unprefixed",
+    breaks: "an edition 2018 `unreachable!(x)` panics with what `x` shows alone, not after std's words",
+    file: "src/lower/format_args.rs",
+    find: "                    true => join(vec![Expr::str(\"internal error: entered unreachable code: \"), shown]),\n",
+    replace: "                    true => shown,\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
+  },
 ];

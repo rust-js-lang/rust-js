@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An edition 2018 `unreachable!(x)`**, base64's, panics as edition
+  2021's does (ADR 0189).
 - **heck compiles**: a closure or a callable that writes to the
   `Formatter` it's given is a writer, `f += withWord(word)`, and `{}` of
   `c.to_uppercase()` is `c.toUpperCase()` (ADR 0460).

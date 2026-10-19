@@ -45,3 +45,14 @@ chrono stopped at three of std's functions besides `Duration`'s (ADR 0188):
 ## Costs
 
 - **A slice into a `&mut` array is still an error.**
+
+## Amendment: an edition 2018 `unreachable!(x)`
+
+Before edition 2021, `unreachable!(x)` of one argument is
+`unreachable_display(&x)`, which was refused: base64 writes
+`unreachable!("Vec is sized conservatively")`. It's `panic_display`'s
+job with std's words first, `Std::PanicDisplay { unreachable: true }`: a
+panic of `internal error: entered unreachable code: ` and what `x`
+shows, the message edition 2021's `unreachable!("{}", x)` gives.
+`test/corpus/unreachable_display.rs` panics so, against native Rust.
+

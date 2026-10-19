@@ -542,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::ToString => unreachable!("lowered by string_call"),
             Std::Panic
             | Std::PanicFmt
-            | Std::PanicDisplay
+            | Std::PanicDisplay { .. }
             | Std::BeginPanic
             | Std::Unreachable
             | Std::Print { .. }

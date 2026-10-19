@@ -5846,7 +5846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(Value::Expr(match known {
             // Panics end what runs: what's made before is made first.
-            Std::Panic | Std::PanicFmt | Std::PanicDisplay | Std::BeginPanic => {
+            Std::Panic | Std::PanicFmt | Std::PanicDisplay { .. } | Std::BeginPanic => {
                 self.flush(state, out)?;
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?

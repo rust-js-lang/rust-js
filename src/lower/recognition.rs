@@ -214,8 +214,12 @@ pub(super) enum Std {
         op: ClockOp,
         instant: bool,
     },
-    /// `panic!("{}", x)`: a panic of `x`'s `Display` (ADR 0189).
-    PanicDisplay,
+    /// `panic!("{}", x)`: a panic of `x`'s `Display` (ADR 0189); and an
+    /// edition 2018 `unreachable!(x)`'s, `unreachable_display(&x)`, after
+    /// std's words, as edition 2021's are.
+    PanicDisplay {
+        unreachable: bool,
+    },
     /// `<&[T; N]>::try_from(slice)`, or `<[T; N]>`'s: `Ok` of the slice where
     /// it's `N` long (ADR 0189).
     SliceToArray {
@@ -917,7 +921,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `panic!("{}", x)`, which std writes as `panic_display(&x)` (ADR 0189).
         if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {
-            return Some(Some(Std::PanicDisplay));
+            return Some(Some(Std::PanicDisplay { unreachable: false }));
+        }
+        if krate == sym::core && name.as_str() == "unreachable_display" && std_path(tcx, def_id).contains("panicking") {
+            return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
         if krate == sym::std {
             match std_path(tcx, def_id).as_str() {

@@ -3,7 +3,7 @@
 //! literal, in Rust's order (ADRs 0034, 0058, 0066).
 
 use super::calls::Call;
-use super::display::append_written;
+use super::display::{append_written, join};
 
 use super::format_spec::Spec;
 use super::recognition::StreamOp;
@@ -214,12 +214,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
-            Std::PanicDisplay => {
+            Std::PanicDisplay { unreachable } => {
                 let ty = generic_args
                     .types()
                     .next()
                     .expect("`panic_display` has a type argument");
                 let shown = self.display_string(arg(), ty, span)?;
+                let shown = match unreachable {
+                    true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),
+                    false => shown,
+                };
                 out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![shown])).at(js_span));
                 Expr::undefined()
             }

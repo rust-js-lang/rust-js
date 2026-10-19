@@ -2130,4 +2130,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
+  {
+    name: "unreachable-display-refused",
+    breaks: "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if krate == sym::core && name.as_str() == \"unreachable_display\" && std_path(tcx, def_id).contains(\"panicking\") {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
+  },
 ];
