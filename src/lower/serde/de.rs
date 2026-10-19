@@ -90,6 +90,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The function that reads a `ty` as serde's impl for it does:
     /// `$json.u32`, `$json.vec($json.string)`, `orderDeserialize_deserialize`.
+    /// A field's reader: its own (`field_codec`), or its type's.
+    fn field_reader(&mut self, field: DefId, attrs: &Attrs, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.field_codec(field, attrs, false, span)? {
+            Some(codec) => Ok(codec),
+            None => self.json_reader(ty, span),
+        }
+    }
+
     pub(in crate::lower) fn json_reader(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let reader = |name: &str| Expr::member(Expr::helper("$json"), name);
         let unsupported = |this: &Self| this.unsupported(span, &format!("deserializing `{ty}`"));
@@ -320,7 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // serde's `transparent` is the field without a default, which
                 // a skipped one has.
                 None if !attrs.skip_deserializing => {
-                    let read = self.json_reader(field_ty, span)?;
+                    let read = self.field_reader(field.did, &attrs, field_ty, span)?;
                     Expr::call(read, vec![Expr::var(json)])
                 }
                 Some(SerdeDefault::Path) => self.default_path(field.did, span)?,
@@ -385,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 items.push(missing.expect("a skipped field has a default"));
                 continue;
             }
-            let read = self.json_reader(field_ty, span)?;
+            let read = self.field_reader(field.did, &attrs, field_ty, span)?;
             let missing = missing.map(|value| {
                 let params = defaults.iter().map(|d| Pattern::from(d.as_str())).collect();
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
@@ -722,7 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     vec![unit, ret(self.construct(adt, variant, args, vec![value]))]
                 } else {
-                    let read = self.json_reader(field_ty, span)?;
+                    let read = self.field_reader(field.did, &attrs, field_ty, span)?;
                     let value = match form {
                         Form::External => method("newtype", vec![read]),
                         _ => Expr::call(read, vec![Expr::var(content)]),

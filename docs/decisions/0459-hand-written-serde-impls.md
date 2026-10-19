@@ -159,3 +159,17 @@ refused, and with it `deserialize_struct`, `deserialize_seq` and
 The serde test of a hand-written visitor's sequence and map reads a
 struct from either, misses, repeats and mistakes fields, and reads a map
 by its entries, against native serde_json.
+
+## Amendment: a field's own writer and reader
+
+`#[serde(with = "module")]`, `serialize_with = "f"` and
+`deserialize_with = "f"`, a field's own format, were refused as
+attributes rust-js didn't read. Each names a hand-written codec, which
+the field's writer or reader now is: the function rustc resolved where
+the derive calls it, `$jsonCodec(f)`, asked of `field_codec` by each
+place a field is written or read, a struct's, a tuple's, a newtype
+variant's. Where the derive calls it with `?`, its desugaring's paths,
+`branch` and `from_residual`, are under the attribute's span too, so the
+path looked for is the one that isn't a desugaring's. The serde test of
+a field's own functions writes and reads them, and their errors, against
+native serde_json.

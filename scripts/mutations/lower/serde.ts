@@ -53,4 +53,28 @@ export const mutations: Mutation[] = [
     replace: "            false => callee,\n",
     tests: ["test/serde.test.ts", "-t", "hand-written"],
   },
+  {
+    name: "serde-with-unread",
+    breaks: "`#[serde(with = \"module\")]` is refused as an attribute rust-js doesn't know",
+    file: "src/lower/serde.rs",
+    find: "                \"with\" => (attrs.serialize_with, attrs.deserialize_with) = (Some(\"with\"), Some(\"with\")),\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "its own functions"],
+  },
+  {
+    name: "serde-field-written-as-its-type",
+    breaks: "a field with its own writer is written as its type is",
+    file: "src/lower/serde.rs",
+    find: "                self.write_field(codec, value.clone(), json, written, span, &mut body)?;\n",
+    replace: "                self.write_field(None, value.clone(), json, written, span, &mut body)?;\n",
+    tests: ["test/serde.test.ts", "-t", "its own functions"],
+  },
+  {
+    name: "serde-path-desugared",
+    breaks: "the function a field's attribute names is taken as what its `?` desugars to, and refused",
+    file: "src/lower/serde.rs",
+    find: "                    && expr.span.desugaring_kind().is_none()\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "its own functions"],
+  },
 ];

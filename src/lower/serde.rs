@@ -239,6 +239,10 @@ struct Attrs {
     try_from: bool,
     into: bool,
     flatten: bool,
+    /// `#[serde(serialize_with = "f")]`, `deserialize_with` and `with =
+    /// "module"`: the attribute that names a field's own writer or reader.
+    serialize_with: Option<&'static str>,
+    deserialize_with: Option<&'static str>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -285,6 +289,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "skip" => (attrs.skip_serializing, attrs.skip_deserializing) = (true, true),
                 "skip_serializing" => attrs.skip_serializing = true,
                 "skip_serializing_if" => attrs.skip_serializing_if = value,
+                "serialize_with" => attrs.serialize_with = Some("serialize_with"),
+                "deserialize_with" => attrs.deserialize_with = Some("deserialize_with"),
+                "with" => (attrs.serialize_with, attrs.deserialize_with) = (Some("with"), Some("with")),
                 "skip_deserializing" => attrs.skip_deserializing = true,
                 "default" => {
                     attrs.default = Some(if value.is_some() {
@@ -797,9 +804,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if attrs.skip_serializing {
                 continue;
             }
+            let codec = self.field_codec(field.did, &attrs, true, span)?;
             let mut body = Vec::new();
             self.emit(json, "element", Vec::new(), &mut body);
-            self.write_json(value.clone(), json, *ty, span, &mut body)?;
+            self.write_field(codec, value.clone(), json, *ty, span, &mut body)?;
             if let Some(path) = attrs.skip_serializing_if {
                 let skip = self.skip_test(field.did, &path, value.clone(), *ty, span)?;
                 out.push(StmtKind::If(Expr::unary(js::UnaryOp::Not, skip), body, None).at(js::Span::NONE));
@@ -868,6 +876,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if attrs.skip_serializing {
                 continue;
             }
+            let codec = self.field_codec(field.did, &attrs, true, span)?;
             let rust_name = field.name.to_string();
             let rust_name = rust_name.strip_prefix("r#").unwrap_or(&rust_name).to_string();
             let name = attrs
@@ -892,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => *ty,
                 };
-                self.write_json(value.clone(), json, written, span, &mut body)?;
+                self.write_field(codec, value.clone(), json, written, span, &mut body)?;
             }
             match attrs.skip_serializing_if {
                 Some(path) => {
@@ -934,6 +943,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.impl_call(method, args, vec![value], span)
     }
 
+    /// A field's own writer, or reader, where `#[serde(serialize_with =
+    /// "f")]`, `deserialize_with` or `with = "module"` names one: the function
+    /// rustc resolved, a hand-written codec, `$jsonCodec(f)` (ADR 0459).
+    fn field_codec(&mut self, field: DefId, attrs: &Attrs, serialize: bool, span: Span) -> R<Option<Expr>> {
+        let named = if serialize {
+            attrs.serialize_with
+        } else {
+            attrs.deserialize_with
+        };
+        let Some(name) = named else {
+            return Ok(None);
+        };
+        let Some(f) = self.resolved_path(field, name, serialize) else {
+            return Err(self.unsupported(span, &format!("`#[serde({name} = ..)]` of this field")));
+        };
+        Ok(Some(Expr::call(Expr::helper("$jsonCodec"), vec![self.fn_ref(f)])))
+    }
+
+    /// A field's `value` written: by its own writer (`field_codec`), or as
+    /// its type is.
+    #[allow(clippy::too_many_arguments)]
+    fn write_field(
+        &mut self,
+        codec: Option<Expr>,
+        value: Expr,
+        json: &str,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        match codec {
+            Some(codec) => {
+                out.push(StmtKind::Expr(Expr::call(codec, vec![value, Expr::var(json)])).at(js::Span::NONE));
+                Ok(())
+            }
+            None => self.write_json(value, json, ty, span, out),
+        }
+    }
+
     /// Serde's derive has already asked rustc to resolve the predicate. Its
     /// path retains the attribute's source span, including imports and aliases.
     fn resolved_skip(&self, field: DefId) -> Option<DefId> {
@@ -950,7 +998,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         impl<'tcx> intravisit::Visitor<'tcx> for Predicate<'tcx> {
             fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
+                // Not what `?` of its call desugars to, `lower(d)?`'s `branch`
+                // and `from_residual`, under the same span.
                 if let hir::ExprKind::Path(ref path) = expr.kind
+                    && expr.span.desugaring_kind().is_none()
                     && self.span.lo() <= expr.span.lo()
                     && expr.span.hi() <= self.span.hi()
                     && let hir::def::Res::Def(_, id) = self.types.qpath_res(path, expr.hir_id)

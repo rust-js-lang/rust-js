@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                if !readers.is_empty() {\n                    return Ok(callee);\n                }",
     tests: ["test/serde.test.ts", "-t", "a generic type's derived codec of a value with a destructor"],
   },
+  {
+    name: "serde-field-read-as-its-type",
+    breaks: "a field with its own reader is read as its type is",
+    file: "src/lower/serde/de.rs",
+    find: "        match self.field_codec(field, attrs, false, span)? {\n",
+    replace: "        match None::<Expr> {\n",
+    tests: ["test/serde.test.ts", "-t", "its own functions"],
+  },
 ];

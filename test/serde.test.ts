@@ -772,3 +772,61 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A field's own writer and reader (ADR 0459): `#[serde(with = "module")]`,
+// `serialize_with` and `deserialize_with`, each a hand-written codec.
+test("serde: a field written and read by its own functions, as serde_json does", async () => {
+  const dir = fixture("serde-field-with");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+mod cents {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(value: &u64, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("{}.{:02}", value / 100, value % 100))
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+        let text = String::deserialize(d)?;
+        let (whole, part) = text.split_once('.').ok_or_else(|| serde::de::Error::custom("no point"))?;
+        Ok(whole.parse::<u64>().map_err(serde::de::Error::custom)? * 100 + part.parse::<u64>().map_err(serde::de::Error::custom)?)
+    }
+}
+
+fn upper<S: Serializer>(value: &str, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(&value.to_uppercase())
+}
+
+fn lower<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    Ok(String::deserialize(d)?.to_lowercase())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Item {
+    #[serde(with = "cents")]
+    pub price: u64,
+    #[serde(serialize_with = "upper", deserialize_with = "lower")]
+    pub name: String,
+    pub qty: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Pair(#[serde(with = "cents")] pub u64, pub bool);
+
+pub fn report() -> String {
+    let item = Item { price: 1250, name: "Pen".into(), qty: 2 };
+    let read = |text: &str| match serde_json::from_str::<Item>(text) { Ok(i) => format!("{i:?}"), Err(e) => e.to_string() };
+    let pair = |text: &str| match serde_json::from_str::<Pair>(text) { Ok(p) => format!("{p:?}"), Err(e) => e.to_string() };
+    [
+        serde_json::to_string(&item).unwrap(),
+        serde_json::to_string(&Pair(5, true)).unwrap(),
+        read("{\"price\": \"3.05\", \"name\": \"INK\", \"qty\": 1}"),
+        read("{\"price\": \"305\", \"name\": \"x\", \"qty\": 1}"),
+        read("{\"price\": 3, \"name\": \"x\", \"qty\": 1}"),
+        pair("[\"0.07\", false]"),
+    ].join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
