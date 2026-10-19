@@ -116,10 +116,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // collection's items are a JS iterator of them.
         if std_method == Some(IterMethod::IntoIter) {
             let value = values.into_iter().next().expect("the receiver");
-            // A generic one is an array or a JS iterator, as its caller has
-            // it: `Iterator.from` takes either (ADR 0061).
             if self.recognition().is_given_iterable(receiver_ty) {
-                return Ok(Some(self.js_iterator(value)));
+                return Ok(Some(crate::lower::iterators::given_into_iter(value)));
             }
             if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
                 return Ok(Some(value));

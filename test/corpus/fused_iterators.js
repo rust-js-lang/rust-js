@@ -3,6 +3,7 @@
 import {
   $closing,
   $fuse,
+  $intoIter,
   $iter,
   $iterator,
   $iteratorValue,
@@ -69,7 +70,7 @@ function pairIterator_size_hint(pair, dropI, dropIItem) {
 }
 
 function pair(i, IIntoIterFused) {
-  return { i: $fuse(Iterator.from(i), IIntoIterFused) };
+  return { i: $fuse($intoIter(i), IIntoIterFused) };
 }
 
 function main() {

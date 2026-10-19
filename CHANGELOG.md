@@ -561,6 +561,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A `Vec`'s iterator a generic function made and gave back**, its
+  `len()`, clone and `size_hint()`, read `NaN` or threw: generic code's
+  `into_iter()` is the iterator concrete code has (ADR 0475).
 - **The crate's iterator given to a generic `I: Iterator + Clone` or
   `Debug`** was cloned and shown as its JS iterator: it's given as it is
   (ADR 0474).

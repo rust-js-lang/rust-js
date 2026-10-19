@@ -5,6 +5,7 @@ import {
   $closing,
   $dropEach,
   $fuse,
+  $intoIter,
   $iter,
   $iterEq,
   $iterator,
@@ -51,7 +52,7 @@ function zip(i, j, dropJ, dropIItem, dropIIntoIter) {
   let j$live = true;
   let tmp;
   try {
-    tmp = Iterator.from(i);
+    tmp = $intoIter(i);
     j$live = false;
   } catch (error) {
     if (j$live) {
@@ -66,7 +67,7 @@ function chain(i, j, dropJ, dropIIntoIter) {
   let j$live = true;
   let tmp;
   try {
-    tmp = Iterator.from(i);
+    tmp = $intoIter(i);
     j$live = false;
   } catch (error) {
     if (j$live) {
@@ -78,14 +79,14 @@ function chain(i, j, dropJ, dropIIntoIter) {
 }
 
 function firsts(i, n, dropIIntoIter) {
-  return $closing(Iterator.from(i), dropIIntoIter).take(n);
+  return $closing($intoIter(i), dropIIntoIter).take(n);
 }
 
 function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJItem) {
   let b$live = true;
   let tmp;
   try {
-    tmp = Iterator.from(a);
+    tmp = $intoIter(a);
     b$live = false;
   } catch (error) {
     if (b$live) {

@@ -5,6 +5,7 @@ import {
   $cmp,
   $debugStr,
   $dropEach,
+  $intoIter,
   $iterator,
   $lastDropping,
   $maxBy,
@@ -47,14 +48,14 @@ function rank(l) {
 }
 
 function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
-  const iter = Iterator.from(items);
+  const iter = $intoIter(items);
   const result = $maxBy(iter.toArray(), IItemOrd.cmp, true, dropIItem);
   dropIIntoIter?.(iter);
   return result;
 }
 
 function final_one(items, dropIItem, dropIIntoIter) {
-  const iter = Iterator.from(items);
+  const iter = $intoIter(items);
   const result = $lastDropping(iter, dropIItem);
   dropIIntoIter?.(iter);
   return result;

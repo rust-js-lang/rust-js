@@ -1356,15 +1356,26 @@ fn is_iterator_from(e: &Expr) -> bool {
             if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")))
 }
 
-/// Of a `Fuse` stepped in place by what steps it till it ends, `$fuse(x,
-/// true).map(f)` or `for (const n of $fuse(x))`, as each JS consumer and
-/// helper does: `x`, which steps the same (ADR 0473). Each statement's: a
-/// `for`'s iterable, and each expression's.
+/// `items.into_iter()` of a generic `IntoIterator`, an array or a JS
+/// iterator as its caller has it (ADR 0061): `$intoIter(items)`, of an
+/// array the `$iter` concrete code has, which knows where it is; of one a
+/// JS iterator already, itself (ADR 0475).
+pub(in crate::lower) fn given_into_iter(items: Expr) -> Expr {
+    match is_js_iterator(&items) {
+        true => items,
+        false => Expr::call_helper("$intoIter", vec![items]),
+    }
+}
+
+/// Of an iterator stepped in place by what steps it till it ends, `$fuse(x,
+/// true).map(f)` or `for (const n of $intoIter(xs))`, as each JS consumer
+/// and helper does: what steps the same, `unfused`'s (ADRs 0473, 0475).
+/// Each statement's: a `for`'s iterable, and each expression's.
 pub(in crate::lower) fn consumed_fuses(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::ForOf { iterable, .. } = &mut stmt.kind {
-                unfused(iterable);
+                unfused(iterable, true);
             }
         }
     });
@@ -1373,7 +1384,7 @@ pub(in crate::lower) fn consumed_fuses(body: &mut Vec<Stmt>) {
             && let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
-            unfused(object);
+            unfused(object, false);
         }
     });
 }
@@ -1384,13 +1395,19 @@ const STEPPED_TILL_DONE: [&str; 11] = [
     "map", "filter", "take", "drop", "flatMap", "toArray", "reduce", "forEach", "some", "every", "find",
 ];
 
-/// `e`, a `$fuse(x, ..)` stepped till it ends: `x`, which steps the same,
-/// and is closed where the `Fuse` would be.
-fn unfused(e: &mut Expr) {
-    if let js::ExprKind::Call(callee, given) = &e.kind
-        && callee.helper_name() == Some("$fuse")
-    {
-        *e = given[0].clone();
+/// `e`, stepped till it ends, by a `for` or not: of a `$fuse(x, ..)`, `x`,
+/// which steps the same, and is closed where the `Fuse` would be (ADR
+/// 0473); of an `$intoIter(xs)`, where nothing reads where it is, JS's
+/// iterator of `xs`, which a `for` makes itself (ADR 0475).
+fn unfused(e: &mut Expr, by_for: bool) {
+    let js::ExprKind::Call(callee, given) = &e.kind else {
+        return;
+    };
+    match callee.helper_name() {
+        Some("$fuse") => *e = given[0].clone(),
+        Some("$intoIter") if by_for => *e = given[0].clone(),
+        Some("$intoIter") => *e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
+        _ => {}
     }
 }
 
@@ -1541,12 +1558,13 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator` and `$fuse`,
-/// and each of its generators, which the runtime package's test holds this
-/// list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 10] = [
+/// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse` and
+/// `$intoIter`, and each of its generators, which the runtime package's
+/// test holds this list to; a range's, its own.
+pub(crate) const ITERATOR_HELPERS: [&str; 11] = [
     "$iterator",
     "$fuse",
+    "$intoIter",
     "$cycle",
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",

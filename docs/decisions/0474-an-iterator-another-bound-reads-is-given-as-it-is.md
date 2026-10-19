@@ -45,6 +45,5 @@ function dup(it, IIterator, IClone, IDebug) {
 
 - **What was wrong is right**: a crate's iterator given to a generic
   function that clones or shows it.
-- **Still to close**: a std iterator made in generic code, `i.into_iter()`'s
-  `Iterator.from(v)`, and read in concrete code as the `$iter` it would be
-  there, its `len()` or clone.
+- **A std iterator made in generic code**, `i.into_iter()`'s, is the one
+  concrete code has: [0475](0475-a-generic-into-iter-is-the-iterator-concrete-code-has.md).

@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "mir-generic-into-iter-unwrapped",
     breaks: "`for x in items` of a generic `IntoIterator` given an array steps the array",
     file: "src/lower/mir/iter.rs",
-    find: "            if self.recognition().is_given_iterable(receiver_ty) {\n                return Ok(Some(self.js_iterator(value)));\n",
+    find: "            if self.recognition().is_given_iterable(receiver_ty) {\n                return Ok(Some(crate::lower::iterators::given_into_iter(value)));\n",
     replace: "            if self.recognition().is_given_iterable(receiver_ty) {\n                return Ok(Some(value));\n",
     tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
