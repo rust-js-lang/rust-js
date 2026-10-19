@@ -1725,7 +1725,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {\n",
     replace: "                        (_, Value::Ref(e)) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
   },
   {
     name: "mir-kept-ref-var-unheld",
