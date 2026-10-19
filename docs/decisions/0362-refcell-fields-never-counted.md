@@ -82,3 +82,15 @@ parent.children.push(node);
 - Mutations make every such field a cell, take a counted borrow, a lent
   field, a bound one and a derive's for one only borrowed for a moment,
   skip a local's check, and declare one `{ value }`.
+
+## Amendment: each body's cells asked where it is
+
+Which `RefCell`s are plain is found once, the first time a function asks,
+over every body; each body's drops were asked in the asking function's
+typing environment, where another's own parameters aren't. Of
+itertools' `ArrayBuilder<T, const N: usize>`, which has a destructor,
+rustc crashed: `cannot find N/#1 in param-env`. Each body's are asked in
+its own, `without_dictionaries`, as `drop_runs` asks a type's, and what
+has no parameter in none. `test/corpus/const_param_drop_cells.rs` holds
+it; a mutation that asks where the first is crashes it.
+

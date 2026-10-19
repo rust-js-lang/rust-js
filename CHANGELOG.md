@@ -683,6 +683,9 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **A struct of a const parameter with a destructor**, itertools'
+  `ArrayBuilder<T, N>`, in a crate that borrows a `RefCell` field, crashed
+  the compiler (ADR 0362).
 - **A `fmt::Result` through generic code**, an impl whose `Error` is
   `fmt::Error` called through `Result<(), S::Error>`, failed reading its
   `TAG`; and **a writer's last call that failed**, `check(n)` of a

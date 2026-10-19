@@ -44,16 +44,26 @@ pub(super) fn drop_runs<'tcx>(
     ty: Ty<'tcx>,
 ) -> bool {
     let state = TypeDrops::default();
-    let query = DropQuery {
+    // Its type parameters, of no drop given here, drop nothing: their drops
+    // are their callers', passed on as they are.
+    without_dictionaries(recognition, library, counted, &state).drops(ty) == Drops::Runs
+}
+
+/// What drops, asked in `recognition`'s typing environment with no
+/// dictionaries given: a type parameter's drop is a maybe.
+fn without_dictionaries<'a, 'tcx>(
+    recognition: super::recognition::Recognition<'a, 'tcx>,
+    library: bool,
+    counted: &'a super::analysis::Counted<'tcx>,
+    state: &'a TypeDrops<'tcx>,
+) -> DropQuery<'a, 'tcx> {
+    DropQuery {
         recognition,
         evidence: super::traits::EvidenceQuery::without_evidence(recognition),
         library,
         counted,
-        state: &state,
-    };
-    // Its type parameters, of no drop given here, drop nothing: their drops
-    // are their callers', passed on as they are.
-    query.drops(ty) == Drops::Runs
+        state,
+    }
 }
 
 /// The drop functions one drop makes, which come before its code: a call
@@ -695,19 +705,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.library {
             return HashSet::new();
         }
-        // Each body's own facts, asked with no dictionaries: a type
-        // parameter's drop is then a maybe, and its borrow counted.
-        let query = DropQuery {
-            recognition: self.recognition(),
-            evidence: self.no_evidence_query(),
-            library: false,
-            counted: self.krate.counted,
-            state: &self.drop_state.types,
-        };
         let mut plain = HashSet::new();
         let mut cells = HashSet::new();
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
         for body in bodies {
+            // Each body's own facts, asked where it is, of its own type
+            // parameters, with no dictionaries: a type parameter's drop is
+            // then a maybe, and its borrow counted.
+            let owner = tcx.typeck_root_def_id(body.def_id.to_def_id());
+            let recognition = super::recognition::Recognition {
+                tcx,
+                typing_env: ty::TypingEnv::post_analysis(tcx, owner),
+                trait_impls: self.krate.trait_impls,
+                foreign: self.krate.foreign,
+            };
+            let state = TypeDrops::default();
+            let query = without_dictionaries(recognition, false, self.krate.counted, &state);
             let thir = &body.thir;
             let facts = find_facts(&query, thir, body.def_id.to_def_id());
             // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
@@ -774,6 +787,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if cells.iter().any(|ty| ty.has_param()) {
             return HashSet::new();
         }
+        // Of no type parameter: asked anywhere.
+        let recognition = super::recognition::Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: self.krate.trait_impls,
+            foreign: self.krate.foreign,
+        };
+        let state = TypeDrops::default();
+        let query = without_dictionaries(recognition, false, self.krate.counted, &state);
         plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
         plain
     }

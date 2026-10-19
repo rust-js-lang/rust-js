@@ -1134,10 +1134,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A query given no dictionaries: another body's, asked of its own types,
     /// whose type parameters are then of no dictionary known (ADR 0362).
-    pub(super) fn no_evidence_query(&self) -> EvidenceQuery<'_, 'tcx> {
-        EvidenceQuery::without_evidence(self.recognition())
-    }
-
     /// Is a dictionary for `tr` given? Without building it.
     pub(super) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
         self.evidence_query().has_evidence(tr)

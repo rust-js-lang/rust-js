@@ -326,4 +326,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(typing_env) = None::<ty::TypingEnv<'tcx>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
   },
+  {
+    name: "plain-cells-asked-where-first",
+    breaks: "which cells are plain is asked of each body where the first function that asks is: another's const parameter, `N`, isn't there, and rustc crashes",
+    file: "src/lower/drops.rs",
+    find: "                typing_env: ty::TypingEnv::post_analysis(tcx, owner),\n",
+    replace: "                typing_env: self.typing_env,\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_param_drop_cells.rs$"],
+  },
 ];
