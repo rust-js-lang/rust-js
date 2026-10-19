@@ -528,6 +528,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](decisions/0457-an-into-iterator-bound-on-a-reference.md)
 - [0458 `try_fold` stops at the first `None` or `Err`, leaving the rest to step](decisions/0458-try-fold.md)
 - [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](decisions/0459-hand-written-serde-impls.md)
+- [0460 A callable that writes to a `Formatter` is a writer, and a writer's options are its crate's](decisions/0460-writer-callables.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

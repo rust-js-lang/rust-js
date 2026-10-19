@@ -11,6 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         values: Vec<Value<'tcx>>,
         arg_tys: &[Ty<'tcx>],
+        writes: Option<usize>,
         span: Span,
     ) -> R<Value<'tcx>> {
         let mut values = values.into_iter();
@@ -32,12 +33,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Err(self.unsupported(span, "this closure call, from its MIR")),
         };
-        let mut exprs = list
-            .into_iter()
-            .map(|v| self.value_expr(v, span))
+        // A writer callable's `Formatter`, `writes`, isn't given it, as a
+        // writer function's isn't (ADR 0054).
+        let given = |i: &usize| Some(*i) != writes;
+        let mut exprs = (list.into_iter().enumerate())
+            .filter(|(i, _)| given(i))
+            .map(|(_, v)| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
         if let ty::Tuple(tys) = arg_tys[1].kind() {
-            crate::lower::calls::units_left_out(&mut exprs, tys);
+            let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
+                .filter(|(i, _)| given(i))
+                .map(|(_, t)| t)
+                .collect();
+            crate::lower::calls::units_left_out(&mut exprs, &tys);
         }
         // Not a closure of the crate's: a `dyn Fn`, a generic one or a
         // pointer, which may be JS's (ADR 0330).
@@ -46,6 +54,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Closure(..) | ty::CoroutineClosure(..)
         ) {
             crate::lower::calls::given_to_js(&mut exprs);
+        }
+        // And its options, where the crate's writers take them (ADR 0137).
+        if writes.is_some() {
+            exprs.extend(self.given_to_writer(None));
         }
         Ok(Value::Expr(Expr::call(callee, exprs)))
     }

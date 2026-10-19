@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **heck compiles**: a closure or a callable that writes to the
+  `Formatter` it's given is a writer, `f += withWord(word)`, and `{}` of
+  `c.to_uppercase()` is `c.toUpperCase()` (ADR 0460).
 - **num-traits compiles**: a float's `log(base)`, `sin_cos`, `asinh`,
   `acosh`, `atanh`, `rem_euclid`, `div_euclid`, `abs_sub` and `copysign`
   (ADR 0064).
@@ -667,6 +670,10 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **A library's `Display` shown with a width**, `{:>12}` of heck's
+  `AsKebabCase`, was given its consumer's options where its dictionaries
+  go, and failed: a writer takes options as its own crate does, which its
+  manifest says (ADR 0460).
 - **A `&mut` of a local a function keeps in another parameter**,
   `keep<'a>(v: &mut Vec<&'a mut u32>, x: &'a mut u32)`, or in `self`, is a
   handle on the local: a box of it was copied back when the call returned,

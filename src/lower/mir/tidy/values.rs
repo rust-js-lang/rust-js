@@ -34,6 +34,21 @@ pub(super) fn array_values(e: &mut Expr) {
         *items = iterated(items.clone());
         return;
     }
+    // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
+    // all of them, `cs.join("")`, which may be a `char`'s case
+    // mapping's, below.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && callee.helper_name() == Some("$restStr")
+        && let [it] = &args[..]
+        && crate::lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, items) = &it.kind
+        && let [items] = &items[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])
+        };
+    }
     // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
     // a `char`'s capital collected: the string.
     if let ExprKind::Call(callee, args) = &e.kind
@@ -49,21 +64,6 @@ pub(super) fn array_values(e: &mut Expr) {
         *e = Expr {
             span: e.span,
             ..text.clone()
-        };
-        return;
-    }
-    // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
-    // all of them, `cs.join("")`.
-    if let ExprKind::Call(callee, args) = &e.kind
-        && callee.helper_name() == Some("$restStr")
-        && let [it] = &args[..]
-        && crate::lower::iterators::is_stepped_items(it)
-        && let ExprKind::Call(_, items) = &it.kind
-        && let [items] = &items[..]
-    {
-        *e = Expr {
-            span: e.span,
-            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])
         };
         return;
     }

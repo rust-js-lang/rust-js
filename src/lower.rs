@@ -304,6 +304,14 @@ struct CrateFacts<'a, 'tcx> {
     local_functions: &'a HashMap<DefId, rustc_span::Span>,
 }
 
+impl CrateFacts<'_, '_> {
+    /// Do its writers take their `Formatter`'s options after their
+    /// arguments, whether to be pretty or a placeholder's (ADRs 0058, 0137)?
+    fn writers_take_options(&self) -> bool {
+        self.pretty_debug || self.format_options
+    }
+}
+
 /// Dependencies recorded by one function (including copied trait bodies and
 /// closures), returned with its JS. They never mutate the crate's inputs.
 #[derive(Default)]

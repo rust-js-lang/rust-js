@@ -67,6 +67,11 @@ pub struct Library {
     /// wrote before kept none.
     #[serde(default)]
     pub keeps_capacity: bool,
+    /// Whether its writers take their `Formatter`'s options after their
+    /// arguments (ADRs 0058, 0137): a consumer's call of one gives them
+    /// only then.
+    #[serde(default)]
+    pub writers_take_options: bool,
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
@@ -87,6 +92,7 @@ pub struct Imported {
 pub struct Exports {
     pub crate_hash: String,
     pub keeps_capacity: bool,
+    pub writers_take_options: bool,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
 }
@@ -137,6 +143,7 @@ impl Dependencies {
             let mut exports = Exports {
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
+                writers_take_options: library.writers_take_options,
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };

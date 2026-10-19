@@ -274,6 +274,34 @@ test("a library's generic writer is given a consumer's Formatter", () => {
   expect(printed(join(dir, "app.js"))).toBe("<3> <9>\n");
 }, 300_000);
 
+// Whether a writer takes its `Formatter`'s options is its own crate's, which
+// a library's manifest says (ADR 0137): a consumer that gives options gives
+// none to a library's writer that takes none, whose `write!` ignores a width
+// as Rust's does, and one that gives none still gives a library's writer
+// that takes them its place, before the dictionaries after it.
+test("a library's writer is given its Formatter's options as its own crate takes them", () => {
+  const dir = fixture("library-fmt-options");
+  for (const [name, source] of [
+    ["plain", "use std::fmt;\n\npub struct Kebab<T: AsRef<str>>(pub T);\n\nimpl<T: AsRef<str>> fmt::Display for Kebab<T> {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        write!(f, \"{}\", self.0.as_ref().replace(' ', \"-\"))\n    }\n}\n"],
+    ["padded", "use std::fmt;\n\npub struct Pad<T: AsRef<str>>(pub T);\n\nimpl<T: AsRef<str>> fmt::Display for Pad<T> {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        f.pad(self.0.as_ref())\n    }\n}\n\npub fn show<T: AsRef<str>>(text: &T, f: &mut fmt::Formatter) -> fmt::Result {\n    f.pad(text.as_ref())\n}\n"],
+  ]) {
+    mkdirSync(join(dir, name), { recursive: true });
+    writeFileSync(join(dir, `${name}.rs`), source);
+    run([compiler, join(dir, `${name}.rs`), "-o", join(dir, name, "lib.js"), "--library", "--manifest", join(dir, name, "lib.manifest.json"),
+      "--", "--crate-name", name, `--emit=metadata=${join(dir, name, `lib${name}.rmeta`)}`]);
+  }
+  const app = (name: string, source: string) => {
+    writeFileSync(join(dir, `${name}.rs`), source);
+    run([compiler, join(dir, `${name}.rs`), "-o", join(dir, `${name}.js`),
+      "--dependency", join(dir, "plain", "lib.manifest.json"), "--dependency", join(dir, "padded", "lib.manifest.json"),
+      "--", "--crate-name", name, "--crate-type=lib",
+      "--extern", `plain=${join(dir, "plain", "libplain.rmeta")}`, "--extern", `padded=${join(dir, "padded", "libpadded.rmeta")}`]);
+    return printed(join(dir, `${name}.js`));
+  };
+  expect(app("widths", "pub fn main() {\n    println!(\"[{:>9}] [{:>4}]\", plain::Kebab(\"a b\"), padded::Pad(\"x\"));\n}\n")).toBe("[a-b] [   x]\n");
+  expect(app("none", "use std::fmt;\n\nstruct Shown(String);\n\nimpl fmt::Display for Shown {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        padded::show(&self.0, f)\n    }\n}\n\npub fn main() {\n    println!(\"[{}] [{}] [{}]\", plain::Kebab(\"a b\"), padded::Pad(String::from(\"x\")), Shown(String::from(\"y\")));\n}\n")).toBe("[a-b] [x] [y]\n");
+}, 300_000);
+
 // A library's function that asks the size of its type parameter is told it
 // by its consumer, as its manifest says (ADR 0145), directly or through the
 // consumer's own generic function, and a library's impl's dictionary too.

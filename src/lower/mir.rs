@@ -578,18 +578,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.options = self.mir_option_writes(mir_body, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
-        // `let f = ""`, which it gives back, its `fmt::Result` nothing.
-        let formatter = (captures.is_none()
-            && mir_body.coroutine.is_none()
+        // `let f = ""`, which it gives back, its `fmt::Result` nothing. A
+        // closure's, after its environment.
+        let formatter = (mir_body.coroutine.is_none()
             && matches!(
                 self.tcx.def_kind(mir_body.source.def_id()),
-                DefKind::Fn | DefKind::AssocFn
+                DefKind::Fn | DefKind::AssocFn | DefKind::Closure
             ))
         .then(|| self.formatter_param(mir_body.source.def_id()))
         .flatten()
-        .map(|i| Local::from_usize(i + 1));
+        .map(|i| Local::from_usize(i + 1 + usize::from(captures.is_some())));
         if let Some(param) = formatter {
-            if let Some((span, what)) = self.writer_refusal(mir_body, param.as_usize() - 1) {
+            if let Some((span, what)) = self.writer_refusal(mir_body, param) {
                 return Err(self.unsupported(span, &what));
             }
             let aliases = writer::formatter_aliases(mir_body, param);
@@ -5309,7 +5309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
                 || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
-            return self.mir_closure_call(values, &arg_tys, span);
+            return self.mir_closure_call(values, &arg_tys, None, span);
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.

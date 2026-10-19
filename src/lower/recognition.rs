@@ -3273,12 +3273,43 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(fmt_result(self.tcx).map(|result| *result.kind()), Some(ty::Adt(_, args))
             if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(args.type_at(1)))
     }
+    /// Whether `def_id`, a function or a closure, writes (ADR 0054): which
+    /// of its parameters is its `Formatter`, given it returns a `fmt::Result`.
     pub(super) fn formatter_param(&self, def_id: DefId) -> Option<usize> {
+        if self.tcx.def_kind(def_id) == DefKind::Closure {
+            let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+            let ty::Closure(_, args) = ty.kind() else { return None };
+            let sig = args.as_closure().sig().skip_binder();
+            return self.writes_to(sig.inputs()[0].tuple_fields().as_slice(), sig.output());
+        }
         let sig = self.tcx.fn_sig(def_id).skip_binder().skip_binder();
-        if !self.is_fmt_result(sig.output()) {
+        self.writes_to(sig.inputs(), sig.output())
+    }
+
+    /// Of a call of a callable, `Fn::call(&g, (s, f))` given its result's
+    /// type: which of its arguments is the `Formatter` it writes to, where
+    /// it's a writer, as a writer function's is (ADR 0054).
+    pub(super) fn callable_formatter(
+        &self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        output: Ty<'tcx>,
+    ) -> Option<usize> {
+        let fn_trait = self.tcx.trait_of_assoc(def_id)?;
+        self.tcx.fn_trait_kind_from_def_id(fn_trait)?;
+        let ty::Tuple(given) = args.type_at(1).kind() else {
+            return None;
+        };
+        self.writes_to(given.as_slice(), output)
+    }
+
+    /// Which of `inputs` is the `Formatter` a writer writes to, of one
+    /// that returns `output`, a `fmt::Result`.
+    fn writes_to(&self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Option<usize> {
+        if !self.is_fmt_result(output) {
             return None;
         }
-        sig.inputs().iter().position(|&t| self.is_formatter(t))
+        inputs.iter().position(|&t| self.is_formatter(t))
     }
 
     pub(super) fn write_call(&self, def_id: DefId, known_function: bool) -> WriteCall {
@@ -3694,8 +3725,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::str::SplitWhitespace",
                     "std::str::Lines",
                     "std::array::IntoIter",
-                    "std::char::ToUppercase",
-                    "std::char::ToLowercase",
                     "std::collections::vec_deque::Iter",
                     "std::collections::vec_deque::IntoIter",
                     "std::collections::binary_heap::Iter",
@@ -3724,7 +3753,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::ChunkByMut",
                 ]
                 .contains(&path.as_str())
-                || self.is_str_split(ty))
+                || self.is_str_split(ty)
+                || is_case_mapping(self.tcx, ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
             || ((krate == sym::alloc || krate == sym::std)
                 && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]
@@ -4901,6 +4931,13 @@ pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
             && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::"))
             // A byte slice's `escape_ascii()` (ADR 0341).
             || std_path(tcx, adt.did()) == "std::slice::EscapeAscii"))
+}
+
+/// A `char`'s `to_uppercase()` or `to_lowercase()`: the `char`s of its
+/// mapping, an array (ADR 0070).
+pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+        && matches!(std_path(tcx, adt.did()).as_str(), "std::char::ToUppercase" | "std::char::ToLowercase"))
 }
 
 /// A `NonZero<T>` type (ADR 0177).

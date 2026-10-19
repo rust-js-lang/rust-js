@@ -35,6 +35,8 @@ pub(super) struct Contracts<'a> {
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
+    /// Whether its writers take their `Formatter`'s options (ADR 0137).
+    pub(super) writers_take_options: bool,
 }
 
 /// The items another crate can reach, and the impls it calls through them.
@@ -52,6 +54,7 @@ pub(super) fn exports(
         type_facts,
         caller_locations,
         keeps_capacity,
+        writers_take_options,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -95,6 +98,7 @@ pub(super) fn exports(
         },
         inputs: Vec::new(),
         keeps_capacity: *keeps_capacity,
+        writers_take_options: *writers_take_options,
     }
 }
 
@@ -185,6 +189,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .libraries
             .values()
             .any(|library| library.keeps_capacity)
+    }
+
+    /// Do the writers of `krate`, a library's, take their `Formatter`'s
+    /// options (ADR 0137)?
+    pub(super) fn writers_take_options(&self, krate: rustc_span::def_id::CrateNum) -> bool {
+        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
+            .is_some_and(|library| library.writers_take_options)
     }
 
     /// May any of the libraries' items?

@@ -2122,4 +2122,12 @@ export const mutations: Mutation[] = [
     replace: "            _ => SerdeOp::Field,\n",
     tests: ["test/serde.test.ts", "-t", "collects and writes variants"],
   },
+  {
+    name: "closure-not-a-writer",
+    breaks: "a closure that writes to the `Formatter` it's given isn't a writer: `|f| write!(f, \"-\")` takes a box",
+    file: "src/lower/recognition.rs",
+    find: "        if self.tcx.def_kind(def_id) == DefKind::Closure {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
+  },
 ];

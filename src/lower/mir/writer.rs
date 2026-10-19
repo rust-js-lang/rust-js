@@ -86,6 +86,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
+        // A writer callable given the writer's `Formatter`, `with_word(word,
+        // f)`: what it writes, `f += withWord(word)`, as a writer function's.
+        if let Some((aliases, name)) = state.writer.clone()
+            && let Some(tuple) = args.get(1).and_then(|a| a.node.place())
+            && self.callables_given(state.body, &aliases).contains(&tuple.local)
+            && let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx))
+            && let Some(at) =
+                (self.recognition()).callable_formatter(def_id, generic_args, destination.ty(decls, self.tcx).ty)
+        {
+            let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
+            let values = self.take_operands(state, &[&args[0].node, &args[1].node], out)?;
+            let written = self.mir_closure_call(values, &arg_tys, Some(at), span)?;
+            let written = self.value_expr(written, span)?;
+            self.flush(state, out)?;
+            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            return Ok(Some(Value::Expr(Expr::undefined())));
+        }
         // A write to the writer's `Formatter` (ADR 0054): `f += s`.
         if let Some((aliases, name)) = &state.writer
             && let Some(at) = args
@@ -125,9 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(i, _)| i != at)
                 .map(|(_, a)| &a.node)
                 .collect();
-            let operation = self
-                .recognition()
-                .write_call(def_id, self.krate.fns.contains_key(&def_id));
+            let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));
             let values = self.take_operands(state, &others, out)?;
             // A `write!` of what may fail: piece by piece, what came before
             // written (ADR 0187).
@@ -142,6 +157,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
         Ok(None)
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The locals of a writer's `body` that are the arguments' tuple of a
+    /// writer callable given its `Formatter`, one of `aliases`, where that
+    /// writes, `with_word(word, f)`'s `(word, f)`: each made once, of the
+    /// `Formatter` itself, and given to the call alone. rustc's borrows
+    /// leave the `Formatter` nowhere else in it.
+    pub(super) fn callables_given(&self, body: &mir::Body<'tcx>, aliases: &[Local]) -> Vec<Local> {
+        let decls = &body.local_decls;
+        let made = |tuple: Local| {
+            let mut made = (body.basic_blocks.iter().flat_map(|b| &b.statements)).filter_map(|s| match &s.kind {
+                StatementKind::Assign(assign) if assign.0.local == tuple => Some(&assign.1),
+                _ => None,
+            });
+            match (made.next(), made.next()) {
+                (Some(Rvalue::Aggregate(kind, items)), None) if matches!(**kind, mir::AggregateKind::Tuple) => {
+                    Some(items.iter().collect::<Vec<_>>())
+                }
+                _ => None,
+            }
+        };
+        (body.basic_blocks.iter())
+            .filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } => {
+                    let (def_id, generic_args) = fn_def(func.ty(decls, self.tcx))?;
+                    let output = destination.ty(decls, self.tcx).ty;
+                    let at = self.recognition().callable_formatter(def_id, generic_args, output)?;
+                    let tuple = args.get(1)?.node.place().filter(|p| p.projection.is_empty())?.local;
+                    let items = made(tuple)?;
+                    let given =
+                        (items[at].place()).is_some_and(|p| p.projection.is_empty() && aliases.contains(&p.local));
+                    let once = (body.basic_blocks.iter())
+                        .filter(|b| {
+                            matches!(&b.terminator().kind, TerminatorKind::Call { args, .. }
+                            if args.iter().any(|a| a.node.place().is_some_and(|p| p.local == tuple)))
+                        })
+                        .count()
+                        == 1;
+                    (given && once).then_some(tuple)
+                }
+                _ => None,
+            })
+            .collect()
     }
 }
 
@@ -182,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> bool {
         // The crate's own, or another rust-js crate's, which its library
         // exports (ADR 0100): bitflags' `to_writer` its macro's `Debug` calls.
-        ((def_id.is_local() && self.krate.fns.contains_key(&def_id)) || self.krate.foreign.item(def_id).is_some())
+        self.is_rust_fn(def_id)
             && self.formatter_param(def_id).is_none()
             && !self.recognition().fmt_write_on_formatter(def_id, generic_args)
             && (self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs())
@@ -277,9 +342,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Formatter`, `param`, that isn't a write to it, `write!`, `{}` of a
     /// value, another writer given it, a question of it, a `Debug` builder's
     /// chain, or the crate's generic `fmt::Write` code given it.
-    pub(super) fn writer_refusal(&self, body: &mir::Body<'tcx>, param: usize) -> Option<(Span, String)> {
+    pub(super) fn writer_refusal(&self, body: &mir::Body<'tcx>, param: Local) -> Option<(Span, String)> {
         let this = || "this `Formatter`".to_string();
-        let aliases = formatter_aliases(body, Local::from_usize(param + 1));
+        let aliases = formatter_aliases(body, param);
         let builders = self.writer_builders(body, &aliases);
         // A builder kept in a variable, which a loop may step: MIR's are a
         // chain's.
@@ -293,6 +358,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let all: Vec<Local> = aliases.iter().chain(builders.keys()).copied().collect();
         let aliases = all;
+        // The arguments' tuple of a writer callable given this `Formatter`
+        // where it writes, `with_word(word, f)`.
+        let callables_given = self.callables_given(body, &aliases);
         let mut location = mir::Location::START;
         for (block, data) in body.basic_blocks.iter_enumerated() {
             location.block = block;
@@ -300,7 +368,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 location.statement_index = i;
                 let of_alias = matches!(&statement.kind, StatementKind::Assign(assign)
                     if assign.0.projection.is_empty() && aliases.contains(&assign.0.local));
-                if !of_alias && mentions_locals(&aliases, |m| m.visit_statement(statement, location)) {
+                let given = matches!(&statement.kind, StatementKind::Assign(assign)
+                    if assign.0.projection.is_empty() && callables_given.contains(&assign.0.local));
+                if !of_alias && !given && mentions_locals(&aliases, |m| m.visit_statement(statement, location)) {
                     return Some((statement.source_info.span, this()));
                 }
             }
@@ -346,9 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     let writes = self.formatter_param(def_id) == Some(at)
                         || (at == 0 && self.recognition().fmt_write_on_formatter(def_id, generic_args));
-                    let operation = self
-                        .recognition()
-                        .write_call(def_id, self.krate.fns.contains_key(&def_id));
+                    let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));
                     if matches!(operation, crate::lower::recognition::WriteCall::Unsupported) && writes && whole {
                         return Some((span, crate::lower::refusal::calling(self.tcx, def_id)));
                     }

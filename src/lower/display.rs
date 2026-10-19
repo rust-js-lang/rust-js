@@ -256,8 +256,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Do the crate's writers take a `Formatter`'s options (ADRs 0058, 0137):
     /// does it show anything pretty, or give a placeholder's options to what
     /// isn't a number, a `bool` or a string?
+    /// Does `writer`, a function that writes, take its `Formatter`'s
+    /// options after its arguments? Its crate's answer (ADR 0137), a
+    /// library's in its manifest.
+    pub(super) fn takes_options(&self, writer: DefId) -> bool {
+        match writer.is_local() {
+            true => self.writers_take_options(),
+            false => self.krate.foreign.writers_take_options(writer.krate),
+        }
+    }
+
+    /// What another writer this one calls, `writer`, is given after its
+    /// arguments: this one's `Formatter`'s options where it takes them,
+    /// `undefined` where this one has none. A callable, `None`, any writer,
+    /// is given this one's.
+    pub(super) fn given_to_writer(&self, writer: Option<DefId>) -> Option<Expr> {
+        match writer {
+            Some(writer) if !self.takes_options(writer) => None,
+            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::undefined)),
+            None => self.writing.given.clone(),
+        }
+    }
+
     pub(super) fn writers_take_options(&self) -> bool {
-        self.krate.pretty_debug || self.krate.format_options
+        self.krate.writers_take_options()
     }
 
     /// `lower`, a writer's body, given its `Formatter`'s options, `given`,
@@ -466,12 +488,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Another writer, given this one's `Formatter`: its options.
             WriteCall::Function => {
-                values.extend(self.writing.given.clone());
+                values.extend(self.given_to_writer(Some(def_id)));
                 values.extend(self.evidence_args(def_id, generic_args, span)?);
                 Expr::call(self.fn_ref(def_id), values)
             }
             WriteCall::Trait => {
-                values.extend(self.writing.given.clone());
+                values.extend(self.given_to_writer(Some(def_id)));
                 match self.trait_call(def_id, generic_args, values, span, out)? {
                     Some(call) => call,
                     None => return Err(self.unsupported(span, "this call")),
@@ -725,6 +747,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if super::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("invalid utf-16: lone surrogate found"));
+        }
+        // A `char`'s case mapping, the `char`s it hasn't given: their text,
+        // all of an array's, the rest of one stepped (ADR 0070).
+        if super::recognition::is_case_mapping(self.tcx, ty) {
+            return Ok(match super::iterators::made_array(&value) {
+                true => Expr::call(Expr::member(value, "join"), vec![Expr::str("")]),
+                false => Expr::call(Expr::helper("$restStr"), vec![value]),
+            });
         }
         // An escape is its text, and `decode_utf16`'s error its code (ADR 0327).
         if super::recognition::is_text_escape(self.tcx, ty) {
@@ -1571,10 +1601,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "this implementation"))?;
         let evidence = self.evidence_args(instance.def_id(), instance.args, span)?;
         let mut values = vec![value];
-        match self.options_arg(pretty) {
-            Some(options) => values.push(options),
-            None if self.writers_take_options() && !evidence.is_empty() => values.push(Expr::undefined()),
-            None => {}
+        if self.takes_options(instance.def_id()) {
+            values.push(pretty.options());
         }
         values.extend(evidence);
         Ok(Expr::call(self.fn_ref(instance.def_id()), values))

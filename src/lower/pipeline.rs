@@ -225,6 +225,8 @@ pub fn lower_crate<'tcx>(
         named_expressions: &named_expressions,
         local_functions: &local_functions,
     };
+    // What a library's manifest says of its writers (ADR 0137).
+    let writers_take_options = crate_facts.writers_take_options();
     // Each dictionary's cache, named apart in its module.
     let mut cache_names: HashMap<LocalModId, HashSet<String>> = HashMap::new();
     let cache_of: HashMap<DefId, String> = (dictionaries.iter())
@@ -757,6 +759,7 @@ pub fn lower_crate<'tcx>(
                     type_facts: &type_facts,
                     caller_locations: &caller_locations,
                     keeps_capacity,
+                    writers_take_options,
                 },
                 &trait_impls,
                 dependencies,
