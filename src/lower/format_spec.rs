@@ -160,6 +160,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => cx.debug_string_with(value, ty, span, &given),
             });
         }
+        // `{:.2e}` of any type: its impl may give a number's `{:e}` the
+        // precision, as deranged's does, which rounds as Rust's does.
+        if matches!(kind, Std::FmtExp(_)) && precision.is_some() {
+            return Err(self.unsupported(span, "`{:.2e}` and the like"));
+        }
         // `{:x}`, `{:e}` or `{:p}` of the crate's type: its own impl's `fmt`,
         // given the placeholder's options where there are any, `{:#x}`'s
         // too, as its `Display`'s is (ADR 0165).
@@ -210,20 +215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(num) = num else {
                     return Err(self.unsupported(span, &format!("`{{:e}}` of a `{ty}`")));
                 };
-                if precision.is_some() {
-                    return Err(self.unsupported(span, "`{:.2e}` and the like"));
-                }
-                let mut args = vec![value];
-                if num == Num::F32 {
-                    args.push(Expr::bool(true));
-                }
-                let text = Expr::call(Expr::helper("$lowerExp"), args);
-                // `1.2E3`, but `inf` and `NaN` as they are.
-                if upper {
-                    Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")])
-                } else {
-                    text
-                }
+                exp_text(value, num, upper)
             }
             // `{:.2}` of an `f64`: exact, and rounded as Rust rounds.
             _ if let Some(digits) = precision.clone()
@@ -330,4 +322,19 @@ fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) ->
         field("zero", Expr::bool(true));
     }
     Expr::object(fields)
+}
+
+/// `{:e}` of a `num`, or `{:E}` where `upper`: the shortest digits, an
+/// `f32`'s its own, written as Rust writes them, `1.2345e3`, `inf` and `NaN`
+/// as they are.
+pub(super) fn exp_text(value: Expr, num: Num, upper: bool) -> Expr {
+    let mut args = vec![value];
+    if num == Num::F32 {
+        args.push(Expr::bool(true));
+    }
+    let text = Expr::call(Expr::helper("$lowerExp"), args);
+    match upper {
+        true => Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")]),
+        false => text,
+    }
 }

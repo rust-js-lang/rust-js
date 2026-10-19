@@ -426,12 +426,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let std_radix = (!self.has_user_impl(trait_id, ty))
                     .then(|| Num::of(ty).filter(|n| !n.float()).zip(self.radix_trait(trait_id)))
                     .flatten();
+                let std_exp = (!self.has_user_impl(trait_id, ty))
+                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id)))
+                    .flatten();
                 // A generic `T`'s: its dictionary's (ADR 0174).
                 if self.is_unknown(ty) {
                     let value = values.remove(0);
                     self.other_fmt_dictionary(trait_id, ty, value, &pretty, span)?
                 } else if let Some((num, radix)) = std_radix {
                     self.radix_text(values.remove(0), num, radix, &pretty)
+                } else if let Some((num, upper)) = std_exp {
+                    // A number's `{:e}`, padded by the options it's given.
+                    let text = super::format_spec::exp_text(values.remove(0), num, upper);
+                    match &pretty {
+                        Pretty::When(options) if self.krate.format_options => Expr::call(
+                            Expr::helper("$formatted"),
+                            vec![text, options.clone(), Expr::bool(true)],
+                        ),
+                        _ => text,
+                    }
                 } else {
                     if !self.has_user_impl(trait_id, ty) {
                         let path = self.tcx.def_path_str(def_id);
@@ -894,6 +907,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             _ => text,
         }
+    }
+
+    /// Whether std's `LowerExp`, `false`, or `UpperExp`, `true`, is
+    /// `trait_id`.
+    pub(super) fn exp_trait(&self, trait_id: DefId) -> Option<bool> {
+        [false, true]
+            .into_iter()
+            .find(|&upper| self.recognition().other_fmt_trait(Std::FmtExp(upper)) == Some(trait_id))
     }
 
     /// The radix std's `LowerHex`, `UpperHex`, `Octal` or `Binary` shows.

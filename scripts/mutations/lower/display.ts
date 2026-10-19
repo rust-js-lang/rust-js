@@ -597,4 +597,20 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => self.writing.given.clone(),\n",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },
+  {
+    name: "number-exp-call-refused",
+    breaks: "`LowerExp::fmt(&self.0, f)` of a number is refused",
+    file: "src/lower/display.rs",
+    find: "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id)))\n",
+    replace: "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id).filter(|_| false)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
+  },
+  {
+    name: "number-exp-call-unpadded",
+    breaks: "a number's `{:e}` given a width through its type's `LowerExp` isn't padded",
+    file: "src/lower/display.rs",
+    find: "                    let text = super::format_spec::exp_text(values.remove(0), num, upper);\n                    match &pretty {\n",
+    replace: "                    let text = super::format_spec::exp_text(values.remove(0), num, upper);\n                    match &Pretty::Plain {\n",
+    tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
+  },
 ];

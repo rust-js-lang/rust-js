@@ -180,6 +180,9 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
+  // A number's `{:e}` its impl may give the precision, which isn't rounded
+  // as Rust rounds yet (ADR 0165).
+  ["a precision with an exponent of the crate's type", 'struct R(u8);\nimpl std::fmt::LowerExp for R { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { std::fmt::LowerExp::fmt(&self.0, f) } }\npub fn f() -> String { format!("{:.2e}", R(5)) }', "`{:.2e}` and the like"],
   ["writing a u128", 'pub fn f(n: u128) -> String { serde_json::to_string(&n).unwrap() }', "does not support", "serde"],
   ["reading a u128", 'pub fn f(s: &str) -> bool { serde_json::from_str::<u128>(s).is_ok() }', "does not support", "serde"],
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],

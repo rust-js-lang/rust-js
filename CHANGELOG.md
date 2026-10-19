@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A number's `LowerExp` and `UpperExp` called by a type's own**, deranged's
+  `{:e}` (ADR 0165).
 - **A `Formatter` kept in a struct**, base64's `FormatterSink`, that
   generic code writes to: a handle on the writer's text (ADR 0461).
 - **An edition 2018 `unreachable!(x)`**, base64's, panics as edition
@@ -602,6 +604,9 @@ names it:
 - An npm package with a crate installed under an alias of another name,
   `"x": "npm:@acme/greet"`, or whose `exports` hide the JS an app imports,
   is an error that says what to do (ADR 0414).
+- `{:.2e}`, a precision with an exponent, of the crate's own type is an
+  error, as of a number it was: its impl may give a number's `{:e}` the
+  precision, which isn't rounded as Rust rounds yet (ADR 0165).
 
 ### Upgrade from 0.0.3
 

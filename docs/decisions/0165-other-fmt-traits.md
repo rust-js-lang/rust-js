@@ -42,3 +42,16 @@ through the trait on a `Formatter`, where `f.write_str(s)` wasn't.
   Rust.
 - **It's the JS a person writes:** the type's function, called as its
   `Display`'s is.
+
+## Amendment: a number's `{:e}` given by a type's own impl
+
+deranged's ranged integers show their number's `{:e}`,
+`fmt::LowerExp::fmt(&self.0, f)`, which was refused: only the radix traits
+of a number were std's here. A number's `LowerExp` and `UpperExp` are its
+`{:e}` and `{:E}`, `exp_text`, the one place a placeholder's are made too,
+padded by the options the writer is given. A precision with an exponent,
+`{:.2e}`, rounds as Rust rounds, which isn't made yet: it was refused of a
+number, and is now of any type, the crate's own too, as its impl may give
+the precision to a number's. `test/corpus/exp_forwarded.rs` shows them
+against native Rust; `diagnostics.test.ts` holds the refusal.
+
