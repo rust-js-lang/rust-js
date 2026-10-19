@@ -124,6 +124,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Some(Expr::call(Expr::member(items, "join"), vec![Expr::str("")])));
         }
+        // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
+        // back, stepped from it, a generic one's too (ADRs 0429, 0455).
+        if let Some(method @ (IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind)) = std_method {
+            return self.back_step(method, values, (iter_ty, output), span).map(Some);
+        }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
         // range or a `$iter` (ADR 0071); not a lazy or a generic one.
         if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
@@ -609,6 +614,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
     /// a `$iter`, of an array's iterator or a `Peekable` of one, or a generic
     /// or a `dyn` one that knows its back (ADR 0429).
+    /// `it.nth_back(n)`, `it.rfold(init, f)` or `it.rfind(p)`, of its
+    /// values, the iterator first, of type `iter_ty`, giving `output`: its
+    /// helper, stepping `it` from its back (ADR 0455). Of items with a
+    /// destructor, what `nth_back` and `rfind` pass over is dropped, as
+    /// std's are; `rfold` gives each to its function. Of items that could
+    /// look like `None`, what's found is their `Some` (ADR 0051).
+    fn back_step(
+        &mut self,
+        method: IterMethod,
+        values: Vec<Expr>,
+        (iter_ty, output): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        let drop = match self.iterator_item(iter_ty) {
+            Some(item) if method != IterMethod::RFold => self.std_drop_function(item, span)?,
+            _ => None,
+        };
+        let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+        let mut values = values.into_iter();
+        let it = values.next().expect("the receiver");
+        // Of what has a back, the iterator it steps, as `next_back`'s;
+        // another made one, a range's of its bounds, stepped in place.
+        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) {
+            true => it,
+            false => self.as_double_ended(it, iter_ty, span)?,
+        };
+        let mut given = vec![it];
+        given.extend(values);
+        if boxed || drop.is_some() {
+            given.push(match boxed {
+                true => Expr::helper("$some"),
+                false => Expr::undefined(),
+            });
+        }
+        given.extend(drop);
+        let helper = match method {
+            IterMethod::NthBack => "$nthBack",
+            IterMethod::RFold => "$foldBack",
+            _ => "$findBack",
+        };
+        Ok(Expr::call_helper(helper, given))
+    }
+
     fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
         self.steps_an_array(iter_ty)
             || self.knows_its_back(iter_ty)
@@ -697,8 +745,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An item with a destructor a method may leave undropped, `take`'s or
     /// `count`'s: what std drops, refused till it's dropped here. Not of one
-    /// that drops or keeps each, `filter_map`'s, which gives each to its
-    /// function, nor `filter`'s and `skip_while`'s, which drop
+    /// that drops or keeps each, or moves each on, `filter_map`'s and
+    /// `find_map`'s to its function, nor `filter`'s and `skip_while`'s, which drop
     /// each they discard, nor of one that makes each as it's stepped,
     /// `repeat`, which leaves none behind but what its drop drops (ADR 0422).
     fn check_leaves_none(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, name: &str, span: Span) -> R<()> {
@@ -724,11 +772,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Find
                     | IterMethod::Partition
                     | IterMethod::Filter
-                    | IterMethod::FilterMap
                     | IterMethod::SkipWhile
             )
         );
-        if keeps_each || self.recognition().closed_on_drop(iter_ty).is_some() {
+        if keeps_each
+            || crate::lower::recognition::moves_each_on(name)
+            || self.recognition().closed_on_drop(iter_ty).is_some()
+        {
             return Ok(());
         }
         Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))

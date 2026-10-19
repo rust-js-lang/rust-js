@@ -1986,4 +1986,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map.rs$"],
   },
+  {
+    name: "rfold-unknown",
+    breaks: "`rfold` of a double-ended iterator is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"rfold\" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFold,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];

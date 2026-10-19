@@ -135,10 +135,10 @@ pub(super) enum IterComb {
 
 impl IterComb {
     /// Whether it moves each item it takes on, `partition`'s into one of its
-    /// two (ADR 0445), `filter_map`'s to its function, so it leaves none
-    /// with a destructor undropped (ADR 0454).
-    pub(super) fn moves_each_on(self) -> bool {
-        matches!(self, IterComb::Partition | IterComb::FilterMap)
+    /// two (ADR 0445), `filter_map`'s and `find_map`'s to its function, so it
+    /// leaves none with a destructor undropped (ADR 0098).
+    pub(in crate::lower) fn moves_each_on(self) -> bool {
+        matches!(self, IterComb::Partition | IterComb::FilterMap | IterComb::FindMap)
     }
 }
 

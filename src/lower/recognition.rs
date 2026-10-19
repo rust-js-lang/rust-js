@@ -3286,6 +3286,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "into_iter" if is_std_def(self.tcx, trait_id, StdItem::IntoIterator) => IterMethod::IntoIter,
             "from_iter" if self.is_from_iterator(trait_id) => IterMethod::FromIter,
             "next_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NextBack,
+            "nth_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NthBack,
+            "rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFold,
+            "rfind" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFind,
             "len" if self.exact_size_iterator() == Some(trait_id) => IterMethod::Len,
             _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,
             "next" => IterMethod::Next,
@@ -3296,7 +3299,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "fuse" => IterMethod::Fuse,
             "map" => IterMethod::Map,
             "filter" => IterMethod::Filter,
-            "filter_map" => IterMethod::FilterMap,
             "skip_while" => IterMethod::SkipWhile,
             "flat_map" => IterMethod::FlatMap,
             "take" => IterMethod::Take,
@@ -4996,6 +4998,12 @@ pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
 }
 
+/// Whether the `Iterator` method `name`, an `IterComb`, moves each item it
+/// takes on (`IterComb::moves_each_on`).
+pub(crate) fn moves_each_on(name: &str) -> bool {
+    methods::iterator(name).is_some_and(|comb| comb.moves_each_on())
+}
+
 /// The type parameters whose names `{:?}` of `ty` shows, each a
 /// `PhantomData<K>`'s, `PhantomData<{type_name::<K>()}>` (ADR 0452), in it
 /// or a struct of the crate's it holds, through what points at it.
@@ -5175,6 +5183,11 @@ pub(crate) enum IterMethod {
     FromIter,
     Next,
     NextBack,
+    /// `nth_back(n)`, `rfold(init, f)`, `rfind(p)`: stepped from the back
+    /// (ADR 0455).
+    NthBack,
+    RFold,
+    RFind,
     Len,
     SizeHint,
     Rev,
@@ -5183,8 +5196,6 @@ pub(crate) enum IterMethod {
     Fuse,
     Map,
     Filter,
-    /// `filter_map(f)`, which gives each item to `f`.
-    FilterMap,
     SkipWhile,
     FlatMap,
     Take,

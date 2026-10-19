@@ -523,6 +523,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](decisions/0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](decisions/0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](decisions/0454-a-mut-given-as-a-type-parameter.md)
+- [0455 `nth_back`, `rfold` and `rfind` step from the back](decisions/0455-stepping-from-the-back.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

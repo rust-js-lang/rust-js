@@ -415,8 +415,16 @@ export const mutations: Mutation[] = [
     name: "filter-map-leaves-drops",
     breaks: "`filter_map` of items with a destructor is refused, though it gives each to its function",
     file: "src/lower/combinators.rs",
-    find: "        matches!(self, IterComb::Partition | IterComb::FilterMap)\n",
-    replace: "        matches!(self, IterComb::Partition)\n",
+    find: "        matches!(self, IterComb::Partition | IterComb::FilterMap | IterComb::FindMap)\n",
+    replace: "        matches!(self, IterComb::Partition | IterComb::FindMap)\n",
     tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+  },
+  {
+    name: "find-map-leaves-drops",
+    breaks: "`find_map` of items with a destructor is refused, though it gives each to its function",
+    file: "src/lower/combinators.rs",
+    find: "        matches!(self, IterComb::Partition | IterComb::FilterMap | IterComb::FindMap)\n",
+    replace: "        matches!(self, IterComb::Partition | IterComb::FilterMap)\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
 ];

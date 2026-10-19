@@ -350,8 +350,8 @@ export const mutations: Mutation[] = [
     name: "partition-moves-unseen",
     breaks: "`partition` of items with a destructor is refused, as if it dropped some",
     file: "src/lower/std_types/values.rs",
-    find: "            || (matches!(known, Std::IterComb(comb) if comb.moves_each_on()) && self.ends_holding_nothing(tys[0]));\n",
-    replace: "            || false;\n",
+    find: "            || (matches!(known, Std::IterComb(comb) if comb.moves_each_on())\n",
+    replace: "            || (false\n",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
   {
@@ -361,5 +361,13 @@ export const mutations: Mutation[] = [
     find: "                    | Std::PoisonData\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+  },
+  {
+    name: "find-map-lent-refused",
+    breaks: "`find_map` through a `&mut` of items with a destructor is refused, as if it took the iterator whole",
+    file: "src/lower/std_types/values.rs",
+    find: "                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])));\n",
+    replace: "                && self.ends_holding_nothing(tys[0]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
 ];
