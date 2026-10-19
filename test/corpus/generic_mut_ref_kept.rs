@@ -58,6 +58,42 @@ impl<T> std::ops::DerefMut for Checked<T> {
     }
 }
 
+// One whose impl isn't generic gives its `Vec` and its number as its
+// signature says, not as the trait's `&mut Self::Target` would.
+struct Stack {
+    items: Vec<u32>,
+}
+
+impl std::ops::Deref for Stack {
+    type Target = Vec<u32>;
+    fn deref(&self) -> &Vec<u32> {
+        &self.items
+    }
+}
+
+impl std::ops::DerefMut for Stack {
+    fn deref_mut(&mut self) -> &mut Vec<u32> {
+        &mut self.items
+    }
+}
+
+struct Total {
+    sum: u32,
+}
+
+impl std::ops::Deref for Total {
+    type Target = u32;
+    fn deref(&self) -> &u32 {
+        &self.sum
+    }
+}
+
+impl std::ops::DerefMut for Total {
+    fn deref_mut(&mut self) -> &mut u32 {
+        &mut self.sum
+    }
+}
+
 // A trait method of the crate's giving cells, matched: its binding is a
 // cell, not a std call's item.
 trait Slot {
@@ -109,6 +145,11 @@ fn main() {
     let mut count = Checked { value: 1 };
     *count += 1;
     println!("{:?} {}", *checked, *count);
+    let mut stack = Stack { items: vec![1] };
+    stack.push(2);
+    let mut total = Total { sum: 3 };
+    *total += 4;
+    println!("{:?} {}", *stack, *total);
 
     let mut k = C { n: 1 };
     match k.slot() {

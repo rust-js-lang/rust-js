@@ -81,6 +81,29 @@ function checkedDerefMut_deref_mut(checked) {
   };
 }
 
+function stackDeref_deref(stack) {
+  return stack.items;
+}
+
+function stackDerefMut_deref_mut(stack) {
+  return stack.items;
+}
+
+function totalDeref_deref(total) {
+  return total.sum;
+}
+
+function totalDerefMut_deref_mut(total) {
+  return {
+    get value() {
+      return total.sum;
+    },
+    set value(value) {
+      total.sum = value;
+    },
+  };
+}
+
 function cSlot() {
   if ($cSlot === undefined) {
     $cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
@@ -278,6 +301,16 @@ function main() {
     `[${checkedDeref_deref(checked)
       .map((item) => String(item))
       .join(", ")}] ${checkedDeref_deref(count)}`,
+  );
+  const stack = { items: [1] };
+  stackDerefMut_deref_mut(stack).push(2);
+  const total = { sum: 3 };
+  const value$8 = totalDerefMut_deref_mut(total);
+  value$8.value = (value$8.value + 4) >>> 0;
+  console.log(
+    `[${stackDeref_deref(stack)
+      .map((item) => String(item))
+      .join(", ")}] ${totalDeref_deref(total)}`,
   );
 
   const k = { n: 1 };
