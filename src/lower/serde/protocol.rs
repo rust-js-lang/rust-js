@@ -104,14 +104,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(step(&json, "string", vec![shown]));
             }
             SerdeOp::Begin(compound) => {
+                // A variant's, `{ "Variant": .. }`, its name after the type's
+                // and its index.
+                if matches!(compound, SerdeCompound::TupleVariant | SerdeCompound::StructVariant) {
+                    out.push(step(&json, "beginObject", Vec::new()));
+                    out.push(step(&json, "key", vec![values.remove(2)]));
+                }
                 let method = match compound {
-                    SerdeCompound::Seq => "beginArray",
+                    SerdeCompound::Seq | SerdeCompound::TupleVariant => "beginArray",
                     SerdeCompound::Tuple => "beginTuple",
                     SerdeCompound::TupleStruct => "beginTupleStruct",
-                    SerdeCompound::Map | SerdeCompound::Struct => "beginObject",
+                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => "beginObject",
                 };
                 out.push(step(&json, method, Vec::new()));
                 return Ok(result::ok(json));
+            }
+            // `collect_seq::<I>(items)`, and `collect_map::<K, V, I>(entries)`.
+            SerdeOp::CollectSeq => {
+                let items_ty = own(1);
+                let items = self.as_js_iterator(values.remove(0), items_ty, span)?;
+                let write = self.json_writer(self.iterable_item(items_ty), span)?;
+                let call = Expr::call(Expr::helper("$jsonCollectSeq"), vec![json, items, write]);
+                out.push(StmtKind::Expr(call).at(crate::js::Span::NONE));
+            }
+            SerdeOp::CollectMap => {
+                let entries = self.as_js_iterator(values.remove(0), own(3), span)?;
+                let key = self.fresh("key");
+                let text = self.json_key(Expr::var(&key), own(1), span)?;
+                let key = Expr::arrow(
+                    vec![key.into()],
+                    vec![StmtKind::Return(Some(text)).at(crate::js::Span::NONE)],
+                );
+                let write = self.json_writer(own(2), span)?;
+                let call = Expr::call(Expr::helper("$jsonCollectMap"), vec![json, entries, key, write]);
+                out.push(StmtKind::Expr(call).at(crate::js::Span::NONE));
             }
             SerdeOp::Element => {
                 out.push(step(&json, "element", Vec::new()));
@@ -134,10 +160,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SerdeOp::Value => self.serde_write(values.remove(0), own(1), &json, span, out)?,
             SerdeOp::End(compound) => {
                 let method = match compound {
-                    SerdeCompound::Seq | SerdeCompound::Tuple | SerdeCompound::TupleStruct => "endArray",
-                    SerdeCompound::Map | SerdeCompound::Struct => "endObject",
+                    SerdeCompound::Seq
+                    | SerdeCompound::Tuple
+                    | SerdeCompound::TupleStruct
+                    | SerdeCompound::TupleVariant => "endArray",
+                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => "endObject",
                 };
                 out.push(step(&json, method, Vec::new()));
+                // A variant's object of its name, closed too.
+                if matches!(compound, SerdeCompound::TupleVariant | SerdeCompound::StructVariant) {
+                    out.push(step(&json, "endObject", Vec::new()));
+                }
             }
             // `v.serialize(s)`: the receiver is `v`, and the writer after it.
             SerdeOp::Serialize => {
@@ -207,23 +240,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => "borrowedStr",
                 (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => "seq",
                 (VisitorMethod::Map, SerdeHint::Any | SerdeHint::Map | SerdeHint::Struct) => "map",
+                (VisitorMethod::None, SerdeHint::Option) => "none",
+                (VisitorMethod::Some, SerdeHint::Option) => "some",
                 _ => continue,
             };
-            let value = self.fresh("v");
-            let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone(), Expr::var(&value)]);
-            let f = Expr::arrow(
-                vec![value.into()],
-                vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)],
-            );
+            // Each of the visitor and what it's given: nothing of a `null`.
+            let given: Vec<String> = match method {
+                VisitorMethod::Unit | VisitorMethod::None => Vec::new(),
+                _ => vec![self.fresh("v")],
+            };
+            let args = std::iter::once(visitor.clone())
+                .chain(given.iter().map(|v| Expr::var(v)))
+                .collect();
+            let call = Expr::call(self.fn_ref(def_id), args);
+            let params = given.into_iter().map(Into::into).collect();
+            let f = Expr::arrow(params, vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)]);
             props.push(crate::js::Prop::Field(key.into(), f));
         }
         let expected = expected.expect("a `Visitor` writes its `expecting`");
         // A hint but `deserialize_any`'s errors of a kind it has no method for
         // where it peeks.
-        let helper = if hint == SerdeHint::Any {
-            "$jsonVisit"
-        } else {
-            "$jsonVisitHint"
+        let helper = match hint {
+            SerdeHint::Any => "$jsonVisit",
+            // `null`, or what's there read by its `visit_some`.
+            SerdeHint::Option => "$jsonVisitOption",
+            _ => "$jsonVisitHint",
         };
         Ok(Expr::call(
             Expr::helper(helper),
@@ -317,5 +358,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$jsonNextEntry"), vec![access, key, read])
             }
         })
+    }
+
+    /// What an `IntoIterator` of type `ty` gives, its `Item`.
+    fn iterable_item(&self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+        let into_iterator =
+            crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::IntoIterator);
+        let item = crate::lower::recognition::trait_method(self.tcx, into_iterator, "Item");
+        let projection = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, item, [ty]);
+        (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            .unwrap_or(projection)
     }
 }

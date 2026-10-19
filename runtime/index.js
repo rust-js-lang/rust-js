@@ -3527,6 +3527,23 @@ export function $jsonVisitHint(json, expected, methods) {
   });
 }
 
+// `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
+// else to its `visit_some`, the reader to read it; of one it has none for,
+// serde's "invalid type: Option value", as serde_json gives it.
+export function $jsonVisitOption(json, expected, { none, some }) {
+  const invalid = () => $jsonError(`invalid type: Option value, expected ${expected}`);
+  return $jsonRead(json, (reader) => {
+    if (reader.parseWhitespace() === 110) {
+      reader.index++;
+      reader.parseIdent("ull");
+      if (!none) throw invalid();
+      return $jsonCodec(none)();
+    }
+    if (!some) throw invalid();
+    return $jsonCodec(some)(reader);
+  });
+}
+
 // The reader's visitor of a hand-written one's methods.
 export function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, seq, map }) {
   const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);
@@ -3632,6 +3649,28 @@ export function $jsonNextValue(map, read) {
 // `next_entry`: its key and value, a pair, or `None` past the last.
 export function $jsonNextEntry(map, readKey, read) {
   return $jsonRead(map, (m) => (m.next() ? [readKey(m.key()), m.value(read)] : undefined));
+}
+
+// `s.collect_seq(items)` of a hand-written `Serialize` (ADR 0459): each
+// item, written by `write`, in an array.
+export function $jsonCollectSeq(json, items, write) {
+  json.beginArray();
+  for (const item of items) {
+    json.element();
+    write(item, json);
+  }
+  json.endArray();
+}
+
+// `s.collect_map(entries)`: each entry, its key's text then its value
+// written, in an object.
+export function $jsonCollectMap(json, entries, key, write) {
+  json.beginObject();
+  for (const [k, v] of entries) {
+    json.key(key(k));
+    write(v, json);
+  }
+  json.endObject();
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so

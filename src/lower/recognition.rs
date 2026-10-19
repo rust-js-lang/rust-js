@@ -2733,6 +2733,10 @@ pub(super) enum SerdeOp {
     NewtypeVariant,
     /// `collect_str(&v)`: what `v` shows, as a string.
     CollectStr,
+    /// `collect_seq(items)` and `collect_map(entries)`: each written in turn,
+    /// in an array or an object.
+    CollectSeq,
+    CollectMap,
     /// `serialize_seq(len)` and the rest: the writer, begun.
     Begin(SerdeCompound),
     /// `serialize_element(&v)`, of a sequence or a tuple: its next.
@@ -2807,6 +2811,8 @@ pub(super) enum SerdeHint {
     Map,
     /// `deserialize_struct`'s, a map or a sequence of its fields.
     Struct,
+    /// `deserialize_option`'s: `null`, or anything else, given to read.
+    Option,
 }
 
 /// What a `SeqAccess` or a `MapAccess` reads next.
@@ -2832,6 +2838,9 @@ pub(super) enum VisitorMethod {
     BorrowedStr,
     Seq,
     Map,
+    /// `visit_none` and `visit_some`, of `deserialize_option`.
+    None,
+    Some,
 }
 
 /// The methods of serde's `Visitor` the impl `imp` writes, of those
@@ -2850,6 +2859,8 @@ pub(super) fn visitor_methods(tcx: TyCtxt<'_>, imp: DefId) -> Vec<(VisitorMethod
                 "visit_borrowed_str" => VisitorMethod::BorrowedStr,
                 "visit_seq" => VisitorMethod::Seq,
                 "visit_map" => VisitorMethod::Map,
+                "visit_none" => VisitorMethod::None,
+                "visit_some" => VisitorMethod::Some,
                 _ => return None,
             };
             Some((method, item.def_id))
@@ -2866,6 +2877,9 @@ pub(super) enum SerdeCompound {
     TupleStruct,
     Map,
     Struct,
+    /// A variant's, in an object of its name.
+    TupleVariant,
+    StructVariant,
 }
 
 /// Is `ty` a `dyn` of serde's `de::Expected`, what a deserializer's error
@@ -2897,6 +2911,8 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
         "SerializeTupleStruct" => Some(SerdeCompound::TupleStruct),
         "SerializeMap" => Some(SerdeCompound::Map),
         "SerializeStruct" => Some(SerdeCompound::Struct),
+        "SerializeTupleVariant" => Some(SerdeCompound::TupleVariant),
+        "SerializeStructVariant" => Some(SerdeCompound::StructVariant),
         _ => None,
     };
     let trait_name = tcx.item_name(trait_id);
@@ -2915,6 +2931,7 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
             "deserialize_seq" | "deserialize_tuple" | "deserialize_tuple_struct" => SerdeHint::Seq,
             "deserialize_map" => SerdeHint::Map,
             "deserialize_struct" => SerdeHint::Struct,
+            "deserialize_option" => SerdeHint::Option,
             _ => return None,
         }),
         ("SeqAccess", "next_element") => SerdeOp::Next(SerdeNext::Element),
@@ -2937,6 +2954,10 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
             "serialize_unit_variant" => SerdeOp::UnitVariant,
             "serialize_newtype_variant" => SerdeOp::NewtypeVariant,
             "collect_str" => SerdeOp::CollectStr,
+            "collect_seq" => SerdeOp::CollectSeq,
+            "collect_map" => SerdeOp::CollectMap,
+            "serialize_tuple_variant" => SerdeOp::Begin(SerdeCompound::TupleVariant),
+            "serialize_struct_variant" => SerdeOp::Begin(SerdeCompound::StructVariant),
             "serialize_seq" => SerdeOp::Begin(SerdeCompound::Seq),
             "serialize_tuple" => SerdeOp::Begin(SerdeCompound::Tuple),
             "serialize_tuple_struct" => SerdeOp::Begin(SerdeCompound::TupleStruct),
@@ -2946,7 +2967,11 @@ pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
         },
         (name, "end") => SerdeOp::End(compound(name)?),
         (name, "serialize_element") if compound(name).is_some() => SerdeOp::Element,
-        (name, "serialize_field") if compound(name).is_some() => SerdeOp::Field,
+        // A struct's field, its key and its value; a tuple's, its value.
+        (name, "serialize_field") => match compound(name)? {
+            SerdeCompound::Struct | SerdeCompound::StructVariant => SerdeOp::Field,
+            _ => SerdeOp::Element,
+        },
         (name, "skip_field") if compound(name).is_some() => SerdeOp::SkipField,
         ("SerializeMap", "serialize_entry") => SerdeOp::Entry,
         ("SerializeMap", "serialize_key") => SerdeOp::Key,

@@ -2114,4 +2114,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde.test.ts", "-t", "sequence and a map"],
   },
+  {
+    name: "serde-tuple-field-keyed",
+    breaks: "a tuple struct's `serialize_field(&v)` is taken as a struct's, of a key and a value",
+    file: "src/lower/recognition.rs",
+    find: "            SerdeCompound::Struct | SerdeCompound::StructVariant => SerdeOp::Field,\n",
+    replace: "            _ => SerdeOp::Field,\n",
+    tests: ["test/serde.test.ts", "-t", "collects and writes variants"],
+  },
 ];

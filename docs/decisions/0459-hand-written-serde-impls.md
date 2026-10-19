@@ -96,8 +96,7 @@ function pointSerialize_serialize(point, s) {
 
 ## Consequences
 
-- `visit_some` and `visit_none`, and `deserialize_option`, are refused yet.
-- `serialize_tuple_variant` and `serialize_struct_variant` are refused yet.
+- A visitor's `visit_enum`, and `deserialize_enum`, are refused yet.
 
 ## Amendment: a hand-written `Visitor`
 
@@ -173,3 +172,23 @@ variant's. Where the derive calls it with `?`, its desugaring's paths,
 path looked for is the one that isn't a desugaring's. The serde test of
 a field's own functions writes and reads them, and their errors, against
 native serde_json.
+
+## Amendment: collections, variants and an option
+
+- **`collect_seq(items)` and `collect_map(entries)`** are
+  `$jsonCollectSeq` and `$jsonCollectMap`: each item, or each entry's key
+  text then its value, written in turn by its writer, of what's given as
+  a JS iterator, as `collect` would step it.
+- **`serialize_tuple_variant` and `serialize_struct_variant`** begin an
+  object of the variant's name around their array or object, and their
+  `end()` closes both. A tuple struct's or a tuple variant's
+  `serialize_field(&v)` is an element, a struct's `serialize_field(key,
+  &v)` a key and a value: recognition tells them by their trait.
+- **`deserialize_option`** is `$jsonVisitOption`: `null` to the visitor's
+  `visit_none`, anything else to its `visit_some`, given the reader; of
+  one it hasn't, serde's "invalid type: Option value", with no place, as
+  serde_json gives it, but where a struct reading it places it. A method
+  that takes nothing, `visit_none` and `visit_unit`, is given nothing.
+
+The serde tests of a hand-written `Serialize`'s collections and variants,
+and of a visitor's option, against native serde_json.

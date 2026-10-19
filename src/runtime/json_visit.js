@@ -33,6 +33,23 @@ function $jsonVisitHint(json, expected, methods) {
   });
 }
 
+// `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
+// else to its `visit_some`, the reader to read it; of one it has none for,
+// serde's "invalid type: Option value", as serde_json gives it.
+function $jsonVisitOption(json, expected, { none, some }) {
+  const invalid = () => $jsonError(`invalid type: Option value, expected ${expected}`);
+  return $jsonRead(json, (reader) => {
+    if (reader.parseWhitespace() === 110) {
+      reader.index++;
+      reader.parseIdent("ull");
+      if (!none) throw invalid();
+      return $jsonCodec(none)();
+    }
+    if (!some) throw invalid();
+    return $jsonCodec(some)(reader);
+  });
+}
+
 // The reader's visitor of a hand-written one's methods.
 function $jsonVisitor(expected, { unit, bool, u64, i64, f64, str, borrowedStr, seq, map }) {
   const invalid = (what) => $jsonError(`invalid type: ${what}, expected ${expected}`);

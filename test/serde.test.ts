@@ -830,3 +830,165 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A hand-written `Serialize`'s `collect_seq` and `collect_map`, a tuple
+// struct's fields, and a variant's tuple or struct (ADR 0459).
+test("serde: a hand-written Serialize collects and writes variants as serde_json does", async () => {
+  const dir = fixture("serde-hand-written-collect");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::ser::{SerializeStructVariant, SerializeTupleStruct, SerializeTupleVariant};
+use serde::{Serialize, Serializer};
+use std::collections::BTreeMap;
+
+pub struct Tags(pub Vec<String>);
+
+impl Serialize for Tags {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_seq(self.0.iter())
+    }
+}
+
+pub struct Lengths(pub Vec<String>);
+
+impl Serialize for Lengths {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_seq(self.0.iter().map(|t| t.len()))
+    }
+}
+
+pub struct Scores(pub BTreeMap<u32, f64>);
+
+impl Serialize for Scores {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_map(self.0.iter())
+    }
+}
+
+pub struct Rgb(pub u8, pub u8, pub u8);
+
+impl Serialize for Rgb {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut t = s.serialize_tuple_struct("Rgb", 3)?;
+        t.serialize_field(&self.0)?;
+        t.serialize_field(&self.1)?;
+        t.serialize_field(&self.2)?;
+        t.end()
+    }
+}
+
+pub enum Shape {
+    Line(i32, i32),
+    Box { w: u32, h: u32 },
+}
+
+impl Serialize for Shape {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Shape::Line(a, b) => {
+                let mut v = s.serialize_tuple_variant("Shape", 0, "Line", 2)?;
+                v.serialize_field(a)?;
+                v.serialize_field(b)?;
+                v.end()
+            }
+            Shape::Box { w, h } => {
+                let mut v = s.serialize_struct_variant("Shape", 1, "Box", 2)?;
+                v.serialize_field("w", w)?;
+                v.serialize_field("h", h)?;
+                v.end()
+            }
+        }
+    }
+}
+
+pub fn report() -> String {
+    let tags = Tags(vec!["a".into(), "bc".into()]);
+    [
+        serde_json::to_string(&tags).unwrap(),
+        serde_json::to_string_pretty(&tags).unwrap(),
+        serde_json::to_string(&Lengths(vec!["abc".into(), "".into()])).unwrap(),
+        serde_json::to_string(&Scores(BTreeMap::from([(2, 1.5), (1, 0.0)]))).unwrap(),
+        serde_json::to_string(&Rgb(1, 2, 3)).unwrap(),
+        serde_json::to_string(&vec![Shape::Line(-1, 4), Shape::Box { w: 2, h: 3 }]).unwrap(),
+        serde_json::to_string_pretty(&Shape::Box { w: 2, h: 3 }).unwrap(),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
+// A hand-written visitor's `visit_none` and `visit_some`, of
+// `deserialize_option`, and serde's error of one it hasn't (ADR 0459).
+test("serde: a hand-written visitor reads an option as serde_json does", async () => {
+  const dir = fixture("serde-hand-written-option");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
+
+#[derive(Debug)]
+pub struct Maybe(pub Option<u8>);
+
+struct MaybeVisitor;
+
+impl<'de> Visitor<'de> for MaybeVisitor {
+    type Value = Maybe;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a level or nothing")
+    }
+    fn visit_none<E: de::Error>(self) -> Result<Maybe, E> {
+        Ok(Maybe(None))
+    }
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Maybe, D::Error> {
+        u8::deserialize(d).map(|n| Maybe(Some(n)))
+    }
+}
+
+impl<'de> Deserialize<'de> for Maybe {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(MaybeVisitor)
+    }
+}
+
+#[derive(Debug)]
+pub struct Required(pub u8);
+
+struct RequiredVisitor;
+
+impl<'de> Visitor<'de> for RequiredVisitor {
+    type Value = Required;
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a level")
+    }
+    fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Required, D::Error> {
+        u8::deserialize(d).map(Required)
+    }
+}
+
+impl<'de> Deserialize<'de> for Required {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_option(RequiredVisitor)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Row {
+    pub a: Maybe,
+    pub b: Required,
+}
+
+pub fn report() -> String {
+    let maybe = |text: &str| match serde_json::from_str::<Maybe>(text) { Ok(m) => format!("{m:?}"), Err(e) => e.to_string() };
+    let required = |text: &str| match serde_json::from_str::<Required>(text) { Ok(m) => format!("{m:?}"), Err(e) => e.to_string() };
+    let row = |text: &str| match serde_json::from_str::<Row>(text) { Ok(r) => format!("{r:?}"), Err(e) => e.to_string() };
+    [
+        maybe("null"), maybe("7"), maybe("300"), maybe("\"x\""), required("4"), required("null"),
+        row("{\"a\": null, \"b\": 2}"), row("{\"a\": 1, \"b\": null}"),
+    ]
+    .join("\n")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+  // A `null`'s `visit_none` is given nothing.
+  expect(readFileSync(join(dir, "cases.js"), "utf8")).toContain("none: () => maybeVisitorVisitor_visit_none(");
+});
