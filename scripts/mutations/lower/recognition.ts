@@ -351,8 +351,8 @@ export const mutations: Mutation[] = [
     name: "user-hash-refused",
     breaks: "a type's own `impl Hash` is an error",
     file: "src/lower/recognition.rs",
-    find: "        || is_hashing(tcx, id)\n}\n",
-    replace: "}\n",
+    find: "        || is_hashing(tcx, id)\n        // `items.sum()` into an `S: Sum<A>`",
+    replace: "        // `items.sum()` into an `S: Sum<A>`",
     tests: ["test/corpus.test.ts", "-t", "user_hash"],
   },
   {
