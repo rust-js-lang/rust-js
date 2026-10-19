@@ -10,7 +10,7 @@
 // results through postMessage, but cannot access the editor's DOM or storage.
 
 import { transform } from "sucrase";
-import { $extend, $iter, $lent, $next } from "@rust-js/runtime";
+import { $extend, $iter, $next } from "@rust-js/runtime";
 
 /**
  * `from`'s directory joined with a relative specifier like `../lib.js`. A
@@ -143,15 +143,13 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
   const css = [];
   const iter = $iter(sources);
-  let tmp;
   while (true) {
     const value$1 = $next(iter);
     if (!value$1) {
       break;
     }
     for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
-      tmp = $iter(styles);
-      const value = $lent(tmp).find(([name]) => name === specifier);
+      const value = styles.find(([name]) => name === specifier);
       if (value && !css.includes(value[1])) {
         css.push(value[1]);
       }
@@ -170,12 +168,10 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   // doesn't have. A bundler would bring them in; the playground has none.
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   const external = [];
-  let tmp$1;
   for (const [path, code] of sources) {
     for (const [, specifier] of Array.from(code.matchAll(imports))) {
       const target = resolve(path, specifier);
-      tmp$1 = $iter(sources);
-      if (!$lent(tmp$1).some(([p]) => p === target) && !external.includes(specifier)) {
+      if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {
         external.push(specifier);
       }
     }

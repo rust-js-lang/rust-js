@@ -406,6 +406,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // and the early exits those `break`s now make.
     js::statement_lists(body, &mut |stmts| outer_continues(stmts, written));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts, false));
+    // Their jumps then, of the loop they're now in, unnamed.
+    js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
     settle_jumps(body);
     // `!(b >= 48)` of what's never `NaN`: `b < 48`.
     js::each_expr_mut(body, &mut |e| turned(e, numbers));

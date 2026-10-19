@@ -61,7 +61,6 @@ export const Lexer = {
   },
   tokens(lexer) {
     const out = [];
-    let s;
     while (true) {
       const c = $next(lexer.chars);
       if (c == null) {
@@ -82,7 +81,7 @@ export const Lexer = {
                     break bb20;
                   }
                   if (c === '"') {
-                    s = "";
+                    let s = "";
                     while (true) {
                       const ch = $next(lexer.chars);
                       if (ch == null) {

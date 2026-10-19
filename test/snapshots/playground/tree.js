@@ -2,12 +2,10 @@
 
 // File paths as a tree, for the file explorers.
 
-import { $cmp, $iter, $lent, $rsplitOnce } from "@rust-js/runtime";
+import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
 export function build_tree(paths) {
   const tree = [];
-  let tmp;
-  let tmp$1;
   for (const path of paths) {
     let folder = tree;
     const value = $rsplitOnce(path, "/");
@@ -16,12 +14,10 @@ export function build_tree(paths) {
       const folders = value[0];
       const name$1 = value[1];
       for (const part of folders.split("/")) {
-        tmp = $iter(folder);
-        if (!$lent(tmp).some(([n]) => n === part)) {
+        if (!folder.some(([n]) => n === part)) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
-        tmp$1 = $iter(folder);
-        const value = $lent(tmp$1).find(([n]) => n === part);
+        const value = folder.find(([n]) => n === part);
         if (value) {
           if (value[1].TAG === "Folder") {
             const children = value[1]._0;
