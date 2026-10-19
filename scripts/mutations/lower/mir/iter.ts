@@ -855,4 +855,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
     snapshots: true,
   },
+  {
+    name: "lazy-peekable-refused",
+    breaks: "`peekable()` of a lazy iterator is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                Err(lazy) if std_method == Some(IterMethod::Peekable) => {\n",
+    replace: "                Err(lazy) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_lazy.rs$"],
+  },
 ];

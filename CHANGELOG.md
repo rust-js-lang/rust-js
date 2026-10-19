@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`peekable()` of a lazy iterator**, `chars().filter(f).peekable()`, its
+  closures run in Rust's order (ADR 0164).
 - **`==` of two maps or two sets**, `$mapEq(a, b)` (ADR 0059).
 - **`into_iter()` of a type parameter's associated type**, `H::Item:
   IntoIterator`, itertools' (ADR 0061).

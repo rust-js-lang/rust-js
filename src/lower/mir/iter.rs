@@ -650,6 +650,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => match from_iterator(receiver) {
                 Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+                // Of a lazy one, `peekable()`: what steps it when asked, as
+                // Rust's `Peekable` does, its closures run in the same order.
+                Err(lazy) if std_method == Some(IterMethod::Peekable) => {
+                    return Ok(Expr::call_helper("$peekable", vec![lazy]));
+                }
                 Err(_) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a lazy iterator, from its MIR")));
                 }

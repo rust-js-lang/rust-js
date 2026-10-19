@@ -1098,6 +1098,10 @@ export function $nextBackSome(it) {
 }
 
 export function $peekSome(it) {
+  if (it.items === undefined) {
+    const step = it.peek();
+    return step.done ? undefined : $some(step.value);
+  }
   return it.at < it.end ? $some(it.items[it.at]) : undefined;
 }
 
@@ -3709,6 +3713,30 @@ export function $floatEuclid(a, b, rem) {
 export function $absSub(a, b) {
   if (Number.isNaN(a) || Number.isNaN(b)) return NaN;
   return a > b ? a - b : 0;
+}
+
+// A lazy iterator made `peekable()` (ADR 0164): a JS iterator that steps
+// it only when asked, and keeps the step `peek` took for the next `next`,
+// as Rust's `Peekable` does. One of an array's items is its `$iter`, which
+// peeks at its array.
+export class $Peekable extends Iterator {
+  constructor(it) {
+    super();
+    this.it = it;
+    this.peeked = undefined;
+  }
+  next() {
+    const step = this.peeked ?? this.it.next();
+    this.peeked = undefined;
+    return step;
+  }
+  peek() {
+    this.peeked ??= this.it.next();
+    return this.peeked;
+  }
+}
+export function $peekable(it) {
+  return new $Peekable(it);
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
@@ -7286,10 +7314,18 @@ export function $splitOff(items, at) {
 }
 
 export function $peek(it) {
+  if (it.items === undefined) {
+    const step = it.peek();
+    return step.done ? undefined : step.value;
+  }
   return it.at < it.end ? it.items[it.at] : undefined;
 }
 
 export function $nextIf(it, f) {
+  if (it.items === undefined) {
+    const step = it.peek();
+    return !step.done && f(step.value) ? it.next().value : undefined;
+  }
   return it.at < it.end && f(it.items[it.at]) ? it.items[it.at++] : undefined;
 }
 

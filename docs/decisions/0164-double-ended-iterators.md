@@ -84,3 +84,18 @@ each callback called from the back, as Rust's `next_back` calls it, as one
 over an array's items is. writeable's KMP prefix walks a string's char
 boundaries from the longest so, which was refused. A `rev()` is of a
 double-ended iterator, which ends, so its items can be listed first.
+
+## Amendment: `peekable()` of a lazy iterator
+
+`peekable()` of a lazy chain, `(1..4).map(f).peekable()`, was refused:
+made an array first, its closures would run before Rust's. Rust's
+`Peekable` steps its source only when it's asked, and keeps the item
+`peek` took for the next `next`. So does `$Peekable`, a JS iterator of
+its source: `$peekable(chain)`, whose `peek()` steps once. `$peek`,
+`$peekSome` and `$nextIf` ask it where it has no array, as `$rest` does
+of a JS iterator. One of an array's items, or of a source with no
+closure, `char_indices()`'s, is still its array's `$iter`.
+`test/corpus/peekable_lazy.rs` peeks, takes with `next_if` and
+`next_if_eq`, tokenizes, and records where its closure ran, against
+native Rust.
+
