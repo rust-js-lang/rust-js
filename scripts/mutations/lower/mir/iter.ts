@@ -875,8 +875,8 @@ export const mutations: Mutation[] = [
     name: "consumed-generic-refused",
     breaks: "generic code that consumes an iterator its caller gives a drop of, `items.into_iter().last()`, takes none, and a caller's destructor is refused",
     file: "src/lower/mir/iter.rs",
-    find: "            true => self.given_drop(receiver).is_some(),\n",
-    replace: "            true => false,\n",
+    find: "            true => self.given_drop(receiver).is_some() || holds_function,\n",
+    replace: "            true => holds_function,\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
@@ -958,5 +958,21 @@ export const mutations: Mutation[] = [
     find: "                    | IterMethod::Reduce\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
+  },
+  {
+    name: "held-function-unclosed",
+    breaks: "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
+    file: "src/lower/mir/iter.rs",
+    find: "        Ok(Some(Expr::call_helper(\n            \"$closing\",\n            vec![adapter, Expr::arrow(vec![\"it\".into()], body)],\n        )))\n",
+    replace: "        let _ = body;\n        Ok(Some(adapter))\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
+  },
+  {
+    name: "consumed-held-function-kept",
+    breaks: "a `map(f)` consumed by `collect` isn't dropped after, nor its function",
+    file: "src/lower/mir/iter.rs",
+    find: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing);\n        let dropped = match params_only {\n",
+    replace: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing && false);\n        let dropped = match params_only {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
 ];

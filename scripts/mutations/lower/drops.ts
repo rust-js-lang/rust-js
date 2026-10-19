@@ -290,8 +290,8 @@ export const mutations: Mutation[] = [
     name: "closed-iterator-unclosed",
     breaks: "a `repeat`'s iterator dropped is walked as a struct, not closed",
     file: "src/lower/drops.rs",
-    find: "            ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {\n",
-    replace: "            ty::Adt(..) if false => {\n",
+    find: "                if self.recognition().closed_on_drop(ty).is_some()\n                    || (self.recognition().held_function(ty))\n",
+    replace: "                if false\n                    || (self.recognition().held_function(ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {

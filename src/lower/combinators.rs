@@ -1325,6 +1325,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(when) = self.handled_function(known, at, ty) else {
                 continue;
             };
+            // Kept by a lazy adapter it's given to, `map(f)`'s, it drops with it
+            // (ADR 0485); by anything else, refused.
+            if when.is_none() && self.recognition().held_function(output) == Some(ty) {
+                continue;
+            }
             if when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {
                 return Err(self.unsupported(
                     span,
@@ -1398,7 +1403,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(ty) == Drops::Nothing {
             return false;
         }
-        if self.drop_query().drops_but_params(ty) == Drops::Nothing && self.given_drop(ty).is_none() {
+        // Of what holds only type parameters' values: its own drop given, or,
+        // a closure that took them, theirs (ADR 0485).
+        if self.drop_query().drops_but_params(ty) == Drops::Nothing
+            && self.given_drop(ty).is_none()
+            && !(matches!(ty.kind(), ty::Closure(..)) && self.holds_given_drops(ty))
+        {
             self.require_no_drops(ty);
             return false;
         }

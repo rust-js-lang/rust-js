@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`map(f)`, `filter(p)` and `skip_while(p)` of a function holding a value
+  with a destructor**, closed to drop it with the adapter (ADR 0485).
 - **A closure holding a value with a destructor given back by its maker**,
   `-> impl Fn`, carries its drop, `Symbol.dispose`, run where it's dropped
   (ADR 0484).

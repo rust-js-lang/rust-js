@@ -438,8 +438,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {
                 self.drop_items(value, item, span, made, out)?
             }
-            // Closed, `it.return()`, which drops what it holds (ADR 0422).
-            ty::Adt(..) if self.recognition().closed_on_drop(ty).is_some() => {
+            // Closed, `it.return()`, which drops what it holds (ADR 0422), and
+            // an adapter that holds a function with a destructor, made closing
+            // to drop it, `map(f)`'s (ADR 0485).
+            ty::Adt(..)
+                if self.recognition().closed_on_drop(ty).is_some()
+                    || (self.recognition().held_function(ty))
+                        .is_some_and(|function| self.drops(function) != Drops::Nothing) =>
+            {
                 out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
             }
             // A channel's end (ADR 0142): a receiver's drops what's still in
@@ -938,6 +944,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (given.into_iter())
             .map(|(alias, index)| (alias, self.drop_state.param_drops[&index].clone()))
             .collect()
+    }
+
+    /// Whether a drop of `ty`, which holds nothing with a destructor but
+    /// type parameters' values, is written with drops this function is
+    /// given: each type parameter it holds is given one, a closure's of what
+    /// it took (ADR 0485).
+    pub(super) fn holds_given_drops(&self, ty: Ty<'tcx>) -> bool {
+        let held = match ty.kind() {
+            ty::Closure(_, args) => args.as_closure().tupled_upvars_ty(),
+            _ => ty,
+        };
+        owned_params(self.tcx, held)
+            .into_iter()
+            .all(|index| self.drop_state.param_drops.contains_key(&index))
     }
 
     /// The index of the drop this function is given for a `ty`, a type

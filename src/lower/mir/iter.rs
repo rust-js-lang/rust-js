@@ -49,7 +49,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drop_value(held, receiver_ty, span, made)?;
             return Ok(Some(result));
         }
-        self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)
+        self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made)
+    }
+
+    /// `mir_iter_method`'s, of an adapter that holds a function with a
+    /// destructor, `map(f)`'s, made closing: `$closing(it, (it) => {
+    /// it.return(); .. })`, which closes its source, then drops its function,
+    /// as Rust drops a `Map`'s fields (ADR 0485).
+    fn holding_function(
+        &mut self,
+        def_id: DefId,
+        (trait_id, arg_tys): (DefId, &[Ty<'tcx>]),
+        mut values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let function = (self.recognition().held_function(output))
+            .filter(|&function| self.drops(function) != crate::lower::drops::Drops::Nothing);
+        let (Some(function), Some(f)) = (function, values.get(1).cloned()) else {
+            return self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made);
+        };
+        let f = match f.kind {
+            js::ExprKind::Var(_) => f,
+            _ => self.spill("f", f, made),
+        };
+        values[1] = f.clone();
+        let Some(adapter) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
+            return Ok(None);
+        };
+        let it = Expr::var("it");
+        let mut body = vec![StmtKind::Expr(Expr::call(Expr::member(it, "return"), Vec::new())).at(js::Span::NONE)];
+        self.drop_value(f, function, span, &mut body)?;
+        Ok(Some(Expr::call_helper(
+            "$closing",
+            vec![adapter, Expr::arrow(vec!["it".into()], body)],
+        )))
     }
 
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
@@ -72,9 +107,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(false);
         }
         let params_only = self.drop_query().drops_but_params(receiver) == crate::lower::drops::Drops::Nothing;
+        // And an adapter that holds a function with a destructor, `map(f)`'s,
+        // dropped with it (ADR 0485).
+        let holds_function = (self.recognition().held_function(receiver))
+            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing);
         let dropped = match params_only {
-            true => self.given_drop(receiver).is_some(),
-            false => self.is_user_iterator(receiver),
+            true => self.given_drop(receiver).is_some() || holds_function,
+            false => self.is_user_iterator(receiver) || holds_function,
         };
         let holds = output.walk().any(|part| part.as_type() == Some(receiver));
         if dropped && given && !holds {

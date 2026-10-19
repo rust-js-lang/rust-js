@@ -123,8 +123,8 @@ for (const [name, source, message, crate] of [
   ["a Cell of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(d: D) -> u32 { let c = std::cell::Cell::new(d); c.into_inner().0 }', "a std type holding a value with a destructor, `std::cell::Cell<D>`"],
   // A function called by `&` given where it's called once: that call drops none of it (ADR 0470).
   ["an Fn given on where it's called once", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\nfn once<G: FnOnce() -> u32>(g: G) -> u32 { g() }\nfn relay<F: Fn() -> u32>(f: F) -> u32 { once(f) }\npub fn f(d: D) -> u32 { relay(move || { let r = &d; r.0 }) }', "giving `once`, which calls it once, a function called by `&` that holds a value with a destructor"],
-  // A lazy adapter holds its function, dropped with it, not as `map` returns (ADR 0470).
-  ["a function with a destructor a lazy map holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> u32 { v.iter().map(move |x| { let r = &d; x + r.0 }).sum() }', "a function that holds a value with a destructor, kept by what it's given to"],
+  // A `take_while` holds its function, dropped with it, which it isn't made closing for yet (ADRs 0470, 0485).
+  ["a function with a destructor a lazy take_while holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> u32 { v.iter().take_while(move |x| { let r = &d; **x < r.0 }).sum() }', "a function that holds a value with a destructor, kept by what it's given to"],
   // A caller gives a type parameter's sort, not one of a type that holds one (ADR 0471).
   ["an unstable sort of items that hold a type parameter", 'pub fn f<T: Ord>(mut v: Vec<(T, u8)>) -> Vec<(T, u8)> { v.sort_unstable(); v }', "an unstable sort of items that hold a type parameter"],
   // `xor` of two `Some`s drops both, which it doesn't give back (ADR 0098).

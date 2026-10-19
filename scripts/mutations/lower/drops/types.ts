@@ -191,4 +191,12 @@ export const mutations: Mutation[] = [
       "an Rc of a dyn none of whose implementors drops"
     ]
   },
+  {
+    name: "held-function-unsupported",
+    breaks: "an adapter that holds a function with a destructor is a std type holding one, refused",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(_, args) if let Some(function) = self.recognition.held_function(ty) => {\n",
+    replace: "            ty::Adt(_, args) if let Some(function) = self.recognition.held_function(ty).filter(|_| false) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
+  },
 ];

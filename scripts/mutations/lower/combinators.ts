@@ -503,8 +503,8 @@ export const mutations: Mutation[] = [
     name: "unrun-param-ungiven",
     breaks: "a generic function's `F` it gives `unwrap_or_else` is taken as given no drop, so what it holds is never dropped",
     file: "src/lower/combinators.rs",
-    find: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing && self.given_drop(ty).is_none() {\n",
-    replace: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing {\n",
+    find: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n            && self.given_drop(ty).is_none()\n",
+    replace: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "            if when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {\n",
     replace: "            if false && when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy map holds"],
+    tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy take_while holds"],
   },
   {
     name: "called-once-unchecked",
@@ -570,5 +570,21 @@ export const mutations: Mutation[] = [
     find: "                && super::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)\n",
     replace: "                && false\n",
     tests: ["test/diagnostics.test.ts", "-t", "an Fn given on where it's called once"],
+  },
+  {
+    name: "held-function-kept-refused",
+    breaks: "a function a lazy adapter keeps, `map(f)`'s, is refused where it's given",
+    file: "src/lower/combinators.rs",
+    find: "            if when.is_none() && self.recognition().held_function(output) == Some(ty) {\n",
+    replace: "            if false && when.is_none() && self.recognition().held_function(output) == Some(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
+  },
+  {
+    name: "closure-of-given-params-ungiven",
+    breaks: "a closure that took a type parameter's value, given its drop, is taken for one its callers give none",
+    file: "src/lower/combinators.rs",
+    find: "            && !(matches!(ty.kind(), ty::Closure(..)) && self.holds_given_drops(ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
 ];

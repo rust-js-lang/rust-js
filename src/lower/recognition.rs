@@ -3724,6 +3724,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_ok()
     }
 
+    /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
+    /// `Map<I, F>`, which drops with it, after its source, closed as it is
+    /// (ADR 0485): `map`'s, `filter`'s and `skip_while`'s.
+    pub(crate) fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::iter::Map" | "std::iter::Filter" | "std::iter::SkipWhile"
+        )
+        .then(|| args.type_at(1))
+    }
+
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
     /// value; and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
