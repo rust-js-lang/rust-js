@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_eq_while_mut"],
   },
+  {
+    name: "map-eq-sizes-unchecked",
+    breaks: "a map with an entry more than another's is equal to it",
+    file: "src/runtime/eq.js",
+    find: "function $mapEq(a, b, eq = (x, y) => x === y) {\n  if (a.size !== b.size) return false;\n",
+    replace: "function $mapEq(a, b, eq = (x, y) => x === y) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
+  },
+  {
+    name: "eq-of-held-map-by-keys",
+    breaks: "a struct's maps compare by their object keys, none: any two are equal",
+    file: "src/runtime/eq.js",
+    find: "  if (a instanceof Map) return b instanceof Map && $mapEq(a, b, $eq);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
+  },
 ];

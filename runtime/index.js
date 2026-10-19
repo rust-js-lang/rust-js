@@ -338,9 +338,30 @@ export function $eq(a, b) {
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
   }
+  // A map's or a set's, held in what's compared (ADR 0059).
+  if (a instanceof Set) return b instanceof Set && $setEq(a, b);
+  if (a instanceof Map) return b instanceof Map && $mapEq(a, b, $eq);
   // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   return [...keys].every((k) => $eq(a[k], b[k]));
+}
+// Two maps (ADR 0059): as many entries, and each key of `a` one of `b`'s,
+// whose value `eq` says is equal, `===` where it's given none; and two sets,
+// each key of `a` one of `b`'s. A map keyed by a struct, `$KeyMap`, looks
+// its keys up by value.
+export function $mapEq(a, b, eq = (x, y) => x === y) {
+  if (a.size !== b.size) return false;
+  for (const [key, value] of a) {
+    if (!b.has(key) || !eq(value, b.get(key))) return false;
+  }
+  return true;
+}
+export function $setEq(a, b) {
+  if (a.size !== b.size) return false;
+  for (const key of a) {
+    if (!b.has(key)) return false;
+  }
+  return true;
 }
 
 // `left` and `right` are their `{:?}` strings already (ADR 0060).

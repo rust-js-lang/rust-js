@@ -96,3 +96,23 @@ enum key goes by its variants' declared order, as `Ord` has it.
   replace JS's own `Map` for the keys that need it least.
 - **An object, `{}`, for string keys.** `__proto__` and friends make it
   unsafe for arbitrary keys, and it can't hold numbers as numbers.
+
+## Amendment: `==` of two maps, and of two sets
+
+`a == b` of two maps was refused; and two structs that each held one, of
+a derived `PartialEq` that the runtime's `$eq` compares, were equal
+whatever their maps held, as `$eq` compared a JS `Map` by its object
+keys, which it has none of.
+
+- **Two maps are equal where they have as many entries and each key of
+  one is the other's, of an equal value**: `$mapEq(a, b, eq)`, `eq` the
+  values' `==`, the helper itself where that's one, `$eq`, and left out
+  where it's `===`. Two sets: `$setEq(a, b)`. A map keyed by a struct, a
+  `$KeyMap`, looks its keys up by value, as each key's `==` is.
+- **`$eq` compares a `Map` and a `Set` so too**, where a struct it
+  compares holds one.
+
+`test/corpus/map_eq.rs` compares maps and sets made in other orders, of
+struct keys, of values with their own `==` and of NaN, and structs that
+hold them, against native Rust.
+

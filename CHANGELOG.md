@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`==` of two maps or two sets**, `$mapEq(a, b)` (ADR 0059).
 - **`into_iter()` of a type parameter's associated type**, `H::Item:
   IntoIterator`, itertools' (ADR 0061).
 - **A number's `LowerExp` and `UpperExp` called by a type's own**, deranged's
@@ -685,6 +686,8 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **Two structs that each held a map or a set**, of a derived `PartialEq`,
+  were equal whatever their maps held (ADR 0059).
 - **A struct of a const parameter with a destructor**, itertools'
   `ArrayBuilder<T, N>`, in a crate that borrows a `RefCell` field, crashed
   the compiler (ADR 0362).

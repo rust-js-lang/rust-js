@@ -834,6 +834,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(all.unwrap_or_else(|| Expr::bool(true)));
         }
+        // Two maps, or two sets (ADR 0059): as many of each, and each key of
+        // one the other's, of an equal value: `$mapEq(a, b, (x, y) => ..)`,
+        // `$setEq(a, b)`.
+        if self.is_map(ty)
+            && let ty::Adt(_, args) = ty.kind()
+        {
+            if self.is_set(ty) {
+                return Ok(Expr::call_helper("$setEq", vec![a, b]));
+            }
+            let (x, y) = (self.fresh("x"), self.fresh("y"));
+            let mut made = Vec::new();
+            let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), span, &mut made)?;
+            let is = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
+            let mut list = vec![a, b];
+            match &same.kind {
+                // `===`, which it compares by where it's given none.
+                js::ExprKind::Binary(Op::Eq, l, r) if made.is_empty() && is(l, &x) && is(r, &y) => {}
+                // A helper of the two, `$eq`: the helper.
+                js::ExprKind::Call(callee, given)
+                    if made.is_empty()
+                        && callee.helper_name().is_some()
+                        && matches!(&given[..], [l, r] if is(l, &x) && is(r, &y)) =>
+                {
+                    list.push((**callee).clone());
+                }
+                _ => {
+                    made.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
+                    list.push(Expr::arrow(vec![x.into(), y.into()], made));
+                }
+            }
+            return Ok(Expr::call_helper("$mapEq", list));
+        }
         let structural = matches!(ty.kind(), ty::Tuple(_) | ty::Array(..) | ty::Slice(_))
             || self.is_std_wrapper(ty)
             || matches!(ty.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()) || self.is_known_std(ty));
