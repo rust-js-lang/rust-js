@@ -7837,6 +7837,22 @@ export function $fmtTry(write) {
     throw error;
   }
 }
+// One where generic code has a `Result` (ADR 0461): `Ok`, or `Err` of the
+// error `write` threw.
+export function $fmtResult(write) {
+  try {
+    write();
+    return { TAG: "Ok" };
+  } catch (error) {
+    if (error instanceof $FmtError) return { TAG: "Err", _0: error };
+    throw error;
+  }
+}
+// A generic `Result` of a `fmt::Error`, as a `fmt::Result` is a value:
+// `undefined`, or its error.
+export function $fmtOf(result) {
+  return result.TAG === "Ok" ? undefined : result._0;
+}
 // `?` of one: its error, on.
 export function $fmtCheck(result) {
   if (result !== undefined) throw result;

@@ -296,6 +296,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder()
             .output();
+        // A generic `Result` of a `fmt::Error`: a `fmt::Result` here.
+        if self.generic_fmt_result(declared, generic_args) {
+            return Ok(Expr::call_helper("$fmtOf", vec![value]));
+        }
         Ok(match self.boxed_in_call(def_id, declared, generic_args) {
             Some(_) => Expr::held(value),
             None => value,

@@ -1569,4 +1569,12 @@ export const mutations: Mutation[] = [
     replace: "                let given = usize::from(self.param_is_box(item.def_id, i));\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_ref_to_object_impl|into_iter_of_ref_param).rs$"],
   },
+  {
+    name: "fmt-result-not-generic",
+    breaks: "an impl's `fmt::Result` given where generic code has a `Result<(), Self::Error>` is `undefined`, whose `TAG` it reads",
+    file: "src/lower/traits.rs",
+    find: "            let call = match self.generic_fmt_result(declared_output, args) {\n",
+    replace: "            let call = match false && self.generic_fmt_result(declared_output, args) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
 ];

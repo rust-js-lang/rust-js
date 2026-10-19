@@ -5,7 +5,7 @@
 //! lowered as one whose writes never fail (ADR 0054).
 
 use crate::lower::library::Foreign;
-use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_fmt_result_type};
+use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_fmt_result_type, is_generic_fmt_result};
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -57,6 +57,19 @@ pub(super) fn failing_fns<'tcx>(
                                 calls.push((caller, callee));
                             }
                         }
+                        continue;
+                    }
+                    let declared = tcx
+                        .fn_sig(callee)
+                        .instantiate_identity()
+                        .skip_normalization()
+                        .skip_binder()
+                        .output();
+                    // A generic `Result` that's a `fmt::Result` here, `encode<S:
+                    // Sink>`'s `Result<(), S::Error>`: what its dictionary's
+                    // calls give, which may be any.
+                    if is_generic_fmt_result(tcx, typing_env, declared, args) {
+                        calls.push((caller, Callee::Unknown));
                         continue;
                     }
                     let output = tcx

@@ -2665,4 +2665,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^kept_read_past_branch.rs$"],
     snapshots: true,
   },
+  {
+    name: "writer-last-call-unchecked",
+    breaks: "a writer's last call that fails, `check(n)` of its `fmt::Result`, is ignored: `Ok(())`",
+    file: "src/lower/mir.rs",
+    find: "            self.fmt_check(value.clone(), self.js_span(span), out);\n            return Ok(());\n",
+    replace: "            out.push(StmtKind::Expr(value.clone()).at(self.js_span(span)));\n            return Ok(());\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
+  {
+    name: "writer-last-call-always-checked",
+    breaks: "a writer's last call, whose own `fmt::Result` throws, is checked again, `$fmtCheck(to_writer(..))`",
+    file: "src/lower/mir.rs",
+    find: "            && matches!(callee.helper_name(), Some(\"$fmtTry\" | \"$fmtOf\"))\n",
+    replace: "            && callee.helper_name() != Some(\"$never\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_writers.rs$"],
+    snapshots: true,
+  },
 ];

@@ -3313,6 +3313,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )),
                 None => call,
             };
+            // A `fmt::Result` the trait's signature has as a `Result`, `fn
+            // write(&mut self) -> Result<(), Self::Error>`'s of an impl whose
+            // `Error` is `fmt::Error`: one (ADR 0461).
+            let call = match self.generic_fmt_result(declared_output, args) {
+                true => {
+                    let made = call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone()));
+                    Some(Expr::call_helper(
+                        "$fmtResult",
+                        vec![Expr::arrow(
+                            Vec::new(),
+                            vec![js::StmtKind::Return(Some(made)).at(js::Span::NONE)],
+                        )],
+                    ))
+                }
+                false => call,
+            };
             // One that passes on just what it's given, in order, is the method.
             let passed = call.is_none()
                 && defaulted.is_none()

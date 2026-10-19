@@ -229,6 +229,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::helper("$fmtTry"), vec![Expr::arrow(Vec::new(), body)])
     }
 
+    /// `is_generic_fmt_result` in this body's typing environment.
+    pub(super) fn generic_fmt_result(&self, declared: Ty<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        super::recognition::is_generic_fmt_result(self.tcx, self.typing_env, declared, generic_args)
+    }
+
     /// Is the function being lowered one that may return `Err(fmt::Error)`
     /// (ADR 0187)?
     pub(super) fn writer_fails(&self) -> bool {

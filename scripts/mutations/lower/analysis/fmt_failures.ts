@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "                            if let Some(callee) = None::<Callee> {",
     tests: ["test/corpus.test.ts","-t","fmt_error_write"],
   },
+  {
+    name: "generic-fmt-result-never-fails",
+    breaks: "a writer that calls generic code whose `Result<(), S::Error>` is a `fmt::Result` isn't known to fail: its error is thrown out of `write!` to a `String`",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        calls.push((caller, Callee::Unknown));\n                        continue;\n",
+    replace: "                        continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
 ];

@@ -2606,6 +2606,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             value => value,
         };
+        // A writer's `fmt::Result`, of what it called last, that may hold
+        // an `Err`, `$fmtTry(..)`'s or `$fmtOf(..)`'s: thrown on, as `?` of
+        // it is (ADR 0187). A call's own throws it.
+        if state.writer.is_some()
+            && place == Place::from(mir::RETURN_PLACE)
+            && let Value::Expr(value) = &value
+            && let js::ExprKind::Call(callee, _) = &value.kind
+            && matches!(callee.helper_name(), Some("$fmtTry" | "$fmtOf"))
+        {
+            self.flush(state, out)?;
+            self.fmt_check(value.clone(), self.js_span(span), out);
+            return Ok(());
+        }
         // A union's field written: the one it holds now (ADR 0406).
         if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
             && self.is_union(base.ty(state.body, self.tcx).ty)

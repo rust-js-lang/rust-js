@@ -2138,4 +2138,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
+  {
+    name: "held-formatter-write-refused",
+    breaks: "a write to a `Formatter` kept in a struct, `self.f.write_str(s)`, is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if self.formatter_write(def_id, args) {\n            return Some(Some(Std::PushStr));\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
+  {
+    name: "formatter-not-text",
+    breaks: "a `&mut Formatter` kept in a struct is the text, `formatterSink.f += s`, not a handle on it",
+    file: "src/lower/recognition.rs",
+    find: "            || self.is_formatter_type(ty)\n            || self.is_rc(ty)\n",
+    replace: "            || self.is_rc(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
 ];

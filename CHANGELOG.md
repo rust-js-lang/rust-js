@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Formatter` kept in a struct**, base64's `FormatterSink`, that
+  generic code writes to: a handle on the writer's text (ADR 0461).
 - **An edition 2018 `unreachable!(x)`**, base64's, panics as edition
   2021's does (ADR 0189).
 - **heck compiles**: a closure or a callable that writes to the
@@ -676,6 +678,10 @@ rustc's own tests that rust-js compiles and runs as Rust does: 1,899 of
 Each of these compiled in 0.0.2 and ran differently than Rust. A program that
 did any of them prints Rust's answer now:
 
+- **A `fmt::Result` through generic code**, an impl whose `Error` is
+  `fmt::Error` called through `Result<(), S::Error>`, failed reading its
+  `TAG`; and **a writer's last call that failed**, `check(n)` of a
+  `fmt::Result`, gave `Ok` (ADR 0461).
 - **A library's `Display` shown with a width**, `{:>12}` of heck's
   `AsKebabCase`, was given its consumer's options where its dictionaries
   go, and failed: a writer takes options as its own crate does, which its

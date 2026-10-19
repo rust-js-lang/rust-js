@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "writer-callable-tuple-refused",
     breaks: "a writer callable given the `Formatter`, `with_word(word, f)`, is refused: its arguments' tuple holds it",
     file: "src/lower/mir/writer.rs",
-    find: "                if !of_alias && !given && mentions_locals",
-    replace: "                if !of_alias && mentions_locals",
+    find: "                if !of_alias && !given && !held && mentions_locals",
+    replace: "                if !of_alias && !held && mentions_locals",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "                    let operation = self.recognition().write_call(def_id, self.is_rust_fn(def_id));\n                    if matches!",
     replace: "                    let operation = self.recognition().write_call(def_id, self.krate.fns.contains_key(&def_id));\n                    if matches!",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
+  },
+  {
+    name: "formatter-held-in-struct-refused",
+    breaks: "a struct that holds a writer's `Formatter`, `FormatterSink { f }`, is refused",
+    file: "src/lower/mir/writer.rs",
+    find: "                if !of_alias && !given && !held && mentions_locals",
+    replace: "                if !of_alias && !given && mentions_locals",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
 ];

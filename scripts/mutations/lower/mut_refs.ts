@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
+  {
+    name: "generic-result-not-fmt",
+    breaks: "a generic `Result` of a `fmt::Error`, read where a `fmt::Result` goes, is the object, whose `Err` a writer never throws",
+    file: "src/lower/mut_refs.rs",
+    find: "            return Ok(Expr::call_helper(\"$fmtOf\", vec![value]));\n",
+    replace: "            return Ok(value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
 ];

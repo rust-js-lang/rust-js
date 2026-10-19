@@ -370,7 +370,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if assign.0.projection.is_empty() && aliases.contains(&assign.0.local));
                 let given = matches!(&statement.kind, StatementKind::Assign(assign)
                     if assign.0.projection.is_empty() && callables_given.contains(&assign.0.local));
-                if !of_alias && !given && mentions_locals(&aliases, |m| m.visit_statement(statement, location)) {
+                // A struct that holds it, `FormatterSink { f }`: a handle on
+                // its text, which what the struct is given writes (ADR 0461).
+                let held = match &statement.kind {
+                    StatementKind::Assign(assign) => match &assign.1 {
+                        Rvalue::Aggregate(kind, items) => {
+                            matches!(**kind, mir::AggregateKind::Adt(..))
+                                && items.iter().all(|item| {
+                                    item.place().is_some_and(|p| p.projection.is_empty())
+                                        || !mentions_locals(&aliases, |m| m.visit_operand(item, location))
+                                })
+                        }
+                        _ => false,
+                    },
+                    _ => false,
+                };
+                if !of_alias && !given && !held && mentions_locals(&aliases, |m| m.visit_statement(statement, location))
+                {
                     return Some((statement.source_info.span, this()));
                 }
             }
