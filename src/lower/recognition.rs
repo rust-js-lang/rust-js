@@ -5771,6 +5771,15 @@ pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
 }
 
+/// What a `Copied` steps, its `I` of a `Copied<I>`, whose JS iterator it is,
+/// each item a number or what's copied as it is (ADR 0480).
+pub(crate) fn copied_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Copied" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
 /// What std's `Map` adapter of type `ty` maps, `I` of `Map<I, F>`, which a
 /// map steps from either end where it knows its back (ADR 0455).
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {

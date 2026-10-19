@@ -79,9 +79,12 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     .and_then(|imp| tcx.impl_opt_trait_ref(imp))
     .map(|tr| tr.skip_binder().def_id)
     .or_else(|| tcx.trait_of_assoc(id));
+    // Not an iterator's extension trait either, `DoubleEndedIterator`, whose
+    // methods its JS iterator answers (ADRs 0164, 0456).
     let read = of_param.iter().any(|&tr| {
         tr != iterator
             && Some(tr) != own_trait
+            && !super::recognition::is_iterator_extension(tcx, tr)
             && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
     });
     // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
@@ -383,8 +386,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its callers give it.
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        // A map of one, made one that knows its back too, `$mapEnds` (ADR 0455).
-        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {
+        // A map of one, made one that knows its back too, `$mapEnds` (ADR
+        // 0455); a copy of one, which it is (ADR 0480).
+        if let Some(source) =
+            super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
+        {
             return self.knows_its_back(source);
         }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
@@ -409,12 +415,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// extension trait, `is`'s, given a JS iterator (ADR 0061), not as it is
     /// (ADR 0411).
     fn extension_param(&self, id: DefId, ty: ty::Ty<'tcx>, is: fn(ty::TyCtxt<'tcx>, DefId) -> bool) -> bool {
-        let ty::Param(param) = ty.kind() else {
-            return false;
+        // A type parameter's, or an associated type's, `I::IntoIter: DoubleEndedIterator`,
+        // a JS iterator as its caller has it (ADR 0480).
+        let js_iterator = match ty.kind() {
+            ty::Param(param) => !given_as_it_is(self.tcx, id, *param),
+            ty::Alias(..) => true,
+            _ => false,
         };
         let env = ty::TypingEnv::post_analysis(self.tcx, id);
-        !given_as_it_is(self.tcx, id, *param)
-            && (self.declared_bounds(ty, env.param_env).into_iter()).any(|bound| is(self.tcx, bound))
+        js_iterator && (self.declared_bounds(ty, env.param_env).into_iter()).any(|bound| is(self.tcx, bound))
     }
 
     /// Whether a value of `ty` is a JS iterator that knows its length, its
@@ -423,7 +432,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {
+        if let Some(source) =
+            super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
+        {
             return self.knows_its_length(source);
         }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
@@ -441,6 +452,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = self.reveal(ty);
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
             return Ok(value);
+        }
+        // A copy of one, which it is (ADR 0480).
+        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
+            return self.as_exact_size(value, source, back, span);
         }
         if let Some(kind) = self.range_kind(ty)
             && kind == super::std_types::range::RangeKind::Exclusive
@@ -473,6 +488,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = self.reveal(ty);
         if self.knows_its_back(ty) {
             return Ok(value);
+        }
+        // A copy of one, which it is (ADR 0480).
+        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
+            return self.as_double_ended(value, source, span);
         }
         if let Some(kind) = self.range_kind(ty)
             && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
