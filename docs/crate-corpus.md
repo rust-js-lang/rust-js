@@ -13,31 +13,35 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-15, after ADR 0414, Rust 1.99.0, each crate at the
+Measured 2026-10-19, after ADR 0461, Rust 1.99.0, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.19 | refused | `rfind`, `nth_back` and `rfold` of a double-ended iterator |
-| itertools 0.14 | blocked | either's |
-| indexmap 2.14 | runs | a `Map`, rustc builds it (ADR 0424) |
-| bitflags 2.13 | runs | |
-| smallvec 1.16 | runs | |
+| either 1.15 | compiles | no probe yet |
+| itertools 0.14 | refused | `IntoIterator::into_iter` in its generic code |
+| indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
+| bitflags 2.9 | runs | |
+| smallvec 1.15 | runs | |
 | arrayvec 0.7 | runs | |
 | hashbrown 0.17 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a `*const dyn Error` pointer, its error's type erased |
 | once_cell 1.21 | refused | `std::thread::current` called |
-| semver 1.0 | refused | `this Formatter` |
-| uuid 1.28 | compiles | no probe yet |
+| semver 1.0 | refused | a pointer's address |
+| uuid 1.18 | compiles | no probe yet |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
-| rust_decimal 1.38 | blocked | serde_core: `size_of` of a type parameter |
+| rust_decimal 1.38 | compiles | no probe yet |
 | chrono 0.4 (`alloc`) | compiles | no probe yet |
-| time 0.3 (`alloc`) | blocked | powerfmt: a pointer read as another type's; deranged: `hint::assert_unchecked` called |
+| time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
+| heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
+| base64 0.22 | refused | `io::Read::read`, `io::Error` |
+| hex 0.4 | compiles | no probe yet |
+| num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-9 of 18 compile, and each of the 7 with a probe runs as natively.
+14 of 22 compile, and each of the 8 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and
