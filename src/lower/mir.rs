@@ -5344,7 +5344,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// A call, `mir_call_values_of`'s; of std's, each function it's given by
+    /// value with a destructor, dropped where std drops it (ADRs 0469, 0470):
+    /// as it returns, or where it's left unrun, by its subject's variant,
+    /// both held in variables first.
     fn mir_call_values(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (mut values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let given = match self.is_std_call(def_id, generic_args)? {
+            true => {
+                let known = self.known_trait_call(def_id, generic_args);
+                self.given_functions(known, (arg_tys, output), span)?
+            }
+            false => {
+                self.check_called_once(def_id, arg_tys, span)?;
+                Vec::new()
+            }
+        };
+        if given.is_empty() {
+            return self.mir_call_values_of(state, (def_id, generic_args), (values, arg_tys), output, span, out);
+        }
+        let subject = match given.iter().find_map(|&(_, when)| when) {
+            Some(when) => Some(self.held_value(&mut values, 0, when.subject(), span, out)?),
+            None => None,
+        };
+        let mut held = Vec::new();
+        for (at, when) in given {
+            let f = self.held_value(&mut values, at, "f", span, out)?;
+            held.push((when, f, arg_tys[at]));
+        }
+        let value = self.mir_call_values_of(state, (def_id, generic_args), (values, arg_tys), output, span, out)?;
+        // What it gives, before what's dropped after it.
+        let value = match value {
+            Value::Expr(e) => Value::Expr(self.spill("value", e, out)),
+            value => value,
+        };
+        self.dropped_given(subject, held, span, out)?;
+        Ok(value)
+    }
+
+    /// Whether `def_id` is std's, as it's called with `generic_args`: not
+    /// the crate's, a binding, a call of a function value, nor a trait's
+    /// that resolves to the crate's impl.
+    fn is_std_call(&self, def_id: rustc_span::def_id::DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
+        let tcx = self.tcx;
+        if self.is_rust_fn(def_id) || bindings::is_binding(tcx, def_id) {
+            return Ok(false);
+        }
+        if let Some(trait_id) = tcx.trait_of_assoc(def_id)
+            && (tcx.fn_trait_kind_from_def_id(trait_id).is_some() || self.is_rust_trait(trait_id))
+        {
+            return Ok(false);
+        }
+        Ok(!(self.resolve_instance(def_id, generic_args)?).is_some_and(|i| self.is_rust_fn(i.def_id())))
+    }
+
+    fn mir_call_values_of(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
@@ -5402,7 +5463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 given.push(value);
                 tys.push(ty);
             }
-            return self.mir_call_values(state, (def_id, peeled), (given, &tys), output, span, out);
+            return self.mir_call_values_of(state, (def_id, peeled), (given, &tys), output, span, out);
         }
         // A constructor called, `f(Shape::Rect)`'s: the arrow making what it
         // makes (ADR 0125), applied.
@@ -5588,54 +5649,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_crate_call(state, (def_id, generic_args), values, &arg_tys, span, out);
         }
         if let Some(known) = known {
-            return self.std_call_dropping_unrun(
-                state,
-                (known, def_id),
-                generic_args,
-                &arg_tys,
-                values,
-                output,
-                span,
-                out,
-            );
+            let call = (known, def_id, generic_args);
+            return self.mir_std_value(state, call, (&arg_tys, values, output), span, out);
         }
         Err(refuse(self.tcx, span, Refused::Call(def_id)))
-    }
-
-    /// A std call, `mir_std_call`'s, its value as its `output` is held, and
-    /// each function it left unrun with a destructor dropped where it was,
-    /// as std drops it (ADR 0469).
-    #[allow(clippy::too_many_arguments)]
-    fn std_call_dropping_unrun(
-        &mut self,
-        state: &mut State<'_, 'tcx>,
-        (known, def_id): (Std, rustc_span::def_id::DefId),
-        generic_args: ty::GenericArgsRef<'tcx>,
-        arg_tys: &[Ty<'tcx>],
-        mut values: Vec<Value<'tcx>>,
-        output: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Value<'tcx>> {
-        let unrun = self.unrun_drops(known, arg_tys);
-        let subject = match unrun.first() {
-            Some(&(_, when)) => Some(self.held_value(&mut values, 0, when.subject(), span, out)?),
-            None => None,
-        };
-        let mut held = Vec::new();
-        for (at, when) in unrun {
-            let f = self.held_value(&mut values, at, "f", span, out)?;
-            held.push((when, f, arg_tys[at]));
-        }
-        let value = self.mir_std_call(state, (known, def_id), generic_args, arg_tys, values, output, span, out)?;
-        let value = self.std_value_as(value, output, arg_tys);
-        let Some(subject) = subject else {
-            return Ok(value);
-        };
-        let value = self.value_expr(value, span)?;
-        let value = self.spill("value", value, out);
-        self.dropped_unrun(subject, held, span, out)?;
-        Ok(Value::Expr(value))
     }
 
     /// `values[at]` held in a variable, which it's left as.
@@ -5655,6 +5672,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         values[at] = Value::Expr(value.clone());
         Ok(value)
+    }
+
+    /// A std call, `mir_std_call`'s, its value as its `output` is held,
+    /// `std_value_as`'s.
+    fn mir_std_value(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (known, def_id, generic_args): (Std, rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (arg_tys, values, output): (&[Ty<'tcx>], Vec<Value<'tcx>>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let value = self.mir_std_call(state, (known, def_id), generic_args, arg_tys, values, output, span, out)?;
+        Ok(self.std_value_as(value, output, arg_tys))
     }
 
     /// A std call's value as its `output` is held. A std iterator

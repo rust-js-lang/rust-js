@@ -5050,14 +5050,16 @@ pub(crate) fn is_memory_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     walk(tcx, ty, &mut Vec::new())
 }
 
+/// Whether `id` is std's: of `std`, `core` or `alloc`.
+pub(crate) fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    !id.is_local() && matches!(tcx.crate_name(id.krate).as_str(), "core" | "alloc" | "std")
+}
+
 fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
     let mut path = tcx.def_path_str(id);
     // Named through a crate's own name for std's, hashbrown's `extern crate
     // alloc as stdalloc`: std's own path, `alloc::alloc::alloc`.
-    if !id.is_local()
-        && matches!(tcx.crate_name(id.krate).as_str(), "core" | "alloc" | "std")
-        && !matches!(path.split("::").next(), Some("std" | "core" | "alloc"))
-    {
+    if is_std_crate(tcx, id) && !matches!(path.split("::").next(), Some("std" | "core" | "alloc")) {
         path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));
     }
     match path.split_once("::") {
@@ -5691,6 +5693,23 @@ pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Map" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
+/// How a function of type `ty`, in `owner`, is called: a closure's kind, or
+/// a type parameter's or an associated type's, by the strongest `Fn` bound
+/// its `owner` gives it, `F: FnMut`'s; `None` of what isn't one. One called
+/// by `FnOnce` alone drops what it holds as its body ends, and one called by
+/// `&` or `&mut` is dropped by what holds it (ADR 0470).
+pub(crate) fn function_kind<'tcx>(tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> Option<ty::ClosureKind> {
+    match ty.kind() {
+        ty::Closure(_, args) => Some(args.as_closure().kind()),
+        ty::Param(_) | ty::Alias(..) => (tcx.param_env(owner).caller_bounds().iter())
+            .filter_map(|clause| clause.as_trait_clause())
+            .filter(|bound| bound.self_ty().skip_binder() == ty)
+            .filter_map(|bound| tcx.fn_trait_kind_from_def_id(bound.def_id()))
+            .reduce(|a, b| if a.extends(b) { a } else { b }),
         _ => None,
     }
 }

@@ -35,6 +35,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<()> {
+        // A function it's given is dropped where std drops it, where it's
+        // `handled_function`'s (ADRs 0469, 0470): nothing taken here.
+        let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
+            .map(|(at, &ty)| match self.handled_function(Some(known), at, ty) {
+                Some(_) => self.tcx.types.unit,
+                None => ty,
+            })
+            .collect();
+        let tys = &tys[..];
         let holds_drops = |ty: Ty<'tcx>| self.drops(ty) == Drops::Runs;
         let takes_drops = tys.iter().any(|&ty| match *ty.kind() {
             ty::Ref(_, inner, Mutability::Mut) => holds_drops(inner),

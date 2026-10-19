@@ -2235,4 +2235,12 @@ export const mutations: Mutation[] = [
     replace: "        if matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "function-kind-weakest",
+    breaks: "an `F: FnMut` is taken for one called by `FnOnce`, whose body drops what it holds, and left undropped",
+    file: "src/lower/recognition.rs",
+    find: "            .reduce(|a, b| if a.extends(b) { a } else { b }),\n",
+    replace: "            .reduce(|a, b| if a.extends(b) { b } else { a }),\n",
+    tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
+  },
 ];

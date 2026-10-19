@@ -1311,24 +1311,90 @@ fn inserted(subject: Expr, at: Expr, value: Expr) -> Expr {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// The functions a std call `known`, of arguments of types `tys`, may
-    /// leave unrun with a destructor, which std drops (ADR 0469): each by its
-    /// argument, with the variant it's left on. A type parameter's whose drop
-    /// this function isn't given, none, one its callers give none with a
-    /// destructor (ADR 0190).
-    pub(super) fn unrun_drops(&self, known: super::recognition::Std, tys: &[Ty<'tcx>]) -> Vec<(usize, Unrun)> {
-        (unrun_functions(known).iter())
-            .filter(|&&(at, _)| self.drops_unrun(tys[at]))
-            .copied()
-            .collect()
+    /// Each function a std call `known` is given by value with a destructor,
+    /// of arguments of types `tys`, by its argument, with where it's dropped,
+    /// `handled_function`'s. One what it gives holds, `map(f)`'s, is refused.
+    pub(super) fn given_functions(
+        &self,
+        known: Option<super::recognition::Std>,
+        (tys, output): (&[Ty<'tcx>], Ty<'tcx>),
+        span: Span,
+    ) -> R<Vec<(usize, Option<Unrun>)>> {
+        let mut given = Vec::new();
+        for (at, &ty) in tys.iter().enumerate() {
+            let Some(when) = self.handled_function(known, at, ty) else {
+                continue;
+            };
+            if when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {
+                return Err(self.unsupported(
+                    span,
+                    "a function that holds a value with a destructor, kept by what it's given to",
+                ));
+            }
+            given.push((at, when));
+        }
+        Ok(given)
     }
 
-    /// Whether a function of type `ty` a std call may leave unrun is dropped
-    /// there, as std drops it (ADR 0469): one that holds a value with a
-    /// destructor, or a type parameter's whose drop this function is given.
-    /// Of one it isn't given, its callers give none with a destructor (ADR
-    /// 0190).
+    /// Where a function std is given by value as argument `at` of `known`, of
+    /// type `ty`, is dropped, as std drops it (ADRs 0469, 0470): one called
+    /// by `FnOnce` alone, on the variant `known` leaves it unrun on, its body
+    /// dropping it where it's run; one called by `&` or `&mut`, as the call
+    /// returns, `Some(None)`. `None` of one that isn't a function with a
+    /// destructor, or that's left as it was, run once by its call.
+    pub(super) fn handled_function(
+        &self,
+        known: Option<super::recognition::Std>,
+        at: usize,
+        ty: Ty<'tcx>,
+    ) -> Option<Option<Unrun>> {
+        let kind = super::recognition::function_kind(self.tcx, self.body_owner, ty)?;
+        if !self.drops_function(ty) {
+            return None;
+        }
+        match kind {
+            ty::ClosureKind::FnOnce => (unrun_functions(known?).iter())
+                .find(|&&(arg, _)| arg == at)
+                .map(|&(_, when)| Some(when)),
+            ty::ClosureKind::Fn | ty::ClosureKind::FnMut => Some(None),
+        }
+    }
+
+    /// A function called by `&` or `&mut` that holds a value with a
+    /// destructor, given where `callee` calls it by `FnOnce` alone, as its
+    /// argument: refused, as that call drops none of it, where Rust's drops
+    /// it once it's run (ADR 0470).
+    pub(super) fn check_called_once(&self, callee: rustc_span::def_id::DefId, tys: &[Ty<'tcx>], span: Span) -> R<()> {
+        let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        for (&ty, &input) in tys.iter().zip(inputs) {
+            let kind = super::recognition::function_kind(self.tcx, self.body_owner, ty);
+            if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
+                && super::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
+                && self.drops_function(ty)
+            {
+                let name = self.tcx.item_name(callee);
+                return Err(self.unsupported(
+                    span,
+                    &format!("giving `{name}`, which calls it once, a function called by `&` that holds a value with a destructor"),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Whether a function of type `ty`, called by `FnOnce` alone, which a
+    /// std call that writes a place or a map's entry may leave unrun, is
+    /// dropped there, as `get_or_insert_with`'s is (ADR 0469).
     pub(super) fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
+        super::recognition::function_kind(self.tcx, self.body_owner, ty) == Some(ty::ClosureKind::FnOnce)
+            && self.drops_function(ty)
+    }
+
+    /// Whether a function of type `ty` std is given is dropped where std
+    /// drops it: one that holds a value with a destructor, or a type
+    /// parameter's whose drop this function is given. Of one it isn't given,
+    /// its callers give none with a destructor (ADR 0190).
+    fn drops_function(&self, ty: Ty<'tcx>) -> bool {
         if self.drops(ty) == Drops::Nothing {
             return false;
         }
@@ -1339,27 +1405,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         true
     }
 
-    /// Each function `f`, of type `ty`, a std call of `subject` left unrun,
-    /// dropped where it was, `unrun_drops`' variant: `if (option == null) {
+    /// Each function `f`, of type `ty`, a std call was given, dropped where
+    /// std drops it: as it returns, or where it's left unrun, by the
+    /// variant of its `subject` it's left on: `if (option == null) {
     /// loudDrop_drop(a); }`.
-    pub(super) fn dropped_unrun(
+    pub(super) fn dropped_given(
         &mut self,
-        subject: Expr,
-        unrun: Vec<(Unrun, Expr, Ty<'tcx>)>,
+        subject: Option<Expr>,
+        given: Vec<(Option<Unrun>, Expr, Ty<'tcx>)>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
         let js_span = self.js_span(span);
-        for (when, f, ty) in unrun {
-            let test = match when {
-                Unrun::None => Expr::bin(Op::LooseEq, subject.clone(), Expr::null()),
-                Unrun::Some => Expr::bin(Op::LooseNe, subject.clone(), Expr::null()),
-                Unrun::Ok => result::is(subject.clone(), true),
-                Unrun::Err => result::is(subject.clone(), false),
-                Unrun::False => Expr::unary(js::UnaryOp::Not, subject.clone()),
-            };
+        for (when, f, ty) in given {
             let mut dropped = Vec::new();
             self.drop_value(f, ty, span, &mut dropped)?;
+            let Some(when) = when else {
+                out.extend(dropped);
+                continue;
+            };
+            let subject = subject.clone().expect("the subject it's left unrun by");
+            let test = match when {
+                Unrun::None => Expr::bin(Op::LooseEq, subject, Expr::null()),
+                Unrun::Some => Expr::bin(Op::LooseNe, subject, Expr::null()),
+                Unrun::Ok => result::is(subject, true),
+                Unrun::Err => result::is(subject, false),
+                Unrun::False => Expr::unary(js::UnaryOp::Not, subject),
+            };
             out.push(StmtKind::If(test, dropped, None).at(js_span));
         }
         Ok(())

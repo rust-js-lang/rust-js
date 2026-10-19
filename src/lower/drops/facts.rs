@@ -173,7 +173,9 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     }
                 }
             },
-            ExprKind::Call { ref args, .. } if args.iter().any(|&a| self.borrowing_closure(self.thir[a].ty)) => {
+            ExprKind::Call { ref args, ty, .. }
+                if !self.drops_given(ty) && args.iter().any(|&a| self.borrowing_closure(self.thir[a].ty)) =>
+            {
                 self.closure_problem(
                     expr.span,
                     "a closure that holds a value with a destructor, given away without being called once",
@@ -189,6 +191,20 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             }
             _ => {}
         }
+    }
+
+    /// Whether a call of `callee`, a function's type, may drop a closure
+    /// it's given that's called by `&` or `&mut`: std's, which drops it as
+    /// it returns, or the crate's own function's, as its caller's drop says,
+    /// each where its lowering says (ADR 0470). Not a binding's, which JS
+    /// holds, nor another crate's.
+    fn drops_given(&self, callee: Ty<'tcx>) -> bool {
+        let tcx = self.cx.recognition.tcx;
+        let Some((def_id, _)) = fn_def(callee) else {
+            return false;
+        };
+        !crate::lower::bindings::is_binding(tcx, def_id)
+            && (def_id.is_local() || crate::lower::recognition::is_std_crate(tcx, def_id))
     }
 
     /// Whether `ty` is a closure that holds a value with a destructor, which

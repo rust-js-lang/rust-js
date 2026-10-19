@@ -574,7 +574,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition.rs", "    pub(super) fn classify(", 8],
   ["src/lower/mir.rs", "    fn mir_call(", 105],
-  ["src/lower/mir.rs", "    fn mir_call_values(", 256],
+  ["src/lower/mir.rs", "    fn mir_call_values_of(", 248],
   ["src/lower/mir.rs", "    fn mir_std_call(", 191],
   ["src/lower/mir.rs", "    fn mir_function(", 388],
   ["src/lower/recognition.rs", "    fn classify_inherent(", 783],

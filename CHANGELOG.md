@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A closure called by `&` or `&mut` that holds a value with a
+  destructor, given by value**: to std's `all`, `fold`, `sort_by` and the
+  rest, dropped as they return, and to a generic function's `F: FnMut`,
+  dropped by it (ADR 0470).
 - **`ok_or_else`, `or_else` and `then` of a function that holds a value
   with a destructor**, dropped where it's left unrun (ADR 0469).
 - **`by_ref().take(n)` of items with a destructor**, in generic code too:

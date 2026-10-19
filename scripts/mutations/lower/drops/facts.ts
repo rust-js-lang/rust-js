@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "                    .find(|(s, _)| *s == scope && false)\n",
     tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
+  {
+    name: "std-given-closure-refused",
+    breaks: "a closure called by `&` given by value to std, which drops it as it returns, is refused",
+    file: "src/lower/drops/facts.rs",
+    find: "            && (def_id.is_local() || crate::lower::recognition::is_std_crate(tcx, def_id))\n",
+    replace: "            && def_id.is_local()\n",
+    tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
+  },
 ];
