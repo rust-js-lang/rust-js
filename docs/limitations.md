@@ -83,7 +83,6 @@ depends on what the program does:
 ## Formatting
 
 - `{:x?}`, a `Debug` in hex: `println!("{:x?}", vec![10, 11]);`
-- An exponent with a precision, `{:.2e}`: `println!("{:.2e}", 1234.5f64);`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
 
 ## Hashing

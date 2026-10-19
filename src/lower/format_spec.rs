@@ -160,11 +160,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => cx.debug_string_with(value, ty, span, &given),
             });
         }
-        // `{:.2e}` of any type: its impl may give a number's `{:e}` the
-        // precision, as deranged's does, which rounds as Rust's does.
-        if matches!(kind, Std::FmtExp(_)) && precision.is_some() {
-            return Err(self.unsupported(span, "`{:.2e}` and the like"));
-        }
         // `{:x}`, `{:e}` or `{:p}` of the crate's type: its own impl's `fmt`,
         // given the placeholder's options where there are any, `{:#x}`'s
         // too, as its `Display`'s is (ADR 0165).
@@ -215,7 +210,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(num) = num else {
                     return Err(self.unsupported(span, &format!("`{{:e}}` of a `{ty}`")));
                 };
-                exp_text(value, num, upper)
+                exp_text(value, num, upper, precision.clone())
             }
             // `{:.2}` of an `f64`: exact, and rounded as Rust rounds.
             _ if let Some(digits) = precision.clone()
@@ -326,12 +321,14 @@ fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) ->
 
 /// `{:e}` of a `num`, or `{:E}` where `upper`: the shortest digits, an
 /// `f32`'s its own, written as Rust writes them, `1.2345e3`, `inf` and `NaN`
-/// as they are.
-pub(super) fn exp_text(value: Expr, num: Num, upper: bool) -> Expr {
+/// as they are; given a `precision`, `{:.2e}`, that many after the first,
+/// rounded half to even, as Rust rounds.
+pub(super) fn exp_text(value: Expr, num: Num, upper: bool, precision: Option<Expr>) -> Expr {
     let mut args = vec![value];
-    if num == Num::F32 {
-        args.push(Expr::bool(true));
+    if num == Num::F32 || precision.is_some() {
+        args.push(Expr::bool(num == Num::F32));
     }
+    args.extend(precision);
     let text = Expr::call(Expr::helper("$lowerExp"), args);
     match upper {
         true => Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")]),

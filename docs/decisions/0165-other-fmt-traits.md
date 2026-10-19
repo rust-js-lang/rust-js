@@ -49,9 +49,7 @@ deranged's ranged integers show their number's `{:e}`,
 `fmt::LowerExp::fmt(&self.0, f)`, which was refused: only the radix traits
 of a number were std's here. A number's `LowerExp` and `UpperExp` are its
 `{:e}` and `{:E}`, `exp_text`, the one place a placeholder's are made too,
-padded by the options the writer is given. A precision with an exponent,
-`{:.2e}`, rounds as Rust rounds, which isn't made yet: it was refused of a
-number, and is now of any type, the crate's own too, as its impl may give
-the precision to a number's. `test/corpus/exp_forwarded.rs` shows them
-against native Rust; `diagnostics.test.ts` holds the refusal.
+of the precision the writer is given, ADR 0058's amendment, and padded by
+its options. `test/corpus/exp_forwarded.rs` and `exp_precision.rs` show
+them against native Rust.
 

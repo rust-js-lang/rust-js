@@ -16,7 +16,7 @@ export function rangedLowerExp() {
 }
 
 function rangedLowerExp_fmt(ranged, options) {
-  return $formatted($lowerExp(ranged[0]), options, true);
+  return $formatted($lowerExp(ranged[0], false, options?.precision), options, true);
 }
 
 export function rangedUpperExp() {
@@ -27,7 +27,11 @@ export function rangedUpperExp() {
 }
 
 function rangedUpperExp_fmt(ranged, options) {
-  return $formatted($lowerExp(ranged[0]).replace("e", "E"), options, true);
+  return $formatted(
+    $lowerExp(ranged[0], false, options?.precision).replace("e", "E"),
+    options,
+    true,
+  );
 }
 
 export function measureLowerExp() {
@@ -38,7 +42,7 @@ export function measureLowerExp() {
 }
 
 function measureLowerExp_fmt(measure, options) {
-  return $formatted($lowerExp(measure[0]), options, true);
+  return $formatted($lowerExp(measure[0], false, options?.precision), options, true);
 }
 
 function main() {

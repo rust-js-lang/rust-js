@@ -84,3 +84,18 @@ applied as Rust applies them:**
 
 - An integer literal before a `.` prints as `(5).toString(2)`. rust-js
   prints integers as their digits, so oxc can't add its usual space.
+
+## Amendment: an exponent with a precision
+
+`{:.2e}` was refused: JS's `toExponential` rounds a tie away from zero,
+on the shortest digits, where Rust rounds the exact value half to even,
+`{:.1e}` of `1.25` `1.2e0`, of `125` `1.2e2`. `$lowerExp(x, f32,
+precision)` makes it so, of the value as an exact fraction, as `$toFixed`
+does `{:.2}`'s: its first digit's exponent found, that many digits more
+rounded half to even, a carry, `9.96` to `1.0e1`, the exponent one up;
+an integer's, a 64-bit one's BigInt too, the same. A precision given as
+the placeholder runs, `{:.*e}`, or through a writer, a type's own
+`LowerExp` that gives a number's (ADR 0165), is the same.
+`test/corpus/exp_precision.rs` shows ties, carries, integers, `f32`s,
+padding and a type's own against native Rust.
+

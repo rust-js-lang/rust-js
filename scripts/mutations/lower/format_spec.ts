@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "lower-exp-f32-as-f64",
     breaks: "`{:e}` of an `f32` has its `f64`'s digits, `1.0000000149011612e-1` for `0.1`",
     file: "src/lower/format_spec.rs",
-    find: "    if num == Num::F32 {\n        args.push(Expr::bool(true));",
-    replace: "    if false {\n        args.push(Expr::bool(true));",
+    find: "        args.push(Expr::bool(num == Num::F32));\n",
+    replace: "        args.push(Expr::bool(false));\n",
     tests: ["test/corpus.test.ts", "-t", "exp_format"],
   },
   {
@@ -131,11 +131,11 @@ export const mutations: Mutation[] = [
     tests: ["test/runtime-package.test.ts", "-t", "a pointer"],
   },
   {
-    name: "exp-precision-of-own-type",
-    breaks: "`{:.2e}` of the crate's type that gives its number's `{:e}` the precision prints every digit",
+    name: "exp-precision-dropped",
+    breaks: "`{:.2e}` prints the shortest digits, its precision dropped",
     file: "src/lower/format_spec.rs",
-    find: "        if matches!(kind, Std::FmtExp(_)) && precision.is_some() {\n",
-    replace: "        if matches!(kind, Std::FmtExp(_)) && precision.is_some() && num.is_some() {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "precision with an exponent"],
+    find: "    args.extend(precision);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
 ];

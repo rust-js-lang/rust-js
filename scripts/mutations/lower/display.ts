@@ -609,8 +609,16 @@ export const mutations: Mutation[] = [
     name: "number-exp-call-unpadded",
     breaks: "a number's `{:e}` given a width through its type's `LowerExp` isn't padded",
     file: "src/lower/display.rs",
-    find: "                    let text = super::format_spec::exp_text(values.remove(0), num, upper);\n                    match &pretty {\n",
-    replace: "                    let text = super::format_spec::exp_text(values.remove(0), num, upper);\n                    match &Pretty::Plain {\n",
+    find: "                            Expr::call(\n                                Expr::helper(\"$formatted\"),\n                                vec![text, options.clone(), Expr::bool(true)],\n                            )\n",
+    replace: "                            text\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
+  },
+  {
+    name: "number-exp-call-precision-dropped",
+    breaks: "`{:.1e}` of a type whose `LowerExp` gives its number's prints every digit",
+    file: "src/lower/display.rs",
+    find: "                            let precision = Expr::optional_member(options.clone(), \"precision\");\n",
+    replace: "                            let precision = Expr::undefined();\n",
+    tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
 ];

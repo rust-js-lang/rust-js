@@ -436,14 +436,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if let Some((num, radix)) = std_radix {
                     self.radix_text(values.remove(0), num, radix, &pretty)
                 } else if let Some((num, upper)) = std_exp {
-                    // A number's `{:e}`, padded by the options it's given.
-                    let text = super::format_spec::exp_text(values.remove(0), num, upper);
+                    // A number's `{:e}`, of the precision it's given, padded by
+                    // the options it's given.
                     match &pretty {
-                        Pretty::When(options) if self.krate.format_options => Expr::call(
-                            Expr::helper("$formatted"),
-                            vec![text, options.clone(), Expr::bool(true)],
-                        ),
-                        _ => text,
+                        Pretty::When(options) if self.krate.format_options => {
+                            let precision = Expr::optional_member(options.clone(), "precision");
+                            let text = super::format_spec::exp_text(values.remove(0), num, upper, Some(precision));
+                            Expr::call(
+                                Expr::helper("$formatted"),
+                                vec![text, options.clone(), Expr::bool(true)],
+                            )
+                        }
+                        _ => super::format_spec::exp_text(values.remove(0), num, upper, None),
                     }
                 } else {
                     if !self.has_user_impl(trait_id, ty) {
