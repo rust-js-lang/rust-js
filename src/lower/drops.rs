@@ -564,12 +564,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What a closure holds: the variables it took, where it was made.
             // Only there, or in a closure made inside it, can JS see them.
             ty::Closure(def_id, _) => {
-                let Some((made_in, places)) = self.drop_state.closures.get(def_id).cloned() else {
+                let made_here = self.drop_state.closures.get(def_id).cloned().filter(|(made_in, _)| {
+                    std::iter::successors(Some(self.body_owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
+                });
+                let Some((_, places)) = made_here else {
+                    // One its maker gave back carries its drop (ADR 0484).
+                    if super::recognition::carries_its_drop(self.tcx, *def_id) {
+                        let js_span = self.js_span(span);
+                        out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
+                        return Ok(());
+                    }
                     return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));
                 };
-                if !std::iter::successors(Some(self.body_owner), |&d| self.tcx.opt_parent(d)).any(|d| d == made_in) {
-                    return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));
-                }
                 for (place, ty) in places {
                     self.drop_in(place, ty, span, made, out)?;
                 }

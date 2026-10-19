@@ -2763,4 +2763,12 @@ export const mutations: Mutation[] = [
     replace: "                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_slice_cast.rs$"],
   },
+  {
+    name: "returned-closure-unwrapped",
+    breaks: "a closure its maker gives back carries no drop, which its caller's `$dispose` reads",
+    file: "src/lower/mir.rs",
+    find: "        Ok(Expr::call_helper(\n            \"$dropping\",\n            vec![closure, Expr::arrow(Vec::new(), dropped)],\n        ))\n",
+    replace: "        let _ = dropped;\n        Ok(closure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
+  },
 ];

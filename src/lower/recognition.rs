@@ -4097,9 +4097,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether a dictionary of `id`'s holds its supertraits': a pair trait's,
-    /// as a `dyn` calls them, and `DerefMut`'s, its `Deref` (ADR 0394).
+    /// as a `dyn` calls them, `DerefMut`'s, its `Deref` (ADR 0394), and
+    /// `BorrowMut`'s, its `Borrow` (ADR 0483).
     pub(super) fn holds_supertraits(&self, id: DefId) -> bool {
-        self.is_pair_trait(id) || self.tcx.is_lang_item(id, LangItem::DerefMut)
+        self.is_pair_trait(id)
+            || self.tcx.is_lang_item(id, LangItem::DerefMut)
+            || is_std_def(self.tcx, id, StdItem::BorrowMut)
     }
 
     /// Of those, std's.
@@ -5787,6 +5790,33 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Map" => Some(args.type_at(0)),
         _ => None,
     }
+}
+
+/// Whether the closure `closure` carries its own drop, `$dropping`'s: one
+/// its maker gives back, the type its `impl Fn` hides, which is dropped
+/// where its maker's variables it took aren't seen (ADR 0484).
+pub(crate) fn carries_its_drop(tcx: TyCtxt<'_>, closure: DefId) -> bool {
+    let maker = tcx.typeck_root_def_id(closure);
+    if !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {
+        return false;
+    }
+    let output = tcx.fn_sig(maker).instantiate_identity().skip_binder().output();
+    output
+        .walk()
+        .filter_map(|part| part.as_type())
+        .any(|part| match part.kind() {
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Opaque { def_id },
+                    ..
+                },
+            ) => (tcx.type_of(*def_id).instantiate_identity())
+                .skip_normalization()
+                .walk()
+                .any(|t| matches!(t.as_type().map(|t| *t.kind()), Some(ty::Closure(id, _)) if id == closure)),
+            _ => false,
+        })
 }
 
 /// How a function of type `ty`, in `owner`, is called: a closure's kind, or

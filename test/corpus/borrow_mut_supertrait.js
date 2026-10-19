@@ -8,7 +8,7 @@ export function entry() {
   main();
 }
 
-function vecPoolIndex() {
+export function vecPoolIndex() {
   if ($vecPoolIndex === undefined) {
     $vecPoolIndex = {
       BorrowMut: () => ({
@@ -30,7 +30,7 @@ function vecPoolIndex() {
   return $vecPoolIndex;
 }
 
-function _usize__K_PoolIndex(K) {
+export function _usize__K_PoolIndex(K) {
   if ($_usize__K_PoolIndex === undefined) {
     $_usize__K_PoolIndex = new Map();
   }

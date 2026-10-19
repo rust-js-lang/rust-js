@@ -1173,6 +1173,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let closure = self.mir_closure_fn(state, def_id, captured, span, out)?;
+        // One its maker gives back, holding a value with a destructor: it
+        // carries its drop, what it took dropped, where it's made (ADR 0484).
+        let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        if !super::recognition::carries_its_drop(self.tcx, def_id) || self.drops(ty) == super::drops::Drops::Nothing {
+            return Ok(closure);
+        }
+        let mut dropped = Vec::new();
+        self.drop_value(Expr::undefined(), ty, span, &mut dropped)?;
+        Ok(Expr::call_helper(
+            "$dropping",
+            vec![closure, Expr::arrow(Vec::new(), dropped)],
+        ))
+    }
+
+    /// `mir_closure`'s function, of what it took.
+    fn mir_closure_fn(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        captured: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let Some(body) = def_id
             .as_local()
             .and_then(|local| self.krate.closures.get(&local))

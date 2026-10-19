@@ -552,6 +552,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0481 An iterator given as it is is written in place](decisions/0481-an-iterator-given-as-it-is-is-written-in-place.md)
 - [0482 A slice's pointer cast to what's at the same place is the slice](decisions/0482-a-slices-pointer-cast-to-the-same-place-is-the-slice.md)
 - [0483 `BorrowMut` is given a dictionary](decisions/0483-borrow-mut-is-given-a-dictionary.md)
+- [0484 A closure its maker gives back carries its drop](decisions/0484-a-returned-closure-carries-its-drop.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

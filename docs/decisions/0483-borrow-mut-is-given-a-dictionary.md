@@ -17,7 +17,8 @@ other impls, was refused.
 ## Decision
 
 **`BorrowMut` is `operational`**: a bound by it is given its dictionary,
-`{ borrow_mut }` and its `Borrow` supertrait's entry, and a trait's
+`{ borrow_mut }` and its `Borrow` supertrait's entry, which it holds as
+`DerefMut`'s holds its `Deref` (`holds_supertraits`), and a trait's
 supertrait chain reaches `Borrow` through it. std's, of what borrows as
 itself as an object, a `Vec`'s or an array's slice, is the same array; of
 text, a value JS can't lend in place, there's none. A crate's impl's is

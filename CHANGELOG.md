@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A closure holding a value with a destructor given back by its maker**,
+  `-> impl Fn`, carries its drop, `Symbol.dispose`, run where it's dropped
+  (ADR 0484).
 - **`borrow_mut()` through a bound, and `borrow()` through a `BorrowMut`
   supertrait**, as itertools' `PoolIndex` has (ADR 0483).
 - **A slice's pointer cast between `MaybeUninit<T>` and `T`**, the slice

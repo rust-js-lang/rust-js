@@ -4,7 +4,7 @@
 // an array the same array (ADR 0483).
 use std::borrow::BorrowMut;
 
-trait PoolIndex: BorrowMut<[usize]> {
+pub trait PoolIndex: BorrowMut<[usize]> {
     fn len(&self) -> usize {
         self.borrow().len()
     }

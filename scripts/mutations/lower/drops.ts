@@ -351,4 +351,12 @@ export const mutations: Mutation[] = [
     replace: "                        Some(value_ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
+  {
+    name: "returned-closure-drop-refused",
+    breaks: "a closure made elsewhere that carries its drop is refused where it's dropped",
+    file: "src/lower/drops.rs",
+    find: "                    if super::recognition::carries_its_drop(self.tcx, *def_id) {\n",
+    replace: "                    if false && super::recognition::carries_its_drop(self.tcx, *def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
+  },
 ];

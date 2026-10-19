@@ -2022,8 +2022,8 @@ export const mutations: Mutation[] = [
     name: "deref-mut-holds-no-supertraits",
     breaks: "a `P: DerefMut`'s `Deref` isn't looked for in its dictionary, and generic code that reads one is refused",
     file: "src/lower/recognition.rs",
-    find: "        self.is_pair_trait(id) || self.tcx.is_lang_item(id, LangItem::DerefMut)\n",
-    replace: "        self.is_pair_trait(id)\n",
+    find: "            || self.tcx.is_lang_item(id, LangItem::DerefMut)\n            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n",
+    replace: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
@@ -2289,6 +2289,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || is_std_def(tcx, id, StdItem::BorrowMut)\n",
     replace: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || serde_visitor(tcx, id) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
+  },
+  {
+    name: "returned-closure-carries-nothing",
+    breaks: "a closure its maker gives back is taken for one that carries no drop, and refused where it's dropped",
+    file: "src/lower/recognition.rs",
+    find: "    let maker = tcx.typeck_root_def_id(closure);\n    if !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {\n",
+    replace: "    let maker = tcx.typeck_root_def_id(closure);\n    if true || !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
+  },
+  {
+    name: "borrow-mut-holds-no-borrow",
+    breaks: "a `BorrowMut` dictionary is taken to hold no `Borrow`, so `self.borrow()` of a trait's own default through it is refused",
+    file: "src/lower/recognition.rs",
+    find: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n    }\n",
+    replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
 ];

@@ -168,7 +168,10 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         Some(ExprKind::Call { args, .. }) => args.contains(&child),
                         _ => false,
                     };
-                    if !placed {
+                    // One its maker gives back carries its drop (ADR 0484).
+                    let carried = matches!(expr.kind, ExprKind::Closure(ref c)
+                        if crate::lower::recognition::carries_its_drop(self.cx.recognition.tcx, c.closure_id.to_def_id()));
+                    if !placed && !carried {
                         self.closure_problem(expr.span, "a closure that holds a value with a destructor, made here");
                     }
                 }

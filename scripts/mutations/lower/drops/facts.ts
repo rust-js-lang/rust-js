@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "closure-made-anywhere",
     breaks: "a closure that holds a value with a destructor is made where its drop can't see what it took",
     file: "src/lower/drops/facts.rs",
-    find: "                    if !placed {",
-    replace: "                    if false && !placed {",
+    find: "                    if !placed && !carried {",
+    replace: "                    if false && !placed && !carried {",
     tests: ["test/traits.test.ts", "-t", "closure made in a block"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "            && (def_id.is_local() || crate::lower::recognition::is_std_crate(tcx, def_id))\n",
     replace: "            && def_id.is_local()\n",
     tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
+  },
+  {
+    name: "returned-closure-made-refused",
+    breaks: "a closure its maker gives back, holding a value with a destructor, is refused where it's made",
+    file: "src/lower/drops/facts.rs",
+    find: "                    if !placed && !carried {\n",
+    replace: "                    if !placed {\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
 ];

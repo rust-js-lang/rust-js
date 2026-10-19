@@ -538,6 +538,22 @@ export function $fuse(iter, fused = false) {
   return it;
 }
 
+// What a closure carries its drop under, JS's own `Symbol.dispose`, or the
+// symbol registered for it where an engine has none yet (ADR 0484).
+export const $disposeKey = Symbol.dispose ?? Symbol.for("Symbol.dispose");
+
+// A closure that leaves where it's made, its maker's `impl Fn`, carrying
+// its drop, `drop`, which drops what it took (ADR 0484).
+export function $dropping(f, drop) {
+  f[$disposeKey] = drop;
+  return f;
+}
+
+// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
+export function $dispose(f) {
+  f[$disposeKey]();
+}
+
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
 // `None` of none, where JS's `reduce` throws; boxed where it may look like
 // `None` (ADRs 0051, 0479).
