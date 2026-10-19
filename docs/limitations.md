@@ -81,7 +81,6 @@ depends on what the program does:
 ## Numbers and text
 
 - A float's `midpoint`: `println!("{}", 1.0f64.midpoint(3.0));`
-- A float's `copysign`: `println!("{}", 1.5f64.copysign(-2.0));`
 - A C string, a `c"..."` literal: `let c = c"hi"; println!("{:?}", c);`
 - `CString` and `CStr`: `let c = std::ffi::CString::new("hi").unwrap(); println!("{:?}", c);`
 
@@ -90,7 +89,6 @@ depends on what the program does:
 - `{:x?}`, a `Debug` in hex: `println!("{:x?}", vec![10, 11]);`
 - An exponent with a precision, `{:.2e}`: `println!("{:.2e}", 1234.5f64);`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
-- `Formatter::pad_integral`: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.pad_integral(true, "", "5") } } println!("{:>4}", X);`
 
 ## Hashing
 
@@ -127,8 +125,7 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time)).
 
 serde_json's common attributes work ([the semantics](semantics.md#the-javascript-boundary)).
 Refused, each held by `test/diagnostics.test.ts`, which compiles them with
-serde: `#[serde(with)]`, `serialize_with` and `deserialize_with`; a `u128`
-in JSON; reading a `BinaryHeap`; a map keyed by a struct;
+serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
 `Value::pointer`, and assigning to a `Value`'s key.
 
 ## React and JSX

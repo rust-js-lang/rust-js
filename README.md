@@ -163,7 +163,7 @@ Rust.js supports a growing subset of Rust aimed at JavaScript applications:
   included (see the [design decisions](docs/README.md))
 
 Support is specific to each feature. For example, a `HashMap` iterates in
-insertion order, and `std::thread::spawn` and `#[serde(with)]` are refused.
+insertion order, and `std::thread::spawn` and a `u128` in JSON are refused.
 [How Rust behaves in Rust.js](docs/semantics.md) says what each part of Rust
 does today and how it differs from native Rust, and
 [the known limitations](docs/limitations.md) what's refused.
