@@ -13,7 +13,7 @@ import {
   $index,
   $iter,
   $lines,
-  $maxBy,
+  $maxByKey,
   $orInsertWith,
   $pad,
   $parseBool,
@@ -125,13 +125,12 @@ export function table(input) {
   for (const [team, members] of $sortedEntries(byTeam, $cmp)) {
     const total = members.map((r) => r.score).reduce((a, b) => (a + b) >>> 0, 0);
     const avg = total / members.length;
-    const key = (r) => [r.score, [r.age]];
     const best =
-      $maxBy(members, (a, b) => {
-        const left = key(a);
-        const right = key(b);
-        return $cmp(left[0], right[0]) || $cmp(right[1][0], left[1][0]);
-      })?.name ?? "-";
+      $maxByKey(
+        members,
+        (r) => [r.score, [r.age]],
+        (a, b) => $cmp(a[0], b[0]) || $cmp(b[1][0], a[1][0]),
+      )?.name ?? "-";
     out += `${$pad(team, 6, ">")}: n=${members.length} avg=${$toFixed(avg, 1).padStart(6)} best=${best}\n`;
   }
   const ages = rows.map((r) => r.age);

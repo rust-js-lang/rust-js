@@ -134,11 +134,15 @@ pub(super) enum IterComb {
 }
 
 impl IterComb {
-    /// Whether it moves each item it takes on, `partition`'s into one of its
-    /// two (ADR 0445), `filter_map`'s and `find_map`'s to its function, so it
-    /// leaves none with a destructor undropped (ADR 0098).
-    pub(in crate::lower) fn moves_each_on(self) -> bool {
-        matches!(self, IterComb::Partition | IterComb::FilterMap | IterComb::FindMap)
+    /// Whether it leaves no item with a destructor undropped (ADR 0098): it
+    /// moves each it takes on, `partition`'s into one of its two (ADR 0445),
+    /// `filter_map`'s and `find_map`'s to its function; or it drops each it
+    /// passes over, `max_by`'s and `min_by`'s, by a key or not.
+    pub(in crate::lower) fn leaves_none(self) -> bool {
+        matches!(
+            self,
+            IterComb::Partition | IterComb::FilterMap | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_)
+        )
     }
 }
 
@@ -1110,42 +1114,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method(items, "filter", vec![f])
             }
+            // Each passed over dropped as it's passed, of items with a
+            // destructor (ADR 0098); a key made once for each, as std's.
             IterComb::MaxByKey(max) | IterComb::MaxBy(max) => {
-                let items = if lazy {
-                    method(items, "toArray", Vec::new())
-                } else {
-                    items
+                let item = self
+                    .iterator_item(receiver_ty.peel_refs())
+                    .ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
+                // Of an array's items, the array, as `$max`'s are.
+                let items = match lazy {
+                    true => method(items, "toArray", Vec::new()),
+                    false => items,
                 };
                 let f = next();
-                let compare = match comb {
-                    IterComb::MaxBy(_) => f,
+                match comb {
+                    IterComb::MaxBy(_) => {
+                        let helper = if max { "$maxBy" } else { "$minBy" };
+                        self.extreme_by(helper, vec![items, f], item, span)?
+                    }
                     _ => {
                         let key_ty = generic_args
                             .types()
                             .nth(1)
                             .ok_or_else(|| self.unsupported(span, "this key"))?;
-                        let key = if matches!(f.kind, js::ExprKind::Var(_)) {
-                            f
-                        } else {
-                            self.spill("key", f, out)
-                        };
-                        let mut body = Vec::new();
-                        let order = self.cmp_value(
-                            Expr::call(key.clone(), vec![Expr::var("a")]),
-                            Expr::call(key, vec![Expr::var("b")]),
-                            key_ty,
-                            false,
-                            span,
-                            &mut body,
-                        )?;
-                        body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-                        Expr::arrow(vec!["a".into(), "b".into()], body)
+                        if self.drops(key_ty) != crate::lower::drops::Drops::Nothing {
+                            return Err(self.unsupported(span, "a key with a destructor"));
+                        }
+                        let compare = self.cmp_fn(key_ty, false, span)?;
+                        let helper = if max { "$maxByKey" } else { "$minByKey" };
+                        self.extreme_by(helper, vec![items, f, compare], item, span)?
                     }
-                };
-                Expr::call(
-                    Expr::helper(if max { "$maxBy" } else { "$minBy" }),
-                    vec![items, compare],
-                )
+                }
             }
             IterComb::Product => {
                 let ty = generic_args

@@ -36,37 +36,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
-        // One taken by value, `items.fold(..)`'s, dropped as it's done, which
-        // JS doesn't: of a generic iterator, one its callers give none with a
-        // destructor (ADR 0190); of the crate's own with one, arrayvec's
-        // `Drain`, consumed, `collect()`, dropped after, as the method's end
-        // drops it. One whose result holds it, `map(f)`, is refused.
         if !receiver_ty.is_ref()
             && is_std_def(tcx, trait_id, StdItem::Iterator)
-            && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
+            && self.dropped_after(def_id, receiver_ty, output, !values.is_empty(), span)?
         {
-            if self.drop_query().drops_but_params(receiver_ty) == crate::lower::drops::Drops::Nothing {
-                self.require_consumed_drops_none(receiver_ty, output);
-            } else if self.is_user_iterator(receiver_ty) && !values.is_empty() {
-                if output.walk().any(|part| part.as_type() == Some(receiver_ty)) {
-                    let name = tcx.item_name(def_id);
-                    return Err(self.unsupported(
-                        span,
-                        &format!("`{name}` of an iterator with a destructor, from its MIR"),
-                    ));
-                }
-                let held = self.spill("iter", values.remove(0), made);
-                values.insert(0, held.clone());
-                let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)?
-                else {
-                    return Ok(None);
-                };
-                let result = self.spill("result", result, made);
-                self.drop_value(held, receiver_ty, span, made)?;
-                return Ok(Some(result));
-            }
+            let held = self.spill("iter", values.remove(0), made);
+            values.insert(0, held.clone());
+            let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
+                return Ok(None);
+            };
+            let result = self.spill("result", result, made);
+            self.drop_value(held, receiver_ty, span, made)?;
+            return Ok(Some(result));
         }
         self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)
+    }
+
+    /// Whether an iterator taken by value, `items.fold(..)`'s, of a
+    /// `receiver` with something to drop, is dropped after its method, as
+    /// the method's end drops it and JS doesn't: consumed, `collect()`, then
+    /// dropped, by its own drop, the crate's own, arrayvec's `Drain`, or its
+    /// caller's, a generic iterator's it's given (ADRs 0421, 0464). One whose
+    /// result holds it, `map(f)`, is refused; of a generic one given no drop,
+    /// its callers give none with a destructor (ADR 0190).
+    fn dropped_after(
+        &mut self,
+        def_id: DefId,
+        receiver: Ty<'tcx>,
+        output: Ty<'tcx>,
+        given: bool,
+        span: Span,
+    ) -> R<bool> {
+        if self.drops(receiver) == crate::lower::drops::Drops::Nothing {
+            return Ok(false);
+        }
+        let params_only = self.drop_query().drops_but_params(receiver) == crate::lower::drops::Drops::Nothing;
+        let dropped = match params_only {
+            true => self.given_drop(receiver).is_some(),
+            false => self.is_user_iterator(receiver),
+        };
+        let holds = output.walk().any(|part| part.as_type() == Some(receiver));
+        if dropped && given && !holds {
+            return Ok(true);
+        }
+        if params_only {
+            self.require_consumed_drops_none(receiver, output);
+        } else if self.is_user_iterator(receiver) && given {
+            let name = self.tcx.item_name(def_id);
+            return Err(self.unsupported(
+                span,
+                &format!("`{name}` of an iterator with a destructor, from its MIR"),
+            ));
+        }
+        Ok(false)
     }
 
     /// `mir_iter_call`'s, once what it drops is seen to.
@@ -851,6 +873,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Sum
                     | IterMethod::Product
                     | IterMethod::Count
+                    | IterMethod::Max
+                    | IterMethod::Min
                     | IterMethod::Last
                     | IterMethod::Nth
                     | IterMethod::Find
@@ -860,7 +884,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         );
         if keeps_each
-            || crate::lower::recognition::moves_each_on(name)
+            || crate::lower::recognition::leaves_none(name)
             || self.recognition().closed_on_drop(iter_ty).is_some()
         {
             return Ok(());

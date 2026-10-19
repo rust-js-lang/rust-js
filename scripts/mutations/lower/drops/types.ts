@@ -60,11 +60,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "params-drop-as-own",
-    breaks: "what a generic iterator drops of its type parameters is taken as its own, and a generic fold is refused",
+    breaks: "what a generic iterator drops of its type parameters is taken as its own, and a generic map is refused",
     file: "src/lower/drops/types.rs",
     find: "            ty::Param(_) if walk.params_none => Drops::Nothing,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic fold takes none"],
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic map takes none"],
   },
   {
     name: "weak-drops-nothing",

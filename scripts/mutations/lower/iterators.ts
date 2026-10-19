@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     "name": "extreme-of-copy",
     "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
     "file": "src/lower/iterators.rs",
-    "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\"].contains(&v.as_str())",
+    "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\", \"$maxByKey\", \"$minByKey\"].contains(&v.as_str())",
     "replace": "[\"$none\"].contains(&v.as_str())",
     "tests": [
       "test/lowering.test.ts",
@@ -658,5 +658,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(source) = super::recognition::mapped_source(self.tcx, ty) {\n            return self.knows_its_length(source);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+  },
+  {
+    name: "extreme-by-unboxed",
+    breaks: "`max()` of items that may look like `None` isn't boxed, so the greatest `None` is no item",
+    file: "src/lower/iterators.rs",
+    find: "        let boxed = self.boxed_payload(item);\n        let drop = self.std_drop_function(item, span)?;\n",
+    replace: "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
 ];

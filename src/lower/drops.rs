@@ -892,7 +892,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The index of the drop this function is given for a `ty`, a type
     /// parameter or an associated type of one, if it's given one.
-    fn given_drop(&self, ty: Ty<'tcx>) -> Option<u32> {
+    pub(super) fn given_drop(&self, ty: Ty<'tcx>) -> Option<u32> {
         let index = match ty.kind() {
             ty::Param(param) => param.index,
             ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,

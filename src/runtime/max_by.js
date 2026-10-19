@@ -1,8 +1,43 @@
-
-function $maxBy(items, cmp, boxed = false) {
-  if (items.length === 0) {
-    return undefined;
+// `max_by(compare)` and `min_by(compare)` of `items`, an array or an
+// iterator: std's fold, `compare(kept, item)` as each comes, the later kept
+// where they're equal for `max`, the earlier for `min`; each passed over
+// given to `drop` as it's passed, of items with a destructor (ADR 0098);
+// boxed where it may look like `None` (ADR 0051).
+function $extremeBy(items, compare, max, boxed, drop) {
+  let kept;
+  let seen = false;
+  for (const item of items) {
+    if (!seen) {
+      kept = item;
+      seen = true;
+    } else if ((compare(kept, item) > 0) === max) {
+      drop?.(item);
+    } else {
+      drop?.(kept);
+      kept = item;
+    }
   }
-  const max = items.reduce((max, x) => (cmp(x, max) >= 0 ? x : max));
-  return boxed ? $some(max) : max;
+  if (!seen) return undefined;
+  return boxed ? $some(kept) : kept;
+}
+function $maxBy(items, compare, boxed = false, drop = undefined) {
+  return $extremeBy(items, compare, true, boxed, drop);
+}
+function $minBy(items, compare, boxed = false, drop = undefined) {
+  return $extremeBy(items, compare, false, boxed, drop);
+}
+// `max_by_key(key)` and `min_by_key(key)`: each item's key made once, as it
+// comes, as std pairs them, and the keys compared by `compare`.
+function $extremeByKey(items, key, compare, max, boxed, drop) {
+  const keyed = (function* () {
+    for (const item of items) yield [key(item), item];
+  })();
+  const pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, drop && ((pair) => drop(pair[1])));
+  return pair === undefined ? undefined : boxed ? $some(pair[1]) : pair[1];
+}
+function $maxByKey(items, key, compare, boxed = false, drop = undefined) {
+  return $extremeByKey(items, key, compare, true, boxed, drop);
+}
+function $minByKey(items, key, compare, boxed = false, drop = undefined) {
+  return $extremeByKey(items, key, compare, false, boxed, drop);
 }

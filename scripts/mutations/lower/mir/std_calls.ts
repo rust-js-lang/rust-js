@@ -598,7 +598,7 @@ export const mutations: Mutation[] = [
     name: "partition-dropping-refused",
     breaks: "`partition` and `filter_map` of items with a destructor are refused, though they move each on",
     file: "src/lower/mir/std_calls.rs",
-    find: "if dropping.is_some() && comb != IterComb::SkipWhile && !comb.moves_each_on() {",
+    find: "if dropping.is_some() && comb != IterComb::SkipWhile && !comb.leaves_none() {",
     replace: "if dropping.is_some() && comb != IterComb::SkipWhile {",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },

@@ -48,10 +48,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `v.extend(items)` moves each into `v`, and drops `items` once it's
         // given them all: that, of what holds nothing then, is nothing;
         // `it.partition(f)` each into one of its two (ADR 0445), and
-        // `it.filter_map(f)` each to `f`, which owns it then; through a
-        // `&mut`, `find_map`'s, what it doesn't reach stays in the iterator.
+        // `it.filter_map(f)` each to `f`, which owns it then, and `max_by`
+        // drops each it passes over; through a `&mut`, `find_map`'s, what it
+        // doesn't reach stays in the iterator.
         let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
-            || (matches!(known, Std::IterComb(comb) if comb.moves_each_on())
+            || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])));
         if takes_drops
             && !drained

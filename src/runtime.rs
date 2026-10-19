@@ -324,7 +324,6 @@ helpers! {
     CmpItems,
     ThenCmp,
     MaxBy,
-    MinBy,
     Max,
     Min,
     Position,
@@ -673,7 +672,6 @@ impl Helper {
             // one's `Some` may be a box (ADR 0051).
             Helper::MaxBy => include_str!("runtime/max_by.js"),
             // And `min`: the first of the least.
-            Helper::MinBy => include_str!("runtime/min_by.js"),
             Helper::Max => include_str!("runtime/max.js"),
             Helper::Min => include_str!("runtime/min.js"),
             Helper::Position => include_str!("runtime/position.js"),

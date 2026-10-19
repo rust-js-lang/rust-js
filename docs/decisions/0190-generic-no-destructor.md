@@ -1,6 +1,9 @@
 # 0190. Generic code may take no destructor of a type parameter, and its callers are checked
 
 Status: Accepted. Extends [0098](0098-destructors.md) and [0100](0100-separate-crates.md).
+Amended by [0464](0464-a-pick-drops-what-it-passes-over.md): a generic
+iterator consumed by value, a `fold` of it, is dropped after by its
+caller's drop, so its callers may give one with a destructor.
 
 Case: D ([0262](0262-when-rust-and-js-disagree.md)).
 

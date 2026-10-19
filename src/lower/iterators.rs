@@ -640,8 +640,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `max()` or `min()` of `items`, an array of `item`s: of what JS's `<`
-    /// doesn't order, by its `cmp` (ADR 0057).
+    /// `max()` or `min()` of `items`, an array of `item`s: of
+    /// what JS's `<` doesn't order, by its `cmp` (ADR 0057), each passed over
+    /// dropped as it's passed, of items with a destructor (ADR 0098).
     pub(in crate::lower) fn extreme_of(
         &mut self,
         max: bool,
@@ -652,14 +653,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match item {
             Some(item) if !self.is_primitive_ord(item) => {
                 let compare = self.cmp_fn(item, false, span)?;
-                let mut list = vec![items, compare];
-                if self.boxed_payload(item) {
-                    list.push(Expr::bool(true));
-                }
-                Expr::call(Expr::helper(if max { "$maxBy" } else { "$minBy" }), list)
+                let helper = if max { "$maxBy" } else { "$minBy" };
+                self.extreme_by(helper, vec![items, compare], item, span)?
             }
             _ => Expr::call(Expr::helper(if max { "$max" } else { "$min" }), vec![items]),
         })
+    }
+
+    /// `helper`, `$maxBy` or one of its kind, given `args`, then whether an
+    /// `item` is boxed where it may look like `None` (ADR 0051), and what
+    /// drops each passed over, of one with a destructor (ADR 0098).
+    pub(in crate::lower) fn extreme_by(
+        &mut self,
+        helper: &'static str,
+        mut args: Vec<Expr>,
+        item: ty::Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        let boxed = self.boxed_payload(item);
+        let drop = self.std_drop_function(item, span)?;
+        if boxed || drop.is_some() {
+            args.push(Expr::bool(boxed));
+        }
+        args.extend(drop);
+        Ok(Expr::call(Expr::helper(helper), args))
     }
 
     /// `last()` of `items`, an array of `item`s: one that looks like `None`
@@ -1031,7 +1048,8 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         }
         // What reads every item alone, `$max`'s: of the array itself, not a
         // copy, `$max(xs)`; `$maxBy`'s compares as each comes.
-        if matches!(&callee.kind, js::ExprKind::Var(v) if ["$max", "$min", "$maxBy", "$minBy"].contains(&v.as_str()))
+        if matches!(&callee.kind, js::ExprKind::Var(v)
+            if ["$max", "$min", "$maxBy", "$minBy", "$maxByKey", "$minByKey"].contains(&v.as_str()))
             && let Some(first) = args.first()
             && let js::ExprKind::Call(to_array, none) = &first.kind
             && none.is_empty()

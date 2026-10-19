@@ -52,11 +52,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "no-drops-unrequired",
-    breaks: "a generic fold that takes no destructor of its iterator is given one by a caller, and drops nothing of it",
+    breaks: "a generic map that takes no destructor of its iterator is given one by a caller, and drops nothing of it",
     file: "src/lower/drops.rs",
     find: "            .extend(params);\n        true",
     replace: "            .extend(params.into_iter().filter(|_| false));\n        true",
-    tests: ["test/diagnostics.test.ts","-t","a destructor given where a generic fold takes none"],
+    tests: ["test/diagnostics.test.ts","-t","a destructor given where a generic map takes none"],
   },
   {
     name: "no-drops-not-passed-on",

@@ -5614,10 +5614,10 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
-/// Whether the `Iterator` method `name`, an `IterComb`, moves each item it
-/// takes on (`IterComb::moves_each_on`).
-pub(crate) fn moves_each_on(name: &str) -> bool {
-    methods::iterator(name).is_some_and(|comb| comb.moves_each_on())
+/// Whether the `Iterator` method `name`, an `IterComb`, leaves no item with
+/// a destructor undropped (`IterComb::leaves_none`).
+pub(crate) fn leaves_none(name: &str) -> bool {
+    methods::iterator(name).is_some_and(|comb| comb.leaves_none())
 }
 
 /// The type parameters whose names `{:?}` of `ty` shows, each a

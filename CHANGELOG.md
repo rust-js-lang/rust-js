@@ -21,6 +21,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).
+- **`max`, `min`, `max_by`, `min_by` and their `_by_key` forms of items
+  with a destructor**, each passed over dropped as std's fold drops it; and
+  generic code that consumes an iterator of them, `fold`, `last`, `count`
+  (ADR 0464).
 - **Hashing is std's**: `DefaultHasher` and `SipHasher`, a crate's own
   `Hasher`, derived and hand-written `Hash` impls, and generic code's `T:
   Hash` and `H: Hasher`, each `finish()` as native Rust's for `wasm32`
@@ -527,6 +531,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`max_by(compare)` and `min_by(compare)`** called `compare(item, kept)`,
+  where std calls `compare(kept, item)`, and **`max_by_key(key)`** made each
+  item's key again for each comparison, where std makes it once: a
+  comparison or a key that prints or counts showed it (ADR 0464).
 - **A hand-written serde impl** was written twice, once as if derived: a
   `Deserialize` read the wrong shape, or called a function that isn't there
   (ADR 0459).

@@ -15,7 +15,7 @@ import {
   $lazySkipWhile,
   $lazyTakeWhile,
   $lazyZip,
-  $maxBy,
+  $maxByKey,
   $minBy,
   $partition,
   $range,
@@ -108,13 +108,12 @@ export function iters(n) {
 
 export function consumers(n) {
   const v = $range(1, (n + 1) >>> 0);
-  const key = (x) => [x % 3, x];
   return [
-    $maxBy(v, (a, b) => {
-      const left = key(a);
-      const right = key(b);
-      return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
-    }),
+    $maxByKey(
+      v,
+      (x) => [x % 3, x],
+      (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+    ),
     $minBy(v, (a, b) => $cmp(b, a)),
     v.reduce((a, b) => (a * b) >>> 0, 1),
     v[2],
