@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            Some(IterMethod::Rev) => Expr::call(Expr::member(items, \"toReversed\"), Vec::new()),\n",
     replace: "            Some(IterMethod::Rev) => items,\n",
-    tests: ["test/corpus.test.ts","-t","linked_lists"],
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_array_iter|fused_iterator|str_bytes|sales_report|matrix_strings).rs$"],
   },
   {
     name: "mir-rev-own-next-back-unused",

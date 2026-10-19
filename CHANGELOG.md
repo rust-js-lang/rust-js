@@ -477,6 +477,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A value read in a branch, then a drop after it**, a map's `len()` in a
+  loop and a value dropped after the loop, ran: JS threw a `ReferenceError`
+  (ADR 0451).
 - **A trait method's `&mut Self::Out` of an object, called through a
   dictionary**, `g.get().push(1)` of a `G: Get<Out = Vec<u32>>`, is the
   impl's `Vec`: it threw (ADR 0454).

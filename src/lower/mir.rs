@@ -1852,7 +1852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.mir_drop(state, block, *place, false, span, &mut dropped)?;
                 if !dropped.is_empty() {
                     self.flush(state, &mut out)?;
-                    self.settle_reads(state, &mut out);
+                    self.settle_reads(state, block, &mut out);
                     let cleanup = self.mir_unwind(state, *unwind)?;
                     match cleanup.is_empty() {
                         true => out.extend(dropped),
@@ -1993,9 +1993,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Each value kept to be read in place that reads through a shared
     /// reference, which nothing changes while it's borrowed, `tmp.length` of
-    /// a `&Vec`: read here, before a drop that may change what it refers to
-    /// once the borrow's over, a `D: Deref`'s `d.len()` returned (ADR 0451).
-    fn settle_reads(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) {
+    /// a `&Vec`: read here, before `block`'s drop, which may change what it
+    /// refers to once the borrow's over, a `D: Deref`'s `d.len()` returned
+    /// (ADR 0451). Not one read only before it, as a branch's that's done
+    /// with, whose reference isn't there.
+    fn settle_reads(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, out: &mut Vec<Stmt>) {
         let references: HashSet<&str> = (state.body.local_decls.iter_enumerated())
             .filter(|(_, decl)| decl.ty.is_ref())
             .map(|(local, _)| state.locals.names[local].as_str())
@@ -2016,6 +2018,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .filter(|(_, e)| reads_reference(e))
             .map(|(&l, _)| l)
+            .filter(|&l| {
+                state.body.basic_blocks[block]
+                    .terminator()
+                    .successors()
+                    .any(|b| read_from(state.body, b, l))
+            })
             .collect();
         settled.sort();
         for local in settled {
@@ -6151,6 +6159,71 @@ fn only_read(body: &mir::Body<'_>, local: Local) -> bool {
     let mut reads = Reads { local, only: true };
     reads.visit_body(body);
     reads.only
+}
+
+/// Whether `local` is read in `from`, or a block it goes on to, before it's
+/// assigned again: what it holds now is read there.
+fn read_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
+    /// The first thing a statement does with `local`: reads it, `Some(true)`,
+    /// or assigns it, `Some(false)`.
+    struct First {
+        local: Local,
+        found: Option<bool>,
+    }
+    impl<'tcx> Visitor<'tcx> for First {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            if local != self.local || self.found.is_some() {
+                return;
+            }
+            self.found = match context {
+                PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call) => Some(false),
+                PlaceContext::NonUse(_) => None,
+                _ => Some(true),
+            };
+        }
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut next = vec![from];
+    'blocks: while let Some(block) = next.pop() {
+        if !seen.insert(block) {
+            continue;
+        }
+        let data = &body.basic_blocks[block];
+        for (index, statement) in data.statements.iter().enumerate() {
+            let at = mir::Location {
+                block,
+                statement_index: index,
+            };
+            let mut first = First { local, found: None };
+            // What's assigned is read first, then where it goes.
+            match &statement.kind {
+                StatementKind::Assign(assign) => {
+                    first.visit_rvalue(&assign.1, at);
+                    if first.found.is_none() && assign.0.local == local {
+                        first.found = Some(!assign.0.projection.is_empty());
+                    }
+                }
+                _ => first.visit_statement(statement, at),
+            }
+            match first.found {
+                Some(true) => return true,
+                Some(false) => continue 'blocks,
+                None => {}
+            }
+        }
+        let mut first = First { local, found: None };
+        let at = mir::Location {
+            block,
+            statement_index: data.statements.len(),
+        };
+        first.visit_terminator(data.terminator(), at);
+        match first.found {
+            Some(true) => return true,
+            Some(false) => continue,
+            None => next.extend(data.terminator().successors()),
+        }
+    }
+    false
 }
 
 /// Whether `local` is assigned in `from`, or a block it goes on to.

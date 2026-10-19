@@ -69,3 +69,15 @@ answers in generic code given a guard or a value with a destructor:
   a `&mut` given as a type parameter's value is the object, and generic
   code over `&mut T` takes a box (ADR 0180), a representation question
   of its own.
+
+## Amendment: only what's read past the drop
+
+Decision 3 read before a drop every value kept to be read in place that
+reads through a reference, those a branch was done with too: a map's
+`len()`, read in a loop's branch, was read again before a drop after
+the loop, where the map wasn't declared, and JS threw (a generated
+program's, seed 12446640, failing the nightly run since). Now it reads
+only those `read_from` the drop's successors, before they're assigned
+again. The `kept_read_past_branch` corpus case reads one in a loop's
+branch, drops a value each pass and one after the loop, against native
+Rust.

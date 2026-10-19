@@ -136,7 +136,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        StmtKind::If(test, then, Some(otherwise)) if then.last().is_some_and(ends) => {\n",
     replace: "        StmtKind::If(test, then, Some(otherwise)) if false && then.last().is_some_and(ends) => {\n",
-    tests: ["test/lowering.test.ts","-t","branches assign is returned from each"],
+    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-let-else-of-written-returns",

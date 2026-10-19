@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
 
@@ -22,6 +22,11 @@ beforeAll(() => {
   forBrowser("test/asserts.rs", "asserts", withWeb);
 }, 600_000);
 
+/** Where `beforeAll` wrote `name`'s tests for `kind`, `rust-tests` or
+ * `browser-tests`, from the root the runners run in: under `target`, its
+ * own where a mutation's run gives it one, not a copy another run left. */
+const built = (kind: string, name: string) => relative(root, join(target, kind, name, `${name}.test.js`));
+
 // ADR 0026: `#[test]` functions, in Rust, compiled by `rust-js --test` and
 // run by `bun test` in happy-dom's DOM.
 function rustTests(files: string[]): { exit: number; output: string } {
@@ -33,13 +38,13 @@ function rustTests(files: string[]): { exit: number; output: string } {
 }
 
 test("the example apps' own tests pass, in a DOM", () => {
-  const apps = ["counter", "todo", "countdown"].map((app) => `target/rust-tests/${app}/${app}.test.js`);
+  const apps = ["counter", "todo", "countdown"].map((app) => built("rust-tests", app));
   const { exit, output } = rustTests(apps);
   expect([exit, output.match(/(\d+) pass/)?.[1], output.match(/(\d+) fail/)?.[1]]).toEqual([0, "8", "0"]);
 });
 
 test("a failing test fails the way Rust's would", () => {
-  const { exit, output } = rustTests(["target/rust-tests/asserts/asserts.test.js"]);
+  const { exit, output } = rustTests([built("rust-tests", "asserts")]);
   expect(exit).toBe(1);
   expect([output.match(/(\d+) pass/)?.[1], output.match(/(\d+) skip/)?.[1], output.match(/(\d+) fail/)?.[1]]).toEqual(["4", "1", "8"]);
   // `assert!` with a message; `assert_eq!` showing both sides, as Rust does.
@@ -59,7 +64,7 @@ test("a failing test fails the way Rust's would", () => {
 
 // ADR 0027: the same tests in Chromium,
 // through Playwright Test and through Vitest's browser mode, both on Bun.
-const browserTests = ["target/browser-tests/counter/counter.test.js", "target/browser-tests/todo/todo.test.js"];
+const browserTests = [built("browser-tests", "counter"), built("browser-tests", "todo")];
 
 function inBrowsers(runner: "playwright" | "vitest", files: string[]): { exit: number; output: string } {
   const command =
@@ -78,7 +83,7 @@ test("in real browsers, with Playwright Test on Bun", () => {
   const { exit, output } = inBrowsers("playwright", browserTests);
   // 8 tests, the layout one included, on Chromium.
   expect([exit, output.match(/(\d+) passed/)?.[1]], output).toEqual([0, "8"]);
-  const failing = inBrowsers("playwright", ["target/browser-tests/asserts/asserts.test.js"]);
+  const failing = inBrowsers("playwright", [built("browser-tests", "asserts")]);
   expect([failing.exit, failing.output.match(/(\d+) failed/)?.[1], failing.output.match(/(\d+) skipped/)?.[1]]).toEqual([1, "8", "1"]);
   expect(failing.output).toContain("Error: assertion `left == right` failed\n      left: Point { x: 1, y: 2 }");
   // A promise it rejected that no one handled, found once it has run.
@@ -88,7 +93,7 @@ test("in real browsers, with Playwright Test on Bun", () => {
 test("in real browsers, with Vitest's browser mode", () => {
   const { exit, output } = inBrowsers("vitest", browserTests);
   expect([exit, output.match(/Tests\s+(\d+) passed/)?.[1]], output).toEqual([0, "8"]);
-  const failing = inBrowsers("vitest", ["target/browser-tests/asserts/asserts.test.js"]);
+  const failing = inBrowsers("vitest", [built("browser-tests", "asserts")]);
   expect([failing.exit, failing.output.match(/Tests\s+(\d+) failed/)?.[1]]).toEqual([1, "7"]);
   // Vitest fails the run for that promise, not the test.
   expect(failing.output).toMatch(/Errors\s+1 error/);

@@ -849,3 +849,14 @@ test("Bun's version is package.json's packageManager alone", () => {
   expect(steps.filter(step => !step.with.includes("bun-version-file: package.json") || step.with.includes("bun-version:"))).toEqual([]);
   expect(workflows.filter(file => read(file).includes("oven-sh/setup-bun")).length).toBe(new Set(steps.map(step => step.file)).size);
 });
+
+// Where a test's build writes is `target`, support.ts's, which a mutation's
+// run gives one of its own: a path spelled under `target/` reads a copy
+// another run left, and failed every mutation of the tests that did.
+test("tests find what they build through target", () => {
+  const spelled = readdirSync(join(root, "test"))
+    .filter((file) => file.endsWith(".test.ts") && file !== "architecture.test.ts")
+    // A string of a path, not a comment's word for the folder.
+    .filter((file) => read(`test/${file}`).split("\n").some((line) => !/^\s*\/\//.test(line) && /["'`]target\//.test(line)));
+  expect(spelled).toEqual([]);
+});
