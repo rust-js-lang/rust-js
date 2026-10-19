@@ -118,6 +118,18 @@ pub(in crate::lower) enum NumOp {
     FromStrRadix,
     DivCeil,
     Fract,
+    /// A float's `log(base)`: its `ln()` over the base's, as std's is.
+    Log,
+    /// `sin_cos()`: the pair.
+    SinCos,
+    /// A float's `rem_euclid(rhs)`, or `div_euclid(rhs)`, as std computes it.
+    FloatEuclid {
+        rem: bool,
+    },
+    /// `abs_sub(other)`, deprecated: the difference where it's positive, else 0.
+    AbsSub,
+    /// `copysign(sign)`: its magnitude, given `sign`'s sign.
+    CopySign,
     /// `to_radians()`, or `to_degrees()`.
     Angle {
         radians: bool,
@@ -523,6 +535,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let x = arg();
                 let x = if x.reads_same() { x } else { self.spill("x", x, out) };
                 Expr::bin(Op::Sub, x.clone(), math("trunc", vec![x]))
+            }
+            NumOp::Log => rounded(Expr::bin(Op::Div, math("log", vec![arg()]), math("log", vec![arg()]))),
+            NumOp::SinCos => {
+                let x = arg();
+                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                Expr::array(vec![
+                    rounded(math("sin", vec![x.clone()])),
+                    rounded(math("cos", vec![x])),
+                ])
+            }
+            NumOp::FloatEuclid { rem } => rounded(helper("$floatEuclid", vec![arg(), arg(), Expr::bool(rem)])),
+            NumOp::AbsSub => rounded(helper("$absSub", vec![arg(), arg()])),
+            // The sign of `sign`, `-0`'s too, by `$signNegative`.
+            NumOp::CopySign => {
+                let x = math("abs", vec![arg()]);
+                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let negative = helper("$signNegative", vec![arg()]);
+                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)
             }
             // `x * (PI / 180)` or `x * (180 / PI)`, as std's constants are: an
             // `f32`'s of `f32`s, its degrees per radian a literal.

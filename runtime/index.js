@@ -3673,6 +3673,23 @@ export function $jsonCollectMap(json, entries, key, write) {
   json.endObject();
 }
 
+// A float's `rem_euclid(rhs)`, or `div_euclid(rhs)`, as std computes it: the
+// remainder made non-negative, and the quotient that goes with it.
+export function $floatEuclid(a, b, rem) {
+  const r = a % b;
+  if (rem) return r < 0 ? r + Math.abs(b) : r;
+  const q = Math.trunc(a / b);
+  if (r < 0) return b > 0 ? q - 1 : q + 1;
+  return q;
+}
+
+// A float's `abs_sub(other)`, C's `fdim`: the difference where it's
+// positive, else 0, and a NaN of either a NaN.
+export function $absSub(a, b) {
+  if (Number.isNaN(a) || Number.isNaN(b)) return NaN;
+  return a > b ? a - b : 0;
+}
+
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
 // far and each item in turn, till one gives an `Err`, which it gives, the
 // rest left to step; else the `Ok` the last gave.

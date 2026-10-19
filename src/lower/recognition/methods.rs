@@ -50,7 +50,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
     let signed = num.signed();
     Some(match name {
         "floor" | "ceil" | "trunc" | "sqrt" | "cbrt" | "exp" | "log10" | "log2" | "sin" | "cos" | "tan" | "asin"
-        | "acos" | "atan" | "sinh" | "cosh" | "tanh" | "hypot" | "atan2"
+        | "acos" | "atan" | "sinh" | "cosh" | "tanh" | "asinh" | "acosh" | "atanh" | "hypot" | "atan2"
             if float =>
         {
             NumOp::Math(match name {
@@ -71,6 +71,9 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
                 "sinh" => "sinh",
                 "cosh" => "cosh",
                 "tanh" => "tanh",
+                "asinh" => "asinh",
+                "acosh" => "acosh",
+                "atanh" => "atanh",
                 "hypot" => "hypot",
                 _ => "atan2",
             })
@@ -161,6 +164,12 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "from_str_radix" if !float => NumOp::FromStrRadix,
         "div_ceil" if !float && !signed => NumOp::DivCeil,
         "fract" if float => NumOp::Fract,
+        "log" if float => NumOp::Log,
+        "sin_cos" if float => NumOp::SinCos,
+        "rem_euclid" if float => NumOp::FloatEuclid { rem: true },
+        "div_euclid" if float => NumOp::FloatEuclid { rem: false },
+        "abs_sub" if float => NumOp::AbsSub,
+        "copysign" if float => NumOp::CopySign,
         "to_radians" if float => NumOp::Angle { radians: true },
         "to_degrees" if float => NumOp::Angle { radians: false },
         "is_sign_negative" if float => NumOp::SignNegative { negated: false },

@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **num-traits compiles**: a float's `log(base)`, `sin_cos`, `asinh`,
+  `acosh`, `atanh`, `rem_euclid`, `div_euclid`, `abs_sub` and `copysign`
+  (ADR 0064).
 - **rust_decimal compiles**: `splitn` of a set of `char`s or a closure
   (ADR 0157), `Formatter::pad_integral` (ADR 0143), and an impl for
   `&mut Decimal`, whose `&mut self` is a cell of the object (ADR 0454).

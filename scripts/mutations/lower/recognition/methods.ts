@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
   },
+  {
+    name: "float-rem-euclid-as-int",
+    breaks: "a float's `rem_euclid` is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"rem_euclid\" if float => NumOp::FloatEuclid { rem: true },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
+  },
 ];

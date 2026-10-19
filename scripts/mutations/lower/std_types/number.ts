@@ -308,4 +308,20 @@ export const mutations: Mutation[] = [
     replace: "                exact\n",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
   },
+  {
+    name: "float-log-base-inverted",
+    breaks: "`8f64.log(2.0)` is the base's logarithm over the number's, 1/3",
+    file: "src/lower/std_types/number.rs",
+    find: "            NumOp::Log => rounded(Expr::bin(Op::Div, math(\"log\", vec![arg()]), math(\"log\", vec![arg()]))),\n",
+    replace: "            NumOp::Log => rounded({ let (x, b) = (arg(), arg()); Expr::bin(Op::Div, math(\"log\", vec![b]), math(\"log\", vec![x])) }),\n",
+    tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
+  },
+  {
+    name: "copysign-of-positive-zero",
+    breaks: "`3f64.copysign(-0.0)` is `3`: the sign of a negative zero isn't read",
+    file: "src/lower/std_types/number.rs",
+    find: "                let negative = helper(\"$signNegative\", vec![arg()]);\n                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)\n",
+    replace: "                let negative = Expr::bin(Op::Lt, arg(), Expr::num(0.0));\n                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)\n",
+    tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
+  },
 ];

@@ -39,6 +39,10 @@ const corpus: Crate[] = [
   { name: "rust_decimal", version: "1.38.0" },
   { name: "chrono", version: "0.4.42", defaultFeatures: false, features: ["alloc"] },
   { name: "time", version: "0.3.44", defaultFeatures: false, features: ["alloc"] },
+  { name: "heck", version: "0.5.0" },
+  { name: "base64", version: "0.22.1" },
+  { name: "hex", version: "0.4.3" },
+  { name: "num-traits", version: "0.2.19" },
 ];
 
 const root = resolve(import.meta.dir, "..");

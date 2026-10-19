@@ -107,3 +107,25 @@ is allowed only when cloning is structural.
 - JS's `Math.sin`, `Math.exp`, `Math.log` and `**` aren't required to be
   correctly rounded, and neither is the C library Rust calls. They agree on
   the values tested, but may differ in the last bit for others.
+
+## Amendment: the rest of a float's methods
+
+num-traits' `Float` calls a float's `log(base)`, `sin_cos`, `asinh`,
+`acosh`, `atanh`, `rem_euclid`, `div_euclid`, `abs_sub` and `copysign`;
+each was refused.
+
+- **`x.log(b)` is `Math.log(x) / Math.log(b)`**, as std's is `ln / ln`;
+  `sin_cos` is `[Math.sin(x), Math.cos(x)]`, `x` read once; `asinh`,
+  `acosh` and `atanh` are `Math`'s.
+- **`rem_euclid` and `div_euclid` are `$floatEuclid(a, b, rem)`**, std's
+  own steps: the remainder made non-negative, the quotient moved one past
+  the truncated one where it was negative. `abs_sub` is `$absSub`, C's
+  `fdim`, `0` where `a <= b`.
+- **`x.copysign(y)` reads `y`'s sign bit**, `$signNegative`, so a `-0.0`
+  gives a negative.
+
+Case: N for each but the transcendental functions, which are the case
+under Consequences: neither JS's `Math` nor the C library Rust calls is
+correctly rounded, so either may differ in the last bit. The corpus case
+`float_methods_more` prints them rounded, and the rest exactly, against
+native Rust.
