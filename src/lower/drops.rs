@@ -455,27 +455,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 out.push(StmtKind::Expr(call).at(js_span));
             }
-            // A map's values, a `BTreeMap`'s in its keys' order (ADR 0321).
+            // A map's entries, each its key, then its value, as Rust drops a
+            // pair, and a set's items, a B-tree's in its keys' order (ADRs
+            // 0321, 0467).
             ty::Adt(_, args) if self.is_map(ty) => {
-                let value_ty = args.type_at(1);
-                if self.is_sorted(ty) {
-                    let entries = self.in_order_of(value, ty, span)?;
-                    let name = self.fresh("value");
+                let set = self.is_set(ty);
+                let key_ty = args.type_at(0);
+                let value_ty = (!set).then(|| args.type_at(1));
+                let drops = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|ty| this.drops(ty) != Drops::Nothing);
+                let (keys, values) = (drops(self, Some(key_ty)), drops(self, value_ty));
+                if !self.is_sorted(ty) && !(keys && values) {
+                    let (items, item) = match (set, keys) {
+                        (true, _) => (value, key_ty),
+                        (false, true) => (Expr::call(Expr::member(value, "keys"), Vec::new()), key_ty),
+                        (false, false) => (
+                            Expr::call(Expr::member(value, "values"), Vec::new()),
+                            value_ty.expect("a map's values"),
+                        ),
+                    };
+                    self.drop_items(items, item, span, made, out)?;
+                } else {
+                    let entries = match self.is_sorted(ty) {
+                        true => self.in_order_of(value, ty, span)?,
+                        false => value,
+                    };
+                    let (key, item) = (self.fresh("key"), self.fresh("value"));
                     let mut body = Vec::new();
-                    self.drop_in(Expr::var(&name), value_ty, span, made, &mut body)?;
+                    let pattern = match value_ty {
+                        None => {
+                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
+                            js::Pattern::Name(key)
+                        }
+                        Some(value_ty) => {
+                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
+                            self.drop_in(Expr::var(&item), value_ty, span, made, &mut body)?;
+                            js::Pattern::names_array([keys.then_some(key), values.then_some(item)])
+                        }
+                    };
                     out.push(
                         StmtKind::ForOf {
                             label: None,
-                            pattern: js::Pattern::names_array([None, Some(name)]),
+                            pattern,
                             mutable: false,
                             iterable: entries,
                             body,
                         }
                         .at(js_span),
                     );
-                } else {
-                    let values = Expr::call(Expr::member(value, "values"), Vec::new());
-                    self.drop_items(values, value_ty, span, made, out)?;
                 }
             }
             // A `RefCell`'s value (ADR 0320), and a `Mutex`'s or an
@@ -894,12 +920,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_state.param_drops.insert(index, name);
     }
 
+    /// Each drop this function is given of a std associated type of a type
+    /// parameter, `dropTItem` of `T::Item`, by its type, which a copied
+    /// default of its impl is given too (ADR 0421).
+    pub(super) fn given_item_drops(&self) -> Vec<(ty::AliasTy<'tcx>, String)> {
+        let mut given: Vec<(ty::AliasTy<'tcx>, u32)> = (self.drop_state.types.items.iter())
+            .filter(|(_, index)| self.drop_state.param_drops.contains_key(index))
+            .map(|(&alias, &index)| (alias, index))
+            .collect();
+        given.sort_by_key(|&(_, index)| index);
+        (given.into_iter())
+            .map(|(alias, index)| (alias, self.drop_state.param_drops[&index].clone()))
+            .collect()
+    }
+
     /// The index of the drop this function is given for a `ty`, a type
     /// parameter or an associated type of one, if it's given one.
     pub(super) fn given_drop(&self, ty: Ty<'tcx>) -> Option<u32> {
         let index = match ty.kind() {
             ty::Param(param) => param.index,
-            ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,
+            // In a copied default, of the trait's terms too, `Self::Item`, as
+            // its impl's, `T::Item` (ADR 0421).
+            ty::Alias(_, alias) => *(self.drop_state.types.items.get(alias)).or_else(|| {
+                let ty::Alias(_, alias) = self.in_impl_terms(ty).kind() else {
+                    return None;
+                };
+                self.drop_state.types.items.get(alias)
+            })?,
             _ => return None,
         };
         self.drop_state.param_drops.contains_key(&index).then_some(index)

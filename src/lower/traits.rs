@@ -3551,7 +3551,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn default_method(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
         let span = self.tcx.def_span(id);
         let mut specialized = Vec::new();
-        let mut in_impl_terms = Vec::new();
         // A generic default's own evidence is its caller's, after its
         // arguments (ADR 0106); the rest is the impl's, made here.
         let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, id);
@@ -3579,19 +3578,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let concrete = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
-            let dictionary = self.dictionary(concrete, span)?;
-            // And in the impl's terms too, as the body asks: `self.remaining()`
-            // of a `Holder<T>`'s default, after the impl's own.
-            if concrete != bound {
-                in_impl_terms.push((concrete, dictionary.clone()));
-            }
-            specialized.push((bound, dictionary));
+            specialized.push((bound, self.dictionary(concrete, span)?));
         }
         // And the impl's own, `SClone` of `impl<S: Clone> Movable<S> for
         // Point<S>`: a call on the impl's types, which the body's resolve
         // to, is given them.
         specialized.extend(self.given.evidence.iter().cloned());
-        specialized.extend(in_impl_terms);
         // Its trait's type parameters, `Self` among them, drop as the impl's
         // arguments for them do, with the impl's drops (ADR 0098): each is
         // made here, and the body is given it by name.
@@ -3625,27 +3617,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             drops.insert(index as u32, name);
         }
-        // And of each std associated type of one, `Self::Item`, the drop the
-        // impl has of it, of its terms, `T::Item`'s `dropTItem`, as the body
-        // asks (ADR 0421).
+        // And each drop of a std associated type the impl's given, `dropTItem`
+        // of `T::Item`, as the body asks in the impl's terms (ADR 0421).
         let mut items = HashMap::new();
-        for (at, item) in drop_items(self.tcx, self.krate.foreign, id).into_iter().enumerate() {
+        for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {
             let index = (generics.count() + at) as u32;
-            let concrete = ty::EarlyBinder::bind(self.tcx, item)
-                .instantiate(self.tcx, args)
-                .skip_normalization();
-            if self.given_drop(concrete).is_none() {
-                continue;
-            }
-            if let Some(Expr {
-                kind: js::ExprKind::Var(name),
-                ..
-            }) = self.drop_function(concrete, span)?
-                && let Some(concrete) = alias_of(concrete)
-            {
-                drops.insert(index, name);
-                items.insert(concrete, index);
-            }
+            drops.insert(index, name);
+            items.insert(alias, index);
         }
         // Its trait's const parameters are the impl's arguments for them, `10`
         // of `Scaled<10>` or the impl's own `K`, and its own are given after

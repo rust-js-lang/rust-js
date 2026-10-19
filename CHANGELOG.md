@@ -21,6 +21,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **base64 compiles and runs as native**: text as `AsRef<[u8]>` (ADR 0162);
   what only a type's own `io::Read` calls is never lowered (ADR 0425);
   every trait impl of a library is exported (ADR 0100).
+- **A map's and a set's keys with a destructor**, dropped as Rust's are:
+  the one `insert` and `entry` are given where an equal's there, the one
+  `remove` takes out, and each as the map's cleared or dropped (ADR 0467).
 - **A map or a set of a type parameter's keys**, in a generic function, a
   trait's generic method and its default, `HashMap<K, V>` and
   `HashMap<Self::Item, usize>`: of the class its caller's keys say, given as

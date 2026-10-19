@@ -1,7 +1,9 @@
 # 0321. A map drops its values as Rust's does
 
 Status: Accepted. Extends [0059](0059-hashmap.md) and
-[0098](0098-destructors.md).
+[0098](0098-destructors.md). Amended by
+[0467](0467-a-maps-keys-drop-as-rusts-do.md): a key with a destructor is
+allowed, and drops as Rust's does.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), but for a key with a
 destructor, D: refused.

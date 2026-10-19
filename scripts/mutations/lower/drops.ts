@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "btree-drops-unsorted",
     breaks: "a `BTreeMap` drops its values in the order they went in",
     file: "src/lower/drops.rs",
-    find: "                if self.is_sorted(ty) {\n",
-    replace: "                if false {\n",
+    find: "                        true => self.in_order_of(value, ty, span)?,\n",
+    replace: "                        true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "map_drops"],
   },
   {
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "given-item-drop-unfound",
     breaks: "a std trait's associated type's drop, given, isn't found by its type, and isn't called",
     file: "src/lower/drops.rs",
-    find: "            ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,\n",
+    find: "            ty::Alias(_, alias) => *(self.drop_state.types.items.get(alias)).or_else(|| {\n                let ty::Alias(_, alias) = self.in_impl_terms(ty).kind() else {\n                    return None;\n                };\n                self.drop_state.types.items.get(alias)\n            })?,\n",
     replace: "            ty::Alias(..) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
@@ -342,5 +342,13 @@ export const mutations: Mutation[] = [
     replace: "            let _ = callee;\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
     snapshots: true,
+  },
+  {
+    name: "map-keys-undropped",
+    breaks: "dropping a map of keys and values with destructors drops its values alone",
+    file: "src/lower/drops.rs",
+    find: "                        Some(value_ty) => {\n                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;\n",
+    replace: "                        Some(value_ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
 ];

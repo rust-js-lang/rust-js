@@ -26,6 +26,10 @@ class $KeySet extends Set {
   has(item) {
     return this.#items.has(this.keyOf(item));
   }
+  // The item it holds equal to `item`, which its drop is of (ADR 0467).
+  storedKey(item) {
+    return this.#items.get(this.keyOf(item));
+  }
   delete(item) {
     return this.#items.delete(this.keyOf(item));
   }

@@ -1,21 +1,43 @@
 // A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
+// The key a map or a set holds equal to `key`: a `$KeyMap`'s, or the key
+// itself, a `Map`'s (ADR 0467).
+function $storedKey(m, key) {
+  return m.storedKey === undefined ? key : m.storedKey(key);
+}
+
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
 // B-tree's sorted, `f` given a handle on a number's or a string's value; of
-// values with a destructor, each it doesn't keep dropped by `drop` before
-// the next is asked (ADR 0321).
-function $retainMap(m, f, entries, handles, drop) {
+// keys and values with a destructor, each it doesn't keep dropped by
+// `dropKey` and `drop` before the next is asked (ADRs 0321, 0467).
+function $retainMap(m, f, entries, handles, drop, dropKey) {
   for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
     if (!f(key, value)) {
       m.delete(key);
-      if (drop !== undefined) drop(value);
+      dropKey?.(key);
+      drop?.(value);
     }
   }
 }
 
-function $retainSet(s, f, items) {
-  for (const item of Array.from(items)) if (!f(item)) s.delete(item);
+function $retainSet(s, f, items, drop) {
+  for (const item of Array.from(items)) {
+    if (!f(item)) {
+      s.delete(item);
+      drop?.(item);
+    }
+  }
+}
+
+// A set's `remove(x)` of items with a destructor: the one it held dropped
+// by `drop` (ADR 0467).
+function $removeItem(s, item, drop) {
+  if (!s.has(item)) return false;
+  const held = $storedKey(s, item);
+  s.delete(item);
+  drop(held);
+  return true;
 }
 
 // `m.drain()`: its entries, or its items, and it empty.
@@ -32,8 +54,9 @@ function $getKeyValue(m, key) {
 function $removeEntry(m, key) {
   if (!m.has(key)) return undefined;
   const value = m.get(key);
+  const held = $storedKey(m, key);
   m.delete(key);
-  return [key, value];
+  return [held, value];
 }
 
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
@@ -146,17 +169,22 @@ function $isDisjoint(a, b) {
 
 // `m.extend(items)`: each pair set, a later one's value over an earlier's,
 // or each item added; of values with a destructor, the one replaced dropped
-// by `drop`, as `insert` gives it back (ADR 0321).
-function $extendMap(m, items, set, drop) {
+// by `drop`, as `insert` gives it back (ADR 0321), and of keys or items with
+// one, the one given where an equal's there by `dropKey` (ADR 0467).
+function $extendMap(m, items, set, drop, dropKey) {
   for (const item of items) {
     if (set) {
-      m.add(item);
+      if (m.has(item)) dropKey?.(item);
+      else m.add(item);
       continue;
     }
-    const replaced = drop !== undefined && m.has(item[0]);
+    const replaced = m.has(item[0]);
     const old = m.get(item[0]);
     m.set(item[0], item[1]);
-    if (replaced) drop(old);
+    if (replaced) {
+      dropKey?.(item[0]);
+      drop?.(old);
+    }
   }
 }
 
@@ -190,9 +218,13 @@ function $entryRemove([m, key], entry) {
 }
 
 // `m.entry(key)` kept or matched: `Occupied` or `Vacant`, as its key is
-// there or not, of `[m, key]`, which its methods are of (ADR 0345).
-function $entry(m, key) {
-  return { TAG: m.has(key) ? "Occupied" : "Vacant", _0: [m, key] };
+// there or not, of `[m, key]`, which its methods are of (ADR 0345); where
+// it's there, the key given dropped by `dropKey`, of keys with a destructor
+// (ADR 0467).
+function $entry(m, key, dropKey) {
+  const there = m.has(key);
+  if (there) dropKey?.(key);
+  return { TAG: there ? "Occupied" : "Vacant", _0: [m, key] };
 }
 
 // An entry's `and_modify(f)`: `f` given its value where its key is there,

@@ -29,6 +29,10 @@ class $KeyMap extends Map {
   has(key) {
     return super.has(this.keyOf(key));
   }
+  // The key it holds equal to `key`, which its drop is of (ADR 0467).
+  storedKey(key) {
+    return super.get(this.keyOf(key))?.[0];
+  }
   delete(key) {
     return super.delete(this.keyOf(key));
   }

@@ -339,16 +339,16 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Runs,
                 }
             }
-            // A map's values (ADR 0321). A key with a destructor is refused: a
-            // map keeps the old key `insert` is given again, which a JS `Map`
-            // doesn't.
+            // A map's keys and values, and a set's items (ADRs 0321, 0467).
             ty::Adt(_, args) if self.recognition.is_map(ty) => {
-                let key = args.type_at(0);
-                match self.drops_in(key, walk) {
-                    Drops::Nothing if self.recognition.is_set(ty) => Drops::Nothing,
-                    Drops::Nothing => self.drops_in(args.type_at(1), walk),
-                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
-                    Drops::Runs => Drops::Unsupported(key, "a map's key with a destructor"),
+                let key = self.drops_in(args.type_at(0), walk);
+                if self.recognition.is_set(ty) {
+                    return key;
+                }
+                match (key, self.drops_in(args.type_at(1), walk)) {
+                    (Drops::Unsupported(t, what), _) | (_, Drops::Unsupported(t, what)) => Drops::Unsupported(t, what),
+                    (Drops::Nothing, Drops::Nothing) => Drops::Nothing,
+                    _ => Drops::Runs,
                 }
             }
             // A counted `Rc`: one count fewer, and the last drops what it points

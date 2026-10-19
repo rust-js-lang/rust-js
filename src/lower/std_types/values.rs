@@ -78,10 +78,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
                     // A map keeps what it takes, and gives back what it replaces or
-                    // removes; `or_insert_with` runs its function only to insert
-                    // (ADR 0321).
+                    // removes, and drops a key it keeps an equal one of, and one
+                    // it takes out; `or_insert_with` runs its function only to
+                    // insert (ADRs 0321, 0467).
                     | Std::Map(
                         MapOp::Insert
+                            | MapOp::Add
+                            | MapOp::Delete
+                            | MapOp::RemoveEntry
+                            | MapOp::SetTake
+                            | MapOp::SetReplace
                             | MapOp::Remove
                             | MapOp::Get
                             | MapOp::Index

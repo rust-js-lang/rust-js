@@ -418,14 +418,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A map's values' drop, where they have a destructor: what `retain`,
         // `extend` and `clear` drop what they take out with (ADR 0321).
         let values_drop = match (set, types.get(1)) {
-            (false, Some(&value)) if matches!(op, MapOp::Retain | MapOp::Extend | MapOp::Clear) => {
+            (false, Some(&value)) if matches!(op, MapOp::Retain | MapOp::Extend) => {
                 self.std_drop_function(value, span)?
             }
             _ => None,
         };
+        // Its keys' drop, a set's items', where they have a destructor: what
+        // drops the key `insert` is given where an equal one's there, the one
+        // `remove` takes out, and those `retain` doesn't keep (ADR 0467).
+        let keys_drop = match (types.first(), op) {
+            (
+                Some(&key),
+                MapOp::Insert
+                | MapOp::Add
+                | MapOp::Remove
+                | MapOp::Delete
+                | MapOp::Retain
+                | MapOp::Extend
+                | MapOp::Entry,
+            ) => self.std_drop_function(key, span)?,
+            _ => None,
+        };
+        // A trailing drop given, `undefined` for one of none before another.
+        let with_drops = |mut list: Vec<Expr>, drops: Vec<Option<Expr>>| {
+            let mut drops = drops;
+            while matches!(drops.last(), Some(None)) {
+                drops.pop();
+            }
+            list.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
+            list
+        };
         Ok(match op {
             // Each value dropped first, in its order, as dropping the map does.
-            MapOp::Clear if values_drop.is_some() => {
+            MapOp::Clear if self.drops(receiver) != crate::lower::drops::Drops::Nothing => {
                 let m = arg();
                 let m = if m.reads_same() { m } else { self.spill("map", m, out) };
                 self.drop_value(m.clone(), receiver, span, out)?;
@@ -439,12 +464,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let m = if m.reads_same() { m } else { self.spill("map", m, out) };
                 let entries = self.in_order_of(m.clone(), receiver, span)?;
                 match set {
-                    true => map_ops("$retainSet", vec![m, f, entries]),
+                    true => map_ops("$retainSet", with_drops(vec![m, f, entries], vec![keys_drop])),
                     false => {
                         let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));
-                        let mut list = vec![m, f, entries, Expr::bool(handles)];
-                        list.extend(values_drop);
-                        map_ops("$retainMap", list)
+                        let list = vec![m, f, entries, Expr::bool(handles)];
+                        map_ops("$retainMap", with_drops(list, vec![values_drop, keys_drop]))
                     }
                 }
             }
@@ -484,9 +508,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
                 let items = self.items_of(items, tys[1], span, out)?;
-                let mut list = vec![m, items, Expr::bool(set)];
-                list.extend(values_drop);
-                map_ops("$extendMap", list)
+                let list = vec![m, items, Expr::bool(set)];
+                map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop]))
             }
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
@@ -520,14 +543,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     helper("$sortKeys", vec![arg(), cmp])
                 }
             },
-            MapOp::Insert => {
-                let list = vec![arg(), arg(), arg()];
-                helper("$insert", list)
-            }
-            MapOp::Add => {
-                let list = vec![arg(), arg()];
-                helper("$add", list)
-            }
+            MapOp::Insert => helper("$insert", with_drops(vec![arg(), arg(), arg()], vec![keys_drop])),
+            MapOp::Add => helper("$add", with_drops(vec![arg(), arg()], vec![keys_drop])),
             // Of a value that could look like `None`, its `Some` boxed (ADR 0051).
             MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {
                 helper("$someGet", vec![arg(), arg()])
@@ -545,14 +562,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (m, k) = (arg(), arg());
                 method(m, "has", vec![k])
             }
-            MapOp::Remove => {
-                let list = vec![arg(), arg()];
-                helper("$remove", list)
-            }
-            MapOp::Delete => {
-                let (s, x) = (arg(), arg());
-                method(s, "delete", vec![x])
-            }
+            MapOp::Remove => helper("$remove", with_drops(vec![arg(), arg()], vec![keys_drop])),
+            MapOp::Delete => match keys_drop {
+                Some(drop) => helper("$removeItem", vec![arg(), arg(), drop]),
+                None => {
+                    let (s, x) = (arg(), arg());
+                    method(s, "delete", vec![x])
+                }
+            },
             MapOp::Len => Expr::member(arg(), "size"),
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
             MapOp::Iter(part) => {
@@ -587,7 +604,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
             // enum is (ADR 0345).
-            MapOp::Entry => map_ops("$entry", vec![arg(), arg()]),
+            MapOp::Entry => map_ops("$entry", with_drops(vec![arg(), arg()], vec![keys_drop])),
             MapOp::VacantInsert | MapOp::AndModify => {
                 let mut list = vec![arg(), arg()];
                 if types.get(1).is_some_and(|&value| self.is_boxable(value)) {

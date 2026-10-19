@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "entry-not-tagged",
     breaks: "a matched entry is `[m, key]`, untagged",
     file: "src/lower/std_types/map.rs",
-    find: "MapOp::Entry => map_ops(\"$entry\", vec![arg(), arg()]),",
+    find: "MapOp::Entry => map_ops(\"$entry\", with_drops(vec![arg(), arg()], vec![keys_drop])),",
     replace: "MapOp::Entry => Expr::array(vec![arg(), arg()]),",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },
@@ -303,8 +303,8 @@ export const mutations: Mutation[] = [
     name: "map-clear-drops-none",
     breaks: "`clear` of a map of values with a destructor drops none of them",
     file: "src/lower/std_types/map.rs",
-    find: "            MapOp::Clear if values_drop.is_some() => {\n",
-    replace: "            MapOp::Clear if false && values_drop.is_some() => {\n",
+    find: "            MapOp::Clear if self.drops(receiver) != crate::lower::drops::Drops::Nothing => {\n",
+    replace: "            MapOp::Clear if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
   {
@@ -350,5 +350,13 @@ export const mutations: Mutation[] = [
     find: "                _ => self.given_fact_of(key, fact),\n",
     replace: "                _ => Some(Expr::var(\"Map\")),\n",
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
+  },
+  {
+    name: "map-ops-keys-undropped",
+    breaks: "a map's operations are given no drop of its keys",
+    file: "src/lower/std_types/map.rs",
+    find: "        let keys_drop = match (types.first(), op) {\n",
+    replace: "        let keys_drop = match (None::<&Ty<'tcx>>, op) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
 ];

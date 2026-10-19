@@ -487,26 +487,35 @@ export function $iterator(iterator, next, boxed = false, nextBack, len) {
 }
 
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
-// like `None` (ADR 0051), or `None`.
-export function $insert(map, key, value) {
+// like `None` (ADR 0051), or `None`; of keys with a destructor, the key
+// given dropped by `dropKey` where one equal's there, which it keeps, as
+// Rust's does (ADR 0467).
+export function $insert(map, key, value, dropKey) {
   const had = map.has(key);
   const old = map.get(key);
   map.set(key, value);
+  if (had) dropKey?.(key);
   return had ? $some(old) : undefined;
 }
 
-export function $add(set, item) {
+// A set's `insert(x)`: whether `x` went in; of items with a destructor, `x`
+// dropped by `drop` where one equal's there, which it keeps (ADR 0467).
+export function $add(set, item, drop) {
   const added = !set.has(item);
   set.add(item);
+  if (!added) drop?.(item);
   return added;
 }
 
 // A map's `remove(k)`: `Some` of the value it had, boxed where it looks
-// like `None` (ADR 0051), or `None`.
-export function $remove(map, key) {
+// like `None` (ADR 0051), or `None`; of keys with a destructor, the key it
+// held dropped by `dropKey` (ADR 0467).
+export function $remove(map, key, dropKey) {
   const had = map.has(key);
   const old = map.get(key);
+  const held = had && dropKey !== undefined ? $storedKey(map, key) : undefined;
   map.delete(key);
+  if (had) dropKey?.(held);
   return had ? $some(old) : undefined;
 }
 
@@ -520,20 +529,25 @@ export function $repeat(item, count, clone) {
 }
 
 // `m.entry(key).or_insert(value)`: the value put in if the key's missing;
-// of a value with a destructor, the one given dropped by `drop` where the
-// key's there, as Rust's is (ADR 0321).
-export function $orInsert(map, key, value, drop) {
+// where the key's there, the key given dropped by `dropKey`, then the value
+// by `drop`, of ones with a destructor, as Rust's are (ADRs 0321, 0467).
+export function $orInsert(map, key, value, drop, dropKey) {
   if (!map.has(key)) {
     map.set(key, value);
-  } else if (drop !== undefined) {
-    drop(value);
+  } else {
+    dropKey?.(key);
+    drop?.(value);
   }
   return map.get(key);
 }
 
-export function $orInsertWith(map, key, make) {
+// `m.entry(key).or_insert_with(make)`: what `make` makes put in if the key's
+// missing; where it's there, the key given dropped by `dropKey` (ADR 0467).
+export function $orInsertWith(map, key, make, dropKey) {
   if (!map.has(key)) {
     map.set(key, make());
+  } else {
+    dropKey?.(key);
   }
   return map.get(key);
 }
@@ -589,6 +603,10 @@ export class $KeyMap extends Map {
   has(key) {
     return super.has(this.keyOf(key));
   }
+  // The key it holds equal to `key`, which its drop is of (ADR 0467).
+  storedKey(key) {
+    return super.get(this.keyOf(key))?.[0];
+  }
   delete(key) {
     return super.delete(this.keyOf(key));
   }
@@ -643,6 +661,10 @@ export class $KeySet extends Set {
   }
   has(item) {
     return this.#items.has(this.keyOf(item));
+  }
+  // The item it holds equal to `item`, which its drop is of (ADR 0467).
+  storedKey(item) {
+    return this.#items.get(this.keyOf(item));
   }
   delete(item) {
     return this.#items.delete(this.keyOf(item));
@@ -2822,21 +2844,43 @@ export function $insertMut(v, i, x, handle) {
 // A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
+// The key a map or a set holds equal to `key`: a `$KeyMap`'s, or the key
+// itself, a `Map`'s (ADR 0467).
+export function $storedKey(m, key) {
+  return m.storedKey === undefined ? key : m.storedKey(key);
+}
+
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
 // B-tree's sorted, `f` given a handle on a number's or a string's value; of
-// values with a destructor, each it doesn't keep dropped by `drop` before
-// the next is asked (ADR 0321).
-export function $retainMap(m, f, entries, handles, drop) {
+// keys and values with a destructor, each it doesn't keep dropped by
+// `dropKey` and `drop` before the next is asked (ADRs 0321, 0467).
+export function $retainMap(m, f, entries, handles, drop, dropKey) {
   for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
     if (!f(key, value)) {
       m.delete(key);
-      if (drop !== undefined) drop(value);
+      dropKey?.(key);
+      drop?.(value);
     }
   }
 }
 
-export function $retainSet(s, f, items) {
-  for (const item of Array.from(items)) if (!f(item)) s.delete(item);
+export function $retainSet(s, f, items, drop) {
+  for (const item of Array.from(items)) {
+    if (!f(item)) {
+      s.delete(item);
+      drop?.(item);
+    }
+  }
+}
+
+// A set's `remove(x)` of items with a destructor: the one it held dropped
+// by `drop` (ADR 0467).
+export function $removeItem(s, item, drop) {
+  if (!s.has(item)) return false;
+  const held = $storedKey(s, item);
+  s.delete(item);
+  drop(held);
+  return true;
 }
 
 // `m.drain()`: its entries, or its items, and it empty.
@@ -2853,8 +2897,9 @@ export function $getKeyValue(m, key) {
 export function $removeEntry(m, key) {
   if (!m.has(key)) return undefined;
   const value = m.get(key);
+  const held = $storedKey(m, key);
   m.delete(key);
-  return [key, value];
+  return [held, value];
 }
 
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
@@ -2967,17 +3012,22 @@ export function $isDisjoint(a, b) {
 
 // `m.extend(items)`: each pair set, a later one's value over an earlier's,
 // or each item added; of values with a destructor, the one replaced dropped
-// by `drop`, as `insert` gives it back (ADR 0321).
-export function $extendMap(m, items, set, drop) {
+// by `drop`, as `insert` gives it back (ADR 0321), and of keys or items with
+// one, the one given where an equal's there by `dropKey` (ADR 0467).
+export function $extendMap(m, items, set, drop, dropKey) {
   for (const item of items) {
     if (set) {
-      m.add(item);
+      if (m.has(item)) dropKey?.(item);
+      else m.add(item);
       continue;
     }
-    const replaced = drop !== undefined && m.has(item[0]);
+    const replaced = m.has(item[0]);
     const old = m.get(item[0]);
     m.set(item[0], item[1]);
-    if (replaced) drop(old);
+    if (replaced) {
+      dropKey?.(item[0]);
+      drop?.(old);
+    }
   }
 }
 
@@ -3011,9 +3061,13 @@ export function $entryRemove([m, key], entry) {
 }
 
 // `m.entry(key)` kept or matched: `Occupied` or `Vacant`, as its key is
-// there or not, of `[m, key]`, which its methods are of (ADR 0345).
-export function $entry(m, key) {
-  return { TAG: m.has(key) ? "Occupied" : "Vacant", _0: [m, key] };
+// there or not, of `[m, key]`, which its methods are of (ADR 0345); where
+// it's there, the key given dropped by `dropKey`, of keys with a destructor
+// (ADR 0467).
+export function $entry(m, key, dropKey) {
+  const there = m.has(key);
+  if (there) dropKey?.(key);
+  return { TAG: there ? "Occupied" : "Vacant", _0: [m, key] };
 }
 
 // An entry's `and_modify(f)`: `f` given its value where its key is there,

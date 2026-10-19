@@ -4,7 +4,6 @@ abi/c-stack-returning-int64.rs	error: rust-js does not support calling `std::ffi
 abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support addressable memory yet: a `transmute` of `for<'a> extern "C" fn(&'a isize) -> std::option::Option<&'a isize>` as `for<'a> extern "C" fn(&'a isize) -> &'a isize`, which 
 associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<<impl Tr1 + std::clone::Clone + std::iter::Iterator + std::ops::Add<u8> + std::convert::Into<u8> as Tr1>::As1 as std::iter::Iterator>::Item` yet
 associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "issue_28983")] fn issue_28983(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
-associated-types/associated-item-long-paths.rs	error: rust-js does not support `size_of` of a type parameter yet
 async-await/async-fn-size-moved-locals.rs	error: rust-js does not support `BigFut` as a promise yet: its `Future` is the crate's own, which rust-js never compiles (ADR 0425)
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::pin_new_unchecked_in_helper` yet
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet

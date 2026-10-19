@@ -1029,14 +1029,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a default's const parameter numbered as its impl's"],
   },
   {
-    name: "default-impl-bound-unsubstituted",
-    breaks: "a trait default's bound of its impl is only in the trait's terms, `Self: Capacity`, so the body's `self.remaining()` of a `Holder<T>` finds no dictionary",
-    file: "src/lower/traits.rs",
-    find: "                in_impl_terms.push((concrete, dictionary.clone()));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^trait_default_impl_const.rs$"],
-  },
-  {
     name: "io-write-default-refused",
     breaks: "a writer of bytes of the crate's has no `write_all` or `write_fmt`, std's defaults, so it's refused where a `W: Write` goes",
     file: "src/lower/traits.rs",
@@ -1662,8 +1654,16 @@ export const mutations: Mutation[] = [
     name: "default-slot-drops-trait-terms",
     breaks: "a copied default has no drop of `Self::Item` though its impl's given one, and reads a dictionary entry that isn't",
     file: "src/lower/traits.rs",
-    find: "                items.insert(concrete, index);\n",
-    replace: "                let _ = (concrete, index);\n",
+    find: "            items.insert(alias, index);\n",
+    replace: "            let _ = (alias, index);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
+  },
+  {
+    name: "default-item-drops-ungiven",
+    breaks: "a copied default isn't given the impl's drops of `T::Item`, and reads a dictionary entry that isn't",
+    file: "src/lower/traits.rs",
+    find: "        for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {\n",
+    replace: "        for (at, (alias, name)) in self.given_item_drops().into_iter().take(0).enumerate() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
 ];

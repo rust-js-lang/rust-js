@@ -5107,26 +5107,111 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::arrow(patterns, body))
     }
 
+    /// `m.entry(k).or_insert(v)`, `or_insert_with(f)` or `or_default()`, of
+    /// its entry's and value's `values`: a value, or a handle on a number's
+    /// or text's (ADRs 0152, 0321, 0467).
+    fn or_insert_values(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        op: MapOp,
+        values: Vec<Value<'tcx>>,
+        (generic_args, output): (ty::GenericArgsRef<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let mut exprs = values
+            .into_iter()
+            .map(|v| self.value_expr(v, span))
+            .collect::<R<Vec<_>>>()?
+            .into_iter();
+        let entry = self.after_and_modify(exprs.next().expect("the entry"), span, out);
+        // Made here, `$entry(m, k)`, the key given's to drop where it's
+        // there, `or_inserted`'s; of one made before, `$entry`'s, which
+        // did (ADR 0467).
+        let fused = matches!(&entry.kind, js::ExprKind::Call(callee, parts)
+            if parts.len() >= 2 && callee.helper_name() == Some("$entry"));
+        let (map, key) = match entry.kind {
+            js::ExprKind::Call(callee, parts) if parts.len() >= 2 && callee.helper_name() == Some("$entry") => {
+                let mut parts = parts.into_iter();
+                (parts.next().expect("a map"), parts.next().expect("a key"))
+            }
+            kind => {
+                let entry = self.spill(
+                    "entry",
+                    Expr {
+                        reads: false,
+                        kind,
+                        span: entry.span,
+                    },
+                    out,
+                );
+                let parts = Expr::member(entry, "_0");
+                (
+                    Expr::index(parts.clone(), Expr::int(0)),
+                    Expr::index(parts, Expr::int(1)),
+                )
+            }
+        };
+        let map = if map.reads_same() {
+            map
+        } else {
+            self.spill("map", map, out)
+        };
+        let key = if key.reads_same() {
+            key
+        } else {
+            self.spill("key", key, out)
+        };
+        let default = match op {
+            MapOp::OrDefault => {
+                let value = generic_args
+                    .types()
+                    .nth(1)
+                    .ok_or_else(|| self.unsupported(span, "this entry"))?;
+                let value = self.default_value(value, span)?;
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
+            }
+            _ => exprs.next().expect("the value"),
+        };
+        let inserted = self.or_inserted(op, vec![map.clone(), key.clone(), default], (generic_args, fused), span)?;
+        if !self.is_cell(output) {
+            return Ok(Value::Expr(inserted));
+        }
+        self.flush(state, out)?;
+        out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
+        Ok(Value::Expr(Expr::call(Expr::helper("$mutGet"), vec![map, key])))
+    }
+
     /// `$orInsert(m, key, value)`, or `$orInsertWith(m, key, f)` of `op`, of
     /// its map, key and value, `list`: of `or_insert` of a value with a
     /// destructor, given its drop, which drops the value given where the
-    /// key's there (ADR 0321).
+    /// key's there (ADR 0321); and of a key with one, of an entry `fused`
+    /// into it, the key's (ADR 0467).
     fn or_inserted(
         &mut self,
         op: MapOp,
         mut list: Vec<Expr>,
-        generic_args: ty::GenericArgsRef<'tcx>,
+        (generic_args, fused): (ty::GenericArgsRef<'tcx>, bool),
         span: Span,
     ) -> R<Expr> {
         let name = match op {
             MapOp::OrInsert => "$orInsert",
             _ => "$orInsertWith",
         };
-        if op == MapOp::OrInsert
-            && let Some(value) = generic_args.types().nth(1)
-        {
-            list.extend(self.std_drop_function(value, span)?);
+        // Of `or_insert`, the value's drop; then of each, the key's, which
+        // drops the key given where it's there (ADR 0467).
+        let value_drop = match (op, generic_args.types().nth(1)) {
+            (MapOp::OrInsert, Some(value)) => self.std_drop_function(value, span)?,
+            _ => None,
+        };
+        let key_drop = match generic_args.types().next() {
+            Some(key) if fused => self.std_drop_function(key, span)?,
+            _ => None,
+        };
+        if op == MapOp::OrInsert && (value_drop.is_some() || key_drop.is_some()) {
+            list.push(value_drop.unwrap_or_else(Expr::undefined));
         }
+        list.extend(key_drop);
         Ok(Expr::call(Expr::helper(name), list))
     }
 
@@ -5790,62 +5875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `*m.entry(k).or_insert(0) += 1`, a handle on the key's value,
         // `$mutGet`'s (ADR 0152). The entry is `$entry(m, k)`, `{ TAG, _0: [m, k] }`.
         if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault)) = known {
-            let mut exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?
-                .into_iter();
-            let entry = self.after_and_modify(exprs.next().expect("the entry"), span, out);
-            let (map, key) = match entry.kind {
-                js::ExprKind::Call(callee, parts) if parts.len() == 2 && callee.helper_name() == Some("$entry") => {
-                    let [map, key]: [Expr; 2] = parts.try_into().ok().expect("two");
-                    (map, key)
-                }
-                kind => {
-                    let entry = self.spill(
-                        "entry",
-                        Expr {
-                            reads: false,
-                            kind,
-                            span: entry.span,
-                        },
-                        out,
-                    );
-                    let parts = Expr::member(entry, "_0");
-                    (
-                        Expr::index(parts.clone(), Expr::int(0)),
-                        Expr::index(parts, Expr::int(1)),
-                    )
-                }
-            };
-            let map = if map.reads_same() {
-                map
-            } else {
-                self.spill("map", map, out)
-            };
-            let key = if key.reads_same() {
-                key
-            } else {
-                self.spill("key", key, out)
-            };
-            let default = match op {
-                MapOp::OrDefault => {
-                    let value = generic_args
-                        .types()
-                        .nth(1)
-                        .ok_or_else(|| self.unsupported(span, "this entry"))?;
-                    let value = self.default_value(value, span)?;
-                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
-                }
-                _ => exprs.next().expect("the value"),
-            };
-            let inserted = self.or_inserted(op, vec![map.clone(), key.clone(), default], generic_args, span)?;
-            if !self.is_cell(output) {
-                return Ok(Value::Expr(inserted));
-            }
-            self.flush(state, out)?;
-            out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
-            return Ok(Value::Expr(Expr::call(Expr::helper("$mutGet"), vec![map, key])));
+            return self.or_insert_values(state, op, values, (generic_args, output), span, out);
         }
         // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of
         // it, the same place the `&mut String` is.
