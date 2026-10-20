@@ -60,10 +60,12 @@ const cases: [string, string, Crate[]][] = [
   ["playground", "wasm/web/rust/lib.rs", ["web", "react"]],
 ];
 
+// Each crate a case uses, built before any case, whose own time is its
+// compile's alone: serde's build is minutes on a cold cache.
 beforeAll(() => {
   buildCompiler();
   buildReact();
-  buildReact();
+  buildSerde();
 }, 600_000);
 
 for (const [name, input, crates] of cases) {
