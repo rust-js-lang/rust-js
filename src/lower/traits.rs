@@ -2293,7 +2293,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .inputs()
                 .to_vec();
             self.given_iterators(instance.def_id(), &mut values, &given, span)?;
-            values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
+            // Its arguments in the impl's terms, a copied default's, asked of
+            // the impl's drops (ADR 0495).
+            values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);
             let called = Expr::call(self.fn_ref(instance.def_id()), values);
             return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
         }
@@ -2381,7 +2383,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         if operational(self.tcx, self.krate.foreign, trait_id) {
-            let dictionary = self.dictionary(tr, span)?;
+            // Of the impl's terms, in a copied default (ADR 0495).
+            let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;
             let mut values = values;
             // A range or an iterator of the crate's where a std method's own
             // generic `IntoIterator` goes, a JS iterator, as a function's (ADR
@@ -2395,7 +2398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.given_iterators(id, &mut values, &given, span)?;
             }
             let location = self.caller_location(span);
-            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
+            values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);
             return Ok(Some(Expr::call(
                 Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
                 values,

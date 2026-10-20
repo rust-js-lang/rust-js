@@ -367,4 +367,12 @@ export const mutations: Mutation[] = [
     replace: "                .replace((self_args, self.typing_env)),\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
+  {
+    name: "impl-drops-not-exchanged",
+    breaks: "what's in a copied default's impl's terms is asked of its trait's drops",
+    file: "src/lower/drops.rs",
+    find: "        self.exchange_drops(&mut outer);\n        let made = f(self);\n        self.exchange_drops(&mut outer);\n",
+    replace: "        let made = f(self);\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
+  },
 ];

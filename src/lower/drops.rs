@@ -120,7 +120,9 @@ pub(super) type DefaultDrops<'tcx> = (
 /// from the drops of the one it's in while it's lowered, given back as it
 /// ends: its statement and scopes, and a default's, the item's drops.
 pub(super) struct EnclosingDrops<'tcx> {
-    swapped: Option<SwappedDrops<'tcx>>,
+    /// Whether a copied default's drops were put in place of the function's,
+    /// which `outer` keeps.
+    swapped: bool,
     /// The enclosing body's drop functions, where this body declares its own.
     hoisted: Option<Option<Hoisted<'tcx>>>,
 }
@@ -165,6 +167,9 @@ pub(super) struct DropState<'tcx> {
     /// The drop functions of the function or closure being lowered, each
     /// declared once at its top; `None` where each drop declares its own.
     hoisted: Option<Hoisted<'tcx>>,
+    /// The drops of each function a copied default is lowered in, innermost
+    /// last, in its impl's terms (ADR 0495).
+    outer: Vec<SwappedDrops<'tcx>>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -889,7 +894,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         default: Option<DefaultDrops<'tcx>>,
         frame: bool,
     ) -> R<EnclosingDrops<'tcx>> {
-        let swapped = default.map(|default| self.swap_drops(default));
+        let swapped = default.is_some();
+        if let Some(default) = default {
+            let outer = self.swap_drops(default);
+            self.drop_state.outer.push(outer);
+        }
         self.drop_facts()?;
         Ok(EnclosingDrops {
             swapped,
@@ -912,8 +921,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Finish the body `enter_body_drops` started: every owner it has had a
     /// scope, and every move its flag cleared, and the enclosing body's back.
     pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>) -> Vec<Stmt> {
-        if let Some(swapped) = enclosing.swapped {
-            self.restore_drops(swapped);
+        if enclosing.swapped {
+            let outer = self.drop_state.outer.pop().expect("the function's drops");
+            self.restore_drops(outer);
         }
         match enclosing.hoisted {
             Some(outer) => self.end_hoisting(outer),
@@ -1050,6 +1060,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The type parameters whose drops the body being lowered has used.
     pub(super) fn used_drops(&self) -> HashSet<u32> {
         self.drop_state.used_drops.clone()
+    }
+
+    /// What `f` makes of what's in the impl's terms, in a copied default:
+    /// the arguments of the impl's own method its body calls, or a
+    /// dictionary of its impl's, whose type parameters are the impl's, not
+    /// its trait's, which share their indexes: asked of the impl's drops
+    /// (ADR 0495). Anywhere else, `f`'s.
+    pub(super) fn with_impl_drops<T>(&mut self, f: impl FnOnce(&mut Self) -> R<T>) -> R<T> {
+        let Some(mut outer) = self.drop_state.outer.pop() else {
+            return f(self);
+        };
+        self.exchange_drops(&mut outer);
+        let made = f(self);
+        self.exchange_drops(&mut outer);
+        self.drop_state.outer.push(outer);
+        made
+    }
+
+    /// The function's drops and `other`'s, each in the other's place.
+    fn exchange_drops(&mut self, other: &mut SwappedDrops<'tcx>) {
+        let state = &mut self.drop_state;
+        std::mem::swap(&mut state.param_drops, &mut other.params);
+        std::mem::swap(&mut state.types.given, &mut other.given);
+        std::mem::swap(&mut state.types.items, &mut other.items);
+        std::mem::swap(&mut state.types.slots, &mut other.slots);
+        std::mem::swap(&mut state.types.self_args, &mut other.self_args);
+        std::mem::swap(&mut state.used_drops, &mut other.used);
+        std::mem::swap(&mut state.types.unsupported, &mut other.unsupported);
+        std::mem::swap(&mut *state.types.cache.borrow_mut(), &mut other.cache);
+        std::mem::swap(&mut *state.sizes.borrow_mut(), &mut other.sizes);
     }
 
     fn restore_drops(&mut self, swapped: SwappedDrops<'tcx>) {

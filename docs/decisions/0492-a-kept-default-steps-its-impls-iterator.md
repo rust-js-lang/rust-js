@@ -65,4 +65,4 @@ function tSkipping(TIterator) {
   asked, as its own methods do.
 - **A copied default's drops of the impl's own type parameters** are yet
   confused with its trait's, by index, where it calls the impl's own
-  functions: a gap of its own.
+  functions: a gap of its own. (Amended: they're the impl's, ADR 0495.)

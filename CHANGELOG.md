@@ -603,6 +603,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A trait's default that calls its impl's own method, or another default,
+  of an impl for a generic type of the crate's**, gave it its `Self`'s drop
+  where its type parameter's goes, and threw: it's given the impl's (ADR
+  0495).
 - **A trait's default that steps its `Self`, kept by a blanket impl or an
   impl for the crate's iterator**, stepped it as a JS iterator and threw;
   it's stepped as the impl's own methods step it (ADR 0492).

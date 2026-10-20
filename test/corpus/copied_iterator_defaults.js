@@ -119,20 +119,14 @@ function holderPeeled(IIterator, dropI, dropIItem) {
   }
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
     drop_first: (self) => {
-      const dropSelf = (holder) => {
-        dropI?.(holder[0]);
-      };
-      const value = holderIterator_next(self, IIterator, dropSelf, dropIItem);
+      const value = holderIterator_next(self, IIterator, dropI, dropIItem);
       if (value != null) {
         dropIItem?.($someValue(value));
       }
     },
     drop_two: (self) => {
-      const dropSelf = (holder) => {
-        dropI?.(holder[0]);
-      };
-      holderPeeled(IIterator, dropSelf, dropIItem).drop_first(self);
-      holderPeeled(IIterator, dropSelf, dropIItem).drop_first(self);
+      holderPeeled(IIterator, dropI, dropIItem).drop_first(self);
+      holderPeeled(IIterator, dropI, dropIItem).drop_first(self);
     },
     $drop: (holder) => {
       dropI?.(holder[0]);
