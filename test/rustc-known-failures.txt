@@ -54,7 +54,6 @@ enum/enum-clike-ffi-as-int.rs	error: rust-js does not support addressable memory
 enum/enum-univariant-repr.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[Univariant]` as `&[i32]`, which aren't numbers alone
 fn/dyn-fn-alignment.rs	error: rust-js does not support addressable memory yet: a pointer's address
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
-functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support values of type `&mut &mut [u8]` yet

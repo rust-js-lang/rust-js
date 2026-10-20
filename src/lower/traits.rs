@@ -2934,7 +2934,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && super::recognition::is_fn_dyn(self.tcx, predicates)
         {
             let function = self.pointee(source);
-            let carried = matches!(function.kind(), ty::Closure(id, _) if self.krate.fn_dyns.carries_its_drop(self.tcx, *id))
+            let carried = matches!(function.kind(), ty::Closure(id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *id))
                 || matches!(function.kind(), ty::Dynamic(..));
             if carried || self.drops(function) == super::drops::Drops::Nothing {
                 return Ok(value);

@@ -25,7 +25,7 @@ draft](draft/counted-rcs-across-crates.md)'s trial found.
 0484), and a `dyn Fn` is dropped by `$dispose(f)`.**
 
 - **A closure made one carries it from where it's made**, as one its
-  maker gives back does: `FnDyns::carries_its_drop` is the one answer for
+  maker gives back does: `ClosureFacts::carries_its_drop` is the one answer for
   both, a crate fact of the closures the crate makes `dyn Fn`s of and the
   types `impl Fn`s hide.
 - **Any other function holding a value with a destructor, a type
@@ -34,7 +34,7 @@ draft](draft/counted-rcs-across-crates.md)'s trial found.
 - **`$dispose(f)` runs what `f` carries, if anything**: a `dyn Fn` of a
   plain function carries nothing.
 - **A `dyn Fn` drops only where the crate makes one of a function holding
-  a value with a destructor** (`FnDyns::drops`), found from the coercions:
+  a value with a destructor** (`ClosureFacts::drops`), found from the coercions:
   of a type parameter's, where a closure the crate makes holds one, or a
   library it uses may. A library's may always be: its callers' closures
   are unseen. A captured `Rc` counted can make one drop, and a `dyn Fn`
@@ -57,7 +57,7 @@ draft](draft/counted-rcs-across-crates.md)'s trial found.
 ## Consequences
 
 - `$dispose` tolerates a function that carries nothing.
-- `recognition::carries_its_drop` is `given_back`, the half `FnDyns` asks.
+- `recognition::carries_its_drop` is `given_back`, the half `ClosureFacts` asks.
 - Mutations stop finding a `dyn Fn` that drops, a closure that carries its
   drop, the coercion's `$dropping`, the `dyn Fn`'s `$dispose`, and refuse
   what `Box::new` keeps.

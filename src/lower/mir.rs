@@ -1174,15 +1174,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let closure = self.mir_closure_fn(state, def_id, captured, span, out)?;
-        // One its maker gives back or makes a `dyn Fn`, holding a value with
-        // a destructor: it carries its drop, what it took dropped, where it's
-        // made (ADRs 0484, 0521).
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        if !self.krate.fn_dyns.carries_its_drop(self.tcx, def_id) || self.drops(ty) == super::drops::Drops::Nothing {
+        if !self.krate.closure_facts.clones_apart(def_id) {
+            return self.closure_carrying_drop(closure, ty, span);
+        }
+        // One cloned apart: made by a function of the variables it took,
+        // `make`, which its clone, `$cloning`'s, calls again with a clone of
+        // each (ADR 0522).
+        let taken: Vec<(String, Ty<'tcx>)> = (self.closure_held(def_id).into_iter())
+            .filter_map(|(e, ty)| match e.kind {
+                js::ExprKind::Var(name) => Some((name, ty)),
+                _ => None,
+            })
+            .collect();
+        let make = self.fresh("make");
+        let mut cloned = Vec::new();
+        let mut clones = Vec::new();
+        for (name, ty) in &taken {
+            clones.push(self.clone_value(Expr::var(name), *ty, span, &mut cloned)?);
+        }
+        cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
+        let closure = Expr::call_helper("$cloning", vec![closure, Expr::arrow(Vec::new(), cloned)]);
+        let closure = self.closure_carrying_drop(closure, ty, span)?;
+        let params = taken.iter().map(|(name, _)| name.as_str().into()).collect();
+        let maker = Expr::arrow(params, vec![StmtKind::Return(Some(closure)).at(js::Span::NONE)]);
+        out.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
+        Ok(Expr::call(
+            Expr::var(&make),
+            taken.iter().map(|(name, _)| Expr::var(name)).collect(),
+        ))
+    }
+
+    /// The closure `closure`, of type `ty`: one its maker gives back, makes
+    /// a `dyn Fn` or clones apart, holding a value with a destructor, carries
+    /// its drop, what it took dropped, where it's made (ADRs 0484, 0521,
+    /// 0522).
+    fn closure_carrying_drop(&mut self, closure: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty::Closure(def_id, _) = *ty.kind() else {
+            return Ok(closure);
+        };
+        if !self.krate.closure_facts.carries_its_drop(self.tcx, def_id)
+            || self.drops(ty) == super::drops::Drops::Nothing
+        {
             return Ok(closure);
         }
-        let mut dropped = Vec::new();
-        self.drop_value(Expr::undefined(), ty, span, &mut dropped)?;
+        let dropped = self.carried_drop(def_id, span)?;
         Ok(Expr::call_helper(
             "$dropping",
             vec![closure, Expr::arrow(Vec::new(), dropped)],

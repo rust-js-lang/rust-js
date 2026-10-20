@@ -827,4 +827,12 @@ export const mutations: Mutation[] = [
     replace: "            if when.is_none() && kept && false && dropped_anywhere {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
+  {
+    name: "dropped-function-dropped-again",
+    breaks: "`drop(f)` of a function that holds a value with a destructor drops it twice",
+    file: "src/lower/combinators.rs",
+    find: "            Some(super::recognition::Std::Drop | super::recognition::Std::Forget)\n",
+    replace: "            Some(super::recognition::Std::Forget)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
 ];

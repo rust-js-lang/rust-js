@@ -560,6 +560,21 @@ export function $dispose(f) {
   f[$disposeKey]?.();
 }
 
+// What a closure carries its clone under (ADR 0522).
+export const $cloneKey = Symbol("rust-js.clone");
+
+// A closure cloned apart, carrying its clone, `clone`, which makes it again
+// of a clone of what it took (ADR 0522).
+export function $cloning(f, clone) {
+  f[$cloneKey] = clone;
+  return f;
+}
+
+// A clone of a closure cloned apart: the one it carries, `$cloning`'s, made.
+export function $clone(f) {
+  return f[$cloneKey]();
+}
+
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
 // `None` of none, where JS's `reduce` throws; boxed where it may look like
 // `None` (ADRs 0051, 0479).

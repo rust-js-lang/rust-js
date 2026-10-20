@@ -91,6 +91,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Another std type: `clone_value` says it can't.
             ty::Adt(..) => true,
+            // A closure cloned apart makes itself again (ADR 0522).
+            ty::Closure(id, _) => self.krate.closure_facts.clones_apart(*id),
             _ => false,
         };
         seen.pop();
@@ -124,19 +126,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// could, calling each hand-written `clone` on the way.
     pub(super) fn clone_value(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // A closure is its JS function, which shares what it captured: a
-        // clone can be the same function only if nothing could tell, that
-        // is, if it never changes what it holds, and holds no `Cell`.
-        if let ty::Closure(_, args) = ty.kind() {
-            let closure = args.as_closure();
-            let shared = closure.kind() == ty::ClosureKind::Fn
-                && closure
-                    .upvar_tys()
-                    .iter()
-                    .all(|t| t.is_freeze(self.tcx, self.typing_env));
-            return if shared {
-                Ok(place)
-            } else {
-                Err(self.unsupported(span, "cloning a closure that changes what it captured"))
+        // clone is the same function where nothing could tell (ADR 0522);
+        // one cloned apart makes itself again, of a clone of what it took.
+        if let ty::Closure(id, _) = *ty.kind() {
+            if self.krate.closure_facts.clones_apart(id) {
+                return Ok(Expr::call_helper("$clone", vec![place]));
+            }
+            let drops = |t| self.drops(t) != super::drops::Drops::Nothing;
+            return match super::analysis::clone_shares(self.tcx, self.typing_env, ty, drops) {
+                true => Ok(place),
+                false => Err(self.unsupported(span, "cloning a closure where it isn't seen to be cloned")),
             };
         }
         // A channel's sender: one more, of the same queue (ADR 0142).

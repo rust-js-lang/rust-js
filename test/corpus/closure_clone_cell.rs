@@ -1,5 +1,5 @@
-//@ compile-fail: cloning a closure that changes what it captured
-// A `Cell` captured by value is copied by the clone, natively.
+// A `Cell` captured by value is copied by the clone, natively, and here:
+// the clone is made again of a copy of it (ADR 0522).
 use std::cell::Cell;
 
 fn main() {

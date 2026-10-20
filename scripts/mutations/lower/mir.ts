@@ -2787,4 +2787,12 @@ export const mutations: Mutation[] = [
     replace: "        if tcx.trait_of_assoc(def_id).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
+  {
+    name: "cloned-apart-captures-shared",
+    breaks: "a closure cloned apart is made again of what it took, not a clone of it",
+    file: "src/lower/mir.rs",
+    find: "            clones.push(self.clone_value(Expr::var(name), *ty, span, &mut cloned)?);\n",
+    replace: "            clones.push(Expr::var(name));\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
+  },
 ];

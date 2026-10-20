@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "fn-param-copied",
     breaks: "props holding an `F: Fn() + Copy` are kept whole, `param.next`, as if the function needed a copy of its own",
     file: "src/lower/copies.rs",
-    find: "        if self.is_unknown(ty) && self.is_callable(ty) {\n            return false;",
-    replace: "        if false {\n            return false;",
+    find: "        if self.is_unknown(ty) && self.is_callable(ty) {\n            return self.krate.closure_facts.functions_clone_apart();",
+    replace: "        if false {\n            return self.krate.closure_facts.functions_clone_apart();",
     tests: ["test/jsx.test.ts", "-t", "Fn type parameter"],
   },
   {

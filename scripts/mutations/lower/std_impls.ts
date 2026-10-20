@@ -456,4 +456,20 @@ export const mutations: Mutation[] = [
     replace: "                Ok(Expr::call_helper(\"$fuse\", vec![iter, fused]))\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
+  {
+    name: "cloned-apart-is-itself",
+    breaks: "a clone of a closure cloned apart is the closure itself",
+    file: "src/lower/std_impls.rs",
+    find: "                return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
+    replace: "                return Ok(place);\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
+  },
+  {
+    name: "cloned-apart-field-shared",
+    breaks: "a struct's clone shares a field's closure cloned apart",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Closure(id, _) => self.krate.closure_facts.clones_apart(*id),\n",
+    replace: "            ty::Closure(id, _) => false && self.krate.closure_facts.clones_apart(*id),\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
 ];

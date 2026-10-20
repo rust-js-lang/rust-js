@@ -1482,7 +1482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given, a `dyn`'s, or one that carries it (ADRs 0484, 0521).
             let dropped_anywhere = match ty.kind() {
                 ty::Param(_) | ty::Dynamic(..) => true,
-                ty::Closure(id, _) => self.krate.fn_dyns.carries_its_drop(self.tcx, *id),
+                ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, *id),
                 _ => false,
             };
             let kept = output.walk().any(|part| part.as_type() == Some(ty));
@@ -1519,6 +1519,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .find(|&&(arg, _)| arg == at)
                 .map(|&(_, when)| Some(when))
         };
+        // `drop(f)` drops it, and `forget(f)` drops none of it, themselves.
+        if matches!(
+            known,
+            Some(super::recognition::Std::Drop | super::recognition::Std::Forget)
+        ) {
+            return None;
+        }
         let Some(kind) = super::recognition::function_kind(self.tcx, self.body_owner, ty) else {
             return unused().filter(|_| self.drops_function(ty));
         };

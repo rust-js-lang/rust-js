@@ -171,7 +171,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     // One its maker gives back or makes a `dyn Fn` carries its drop (ADRs
                     // 0484, 0521).
                     let carried = matches!(expr.kind, ExprKind::Closure(ref c)
-                        if self.cx.fn_dyns.carries_its_drop(self.cx.recognition.tcx, c.closure_id.to_def_id()));
+                        if self.cx.closure_facts.carries_its_drop(self.cx.recognition.tcx, c.closure_id.to_def_id()));
                     if !placed && !carried {
                         self.closure_problem(expr.span, "a closure that holds a value with a destructor, made here");
                     }

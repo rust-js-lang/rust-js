@@ -1,6 +1,5 @@
-//@ compile-fail: cloning a closure that changes what it captured
-// A clone of a closure holds a copy of what it captured by value; a JS
-// function shares it, so a clone that could tell is rejected.
+// A clone of a closure holds a copy of what it captured by value, which
+// each then changes on its own: made again of a clone of it (ADR 0522).
 #[derive(Clone)]
 struct S(i32);
 

@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A clone of a closure that changes what it took, holds a `Cell`, or
+  holds a counted `Rc`** (ADR 0522).
 - **A `Box<dyn Fn>` of a function holding a value with a destructor**
   (ADR 0521).
 - **`Rc::downcast` of a counted `Rc<dyn Any>`, and a `dyn Any`'s

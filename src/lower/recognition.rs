@@ -5908,7 +5908,7 @@ pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 }
 
 /// Whether the closure `closure` is one its maker gives back, the type its
-/// `impl Fn` hides, which carries its drop (ADR 0484): `FnDyns::carries_its_drop`'s
+/// `impl Fn` hides, which carries its drop (ADR 0484): `ClosureFacts::carries_its_drop`'s
 /// to answer.
 pub(crate) fn given_back(tcx: TyCtxt<'_>, closure: DefId) -> bool {
     let maker = tcx.typeck_root_def_id(closure);

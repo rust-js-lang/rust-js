@@ -231,9 +231,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(super) fn contains_mutated_uncached(&self, ty: Ty<'tcx>) -> bool {
         // A type parameter may be anything changed in place, but a function's:
-        // a copy of a JS function is the function (ADR 0246).
+        // a copy of a JS function is the function (ADR 0246), unless one may
+        // be cloned apart (ADR 0522).
         if self.is_unknown(ty) && self.is_callable(ty) {
-            return false;
+            return self.krate.closure_facts.functions_clone_apart();
         }
         self.is_unknown(ty)
             || self.mutated_itself(ty)

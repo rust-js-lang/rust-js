@@ -1,0 +1,77 @@
+// Mutations of src/lower/analysis/closures.rs (ADRs 0521, 0522).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "fn-dyn-drops-unseen",
+    breaks: "a function holding a value with a destructor made a `dyn Fn` leaves the `dyn Fn` dropping nothing",
+    file: "src/lower/analysis/closures.rs",
+    find: "        .any(|from| drops(from) || from.has_non_region_param() && closure_drops())\n",
+    replace: "        .any(|from| from.has_non_region_param() && closure_drops())\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
+  },
+  {
+    name: "fn-dyn-generic-unseen",
+    breaks: "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
+    file: "src/lower/analysis/closures.rs",
+    find: "        .any(|from| drops(from) || from.has_non_region_param() && closure_drops())\n",
+    replace: "        .any(|from| drops(from))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+  },
+  {
+    name: "fn-dyn-closure-drops-unseen",
+    breaks: "a closure holding a value with a destructor, given to a type parameter made a `dyn Fn`, isn't seen to drop",
+    file: "src/lower/analysis/closures.rs",
+    find: "                    drops(ty) || params_may_drop && ty.has_non_region_param()\n",
+    replace: "                    params_may_drop && ty.has_non_region_param()\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+  },
+  {
+    name: "fn-dyn-closure-uncarried",
+    breaks: "a closure made a `dyn Fn` doesn't carry its drop, and `Box::new` of it is refused",
+    file: "src/lower/analysis/closures.rs",
+    find: "        self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
+    replace: "        self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
+  },
+  {
+    name: "clone-bound-unseen",
+    breaks: "a closure given a `T: Clone` isn't seen to be cloned, and its clone is the closure itself",
+    file: "src/lower/analysis/closures.rs",
+    find: "            .filter(|p| is_clone(p.def_id()))\n",
+    replace: "            .filter(|p| false && is_clone(p.def_id()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
+  {
+    name: "clone-shares-dropping",
+    breaks: "a clone of a closure holding a counted `Rc` is the closure itself, counting nothing",
+    file: "src/lower/analysis/closures.rs",
+    find: "        && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))\n",
+    replace: "        && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env))\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
+  {
+    name: "clone-shares-cell",
+    breaks: "a clone of a closure holding a `Cell` shares it",
+    file: "src/lower/analysis/closures.rs",
+    find: "        && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))\n",
+    replace: "        && (closure.upvar_tys().iter()).all(|t| !drops(t))\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
+  },
+  {
+    name: "cloned-apart-uncarried",
+    breaks: "a closure cloned apart doesn't carry its drop, and each clone drops what its maker took",
+    file: "src/lower/analysis/closures.rs",
+    find: "        self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
+    replace: "        self.made_fn_dyns.contains(&closure) || given_back(tcx, closure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
+  {
+    name: "functions-clone-shared",
+    breaks: "a type parameter's function is cloned as itself where a closure is cloned apart",
+    file: "src/lower/analysis/closures.rs",
+    find: "        self.library || !self.cloned_apart.is_empty()\n",
+    replace: "        self.library\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+  },
+];

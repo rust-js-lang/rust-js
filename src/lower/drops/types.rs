@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::lower::analysis::{Counted, FnDyns};
+use crate::lower::analysis::{ClosureFacts, Counted};
 use crate::lower::recognition::{Recognition, StdItem, rc_pointee, weak_pointee};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -73,7 +73,7 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     pub(in crate::lower) counted: &'a Counted<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which drops it then (ADR 0521).
-    pub(in crate::lower) fn_dyns: &'a FnDyns,
+    pub(in crate::lower) closure_facts: &'a ClosureFacts,
     pub(in crate::lower) state: &'a TypeDrops<'tcx>,
 }
 
@@ -509,7 +509,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // A function's, the drop it carries, where a function holding a
             // value with a destructor is made one (ADR 0521).
             ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.recognition.tcx, predicates) => {
-                match self.fn_dyns.drops {
+                match self.closure_facts.fn_dyns_drop {
                     true => Drops::Runs,
                     false => Drops::Nothing,
                 }

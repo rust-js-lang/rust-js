@@ -66,10 +66,6 @@ depends on what the program does:
 - A `rev` of a lazy chain of items with a destructor, stepped from its back: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } let mut r = vec![D(1), D(2)].into_iter().map(|d| d).rev(); r.next();`
 - Generic code given a type with a destructor where it takes none, a `peekable` of an iterator of it that it gives back: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } fn peeked<I: Iterator<Item = D>>(it: I) -> std::iter::Peekable<I> { it.peekable() } println!("{}", peeked(vec![D(1), D(2)].into_iter()).count());`
 
-## Closures
-
-- A clone of a closure that changes what it captured: `let mut n = 0; let mut f = move || { n += 1; n }; let mut g = f.clone(); println!("{} {}", f(), g());`
-
 ## Iterators and collections
 
 - A clone of a lazy iterator: `let it = (1..4).map(|x| x * 2); let v: Vec<_> = it.clone().collect(); println!("{v:?} {}", it.count());`

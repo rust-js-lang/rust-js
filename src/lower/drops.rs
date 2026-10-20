@@ -39,21 +39,21 @@ use types::{DropQuery, TypeDrops, describe};
 /// counted, as its last drops it.
 pub(super) fn drop_runs<'tcx>(
     recognition: super::recognition::Recognition<'_, 'tcx>,
-    (library, fn_dyns): (bool, &super::analysis::FnDyns),
+    (library, closure_facts): (bool, &super::analysis::ClosureFacts),
     counted: &super::analysis::Counted<'tcx>,
     ty: Ty<'tcx>,
 ) -> bool {
     let state = TypeDrops::default();
     // Its type parameters, of no drop given here, drop nothing: their drops
     // are their callers', passed on as they are.
-    without_dictionaries(recognition, (library, fn_dyns), counted, &state).drops(ty) == Drops::Runs
+    without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) == Drops::Runs
 }
 
 /// What drops, asked in `recognition`'s typing environment with no
 /// dictionaries given: a type parameter's drop is a maybe.
 fn without_dictionaries<'a, 'tcx>(
     recognition: super::recognition::Recognition<'a, 'tcx>,
-    (library, fn_dyns): (bool, &'a super::analysis::FnDyns),
+    (library, closure_facts): (bool, &'a super::analysis::ClosureFacts),
     counted: &'a super::analysis::Counted<'tcx>,
     state: &'a TypeDrops<'tcx>,
 ) -> DropQuery<'a, 'tcx> {
@@ -62,7 +62,7 @@ fn without_dictionaries<'a, 'tcx>(
         evidence: super::traits::EvidenceQuery::without_evidence(recognition),
         library,
         counted,
-        fn_dyns,
+        closure_facts,
         state,
     }
 }
@@ -189,7 +189,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             evidence: self.evidence_query(),
             library: self.krate.library,
             counted: self.krate.counted,
-            fn_dyns: self.krate.fn_dyns,
+            closure_facts: self.krate.closure_facts,
             state: &self.drop_state.types,
         }
     }
@@ -301,6 +301,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A closure, at `closure`, made here: the places its drop drops.
     pub(super) fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
         self.drop_state.closures.insert(closure, (self.body_owner, places));
+    }
+
+    /// Drop what the closure `closure` took: the variables it took, where it
+    /// was made. Only there, or in a closure made inside it, can JS see them.
+    fn drop_taken(&mut self, closure: DefId, span: Span, made: &mut Made<'tcx>, out: &mut Vec<Stmt>) -> R<()> {
+        let made_here = self.drop_state.closures.get(&closure).cloned().filter(|(made_in, _)| {
+            std::iter::successors(Some(self.body_owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
+        });
+        let Some((_, places)) = made_here else {
+            return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));
+        };
+        for (place, ty) in places {
+            self.drop_in(place, ty, span, made, out)?;
+        }
+        Ok(())
+    }
+
+    /// The drop a closure that carries its drop carries, `$dropping`'s:
+    /// what it took dropped, where it's made (ADR 0484).
+    pub(super) fn carried_drop(&mut self, closure: DefId, span: Span) -> R<Vec<Stmt>> {
+        let mut made = Made::default();
+        let mut code = Vec::new();
+        self.drop_taken(closure, span, &mut made, &mut code)?;
+        Ok(made.defs.into_iter().chain(code).collect())
+    }
+
+    /// What the closure `closure` holds, `closure_made`'s, where it's made.
+    pub(super) fn closure_held(&self, closure: DefId) -> Vec<(Expr, Ty<'tcx>)> {
+        (self.drop_state.closures.get(&closure)).map_or_else(Vec::new, |(_, held)| held.clone())
     }
 
     /// Drop `value`, a `ty`: its own `drop`, then each part's, in Rust's
@@ -585,25 +614,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.weak_of(ty).is_some() => {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
             }
-            // What a closure holds: the variables it took, where it was made.
-            // Only there, or in a closure made inside it, can JS see them.
-            ty::Closure(def_id, _) => {
-                let made_here = self.drop_state.closures.get(def_id).cloned().filter(|(made_in, _)| {
-                    std::iter::successors(Some(self.body_owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
-                });
-                let Some((_, places)) = made_here else {
-                    // One its maker gave back carries its drop (ADR 0484).
-                    if self.krate.fn_dyns.carries_its_drop(self.tcx, *def_id) {
-                        let js_span = self.js_span(span);
-                        out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
-                        return Ok(());
-                    }
-                    return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));
-                };
-                for (place, ty) in places {
-                    self.drop_in(place, ty, span, made, out)?;
-                }
+            // One that carries its drop, its own, which its clones don't share
+            // (ADRs 0484, 0521, 0522), anywhere.
+            ty::Closure(def_id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) => {
+                out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
             }
+            ty::Closure(def_id, _) => self.drop_taken(*def_id, span, made, out)?,
             // A function's, the drop it carries, if any (ADR 0521).
             ty::Dynamic(predicates, ..) if super::recognition::is_fn_dyn(self.tcx, predicates) => {
                 out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
@@ -784,7 +800,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 foreign: self.krate.foreign,
             };
             let state = TypeDrops::default();
-            let query = without_dictionaries(recognition, (false, self.krate.fn_dyns), self.krate.counted, &state);
+            let query = without_dictionaries(
+                recognition,
+                (false, self.krate.closure_facts),
+                self.krate.counted,
+                &state,
+            );
             let thir = &body.thir;
             let facts = find_facts(&query, thir, body.def_id.to_def_id());
             // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
@@ -859,7 +880,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             foreign: self.krate.foreign,
         };
         let state = TypeDrops::default();
-        let query = without_dictionaries(recognition, (false, self.krate.fn_dyns), self.krate.counted, &state);
+        let query = without_dictionaries(
+            recognition,
+            (false, self.krate.closure_facts),
+            self.krate.counted,
+            &state,
+        );
         plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
         plain
     }

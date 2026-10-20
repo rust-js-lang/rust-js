@@ -130,7 +130,8 @@ compile as one. Five that compile as a library today would be refused,
 each where a counted `Rc` has a drop an uncounted one doesn't:
 
 - a closure that holds an `Rc`, made in a block, `closure_clone_shared`:
-  "a closure that holds a value with a destructor, made here";
+  "a closure that holds a value with a destructor, made here" (closed
+  since, ADR 0522);
 - a boxed function that holds one, kept, `subscriptions`: "a function that
   holds a value with a destructor, kept by what it's given to" (closed
   since, ADR 0521);
