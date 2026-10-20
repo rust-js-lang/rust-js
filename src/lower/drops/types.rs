@@ -53,6 +53,10 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     /// Each one a caller would give a drop for, given one or not: one none
     /// gives one drops nothing, as no caller's has one (ADR 0489).
     pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
+    /// A copied default's impl's arguments for its trait's parameters,
+    /// whose body names a slot in the trait's terms, `Self::Item` of the
+    /// impl's `T::Item` (ADR 0421).
+    pub(super) self_args: Option<ty::GenericArgsRef<'tcx>>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -112,6 +116,34 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             return None;
         };
         (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))
+    }
+
+    /// The index of the drop given for `alias`, a std associated type of a
+    /// type parameter (ADR 0421), named as it's keyed or, in a copied
+    /// default, in its trait's terms: the one place asked.
+    pub(in crate::lower) fn slot_of(&self, alias: ty::AliasTy<'tcx>) -> Option<u32> {
+        let items = &self.state.items;
+        let index = items.get(&alias).or_else(|| items.get(&self.in_impl_terms(alias)?));
+        index.copied()
+    }
+
+    /// Whether `alias` is one a caller would give a drop for, given one or
+    /// not (ADR 0489), named as `slot_of` names it.
+    fn is_slot(&self, alias: ty::AliasTy<'tcx>) -> bool {
+        self.state.slots.contains(&alias)
+            || self
+                .in_impl_terms(alias)
+                .is_some_and(|alias| self.state.slots.contains(&alias))
+    }
+
+    /// `alias`, of a copied default's trait's terms, in its impl's.
+    fn in_impl_terms(&self, alias: ty::AliasTy<'tcx>) -> Option<ty::AliasTy<'tcx>> {
+        let tcx = self.recognition.tcx;
+        Some(
+            ty::EarlyBinder::bind(tcx, alias)
+                .instantiate(tcx, self.state.self_args?)
+                .skip_normalization(),
+        )
     }
 
     /// Is an associated type's drop given, in a dictionary this function has?
@@ -324,11 +356,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ) if walk.params_none && self.recognition.is_unknown(ty) => Drops::Nothing,
             // A std trait's, `<I as IntoIterator>::IntoIter`, whose drop a
             // caller gives (ADR 0421).
-            ty::Alias(_, alias) if self.state.items.contains_key(alias) => Drops::Runs,
+            ty::Alias(_, alias) if self.slot_of(*alias).is_some() => Drops::Runs,
             // One a caller would give a drop for, that none does: none of
             // theirs has one, as of a type parameter none's given for (ADR
             // 0489).
-            ty::Alias(_, alias) if self.state.slots.contains(alias) => Drops::Nothing,
+            ty::Alias(_, alias) if self.is_slot(*alias) => Drops::Nothing,
             ty::Alias(
                 _,
                 ty::AliasTy {

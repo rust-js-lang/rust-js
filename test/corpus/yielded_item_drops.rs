@@ -3,7 +3,9 @@
 // an iterator with no destructor may give items with one, which a step
 // that discards one drops; where it's the caller's own type parameter, or
 // its own associated type, the caller's drop passed on. Where no caller's
-// has one, it drops nothing, as a type parameter's does (ADR 0489).
+// has one, it drops nothing, as a type parameter's does. A trait impl's, which
+// a `dyn`'s caller can't be seen to give, is given one for each of its
+// parameters' (ADRs 0421, 0489).
 struct Loud(u8);
 
 impl Drop for Loud {
@@ -42,6 +44,16 @@ struct Skipper<I> {
 }
 
 impl<I: Iterator> Skipper<I> {
+    fn skip(&mut self) {
+        self.inner.next();
+    }
+}
+
+trait Skip {
+    fn skip(&mut self);
+}
+
+impl<I: Iterator> Skip for Skipper<I> {
     fn skip(&mut self) {
         self.inner.next();
     }
@@ -90,6 +102,10 @@ fn main() {
     let relay = relayed(Gen(1));
     println!("relayed {}", relay.map_or(0, |l| l.0));
     println!("{}", counted(0..3));
+    let mut held = Skipper { inner: Gen(1) };
+    let skipping: &mut dyn Skip = &mut held;
+    skipping.skip();
+    println!("dyn skipped");
     let loud = Loud(9);
     println!("{}", loud.0);
 }

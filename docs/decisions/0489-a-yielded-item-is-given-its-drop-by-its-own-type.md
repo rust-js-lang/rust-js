@@ -32,10 +32,13 @@ drops nothing**, as a type parameter none's given for.
 - **The analysis asks each call** what the callee's associated types are
   in the caller's terms, `drop_items` instantiated and normalized: a type
   with a destructor, given; the caller's `T`, or its `J::Item`, passed on.
-- **A function knows which it could be given, `slots`**, and a copied
-  default each in its trait's terms, `Self::Item`, and its impl's,
-  `T::Item`, keyed alike: the one way its drop is found, no second
-  lookup in the impl's terms.
+- **A function knows which it could be given, `slots`**, keyed as its
+  slots are, a copied default's in its impl's terms, `T::Item`; and one
+  place, `slot_of`, finds a slot by its type, in those terms or, of a
+  copied default's body, in its trait's, `Self::Item`, which `given_drop`
+  and what a type drops both ask.
+- **A trait impl's**, reached through a `dyn` its caller can't be seen to
+  give, is given one for each of its parameters', as before (ADR 0421).
 - **Another associated type's, which no slot gives**, `<T as
   Add>::Output`, is refused, as before.
 
@@ -53,8 +56,8 @@ function second(iter, dropIItem) {
 
 - **It's std's**: `yielded_item_drops` skips items with a destructor of an
   iterator without one, given as it is and as a JS iterator, directly, by a
-  function whose `T` they are, and by one whose `J::Item` they are, and
-  counts a range's where nothing has one, with native Rust.
+  function whose `T` they are, by one whose `J::Item` they are, and through
+  a `dyn`, and counts a range's where nothing has one, with native Rust.
 - **A silent leak becomes the drop Rust runs.**
 
 ## Consequences

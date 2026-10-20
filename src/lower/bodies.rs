@@ -50,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 items,
                 slots,
             } => {
-                default_drops = Some((drops, unsupported, items, slots));
+                default_drops = Some((drops, unsupported, items, slots, self_args));
                 EnclosingKind::Default(Box::new(ItemScope {
                     names: self.names.clone(),
                     locals: std::mem::take(&mut self.locals),

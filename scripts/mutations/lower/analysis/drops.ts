@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/drops.rs",
     find: "            if holds && given.insert((id, count + at as u32)) {\n",
     replace: "            if false && holds && given.insert((id, count + at as u32)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
   {
     name: "guard-given-generic-undropped",

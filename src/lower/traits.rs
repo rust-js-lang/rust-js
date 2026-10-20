@@ -3707,41 +3707,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             drops.insert(index as u32, name);
         }
         // And each drop of a std associated type the impl's given, `dropTItem`
-        // of `T::Item`, as the body asks it, in the trait's terms, `Self::Item`,
-        // and in the impl's (ADRs 0421, 0489).
+        // of `T::Item`, as the body asks in the impl's terms (ADR 0421), and
+        // each it could be given (ADR 0489).
         let mut items = HashMap::new();
-        let own_items = drop_items(self.tcx, self.krate.foreign, id);
-        // Each it could be given, in the trait's terms and the impl's.
-        let slots: HashSet<ty::AliasTy<'tcx>> = (own_items.iter())
-            .flat_map(|&own| {
-                [
-                    own,
-                    ty::EarlyBinder::bind(self.tcx, own)
-                        .instantiate(self.tcx, args)
-                        .skip_normalization(),
-                ]
-            })
-            .filter_map(|ty| match *ty.kind() {
-                ty::Alias(_, alias) => Some(alias),
-                _ => None,
-            })
-            .collect();
         for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {
             let index = (generics.count() + at) as u32;
             drops.insert(index, name);
             items.insert(alias, index);
-            for &own in &own_items {
-                if let ty::Alias(_, own_alias) = *own.kind()
-                    && let ty::Alias(_, concrete) = *ty::EarlyBinder::bind(self.tcx, own)
-                        .instantiate(self.tcx, args)
-                        .skip_normalization()
-                        .kind()
-                    && concrete == alias
-                {
-                    items.insert(own_alias, index);
-                }
-            }
         }
+        let slots: HashSet<ty::AliasTy<'tcx>> = (drop_items(self.tcx, self.krate.foreign, id).into_iter())
+            .filter_map(|own| {
+                match *ty::EarlyBinder::bind(self.tcx, own)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization()
+                    .kind()
+                {
+                    ty::Alias(_, alias) => Some(alias),
+                    _ => None,
+                }
+            })
+            .collect();
         // Its trait's const parameters are the impl's arguments for them, `10`
         // of `Scaled<10>` or the impl's own `K`, and its own are given after
         // its arguments (ADR 0135).

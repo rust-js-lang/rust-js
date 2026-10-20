@@ -5,10 +5,15 @@ import {
   $dropEach,
   $extend,
   $intoIter,
+  $iter,
+  $next,
   $nextSome,
   $reduce,
   $someValue,
+  $traitImpl,
 } from "@rust-js/runtime";
+
+var $groupsFirstOfNext;
 
 export function entry() {
   main();
@@ -134,6 +139,67 @@ function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemI
   return result;
 }
 
+function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
+  if ($groupsFirstOfNext === undefined) {
+    $groupsFirstOfNext = new WeakMap();
+  }
+  return $traitImpl(
+    $groupsFirstOfNext,
+    [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
+    () => ({
+      first_of_next: (arg0) =>
+        groupsFirstOfNext_first_of_next(
+          arg0.value,
+          IIterator,
+          dropI,
+          dropIItem,
+          dropIItemItem,
+          dropIItemIntoIter,
+        ),
+      $drop: (groups) => {
+        dropI?.(groups[0]);
+      },
+    }),
+  );
+}
+
+function groupsFirstOfNext_first_of_next(
+  groups,
+  IIterator,
+  dropI,
+  dropIItem,
+  dropIItemItem,
+  dropIItemIntoIter,
+) {
+  const value = IIterator.next(groups[0]);
+  let value$0$live = true;
+  let result;
+  if (value != null) {
+    value$0$live = false;
+    const inner = $someValue(value);
+    const value$1 = $intoIter(inner);
+    try {
+      const tmp = $nextSome(value$1);
+      const tmp$1 = (_2) => {
+        dropIItemItem?.(_2);
+        return 1;
+      };
+      const value = $someValue(tmp);
+      result = tmp != null ? tmp$1(value) : 0;
+    } finally {
+      dropIItemIntoIter?.(value$1);
+    }
+  } else {
+    result = 0;
+  }
+  if (value != null) {
+    if (value$0$live) {
+      dropIItem?.($someValue(value));
+    }
+  }
+  return result;
+}
+
 function main() {
   const groups = [[[1], [2]], [], [[3]]];
   const got = firsts(
@@ -182,7 +248,53 @@ function main() {
   const value = (v) => v.length;
   try {
     console.log(`all ${all != null ? value(all) : 0}`);
-    console.log("end");
+  } catch (error) {
+    if (all != null) {
+      for (const item of all) {
+        loudDrop_drop(item);
+      }
+    }
+    throw error;
+  }
+  const value$1 = [[[20], [21]]];
+  let groups$1;
+  try {
+    groups$1 = [$iter(value$1)];
+  } catch (error) {
+    if (all != null) {
+      for (const item of all) {
+        loudDrop_drop(item);
+      }
+    }
+    throw error;
+  }
+  const next = {
+    value: groups$1,
+    impl: groupsFirstOfNext(
+      { next: $next },
+      (intoIter) => {
+        for (const item of intoIter) {
+          for (const item$1 of item) {
+            loudDrop_drop(item$1);
+          }
+        }
+      },
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+      $dropEach(loudDrop_drop),
+    ),
+  };
+  try {
+    try {
+      console.log(`firsts ${next.impl.first_of_next(next)}`);
+      console.log("end");
+    } finally {
+      for (const item of groups$1[0]) {
+        for (const item$1 of item) {
+          loudDrop_drop(item$1);
+        }
+      }
+    }
   } finally {
     if (all != null) {
       for (const item of all) {
