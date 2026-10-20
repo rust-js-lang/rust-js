@@ -130,15 +130,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "trait-self-as-js-iterator",
-    breaks: "a default's `Self`, never made a JS iterator by its caller, gives its blanket impl an `Iterator` dictionary it doesn't step",
-    file: "src/lower/analysis/iterator_steps.rs",
-    find: "            || (tcx.trait_of_assoc(id).is_some() && (index as usize) < generics.parent_count)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
-    snapshots: true,
-  },
-  {
     name: "associated-iterator-unstepped",
     breaks: "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
     file: "src/lower/analysis/iterator_steps.rs",

@@ -220,14 +220,9 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // A parameter given as a JS iterator (ADR 0061), not as it is, takes
     // one made of the dictionaries its bounds ask: its `Iterator`'s, and its
     // extensions', its back and its length (ADR 0487).
-    // Not a trait's own, its `Self`, the impl's argument for it, which no
-    // caller makes a JS iterator.
     let as_js_iterator = |(id, index): (DefId, u32)| -> Vec<DefId> {
         let generics = tcx.generics_of(id);
-        if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
-            || generics.count() <= index as usize
-            || (tcx.trait_of_assoc(id).is_some() && (index as usize) < generics.parent_count)
-        {
+        if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) || generics.count() <= index as usize {
             return Vec::new();
         }
         let param = generics.param_at(index as usize, tcx);
