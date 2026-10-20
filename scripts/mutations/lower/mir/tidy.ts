@@ -805,4 +805,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|writer_callables).rs$"],
     snapshots: true,
   },
+  {
+    name: "holed-lists-kept",
+    breaks: "a list MIR took its other items out of is kept, `[undefined, ids(v)]`, read as `tmp[1]`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    holed_lists(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a list of one item left is the item"],
+  },
 ];

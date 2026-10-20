@@ -562,6 +562,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **No list with holes**: `println!("{:?} {:?}", f(a), g(b))` reads `g(b)`
+  as itself, not `[undefined, g(b)][1]` (ADR 0512).
 - **No `.map((item) => item)`**: `{:?}` of a list of unit enums or of
   numbers is `` `[${v.join(", ")}]` ``, and `cloned()` of strings is the
   strings (ADR 0508).

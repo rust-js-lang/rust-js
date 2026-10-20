@@ -86,7 +86,7 @@ function main() {
   }
   let tmp$5;
   try {
-    tmp$5 = [undefined, ids(tmp$4)];
+    tmp$5 = ids(tmp$4);
   } catch (error) {
     for (const item of taken) {
       nDrop_drop(item);
@@ -97,7 +97,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`taken [${tmp$3.join(", ")}] left [${tmp$5[1].join(", ")}]`);
+    console.log(`taken [${tmp$3.join(", ")}] left [${tmp$5.join(", ")}]`);
   } catch (error) {
     for (const item of taken) {
       nDrop_drop(item);

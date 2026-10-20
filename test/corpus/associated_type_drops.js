@@ -53,9 +53,9 @@ function describe(zone, ZZone) {
     console.log(`made ${tmp}`);
     const second = stamp(zone, 7n, "second", ZZone);
     try {
-      const tmp = [undefined, ZZone.show(second.offset)];
+      const tmp = ZZone.show(second.offset);
       const tmp$1 = second.at;
-      console.log(`stamp ${tmp$1} ${tmp[1]}`);
+      console.log(`stamp ${tmp$1} ${tmp}`);
       const maybe = $some(ZZone.offset(zone, "maybe"));
       try {
         console.log(`some ${maybe != null}`);

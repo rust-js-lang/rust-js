@@ -416,6 +416,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // An `if` of `false`, a check that can't fail once what it reads is
     // in place: its `else`, if any.
     js::statement_lists(body, &mut never_taken);
+    holed_lists(body);
     // For the source map: a `return` given the value it returns, at MIR's
     // end of the body, which the map has nothing of, where that value was
     // written; an `if`, where its test says, `if c` or its arm's pattern.

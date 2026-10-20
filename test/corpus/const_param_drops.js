@@ -45,8 +45,8 @@ function main() {
   const loud = [1];
   try {
     const tmp = made(4);
-    const tmp$1 = [undefined, bufferDescribed(8).described(Buffer.new(8))];
-    console.log(`${tmp} ${tmp$1[1]}`);
+    const tmp$1 = bufferDescribed(8).described(Buffer.new(8));
+    console.log(`${tmp} ${tmp$1}`);
     console.log(`${loud[0]}`);
   } finally {
     loudDrop_drop(loud);

@@ -274,6 +274,82 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
     });
 }
 
+/// `t = [undefined, f()]`, a list MIR held while it took its other items
+/// out, `format_args!`'s of a value it read first: of one item left, read
+/// only as `t[1]`, the item, `t = f()`, read as `t` (ADR 0512).
+pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
+    // Each list with holes, by its name, its one item's index, and whether
+    // it's assigned, not declared with it.
+    let mut lists: Vec<(String, i128, bool)> = Vec::new();
+    js::statement_lists(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            let (name, value, assigned) = match &stmt.kind {
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.clone(), value, false),
+                StmtKind::Assign(
+                    Expr {
+                        kind: ExprKind::Var(name),
+                        ..
+                    },
+                    value,
+                ) => (name.clone(), value, true),
+                _ => continue,
+            };
+            let ExprKind::Array(items) = &value.kind else { continue };
+            let left: Vec<usize> = (0..items.len())
+                .filter(|&i| !matches!(items[i].kind, ExprKind::Undefined))
+                .collect();
+            if let [at] = left.as_slice()
+                && items.len() > 1
+            {
+                lists.push((name, *at as i128, assigned));
+            }
+        }
+    });
+    for (name, at, assigned) in lists {
+        let read = |e: &Expr| {
+            matches!(&e.kind, ExprKind::Index(of, index)
+                if matches!(&of.kind, ExprKind::Var(v) if *v == name) && index.as_int() == Some(at))
+        };
+        // Each read of it one of its item's, and it made once.
+        let mut rest = body.clone();
+        js::each_expr_mut(&mut rest, &mut |e| {
+            if read(e) {
+                *e = Expr::undefined();
+            }
+        });
+        if js::mentions_in(&rest, &name) != usize::from(assigned)
+            || js::mentions_in(body, &name) == usize::from(assigned)
+        {
+            continue;
+        }
+        js::statement_lists(body, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                let value = match &mut stmt.kind {
+                    StmtKind::Const(n, value) | StmtKind::Let(n, Some(value)) if *n == name => value,
+                    StmtKind::Assign(
+                        Expr {
+                            kind: ExprKind::Var(n), ..
+                        },
+                        value,
+                    ) if *n == name => value,
+                    _ => continue,
+                };
+                if let ExprKind::Array(items) = &mut value.kind {
+                    *value = std::mem::replace(&mut items[at as usize], Expr::undefined());
+                }
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if read(e) {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(&name)
+                };
+            }
+        });
+    }
+}
+
 /// A handle made only to read or write its value there, `Cell::set` of
 /// `&self.n`'s `({ get value() { .. }, set value(value) { .. } }).value =
 /// v`: its place, `t.n = v`. Of a place that reads the same

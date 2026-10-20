@@ -117,14 +117,14 @@ function main() {
   }
   let tmp$4;
   try {
-    tmp$4 = [undefined, tmp$2 ? tmp$3(tmp$2) : undefined];
+    tmp$4 = tmp$2 ? tmp$3(tmp$2) : undefined;
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a$1);
     throw error;
   }
   try {
-    console.log(`${tmp$1} ${tmp$4[1] == null ? "None" : `Some(${tmp$4[1]})`}`);
+    console.log(`${tmp$1} ${tmp$4 == null ? "None" : `Some(${tmp$4})`}`);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a$1);
@@ -220,9 +220,9 @@ function main() {
   }
   try {
     try {
-      const tmp = [undefined, $intoInner(a$1)];
+      const tmp = $intoInner(a$1);
       console.log(
-        `${tmp$7 == null ? "None" : `Some(${tmp$7.value})`} ${tmp[1] == null ? "None" : `Some(${tmp[1]})`}`,
+        `${tmp$7 == null ? "None" : `Some(${tmp$7.value})`} ${tmp == null ? "None" : `Some(${tmp})`}`,
       );
     } finally {
       if (tmp$7 != null) {

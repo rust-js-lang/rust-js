@@ -519,8 +519,8 @@ function main() {
             const tmp = checked(3);
             const tmp$1 = discard_result(tmp, false, dDrop_drop);
             const tmp$2 = checked(4);
-            const tmp$3 = [undefined, discard_result(tmp$2, true, dDrop_drop)];
-            console.log(`${tmp$1} ${tmp$3[1]}`);
+            const tmp$3 = discard_result(tmp$2, true, dDrop_drop);
+            console.log(`${tmp$1} ${tmp$3}`);
             console.log("end");
           } finally {
             if (generic.TAG === "Ok") {

@@ -1460,7 +1460,7 @@ function main() {
           };
           let tmp;
           try {
-            tmp = [undefined, e != null ? value(e) : 0];
+            tmp = e != null ? value(e) : 0;
           } catch (error) {
             dDrop_drop(d);
             if (err.TAG === "Ok") {
@@ -1488,7 +1488,7 @@ function main() {
             throw error;
           }
           try {
-            console.log(`pair ${d[0]} ${tmp[1]}`);
+            console.log(`pair ${d[0]} ${tmp}`);
           } catch (error) {
             dDrop_drop(d);
             if (err.TAG === "Ok") {

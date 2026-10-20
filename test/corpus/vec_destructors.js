@@ -42,21 +42,21 @@ function main() {
     console.log(`[${tmp.join(", ")}]`);
     const removed = $removeAt(v, 0);
     try {
-      const tmp = [undefined, ids(v)];
-      console.log(`removed ${removed[0]} [${tmp[1].join(", ")}]`);
+      const tmp = ids(v);
+      console.log(`removed ${removed[0]} [${tmp.join(", ")}]`);
     } finally {
       noisyDrop_drop(removed);
     }
     const swapped = $swapRemove(v, 0);
     let tmp$1;
     try {
-      tmp$1 = [undefined, ids(v)];
+      tmp$1 = ids(v);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
     }
     try {
-      console.log(`swapped ${swapped[0]} [${tmp$1[1].join(", ")}]`);
+      console.log(`swapped ${swapped[0]} [${tmp$1.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -177,7 +177,7 @@ function main() {
     }
     let tmp$7;
     try {
-      tmp$7 = [undefined, ids(tail)];
+      tmp$7 = ids(tail);
     } catch (error) {
       for (const item of tail) {
         noisyDrop_drop(item);
@@ -186,7 +186,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$6.join(", ")}] [${tmp$7[1].join(", ")}]`);
+      console.log(`[${tmp$6.join(", ")}] [${tmp$7.join(", ")}]`);
     } catch (error) {
       for (const item of tail) {
         noisyDrop_drop(item);

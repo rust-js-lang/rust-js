@@ -28,6 +28,17 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   expect(js).not.toContain("$rcClone(logger)");
 });
 
+// ADR 0512: a list MIR held while it took its other items out, `[undefined,
+// ids(v)]` of `println!`'s arguments, is its one item left, read as itself.
+test("a list of one item left is the item", () => {
+  const dir = fixture("holed-lists");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/extract_if_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("console.log(`odd [${tmp.join(\", \")}] kept [${tmp$2.join(\", \")}]`);");
+  expect(js).not.toContain("[undefined, ids(");
+});
+
 // ADR 0508: no `.map((item) => item)`: a list of unit enums, or of numbers,
 // is shown by `join` alone, and `cloned()` of strings is the strings.
 test("no item is mapped to itself", () => {

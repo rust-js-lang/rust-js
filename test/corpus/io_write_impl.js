@@ -65,9 +65,9 @@ function main() {
     const tmp$3 = bufWrite(16).write_all({ value: b }, [63]);
     const tmp$4 = b.bytes.slice();
     const tmp$5 = $fromUtf8(tmp$4, true);
-    const tmp$6 = [undefined, n];
+    const tmp$6 = n;
     const tmp$7 = $unwrapOk(tmp$5, undefined, (e) => $debugUtf8Error(e, true));
-    console.log(`${tmp$7} ${tmp$6[1] == null ? "None" : `Some(${tmp$6[1]})`}`);
+    console.log(`${tmp$7} ${tmp$6 == null ? "None" : `Some(${tmp$6})`}`);
   } finally {
     bufDrop_drop(b, 16);
   }
