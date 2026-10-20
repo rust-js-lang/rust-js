@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An impl whose associated type is an iterator over its type
+  parameter, in a library** (ADR 0527).
 - **A `filter` or `filter_map` of a double-ended iterator, stepped from
   its back** (ADR 0526).
 - **A clone of a lazy `map` or `filter`** (ADR 0525).

@@ -138,4 +138,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
     snapshots: true,
   },
+  {
+    name: "associated-iterator-unstepped",
+    breaks: "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                if !iterates || !fns.contains_key(&instance.def_id()) {\n",
+    replace: "                if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
+  },
+  {
+    name: "associated-iterator-param-unpassed",
+    breaks: "an impl's `IntoIter` holding its type parameter as it is isn't given that parameter's dictionary",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),\n",
+    replace: "                        ty::Param(_) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
+  },
+  {
+    name: "associated-iterator-adapter-unstepped",
+    breaks: "an impl's associated iterator holding a std adapter of its type parameter, `Fuse<I>`, isn't given that parameter's dictionary",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {\n",
+    replace: "                        _ => stepped.extend(held.walk().filter(|_| false).filter_map(|part| match part.as_type()?.kind() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
+  },
 ];

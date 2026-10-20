@@ -171,6 +171,47 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         }
     }
+    // An impl's associated type bound by `Iterator`, `IntoIterator`'s
+    // `IntoIter`: its dictionary gives that type's, made of the impl's
+    // evidence, so the impl steps what that type's `next` steps, of a
+    // parameter passed on as it is, or held in a std adapter, `Fuse<I>`
+    // (ADR 0527).
+    for impls in tcx.all_local_trait_impls(()).values() {
+        for &imp in impls {
+            let imp = imp.to_def_id();
+            let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+            for item in tcx
+                .associated_items(imp)
+                .in_definition_order()
+                .filter(|item| item.is_type())
+            {
+                let Some(declared) = item.trait_item_def_id() else {
+                    continue;
+                };
+                let iterates = (tcx.item_bounds(declared).skip_binder().iter())
+                    .filter_map(|clause| clause.as_trait_clause())
+                    .any(|p| p.def_id() == iterator);
+                let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
+                let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
+                else {
+                    continue;
+                };
+                if !iterates || !fns.contains_key(&instance.def_id()) {
+                    continue;
+                }
+                for (at, held) in instance.args.iter().enumerate() {
+                    let Some(held) = held.as_type() else { continue };
+                    match held.kind() {
+                        ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),
+                        _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {
+                            ty::Param(param) => Some((imp, param.index, iterator)),
+                            _ => None,
+                        })),
+                    }
+                }
+            }
+        }
+    }
     // An impl's, of each item's.
     let items: Vec<(DefId, DefId)> = fns
         .keys()
