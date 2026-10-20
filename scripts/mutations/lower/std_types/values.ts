@@ -570,4 +570,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
   },
+  {
+    name: "peekable-methods-refused",
+    breaks: "a `Peekable`'s `peek` and `next_if` of items with a destructor are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
+  },
 ];

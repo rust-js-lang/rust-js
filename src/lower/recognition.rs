@@ -3779,8 +3779,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 let source = sources.next()?;
                 self.closing_both(source, self.closing_inner(self.iterator_item(source)?)?)
             }
+            // `peekable()`'s: its source, and what it peeked at, whatever its
+            // source holds; not of one that drops what it is (ADR 0514).
+            "std::iter::Peekable" => {
+                let source = sources.next().filter(|&source| !self.drops_what_it_is(source))?;
+                Some(Ty::new_tup(self.tcx, &[source, self.iterator_item(source)?]))
+            }
             _ => None,
         }
+    }
+
+    /// Whether an iterator steps a value of the crate's, or a type
+    /// parameter's, which may drop what it is, not only what it hasn't given:
+    /// JS's iterators, stepped to their end, are never closed, where Rust
+    /// drops it (ADR 0514).
+    pub(super) fn drops_what_it_is(&self, source: Ty<'tcx>) -> bool {
+        source
+            .walk()
+            .filter_map(|part| part.as_type())
+            .any(|ty| self.is_user_iterator(ty) || matches!(ty.kind(), ty::Param(_) | ty::Alias(..)))
     }
 
     /// What closing an adapter of `source` and another it holds, `other`,

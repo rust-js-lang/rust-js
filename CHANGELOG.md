@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`peekable()` of what has a destructor** (ADR 0514).
 - **`iter::repeat_n` and a `Peekable`'s `peek_mut`** (ADR 0513).
 - **`flat_map` and `flatten` of what has a destructor** (ADR 0510).
 - **An array's `map`, `unwrap_or_default`, `Option::as_mut`, `pop_if`,
@@ -630,6 +631,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **An adapter a generic function makes of a type parameter given as it
+  is**, closed, dropped the JS iterator stepping it, not the value (ADR
+  0514).
 - **A type parameter bound by the crate's trait that extends `Iterator`**,
   `T: Sorted`, of the crate's iterator, was stepped as its fields: it's
   given as it is, as its trait's impl takes it (ADR 0511).

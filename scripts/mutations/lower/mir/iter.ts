@@ -1007,4 +1007,20 @@ export const mutations: Mutation[] = [
       "^(atomics|std_odds).rs$"
     ]
   },
+  {
+    name: "given-iterator-closed-as-wrapper",
+    breaks: "an adapter of a type parameter given as it is drops the JS iterator stepping it, not the value",
+    file: "src/lower/mir/iter.rs",
+    find: "                let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);\n",
+    replace: "                let stepped = self.is_user_iterator(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_adapter_source_drops.rs$"],
+  },
+  {
+    name: "peekable-of-destructors-a-slice-iter",
+    breaks: "`peekable()` of items with a destructor is the source's own `$iter`, which drops none it peeked at last",
+    file: "src/lower/mir/iter.rs",
+    find: "        if std_method == Some(IterMethod::Peekable)\n            && let Some(peekable) = self.dropping_peekable(receiver.clone(), iter_ty, span)?\n",
+    replace: "        if false\n            && let Some(peekable) = self.dropping_peekable(receiver.clone(), iter_ty, span)?\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
+  },
 ];

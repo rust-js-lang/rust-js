@@ -2372,4 +2372,12 @@ export const mutations: Mutation[] = [
     replace: "    is_iterator_extension(tcx, id)\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
+  {
+    name: "peekable-of-own-drops-allowed",
+    breaks: "a `Peekable` of an iterator that drops what it is, stepped to its end, is allowed, and never dropped",
+    file: "src/lower/recognition.rs",
+    find: "                let source = sources.next().filter(|&source| !self.drops_what_it_is(source))?;\n",
+    replace: "                let source = sources.next()?;\n",
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic peekable takes none"],
+  },
 ];

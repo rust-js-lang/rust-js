@@ -251,6 +251,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Slice(SliceOp::PopFrontIf)
                     | Std::Method("map")
                     | Std::Pointee
+                    // A `Peekable`'s, which lend the next item, or give it,
+                    // keeping it where it's not taken (ADR 0514).
+                    | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)
                     | Std::Clear
                     | Std::Retain
                     | Std::Slice(SliceOp::RetainMut)

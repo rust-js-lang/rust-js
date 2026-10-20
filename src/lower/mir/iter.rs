@@ -717,6 +717,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper(helper, args))
     }
 
+    /// `peekable()` of a source or items with a destructor: `$peekable(it,
+    /// drop)`, its source closed to drop what it holds, then what it peeked
+    /// at dropped, as Rust drops a `Peekable`'s fields (ADR 0514). `None` of
+    /// one with nothing to drop.
+    fn dropping_peekable(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        if !self.peekable_closes(iter_ty) {
+            return Ok(None);
+        }
+        let item = self.iterator_item(iter_ty).expect("an iterator's item");
+        let drop = self.std_drop_function(item, span)?;
+        let it = match self.array_source(iter_ty) {
+            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
+            Some(_) => self.std_iterator(receiver, iter_ty),
+            None => self.as_js_iterator(receiver, iter_ty, span)?,
+        };
+        let it = self.closing(it, iter_ty, span)?;
+        Ok(Some(Expr::call_helper(
+            "$peekable",
+            Expr::optional_args(vec![it], vec![drop]),
+        )))
+    }
+
+    /// Whether `peekable()` of a `source` is `$peekable`, closed to drop
+    /// what it holds: of a source or items with a destructor (ADR 0514). The
+    /// one answer, of what makes it and what asks its length.
+    pub(in crate::lower) fn peekable_closes(&self, source: Ty<'tcx>) -> bool {
+        let drops = |ty: Ty<'tcx>| self.drops(ty) != crate::lower::drops::Drops::Nothing;
+        !self.recognition().drops_what_it_is(source) && (drops(source) || self.iterator_item(source).is_some_and(drops))
+    }
+
     /// `rev()` or `peekable()` of a std iterator neither a range nor the
     /// crate's own: of items made already, an array's, a `$iter` of them,
     /// reversed for `rev`; a lazy chain made of its items reversed where its
@@ -729,6 +759,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
+        if std_method == Some(IterMethod::Peekable)
+            && let Some(peekable) = self.dropping_peekable(receiver.clone(), iter_ty, span)?
+        {
+            return Ok(peekable);
+        }
         // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
         // it steps reversed (ADR 0473).
         if std_method == Some(IterMethod::Rev)
@@ -994,8 +1029,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         match owns {
             // The crate's own is stepped as `$iterator(value, next)`, which
-            // drops its `value` (ADR 0421).
-            true => self.held_drop_function(ty, self.is_user_iterator(ty), span),
+            // drops its `value` (ADR 0421), as one given as it is is (ADR
+            // 0514).
+            true => {
+                let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);
+                self.held_drop_function(ty, stepped, span)
+            }
             false => Ok(None),
         }
     }

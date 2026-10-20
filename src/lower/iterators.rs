@@ -446,10 +446,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a value of `ty` is a JS iterator that knows its length, its
     /// `len()` (ADR 0456): a type parameter's bound by `ExactSizeIterator`,
-    /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
+    /// a `dyn`'s, a map of one, or a `Peekable` closed to drop what it holds,
+    /// `$peekable`'s (ADR 0514). The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
+        if let ty::Adt(_, args) = ty.kind()
+            && self.is_peekable(ty)
+            && self.peekable_closes(args.type_at(0))
+        {
+            return true;
+        }
         if let Some(source) =
             super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
         {

@@ -999,21 +999,22 @@ export function $findDropping(it, test, drop, boxed) {
 
 // An iterator an adapter holds, closed when the adapter ends early or is
 // dropped: `drop`, its own drop, given what it hasn't given, once, as Rust
-// drops it with the adapter (ADRs 0422, 0465).
+// drops it with the adapter (ADRs 0422, 0465); its back and its length
+// still its own, where it has them (ADR 0514).
 export function $closing(it, drop) {
   let closed = false;
-  return Iterator.from({
-    next() {
-      return it.next();
-    },
-    return() {
-      if (!closed) {
-        closed = true;
-        drop?.(it);
-      }
-      return { done: true, value: undefined };
-    },
-  });
+  const closing = Object.create(Iterator.prototype);
+  closing.next = () => it.next();
+  closing.back = () => it.back();
+  closing.len = () => it.len();
+  closing.return = () => {
+    if (!closed) {
+      closed = true;
+      drop?.(it);
+    }
+    return { done: true, value: undefined };
+  };
+  return closing;
 }
 
 // `skip(n)` of items with a destructor: the first `n` dropped by `drop` as
@@ -3906,12 +3907,15 @@ export function $floatMidpoint(a, b) {
 // A lazy iterator made `peekable()` (ADR 0164): a JS iterator that steps
 // it only when asked, and keeps the step `peek` took for the next `next`,
 // as Rust's `Peekable` does. One of an array's items is its `$iter`, which
-// peeks at its array.
+// peeks at its array. Of items with a destructor, `drop`'s: closed, its
+// source first, then what it peeked at, as Rust drops a `Peekable`'s
+// fields (ADR 0514).
 export class $Peekable extends Iterator {
-  constructor(it) {
+  constructor(it, drop) {
     super();
     this.it = it;
     this.peeked = undefined;
+    this.drop = drop;
   }
   next() {
     const step = this.peeked ?? this.it.next();
@@ -3922,9 +3926,30 @@ export class $Peekable extends Iterator {
     this.peeked ??= this.it.next();
     return this.peeked;
   }
+  // Its last, `next_back()`'s, as Rust's: what it peeked at, once what it
+  // steps has none left.
+  back() {
+    if (this.peeked === undefined) return this.it.back();
+    if (this.peeked.done) return this.peeked;
+    const step = this.it.back();
+    if (!step.done) return step;
+    const peeked = this.peeked;
+    this.peeked = undefined;
+    return peeked;
+  }
+  len() {
+    return (this.peeked === undefined || this.peeked.done ? 0 : 1) + this.it.len();
+  }
+  return() {
+    this.it.return?.();
+    const peeked = this.peeked;
+    this.peeked = undefined;
+    if (peeked !== undefined && !peeked.done) this.drop?.(peeked.value);
+    return { done: true, value: undefined };
+  }
 }
-export function $peekable(it) {
-  return new $Peekable(it);
+export function $peekable(it, drop) {
+  return new $Peekable(it, drop);
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
