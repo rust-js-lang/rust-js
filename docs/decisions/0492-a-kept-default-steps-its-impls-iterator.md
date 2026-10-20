@@ -40,6 +40,8 @@ dictionary, the crate's iterator by its own `next`.**
 - **A std trait's associated type is never looked for in a dictionary**,
   `item_drop_of`; its slot is found in the impl's terms, normalized in the
   impl's typing environment, `<Holder<I> as Iterator>::Item` as `I::Item`.
+  (Amended: one whose bound is given a dictionary is its entry's, ADR
+  0497; an iterator's slot is found first.)
 
 ```js
 function tSkipping(TIterator) {

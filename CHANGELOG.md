@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A generic `a + b`, or another std operator's, whose `Output` has a
+  destructor**, dropped by its dictionary's `$dropOutput` (ADR 0497).
 - **`and` of an `Option` or a `Result` of values with a destructor**,
   dropping what it gives up (ADR 0496).
 - **An `Rc` of a type parameter's value with a destructor**, itertools'

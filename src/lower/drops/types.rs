@@ -102,9 +102,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// An associated type's trait and item, `<Z as Zone>::Offset`'s
     /// `Z: Zone` and `Offset`, whose drop its impl's dictionary has where
-    /// its type has one (ADR 0178). Not an `async fn`'s, which has no name,
-    /// nor a std trait's, whose dictionary has none: its drop is given apart,
-    /// as its function's (ADRs 0421, 0489).
+    /// its type has one (ADR 0178), a std trait's too, `Add`'s `Output` (ADR
+    /// 0497). Not an `async fn`'s, which has no name. An iterator's, of no
+    /// dictionary, is a slot's, found first (ADRs 0421, 0489).
     pub(in crate::lower) fn item_drop_of(&self, ty: Ty<'tcx>) -> Option<(ty::TraitRef<'tcx>, DefId)> {
         let tcx = self.recognition.tcx;
         let ty::Alias(
@@ -117,9 +117,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         else {
             return None;
         };
-        let owner = alias.trait_ref(tcx);
-        (!tcx.is_impl_trait_in_trait(def_id) && !crate::lower::recognition::is_std_crate(tcx, owner.def_id))
-            .then_some((owner, def_id))
+        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))
     }
 
     /// The index of the drop given for `alias`, a std associated type of a

@@ -565,6 +565,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0494 An `Rc` of a type parameter's value is counted where it may drop](decisions/0494-a-generic-rc-is-counted-where-it-may-drop.md)
 - [0495 A copied default asks its impl's drops in its impl's terms](decisions/0495-a-copied-default-asks-its-impls-drops-in-its-impls-terms.md)
 - [0496 `and` drops what it gives up](decisions/0496-and-drops-what-it-gives-up.md)
+- [0497 A std trait's dictionary drops its associated type](decisions/0497-a-std-traits-dictionary-drops-its-associated-type.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -216,12 +216,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
   {
-    name: "std-item-drop-dictionary-entry",
-    breaks: "a std trait's associated type's drop is looked for in its dictionary, `.Iterator().$dropItem`, which has none",
+    name: "operator-output-drop-unseen",
+    breaks: "a generic `a + b`'s `Output` with a destructor isn't dropped by its dictionary's `$dropOutput`, and is refused",
     file: "src/lower/drops/types.rs",
-    find: "        (!tcx.is_impl_trait_in_trait(def_id) && !crate::lower::recognition::is_std_crate(tcx, owner.def_id))\n",
-    replace: "        (!tcx.is_impl_trait_in_trait(def_id))\n",
-    tests: ["test/diagnostics.test.ts", "-t", "associated type's value no drop is given for"],
+    find: "        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))\n",
+    replace: "        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^operator_output_drops.rs$"],
   },
   {
     name: "slot-unnormalized",
