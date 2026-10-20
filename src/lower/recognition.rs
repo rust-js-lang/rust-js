@@ -3582,6 +3582,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id) {
             return rc_pointee(tcx, args.type_at(0)).map(|pointee| (false, pointee));
         }
+        // `rc.borrow()` to what it points at, as `*rc` is (ADR 0503).
+        if let Some(trait_) = tcx.trait_of_assoc(def_id)
+            && is_std_def(tcx, trait_, StdItem::Borrow)
+            && let Some(pointee) = rc_pointee(tcx, args.type_at(0))
+            && args.types().nth(1) == Some(pointee)
+        {
+            return Some((false, pointee));
+        }
         // `Rc::from(x)` and `x.into()`, of what `rc_made_of` says.
         if let Some(trait_) = tcx.trait_of_assoc(def_id)
             && let Some((from, to)) = conversion_sides(tcx, trait_, args)

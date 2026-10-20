@@ -2340,4 +2340,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
   },
+  {
+    name: "rc-borrow-the-rc",
+    breaks: "`rc.borrow()` of a counted `Rc` is the `Rc`, `[object Object]` where it's shown",
+    file: "src/lower/recognition.rs",
+    find: "            && is_std_def(tcx, trait_, StdItem::Borrow)\n            && let Some(pointee) = rc_pointee(tcx, args.type_at(0))\n",
+    replace: "            && false\n            && let Some(pointee) = rc_pointee(tcx, args.type_at(0))\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
 ];

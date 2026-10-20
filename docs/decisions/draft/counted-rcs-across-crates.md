@@ -120,3 +120,25 @@ this ABI; it cannot add a user option or require artificial count reads.
 
 The library refusal is removed only after the boundary tests pass.
 Crate-corpus results change only for probes actually run successfully.
+
+## Findings from a trial implementation
+
+Making every `Rc` counted in a library, and in a binary using one, was
+tried on 2026-10-20. The crate corpus compiles as it did, and itertools'
+`tee` compiles as a library; sixteen corpus cases that a library refused
+compile as one. Five that compile as a library today would be refused,
+each where a counted `Rc` has a drop an uncounted one doesn't:
+
+- a closure that holds an `Rc`, made in a block, `closure_clone_shared`:
+  "a closure that holds a value with a destructor, made here";
+- a boxed function that holds one, kept, `subscriptions`: "a function that
+  holds a value with a destructor, kept by what it's given to";
+- `downcast_mut` of a `dyn Any`, and `Rc::downcast`, beside one,
+  `dyn_any` and `dyn_any_generic`;
+- `{}` of an `Rc<&T>`, `rc_of_borrowed_param`.
+
+Each is a gap of its own to close before this is accepted, or the user's
+call to accept by name. `rc.borrow()` of a counted `Rc`, which gave the
+`Rc`, was a bug of any counted one, fixed apart in
+[0503](../0503-a-counted-rcs-borrow-is-its-value.md).
+

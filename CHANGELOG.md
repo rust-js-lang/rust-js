@@ -613,6 +613,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`rc.borrow()` of a counted `Rc`** gave the `Rc`, shown `[object
+  Object]`: it's what it points at (ADR 0503).
 - **`xor` of two `Some`s whose first value's destructor panicked** never
   dropped the second: it's dropped in a `finally` (ADR 0502).
 - **A trait's default that calls its impl's own method, or another default,

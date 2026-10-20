@@ -571,6 +571,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0500 A collection made of another keeps its items](decisions/0500-a-collection-made-of-another-keeps-its-items.md)
 - [0501 A `splice` owns what it takes out](decisions/0501-a-splice-owns-what-it-takes-out.md)
 - [0502 `xor` drops its second value through a panic](decisions/0502-xor-drops-its-second-value-through-a-panic.md)
+- [0503 A counted `Rc`'s `borrow()` is its value](decisions/0503-a-counted-rcs-borrow-is-its-value.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
