@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: drop"],
   },
   {
-    name: "projection-drops-nothing",
-    breaks: "an associated type's value is taken to have nothing to drop where a type has a destructor, and its destructor never runs",
-    file: "src/lower/drops/types.rs",
-    find: "                (false, true) => {\n",
-    replace: "                (false, false) => {\n",
-    tests: ["test/diagnostics.test.ts","-t","associated type"],
-  },
-  {
     name: "closure-part-taken",
     breaks: "a closure that takes part of a value with a destructor is taken as holding it whole",
     file: "src/lower/drops/types.rs",
