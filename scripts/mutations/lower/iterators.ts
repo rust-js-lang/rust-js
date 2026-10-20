@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "repeat-uncloned",
     breaks: "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",
     file: "src/lower/iterators.rs",
-    find: "                if self.needs_clone(item) {\n                    list.push(self.clone_fn(\"value\", item, span)?);",
-    replace: "                if false && self.needs_clone(item) {\n                    list.push(self.clone_fn(\"value\", item, span)?);",
+    find: "                let clone = match self.needs_clone(item) {\n                    true => Some(self.clone_fn(\"value\", item, span)?),\n",
+    replace: "                let clone = match self.needs_clone(item) {\n                    true => None,\n",
     tests: ["test/corpus.test.ts","-t","iterator_sources"],
   },
   {
@@ -524,9 +524,9 @@ export const mutations: Mutation[] = [
     name: "repeat-drop-ungiven",
     breaks: "`repeat`'s value is never dropped, as its iterator isn't given its drop",
     file: "src/lower/iterators.rs",
-    find: "                list.extend(drop);\n",
-    replace: "                let _ = drop;\n",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+    find: "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone, drop]))\n",
+    replace: "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|repeat_n_and_peek_mut).rs$"],
   },
   {
     name: "fresh-iter-sliced",
@@ -883,5 +883,13 @@ export const mutations: Mutation[] = [
     find: "                if list.mentions_var(\"$closing\") {\n                    return None;\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
+  },
+  {
+    name: "repeat-n-is-repeat",
+    breaks: "`repeat_n` is `repeat`'s, given its count as its clone",
+    file: "src/lower/iterators.rs",
+    find: "                    _ => \"$repeatingN\",\n",
+    replace: "                    _ => \"$repeating\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
 ];

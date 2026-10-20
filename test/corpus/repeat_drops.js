@@ -11,15 +11,12 @@ function loudDrop_drop(loud) {
 }
 
 function fill(v, value, n) {
-  $extend(v, Array.from(Iterator.from($repeating(value, undefined, loudDrop_drop)).take(n)));
+  $extend(v, Array.from($repeating(value, undefined, loudDrop_drop).take(n)));
   console.log(`filled ${v.length}`);
 }
 
 function fill_generic(v, value, n, TClone, dropT) {
-  $extend(
-    v,
-    Array.from(Iterator.from($repeating(value, (value) => TClone.clone(value), dropT)).take(n)),
-  );
+  $extend(v, Array.from($repeating(value, (value) => TClone.clone(value), dropT).take(n)));
 }
 
 function main() {
@@ -34,7 +31,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = Iterator.from($repeating(["b"], undefined, loudDrop_drop));
+    tmp = $repeating(["b"], undefined, loudDrop_drop);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -98,7 +95,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = Iterator.from($repeating(["c"], undefined, loudDrop_drop));
+    tmp$1 = $repeating(["c"], undefined, loudDrop_drop);
   } catch (error) {
     if (first != null) {
       loudDrop_drop(first);
@@ -133,7 +130,7 @@ function main() {
   }
   let tmp$2;
   try {
-    tmp$2 = Iterator.from($repeating(["d"], undefined, loudDrop_drop));
+    tmp$2 = $repeating(["d"], undefined, loudDrop_drop);
   } catch (error) {
     if (first != null) {
       loudDrop_drop(first);
@@ -226,7 +223,7 @@ function main() {
   try {
     let tmp;
     try {
-      tmp = Iterator.from($repeating(["e"], undefined, loudDrop_drop));
+      tmp = $repeating(["e"], undefined, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

@@ -674,4 +674,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(item) if false && self.needs_clone(item) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
+  {
+    name: "peek-mut-of-numbers-unhandled",
+    breaks: "`peek_mut` of numbers gives the number, which a write changes nowhere",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        Some(item) if self.is_boxable(item) => Expr::call_helper(\"$peekCell\", vec![it]),\n",
+    replace: "                        Some(item) if false && self.is_boxable(item) => Expr::call_helper(\"$peekCell\", vec![it]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
+  },
 ];

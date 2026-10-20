@@ -226,6 +226,7 @@ pub(super) enum IterSource {
     Once,
     Empty,
     Repeat,
+    RepeatN,
     RepeatWith,
     Successors,
     FromFn,
@@ -238,6 +239,8 @@ pub(super) enum StepOp {
     Next,
     Peekable,
     Peek,
+    /// A `Peekable`'s `peek_mut`: the item, or a handle on it (ADR 0513).
+    PeekMut,
     NextIf,
     NextIfEq,
     /// `Chars::as_str`: the rest, as a string.

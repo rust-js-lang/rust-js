@@ -587,6 +587,8 @@ impl Std {
                 // a `NonNull`'s.
                 | Std::Pointer(PointerOp::AsMut | PointerOp::PlaceMut)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
+                // A `Peekable`'s `peek_mut`, `$peekCell`'s handle (ADR 0513).
+                | Std::Step(StepOp::PeekMut)
                 | Std::Slice(
                     SliceOp::PushMut { .. }
                         | SliceOp::PushFrontMut
@@ -862,6 +864,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "std::iter::once" => Some(IterSource::Once),
                 "std::iter::empty" => Some(IterSource::Empty),
                 "std::iter::repeat" => Some(IterSource::Repeat),
+                "std::iter::repeat_n" => Some(IterSource::RepeatN),
                 "std::iter::repeat_with" => Some(IterSource::RepeatWith),
                 "std::iter::successors" => Some(IterSource::Successors),
                 "std::iter::from_fn" => Some(IterSource::FromFn),
@@ -1609,9 +1612,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "try_recv" if self.channel_end(owner) == Some(ChannelEnd::Receiver) => {
                 Some(Std::Channel(ChannelOp::TryRecv))
             }
-            "peek" if peekable => Some(Std::Step(StepOp::Peek)),
-            "next_if" if peekable => Some(Std::Step(StepOp::NextIf)),
-            "next_if_eq" if peekable => Some(Std::Step(StepOp::NextIfEq)),
+            name if peekable && let Some(step) = peekable_step(name) => Some(Std::Step(step)),
             "as_str" if chars => Some(Std::Step(StepOp::AsStr)),
             "as_slice" if slice_iter => Some(Std::Step(StepOp::AsSlice)),
             "push" if heap => Some(Std::Heap(HeapOp::Push)),
@@ -3751,7 +3752,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
         match std_path(self.tcx, adt.did()).as_str() {
-            "std::iter::Repeat" => sources.next(),
+            "std::iter::Repeat" | "std::iter::RepeatN" => sources.next(),
             "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),
             "std::iter::Take"
             | "std::iter::Skip"
@@ -6776,6 +6777,17 @@ fn cell_method(name: &str, refcell: bool) -> Option<Std> {
         "replace" => Std::CellReplace,
         "take" => Std::CellTake,
         "replace_with" if refcell => Std::CellReplaceWith,
+        _ => return None,
+    })
+}
+
+/// Which `StepOp` a `Peekable`'s own method is (ADRs 0071, 0513).
+fn peekable_step(name: &str) -> Option<StepOp> {
+    Some(match name {
+        "peek" => StepOp::Peek,
+        "peek_mut" => StepOp::PeekMut,
+        "next_if" => StepOp::NextIf,
+        "next_if_eq" => StepOp::NextIfEq,
         _ => return None,
     })
 }

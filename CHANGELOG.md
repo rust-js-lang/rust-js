@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`iter::repeat_n` and a `Peekable`'s `peek_mut`** (ADR 0513).
 - **`flat_map` and `flatten` of what has a destructor** (ADR 0510).
 - **An array's `map`, `unwrap_or_default`, `Option::as_mut`, `pop_if`,
   `pop_front_if` and capacity changes, of values with a destructor** (ADR

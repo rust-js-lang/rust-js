@@ -81,10 +81,10 @@ function main() {
   );
   const nothing = [];
   console.log(`[${nothing.join(", ")}]`);
-  const dashes = Iterator.from($repeating("-")).take(5).toArray().join("");
-  const words = Iterator.from($repeating("hi")).take(3).toArray();
+  const dashes = $repeating("-").take(5).toArray().join("");
+  const words = $repeating("hi").take(3).toArray();
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
-  const padded = $lazyChain($iter([1, 2]), Iterator.from($repeating(0)))
+  const padded = $lazyChain($iter([1, 2]), $repeating(0))
     .take(5)
     .toArray();
   console.log(`[${padded.join(", ")}]`);
@@ -107,11 +107,11 @@ function main() {
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
   const zipped = $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))).toArray();
-  const labelled = $lazyZip($iter(Array.from("xyz")), Iterator.from($repeating(7))).toArray();
+  const labelled = $lazyZip($iter(Array.from("xyz")), $repeating(7)).toArray();
   console.log(
     `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
-  const fours = Iterator.from($repeating(4));
+  const fours = $repeating(4);
   const bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
   const a = $next(fours);
   const b = $next(bigger);
@@ -125,7 +125,7 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const rows = Iterator.from($repeating([0], (value) => value.slice()))
+  const rows = $repeating([0], (value) => value.slice())
     .take(2)
     .toArray();
   $index(rows, 0).push(1);

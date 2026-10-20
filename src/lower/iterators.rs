@@ -944,19 +944,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             Std::IterSource(IterSource::Once) => Expr::array(vec![arg()]),
             Std::IterSource(IterSource::Empty) => Expr::array(vec![]),
-            // Its value's drop too, which it runs when it's closed (ADR 0422).
-            Std::IterSource(IterSource::Repeat) => {
-                let value = arg();
-                let item = generic_args.type_at(0);
-                let mut list = vec![value];
-                let drop = self.drop_function(item, span)?;
-                if self.needs_clone(item) {
-                    list.push(self.clone_fn("value", item, span)?);
-                } else if drop.is_some() {
-                    list.push(Expr::undefined());
+            // Its value's drop too, which it runs when it's closed (ADR 0422);
+            // `repeat_n`'s, its count's, the last its value (ADR 0513).
+            Std::IterSource(source @ (IterSource::Repeat | IterSource::RepeatN)) => {
+                let mut list = vec![arg()];
+                if source == IterSource::RepeatN {
+                    list.push(arg());
                 }
-                list.extend(drop);
-                Expr::call(Expr::helper("$repeating"), list)
+                let item = generic_args.type_at(0);
+                let clone = match self.needs_clone(item) {
+                    true => Some(self.clone_fn("value", item, span)?),
+                    false => None,
+                };
+                let drop = self.drop_function(item, span)?;
+                let name = match source {
+                    IterSource::Repeat => "$repeating",
+                    _ => "$repeatingN",
+                };
+                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone, drop]))
             }
             Std::IterSource(IterSource::RepeatWith) => Expr::call(Expr::helper("$repeatingWith"), vec![arg()]),
             // Their closures' `Option`s: a `Some` that looks like `None` is boxed (ADR 0051).
@@ -1693,15 +1698,18 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse` and
-/// `$intoIter`, and each of its generators, which the runtime package's
-/// test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 14] = [
+/// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
+/// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513), and
+/// each of its generators, which the runtime package's test holds this list
+/// to; a range's, its own.
+pub(crate) const ITERATOR_HELPERS: [&str; 16] = [
     "$iterator",
     "$fuse",
     "$intoIter",
     "$cycle",
     "$cycleOf",
+    "$repeating",
+    "$repeatingN",
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",
     "$lazySkipWhile",

@@ -764,6 +764,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // knows where it is (ADR 0071).
             Std::Step(
                 op @ (StepOp::Peek
+                | StepOp::PeekMut
                 | StepOp::NextIf
                 | StepOp::NextIfEq
                 | StepOp::AsSlice
@@ -785,6 +786,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A string's `chars()`' rest, as a string.
                     StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
                     StepOp::Peek => Expr::call_helper("$peek", vec![it]),
+                    // A handle on a number or text, else the item itself.
+                    StepOp::PeekMut => match self.iterator_item(arg_tys[0].peel_refs()) {
+                        Some(item) if self.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),
+                        _ => Expr::call_helper("$peek", vec![it]),
+                    },
                     StepOp::Cycle => {
                         let iter_ty = arg_tys[0].peel_refs();
                         let owns = self.array_source(iter_ty).expect("matched");

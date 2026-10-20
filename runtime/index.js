@@ -8766,6 +8766,25 @@ export function* $flatMap(it, f) {
   }
 }
 
+// `peek_mut()` of a `Peekable` of numbers or text: a handle on the item it
+// gives next, whose write changes it there, as Rust's `&mut` to it does; of
+// one at its end, `undefined` (ADR 0513).
+export function $peekCell(it) {
+  if (it.items === undefined) {
+    const step = it.peek();
+    if (step.done) return undefined;
+    return {
+      get value() {
+        return step.value;
+      },
+      set value(value) {
+        step.value = value;
+      },
+    };
+  }
+  return it.at < it.end ? $mutAt(it.items, it.at) : undefined;
+}
+
 export function* $lazyTakeWhile(items, keep) {
   for (const item of items) {
     if (!keep(item)) {
@@ -8796,6 +8815,29 @@ export function $repeating(value, clone = (value) => value, drop) {
     },
     return() {
       drop?.(value);
+      return { done: true, value: undefined };
+    },
+  });
+}
+
+// `iter::repeat_n(value, count)`: a clone of `value` each step but the
+// last, which is `value` itself, as std's moves it; of a count of none,
+// `value` dropped at once, and else when it's closed before its last
+// (ADR 0513).
+export function $repeatingN(value, count, clone = (value) => value, drop) {
+  let left = count;
+  if (left === 0) drop?.(value);
+  return Iterator.from({
+    next() {
+      if (left === 0) return { done: true, value: undefined };
+      left--;
+      return { done: false, value: left === 0 ? value : clone(value) };
+    },
+    return() {
+      if (left > 0) {
+        left = 0;
+        drop?.(value);
+      }
       return { done: true, value: undefined };
     },
   });

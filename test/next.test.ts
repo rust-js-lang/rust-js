@@ -1057,7 +1057,8 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     writeFileSync(join(dir, "app/counter.rs"), text);
     return finished(rustJs(dir, ["build"]));
   };
-  const port = 3200 + Math.floor(Math.random() * 500);
+  // A port fetch takes: 3200-3699 has 3659, which fetch refuses as reserved.
+  const port = 7100 + Math.floor(Math.random() * 500);
   const server = command(dir, ["dev", "--port", String(port)]);
   let output = "";
   server.stdout?.on("data", (data) => (output += data));

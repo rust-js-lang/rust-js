@@ -148,11 +148,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "repeat-value-refused",
-    breaks: "`repeat` of a value with a destructor is refused, as a std call that may drop it",
+    breaks: "`repeat` and `repeat_n` of a value with a destructor are refused, as std calls that may drop it",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::IterSource(IterSource::Repeat)\n",
+    find: "                    | Std::IterSource(IterSource::Repeat | IterSource::RepeatN)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|repeat_n_and_peek_mut).rs$"],
   },
   {
     name: "extend-moving-all-refused",
