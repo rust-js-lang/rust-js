@@ -1,37 +1,40 @@
-# `xor` drops what it gives up
+# `xor` completes cleanup when a discarded payload panics
 
-Status: Draft. Would extend [0496](../0496-and-drops-what-it-gives-up.md),
-whose `and` drops its argument by the one table of what std leaves
-unused, and [0490](../0490-a-value-std-leaves-unused-is-dropped-there.md).
+Status: Draft. Would amend
+[0498](../0498-xor-and-zip-drop-what-they-give-up.md), which now implements
+ordinary `xor` and `zip` drops through `unpaired`.
 
 Case: C ([0262](../0262-when-rust-and-js-disagree.md)): what's dropped,
 and when, as std's.
 
 ## Context
 
-`Option::xor` of values with a destructor is refused: `Some(a).xor(Some(b))`
-is `None`, and std drops both `a` and `b` as it returns; `Some(a).xor(None)`
-is `Some(a)` and drops nothing. ADR 0496 gave `and` its argument's drop
-through `unused_arguments`, the existing table, and its subject's through
-`kept_or`. `xor` needs a condition involving both options.
+`Option::xor` of values with a destructor is now supported.
+`Some(a).xor(Some(b))` is `None`, and `unpaired` emits the drop of `a`
+then `b`. Its two drop-statement lists are concatenated. If `a`'s drop
+throws, execution never reaches `b`'s list.
+
+The normal-path corpus case in ADR 0498 proves the ordinary pairings,
+but its destructors do not panic. The earlier draft's general proposal
+is therefore superseded; this draft is only the remaining unwind work.
 
 ## Decision
 
-**Extend the existing unused-value decision to express `xor`'s joint
-condition: both `Some`, drop the subject's payload then the argument's;
-one `Some`, move that option to the result; neither, return `None`.**
-The pinned std's `Option::xor` matches the pair and releases the discarded
-pair in that order.
+**Keep `unpaired` as the one owner of `xor` and `zip` selection, and use
+the existing drop/unwind machinery to finish both discarded payloads'
+cleanup.** For `xor` of two `Some`s, drop the subject first and arrange
+the argument's drop as cleanup that runs even when the first panics.
+The pinned std's `Option::xor` releases the discarded pair in that order.
 
 Evaluate the subject and argument once, in Rust's order, before selecting
 the branch. Use the existing `Option` representation helpers: `Some` may
 contain a falsy value or a payload whose JS representation is `undefined`.
 JS truthiness is not an option-discriminant test.
 
-The unused-value owner decides which values are discarded; the existing
-drop machinery emits their cleanup. Do not leave an old refusal or a
-second drop condition in another lowering path. A new standalone `$xor`
-helper is not required merely to add destructor support.
+Do not add another unused-value table or a standalone `$xor` helper.
+`unpaired` already knows the joint condition; drop emission owns how to
+clean up what that branch discards. `zip`'s existing selection and
+ownership must stay unchanged.
 
 **Cleanup must survive a panic in the first destructor.** Transfer
 ownership before each drop and arrange the second's cleanup through the
@@ -55,10 +58,12 @@ this draft does not claim to resolve the [panic proposal](catch-unwind.md).
 - **Mutations prove the checks**: reverse the drop order, skip cleanup
   after a panic, drop the surviving result, evaluate an operand twice,
   or test option presence by truthiness.
-- **It's the existing owner's**: one place says what std leaves unused;
-  extend it rather than invent a parallel `std_leaves_unused` table.
+- **It's the existing owner's**: `unpaired` keeps its selection rule;
+  cleanup reuses the drop machinery rather than duplicating it.
 
 ## Consequences
 
-- Remove the specific `xor` refusal only when these cases pass.
-  Do not infer that an entire dependent crate is supported.
+- Ordinary `xor` support is already accepted. After this change, its
+  two-payload cleanup also survives a first destructor's panic.
+- Amend ADR 0498's sequential-drop example when implemented. Do not infer
+  that every dependent crate or every unwinding case is then supported.
