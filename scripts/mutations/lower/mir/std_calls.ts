@@ -666,4 +666,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
   },
+  {
+    name: "extend-from-within-aliased",
+    breaks: "`extend_from_within` pushes the same objects again, not clones",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    Some(item) if op == TextOp::ExtendFromWithin && self.needs_clone(item) => {\n",
+    replace: "                    Some(item) if false && self.needs_clone(item) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
+  },
 ];

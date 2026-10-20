@@ -189,7 +189,71 @@ pub(in crate::lower) enum SliceOp {
     },
 }
 
+impl SliceOp {
+    /// Does it lend items, or views of them, and drop none: `split_at_mut`,
+    /// `chunks_mut` and the rest (ADR 0507)?
+    pub(in crate::lower) fn lends(self) -> bool {
+        matches!(
+            self,
+            SliceOp::SplitChunk { .. }
+                | SliceOp::SplitBy { .. }
+                | SliceOp::ChunkBy { .. }
+                | SliceOp::View { .. }
+                | SliceOp::DequeRangeMut
+                | SliceOp::ChunksMut
+                | SliceOp::SplitAtMut { .. }
+                | SliceOp::SplitEndMut { .. }
+                | SliceOp::AsArray
+                | SliceOp::ArrayWindows
+                | SliceOp::AsChunks { .. }
+                | SliceOp::Flattened { .. }
+                | SliceOp::GetDisjointMut { .. }
+        )
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// How an `item` is written over by a clone of another, as std's
+    /// `clone_from` does it: a clone, where a clone is more than the value,
+    /// and `(items, i, from) => ...`, its type's own `clone_from`, or a type
+    /// parameter's dictionary's where its impl writes one. The one answer
+    /// `fill` and `clone_from_slice` ask (ADR 0507).
+    fn clone_over(&mut self, item: ty::Ty<'tcx>, what: &str, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
+        let written = |called: Expr| {
+            Expr::arrow(
+                vec!["items".into(), "i".into(), "from".into()],
+                vec![StmtKind::Expr(called).at(js::Span::NONE)],
+            )
+        };
+        if self.recognition().own_clone_from(item) {
+            let place = Expr::index(Expr::var("items"), Expr::var("i"));
+            let target = match self.is_boxable(item) {
+                true => Expr::handle(place),
+                false => place,
+            };
+            let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
+            let args = self.args_of(self.clone_trait(), item);
+            let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
+            return Ok((None, Some(written(called))));
+        }
+        // A type parameter's, or an associated type's, `A::Item`.
+        if self.is_unknown(item) {
+            let clone = self.clone_arg(item, span)?;
+            let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item]), span)?;
+            let clone_from = Expr::member(dictionary, "clone_from");
+            let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
+            let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
+            return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
+        }
+        if self.recognition().reaches_clone_from(item) {
+            return Err(self.unsupported(
+                span,
+                &format!("`{what}` of items whose `clone_from` may be the crate's, inside them or generic"),
+            ));
+        }
+        Ok((Some(self.clone_arg(item, span)?), None))
+    }
+
     /// A call of one of the views' helpers (ADR 0335).
     pub(in crate::lower) fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), list)
@@ -486,66 +550,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let method = if mutable { "index_mut" } else { "index" };
                 Expr::call(Expr::member(dictionary, method), vec![index, items])
             }
-            // A clone of the value in each but the last, as std's is.
+            // A clone of the value in each but the last, by its type's
+            // `clone_from` where it may have one, as std's is; of items with
+            // a destructor, each it replaces dropped (ADR 0507). One whose
+            // copies can't be told apart, JS's: its `clone_from` is std's.
             SliceOp::Fill => {
                 let (items, value) = (arg(), arg());
                 match self.needs_clone(item()) {
                     true => {
-                        let clone = self.clone_arg(item(), span)?;
-                        helper("$fill", vec![items, value, clone])
+                        let (clone, clone_from) = self.clone_over(item(), "fill", span)?;
+                        let drop = self.std_drop_function(item(), span)?;
+                        helper(
+                            "$fill",
+                            Expr::optional_args(vec![items, value], vec![clone, clone_from, drop]),
+                        )
                     }
                     false => Expr::call(Expr::member(items, "fill"), vec![value]),
                 }
             }
             SliceOp::FillWith => helper("$fillWith", vec![arg(), arg()]),
             SliceOp::CopyFromSlice => helper("$copyFromSlice", vec![arg(), arg()]),
-            // Each by its type's own `clone_from` where it has one, as
-            // std's calls it.
-            SliceOp::CloneFromSlice if self.recognition().own_clone_from(item()) => {
-                let (items, source) = (arg(), arg());
-                let place = Expr::index(Expr::var("items"), Expr::var("i"));
-                let target = match self.is_boxable(item()) {
-                    true => Expr::handle(place),
-                    false => place,
-                };
-                let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
-                let args = self.args_of(self.clone_trait(), item());
-                let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
-                let f = Expr::arrow(
-                    vec!["items".into(), "i".into(), "from".into()],
-                    vec![StmtKind::Expr(called).at(js::Span::NONE)],
-                );
-                helper("$cloneFromSlice", vec![items, source, Expr::undefined(), f])
-            }
-            // Of a type parameter's, or an associated type's, `A::Item`, by
-            // its dictionary's `clone_from` where its impl writes one, as
-            // std's calls it, else a clone of each.
-            SliceOp::CloneFromSlice if self.is_unknown(item()) => {
-                let (items, source) = (arg(), arg());
-                let clone = self.clone_arg(item(), span)?;
-                let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item()]), span)?;
-                let clone_from = Expr::member(dictionary, "clone_from");
-                let place = helper("$ptr", vec![Expr::var("items"), Expr::var("i")]);
-                let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
-                let f = Expr::arrow(
-                    vec!["items".into(), "i".into(), "from".into()],
-                    vec![StmtKind::Expr(called).at(js::Span::NONE)],
-                );
-                helper(
-                    "$cloneFromSlice",
-                    vec![items, source, clone, Expr::bin(Op::And, clone_from, f)],
-                )
-            }
-            SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
-                return Err(self.unsupported(
-                    span,
-                    "`clone_from_slice` of items whose `clone_from` may be the crate's, inside them or generic",
-                ));
-            }
+            // Each by its type's `clone_from` where it may have one, as std's
+            // calls it, else a clone of each; of items with a destructor,
+            // each it replaces dropped (ADR 0507).
             SliceOp::CloneFromSlice => {
                 let (items, source) = (arg(), arg());
-                let clone = self.clone_arg(item(), span)?;
-                helper("$cloneFromSlice", vec![items, source, clone])
+                let (clone, clone_from) = self.clone_over(item(), "clone_from_slice", span)?;
+                let drop = self.std_drop_function(item(), span)?;
+                helper(
+                    "$cloneFromSlice",
+                    Expr::optional_args(vec![items, source], vec![clone, clone_from, drop]),
+                )
             }
             SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),
             // Each two in a row, by their `PartialOrd`.

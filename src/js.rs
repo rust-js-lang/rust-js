@@ -1258,6 +1258,17 @@ impl Expr {
         Expr::new(ExprKind::Undefined)
     }
 
+    /// `list` and then each of `optional` given, `undefined` for one absent
+    /// before a given one, and none past the last given: a helper's trailing
+    /// arguments, its drops.
+    pub fn optional_args(mut list: Vec<Expr>, mut optional: Vec<Option<Expr>>) -> Vec<Expr> {
+        while matches!(optional.last(), Some(None)) {
+            optional.pop();
+        }
+        list.extend(optional.into_iter().map(|arg| arg.unwrap_or_else(Expr::undefined)));
+        list
+    }
+
     pub fn null() -> Expr {
         Expr::new(ExprKind::Null)
     }

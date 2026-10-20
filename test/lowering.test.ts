@@ -28,6 +28,18 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   expect(js).not.toContain("$rcClone(logger)");
 });
 
+// ADR 0489: an iterator's items no caller gives a drop for drop nothing,
+// as a type parameter's none's given for: `counted(0..3)`'s `count()` is
+// `(n) => n + 1`, not a hook for a drop no dictionary has.
+test("a generic count of items no caller gives a drop for drops none", () => {
+  const dir = fixture("ungiven-item-slot");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/yielded_item_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return $iterator(IClone.clone(iter), IIterator.next, true).reduce((n) => n + 1, 0);");
+  expect(js).not.toContain("IIterator.$dropItem");
+});
+
 // ADR 0345: an entry's `and_modify(f)` is a statement, and `or_insert`
 // after it is of the map and the key, as of an entry alone; a `&mut` it
 // gives that nothing reads isn't made.

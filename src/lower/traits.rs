@@ -2097,11 +2097,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.held_drop_function(ty, iterated, span)?,
             });
         }
-        while matches!(drops.last(), Some(None)) {
-            drops.pop();
-        }
-        values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
-        Ok(values)
+        Ok(Expr::optional_args(values, drops))
     }
 
     /// What `id` asks of its type parameters, `TSize` and `KMap`, by their
@@ -2454,11 +2450,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = self.drop_slot_of(id, index, generic_args);
             drops.push(self.drop_function(ty, span)?);
         }
-        while matches!(drops.last(), Some(None)) {
-            drops.pop();
-        }
-        values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
-        Ok(values)
+        Ok(Expr::optional_args(values, drops))
     }
 
     /// `evidence_args` of an impl's generic method, for its dictionary's entry:
@@ -2516,11 +2508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = self.drop_slot_of(method, index, args);
             drops.push(self.drop_function(ty, span)?);
         }
-        while matches!(drops.last(), Some(None)) {
-            drops.pop();
-        }
-        values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
-        Ok(values)
+        Ok(Expr::optional_args(values, drops))
     }
 
     /// A `dyn` given for one of `id`'s type parameters that its signature,

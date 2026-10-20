@@ -2613,11 +2613,26 @@ export function $ceilCharBoundary(s, at) {
 // A slice's fills, copies, order checks, chunks and splits (ADR 0324).
 
 // `v.fill(x)`: a clone of `x` in each but the last, which is `x` itself, as
-// std's is; `clone` where a clone is more than the value.
-export function $fill(v, x, clone) {
-  if (!clone) return v.fill(x);
-  for (let i = 0; i < v.length - 1; i++) v[i] = clone(x);
-  if (v.length > 0) v[v.length - 1] = x;
+// std's is: by its type's `clone_from` (`cloneFrom`) where it has one, or
+// `clone` where a clone is more than the value. Of items with a destructor,
+// each it replaces dropped by `drop`, or `x`, of none to write (ADR 0507).
+export function $fill(v, x, clone, cloneFrom, drop) {
+  for (let i = 0; i < v.length - 1; i++) {
+    if (cloneFrom) {
+      cloneFrom(v, i, x);
+      continue;
+    }
+    const old = v[i];
+    v[i] = clone(x);
+    drop?.(old);
+  }
+  if (v.length === 0) {
+    drop?.(x);
+    return;
+  }
+  const old = v[v.length - 1];
+  v[v.length - 1] = x;
+  drop?.(old);
 }
 
 export function $fillWith(v, f) {
@@ -2645,11 +2660,19 @@ export function $writeCloneOfSlice(v, src, clone) {
   return v;
 }
 
-export function $cloneFromSlice(v, src, clone, cloneFrom) {
+// `v.clone_from_slice(src)`: each item its type's `clone_from` of the
+// source's (`cloneFrom`), or a clone of it, the one it replaces dropped by
+// `drop`, as std's assignment drops it (ADR 0507).
+export function $cloneFromSlice(v, src, clone, cloneFrom, drop) {
   if (v.length !== src.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) {
-    if (cloneFrom) cloneFrom(v, i, src[i]);
-    else v[i] = clone ? clone(src[i]) : src[i];
+    if (cloneFrom) {
+      cloneFrom(v, i, src[i]);
+      continue;
+    }
+    const old = v[i];
+    v[i] = clone ? clone(src[i]) : src[i];
+    drop?.(old);
   }
 }
 
@@ -8586,9 +8609,13 @@ export function $swapRemove(v, index) {
   return item;
 }
 
-export function $resize(v, length, item, clone) {
+// `v.resize(length, item)`: shortened, as `truncate` drops what's past it,
+// then `item` dropped, or lengthened with clones of `item`, and `item`
+// itself last, as std's is (ADR 0507).
+export function $resize(v, length, item, clone, drop) {
   if (length <= v.length) {
-    v.length = length;
+    $truncate(v, length, drop);
+    drop?.(item);
     return;
   }
   for (let i = v.length + 1; i < length; i++) v.push(clone === undefined ? item : clone(item));

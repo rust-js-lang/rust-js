@@ -362,13 +362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => None,
             });
         }
-        while matches!(drops.last(), Some(None)) {
-            drops.pop();
-        }
-        let drops: Vec<Expr> = drops
-            .into_iter()
-            .map(|drop| drop.unwrap_or_else(Expr::undefined))
-            .collect();
+        let drops = Expr::optional_args(Vec::new(), drops);
         let sorted = map.is_some_and(|map| self.is_sorted(map));
         let made = Expr::new_(class.clone(), Vec::new());
         Ok(match key {
@@ -466,15 +460,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ) => self.std_drop_function(key, span)?,
             _ => None,
         };
-        // A trailing drop given, `undefined` for one of none before another.
-        let with_drops = |mut list: Vec<Expr>, drops: Vec<Option<Expr>>| {
-            let mut drops = drops;
-            while matches!(drops.last(), Some(None)) {
-                drops.pop();
-            }
-            list.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
-            list
-        };
+        let with_drops = Expr::optional_args;
         Ok(match op {
             // Each value dropped first, in its order, as dropping the map does.
             MapOp::Clear if self.drops(receiver) != crate::lower::drops::Drops::Nothing => {

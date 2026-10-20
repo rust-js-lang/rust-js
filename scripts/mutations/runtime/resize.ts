@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "vec_edits"],
   },
+  {
+    name: "resize-keeps-value",
+    breaks: "`resize` that shortens drops none of the value it's given",
+    file: "src/runtime/resize.js",
+    find: "    drop?.(item);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
+  },
 ];

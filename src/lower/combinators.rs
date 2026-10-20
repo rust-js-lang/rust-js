@@ -1017,15 +1017,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", vec![subject, next(), next()]),
             Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),
-            Comb::Dedup => {
-                let item = self
-                    .slice_item(subject_ty)
-                    .ok_or_else(|| self.unsupported(span, "`dedup` of this"))?;
-                if !self.eq_is_identity(item) {
-                    return Err(self.unsupported(span, "`dedup` of what `===` doesn't compare"));
-                }
-                helper("$dedup", vec![subject])
-            }
+            Comb::Dedup => self.dedup_call(subject, subject_ty, span)?,
             // Its closure takes `&mut` items: an object itself, or a cell of a
             // number or text, whose change is written back, as std's is.
             Comb::DedupBy | Comb::DedupByKey | Comb::PopIf
@@ -1062,23 +1054,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper(name, self.dropping(vec![subject, same], subject_ty, span)?)
             }
             Comb::SwapRemove => helper("$swapRemove", vec![subject, next()]),
-            // Each new item its own, a clone, but the last, which is the value
-            // given, as std moves it; one whose copies can't be told apart, it.
-            Comb::Resize => {
-                let (length, item) = (next(), next());
-                let item_ty = self
-                    .slice_item(subject_ty)
-                    .ok_or_else(|| self.unsupported(span, "`resize` of this"))?;
-                let mut list = vec![subject, length, item];
-                if self.needs_clone(item_ty) {
-                    let name = self.fresh("item");
-                    let mut body = Vec::new();
-                    let copy = self.clone_value(Expr::var(&name), item_ty, span, &mut body)?;
-                    body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-                    list.push(Expr::arrow(vec![name.into()], body));
-                }
-                helper("$resize", list)
-            }
+            Comb::Resize => self.resize_call(vec![subject, next(), next()], subject_ty, span)?,
             Comb::ResizeWith => helper(
                 "$resizeWith",
                 self.dropping(vec![subject, next(), next()], subject_ty, span)?,
@@ -1117,6 +1093,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn items_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let item = self.slice_item(ty).expect("a slice's, an array's or a `Vec`'s items");
         self.std_drop_function(item, span)
+    }
+
+    /// `v.dedup()`, std's `dedup_by(|a, b| a == b)`: `$dedupBy(v, eq, drop)`,
+    /// or of what `===` compares and drops nothing, `$dedup(v)` (ADR 0507).
+    fn dedup_call(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let item = (self.slice_item(ty)).ok_or_else(|| self.unsupported(span, "`dedup` of this"))?;
+        Ok(match self.items_drop(ty, span)? {
+            None if self.eq_is_identity(item) => Expr::call(Expr::helper("$dedup"), vec![items]),
+            drop => {
+                let same = self.eq_fn(item, span)?;
+                Expr::call(
+                    Expr::helper("$dedupBy"),
+                    Expr::optional_args(vec![items, same], vec![drop]),
+                )
+            }
+        })
+    }
+
+    /// `v.resize(n, x)`, `list`: each new item its own, a clone, but the
+    /// last, which is `x`, as std moves it; one whose copies can't be told
+    /// apart, it. Of items with a destructor, what it cuts off and then `x`
+    /// dropped, as std's are (ADR 0507).
+    fn resize_call(&mut self, list: Vec<Expr>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let item = (self.slice_item(ty)).ok_or_else(|| self.unsupported(span, "`resize` of this"))?;
+        let clone = match self.needs_clone(item) {
+            true => Some(self.clone_fn("item", item, span)?),
+            false => None,
+        };
+        let drop = self.items_drop(ty, span)?;
+        Ok(Expr::call(
+            Expr::helper("$resize"),
+            Expr::optional_args(list, vec![clone, drop]),
+        ))
     }
 
     /// `list`, a call's arguments, and last, `items_drop` of `ty`, where it

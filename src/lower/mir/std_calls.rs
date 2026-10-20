@@ -347,7 +347,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let rest = exprs.split_off(2);
                 let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
-                self.range_edit(op, range, rest)
+                let clone = match self.slice_item(arg_tys[0]) {
+                    Some(item) if op == TextOp::ExtendFromWithin && self.needs_clone(item) => {
+                        Some(self.clone_arg(item, span)?)
+                    }
+                    _ => None,
+                };
+                self.range_edit(op, range, rest, clone)
             }
             Std::StringEdit(edit) => {
                 let place = match values.next().expect("the string") {

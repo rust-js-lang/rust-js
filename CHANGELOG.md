@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`fill`, `resize`, `clone_from_slice`, `dedup`, `extend_from_within`
+  and a slice's lending views, of values with a destructor; `dedup()` of
+  structs** (ADR 0507).
 - **`extract_if`, `HashMap::from` and `collect()` into a map, of values
   with a destructor** (ADR 0506).
 - **`rc.as_ref()` of an `Rc`** (ADR 0505).
@@ -617,6 +620,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`extend_from_within` of objects** pushed the same objects again, so a
+  change to one changed both: it pushes clones (ADR 0507).
+- **`fill` of a type with its own `clone_from`** cloned each: it calls
+  `clone_from`, as std's does (ADR 0507).
 - **`rc.borrow()` of a counted `Rc`** gave the `Rc`, shown `[object
   Object]`: it's what it points at (ADR 0503).
 - **`xor` of two `Some`s whose first value's destructor panicked** never

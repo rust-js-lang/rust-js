@@ -192,12 +192,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
   {
-    name: "item-slot-ungiven-refused",
-    breaks: "`counted(0..3)`, whose items no caller gives a drop, is refused as of an associated type that may have a destructor",
+    name: "item-slot-ungiven-hooked",
+    breaks: "`counted(0..3)`, whose items no caller gives a drop, is given a hook for one, `IIterator.$dropItem?.(item)`",
     file: "src/lower/drops/types.rs",
     find: "            ty::Alias(_, alias) if self.is_slot(*alias) => Drops::Nothing,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+    tests: ["test/lowering.test.ts", "-t", "a generic count of items no caller gives a drop for drops none"],
   },
   {
     name: "slot-in-trait-terms-unfound",

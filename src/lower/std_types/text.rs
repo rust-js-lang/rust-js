@@ -607,9 +607,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by
     /// `rest`, `$splice(v, a, b, items)`, or pushed again, `v.push(
-    /// ...$copyRange(v, a, b))` (ADR 0315). Of all of it,
-    /// `..`, `range` is the `Vec` itself.
-    pub(in crate::lower) fn range_edit(&mut self, op: TextOp, range: Expr, rest: Vec<Expr>) -> Expr {
+    /// ...$copyRange(v, a, b))` (ADR 0315), each a clone, by `clone`, where
+    /// a clone is more than the value (ADR 0507). Of all of it, `..`,
+    /// `range` is the `Vec` itself.
+    pub(in crate::lower) fn range_edit(
+        &mut self,
+        op: TextOp,
+        range: Expr,
+        rest: Vec<Expr>,
+        clone: Option<Expr>,
+    ) -> Expr {
         let mut list = match range.kind {
             js::ExprKind::Call(_, list) => list,
             kind => vec![
@@ -625,10 +632,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Checked as `slice::range` checks it, its end first, not as
         // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
         if op == TextOp::ExtendFromWithin {
-            return Expr::call(
-                Expr::member(items, "push"),
-                vec![Expr::spread(Expr::call(Expr::helper("$copyRange"), list))],
-            );
+            let copied = Expr::call(Expr::helper("$copyRange"), list);
+            let copied = match clone {
+                Some(clone) => Expr::call(Expr::member(copied, "map"), vec![clone]),
+                None => copied,
+            };
+            return Expr::call(Expr::member(items, "push"), vec![Expr::spread(copied)]);
         }
         if list.len() == 2 {
             list.push(Expr::member(items, "length"));

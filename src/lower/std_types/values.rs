@@ -58,11 +58,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // drops each it passes over; through a `&mut`, `find_map`'s, what it
         // doesn't reach stays in the iterator. A lazy adapter, `zip`, moves
         // what it's given into what it makes, which its type says is closed
-        // to drop it, or is refused (ADR 0465).
+        // to drop it, or is refused (ADR 0465). A slice's op that lends its
+        // items, or views of them, drops none (ADR 0507).
         let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
             || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
-            || matches!(known, Std::IterComb(comb) if comb.holds_its_sources());
+            || matches!(known, Std::IterComb(comb) if comb.holds_its_sources())
+            || matches!(known, Std::Slice(op) if op.lends());
         if takes_drops
             && !moves_all
             && !matches!(
@@ -177,9 +179,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // What moves or lends items in place, or adds clones, and
                     // drops none: `swap`, a slice's item or a generic index's
                     // as a place, `extend_from_slice`; and the allocator's,
-                    // `set_len` leaving what's past it (ADRs 0417, 0420).
+                    // `set_len` leaving what's past it (ADRs 0417, 0420); the
+                    // first item, and `extend_from_within` (ADR 0507).
                     | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)
                     | Std::SliceGet
+                    | Std::First
+                    | Std::SliceLast
+                    | Std::Text(TextOp::ExtendFromWithin)
+                    | Std::Slice(SliceOp::CloneFromSlice)
                     | Std::Slice(SliceOp::GenericIndex { mutable: true })
                     | Std::Alloc(_)
                     // A channel's queue, which its receiver's drop drops what's
@@ -224,7 +231,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::MemTake
                     // What drops what it takes out of a vector, given its
                     // items' drop, as std drops each (ADR 0098).
-                    | Std::Comb(Comb::Truncate | Comb::DedupBy | Comb::DedupByKey | Comb::ResizeWith)
+                    | Std::Comb(
+                        Comb::Truncate
+                            | Comb::Dedup
+                            | Comb::DedupBy
+                            | Comb::DedupByKey
+                            | Comb::Resize
+                            | Comb::ResizeWith
+                    )
+                    // And what it replaces, `fill`'s (ADR 0507).
+                    | Std::Slice(SliceOp::Fill)
                     | Std::Clear
                     | Std::Retain
                     | Std::Slice(SliceOp::RetainMut)
