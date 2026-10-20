@@ -25,4 +25,5 @@ given the items' drop, as `retain` does, of a `Vec` and a `VecDeque`.**
 ## Consequences
 
 - **`splice`, and `VecDeque::from` of a `Vec`, of values with a
-  destructor**, are refused yet.
+  destructor**, are refused yet. (Amended: `VecDeque::from`'s isn't, ADR
+  0500.)

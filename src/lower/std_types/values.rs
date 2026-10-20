@@ -226,6 +226,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Clear
                     | Std::Retain
                     | Std::Slice(SliceOp::RetainMut)
+                    // A collection made of another it's given, `VecDeque::from(v)`,
+                    // which keeps each item (ADR 0500).
+                    | Std::ToVec
                     // What it takes out, given back as what's drained, which
                     // drops what's left of it as an `IntoIter` does.
                     | Std::Text(TextOp::Drain)

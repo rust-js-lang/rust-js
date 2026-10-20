@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`VecDeque::from(v)` and the like of values with a destructor** (ADR
+  0500).
 - **`retain_mut` of values with a destructor**, dropping each it removes
   (ADR 0499).
 - **A generic `a + b`, or another std operator's, whose `Output` has a

@@ -442,4 +442,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
   },
+  {
+    name: "collection-from-refused",
+    breaks: "`VecDeque::from(v)` of values with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::ToVec\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collection_from_drops.rs$"],
+  },
 ];
