@@ -189,14 +189,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
         // range or a `$iter` (ADR 0071); not a lazy or a generic one.
         if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
-            // The crate's own `len()`, std's: its `size_hint()`, exact.
-            let own_len = || -> R<bool> {
-                let args = self.args_of(trait_id, iter_ty);
-                Ok(self
-                    .resolve_instance(def_id, args)?
-                    .is_some_and(|i| self.is_rust_fn(i.def_id())))
-            };
-            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) && !own_len()? {
+            // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
+            // One its impl writes itself is its own, never asked here (ADR
+            // 0492).
+            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) {
                 let it = values.into_iter().next().expect("the receiver");
                 let mut made = Vec::new();
                 let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
@@ -333,12 +329,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Err(self.unsupported(span, "`next` of this `&mut`, from its MIR")),
             };
         }
-        // Of the crate's iterator, its own `next` and what its impl writes
-        // itself are its trait's; the rest, `map`, `fuse`, `collect`, std's
-        // of a JS iterator its `next` steps (`as_js_iterator`).
-        let own = self.is_user_iterator(iter_ty)
-            && (std_method == Some(IterMethod::Next) || self.recognition().user_impl_defines(trait_id, iter_ty, name));
-        if !is_std_def(tcx, trait_id, StdItem::Iterator) || own {
+        // Of the crate's iterator, what its impl takes from `Iterator`, `map`,
+        // `fuse`, `collect`, is std's of a JS iterator its `next` steps
+        // (`as_js_iterator`); its `next`, and what else its impl writes
+        // itself, is its own, never asked here (ADR 0492).
+        if !is_std_def(tcx, trait_id, StdItem::Iterator) {
             return Ok(None);
         }
         let mut values = values.into_iter();

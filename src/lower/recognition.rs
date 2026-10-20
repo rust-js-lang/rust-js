@@ -2807,18 +2807,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ))
     }
 
-    /// Whether the crate's impl of `trait_id` for `ty` writes the method
-    /// `name` itself, not taking its trait's default.
-    pub(super) fn user_impl_defines(&self, trait_id: DefId, ty: Ty<'tcx>, name: &str) -> bool {
-        let tr = ty::TraitRef::new_from_args(self.tcx, trait_id, self.args_of(trait_id, ty));
-        let tr = self.tcx.erase_and_anonymize_regions(tr);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
-            Ok(ImplSource::UserDefined(imp)) if self.tcx.associated_items(imp.impl_def_id)
-                .filter_by_name_unhygienic(Symbol::intern(name))
-                .next()
-                .is_some())
-    }
-
     /// The crate's impl of serde's `Visitor` for `ty`, a hand-written
     /// `Deserialize`'s (ADR 0459).
     pub(super) fn serde_visitor_impl(&self, ty: Ty<'tcx>) -> Option<DefId> {

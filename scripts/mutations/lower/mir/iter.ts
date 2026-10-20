@@ -255,20 +255,8 @@ export const mutations: Mutation[] = [
     "name": "mir-user-len-refused",
     "breaks": "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
     "file": "src/lower/mir/iter.rs",
-    "find": "            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) && !own_len()? {\n",
-    "replace": "            if false && self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) && !own_len()? {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an iterator's len from MIR"
-    ]
-  },
-  {
-    "name": "mir-user-len-own-skipped",
-    "breaks": "an iterator's own `len()` from MIR is std's of its `size_hint()`, not its own",
-    "file": "src/lower/mir/iter.rs",
-    "find": "&& std_method == Some(IterMethod::Len) && !own_len()? {\n",
-    "replace": "&& std_method == Some(IterMethod::Len) {\n",
+    "find": "            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) {\n",
+    "replace": "            if false && self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) {\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -285,30 +273,6 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "str_bytes"
-    ]
-  },
-  {
-    "name": "mir-user-iterator-std-methods-refused",
-    "breaks": "`map`, `fuse` or `collect` of the crate's iterator from MIR, which its impl takes from `Iterator`, is refused",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            && (std_method == Some(IterMethod::Next) || self.recognition().user_impl_defines(trait_id, iter_ty, name));\n",
-    "replace": ";\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the crate's iterator from MIR"
-    ]
-  },
-  {
-    "name": "mir-user-iterator-own-method-std",
-    "breaks": "what the crate's iterator writes itself, its own `count`, from MIR is std's",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            && (std_method == Some(IterMethod::Next) || self.recognition().user_impl_defines(trait_id, iter_ty, name));\n",
-    "replace": "            && std_method == Some(IterMethod::Next);\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the crate's iterator from MIR"
     ]
   },
   {

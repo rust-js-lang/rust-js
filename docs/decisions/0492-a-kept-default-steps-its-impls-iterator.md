@@ -68,3 +68,12 @@ function tSkipping(TIterator) {
 - **A copied default's drops of the impl's own type parameters** are yet
   confused with its trait's, by index, where it calls the impl's own
   functions: a gap of its own. (Amended: they're the impl's, ADR 0495.)
+
+## Amendment: one place asks whether a call is the crate's
+
+`resolves_to_crate` keeps every call its impl writes itself from std's
+iterator methods, so the iterator lowering's own checks of the same
+question, `own_len` and `user_impl_defines`, never held: CI's mutations
+of them survived once `mir/iter.rs` changed. Both are removed, and the
+crate's iterator's `next` with them; `resolves_to_crate` is the one
+answer.
