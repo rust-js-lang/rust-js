@@ -25,8 +25,8 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  console.log(`${list.includes(2)} ${Iterator.from(list).reduce((a, b) => (a + b) >>> 0, 0)}`);
-  const doubled = Array.from(tail).map((x) => Math.imul(x, 2) >>> 0);
+  console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
+  const doubled = tail.map((x) => Math.imul(x, 2) >>> 0);
   for (const x of doubled) {
     $print(`${x} `);
   }
@@ -34,7 +34,7 @@ function main() {
   const words = [];
   $extend(words, ["a", "b"]);
   console.log(
-    `[${words.map((item) => $debugStr(item)).join(", ")}] [${Array.from(words)
+    `[${words.map((item) => $debugStr(item)).join(", ")}] [${words
       .toReversed()
       .map((item) => $debugStr(item))
       .join(", ")}]`,

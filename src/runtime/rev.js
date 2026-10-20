@@ -9,5 +9,7 @@ function $rev(it) {
   rev.back = () => it.next();
   rev.len = () => it.len();
   rev.return = () => it.return?.() ?? { done: true, value: undefined };
+  // What a clone of it clones (ADR 0530).
+  rev.source = it;
   return rev;
 }

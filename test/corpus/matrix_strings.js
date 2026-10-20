@@ -93,10 +93,10 @@ function main() {
     const value$13 = Iterator.from($rsplit(a, " ")).toArray();
     const value$14 = $splitOnce(a, ",");
     const value$15 = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
-    const value$16 = Iterator.from($charIndices(a)).toArray();
+    const value$16 = $charIndices(a);
     const value$17 = $charBoundary(a, 1) !== undefined;
     const value$18 = $strGet(a, 0, 1);
-    const arg$2 = Array.from($charIndices(a)).toReversed()[0];
+    const arg$2 = $charIndices(a).toReversed()[0];
     console.log(
       `${$debugStr(a)}: split [${value$11.map((item) => $debugStr(item)).join(", ")}] [${value$12.map((item) => $debugStr(item)).join(", ")}] [${value$13.map((item) => $debugStr(item)).join(", ")}] ${value$14 == null ? "None" : `Some((${$debugStr(value$14[0])}, ${$debugStr(value$14[1])}))`} bytes ${value$15} [${value$16.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${value$17} ${value$18 == null ? "None" : `Some(${$debugStr(value$18)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
     );

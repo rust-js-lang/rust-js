@@ -42,7 +42,7 @@ function transform(s, withWord, boundary, options) {
   let f = "";
   let firstWord = true;
   for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
-    const charIndices = $iter(Array.from($charIndices(word)));
+    const charIndices = $iter($charIndices(word));
     let init = 0;
     let mode = "Boundary";
     while (true) {

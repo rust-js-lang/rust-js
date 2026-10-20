@@ -58,6 +58,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Arrays and cells are JS objects that change in place, and so
             // is a `Vec` something takes `&mut` of.
             ty::Array(..) => true,
+            // A slice a `Box<[T]>` holds, as a `Vec`'s items: where something
+            // changes one in place, `contains_mutated`'s, or its items need a
+            // clone (ADR 0530).
+            ty::Slice(item) => self.needs_clone_in(*item, seen),
             ty::Adt(_, args) if self.is_vec_like(ty) => {
                 self.vec_changed(ty) || self.needs_clone_in(args.type_at(0), seen)
             }
@@ -248,7 +252,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let std = |item: StdItem| self.is_std_type(ty, item);
         // Each read once.
         match ty.kind() {
-            ty::Array(item, _) => return self.clone_items(place, *item, span),
+            // An array, or a slice a `Box<[T]>` holds, a JS array (ADR 0530).
+            ty::Array(item, _) | ty::Slice(item) => return self.clone_items(place, *item, span),
             ty::Adt(_, args) if self.is_vec_like(ty) => return self.clone_items(place, args.type_at(0), span),
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
                 return self.clone_value(place, args.type_at(0), span, out);
@@ -411,10 +416,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call_helper("$fuse", vec![Expr::bin(Op::And, iter, copy), fused]))
             }
             // std's iterator over an array is a `$iter` that knows where it is
-            // (ADR 0364): a clone, a `$iter` of what it has left.
-            ty::Adt(..) if let Some(owns) = self.array_source(ty) => {
+            // (ADR 0364): a clone, a `$iter` of what it has left, each item a
+            // clone of one where the iterator owns them; of its `rev()` too,
+            // its array reversed (ADR 0530).
+            ty::Adt(..) if self.steps_an_array(ty) => {
+                let source = super::recognition::reversed_source(self.tcx, ty).unwrap_or(ty);
+                let owns = self.array_source(source).unwrap_or(false);
                 let left = self.stepped_left(place, ty, owns, span)?;
                 Ok(self.stepped_items(left))
+            }
+            // Another's `rev()`: of a type parameter's given as it is, the
+            // `$iterator` of it its `next_back` steps, made again of a clone
+            // of its value, as a `Fuse`'s is; of one that knows its back,
+            // `$rev(it)`, one of a clone of what it steps.
+            ty::Adt(..) if let Some(source) = super::recognition::reversed_source(self.tcx, ty) => {
+                if self.iterator_given_as_it_is(source) {
+                    let clone = self.clone_fn("value", source, span)?;
+                    return Ok(Expr::call_helper("$iteratorWith", vec![place, clone]));
+                }
+                let clone = self.clone_value(Expr::member(place, "source"), source, span, out)?;
+                Ok(Expr::call_helper("$rev", vec![clone]))
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, fields, span, out),

@@ -18,6 +18,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`try_rfold`** (ADR 0531).
+- **A clone of a string's `chars()` and `char_indices()`, an `Option`'s
+  and a `Result`'s `iter()`, a `VecDeque`'s and a `LinkedList`'s, and a
+  `rev()`; `next_back` of a `rev()` of an array's iterator; and a
+  `Box<[T]>` collected and cloned** (ADR 0530).
 - **memchr 2.8.3's searches**, `memchr`, `memchr2`, `memchr3`, their
   `memrchr`s and their iterators, over the byte arrays slices are; another
   memchr, a fork or another version, is refused where it's called, saying

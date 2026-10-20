@@ -3982,6 +3982,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "nth_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NthBack,
             "rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFold,
             "rfind" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFind,
+            "try_rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::TryRFold,
             "len" if self.exact_size_iterator() == Some(trait_id) => IterMethod::Len,
             _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,
             "next" => IterMethod::Next,
@@ -4042,6 +4043,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
+    /// A std iterator of what's an array already, or made one where it's
+    /// made, `$iter` of it: an `Option`'s or a `Result`'s `iter()`, `[]` or
+    /// `[x]`, a `LinkedList`'s, and a string's `char_indices()`, its pairs
+    /// (ADR 0530).
+    pub(super) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
+            "std::option::Iter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"))
+    }
+
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::collections::vec_deque::Iter")
@@ -5957,6 +5968,14 @@ pub(crate) fn source_and_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
     }
 }
 
+/// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.
+pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Rev" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
 /// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.
 pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
@@ -5966,8 +5985,8 @@ pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
 }
 
 /// Of std's adapter of type `ty` that steps from its back where its source
-/// does, `Map`, `Filter`, `FilterMap`, `Copied` or `Fuse`, its source
-/// (ADRs 0455, 0480, 0526, 0528).
+/// does, `Map`, `Filter`, `FilterMap`, `Copied`, `Fuse` or `Rev`, its
+/// source (ADRs 0455, 0480, 0526, 0528, 0530).
 pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
@@ -5978,6 +5997,7 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
                     | "std::iter::FilterMap"
                     | "std::iter::Copied"
                     | "std::iter::Fuse"
+                    | "std::iter::Rev"
             ) =>
         {
             Some(args.type_at(0))
@@ -5987,14 +6007,14 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
 }
 
 /// Of std's adapter of type `ty` that knows its length where its source
-/// does, `Map`, `Copied`, `Fuse` or `Enumerate`, its source (ADRs 0456,
-/// 0528).
+/// does, `Map`, `Copied`, `Fuse`, `Enumerate` or `Rev`, its source (ADRs
+/// 0456, 0528, 0530).
 pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map" | "std::iter::Copied" | "std::iter::Fuse" | "std::iter::Enumerate"
+                "std::iter::Map" | "std::iter::Copied" | "std::iter::Fuse" | "std::iter::Enumerate" | "std::iter::Rev"
             ) =>
         {
             Some(args.type_at(0))
@@ -6300,6 +6320,8 @@ pub(crate) enum IterMethod {
     NthBack,
     RFold,
     RFind,
+    /// `try_rfold(init, f)`: `try_fold` from the back (ADR 0531).
+    TryRFold,
     Len,
     SizeHint,
     Rev,
@@ -6340,6 +6362,15 @@ pub(crate) enum IterMethod {
 }
 
 impl IterMethod {
+    /// Whether it steps what it's given from its back alone, `back_step`'s:
+    /// `nth_back`, `rfold`, `rfind` and `try_rfold` (ADRs 0455, 0531).
+    pub(crate) fn steps_from_its_back(self) -> bool {
+        matches!(
+            self,
+            IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind | IterMethod::TryRFold
+        )
+    }
+
     /// A lazy adapter that holds what it steps, so an owning source given it
     /// is `$closing`, dropping what it hasn't given as the adapter's closed
     /// (ADR 0465): `map`'s, `filter`'s, `take`'s and the rest.

@@ -598,6 +598,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0527 An associated iterator steps its impl's parameter](decisions/0527-an-associated-iterator-steps-its-impls-parameter.md)
 - [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md)
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
+- [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
+- [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

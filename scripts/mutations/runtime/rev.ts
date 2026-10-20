@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  rev.next = () => it.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_drops|generic_double_ended).rs$"],
   },
+  {
+    name: "rev-sourceless",
+    breaks: "a `$rev` keeps nothing of what it steps for a clone to clone",
+    file: "src/runtime/rev.js",
+    find: "  rev.source = it;\n",
+    replace: "",
+    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
+  },
 ];

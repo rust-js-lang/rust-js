@@ -50,6 +50,14 @@ pub fn report() -> String {
     let mut three = memchr::memchr3_iter(b'h', b'e', b'!', text);
     let firsts = (three.next(), three.next(), three.next(), three.next(), three.next());
     out += &format!("{firsts:?} {:?}\n", three.next());
+    let mut backwards = memchr::memrchr_iter(b'l', text);
+    backwards.next();
+    let again = backwards.clone();
+    out += &format!(
+        "{:?} {:?}\n",
+        backwards.collect::<Vec<_>>(),
+        again.rev().collect::<Vec<_>>()
+    );
     let none: Vec<usize> = memchr::memchr_iter(b'a', empty).collect();
     out += &format!("{none:?} {}\n", memchr::memchr_iter(b'l', &text[3..]).count());
     let every = (0..=255u8)

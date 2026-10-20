@@ -7,14 +7,14 @@ export function entry() {
 }
 
 function proper_prefixes(s) {
-  return Array.from($charIndices(s))
+  return $charIndices(s)
     .toReversed()
     .map(([idx]) => idx)
     .filter((idx) => idx > 0);
 }
 
 function longest_border(needle) {
-  for (const k of Array.from($charIndices(needle))
+  for (const k of $charIndices(needle)
     .toReversed()
     .values()
     .map(([idx]) => idx)
@@ -35,7 +35,7 @@ function main() {
   console.log(`[${proper_prefixes("héllo").join(", ")}]`);
   console.log(`${longest_border("abab")} ${longest_border("aaa")} ${longest_border("abc")}`);
   const seen = [];
-  const backwards = Array.from($charIndices("xyz"))
+  const backwards = $charIndices("xyz")
     .toReversed()
     .map(([i, c]) => {
       seen.push(i);

@@ -218,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
         // back, stepped from it, a generic one's too (ADRs 0429, 0455).
-        if let Some(method @ (IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind)) = std_method {
+        if let Some(method) = std_method.filter(|method| method.steps_from_its_back()) {
             return self.back_step(method, values, (iter_ty, output), span).map(Some);
         }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
@@ -463,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
-            Some(IterMethod::TryFold) => self.try_folded(it, (arg(), arg()), (arg_tys, output), span)?,
+            Some(IterMethod::TryFold) => self.try_folded(it, (arg(), arg()), (own, output), span)?,
             // Each item counted, and dropped as `count` drops it.
             Some(IterMethod::Count) => {
                 let n = self.fresh("n");
@@ -629,7 +629,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
             self.heap_values(HeapOp::From, vec![items(it)], output, span)?
-        } else if self.is_vec_like(output) {
+        // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
+        } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             match self.mapped_range(&it, iter_ty) {
                 Some(items) => items,
@@ -738,7 +739,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         it: Expr,
         (init, f): (Expr, Expr),
-        (arg_tys, output): (&[Ty<'tcx>], Ty<'tcx>),
+        (own, output): (bool, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
         let helper = match self.option_of(output) {
@@ -746,7 +747,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if self.recognition().is_result(output) => "$tryFoldOk",
             _ => return Err(self.unsupported(span, &format!("`try_fold` into a `{output}`, from its MIR"))),
         };
-        let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let mut args = vec![it, init, self.binary_callback(f, own)];
         crate::lower::calls::given_to_js(&mut args);
         Ok(Expr::call_helper(helper, args))
@@ -818,7 +818,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             given[0] = self.rev_or_peekable_items(given[0].clone(), inner, std_method, name, span)?;
             return Ok(Expr::call_helper("$fuse", given));
         }
-        let items = match self.array_source(iter_ty) {
+        // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
+        let items = match self.steps_an_array(iter_ty).then_some(()) {
             // One a variable or a field holds, its `$iter`, stepped or
             // not: what's left of it.
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => match std_method {
@@ -1008,6 +1009,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => it,
             false => self.as_double_ended(it, iter_ty, span)?,
         };
+        // `try_rfold`: `try_fold` of it reversed, which gives its items as
+        // its own function does (ADR 0531).
+        if method == IterMethod::TryRFold {
+            let (init, f) = (values.next().expect("the start"), values.next().expect("the function"));
+            let reversed = Expr::call_helper("$rev", vec![it]);
+            return self.try_folded(reversed, (init, f), (false, output), span);
+        }
         let mut given = vec![it];
         given.extend(values);
         if boxed || drop.is_some() {
@@ -1330,6 +1338,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// knows its length. The one list.
     pub(in crate::lower) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
         self.array_source(ty).is_some()
+            || self.recognition().iterates_items(ty)
+            // A `rev()` of one, its array reversed (ADR 0530).
+            || crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| self.steps_an_array(source))
             || self.recognition().is_str_chars(ty)
             || self.is_str_split(ty)
             || self.recognition().is_deque_iter(ty)

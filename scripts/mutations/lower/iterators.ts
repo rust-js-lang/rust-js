@@ -958,4 +958,13 @@ export const mutations: Mutation[] = [
     replace: "        if false && self.recognition().is_memchr_iter(ty) {\n",
     tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
   },
+  {
+    name: "char-indices-not-fresh",
+    breaks: "a string's `char_indices()` collected, an array made there, is copied again, `$charIndices(s).slice()`",
+    file: "src/lower/iterators.rs",
+    find: "                \"$charIndices\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
+    snapshots: true,
+  },
 ];
