@@ -58,7 +58,7 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  const set = $treeFrom(new $PathSet(), $iter(["b/c", "b", "b//c"]), true);
+  const set = $treeFrom(new $PathSet(), $iter(["b/c", "b", "b//c"]), true, $pathCmp);
   console.log(
     `{${Array.from($sortedKeys(set, $pathCmp))
       .map((item) => $debugStr(item))
@@ -71,6 +71,7 @@ function main() {
       ["x//y", 2],
     ],
     false,
+    $pathCmp,
   );
   console.log(
     `{${Array.from($sortedEntries(from, $pathCmp))

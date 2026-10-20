@@ -186,6 +186,7 @@ function $extendMap(m, items, set, drop, dropKey) {
       drop?.(old);
     }
   }
+  return m;
 }
 
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
@@ -244,12 +245,19 @@ function $vacantInsert([m, key], value, handle) {
   return handle ? $mutGet(m, key) : value;
 }
 
-// A B-tree made of `items`, its entries or a set's items, of keys it finds
-// others by, a path's or a `Cow`'s: of equal ones, the last, as std's sorts
-// them and keeps the last, where `insert` keeps the first (ADR 0401).
-function $treeFrom(tree, items, set) {
-  for (const item of items) {
-    tree.delete(set ? item : item[0]);
+// A B-tree made of `items`, its entries or a set's items, sorted by their
+// keys' `cmp`, and of equal ones the last kept, as std's sorts them and
+// keeps the last, where `insert` keeps the first (ADR 0401); the earlier
+// dropped, its key by `dropKey`, then its value by `drop` (ADR 0506).
+function $treeFrom(tree, items, set, cmp, drop, dropKey) {
+  const key = (item) => (set ? item : item[0]);
+  for (const item of Array.from(items).sort((a, b) => cmp(key(a), key(b)))) {
+    if (tree.has(key(item))) {
+      const old = set ? undefined : tree.get(item[0]);
+      dropKey?.($storedKey(tree, key(item)));
+      tree.delete(key(item));
+      if (!set) drop?.(old);
+    }
     if (set) tree.add(item);
     else tree.set(item[0], item[1]);
   }

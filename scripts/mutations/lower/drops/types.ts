@@ -223,4 +223,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = impl_env;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
+  {
+    name: "extract-if-drops-items",
+    breaks: "an `extract_if()`'s iterator is taken to drop what it hasn't reached, refused",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if let Some(test) = self.recognition.extract_if_test(ty) => self.drops_in(test, walk),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
+  },
 ];

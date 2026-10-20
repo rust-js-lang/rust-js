@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     name: "path-tree-made-as-inserted",
     breaks: "a B-tree of paths made of items keeps the first of equal ones, as `insert` does",
     file: "src/lower/std_types/map.rs",
-    find: "        Ok(match last_of_equal {\n            true => Expr::call(\n",
-    replace: "        Ok(match false {\n            true => Expr::call(\n",
+    find: "            Some(key) if sorted && (!drops.is_empty() || self.finds_others(key)) => {\n",
+    replace: "            Some(key) if sorted && !drops.is_empty() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
   },
   {
@@ -358,5 +358,13 @@ export const mutations: Mutation[] = [
     find: "        let keys_drop = match (types.first(), op) {\n",
     replace: "        let keys_drop = match (None::<&Ty<'tcx>>, op) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
+  },
+  {
+    name: "made-of-undropped",
+    breaks: "a map made of items drops none an equal one replaces",
+    file: "src/lower/std_types/map.rs",
+    find: "                Some(ty) => self.std_drop_function(ty, span)?,\n",
+    replace: "                Some(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
   },
 ];

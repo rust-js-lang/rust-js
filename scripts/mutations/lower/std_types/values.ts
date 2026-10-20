@@ -466,4 +466,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
   },
+  {
+    name: "extract-if-refused",
+    breaks: "`extract_if` of a vector's or a list's values with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Slice(SliceOp::ExtractIf { .. })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
+  },
+  {
+    name: "map-extract-if-refused",
+    breaks: "`extract_if` of a map's values with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Map(MapOp::ExtractIf)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
+  },
+  {
+    name: "map-from-refused",
+    breaks: "a map made of items with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Map(MapOp::From { .. })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
+  },
 ];

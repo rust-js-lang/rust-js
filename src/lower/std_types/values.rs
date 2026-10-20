@@ -231,9 +231,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A collection made of another it's given, `VecDeque::from(v)`,
                     // which keeps each item (ADR 0500).
                     | Std::ToVec
+                    // A map or a set made of items, which drops what an equal
+                    // one replaces as std does (ADR 0506).
+                    | Std::Map(MapOp::From { .. })
                     // What it takes out, given back as what's drained, which
                     // drops what's left of it as an `IntoIter` does.
                     | Std::Text(TextOp::Drain | TextOp::Splice)
+                    // What takes out what its test holds of, given as it's
+                    // stepped, and leaves what it doesn't reach (ADR 0506).
+                    | Std::Slice(SliceOp::ExtractIf { .. })
+                    | Std::Map(MapOp::ExtractIf)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

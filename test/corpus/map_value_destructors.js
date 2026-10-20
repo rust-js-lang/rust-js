@@ -11,6 +11,7 @@ import {
   $orInsert,
   $retainMap,
   $sortedEntries,
+  $treeFrom,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -22,7 +23,13 @@ function noisyDrop_drop(noisy) {
 }
 
 function main() {
-  const tree = new Map($lazyRange(1, 7).map((k) => [k, [Math.imul(k, 10) >>> 0]]));
+  const tree = $treeFrom(
+    new Map(),
+    $lazyRange(1, 7).map((k) => [k, [Math.imul(k, 10) >>> 0]]),
+    false,
+    $cmp,
+    noisyDrop_drop,
+  );
   const value = (k, v) => {
     console.log(`keep ${k}? ${v[0]}`);
     return k % 2 === 0;

@@ -337,7 +337,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type, among `generic_args`, says: `new Map(items)`. A B-tree of keys
     /// it finds others by keeps the last of equal ones, as std sorts what
     /// it's made of and keeps the last, where `insert` keeps the first:
-    /// `$treeFrom(new $PathSet(), items, true)` (ADRs 0401, 0402).
+    /// `$treeFrom(new $PathSet(), items, true, cmp)` (ADRs 0401, 0402). Of
+    /// keys or values with a destructor, what an equal one replaces is
+    /// dropped as std drops it: a B-tree's the earlier of equal ones, in its
+    /// keys' order, by `$treeFrom`, another's the key it's given and the
+    /// value it replaces, each as it's inserted, by `$extendMap` (ADR 0506).
     pub(in crate::lower) fn made_of(
         &mut self,
         set: bool,
@@ -347,17 +351,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let class = self.made(set, generic_args, span)?;
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
-        let last_of_equal = map.is_some_and(|map| {
-            self.is_sorted(map)
-                && matches!(map.peel_refs().kind(), ty::Adt(_, args)
-                    if args.types().next().is_some_and(|key| self.finds_others(key)))
-        });
-        Ok(match last_of_equal {
-            true => Expr::call(
-                Expr::helper("$treeFrom"),
-                vec![Expr::new_(class, Vec::new()), items, Expr::bool(set)],
-            ),
-            false => Expr::new_(class, vec![items]),
+        let (key, value) = match map.map(|map| map.peel_refs().kind()) {
+            Some(ty::Adt(_, args)) => (args.types().next(), args.types().nth(1).filter(|_| !set)),
+            _ => (None, None),
+        };
+        let mut drops = Vec::new();
+        for ty in [value, key] {
+            drops.push(match ty {
+                Some(ty) => self.std_drop_function(ty, span)?,
+                None => None,
+            });
+        }
+        while matches!(drops.last(), Some(None)) {
+            drops.pop();
+        }
+        let drops: Vec<Expr> = drops
+            .into_iter()
+            .map(|drop| drop.unwrap_or_else(Expr::undefined))
+            .collect();
+        let sorted = map.is_some_and(|map| self.is_sorted(map));
+        let made = Expr::new_(class.clone(), Vec::new());
+        Ok(match key {
+            Some(key) if sorted && (!drops.is_empty() || self.finds_others(key)) => {
+                let cmp = self.cmp_fn(key, false, span)?;
+                let list = vec![made, items, Expr::bool(set), cmp]
+                    .into_iter()
+                    .chain(drops)
+                    .collect();
+                Expr::call(Expr::helper("$treeFrom"), list)
+            }
+            _ if !drops.is_empty() => {
+                let list = vec![made, items, Expr::bool(set)].into_iter().chain(drops).collect();
+                Expr::call(Expr::helper("$extendMap"), list)
+            }
+            _ => Expr::new_(class, vec![items]),
         })
     }
 

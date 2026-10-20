@@ -68,6 +68,7 @@ function main() {
       { TAG: "Owned", _0: "z" },
     ]),
     true,
+    (a, b) => $cmp(a._0, b._0),
   );
   console.log(
     `[${$sortedKeys(made, (a, b) => $cmp(a._0, b._0))

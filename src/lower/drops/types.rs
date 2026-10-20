@@ -446,6 +446,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             }
             // One closed to drop what it holds, `repeat`'s value (ADR 0422).
             ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),
+            // An `extract_if()`'s: its test, what it hasn't reached left in
+            // its collection (ADR 0506).
+            ty::Adt(..) if let Some(test) = self.recognition.extract_if_test(ty) => self.drops_in(test, walk),
             // A heap's `PeekMut`: its top sifted down, if it changed (ADR 0333).
             ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,
             // Never dropped, or dropped by hand.

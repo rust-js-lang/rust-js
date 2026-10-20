@@ -3736,6 +3736,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .then(|| args.type_at(1))
     }
 
+    /// The test an `extract_if()`'s iterator holds, of a `Vec`'s, a list's,
+    /// a map's or a set's (`F`, before its allocator): all its drop drops,
+    /// what it hasn't reached staying where it is (ADR 0506).
+    pub(crate) fn extract_if_test(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        let path = std_path(self.tcx, adt.did());
+        if !(path.starts_with("std::") && path.ends_with("::ExtractIf")) {
+            return None;
+        }
+        let types: Vec<Ty<'tcx>> = args.types().collect();
+        types.len().checked_sub(2).map(|test| types[test])
+    }
+
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
     /// value, and `cycle()`'s iterator, of one not std's over an array (ADR
