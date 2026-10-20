@@ -35,10 +35,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<()> {
-        // A function it's given is dropped where std drops it, where it's
-        // `handled_function`'s (ADRs 0469, 0470): nothing taken here.
+        // A function or a value it's given is dropped where std drops it,
+        // where it's `handled_argument`'s (ADRs 0469, 0470, 0490): nothing
+        // taken here.
         let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
-            .map(|(at, &ty)| match self.handled_function(Some(known), at, ty) {
+            .map(|(at, &ty)| match self.handled_argument(Some(known), at, ty) {
                 Some(_) => self.tcx.types.unit,
                 None => ty,
             })
@@ -142,6 +143,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Comb::ResultOrElse
                             | Comb::Then
                     )
+                    // Gives back what it holds, or its `Err`'s dropped; a
+                    // value it leaves unused is dropped there (ADR 0490).
+                    | Std::UnwrapOr
+                    | Std::ResultOr
+                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome)
                     | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap

@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     name: "ok-of-err-undropped",
     breaks: "`ok()` of an `Err` with a destructor leaves it undropped",
     file: "src/lower/std_types/option.rs",
-    find: "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
-    replace: "            Std::ResultOk if false => {",
+    find: "            Std::ResultOk | Std::ResultOr if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
+    replace: "            Std::ResultOk | Std::ResultOr if false => {",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
   {
@@ -314,5 +314,13 @@ export const mutations: Mutation[] = [
     find: "        if self.boxed_payload(item) {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
     replace: "        if false {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
+  },
+  {
+    name: "result-unwrap-or-err-undropped",
+    breaks: "`Err(e).unwrap_or(d)` of a `Result` leaves `e` undropped",
+    file: "src/lower/std_types/option.rs",
+    find: "            Std::ResultOk | Std::ResultOr if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
+    replace: "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
+    tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
 ];

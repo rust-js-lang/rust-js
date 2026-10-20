@@ -394,4 +394,12 @@ export const mutations: Mutation[] = [
     replace: "            | Std::OptionTake\n            // A `OnceCell`'s",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
+  {
+    name: "unused-value-calls-refused",
+    breaks: "`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a destructor are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
+  },
 ];

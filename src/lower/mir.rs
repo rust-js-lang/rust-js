@@ -5385,10 +5385,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// A call, `mir_call_values_of`'s; of std's, each function it's given by
-    /// value with a destructor, dropped where std drops it (ADRs 0469, 0470):
-    /// as it returns, or where it's left unrun, by its subject's variant,
-    /// both held in variables first.
+    /// A call, `mir_call_values_of`'s; of std's, each function or value it's
+    /// given by value with a destructor, dropped where std drops it (ADRs
+    /// 0469, 0470, 0490): as it returns, or where it's left unused, by its
+    /// subject's variant, both held in variables first.
     fn mir_call_values(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -5401,7 +5401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = match self.is_std_call(def_id, generic_args)? {
             true => {
                 let known = self.known_trait_call(def_id, generic_args);
-                self.given_functions(known, (arg_tys, output), span)?
+                self.given_unused(known, (arg_tys, output), span)?
             }
             false => {
                 self.check_called_once(def_id, arg_tys, span)?;

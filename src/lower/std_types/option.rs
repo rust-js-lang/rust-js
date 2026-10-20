@@ -76,13 +76,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `r.TAG === "Ok" ? r._0 : d`, with `r` computed once, and `d` too,
             // before the test, as Rust does.
-            // An `Err` with a destructor is dropped (ADR 0179).
-            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {
+            // An `Err` with a destructor is dropped (ADR 0179), `ok()`'s and
+            // `unwrap_or(d)`'s (ADR 0490).
+            Std::ResultOk | Std::ResultOr if self.drops(generic_args.type_at(1)) != Drops::Nothing => {
                 let result = arg();
                 let result = if result.reads_same() {
                     result
                 } else {
                     self.spill("result", result, out)
+                };
+                let otherwise = match (known == Std::ResultOr).then(arg) {
+                    Some(d) if d.has_effects() => self.spill("fallback", d, out),
+                    Some(d) => d,
+                    None => Expr::undefined(),
                 };
                 let ok = result::is(result.clone(), true);
                 let value = result::held(result.clone());
@@ -90,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = self.fresh("value");
                 let then = vec![StmtKind::Assign(Expr::var(&name), value).at(js::Span::NONE)];
                 let error = (Expr::member(result, "_0"), generic_args.type_at(1));
-                self.or_dropped(ok, name, then, error, Expr::undefined(), span, out)?
+                self.or_dropped(ok, name, then, error, otherwise, span, out)?
             }
             Std::ResultOk | Std::ResultOr => {
                 let mut result = arg();

@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0098](0098-destructors.md), whose type
 parameters' drops a caller gives, [0163](0163-trait-method-drops.md) and
 [0178](0178-associated-type-drops.md), and amends
-[0061](0061-generic-iterators.md).
+[0061](0061-generic-iterators.md). Amended by
+[0489](0489-a-yielded-item-is-given-its-drop-by-its-own-type.md): one's
+given by its own type, not its type parameter's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): a value is dropped
 where Rust drops it, once.

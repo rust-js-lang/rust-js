@@ -13,49 +13,54 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
-/// The variant of its subject on which a std call leaves a function it's
-/// given unrun: `map`'s of a `None`, `unwrap_or_else`'s of a `Some`.
+/// The variant of its subject on which a std call leaves an argument it's
+/// given unused: a function unrun, `map`'s of a `None`, `unwrap_or_else`'s
+/// of a `Some`; a value unkept, `unwrap_or`'s of a `Some`.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Unrun {
+pub(super) enum Unused {
     None,
     Some,
     Ok,
     Err,
-    /// `bool::then`'s, of `false`.
+    /// `bool::then`'s and `then_some`'s, of `false`.
     False,
 }
 
-impl Unrun {
+impl Unused {
     /// What its subject's called, held to be tested.
     pub(super) fn subject(self) -> &'static str {
         match self {
-            Unrun::None | Unrun::Some => "option",
-            Unrun::Ok | Unrun::Err => "result",
-            Unrun::False => "condition",
+            Unused::None | Unused::Some => "option",
+            Unused::Ok | Unused::Err => "result",
+            Unused::False => "condition",
         }
     }
 }
 
-/// The functions `known` is given, by their argument, each with the variant
-/// of its subject it leaves it unrun on, where std drops it unrun, with what
-/// it holds (ADR 0469). One it runs drops what it holds as it ends. Of an
-/// `Option` or a `Result` it takes by value, tested once it's done; what
+/// The arguments `known` is given, each with the variant of its subject it
+/// leaves it unused on, where std drops it, with what it holds: a function
+/// unrun (ADR 0469), a value unkept, `unwrap_or`'s default (ADR 0490). A
+/// function it runs drops what it holds as it ends. Of an `Option`, a
+/// `Result` or a `bool` it takes by value, tested once it's done; what
 /// writes a place, `get_or_insert_with`, or a map's entry, `or_insert_with`,
 /// drops it where it branches.
-pub(super) fn unrun_functions(known: super::recognition::Std) -> &'static [(usize, Unrun)] {
+pub(super) fn unused_arguments(known: super::recognition::Std) -> &'static [(usize, Unused)] {
     use super::recognition::Std;
     match known {
         Std::OptionMap | Std::Comb(Comb::AndThen | Comb::Filter | Comb::IsSomeAnd | Comb::IsNoneOr) => {
-            &[(1, Unrun::None)]
+            &[(1, Unused::None)]
         }
-        Std::Comb(Comb::MapOr) => &[(2, Unrun::None)],
-        Std::Comb(Comb::UnwrapOrElse | Comb::OkOrElse | Comb::OrElse) => &[(1, Unrun::Some)],
-        Std::Comb(Comb::Then) => &[(1, Unrun::False)],
-        Std::Comb(Comb::MapOrElse) => &[(1, Unrun::Some), (2, Unrun::None)],
-        Std::Comb(Comb::ResultMap | Comb::ResultAndThen | Comb::IsOkAnd) => &[(1, Unrun::Err)],
-        Std::Comb(Comb::ResultMapOr) => &[(2, Unrun::Err)],
-        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd | Comb::ResultOrElse) => &[(1, Unrun::Ok)],
-        Std::Comb(Comb::ResultMapOrElse) => &[(1, Unrun::Ok), (2, Unrun::Err)],
+        Std::Comb(Comb::MapOr) => &[(2, Unused::None)],
+        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {
+            &[(1, Unused::Some)]
+        }
+        Std::Comb(Comb::Then | Comb::ThenSome) => &[(1, Unused::False)],
+        Std::Comb(Comb::MapOrElse) => &[(1, Unused::Some), (2, Unused::None)],
+        Std::Comb(Comb::ResultMap | Comb::ResultAndThen | Comb::IsOkAnd) => &[(1, Unused::Err)],
+        Std::Comb(Comb::ResultMapOr) => &[(2, Unused::Err)],
+        Std::ResultOr | Std::Comb(Comb::ResultOr) => &[(1, Unused::Ok)],
+        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd | Comb::ResultOrElse) => &[(1, Unused::Ok)],
+        Std::Comb(Comb::ResultMapOrElse) => &[(1, Unused::Ok), (2, Unused::Err)],
         _ => &[],
     }
 }
@@ -335,6 +340,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::var(&name))
     }
 
+    /// `test ? kept : otherwise`, where `given_up`, the other variant's
+    /// value std drops, has nothing to drop; else `or_dropped`'s (ADRs 0179,
+    /// 0490).
+    fn kept_or(
+        &mut self,
+        test: Expr,
+        kept: Expr,
+        given_up: (Expr, Ty<'tcx>),
+        otherwise: Expr,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if self.drops(given_up.1) == Drops::Nothing {
+            return Ok(Expr::cond(test, kept, otherwise));
+        }
+        let name = self.fresh("kept");
+        let then = vec![StmtKind::Assign(Expr::var(&name), kept).at(js::Span::NONE)];
+        self.or_dropped(test, name, then, given_up, otherwise, span, out)
+    }
+
     /// An `Option`'s or a `Result`'s combinator, of its arguments' values,
     /// `tys` their types (ADR 0364).
     /// `made`: whether the subject was just made by a call, so no other
@@ -487,8 +512,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::var(&result)
             }
             Comb::MapOr => {
-                let fallback = next();
-                let fallback = eager(self, fallback, out);
+                let fallback = eager(self, next(), out);
                 let f = next();
                 let mapped = self.call_with(f, vec![value], "map", out);
                 // `e?.[1] ?? d`, as a `match` of it is (ADR 0309).
@@ -550,8 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.or_dropped(tag(true), name, then, error, fallback, span, out)?
             }
             Comb::ResultMapOr => {
-                let fallback = next();
-                let fallback = eager(self, fallback, out);
+                let fallback = eager(self, next(), out);
                 let f = next();
                 let mapped = self.call_with(f, vec![inside()], "map", out);
                 Expr::cond(tag(true), mapped, fallback)
@@ -598,8 +621,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(Expr::bin(Op::And, some, keep), subject, Expr::undefined())
             }
             Comb::OkOr => {
-                let e = next();
-                let e = eager(self, e, out);
+                let e = eager(self, next(), out);
                 Expr::cond(some, result::ok(value), result::err(e))
             }
             Comb::OkOrElse => {
@@ -608,8 +630,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(some, result::ok(value), result::err(e))
             }
             Comb::Or => {
-                let other = next();
-                let other = eager(self, other, out);
+                let other = eager(self, next(), out);
                 Expr::bin(Op::Coalesce, subject, other)
             }
             Comb::OrElse => {
@@ -662,8 +683,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::Err => Expr::cond(tag(false), inside(), Expr::undefined()),
             // Rust works out `b` either way: in a `const` first if it has effects.
             Comb::And => {
-                let other = next();
-                let other = eager(self, other, out);
+                let other = eager(self, next(), out);
                 Expr::cond(some, other, Expr::undefined())
             }
             // The one that's `Some`, where only one is.
@@ -767,12 +787,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Expr::cond(tag(true), result::ok(pointee), subject),
                 }
             }
+            // An `Err` `or` gives up is dropped (ADRs 0179, 0490).
             Comb::ResultAnd | Comb::ResultOr => {
-                let other = next();
-                let other = eager(self, other, out);
+                let other = eager(self, next(), out);
+                let error = (inside(), generic_args.type_at(1));
                 match comb {
                     Comb::ResultAnd => Expr::cond(tag(true), other, subject),
-                    _ => Expr::cond(tag(true), subject, other),
+                    _ => self.kept_or(tag(true), subject.clone(), error, other, span, out)?,
                 }
             }
             Comb::ResultOrElse => {
@@ -1311,18 +1332,19 @@ fn inserted(subject: Expr, at: Expr, value: Expr) -> Expr {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Each function a std call `known` is given by value with a destructor,
-    /// of arguments of types `tys`, by its argument, with where it's dropped,
-    /// `handled_function`'s. One what it gives holds, `map(f)`'s, is refused.
-    pub(super) fn given_functions(
+    /// Each argument a std call `known` is given by value with a destructor,
+    /// a function or a value it may leave unused, of arguments of types
+    /// `tys`, by its argument, with where it's dropped, `handled_argument`'s.
+    /// A function what it gives holds, `map(f)`'s, is refused.
+    pub(super) fn given_unused(
         &self,
         known: Option<super::recognition::Std>,
         (tys, output): (&[Ty<'tcx>], Ty<'tcx>),
         span: Span,
-    ) -> R<Vec<(usize, Option<Unrun>)>> {
+    ) -> R<Vec<(usize, Option<Unused>)>> {
         let mut given = Vec::new();
         for (at, &ty) in tys.iter().enumerate() {
-            let Some(when) = self.handled_function(known, at, ty) else {
+            let Some(when) = self.handled_argument(known, at, ty) else {
                 continue;
             };
             // Kept by a lazy adapter it's given to, `map(f)`'s, it drops with it
@@ -1341,26 +1363,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(given)
     }
 
-    /// Where a function std is given by value as argument `at` of `known`, of
-    /// type `ty`, is dropped, as std drops it (ADRs 0469, 0470): one called
-    /// by `FnOnce` alone, on the variant `known` leaves it unrun on, its body
-    /// dropping it where it's run; one called by `&` or `&mut`, as the call
-    /// returns, `Some(None)`. `None` of one that isn't a function with a
-    /// destructor, or that's left as it was, run once by its call.
-    pub(super) fn handled_function(
+    /// Where an argument std is given by value, `at` of `known`, of type
+    /// `ty`, that holds a value with a destructor, is dropped, as std drops
+    /// it: on the variant `known` leaves it unused on, a function called by
+    /// `FnOnce` alone, whose body drops it where it's run (ADRs 0469, 0470),
+    /// or a value, which it keeps where it's used (ADR 0490); a function
+    /// called by `&` or `&mut`, as the call returns, `Some(None)`. `None` of
+    /// one with nothing to drop, or that's left as it was, run once or kept
+    /// by its call.
+    pub(super) fn handled_argument(
         &self,
         known: Option<super::recognition::Std>,
         at: usize,
         ty: Ty<'tcx>,
-    ) -> Option<Option<Unrun>> {
-        let kind = super::recognition::function_kind(self.tcx, self.body_owner, ty)?;
+    ) -> Option<Option<Unused>> {
+        let unused = || {
+            (unused_arguments(known?).iter())
+                .find(|&&(arg, _)| arg == at)
+                .map(|&(_, when)| Some(when))
+        };
+        let Some(kind) = super::recognition::function_kind(self.tcx, self.body_owner, ty) else {
+            return unused().filter(|_| self.drops_function(ty));
+        };
         if !self.drops_function(ty) {
             return None;
         }
         match kind {
-            ty::ClosureKind::FnOnce => (unrun_functions(known?).iter())
-                .find(|&&(arg, _)| arg == at)
-                .map(|&(_, when)| Some(when)),
+            ty::ClosureKind::FnOnce => unused(),
             ty::ClosureKind::Fn | ty::ClosureKind::FnMut => Some(None),
         }
     }
@@ -1395,10 +1424,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.drops_function(ty)
     }
 
-    /// Whether a function of type `ty` std is given is dropped where std
-    /// drops it: one that holds a value with a destructor, or a type
-    /// parameter's whose drop this function is given. Of one it isn't given,
-    /// its callers give none with a destructor (ADR 0190).
+    /// Whether a function, or a value, of type `ty` std is given is dropped
+    /// where std drops it: one that holds a value with a destructor, or a
+    /// type parameter's whose drop this function is given. Of one it isn't
+    /// given, its callers give none with a destructor (ADR 0190).
     fn drops_function(&self, ty: Ty<'tcx>) -> bool {
         if self.drops(ty) == Drops::Nothing {
             return false;
@@ -1415,14 +1444,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         true
     }
 
-    /// Each function `f`, of type `ty`, a std call was given, dropped where
-    /// std drops it: as it returns, or where it's left unrun, by the
+    /// Each argument `f`, of type `ty`, a std call was given, dropped where
+    /// std drops it: as it returns, or where it's left unused, by the
     /// variant of its `subject` it's left on: `if (option == null) {
     /// loudDrop_drop(a); }`.
     pub(super) fn dropped_given(
         &mut self,
         subject: Option<Expr>,
-        given: Vec<(Option<Unrun>, Expr, Ty<'tcx>)>,
+        given: Vec<(Option<Unused>, Expr, Ty<'tcx>)>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
@@ -1436,11 +1465,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let subject = subject.clone().expect("the subject it's left unrun by");
             let test = match when {
-                Unrun::None => Expr::bin(Op::LooseEq, subject, Expr::null()),
-                Unrun::Some => Expr::bin(Op::LooseNe, subject, Expr::null()),
-                Unrun::Ok => result::is(subject, true),
-                Unrun::Err => result::is(subject, false),
-                Unrun::False => Expr::unary(js::UnaryOp::Not, subject),
+                Unused::None => Expr::bin(Op::LooseEq, subject, Expr::null()),
+                Unused::Some => Expr::bin(Op::LooseNe, subject, Expr::null()),
+                Unused::Ok => result::is(subject, true),
+                Unused::Err => result::is(subject, false),
+                Unused::False => Expr::unary(js::UnaryOp::Not, subject),
             };
             out.push(StmtKind::If(test, dropped, None).at(js_span));
         }

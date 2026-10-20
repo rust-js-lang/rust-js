@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a
+  destructor**, the one they leave unused dropped there (ADR 0490).
 - **Items with a destructor of an iterator without one**, dropped where
   generic code discards them, where they leaked (ADR 0489).
 - **A type holding an iterator bound by `DoubleEndedIterator` or
