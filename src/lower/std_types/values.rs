@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // value it leaves unused is dropped there (ADR 0490).
                     | Std::UnwrapOr
                     | Std::ResultOr
-                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome)
+                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd)
                     | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap
@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Comb(Comb::Then | Comb::ThenSome)
             // An `Option` of the same type, or the closure's own, `find_map`'s
             // too, one of what its function gives.
-            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
+            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)
             | Std::IterComb(crate::lower::combinators::IterComb::FindMap)
             | Std::Last
             // What a pointer points to, boxed as it's given (ADR 0407).

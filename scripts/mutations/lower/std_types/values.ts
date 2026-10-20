@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "boxed-filter-refused",
     breaks: "`filter` of an `Option` of an `Option` is an error, where it keeps its own box",
     file: "src/lower/std_types/values.rs",
-    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)\n",
-    replace: "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen)\n",
+    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
+    replace: "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
     tests: ["test/corpus.test.ts","-t","nested_options"],
   },
   {
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
     name: "unused-value-calls-refused",
     breaks: "`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a destructor are refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome)\n",
+    find: "                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
@@ -417,5 +417,13 @@ export const mutations: Mutation[] = [
     find: "            | Std::Method(\"pop\" | \"shift\")\n",
     replace: "            | Std::Method(\"pop\")\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+  },
+  {
+    name: "boxed-and-refused",
+    breaks: "`and` of a type parameter's `Option` is refused, its box taken for none",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
+    replace: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)\n",
+    tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
 ];

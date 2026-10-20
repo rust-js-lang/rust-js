@@ -13,8 +13,8 @@ function pointDebug_fmt(point) {
 function main() {
   const some = 2;
   const none = undefined;
-  const value = some != null ? "x" : undefined;
-  const value$1 = none != null ? "x" : undefined;
+  const value = some == null ? undefined : "x";
+  const value$1 = none == null ? undefined : "x";
   const value$2 = some != null ? (none == null ? some : undefined) : none;
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
@@ -157,8 +157,8 @@ function main() {
 
   const good = { TAG: "Ok", _0: 1 };
   const bad = { TAG: "Err", _0: "no" };
-  const value$15 = good.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : good;
-  const value$16 = bad.TAG === "Ok" ? { TAG: "Ok", _0: "y" } : bad;
+  const value$15 = good.TAG === "Err" ? good : { TAG: "Ok", _0: "y" };
+  const value$16 = bad.TAG === "Err" ? bad : { TAG: "Ok", _0: "y" };
   console.log(
     `${value$15.TAG === "Ok" ? `Ok(${$debugStr(value$15._0)})` : `Err(${$debugStr(value$15._0)})`} ${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugStr(value$16._0)})`}`,
   );

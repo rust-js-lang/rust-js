@@ -59,6 +59,8 @@ pub(super) fn unused_arguments(known: super::recognition::Std) -> &'static [(usi
         Std::Comb(Comb::ResultMap | Comb::ResultAndThen | Comb::IsOkAnd) => &[(1, Unused::Err)],
         Std::Comb(Comb::ResultMapOr) => &[(2, Unused::Err)],
         Std::ResultOr | Std::Comb(Comb::ResultOr) => &[(1, Unused::Ok)],
+        Std::Comb(Comb::And) => &[(1, Unused::None)],
+        Std::Comb(Comb::ResultAnd) => &[(1, Unused::Err)],
         Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd | Comb::ResultOrElse) => &[(1, Unused::Ok)],
         Std::Comb(Comb::ResultMapOrElse) => &[(1, Unused::Ok), (2, Unused::Err)],
         _ => &[],
@@ -466,6 +468,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value
             }
         };
+        // One read more than once: in a `const` first unless it reads the same.
+        let once = |this: &mut Self, value: Expr, name: &str, out: &mut Vec<Stmt>| match value.reads_same() {
+            true => value,
+            false => this.spill(name, value, out),
+        };
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(match comb {
             Comb::Then | Comb::ThenSome => unreachable!("handled above"),
@@ -682,18 +689,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Err => Expr::cond(tag(false), inside(), Expr::undefined()),
             // Rust works out `b` either way: in a `const` first if it has effects.
+            // A `Some`'s value `and` gives up is dropped (ADR 0496).
             Comb::And => {
                 let other = eager(self, next(), out);
-                Expr::cond(some, other, Expr::undefined())
+                let given_up = (value.clone(), generic_args.type_at(0));
+                self.kept_or(none(), Expr::undefined(), given_up, other, span, out)?
             }
             // The one that's `Some`, where only one is.
             Comb::Xor | Comb::Zip => {
                 let other = next();
-                let other = if other.reads_same() {
-                    other
-                } else {
-                    self.spill("other", other, out)
-                };
+                let other = once(self, other, "other", out);
                 let other_some = Expr::bin(Op::LooseNe, other.clone(), Expr::null());
                 if comb == Comb::Xor {
                     let other_none = Expr::bin(Op::LooseEq, other.clone(), Expr::null());
@@ -787,14 +792,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Expr::cond(tag(true), result::ok(pointee), subject),
                 }
             }
-            // An `Err` `or` gives up is dropped (ADRs 0179, 0490).
+            // An `Ok`'s value `and` gives up, or an `Err`'s `or` does, is
+            // dropped (ADRs 0179, 0490, 0496).
             Comb::ResultAnd | Comb::ResultOr => {
                 let other = eager(self, next(), out);
-                let error = (inside(), generic_args.type_at(1));
-                match comb {
-                    Comb::ResultAnd => Expr::cond(tag(true), other, subject),
-                    _ => self.kept_or(tag(true), subject.clone(), error, other, span, out)?,
-                }
+                let ok = comb == Comb::ResultOr;
+                let given_up = (inside(), generic_args.type_at(usize::from(ok)));
+                self.kept_or(tag(ok), subject.clone(), given_up, other, span, out)?
             }
             Comb::ResultOrElse => {
                 let f = next();
@@ -885,7 +889,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
                 // Strings and `char`s by code point, `$cmp` (ADR 0183).
                 if self.is_text_ord(item) {
-                    let x = if x.reads_same() { x } else { self.spill("item", x, out) };
+                    let x = once(self, x, "item", out);
                     let order = self.text_order(Expr::var("each"), x);
                     let f = Expr::arrow(
                         vec!["each".into()],
@@ -907,7 +911,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.eq_is_identity(item) {
                     Expr::call(Expr::member(subject, "includes"), vec![x])
                 } else {
-                    let x = if x.reads_same() { x } else { self.spill("item", x, out) };
+                    let x = once(self, x, "item", out);
                     let mut body = Vec::new();
                     let same = self.eq_value(Expr::var("each"), x, item, span, &mut body)?;
                     body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
@@ -943,11 +947,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `f(item)` compared with `b`, by its type's `Ord`.
             Comb::BinarySearchByKey => {
                 let (key, f) = (next(), next());
-                let key = if key.reads_same() {
-                    key
-                } else {
-                    self.spill("key", key, out)
-                };
+                let key = once(self, key, "key", out);
                 let key_ty = generic_args
                     .types()
                     .nth(1)
@@ -997,11 +997,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "`dedup_by_key` of keys `===` doesn't compare"));
                 }
                 let key = next();
-                let key = if key.reads_same() {
-                    key
-                } else {
-                    self.spill("key", key, out)
-                };
+                let key = once(self, key, "key", out);
                 let (a, b) = (self.fresh("a"), self.fresh("b"));
                 let same = Expr::bin(
                     Op::Eq,
@@ -1432,11 +1428,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(ty) == Drops::Nothing {
             return false;
         }
-        // Of what holds only type parameters' values: its own drop given, or,
-        // a closure that took them, theirs (ADR 0485).
+        // Of what holds only type parameters' values: its own drop given, or
+        // theirs, a closure's of what it took (ADRs 0485, 0496).
         if self.drop_query().drops_but_params(ty) == Drops::Nothing
             && self.given_drop(ty).is_none()
-            && !(matches!(ty.kind(), ty::Closure(..)) && self.holds_given_drops(ty))
+            && !self.holds_given_drops(ty)
         {
             self.require_no_drops(ty);
             return false;

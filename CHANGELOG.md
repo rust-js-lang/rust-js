@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`and` of an `Option` or a `Result` of values with a destructor**,
+  dropping what it gives up (ADR 0496).
 - **An `Rc` of a type parameter's value with a destructor**, itertools'
   `tee`'s buffer, counted and dropped by its last clone, and `pop_front`
   of a type parameter's items (ADR 0494).
