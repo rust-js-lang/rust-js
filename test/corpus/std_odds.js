@@ -26,9 +26,7 @@ function main() {
   const boxed = 22;
   const array = [1, 2, 3];
   const slice = [4, 5];
-  console.log(
-    `${boxed} [${array.map((item) => String(item)).join(", ")}] [${slice.map((item) => String(item)).join(", ")}] 5`,
-  );
+  console.log(`${boxed} [${array.join(", ")}] [${slice.join(", ")}] 5`);
 
   const text = "";
   const none = [];
@@ -37,7 +35,7 @@ function main() {
   const boxedStr = "";
   const boxedSlice = [];
   console.log(
-    `[${text}] [${none.map((item) => String(item)).join(", ")}] [${zeros.map((item) => String(item)).join(", ")}] (${pair[0]}, ${$debugStr(pair[1])}) [${boxedStr}] [${boxedSlice.map((item) => String(item)).join(", ")}] PhantomData<u8>`,
+    `[${text}] [${none.join(", ")}] [${zeros.join(", ")}] (${pair[0]}, ${$debugStr(pair[1])}) [${boxedStr}] [${boxedSlice.join(", ")}] PhantomData<u8>`,
   );
 
   console.log("alloc::vec::Vec<core::option::Option<&str>>");

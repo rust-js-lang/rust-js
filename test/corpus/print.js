@@ -15,7 +15,7 @@ function main() {
   $print(`b ${n}`);
   console.log(" c");
   console.log("ends here");
-  console.error(`warn [${[1, 2].map((item) => String(item)).join(", ")}]`);
+  console.error(`warn [${[1, 2].join(", ")}]`);
   $eprint("partial ");
   console.error("done");
   console.log("100% {literal} %s %d");

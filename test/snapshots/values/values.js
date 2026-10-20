@@ -265,7 +265,7 @@ export function boxes() {
   const count$3 = { value: counts[1] };
   bump(count$3, 40);
   counts[1] = count$3.value;
-  return `${first} ${total} ${n} ${text} ${stats.hits} ${stats.last == null ? "None" : `Some(${stats.last})`} [${counts.map((item) => String(item)).join(", ")}]`;
+  return `${first} ${total} ${n} ${text} ${stats.hits} ${stats.last == null ? "None" : `Some(${stats.last})`} [${counts.join(", ")}]`;
 }
 
 export function report() {

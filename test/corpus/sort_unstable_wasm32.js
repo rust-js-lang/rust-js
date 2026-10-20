@@ -17,12 +17,7 @@ function main() {
   const pairs = $range(0, 40).map((i) => [(Math.imul(i, 7) >>> 0) % 4, i]);
   const key$1 = (p) => p[0];
   $sortUnstable(pairs, (a, b) => key$1(a) < key$1(b), "network");
-  console.log(
-    `[${pairs
-      .map((p) => p[1])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${pairs.map((p) => p[1]).join(", ")}]`);
 
   const owned = text.split(" ");
   $sortUnstable(owned, (a, b) => $cmp($byteLen(b), $byteLen(a)) < 0, "general8");
@@ -52,12 +47,7 @@ function main() {
   ]);
   const key$2 = (w) => w[0];
   $sortUnstable(wide, (a, b) => key$2(a) < key$2(b), "general");
-  console.log(
-    `[${wide
-      .map((w) => w[1])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${wide.map((w) => w[1]).join(", ")}]`);
 
   const picked = text.split(" ");
   const middle = (picked.length / 2) >>> 0;

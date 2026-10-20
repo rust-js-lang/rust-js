@@ -92,7 +92,7 @@ function main() {
   const first$1 = words[0];
   const first = (1 + Array.from(first$1).length) >>> 0;
   console.log(
-    `${missing} [${items.map((item) => String(item)).join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.map((item) => String(item)).join(", ")}] ${first}`,
+    `${missing} [${items.join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.join(", ")}] ${first}`,
   );
   console.log(
     `${$displayF64(
@@ -112,9 +112,7 @@ function main() {
   const options = [1, undefined];
   const somes = options.map((x) => x != null);
   const nones = options.map((x) => x == null);
-  console.log(
-    `[${somes.map((item) => String(item)).join(", ")}] [${nones.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${somes.join(", ")}] [${nones.join(", ")}]`);
   loudDrop_drop([1]);
   give(
     (value) => {

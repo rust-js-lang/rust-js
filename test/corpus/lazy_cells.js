@@ -65,13 +65,11 @@ function main() {
   );
 
   const list = { init: () => [] };
-  console.log(
-    `LazyCell(${list.init === undefined ? `[${list.value.map((item) => String(item)).join(", ")}]` : "<uninit>"})`,
-  );
+  console.log(`LazyCell(${list.init === undefined ? `[${list.value.join(", ")}]` : "<uninit>"})`);
   $force(list).push(1);
   $force(list).push(2);
   console.log(
-    `LazyCell(${list.init === undefined ? `[${list.value.map((item) => String(item)).join(", ")}]` : "<uninit>"}) ${$pretty(
+    `LazyCell(${list.init === undefined ? `[${list.value.join(", ")}]` : "<uninit>"}) ${$pretty(
       "LazyCell(",
       [
         list.init === undefined

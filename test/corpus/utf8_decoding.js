@@ -52,7 +52,7 @@ function main() {
     console.log(
       `${$utf8ErrorMessage(value._0.error)} | ${$debugUtf8Error(value._0, true)} | ${$debugUtf8Error(value._0.error)}`,
     );
-    console.log(`[${value._0.bytes.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${value._0.bytes.join(", ")}]`);
   }
   const value$1 = $fromUtf8([240, 159, 146, 150], true);
   console.log(

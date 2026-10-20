@@ -288,30 +288,20 @@ function main() {
   const w = [4, 5];
   const value$6 = first(w);
   value$6.value = (value$6.value + 1) | 0;
-  console.log(
-    `[${v.map((item) => cDebug_fmt(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${v.map((item) => cDebug_fmt(item)).join(", ")}] [${w.join(", ")}]`);
 
   const checked = { value: [0] };
   checkedDerefMut_deref_mut(checked).value.push(1);
   const count = { value: 1 };
   const value$7 = checkedDerefMut_deref_mut(count);
   value$7.value = (value$7.value + 1) | 0;
-  console.log(
-    `[${checkedDeref_deref(checked)
-      .map((item) => String(item))
-      .join(", ")}] ${checkedDeref_deref(count)}`,
-  );
+  console.log(`[${checkedDeref_deref(checked).join(", ")}] ${checkedDeref_deref(count)}`);
   const stack = { items: [1] };
   stackDerefMut_deref_mut(stack).push(2);
   const total = { sum: 3 };
   const value$8 = totalDerefMut_deref_mut(total);
   value$8.value = (value$8.value + 4) >>> 0;
-  console.log(
-    `[${stackDeref_deref(stack)
-      .map((item) => String(item))
-      .join(", ")}] ${totalDeref_deref(total)}`,
-  );
+  console.log(`[${stackDeref_deref(stack).join(", ")}] ${totalDeref_deref(total)}`);
 
   const k = { n: 1 };
   const r$1 = cSlot_slot(k);

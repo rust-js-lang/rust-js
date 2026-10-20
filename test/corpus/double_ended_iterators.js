@@ -36,7 +36,7 @@ function main() {
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$exactLen(spanIterator_size_hint(s))}`,
   );
   const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_next_back).toArray();
-  console.log(`[${backwards.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${backwards.join(", ")}]`);
   const both = { low: 10, high: 14 };
   const value$2 = spanDoubleEndedIterator_next_back(both);
   const value$3 = spanIterator_next(both);
@@ -50,7 +50,6 @@ function main() {
     `[${$iterator({ low: 0, high: 6 }, spanDoubleEndedIterator_next_back)
       .take(2)
       .toArray()
-      .map((item) => String(item))
       .join(", ")}]`,
   );
 }

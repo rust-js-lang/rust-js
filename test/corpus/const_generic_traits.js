@@ -86,12 +86,7 @@ function main() {
   const value = sevenRepeat_repeat(undefined, 4);
   const value$1 = sevenRepeat().twice(undefined);
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${three(
-      undefined,
-      sevenRepeat(),
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${value.join(", ")}] [${value$1.join(", ")}] [${three(undefined, sevenRepeat()).join(", ")}]`,
   );
   const m = [3];
   console.log(

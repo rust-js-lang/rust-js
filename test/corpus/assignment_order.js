@@ -82,7 +82,7 @@ function main() {
   const x$1 = $index(ps, 0).x;
   const arg = $index(totals, 0);
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${x$1} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${v.join(", ")}] [${a.join(", ")}] ${x$1} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
   // The value is read before the place changes it. Found in review.
   let x = 1;
@@ -128,34 +128,26 @@ function main() {
   const value$18 = cur;
   cur = b;
   value$18[$at(value$18, 0)] = (value$18[0] + 1) | 0;
-  console.log(
-    `[${a$1.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a$1.join(", ")}] [${b.join(", ")}]`);
   const a$2 = [1, 2];
   const b$1 = [10, 20];
   let cur$1 = a$2;
   const value$19 = cur$1;
   cur$1 = b$1;
   value$19[$at(value$19, 0)] = 7;
-  console.log(
-    `[${a$2.map((item) => String(item)).join(", ")}] [${b$1.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a$2.join(", ")}] [${b$1.join(", ")}]`);
   const a$3 = [1, 2];
   const b$2 = [10, 20];
   let cur$2 = a$3;
   const value$20 = cur$2;
   cur$2 = b$2;
   value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
-  console.log(
-    `[${a$3.map((item) => String(item)).join(", ")}] [${b$2.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a$3.join(", ")}] [${b$2.join(", ")}]`);
   const a$4 = [1, 2].slice();
   const b$3 = [10, 20].slice();
   const cur$3 = b$3;
   cur$3[0] = (cur$3[0] + 1) | 0;
-  console.log(
-    `[${a$4.map((item) => String(item)).join(", ")}] [${b$3.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a$4.join(", ")}] [${b$3.join(", ")}]`);
   const empty = [];
   const value$21 = value("out of bounds", 8);
   const index$5 = index("out of bounds", 0);

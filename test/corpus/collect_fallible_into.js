@@ -50,7 +50,7 @@ function parse_kv(s) {
 }
 
 function bagDebug_fmt(bag) {
-  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
+  return `Bag([${bag[0].join(", ")}])`;
 }
 
 function bagFromIteratorI32_from_iter(it) {
@@ -138,19 +138,7 @@ function main() {
     ["1", "2"].values().map((s) => $parseInt(s, -2147483648, 2147483647)),
   );
   console.log(
-    `${words.TAG === "Ok" ? `Ok(${$debugStr(words._0)})` : `Err(${$debugStr(words._0)})`} ${
-      set == null
-        ? "None"
-        : `Some({${Array.from($sortedKeys(set, $cmp))
-            .map((item) => String(item))
-            .join(", ")}})`
-    } ${
-      none$1 == null
-        ? "None"
-        : `Some({${Array.from($sortedKeys(none$1, $cmp))
-            .map((item) => String(item))
-            .join(", ")}})`
-    } [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${vecOk.TAG === "Ok" ? `Ok([${vecOk._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(vecOk._0)})`}`,
+    `${words.TAG === "Ok" ? `Ok(${$debugStr(words._0)})` : `Err(${$debugStr(words._0)})`} ${set == null ? "None" : `Some({${Array.from($sortedKeys(set, $cmp)).join(", ")}})`} ${none$1 == null ? "None" : `Some({${Array.from($sortedKeys(none$1, $cmp)).join(", ")}})`} [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${vecOk.TAG === "Ok" ? `Ok([${vecOk._0.join(", ")}])` : `Err(${$debugStr(vecOk._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

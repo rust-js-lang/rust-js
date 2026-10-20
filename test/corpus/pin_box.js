@@ -78,14 +78,10 @@ function main() {
   const a = [1, 2];
   const b = [1, 3];
   const copy = a.slice();
-  console.log(
-    `${$eq(a, copy)} ${$cmpItems(a, b, $cmp) < 0} [${copy.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${$eq(a, copy)} ${$cmpItems(a, b, $cmp) < 0} [${copy.join(", ")}]`);
   const changed = a.slice();
   changed.push(9);
-  console.log(
-    `[${a.map((item) => String(item)).join(", ")}] [${changed.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a.join(", ")}] [${changed.join(", ")}]`);
   const _noisy = [1];
   try {
     console.log("pinned");

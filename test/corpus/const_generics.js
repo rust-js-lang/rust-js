@@ -101,13 +101,7 @@ function shown(s, SShow) {
 function main() {
   console.log(`${sum([1, 2, 3], 3)} ${sum([10, 10, 10, 10], 4)}`);
   console.log(`${describe(["a", "b"], 2, { fmt: (value) => $debugStr(value) })}`);
-  console.log(
-    `[${filled(7, 3)
-      .map((item) => String(item))
-      .join(", ")}] [${filled(1, 0)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${filled(7, 3).join(", ")}] [${filled(1, 0).join(", ")}]`);
   const ring = Ring.new(2);
   const iter = { start: 1, end: 5 };
   while (true) {
@@ -117,13 +111,9 @@ function main() {
     }
     Ring.push(ring, x, 2);
   }
-  console.log(`[${ring.items.map((item) => String(item)).join(", ")}] ${Ring.capacity(ring, 2)}`);
+  console.log(`[${ring.items.join(", ")}] ${Ring.capacity(ring, 2)}`);
   console.log(`${flag(true, "x")} ${flag(false, "y")}`);
-  console.log(
-    `[${scaled([1, 2], 3)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${scaled([1, 2], 3).join(", ")}]`);
   const big = Ring.new(5);
   console.log(
     `${shown(ring, ringShow(2))} ${shown(big, ringShow(5))} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`,

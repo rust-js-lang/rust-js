@@ -98,14 +98,10 @@ function dropped_tail() {
 
 function main() {
   const v = [1, 2, 3, 4, 5];
-  console.log(
-    `[${drained(v, 1, 3)
-      .map((item) => String(item))
-      .join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${drained(v, 1, 3).join(", ")}] [${v.join(", ")}]`);
   const items = [1, 2, 3];
   doubled(items);
-  console.log(`[${items.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${items.join(", ")}]`);
   const bytes = [1, 2, 3, 4];
   const rest = tail(bytes, 2);
   console.log(`${rest.length}`);
@@ -116,9 +112,9 @@ function main() {
   if (front) {
     front[$at(front, 0)] = 8;
   }
-  console.log(`[${bytes.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${bytes.join(", ")}]`);
   const taken = $iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true).toArray();
-  console.log(`[${taken.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${taken.join(", ")}]`);
   dropped_tail();
   let count = 4;
   const count$1 = { value: count };

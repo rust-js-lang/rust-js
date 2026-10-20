@@ -77,7 +77,7 @@ function main() {
   $unborrow(value$6);
   const value$7 = $lockRead(config, true);
   try {
-    console.log(`[${value$7.value.map((item) => String(item)).join(", ")}] ${len}`);
+    console.log(`[${value$7.value.join(", ")}] ${len}`);
   } finally {
     $unborrow(value$7);
   }
@@ -134,7 +134,6 @@ function main() {
         $unborrow(value);
         return value.value;
       })
-      .map((item) => String(item))
       .join(", ")}]`,
   );
   const r$1 = $lockRead(text, true);

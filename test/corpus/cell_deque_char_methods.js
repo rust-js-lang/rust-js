@@ -44,9 +44,7 @@ function main() {
   try {
     const tmp = $borrow(more, true);
     try {
-      console.log(
-        `[${value.value.map((item) => String(item)).join(", ")}] [${tmp.value.map((item) => String(item)).join(", ")}]`,
-      );
+      console.log(`[${value.value.join(", ")}] [${tmp.value.join(", ")}]`);
     } finally {
       $unborrow(tmp);
     }
@@ -69,13 +67,11 @@ function main() {
   const value$3 = $unwrap($mutAt(deque, -1));
   value$3.value = Math.imul(value$3.value, 10);
   const arg = $slice(deque, 1, 3);
-  console.log(
-    `[${deque.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const value$4 = $dequeSwapRemove(deque, 1, false);
   const value$5 = $dequeSwapRemove(deque, 3, true);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} [${deque.join(", ")}]`,
   );
   $retainMut(
     deque,
@@ -86,16 +82,14 @@ function main() {
     true,
   );
   const arg$1 = $partitionPoint(deque, (x) => x < 50);
-  console.log(`[${deque.map((item) => String(item)).join(", ")}] ${arg$1}`);
+  console.log(`[${deque.join(", ")}] ${arg$1}`);
   const value$6 = $popFrontIf(deque, (x) => x.value > 100, true);
   const value$7 = $popIfCell(deque, (x) => x.value > 100);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} [${deque.join(", ")}]`,
   );
   const value$8 = $popFrontIf(deque, (x) => x.value < 100, true);
-  console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} [${deque.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${value$8 == null ? "None" : `Some(${value$8})`} [${deque.join(", ")}]`);
 
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
     console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
@@ -105,7 +99,7 @@ function main() {
   const buffer = [0, 0, 0, 0];
   const text = $encodeUtf8("é", buffer);
   console.log(`${text} ${$byteLen(text)}`);
-  console.log(`[${buffer.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${buffer.join(", ")}]`);
   const decoded = Iterator.from($decodeUtf16([104, 55357, 56832, 55296, 105]))
     .map((r) => (r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r))
     .toArray();
@@ -118,15 +112,10 @@ function main() {
 
   const pair = [1, 2];
   const refs = pair;
-  console.log(
-    `[${refs
-      .map((x) => Math.imul(x, 2))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${refs.map((x) => Math.imul(x, 2)).join(", ")}]`);
   for (const x of $mutItems(pair)) {
     x.value = (x.value + 1) | 0;
   }
-  console.log(`[${pair.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${pair.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

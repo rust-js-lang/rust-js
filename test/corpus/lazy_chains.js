@@ -36,7 +36,7 @@ function main() {
     .map((x) => noisy("map", Math.imul(x, 2)))
     .filter((x) => noisy("filter", x) > 2)
     .toArray();
-  console.log(`[${kept.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${kept.join(", ")}]`);
 
   // `fold`'s start is made before any item is stepped: a stage that does
   // something runs after it.
@@ -51,7 +51,7 @@ function main() {
     .map((x) => noisy("take", x))
     .take(2)
     .toArray();
-  console.log(`[${first.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${first.join(", ")}]`);
 
   const value = $lent(v.values().map((x) => noisy("find", x))).find((x) => x > 1);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
@@ -130,14 +130,14 @@ function main() {
   ).toArray();
   console.log(`[${short.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const back = doubled(v).toArray();
-  console.log(`[${back.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${back.join(", ")}]`);
   const joined = $lazyChain(
     $iter($slice(v, 0, 1)),
     v.values().map((x) => noisy("joined", x)),
   )
     .take(2)
     .toArray();
-  console.log(`[${joined.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${joined.join(", ")}]`);
 
   // `next()` takes one item, of a chain made there or kept to step through.
   const value$5 = $next(v.values().map((x) => noisy("next", x)));
@@ -153,6 +153,6 @@ function main() {
     .map((x) => Math.imul(x, 2))
     .filter((x) => x % 4 === 0)
     .slice(0, 1);
-  console.log(`[${doubled$1.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${doubled$1.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

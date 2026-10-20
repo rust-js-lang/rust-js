@@ -37,7 +37,7 @@ function main() {
     x.value = (x.value + 100) | 0;
   }
   console.log(`${it.reduce((n) => n + 1, 0)}`);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 
   const part = $iter($mutItems($view(v, 2)));
   while (true) {
@@ -47,7 +47,7 @@ function main() {
     }
     x.value = -x.value | 0;
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 
   const names = ["a", "b", "c"];
   const each = $iter($mutItems(names));
@@ -72,6 +72,6 @@ function main() {
   for (const x of q) {
     x.value = (x.value * 2) & 255;
   }
-  console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${queue.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

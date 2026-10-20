@@ -29,7 +29,7 @@ function main() {
   const counts = rows.map((x) => x.length);
   const empty = rows.map((x) => x.length === 0);
   console.log(
-    `[${bytes.map((item) => String(item)).join(", ")}] [${owned.map((item) => $debugStr(item)).join(", ")}] [${sizes.map((item) => String(item)).join(", ")}] [${counts.map((item) => String(item)).join(", ")}] [${empty.map((item) => String(item)).join(", ")}]`,
+    `[${bytes.join(", ")}] [${owned.map((item) => $debugStr(item)).join(", ")}] [${sizes.join(", ")}] [${counts.join(", ")}] [${empty.join(", ")}]`,
   );
 
   // Conversions, and what an `Option` or a `Result` gives.
@@ -44,7 +44,7 @@ function main() {
     .map((x) => (x.TAG === "Ok" ? x._0 : undefined))
     .filter((item) => item != null);
   console.log(
-    `[${names.map((item) => $debugStr(item)).join(", ")}] [${into.map((item) => $debugStr(item)).join(", ")}] [${present.map((item) => String(item)).join(", ")}] [${good.map((item) => String(item)).join(", ")}]`,
+    `[${names.map((item) => $debugStr(item)).join(", ")}] [${into.map((item) => $debugStr(item)).join(", ")}] [${present.join(", ")}] [${good.join(", ")}]`,
   );
   const numbers = $collectResults(
     "4 5 6"
@@ -59,7 +59,7 @@ function main() {
       .map((s) => $parseInt(s, 0, 255)),
   );
   console.log(
-    `${numbers.TAG === "Ok" ? `Ok([${numbers._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(numbers._0, "ParseIntError")})`} ${bad.TAG === "Ok" ? `Ok([${bad._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(bad._0, "ParseIntError")})`}`,
+    `${numbers.TAG === "Ok" ? `Ok([${numbers._0.join(", ")}])` : `Err(${$debugParseError(numbers._0, "ParseIntError")})`} ${bad.TAG === "Ok" ? `Ok([${bad._0.join(", ")}])` : `Err(${$debugParseError(bad._0, "ParseIntError")})`}`,
   );
 
   // Of none: what makes an empty value.
@@ -67,7 +67,7 @@ function main() {
   const text = undefined;
   const table = undefined;
   console.log(
-    `[${(missing ?? []).map((item) => String(item)).join(", ")}] ${$debugStr(text ?? "")} ${(table ?? new Map()).size}`,
+    `[${(missing ?? []).join(", ")}] ${$debugStr(text ?? "")} ${(table ?? new Map()).size}`,
   );
   const groups = new Map();
   for (let n = 1; n < 6; n++) {
@@ -75,11 +75,7 @@ function main() {
     $orInsertWith(groups, key, () => []).push(n);
   }
   console.log(
-    `[${$unwrap(groups.get(true), "no entry found for key")
-      .map((item) => String(item))
-      .join(", ")}] [${$unwrap(groups.get(false), "no entry found for key")
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${$unwrap(groups.get(true), "no entry found for key").join(", ")}] [${$unwrap(groups.get(false), "no entry found for key").join(", ")}]`,
   );
 
   // Of two: a trait's method on numbers, as a fold's or a sort's.
@@ -90,8 +86,8 @@ function main() {
   const sorted = [3, 1, 2];
   sorted.sort((a, b) => $cmp(a, b));
   console.log(
-    `${highest} ${lowest} ${$displayF64(widest)} [${sorted.map((item) => String(item)).join(", ")}] [${distances.map((item) => String(item)).join(", ")}]`,
+    `${highest} ${lowest} ${$displayF64(widest)} [${sorted.join(", ")}] [${distances.join(", ")}]`,
   );
-  console.log(`${$byteLen("日本")} [${[].map((item) => String(item)).join(", ")}]`);
+  console.log(`${$byteLen("日本")} [${[].join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

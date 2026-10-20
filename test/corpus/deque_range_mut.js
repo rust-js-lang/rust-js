@@ -12,7 +12,7 @@ function main() {
   for (const x of $mutItems($view(d, 2, 5))) {
     x.value = Math.imul(x.value, 10);
   }
-  console.log(`[${d.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${d.join(", ")}]`);
   const words = ["a", "b", "c"].map((s) => s);
   Iterator.from($mutItems($view(words, 1))).forEach((w) => {
     w.value += "!";
@@ -34,6 +34,6 @@ function main() {
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] [${points.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${value} ${arg}`,
   );
-  console.log(`[${d.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${d.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

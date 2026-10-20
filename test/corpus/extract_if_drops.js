@@ -34,9 +34,7 @@ function collected() {
       const tmp = ids(odd);
       const tmp$1 = v;
       const tmp$2 = [undefined, ids(tmp$1)];
-      console.log(
-        `odd [${tmp.map((item) => String(item)).join(", ")}] kept [${tmp$2[1].map((item) => String(item)).join(", ")}]`,
-      );
+      console.log(`odd [${tmp.join(", ")}] kept [${tmp$2[1].join(", ")}]`);
     } finally {
       for (const item of odd) {
         loudDrop_drop(item);
@@ -62,7 +60,7 @@ function stopped_early() {
     const tmp = first != null ? value(first) : 0;
     const tmp$1 = w;
     const tmp$2 = [undefined, ids(tmp$1)];
-    console.log(`first ${tmp} left [${tmp$2[1].map((item) => String(item)).join(", ")}]`);
+    console.log(`first ${tmp} left [${tmp$2[1].join(", ")}]`);
   } finally {
     for (const item of w) {
       loudDrop_drop(item);

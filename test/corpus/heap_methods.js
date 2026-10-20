@@ -10,7 +10,7 @@ function main() {
   const small = $heapFrom([5, 1, 8], $cmp);
   const big = $heapFrom([3, 9, 2, 7, 4, 6], $cmp);
   $heapAppend(small, big, $cmp);
-  console.log(`[${small.map((item) => String(item)).join(", ")}] ${big.length}`);
+  console.log(`[${small.join(", ")}] ${big.length}`);
   const long = $heapFrom(
     $lazyRange(0, 40)
       .map((i) => (Math.imul(i, 7) % 23) | 0)
@@ -19,7 +19,7 @@ function main() {
   );
   const short = $heapFrom([50, 0], $cmp);
   $heapAppend(long, short, $cmp);
-  console.log(`[${long.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${long.join(", ")}]`);
   const left = $heapFrom(
     $lazyRange(0, 32)
       .map((i) => (Math.imul(i, 5) % 17) | 0)
@@ -33,9 +33,9 @@ function main() {
     $cmp,
   );
   $heapAppend(left, right, $cmp);
-  console.log(`[${left.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${left.join(", ")}]`);
   $heapRetain(long, (x) => x % 3 !== 0, $cmp);
-  console.log(`[${long.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${long.join(", ")}]`);
   const seen = [];
   $heapRetain(
     small,
@@ -45,18 +45,16 @@ function main() {
     },
     $cmp,
   );
-  console.log(
-    `[${seen.map((item) => String(item)).join(", ")}] [${small.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${seen.join(", ")}] [${small.join(", ")}]`);
   const sifted = $heapFrom([3, 0, 28, 25, 22, 19], $cmp);
   const few = $heapFrom([5, 20, 6], $cmp);
   $heapAppend(sifted, few, $cmp);
-  console.log(`[${sifted.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${sifted.join(", ")}]`);
   const late = $heapFrom([7, 72, 137, 202, 56, 121, 186, 40], $cmp);
   $heapRetain(late, (x) => x !== 40 && x !== 56, $cmp);
-  console.log(`[${late.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${late.join(", ")}]`);
   const drained = small.splice(0);
-  console.log(`[${drained.map((item) => String(item)).join(", ")}] ${small.length === 0}`);
+  console.log(`[${drained.join(", ")}] ${small.length === 0}`);
   const words = $heapFrom(["pear", "fig", "apple"], $cmp);
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] ${words[0] == null ? "None" : `Some(${$debugStr(words[0])})`}`,

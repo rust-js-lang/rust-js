@@ -135,7 +135,7 @@ export function table(input) {
   }
   const ages = rows.map((r) => r.age);
   const gaps = $windows(ages, 2).map((w) => (($index(w, 1) | 0) - ($index(w, 0) | 0)) | 0);
-  out += `[${gaps.map((item) => String(item)).join(", ")}]\n`;
+  out += `[${gaps.join(", ")}]\n`;
   out += `${rows.every((r) => r.score > 50)} ${rows.some((r) => r.team === "red")} ${((value) => (value == null ? "None" : `Some(${value})`))($position(rows, (r) => r.age > 40))}\n`;
   return out;
 }
@@ -163,6 +163,6 @@ export function function_values(words) {
 export function report() {
   const input =
     "name,team,score,age\nann, red, 91, 34\nbob,blue,78,25\ncy,red,78,45\n,blue,5,5\ndee,blue,x,3\neve,green,64,29\nfay,red\ngus, blue ,88,31\nßen,red,70,20\n";
-  return `${table(input)}${parse_errors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].map((item) => String(item)).join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(function_values(["x", "é"]))}\n`;
+  return `${table(input)}${parse_errors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(function_values(["x", "é"]))}\n`;
 }
 //# sourceMappingURL=report.js.map

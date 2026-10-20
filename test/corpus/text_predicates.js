@@ -80,7 +80,7 @@ function main() {
     `${name == null ? "None" : `Some(${$debugStr(name)})`} ${value$11 == null ? "None" : `Some(${$debugStr(value$11)})`} ${value$12 == null ? "None" : `Some(${$debugStr(value$12)})`}`,
   );
   const edges = $range(0, 7).map((i) => $charBoundary(name, i) !== undefined);
-  console.log(`[${edges.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${edges.join(", ")}]`);
 
   // Characters' sizes, and characters from bytes and back.
   console.log(`${$byteLen("a")} ${$byteLen("ë")} ${$byteLen("😀")} ${"😀".length}`);

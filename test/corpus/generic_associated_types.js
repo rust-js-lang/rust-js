@@ -180,15 +180,10 @@ function main() {
     `[${shelfContainer_items(shelf)
       .map((b) => $byteLen(b))
       .toArray()
-      .map((item) => String(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${byteFilled_filled([7], 3)
-      .map((item) => String(item))
-      .join(", ")}] [${byteFilled_filled([1], 0)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${byteFilled_filled([7], 3).join(", ")}] [${byteFilled_filled([1], 0).join(", ")}]`,
   );
   console.log(
     `${summed([4], uptoSource())} ${summed(undefined, from3Source())} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,

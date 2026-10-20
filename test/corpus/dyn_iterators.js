@@ -42,24 +42,14 @@ function doubled(it) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  console.log(
-    `[${evens(v)
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${evens(v).toArray().join(", ")}]`);
   const value = $max(
     evens(v)
       .map((n) => Math.imul(n, 10) >>> 0)
       .toArray(),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  console.log(
-    `[${numbers(true)
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${numbers(true).toArray().join(", ")}]`);
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
 
   const it = $iter(v);
@@ -70,11 +60,7 @@ function main() {
   console.log(`${total(it)}`);
   const rest = $iter(v);
   $next(rest);
-  console.log(
-    `[${doubled(rest)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${doubled(rest).join(", ")}]`);
 
   const boxed = $iter(v);
   const value$2 = $next(boxed);
@@ -88,12 +74,6 @@ function main() {
     console.log(`see ${n}`);
     return n;
   });
-  console.log(
-    `[${noisy
-      .take(2)
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${noisy.take(2).toArray().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

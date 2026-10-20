@@ -65,7 +65,7 @@ function main() {
   );
   const v = [$unwrap(9), a, $unwrap(1)];
   v.sort((a, b) => a - b);
-  console.log(`[${v.map((item) => String(item)).join(", ")}] 8`);
+  console.log(`[${v.join(", ")}] 8`);
   for (const n of v) {
     if (7 === n) {
       console.log("seven");

@@ -13,9 +13,7 @@ function main() {
     x.value = (x.value + y.value) | 0;
     y.value = 0;
   }
-  console.log(
-    `[${a.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
 
   const names = ["p", "q", "r"];
   const nums = [1, 2, 3, 4];
@@ -33,9 +31,7 @@ function main() {
       break;
     }
   }
-  console.log(
-    `[${words.map((item) => $debugStr(item)).join(", ")}] [${counts.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${words.map((item) => $debugStr(item)).join(", ")}] [${counts.join(", ")}]`);
 
   const none = $zipBack($iter([1, 2]), $iter([])).toArray();
   console.log(`[${none.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);

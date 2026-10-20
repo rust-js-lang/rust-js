@@ -8,6 +8,6 @@ function main() {
   const _5_ = [1, 2];
   _5_.push(3);
   const total = _5_.reduce((a, b) => (a + b) | 0, 0);
-  console.log(`${total} [${_5_.map((item) => String(item)).join(", ")}]`);
+  console.log(`${total} [${_5_.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -9,6 +9,6 @@ export function entry() {
 function main() {
   const target = [0, 0, 0];
   $copyFromSlice(target, [1, 2]);
-  console.log(`[${target.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${target.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -68,7 +68,7 @@ function main() {
   );
   const value = after_first($iter(v));
   console.log(
-    `(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].map((item) => String(item)).join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
   );
   const value$1 = firsts($iter([undefined, 2]));
   console.log(

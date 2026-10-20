@@ -95,7 +95,7 @@ function main() {
   const s = { value };
   const value$1 = drain(s, countSource());
   $assign(value, s.value);
-  console.log(`[${value$1.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${value$1.join(", ")}]`);
   const value$2 = { list: ["a", "b"] };
   const s$1 = { value: value$2 };
   const value$3 = drain(s$1, wordsSource());
@@ -111,11 +111,7 @@ function main() {
   $assign(value$6, s$3.value);
   console.log(`${value$5} ${value$7}`);
   console.log(`${tag({ n: 7 }, countLabeled())} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
-  console.log(
-    `[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0)).join(", ")}]`);
   const source = { value: { n: 2 }, impl: countSource() };
   const value$8 = source.impl.next_item(source);
   const value$9 = source.impl.next_item(source);

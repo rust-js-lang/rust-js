@@ -66,6 +66,6 @@ function main() {
   const self$5 = { value: counts[1] };
   i32Bump_bump(self$5);
   counts[1] = self$5.value;
-  console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${counts.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

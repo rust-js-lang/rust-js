@@ -9,12 +9,12 @@ export function entry() {
 function main() {
   const a = [1, 2, 3];
   const seven = $cycle(a).take(7).toArray();
-  console.log(`[${seven.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${seven.join(", ")}]`);
 
   const it = $iter(a);
   $next(it);
   const rest = $cycle(it.items.slice(it.at, it.end)).take(5).toArray();
-  console.log(`[${rest.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${rest.join(", ")}]`);
 
   const held = $cycle(a);
   $next(held);
@@ -35,9 +35,7 @@ function main() {
     .take(3)
     .toArray();
   $index(copies, 0).push(9);
-  console.log(
-    `[${copies.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${copies.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const none = [];
   const value$2 = $next($cycle(none));

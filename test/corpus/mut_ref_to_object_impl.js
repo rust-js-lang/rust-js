@@ -9,7 +9,7 @@ export function entry() {
 }
 
 function moneyDebug_fmt(money) {
-  return `Money { cents: ${money.cents}, note: [${money.note.map((item) => String(item)).join(", ")}] }`;
+  return `Money { cents: ${money.cents}, note: [${money.note.join(", ")}] }`;
 }
 
 function moneyAddAssign_add_assign(money, other) {

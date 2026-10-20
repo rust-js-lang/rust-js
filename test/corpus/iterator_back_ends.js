@@ -34,9 +34,7 @@ function main() {
   const down = $range(1, 4).toReversed();
   const top = $range(250, 256).toReversed();
   const own = $iterator([0, 3], spanDoubleEndedIterator_next_back).toArray();
-  console.log(
-    `[${down.map((item) => String(item)).join(", ")}] [${top.map((item) => String(item)).join(", ")}] [${own.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${down.join(", ")}] [${top.join(", ")}] [${own.join(", ")}]`);
 
   const v = [10, 20, 30, 40];
   const it = $iter(v);
@@ -45,7 +43,7 @@ function main() {
   const value = it.end - it.at;
   const arg = it.items.slice(it.at, it.end);
   console.log(
-    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${value} [${arg.map((item) => String(item)).join(", ")}]`,
+    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${value} [${arg.join(", ")}]`,
   );
 
   const range = { start: 0, end: 5 };

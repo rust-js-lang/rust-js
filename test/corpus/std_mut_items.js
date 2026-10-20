@@ -39,7 +39,7 @@ function main() {
   for (const [i, s] of $mutItems(scores).entries()) {
     s.value = (s.value + (i | 0)) | 0;
   }
-  console.log(`[${scores.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${scores.join(", ")}]`);
   const names = ["ann", "bo"];
   $mutItems(names).forEach((n) => {
     n.value += "!";
@@ -82,9 +82,7 @@ function main() {
   console.log(
     `{${Array.from($sortedEntries(ordered, $cmp))
       .map(([key, value]) => `${key}: ${$debugF64(value)}`)
-      .join(
-        ", ",
-      )}} [${visited.map((item) => String(item)).join(", ")}] [${halves.map((item) => $debugF64(item)).join(", ")}]`,
+      .join(", ")}} [${visited.join(", ")}] [${halves.map((item) => $debugF64(item)).join(", ")}]`,
   );
 
   // Kept in a variable, and passed on.
@@ -110,7 +108,7 @@ function main() {
   console.log(
     `{${Array.from(counts)
       .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
-      .join(", ")}} [${row.map((item) => String(item)).join(", ")}]`,
+      .join(", ")}} [${row.join(", ")}]`,
   );
 
   // Passed on in an `Option`, matched, and collected.
@@ -128,6 +126,6 @@ function main() {
   for (const r of refs) {
     r.value = -r.value | 0;
   }
-  console.log(`${seen} ${found} [${cells.map((item) => String(item)).join(", ")}]`);
+  console.log(`${seen} ${found} [${cells.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

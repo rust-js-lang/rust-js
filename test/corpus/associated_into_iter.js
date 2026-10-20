@@ -24,9 +24,7 @@ function firsts(iters) {
 function main() {
   const v = [[1, 2], [], [3]];
   console.log(
-    `[${lengths($iter(v))
-      .map((item) => String(item))
-      .join(", ")}] [${firsts($iter(v))
+    `[${lengths($iter(v)).join(", ")}] [${firsts($iter(v))
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );

@@ -48,7 +48,7 @@ function main() {
   const lines = [undefined, undefined].map(
     () => here({ file: "test/corpus/track_caller.rs", line: 59, column: 50 }).line,
   );
-  console.log(`[${lines.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${lines.join(", ")}]`);
   console.log(
     `${at.file}:${at.line}:${at.column} Location { file: ${$debugStr(at.file)}, line: ${at.line}, column: ${at.column} }`,
   );

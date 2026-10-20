@@ -353,9 +353,7 @@ export function sorted_maps(text) {
   ]);
   const value = $sortedEntries(counts, $cmp);
   const arg = $sortedKeys(set, $cmp).toReversed();
-  const value$1 = `{${Array.from($sortedKeys(set, $cmp))
-    .map((item) => String(item))
-    .join(", ")}} [${arg.map((item) => String(item)).join(", ")}]`;
+  const value$1 = `{${Array.from($sortedKeys(set, $cmp)).join(", ")}} [${arg.join(", ")}]`;
   const arg$1 = $unwrap(tiers.get("Bronze"), "no entry found for key");
   return [
     value,

@@ -18,6 +18,6 @@ function main() {
     })
     .map((x) => $unwrap(x))
     .toArray();
-  console.log(`[${seen.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${seen.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -48,16 +48,12 @@ function main() {
   const key$1 = key(log);
   const current = $orInsert(map, key$1, 10);
   map.set(key$1, (current + value$1) | 0);
-  console.log(
-    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
-  );
+  console.log(`[${log.join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`);
   log.length = 0;
   // An overloaded operator is a call: receiver, then argument.
   const key$2 = key(log);
   const current$1 = $orInsert(map, key$2, 10);
   map.set(key$2, (current$1 + value(log)) | 0);
-  console.log(
-    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
-  );
+  console.log(`[${log.join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`);
 }
 //# sourceMappingURL=case.js.map

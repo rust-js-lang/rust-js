@@ -30,14 +30,10 @@ function main() {
   const t$1 = pair.label;
   pair.label = other;
   other = t$1;
-  console.log(
-    `[${pair.left.map((item) => String(item)).join(", ")}] [${pair.right.map((item) => String(item)).join(", ")}] ${pair.label} ${other}`,
-  );
+  console.log(`[${pair.left.join(", ")}] [${pair.right.join(", ")}] ${pair.label} ${other}`);
 
   const old = $take(pair.left, [9]);
-  console.log(
-    `[${old.map((item) => String(item)).join(", ")}] [${pair.left.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${old.join(", ")}] [${pair.left.join(", ")}]`);
   a = 6;
   console.log(`${a}`);
 

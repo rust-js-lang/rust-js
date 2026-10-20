@@ -15,7 +15,7 @@ function main() {
   const numbers = [1, 2, 3];
   const doubled = numbers.map((n) => Math.imul(n, 2));
   const total = numbers.reduce((a, b) => (a + b) | 0, 0);
-  console.log(`[${doubled.map((item) => String(item)).join(", ")}] ${total}`);
+  console.log(`[${doubled.join(", ")}] ${total}`);
   const items = [{ name: "a", count: 1 }];
   const items$1 = bumped(items);
   for (const item of items$1) {

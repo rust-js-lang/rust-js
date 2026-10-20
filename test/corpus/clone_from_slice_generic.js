@@ -73,7 +73,7 @@ function main() {
   refill(n, [7, 8], { clone: (value) => value });
   refill_items($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone());
   console.log(
-    `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.map((item) => String(item)).join(", ")}]`,
+    `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

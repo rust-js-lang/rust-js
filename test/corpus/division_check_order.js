@@ -28,7 +28,7 @@ function main() {
   const value$1 = $rem(value$3, value$4) & 65535;
   v[index$1] = value$1;
   const quotient = $div(value("second", 9), value("second", 2)) & 65535;
-  console.log(`[${v.map((item) => String(item)).join(", ")}] ${quotient}`);
+  console.log(`[${v.join(", ")}] ${quotient}`);
   const value$5 = value("third", 7);
   const value$6 = value("third", 0);
   if (value$6 === 0) {
@@ -38,6 +38,6 @@ function main() {
   $index(v, index$2);
   const value$2 = $rem(value$5, value$6) & 65535;
   v[index$2] = value$2;
-  console.log(`unreachable [${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`unreachable [${v.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

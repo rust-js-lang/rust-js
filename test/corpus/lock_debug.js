@@ -8,14 +8,10 @@ export function entry() {
 
 function main() {
   const m = { value: [1, 2] };
-  console.log(
-    `${$showLocked(m, (value) => `[${value.map((item) => String(item)).join(", ")}]`, "Mutex", true)}`,
-  );
+  console.log(`${$showLocked(m, (value) => `[${value.join(", ")}]`, "Mutex", true)}`);
   const _held = $lock(m, true);
   try {
-    console.log(
-      `${$showLocked(m, (value) => `[${value.map((item) => String(item)).join(", ")}]`, "Mutex", true)}`,
-    );
+    console.log(`${$showLocked(m, (value) => `[${value.join(", ")}]`, "Mutex", true)}`);
   } finally {
     $unborrow(_held);
   }

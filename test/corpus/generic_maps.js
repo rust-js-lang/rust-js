@@ -95,7 +95,7 @@ function main() {
   );
   const value = g.get("a");
   console.log(
-    `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(g.get("b"))}`,
+    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(g.get("b"))}`,
   );
   const pg = group(
     $iter([
@@ -107,9 +107,7 @@ function main() {
     $KeyMap,
   );
   const value$1 = pg.get([1, 2]);
-  console.log(
-    `${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`}`,
-  );
+  console.log(`${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`);
   const d = distinct(
     [
       [1, 1],

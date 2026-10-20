@@ -162,9 +162,7 @@ function main() {
   const items = [1, 2];
   const boxed = 3;
   const shared = "rc";
-  console.log(
-    `${uuidDebug_fmt(id)} ${name} ${text} [${items.map((item) => String(item)).join(", ")}] ${boxed} ${shared}`,
-  );
+  console.log(`${uuidDebug_fmt(id)} ${name} ${text} [${items.join(", ")}] ${boxed} ${shared}`);
 
   const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));

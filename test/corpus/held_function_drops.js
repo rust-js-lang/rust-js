@@ -78,11 +78,7 @@ function count_by(it, f, dropF) {
 }
 
 function main() {
-  console.log(
-    `[${scaled([1, 2])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${scaled([1, 2]).join(", ")}]`);
   console.log("after scaled");
   let shared$live = true;
   const shared = [10];
@@ -121,9 +117,7 @@ function main() {
       (value) => {
         loudDrop_drop(base);
       },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   let tag$live = true;
   const tag = [7];

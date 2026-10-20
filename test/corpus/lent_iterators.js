@@ -76,12 +76,7 @@ function main() {
   const it = $iter([1, 2, 3, 4, 5]);
   skip(it, 2);
   const value = first(it);
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} [${it
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`${value == null ? "None" : `Some(${value})`} [${it.toArray().join(", ")}]`);
   const c = [5];
   skip($iterator(c, countdownIterator_next), 1);
   const value$1 = first($iterator(c, countdownIterator_next));
@@ -100,7 +95,7 @@ function main() {
   const lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
   const a$1 = take2(lazy);
   console.log(
-    `[${a$1.map((item) => String(item)).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,
+    `[${a$1.join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,
   );
   const v = $iter([1, 2, 0, 3, 4, 0, 5]);
   const s1 = until_zero(v);

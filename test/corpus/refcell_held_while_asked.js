@@ -206,7 +206,7 @@ function main() {
   } finally {
     $unborrow(value$5);
   }
-  console.log(`[${asked.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${asked.join(", ")}]`);
   const seen = ((s) => {
     const value = $borrow(s, true);
     let result;
@@ -217,7 +217,7 @@ function main() {
     }
     return result;
   })(SHARED);
-  console.log(`[${seen.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${seen.join(", ")}]`);
 
   const node = $newCyclic((me) => ({ value: { me: $weakClone(me) } }));
   try {

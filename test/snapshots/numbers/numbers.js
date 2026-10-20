@@ -198,7 +198,7 @@ export function report() {
     .map((item) => $debugF64(item))
     .join(", ")}]\n`;
   const value = grids(3);
-  out += `([${value[0].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], ${$debugStr(value[2])})\n${searches()}\n`;
+  out += `([${value[0].map((item) => `[${item.join(", ")}]`).join(", ")}], [${value[1].join(", ")}], ${$debugStr(value[2])})\n${searches()}\n`;
   return out;
 }
 //# sourceMappingURL=numbers.js.map

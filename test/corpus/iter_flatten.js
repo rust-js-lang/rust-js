@@ -14,24 +14,9 @@ function main() {
   console.log(`${$debugStr(joined(["a", undefined, "b", undefined]))}`);
   const numbers = [1, undefined, 3];
   console.log(`${numbers.filter((item) => item != null).reduce((a, b) => (a + b) | 0, 0)}`);
-  console.log(
-    `[${numbers
-      .filter((item) => item != null)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${numbers.filter((item) => item != null).join(", ")}]`);
   const rows = [[1, 2], [], [3]];
-  console.log(
-    `[${rows
-      .flat()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${rows
-      .flat()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${rows.flat().join(", ")}]`);
+  console.log(`[${rows.flat().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -161,10 +161,6 @@ function main() {
   console.log(
     `[${names.values.map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`).join(", ")}] ${was}`,
   );
-  console.log(
-    `[${odd([[1], [2], [3]])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${odd([[1], [2], [3]]).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

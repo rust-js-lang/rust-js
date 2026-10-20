@@ -38,7 +38,7 @@ function main() {
   const first = $next(it);
   const rest = it.toArray();
   console.log(
-    `[${a.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}] [${c.map((item) => String(item)).join(", ")}] ${first == null ? "None" : `Some(${first})`} [${rest.map((item) => String(item)).join(", ")}]`,
+    `[${a.join(", ")}] [${b.join(", ")}] [${c.join(", ")}] ${first == null ? "None" : `Some(${first})`} [${rest.join(", ")}]`,
   );
   more();
 }
@@ -58,7 +58,7 @@ function more() {
       return Math.imul(x, i | 0);
     });
   console.log(
-    `[${e.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${f.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${g.map((item) => String(item)).join(", ")}]`,
+    `[${e.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${f.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${g.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -13,6 +13,6 @@ function main() {
   }
   i = 2;
   a[value] = (a[value] + 10) >>> 0;
-  console.log(`[${a.map((item) => String(item)).join(", ")}] ${i}`);
+  console.log(`[${a.join(", ")}] ${i}`);
 }
 //# sourceMappingURL=case.js.map

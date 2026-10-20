@@ -209,7 +209,7 @@ function looseDeserialize_deserialize(json) {
 }
 
 function looseDebug_fmt(loose) {
-  return `Loose { a: ${loose.a}, b: ${$debugStr(loose.b)}, c: ${loose.c}, d: [${loose.d.map((item) => String(item)).join(", ")}] }`;
+  return `Loose { a: ${loose.a}, b: ${$debugStr(loose.b)}, c: ${loose.c}, d: [${loose.d.join(", ")}] }`;
 }
 
 function eventDeserialize_deserialize(json) {
@@ -338,7 +338,7 @@ function holderDebug_fmt(holder) {
     [
       String(holder.boxed),
       $debugStr(holder.shared),
-      `[${holder.queue.map((item) => String(item)).join(", ")}]`,
+      `[${holder.queue.join(", ")}]`,
       `{${Array.from($sortedKeys(holder.set, $cmp))
         .map((item) => $debugStr(item, "'"))
         .join(", ")}}`,
@@ -560,7 +560,7 @@ function anythingDebug_fmt(anything) {
   if (anything === "Nothing") {
     return "Nothing";
   }
-  return `Many([${anything._0.map((item) => String(item)).join(", ")}])`;
+  return `Many([${anything._0.join(", ")}])`;
 }
 
 function eitherDeserialize_deserialize(json) {
@@ -1216,13 +1216,13 @@ export function report() {
   }
   const value$90 = $fromJson("[1,2,3]", $json.array(3, $json.u8));
   if (value$90.TAG === "Ok") {
-    out += `ok [${value$90._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$90._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$90._0)} / ${$debugJsonError(value$90._0)}\n`;
   }
   const value$91 = $fromJson("[1,2]", $json.array(3, $json.u8));
   if (value$91.TAG === "Ok") {
-    out += `ok [${value$91._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$91._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$91._0)} / ${$debugJsonError(value$91._0)}\n`;
   }
@@ -1733,25 +1733,25 @@ export function report() {
   }
   const value$171 = $fromJson("[1,\n2,\n  x]", $json.vec($json.u32));
   if (value$171.TAG === "Ok") {
-    out += `ok [${value$171._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$171._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$171._0)} / ${$debugJsonError(value$171._0)}\n`;
   }
   const value$172 = $fromJson("[\r\n1	,2  ]", $json.vec($json.u32));
   if (value$172.TAG === "Ok") {
-    out += `ok [${value$172._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$172._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$172._0)} / ${$debugJsonError(value$172._0)}\n`;
   }
   const value$173 = $fromJson("\n\n  [1,2", $json.vec($json.u32));
   if (value$173.TAG === "Ok") {
-    out += `ok [${value$173._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$173._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$173._0)} / ${$debugJsonError(value$173._0)}\n`;
   }
   const value$174 = $fromJson("[1]\n\n  ,", $json.vec($json.u32));
   if (value$174.TAG === "Ok") {
-    out += `ok [${value$174._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$174._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$174._0)} / ${$debugJsonError(value$174._0)}\n`;
   }

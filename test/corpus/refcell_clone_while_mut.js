@@ -12,7 +12,7 @@ function main() {
   try {
     const copy = { value: $borrow(cell).value };
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.map((item) => String(item)).join(", ")}]`)} } ${writing.value.length}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.join(", ")}]`)} } ${writing.value.length}`,
     );
   } finally {
     $unborrow(writing);

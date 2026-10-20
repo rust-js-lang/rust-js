@@ -23,25 +23,21 @@ function main() {
   const value = items.length === 3 ? items : undefined;
   const value$1 = v.length === 3 ? v : undefined;
   console.log(
-    `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`}`,
+    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`,
   );
   for (const [a, b] of $windows(v, 2)) {
     $print(`${Math.imul(a, b)} `);
   }
   console.log("");
   const [chunks, rest] = $asChunks(v, 3);
-  console.log(
-    `[${chunks.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${rest.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${chunks.map((item) => `[${item.join(", ")}]`).join(", ")}] [${rest.join(", ")}]`);
   const [rest$1, chunks$1] = $asChunks(v, 3, true);
   console.log(
-    `[${rest$1.map((item) => String(item)).join(", ")}] [${chunks$1.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${rest$1.join(", ")}] [${chunks$1.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
   const pairs = $asChunks($slice(v, 0, 6), 2)[0];
   const arg = pairs.flat();
-  console.log(
-    `[${pairs.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${arg.join(", ")}]`);
 
   const w = [1, 2, 3, 4, 5, 6, 7];
   const items$1 = $view(w, 0, 2);
@@ -63,16 +59,16 @@ function main() {
     throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
   }
   chunks$2[0][0] = 8;
-  $print(`[${kept.map((item) => String(item)).join(", ")}] `);
+  $print(`[${kept.join(", ")}] `);
   rest$2[$at(rest$2, 0)] = -1;
-  console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${w.join(", ")}]`);
   const [rest$3, chunks$3] = $asChunksMut(w, 2, true);
   rest$3[$at(rest$3, 0)] = 100;
   chunks$3.reverse();
   for (const chunk of chunks$3) {
     chunk.reverse();
   }
-  console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${w.join(", ")}]`);
 
   const grid = [
     [1, 2],
@@ -84,8 +80,6 @@ function main() {
   $view(flat, 4).fill(0);
   flat.reverse();
   const arg$1 = grid.flat().length;
-  console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] ${arg$1}`,
-  );
+  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] ${arg$1}`);
 }
 //# sourceMappingURL=case.js.map

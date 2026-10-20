@@ -91,15 +91,11 @@ function main() {
   });
   s = c$2.value;
   if (a.TAG === "Left") {
-    console.log(`[${a._0.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${a._0.join(", ")}]`);
   }
   if (b.TAG === "Right") {
-    console.log(
-      `{${Array.from($sortedKeys(b._0, $cmp))
-        .map((item) => String(item))
-        .join(", ")}}`,
-    );
+    console.log(`{${Array.from($sortedKeys(b._0, $cmp)).join(", ")}}`);
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}] ${s}`);
+  console.log(`[${v.join(", ")}] ${s}`);
 }
 //# sourceMappingURL=case.js.map

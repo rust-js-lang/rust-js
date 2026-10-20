@@ -89,7 +89,7 @@ function main() {
   const p = { value: range };
   const value$2 = drain(p, iPull({ next: $rangeNext }));
   $assign(range, p.value);
-  console.log(`[${value$2.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${value$2.join(", ")}]`);
   const down = [3];
   const self$1 = { value: down };
   const value$3 = iPull({ next: countdownIterator_next }).pull_two(self$1);

@@ -27,7 +27,7 @@ function main() {
   }
   const value$1 = $borrow(cell, true);
   try {
-    console.log(`[${value$1.value.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${value$1.value.join(", ")}]`);
   } finally {
     $unborrow(value$1);
   }

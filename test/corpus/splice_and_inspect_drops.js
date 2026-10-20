@@ -42,7 +42,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`[${tmp$1.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp$1.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -71,7 +71,7 @@ function main() {
   const arg = v.map((l) => l[0]);
   try {
     try {
-      console.log(`${removed.length} [${arg.map((item) => String(item)).join(", ")}]`);
+      console.log(`${removed.length} [${arg.join(", ")}]`);
     } finally {
       for (const item of removed) {
         loudDrop_drop(item);
@@ -93,7 +93,7 @@ function main() {
       }
     }
     const tmp = v.map((l) => l[0]);
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
     const value = [7];
     const value$1 = (l) => {
       console.log(`saw ${l[0]}`);

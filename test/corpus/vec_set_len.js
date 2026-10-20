@@ -47,7 +47,7 @@ function main() {
   $ptrAdd(p, 2).value = 3;
   $keepCapacity(v$1);
   $setLen(v$1, 3);
-  console.log(`[${v$1.map((item) => String(item)).join(", ")}] ${v$1.length}`);
+  console.log(`[${v$1.join(", ")}] ${v$1.length}`);
 
   // Shortened, read past it, and lengthened back.
   const v$2 = [10, 20, 30, 40, 50];
@@ -56,20 +56,18 @@ function main() {
   const third = $ptrAdd($ptr(v$2, 0), 2).value;
   const past = $ptrSlice($ptrAdd($ptr(v$2, 0), 1), 2);
   const arg = $capacity(v$2) >= 5;
-  console.log(
-    `[${v$2.map((item) => String(item)).join(", ")}] ${third} [${past.map((item) => String(item)).join(", ")}] ${arg}`,
-  );
+  console.log(`[${v$2.join(", ")}] ${third} [${past.join(", ")}] ${arg}`);
   // Its last two moved down over what's left behind, as a drain does.
   const p$1 = $ptr(v$2, 0);
   $ptrCopy($ptrAdd(p$1, 3), $ptrAdd(p$1, 1), 2);
   $keepCapacity(v$2);
   $setLen(v$2, 3);
-  console.log(`[${v$2.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v$2.join(", ")}]`);
   $keepCapacity(v$2);
   $setLen(v$2, 1);
   $keepCapacity(v$2);
   $setLen(v$2, 3);
   v$2.push(60);
-  console.log(`[${v$2.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v$2.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

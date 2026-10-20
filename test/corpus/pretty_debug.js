@@ -156,7 +156,7 @@ export function rawDebug() {
 }
 
 function rawDebug_fmt(raw, options) {
-  return `[${raw[0]} [${[raw[0]].map((item) => String(item)).join(", ")}]]`;
+  return `[${raw[0]} [${[raw[0]].join(", ")}]]`;
 }
 
 export function asksDebug() {
@@ -279,7 +279,7 @@ function main() {
       "}",
     )} ${failed.TAG === "Ok" ? $pretty("Ok(", [String(failed._0)], ")") : $pretty("Err(", [$debugStr(failed._0)], ")")}`,
   );
-  console.log(`1..4 ${$debugStr("text")} [${[1].map((item) => String(item)).join(", ")}]`);
+  console.log(`1..4 ${$debugStr("text")} [${[1].join(", ")}]`);
 
   const point = { x: 1, label: "a" };
   console.log(`${pointDebug_fmt(point, { alternate: true })}\n${pointDebug_fmt(point)}`);

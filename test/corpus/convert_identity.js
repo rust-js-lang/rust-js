@@ -14,8 +14,6 @@ function main() {
     .values()
     .flatMap((x) => x)
     .toArray();
-  console.log(
-    `[${kept.map((item) => $debugStr(item)).join(", ")}] ${n} [${nested.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${kept.map((item) => $debugStr(item)).join(", ")}] ${n} [${nested.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

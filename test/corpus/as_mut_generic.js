@@ -37,16 +37,8 @@ function double(t, TAsMutU32Slice) {
 
 function main() {
   console.log(`${shout("hi", { as_mut: (cell) => cell })}`);
-  console.log(
-    `[${double([1, 2], { as_mut: (cell) => cell })
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${double([3, 4], { as_mut: (cell) => cell })
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${double([1, 2], { as_mut: (cell) => cell }).join(", ")}]`);
+  console.log(`[${double([3, 4], { as_mut: (cell) => cell }).join(", ")}]`);
   let s = "ab";
   const t = { value: s };
   shout(t, { as_mut: (cell) => cell.value });
@@ -56,6 +48,6 @@ function main() {
   const t$1 = { value: v };
   double(t$1, { as_mut: (cell) => cell.value }).value;
   $assign(v, t$1.value);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

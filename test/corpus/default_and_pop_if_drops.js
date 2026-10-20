@@ -31,7 +31,7 @@ function mapped() {
     loudDrop_drop(l);
     return result;
   });
-  console.log(`[${b.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${b.join(", ")}]`);
   const c = [[3], [4]].map((l) => {
     const result = [(l[0] + 10) & 255];
     loudDrop_drop(l);
@@ -39,7 +39,7 @@ function mapped() {
   });
   try {
     const tmp = c.map((l) => l[0]);
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
   } finally {
     for (const item of c) {
       loudDrop_drop(item);

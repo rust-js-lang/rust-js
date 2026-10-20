@@ -37,9 +37,7 @@ function put(w, n) {
 function main() {
   const buf = { text: "", cap: 8 };
   const receiver = { value: buf, impl: bufWrite() };
-  const short = $writeTry(() =>
-    receiver.impl.write_fmt(receiver, `[${[1, 2].map((item) => String(item)).join(", ")}]`),
-  );
+  const short = $writeTry(() => receiver.impl.write_fmt(receiver, `[${[1, 2].join(", ")}]`));
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
   const receiver$1 = { value: buf, impl: bufWrite() };
   const long = $writeTry(() => receiver$1.impl.write_fmt(receiver$1, "too long"));

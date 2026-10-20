@@ -88,7 +88,7 @@ function main() {
     },
     holderGet(),
   ).value.push(2);
-  console.log(`[${h[0].map((item) => String(item)).join(", ")}]`);
+  console.log(`[${h[0].join(", ")}]`);
   const kept = $ptrTo(h[0]);
   const g$1 = { value: h };
   reset(g$1, [7, 8], holderGet());
@@ -107,7 +107,7 @@ function main() {
     ).value,
     [9],
   );
-  console.log(`[${h[0].map((item) => String(item)).join(", ")}] ${kept === $ptrTo(h[0])}`);
+  console.log(`[${h[0].join(", ")}] ${kept === $ptrTo(h[0])}`);
 
   let n = [1];
   const g$2 = { value: n };
@@ -166,6 +166,6 @@ function main() {
   const g$7 = { value: count };
   bump(g$7, slotGet());
   $assign(count, g$7.value);
-  console.log(`[${slot[0].map((item) => String(item)).join(", ")}] ${count[0]}`);
+  console.log(`[${slot[0].join(", ")}] ${count[0]}`);
 }
 //# sourceMappingURL=case.js.map

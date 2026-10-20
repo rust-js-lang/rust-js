@@ -26,9 +26,9 @@ function main() {
   $extendMap(more, $range(4, (s.size | 0) + 1), true);
   const value = $unwrap(m.get(3), "no entry found for key");
   console.log(
-    `${s.size} {${Array.from($sortedKeys(t, $cmp))
-      .map((item) => String(item))
-      .join(", ")}} ${value} {${Array.from($sortedKeys(u, $cmp))
+    `${s.size} {${Array.from($sortedKeys(t, $cmp)).join(", ")}} ${value} {${Array.from(
+      $sortedKeys(u, $cmp),
+    )
       .map((item) => $debugStr(item, "'"))
       .join(", ")}} ${more.size}`,
   );

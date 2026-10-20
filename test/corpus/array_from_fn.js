@@ -20,7 +20,7 @@ function main() {
   const doubled = Array.from({ length: 3 }, (_, i) => double(i));
   const arg = ids(3);
   console.log(
-    `[${squares.map((item) => String(item)).join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}] [${doubled.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
+    `[${squares.join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}] [${doubled.join(", ")}] [${arg.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

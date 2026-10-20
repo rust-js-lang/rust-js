@@ -39,3 +39,12 @@ answer to whether a clone is more than the value.**
   `sources.push(...modules)` would read better: `extend`'s gap, not this
   one's.
 - Mutations map each item to itself again, and clone a string's items.
+
+## Amendment: a list of numbers
+
+**`{:?}` of a list of numbers is `items.join(", ")` too**:
+`` `[${v.join(", ")}]` ``, not `v.map((item) => String(item))`, as
+`join` shows each item as `String` does. Only where the format isn't
+pretty: `$pretty` indents each item's lines, which needs strings. 209
+corpus cases and 14 snapshots lose the map. Mutations map each again, and
+give `$pretty` numbers.

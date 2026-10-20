@@ -95,9 +95,7 @@ function main() {
     `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
   );
   console.log(
-    `[${$toBytes(258n, 16, true)
-      .map((item) => String(item))
-      .join(", ")}] ${$fromBytes(new Array(16).fill(1), 16, false, false)}`,
+    `[${$toBytes(258n, 16, true).join(", ")}] ${$fromBytes(new Array(16).fill(1), 16, false, false)}`,
   );
   console.log(
     `${$fromBytes($toBytes(-3n, 16, true), 16, true, true)} ${$displayF32($bigToF32(big))}`,
@@ -170,7 +168,7 @@ function main() {
   const values = [max, 0n, big, 1n];
   values.sort($cmp);
   console.log(
-    `${size} [${values.map((item) => String(item)).join(", ")}] ${$slice(values, 0, 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,
+    `${size} [${values.join(", ")}] ${$slice(values, 0, 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,
   );
 }
 //# sourceMappingURL=case.js.map

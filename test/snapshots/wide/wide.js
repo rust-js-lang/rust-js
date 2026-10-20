@@ -187,7 +187,7 @@ export function report() {
     .slice(0, 3)
     .reduce((a, b) => BigInt.asIntN(64, a + b), 0n);
   const arg = $max(stamps);
-  out += `[${stamps.map((item) => String(item)).join(", ")}] ${total} ${arg == null ? "None" : `Some(${arg})`}\n`;
+  out += `[${stamps.join(", ")}] ${total} ${arg == null ? "None" : `Some(${arg})`}\n`;
 
   const payment = { id, cents: -1999n, at: 1700000000123n };
   const text = $unwrapOk(

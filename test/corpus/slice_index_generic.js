@@ -25,7 +25,7 @@ function main() {
   const value$3 = smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
   const value$4 = smallIndexI_index(s, undefined, $sliceIndexes.full);
   console.log(
-    `${value$2} [${value$3.map((item) => String(item)).join(", ")}] [${value$4.map((item) => String(item)).join(", ")}] [${s.items.map((item) => String(item)).join(", ")}] ${smallIndexI_index(s, { end: 1 }, $sliceIndexes.toInclusive).length}`,
+    `${value$2} [${value$3.join(", ")}] [${value$4.join(", ")}] [${s.items.join(", ")}] ${smallIndexI_index(s, { end: 1 }, $sliceIndexes.toInclusive).length}`,
   );
 }
 //# sourceMappingURL=case.js.map

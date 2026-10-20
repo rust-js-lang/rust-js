@@ -15,7 +15,7 @@ function main() {
   const value$5 = $dequeInsert(queue, 2, 7, true);
   value$5.value = (value$5.value - 1) | 0;
   $dequeInsert(queue, 0, 0);
-  console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${queue.join(", ")}]`);
   const names = [];
   const value = $pushMut(names, "b", true);
   value.value += "!";
@@ -29,6 +29,6 @@ function main() {
   value$6.value = (value$6.value + 1) | 0;
   const value$7 = $pushFrontMut(list, 4, true);
   value$7.value = Math.imul(value$7.value, 2);
-  console.log(`[${list.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${list.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

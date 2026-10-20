@@ -76,21 +76,17 @@ function shout(p, PDerefMut) {
 }
 
 function main() {
+  console.log(`[${push_one([[7]], wrapperDerefMut())[0].join(", ")}]`);
   console.log(
-    `[${push_one([[7]], wrapperDerefMut())[0]
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${push_one([8], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${push_one([8], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell }).join(
+      ", ",
+    )}]`,
   );
   const v = [9];
   const p = { value: v };
   push_one(p, { Deref: () => ({ deref: (x) => x.value }), deref_mut: (cell) => cell.value }).value;
   $assign(v, p.value);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   const value = grown([1, 2], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell });
   const p$1 = { value: v };
   const value$1 = grown(p$1, {
@@ -224,11 +220,7 @@ function either_sides() {
     wrapperDerefMut(),
   ).value.push(6);
   console.log(
-    `[${eitherDeref_deref(left, { deref: (x) => x }, wrapperDeref())
-      .map((item) => String(item))
-      .join(", ")}] [${eitherDeref_deref(right, { deref: (x) => x }, wrapperDeref())
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${eitherDeref_deref(left, { deref: (x) => x }, wrapperDeref()).join(", ")}] [${eitherDeref_deref(right, { deref: (x) => x }, wrapperDeref()).join(", ")}]`,
   );
   console.log(
     `${

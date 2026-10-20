@@ -32,11 +32,7 @@ function longest_border(needle) {
 }
 
 function main() {
-  console.log(
-    `[${proper_prefixes("héllo")
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${proper_prefixes("héllo").join(", ")}]`);
   console.log(`${longest_border("abab")} ${longest_border("aaa")} ${longest_border("abc")}`);
   const seen = [];
   const backwards = Array.from($charIndices("xyz"))
@@ -45,8 +41,6 @@ function main() {
       seen.push(i);
       return c;
     });
-  console.log(
-    `[${backwards.map((item) => $debugStr(item, "'")).join(", ")}] [${seen.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${backwards.map((item) => $debugStr(item, "'")).join(", ")}] [${seen.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -97,27 +97,19 @@ function main() {
   );
   console.log(`${passed_on($iter([5, 1, 9]))}`);
   const value = last_then_rest($iter([7, 8, 9]));
-  console.log(
-    `(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].map((item) => String(item)).join(", ")}])`,
-  );
+  console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
   const value$1 = last_then_rest(
     $iterator({ start: 1, end: 4 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
   );
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, [${value$1[1].map((item) => String(item)).join(", ")}])`,
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, [${value$1[1].join(", ")}])`,
   );
   console.log(
     `[${reversed(
       $iterator({ low: 0, high: 4 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
-  console.log(
-    `[${reversed($iter([1, 2, 3]))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${reversed($iter([1, 2, 3])).join(", ")}]`);
   const range = { start: 10, end: 14 };
   const value$2 = ends($iterator(range, $rangeNext, false, $rangeNextBack));
   console.log(
@@ -130,22 +122,14 @@ function main() {
   console.log(
     `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
   );
+  console.log(`[${boxed($iter([1, 2, 3, 4, 5])).join(", ")}]`);
   console.log(
-    `[${boxed($iter([1, 2, 3, 4, 5]))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${boxed($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack))
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${boxed($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack)).join(", ")}]`,
   );
   console.log(
     `[${boxed(
       $iterator({ low: 4, high: 7 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const value$4 = maybe($iter([undefined, 1]));
   console.log(

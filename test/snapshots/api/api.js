@@ -1228,7 +1228,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$13._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$13._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$13._0)}\n`;
   }
@@ -1255,7 +1255,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$14._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$14._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$14._0)}\n`;
   }
@@ -1282,7 +1282,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$15._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$15._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$15._0)}\n`;
   }
@@ -1563,7 +1563,7 @@ export function report() {
       json.endArray();
     },
     $json.vec($json.u32),
-    { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` },
+    { fmt: (value) => `[${value.join(", ")}]` },
   );
   out += "\n";
   out += roundtrip(
@@ -1581,7 +1581,7 @@ export function report() {
     '{"data":[1,2],"ok":false}',
     $json.with(responseDeserialize_deserialize, $json.vec($json.u8)),
   );
-  out += `${reply.TAG === "Ok" ? `Ok(${responseDebug_fmt(reply._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })})` : `Err(${$debugStr(reply._0)})`}\n`;
+  out += `${reply.TAG === "Ok" ? `Ok(${responseDebug_fmt(reply._0, { fmt: (value) => `[${value.join(", ")}]` })})` : `Err(${$debugStr(reply._0)})`}\n`;
   const n = borrowed("7", $json.u8);
   const m = borrowed("x", $json.u8);
   out += `${n == null ? "None" : `Some(${n})`} ${m == null ? "None" : `Some(${m})`}\n`;

@@ -307,7 +307,7 @@ function main() {
   const value$1 = $binarySearch(prices, 1899);
   const value = $binarySearch(prices, 2000);
   console.log(
-    `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
+    `prices: [${prices.join(", ")}], 1899 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
   );
 
   const restock = new Map([

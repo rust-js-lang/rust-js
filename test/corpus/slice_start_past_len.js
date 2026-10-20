@@ -9,10 +9,6 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4];
   const start = (v.length + 1) >>> 0;
-  console.log(
-    `[${$slice(v, start, (start + 1) >>> 0)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$slice(v, start, (start + 1) >>> 0).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

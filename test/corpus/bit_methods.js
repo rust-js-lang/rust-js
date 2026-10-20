@@ -43,11 +43,7 @@ function main() {
 
   console.log(`${$displayF64(1 / 4)} ${$displayF32(Math.fround(1 / 3))} ${$displayF64(1 / 0)}`);
   console.log(
-    `[${$toBytes($floatToBits(1.5, 4), 4, true)
-      .map((item) => String(item))
-      .join(", ")}] [${$toBytes($floatToBits(-2, 8), 8, false)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${$toBytes($floatToBits(1.5, 4), 4, true).join(", ")}] [${$toBytes($floatToBits(-2, 8), 8, false).join(", ")}]`,
   );
   console.log(
     `${$displayF32(

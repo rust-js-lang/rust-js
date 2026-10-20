@@ -48,30 +48,14 @@ function main() {
   const value = $toBytes(16909060, 4, false);
   const value$1 = $toBytes(16909060, 4, true);
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${$toBytes(
-      258,
-      2,
-      true,
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${value.join(", ")}] [${value$1.join(", ")}] [${$toBytes(258, 2, true).join(", ")}]`,
   );
   const value$2 = $toBytes(-2, 4, false);
   const value$3 = $toBytes(-1, 1, true);
   console.log(
-    `[${value$2.map((item) => String(item)).join(", ")}] [${value$3.map((item) => String(item)).join(", ")}] [${$toBytes(
-      258n,
-      8,
-      false,
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${value$2.join(", ")}] [${value$3.join(", ")}] [${$toBytes(258n, 8, false).join(", ")}]`,
   );
-  console.log(
-    `[${$toBytes(-3n, 8, true)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$toBytes(-3n, 8, true).join(", ")}]`);
   console.log(
     `${$fromBytes(
       [1, 2, 3, 4],

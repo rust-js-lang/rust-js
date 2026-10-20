@@ -78,7 +78,7 @@ function main() {
     { from_iter: (items) => $collectResults(Array.from(items)) },
   );
   console.log(
-    `${ok.TAG === "Ok" ? `Ok([${ok._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(ok._0)})`} ${err.TAG === "Ok" ? `Ok([${err._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(err._0)})`}`,
+    `${ok.TAG === "Ok" ? `Ok([${ok._0.join(", ")}])` : `Err(${$debugStr(ok._0)})`} ${err.TAG === "Ok" ? `Ok([${err._0.join(", ")}])` : `Err(${$debugStr(err._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

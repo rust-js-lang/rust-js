@@ -19,13 +19,11 @@ function main() {
   const zeros = new Array(1024).fill(0);
   const flags = [true, true, true];
   const arg = zeros.reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`${zeros.length} ${arg} [${flags.map((item) => String(item)).join(", ")}]`);
+  console.log(`${zeros.length} ${arg} [${flags.join(", ")}]`);
   const item = [0, 0, 0];
   const grid = Array.from({ length: 4 }, () => item.slice());
   grid[1][2] = 7;
-  console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const item$1 = { x: 1 };
   const points = Array.from({ length: 3 }, () => ({ ...item$1 }));
   points[0].x = 5;
@@ -33,7 +31,7 @@ function main() {
   const once = new Array(3).fill(made("once", 4));
   made("none", 9);
   const none = [];
-  console.log(`[${once.map((item) => String(item)).join(", ")}] ${none.length}`);
+  console.log(`[${once.join(", ")}] ${none.length}`);
   const options = [2, 2];
   console.log(`[${options.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
   // The case this was, while rust-js didn't support `[x; N]`.
@@ -42,8 +40,6 @@ function main() {
   const item$2 = [0, 0, 0];
   const pair = Array.from({ length: 2 }, () => item$2.slice());
   pair[0][1] = 5;
-  console.log(
-    `[${row.map((item) => String(item)).join(", ")}] [${pair.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${row.join(", ")}] [${pair.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

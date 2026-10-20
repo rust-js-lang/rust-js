@@ -58,7 +58,7 @@ function main() {
   } else if (top) {
     $peekMutDrop(top);
   }
-  console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${heap.join(", ")}]`);
   const top$1 = $unwrap($peekMut(heap, $cmp));
   try {
     const tmp = $peekMutTop(top$1, true);
@@ -67,10 +67,10 @@ function main() {
   } finally {
     $peekMutDrop(top$1);
   }
-  console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${heap.join(", ")}]`);
   const top$2 = $unwrap($peekMut(heap, $cmp));
   console.log(`popped ${$peekMutPop(top$2)}`);
-  console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${heap.join(", ")}]`);
   const loud = [];
   $heapPush(loud, [2], loudOrd_cmp);
   $heapPush(loud, [7], loudOrd_cmp);

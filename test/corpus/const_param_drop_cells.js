@@ -52,7 +52,7 @@ function main() {
   }
   const value$1 = $borrow(h.cell, true);
   try {
-    console.log(`[${value$1.value.map((item) => String(item)).join(", ")}] ${filled("a", 3)}`);
+    console.log(`[${value$1.value.join(", ")}] ${filled("a", 3)}`);
   } finally {
     $unborrow(value$1);
   }

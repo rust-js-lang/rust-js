@@ -28,8 +28,8 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   expect(js).not.toContain("$rcClone(logger)");
 });
 
-// ADR 0508: no `.map((item) => item)`: a list of unit enums is shown by
-// `join` alone, and `cloned()` of strings is the strings.
+// ADR 0508: no `.map((item) => item)`: a list of unit enums, or of numbers,
+// is shown by `join` alone, and `cloned()` of strings is the strings.
 test("no item is mapped to itself", () => {
   const dir = fixture("no-identity-maps");
   writeFileSync(join(dir, "enums.rs"), readFileSync(join(root, "test/corpus/enum_order.rs"), "utf8").replace("fn main()", "pub fn main()"));
@@ -41,6 +41,10 @@ test("no item is mapped to itself", () => {
   expect(enums).toContain("`[${levels.join(\", \")}] ${value == null");
   expect(calc).toContain("const names = Array.from(calc.vars.keys());");
   expect(enums + calc).not.toContain(".map((item) => item)");
+  writeFileSync(join(dir, "edits.rs"), readFileSync(join(root, "test/corpus/vec_edits.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "edits.rs"), "-o", join(dir, "edits.js")]);
+  const edits = readFileSync(join(dir, "edits.js"), "utf8");
+  expect(edits).toContain("console.log(`[${v.join(\", \")}] [${w.join(\", \")}] ${asked}`);");
 });
 
 // ADR 0489: an iterator's items no caller gives a drop for drop nothing,

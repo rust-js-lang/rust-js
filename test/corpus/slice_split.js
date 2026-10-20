@@ -26,19 +26,17 @@ function total(items) {
 function main() {
   const v = [1, 2, 3, 4, 5];
   const [left, right] = $sliceSplitAt(v, 2);
-  console.log(
-    `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${left.join(", ")}] [${right.join(", ")}]`);
   const [none, all] = $sliceSplitAt(v, 0);
   const [whole, empty] = $sliceSplitAt($slice(v, 1), 4);
   console.log(
-    `[${none.map((item) => String(item)).join(", ")}] [${all.map((item) => String(item)).join(", ")}] [${whole.map((item) => String(item)).join(", ")}] [${empty.map((item) => String(item)).join(", ")}]`,
+    `[${none.join(", ")}] [${all.join(", ")}] [${whole.join(", ")}] [${empty.join(", ")}]`,
   );
   const value = halves([1, 0, 0, 2]);
   console.log(`(${value[0]}, ${value[1]})`);
   const value$1 = $sliceSplitAt(v, 2, true);
   console.log(
-    `${value$1 == null ? "None" : `Some(([${value$1[0].map((item) => String(item)).join(", ")}], [${value$1[1].map((item) => String(item)).join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
+    `${value$1 == null ? "None" : `Some(([${value$1[0].join(", ")}], [${value$1[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].join(", ")}], [${value[1].join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
   );
   const words = ["a", "b", "c"];
   const [first, rest] = $sliceSplitAt(words, 1);
@@ -47,24 +45,24 @@ function main() {
   const value$2 = $sliceGet(v, 1, 3);
   const value$3 = $sliceGet(v, 3);
   console.log(
-    `${value$2 == null ? "None" : `Some([${value$2.map((item) => String(item)).join(", ")}])`} ${value$3 == null ? "None" : `Some([${value$3.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceGet(v, 0, 2))}`,
+    `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 0, 2))}`,
   );
   const value$4 = $sliceGet(v, 0);
   const value$5 = $sliceGet(v, 4, 9);
   console.log(
-    `${value$4 == null ? "None" : `Some([${value$4.map((item) => String(item)).join(", ")}])`} ${value$5 == null ? "None" : `Some([${value$5.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceGet(v, 2, 5))}`,
+    `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${value$5 == null ? "None" : `Some([${value$5.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 2, 5))}`,
   );
   const start = 3;
   const end = 1;
   const value$6 = $sliceGet(v, start, end);
   console.log(
-    `${value$6 == null ? "None" : `Some([${value$6.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceGet(v, 5))}`,
+    `${value$6 == null ? "None" : `Some([${value$6.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 5))}`,
   );
   const value$7 = v.length === 0 ? undefined : [v[0], v.slice(1)];
   const value$8 = v.length === 0 ? undefined : [v[v.length - 1], v.slice(0, -1)];
   const items = $slice(v, 0, 0);
   console.log(
-    `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].map((item) => String(item)).join(", ")}]))`} ${value$8 == null ? "None" : `Some((${value$8[0]}, [${value$8[1].map((item) => String(item)).join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].map((item) => String(item)).join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
+    `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].join(", ")}]))`} ${value$8 == null ? "None" : `Some((${value$8[0]}, [${value$8[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
   );
   const value$9 = total(v);
   const option = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
@@ -73,7 +71,7 @@ function main() {
   const one = [9];
   const value$11 = one.length === 0 ? undefined : [one[0], one.slice(1)];
   console.log(
-    `${value$11 == null ? "None" : `Some((${value$11[0]}, [${value$11[1].map((item) => String(item)).join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].map((item) => String(item)).join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
+    `${value$11 == null ? "None" : `Some((${value$11[0]}, [${value$11[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
   );
   const tail = $sliceGet(words, 1);
   if (tail) {

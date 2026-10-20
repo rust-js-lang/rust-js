@@ -82,7 +82,7 @@ function fill() {
   try {
     $fill(v, [4], (value) => [value[0]], undefined, loudDrop_drop);
     const tmp = ids(v);
-    console.log(`filled [${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`filled [${tmp.join(", ")}]`);
     const none = [];
     try {
       $fill(none, [5], (value) => [value[0]], undefined, loudDrop_drop);
@@ -123,10 +123,10 @@ function resize() {
   try {
     $resize(v, 1, [6], (item) => [item[0]], loudDrop_drop);
     const tmp = ids(v);
-    console.log(`shrunk [${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`shrunk [${tmp.join(", ")}]`);
     $resize(v, 3, [7], (item) => [item[0]], loudDrop_drop);
     const tmp$1 = ids(v);
-    console.log(`grown [${tmp$1.map((item) => String(item)).join(", ")}]`);
+    console.log(`grown [${tmp$1.join(", ")}]`);
     const value = [[8], [9], [10]];
     try {
       $cloneFromSlice(v, value, (value) => [value[0]], undefined, loudDrop_drop);
@@ -136,7 +136,7 @@ function resize() {
       }
     }
     const tmp$2 = ids(v);
-    console.log(`cloned [${tmp$2.map((item) => String(item)).join(", ")}]`);
+    console.log(`cloned [${tmp$2.join(", ")}]`);
   } finally {
     for (const item of v) {
       loudDrop_drop(item);
@@ -149,7 +149,7 @@ function dedup() {
   try {
     $dedupBy(d, $eq, loudDrop_drop);
     const tmp = ids(d);
-    console.log(`deduped [${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`deduped [${tmp.join(", ")}]`);
     const p = [
       [1, 2],
       [1, 2],
@@ -184,7 +184,7 @@ function lend() {
     throw error;
   }
   try {
-    console.log(`extended [${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`extended [${tmp.join(", ")}]`);
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);
@@ -314,7 +314,7 @@ function lend() {
   }
   try {
     const tmp = ids(d);
-    console.log(`edited [${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`edited [${tmp.join(", ")}]`);
   } finally {
     for (const item of d) {
       loudDrop_drop(item);

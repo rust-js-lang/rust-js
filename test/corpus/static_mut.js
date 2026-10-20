@@ -44,7 +44,7 @@ function main() {
   console.log(`${statsDebug_fmt(stats)} ${calls} ${last} ${slot}`);
   const slots = SLOTS.slice().slice();
   const wrap = WRAP;
-  console.log(`[${slots.map((item) => String(item)).join(", ")}] ${wrap}`);
+  console.log(`[${slots.join(", ")}] ${wrap}`);
   LINES.value = 10;
   console.log(`${line()} ${line()}`);
 }

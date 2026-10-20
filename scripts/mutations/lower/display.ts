@@ -645,4 +645,20 @@ export const mutations: Mutation[] = [
     replace: "        let mapped = match false {\n",
     tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
   },
+  {
+    name: "debug-numbers-mapped",
+    breaks: "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
+    file: "src/lower/display.rs",
+    find: "        let each_its_own = is_var(&shown, \"item\")\n            || (pretty.known() == Some(false)\n",
+    replace: "        let each_its_own = is_var(&shown, \"item\")\n            || (false\n",
+    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+  },
+  {
+    name: "debug-numbers-pretty-unmapped",
+    breaks: "`{:#?}` of a list of numbers gives `$pretty` numbers, which it can't indent",
+    file: "src/lower/display.rs",
+    find: "            || (pretty.known() == Some(false)\n",
+    replace: "            || (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^(pretty_debug|pretty_debug_derived|std_enum_debug|int_error_kind).rs$"],
+  },
 ];

@@ -154,7 +154,7 @@ function pointMovableS(SClone, SAdd) {
 }
 
 function bagDebug_fmt(bag) {
-  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
+  return `Bag([${bag[0].join(", ")}])`;
 }
 
 export function bagAdd() {

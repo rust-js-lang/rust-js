@@ -26,7 +26,7 @@ function valueDebug_fmt(value) {
     return `Flag(${value})`;
   }
   if (Array.isArray(value)) {
-    return `List([${value.map((item) => String(item)).join(", ")}])`;
+    return `List([${value.join(", ")}])`;
   }
   return `At(${pointDebug_fmt(value)})`;
 }

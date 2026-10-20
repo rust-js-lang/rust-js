@@ -42,38 +42,20 @@ function main() {
     { clone: (value) => [value[0]] },
     countDebug(),
   );
-  console.log(
-    `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}])`,
-  );
+  console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
   const value$1 = dup(
     $iter([1, 2, 3]),
     { next: $next },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    {
-      fmt: (value) =>
-        `IntoIter([${value.items
-          .slice(value.at, value.end)
-          .map((item) => String(item))
-          .join(", ")}])`,
-    },
+    { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` },
   );
-  console.log(
-    `([${value$1[0].map((item) => String(item)).join(", ")}], [${value$1[1].map((item) => String(item)).join(", ")}])`,
-  );
+  console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
   const value$2 = dup(
     $iter([4, 5, 6]),
     { next: $next },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    {
-      fmt: (value) =>
-        `Iter([${value.items
-          .slice(value.at, value.end)
-          .map((item) => String(item))
-          .join(", ")}])`,
-    },
+    { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` },
   );
-  console.log(
-    `([${value$2[0].map((item) => String(item)).join(", ")}], [${value$2[1].map((item) => String(item)).join(", ")}])`,
-  );
+  console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}])`);
 }
 //# sourceMappingURL=case.js.map

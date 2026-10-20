@@ -40,7 +40,7 @@ function main() {
   $extend(words, more);
   words[$at(words, 1)] = words[1] + "!";
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
+    `[${v.join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
   );
   // Each a clone: changing one in the copy leaves the original, as
   // `to_vec()` does too.
@@ -93,9 +93,9 @@ function main() {
   // A queue rotated either way.
   const q = [1, 2, 3, 4, 5].slice();
   $rotateLeft(q, 2, "n");
-  console.log(`[${q.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${q.join(", ")}]`);
   $rotateRight(q, 3, "n");
-  console.log(`[${q.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${q.join(", ")}]`);
   const r = ["a", "b", "c"];
   $rotateLeft(r, 1, "mid");
   $rotateRight(r, 2, "k");
@@ -120,9 +120,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}} ${seen.size} {${Array.from($sortedEntries(ages, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
-      .join(
-        ", ",
-      )}} ${value$4} [${queue.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
+      .join(", ")}} ${value$4} [${queue.join(", ")}] [${list.join(", ")}]`,
   );
 
   // What a `Cell` or a `RefCell` holds, replaced or taken.
@@ -146,9 +144,7 @@ function main() {
   const after = $cellReplace($borrowMut(log), []);
   const value$7 = $borrow(log, true);
   try {
-    console.log(
-      `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${value$7.value.map((item) => String(item)).join(", ")}]`,
-    );
+    console.log(`[${before.join(", ")}] [${after.join(", ")}] [${value$7.value.join(", ")}]`);
   } finally {
     $unborrow(value$7);
   }

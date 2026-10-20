@@ -27,7 +27,7 @@ function main() {
 
   const items = [1, 2, 3];
   const list = { TAG: "Borrowed", _0: items };
-  console.log(`[${list._0.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${list._0.join(", ")}]`);
   if (list.TAG === "Borrowed") {
     list.TAG = "Owned";
     list._0 = list._0.slice();
@@ -38,18 +38,14 @@ function main() {
     list._0 = list._0.slice();
   }
   list._0[$at(list._0, 0)] = 0;
-  console.log(
-    `[${list._0.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] ${list._0.length}`,
-  );
+  console.log(`[${list._0.join(", ")}] [${items.join(", ")}] ${list._0.length}`);
   const vec = list.TAG === "Borrowed" ? list._0.slice() : list._0;
-  console.log(`[${vec.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${vec.join(", ")}]`);
   const borrowed = { TAG: "Borrowed", _0: items };
   const copy = borrowed.TAG === "Borrowed" ? borrowed._0.slice() : borrowed._0;
   copy.push(9);
   const arg = { TAG: "Owned", _0: copy.slice() };
-  console.log(
-    `[${copy.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] [${arg._0.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${copy.join(", ")}] [${items.join(", ")}] [${arg._0.join(", ")}]`);
   const path = { TAG: "Borrowed", _0: "a/b" };
   const buf = path._0;
   console.log(`${path._0} ${$debugStr(path._0)} ${buf}`);

@@ -56,7 +56,7 @@ function main() {
       const sorted = $heapSorted(tmp$1, (a, b) => $cmp(a[0], b[0]));
       try {
         const tmp = sorted.map((o) => o[0]);
-        console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+        console.log(`[${tmp.join(", ")}]`);
         const value = [[20], [25], [21], [30]];
         const r = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
         const value$1 = (o) => {

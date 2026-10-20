@@ -62,12 +62,12 @@ function main() {
     const value = BigInt($index(w, 1));
     return BigInt.asIntN(64, value - BigInt($index(w, 0)));
   });
-  console.log(`[${diffs.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${diffs.join(", ")}]`);
   const running = $scan(units.slice(), 0, (acc, u) => {
     acc.value = (acc.value + u) >>> 0;
     return acc.value;
   });
-  console.log(`[${running.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${running.join(", ")}]`);
   const pairs = all
     .map((s) => s.item)
     .map((x, i) => [i, x])
@@ -78,7 +78,7 @@ function main() {
     .toArray();
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);
   const chunks = $chunks(units, 2).map((c) => c.reduce((a, b) => (a * b) >>> 0, 1));
-  console.log(`[${chunks.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${chunks.join(", ")}]`);
   const letters = items$1
     .toReversed()
     .flatMap((i) => Array.from(i).slice(0, 1))

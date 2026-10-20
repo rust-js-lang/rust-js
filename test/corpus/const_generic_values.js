@@ -20,7 +20,7 @@ function total(values, N) {
 
 function main() {
   const a = filled(2, 3);
-  console.log(`[${a.map((item) => String(item)).join(", ")}] ${total(a, 3)}`);
+  console.log(`[${a.join(", ")}] ${total(a, 3)}`);
   console.log(`${total(filled(1, 5), 5)}`);
 }
 //# sourceMappingURL=case.js.map

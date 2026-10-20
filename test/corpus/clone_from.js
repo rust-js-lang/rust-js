@@ -48,7 +48,7 @@ function main() {
   copy_into(dest$1, b, { clone: (value) => ({ ...value }) });
   $assign(q, dest$1.value);
   console.log(
-    `${pointDebug_fmt(a)} [${items.map((item) => String(item)).join(", ")}] ${text} ${pointDebug_fmt(q)} ${pointDebug_fmt(b)}`,
+    `${pointDebug_fmt(a)} [${items.join(", ")}] ${text} ${pointDebug_fmt(q)} ${pointDebug_fmt(b)}`,
   );
   const loud = [1];
   const value = [2];

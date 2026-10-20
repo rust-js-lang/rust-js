@@ -30,41 +30,37 @@ function main() {
   ask();
   ask();
   const w = [];
-  console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}] ${asked}`,
-  );
+  console.log(`[${v.join(", ")}] [${w.join(", ")}] ${asked}`);
   const gone = $swapRemove(v, 1);
-  console.log(`${gone} [${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`${gone} [${v.join(", ")}]`);
   $resize(v, 7, 9);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   $resize(v, 3, 0);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   let n = 0;
   $resizeWith(v, 5, () => {
     n = (n + 1) >>> 0;
     return Math.imul(n, 10) >>> 0;
   });
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   const tens = [1, 2, 12, 13, 3, 30];
   const key = (x) => (x.value / 10) >>> 0;
   $dedupByCells(tens, (a, b) => key(a) === key(b));
-  console.log(`[${tens.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${tens.join(", ")}]`);
   const words = ["a", "A", "b", "B", "b"].map((s) => s);
   $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const s = [1, 2, 3];
   s.push(...$copyRange(s, 1));
-  console.log(`[${s.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${s.join(", ")}]`);
   const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
-  console.log(
-    `[${removed.map((item) => String(item)).join(", ")}] [${s.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);
   $iter($splice(s, 0, 1, []));
-  console.log(`[${s.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${s.join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);
   console.log(
-    `${top == null ? "None" : `Some(${top})`} ${kept == null ? "None" : `Some(${kept})`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${top == null ? "None" : `Some(${top})`} ${kept == null ? "None" : `Some(${kept})`} [${s.join(", ")}]`,
   );
   // What a closure changes through its `&mut` is kept, popped or not.
   const still = $popIfCell(s, (x) => {
@@ -77,30 +73,23 @@ function main() {
     return a.value === b.value;
   });
   console.log(
-    `${still == null ? "None" : `Some(${still})`} [${s.map((item) => String(item)).join(", ")}] [${counts.map((item) => String(item)).join(", ")}]`,
+    `${still == null ? "None" : `Some(${still})`} [${s.join(", ")}] [${counts.join(", ")}]`,
   );
   const boxed = s;
-  console.log(`[${boxed.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${boxed.join(", ")}]`);
   const grid = [
     [1, 2],
     [3, 4],
   ];
-  console.log(
-    `[${grid
-      .flat()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${grid.flat().join(", ")}]`);
   const value = [0];
   const points = Array.from({ length: 1 }, () => value.slice());
   $resize(points, 3, [1], (item) => item.slice());
   $index(points, 1).push(2);
-  console.log(
-    `[${points.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${points.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const q = [];
   q.push(1);
   $resize(q, 3, 7);
-  console.log(`[${q.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${q.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

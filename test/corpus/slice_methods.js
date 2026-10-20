@@ -42,7 +42,7 @@ function main() {
     next = (next + 1) & 255;
     return next;
   });
-  console.log(`[${nums.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${nums.join(", ")}]`);
   const item = { n: 0 };
   const cells = Array.from({ length: 2 }, () => ({ ...item }));
   $fill(cells, { n: 3 }, (value) => ({ ...value }));
@@ -56,16 +56,14 @@ function main() {
   $cloneFromSlice(copies, source, (value) => ({ ...value }));
   $index(copies, 0).n = 5;
   console.log(
-    `[${target.map((item) => String(item)).join(", ")}] [${copies.map((item) => cellDebug_fmt(item)).join(", ")}] [${source.map((item) => cellDebug_fmt(item)).join(", ")}]`,
+    `[${target.join(", ")}] [${copies.map((item) => cellDebug_fmt(item)).join(", ")}] [${source.map((item) => cellDebug_fmt(item)).join(", ")}]`,
   );
   const left = [1, 2];
   const right = [3, 4];
   $swapWithSlice(left, right);
   const shifted = [1, 2, 3, 4, 5];
   $copyWithin(shifted, 1, 3, 3);
-  console.log(
-    `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => String(item)).join(", ")}] [${shifted.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${left.join(", ")}] [${right.join(", ")}] [${shifted.join(", ")}]`);
 
   const sorted = [1, 2, 2, 5];
   console.log(
@@ -85,66 +83,58 @@ function main() {
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
     `[${$chunksExact(items, 3)
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
-  console.log(
-    `[${$chunksExact(items, 3)
-      .remainder.map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$chunksExact(items, 3).remainder.join(", ")}]`);
   console.log(
     `[${Iterator.from($rchunks(items, 3, false))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}] [${Iterator.from($rchunks(items, 2, true))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   const value = items.length >= 2 ? items.slice(0, 2) : undefined;
   const value$1 = items.length >= 3 ? items.slice(-3) : undefined;
   console.log(
-    `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
+    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
   );
   console.log(`${$sliceStartsWith(items, [1, 2])} ${$sliceStartsWith(items, [6], true)}`);
   const value$2 = $sliceStrip(items, [1], false);
   console.log(
-    `${value$2 == null ? "None" : `Some([${value$2.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceStrip(items, [9], true))}`,
+    `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceStrip(items, [9], true))}`,
   );
-  console.log(
-    `[${$repeatItems([1, 2], 3)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$repeatItems([1, 2], 3).join(", ")}]`);
   console.log(
     `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
     `[${Iterator.from($sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
     `[${Iterator.from($sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
     `[${Iterator.from($sliceSplitBy(items, (x) => x === 4, undefined, false, true))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
     `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
 
@@ -160,16 +150,8 @@ function main() {
   );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}] ${calls}`);
   const bytes = [72, 101, 108, 108, 111, 33];
-  console.log(
-    `${bytes.every((b) => b < 128)} [${$asciiBytes(bytes, true)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`${bytes.every((b) => b < 128)} [${$asciiBytes(bytes, true).join(", ")}]`);
   $makeAsciiBytes(bytes, false);
-  console.log(
-    `[${bytes.map((item) => String(item)).join(", ")}] ${
-      $trimAsciiBytes([32, 97, 98, 32], true, true).length
-    }`,
-  );
+  console.log(`[${bytes.join(", ")}] ${$trimAsciiBytes([32, 97, 98, 32], true, true).length}`);
 }
 //# sourceMappingURL=case.js.map

@@ -31,45 +31,27 @@ function main() {
   ]);
   const keys = (bounds) =>
     $treeRange(tree, $cmp, false, "BTreeMap", bounds[0], bounds[1]).map(([k]) => k);
-  console.log(
-    `[${keys([{ TAG: "Excluded", _0: 2 }, "Unbounded"])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${keys([{ TAG: "Excluded", _0: 2 }, "Unbounded"]).join(", ")}]`);
   console.log(
     `[${keys([
       { TAG: "Included", _0: 2 },
       { TAG: "Excluded", _0: 4 },
-    ])
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ]).join(", ")}]`,
   );
   console.log(
     `[${keys([
       { TAG: "Excluded", _0: 1 },
       { TAG: "Included", _0: 4 },
-    ])
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ]).join(", ")}]`,
   );
-  console.log(
-    `[${keys(["Unbounded", { TAG: "Included", _0: 3 }])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${keys(["Unbounded", { TAG: "Included", _0: 3 }]).join(", ")}]`);
   console.log(
     `[${keys([
       { TAG: "Excluded", _0: 3 },
       { TAG: "Excluded", _0: 4 },
-    ])
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ]).join(", ")}]`,
   );
-  console.log(
-    `[${keys(["Unbounded", "Unbounded"])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${keys(["Unbounded", "Unbounded"]).join(", ")}]`);
   const value = $treeRange(
     tree,
     $cmp,
@@ -125,15 +107,9 @@ function main() {
     `[${between(set, [
       { TAG: "Excluded", _0: 1 },
       { TAG: "Excluded", _0: 4 },
-    ])
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ]).join(", ")}]`,
   );
-  console.log(
-    `[${between(set, [{ TAG: "Included", _0: 5 }, "Unbounded"])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${between(set, [{ TAG: "Included", _0: 5 }, "Unbounded"]).join(", ")}]`);
   const values = new Map(tree);
   for (const [, v] of $mutEntries(
     values,

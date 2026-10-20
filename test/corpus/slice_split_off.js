@@ -36,23 +36,21 @@ function main() {
   let s = v;
   const split = $sliceSplitOff(s, 2);
   s = split[0];
-  console.log(
-    `${split[1] == null ? "None" : `Some([${split[1].map((item) => String(item)).join(", ")}])`} [${s.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${split[1] == null ? "None" : `Some([${split[1].join(", ")}])`} [${s.join(", ")}]`);
   const split$1 = $sliceSplitOff(s, 3, true);
   s = split$1[0];
   console.log(
-    `${split$1[1] == null ? "None" : `Some([${split$1[1].map((item) => String(item)).join(", ")}])`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${split$1[1] == null ? "None" : `Some([${split$1[1].join(", ")}])`} [${s.join(", ")}]`,
   );
   const split$2 = $sliceSplitOff(s, 1);
   s = split$2[0];
   console.log(
-    `${split$2[1] == null ? "None" : `Some([${split$2[1].map((item) => String(item)).join(", ")}])`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${split$2[1] == null ? "None" : `Some([${split$2[1].join(", ")}])`} [${s.join(", ")}]`,
   );
   const split$3 = $sliceSplitOff(s, 9);
   s = split$3[0];
   console.log(
-    `${split$3[1] == null ? "None" : `Some([${split$3[1].map((item) => String(item)).join(", ")}])`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${split$3[1] == null ? "None" : `Some([${split$3[1].join(", ")}])`} [${s.join(", ")}]`,
   );
   const split$4 = $sliceSplitOffEnd(s, false);
   s = split$4[0];
@@ -60,13 +58,11 @@ function main() {
   const split$5 = $sliceSplitOffEnd(s, true);
   s = split$5[0];
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${value == null ? "None" : `Some(${value})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.join(", ")}]`,
   );
   const split$6 = $sliceSplitOffEnd(s, false);
   s = split$6[0];
-  console.log(
-    `${split$6[1] == null ? "None" : `Some(${split$6[1]})`} [${s.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${split$6[1] == null ? "None" : `Some(${split$6[1]})`} [${s.join(", ")}]`);
 
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
@@ -101,7 +97,7 @@ function main() {
     last.value = -1;
   }
   rest.reverse();
-  console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${w.join(", ")}]`);
   const names = ["a", "b"];
   let all = names;
   const split$10 = $sliceSplitOffEndMut(all, true, true);
@@ -123,7 +119,7 @@ function main() {
   const split$12 = $sliceSplitOffMut(none, 1, true);
   none = split$12[0];
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].map((item) => String(item)).join(", ")}])`}`,
+    `${value$1 == null ? "None" : `Some(${value$1.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].join(", ")}])`}`,
   );
 }
 //# sourceMappingURL=case.js.map

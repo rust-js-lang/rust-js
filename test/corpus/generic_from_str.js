@@ -88,7 +88,7 @@ function main() {
   );
   const value$5 = parse_all(["1", "2"], { from_str: (s) => $parseInt(s, 0, 65535) });
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok([${value$5._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`} ${parse_all(["1", "300"], { from_str: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
+    `${value$5.TAG === "Ok" ? `Ok([${value$5._0.join(", ")}])` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`} ${parse_all(["1", "300"], { from_str: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
   );
   const value$6 = parse_all(["lb", "st"], unitFromStr());
   console.log(

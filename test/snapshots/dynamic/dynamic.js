@@ -502,7 +502,7 @@ export function report() {
     $json.vec($json.u8),
   );
   if (value$30.TAG === "Ok") {
-    out += `ok [${value$30._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$30._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$30._0)}\n`;
   }
@@ -517,7 +517,7 @@ export function report() {
     $json.vec($json.u8),
   );
   if (value$31.TAG === "Ok") {
-    out += `ok [${value$31._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$31._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$31._0)}\n`;
   }
@@ -525,7 +525,7 @@ export function report() {
   value$32.set("a", { TAG: "Number", _0: $jsonInt(1) });
   const value$33 = $fromJsonValue({ TAG: "Object", _0: value$32 }, $json.vec($json.u8));
   if (value$33.TAG === "Ok") {
-    out += `ok [${value$33._0.map((item) => String(item)).join(", ")}]\n`;
+    out += `ok [${value$33._0.join(", ")}]\n`;
   } else {
     out += `err ${$displayJsonError(value$33._0)}\n`;
   }

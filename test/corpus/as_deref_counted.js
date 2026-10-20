@@ -14,7 +14,7 @@ function main() {
     const value = counted?.value;
     try {
       console.log(
-        `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${$unwrap(again).strong}`,
+        `${value == null ? "None" : `Some([${value.join(", ")}])`} ${$unwrap(again).strong}`,
       );
       // Two counted layers: `as_deref` takes off one.
       const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
@@ -27,7 +27,7 @@ function main() {
         try {
           const value = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;
           console.log(
-            `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => String(item)).join(", ")}])` : `Err(${value._0})`}`,
+            `${value.TAG === "Ok" ? `Ok([${value._0.join(", ")}])` : `Err(${value._0})`}`,
           );
         } finally {
           if (countedOk.TAG === "Ok") {

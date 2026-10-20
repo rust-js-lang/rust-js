@@ -1609,8 +1609,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A sequence's `{:?}`: `"[" + items.map((item) => ..).join(", ") + "]"`;
-    /// of items each their own text, a unit enum's name, `items.join(", ")`
-    /// (ADR 0508).
+    /// of items each their own text, a unit enum's name, or each `join`'s
+    /// own, a number's, `items.join(", ")` (ADR 0508).
     fn debug_items(
         &mut self,
         items: Expr,
@@ -1621,7 +1621,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
     ) -> R<Expr> {
         let shown = self.debug_string_with(Expr::var("item"), item, span, pretty)?;
-        let each_its_own = is_var(&shown, "item");
+        // Each its own text, a unit enum's name; or, `join`'s own, a
+        // number's, where it isn't pretty, whose lines are strings.
+        let each_its_own = is_var(&shown, "item")
+            || (pretty.known() == Some(false)
+                && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, "item")));
         let f = Expr::arrow(
             vec!["item".into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],

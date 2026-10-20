@@ -46,7 +46,7 @@ function main() {
   };
   i = 2;
   r.value = (r.value + 10) | 0;
-  console.log(`[${v.map((item) => String(item)).join(", ")}] ${i}`);
+  console.log(`[${v.join(", ")}] ${i}`);
 
   let name = "ada";
   name += " lovelace";
@@ -80,9 +80,7 @@ function main() {
   list = ys;
   item[0] = (item[0] + 1) | 0;
   list[$at(list, 1)] = (list[1] + 1) | 0;
-  console.log(
-    `[${xs.map((item) => String(item)).join(", ")}] [${ys.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
 
   // Through a reference in a field that's assigned again: the same.
   const xs$1 = [1, 2];
@@ -97,9 +95,7 @@ function main() {
   list$2[0] = (list$2[0] + 1) | 0;
   node.count = (node.count + 1) | 0;
   h.list[$at(h.list, 1)] = (h.list[1] + 1) | 0;
-  console.log(
-    `[${xs$1.map((item) => String(item)).join(", ")}] [${ys$1.map((item) => String(item)).join(", ")}] ${na.count} ${nb.count}`,
-  );
+  console.log(`[${xs$1.join(", ")}] [${ys$1.join(", ")}] ${na.count} ${nb.count}`);
 
   // In an element, or behind another reference: the same.
   const xs$2 = [1, 2];
@@ -109,9 +105,7 @@ function main() {
   const item$1 = refs[0];
   refs[0] = ys$2;
   item$1[0] = (item$1[0] + 1) | 0;
-  console.log(
-    `[${xs$2.map((item) => String(item)).join(", ")}] [${ys$2.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${xs$2.join(", ")}] [${ys$2.join(", ")}]`);
   const xs$3 = [1, 2];
   const ys$3 = [10, 20];
   let list$1 = xs$3;
@@ -119,9 +113,7 @@ function main() {
   const item$2 = list$1;
   list$1 = ys$3;
   item$2[0] = (item$2[0] + 1) | 0;
-  console.log(
-    `[${xs$3.map((item) => String(item)).join(", ")}] [${ys$3.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${xs$3.join(", ")}] [${ys$3.join(", ")}]`);
 
   // A field of an element, and an element of an element.
   const nodes = [{ count: 1 }, { count: 2 }];
@@ -138,9 +130,7 @@ function main() {
   const col = 0;
   const items = $index(grid, row);
   items[$at(items, col)] = 30;
-  console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   let z = 1;
   z = (z + 1) | 0;

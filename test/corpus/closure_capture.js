@@ -45,12 +45,7 @@ function main() {
 
   const base = 10;
   const adders = $range(0, 3).map((i) => (x) => (x + Math.imul(i, base)) | 0);
-  console.log(
-    `[${adders
-      .map((f) => f(1))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${adders.map((f) => f(1)).join(", ")}]`);
 
   let value = 5;
   const double = () => {

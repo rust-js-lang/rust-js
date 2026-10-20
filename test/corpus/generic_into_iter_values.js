@@ -27,13 +27,7 @@ function main() {
   const c = $iter(it.items.slice(it.at, it.end));
   const value = $sizeHint(it);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) [${c
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}] [${it.items
-      .slice(it.at, it.end)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) [${c.toArray().join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
   const pair = both(["a", "b"], [1, 2, 3]);
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);

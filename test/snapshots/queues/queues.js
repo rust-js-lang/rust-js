@@ -185,7 +185,7 @@ export function heaps() {
   const from = $heapFrom([4, 8, 1, 9, 9, 2, 7, 3], $cmp);
   const collected = $heapFrom([5, 1, 5, 2, 8], $cmp);
   const arg = $heapSorted(from, $cmp);
-  out += `${sorted} [${from.map((item) => String(item)).join(", ")}] [${collected.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]\n`;
+  out += `${sorted} [${from.join(", ")}] [${collected.join(", ")}] [${arg.join(", ")}]\n`;
   const empty = [];
   const value$1 = $heapPop(empty, $cmp);
   const value$2 = empty[0];
@@ -205,7 +205,7 @@ export function deques() {
   $retain(d, (x) => x !== 4);
   const length = d.length;
   const arg = d.includes(3);
-  return `[${d.map((item) => String(item)).join(", ")}] ${front == null ? "None" : `Some(${front})`} ${back == null ? "None" : `Some(${back})`} (${removed[0] == null ? "None" : `Some(${removed[0]})`}, ${removed[1] == null ? "None" : `Some(${removed[1]})`}) (${popped[0] == null ? "None" : `Some(${popped[0]})`}, ${popped[1] == null ? "None" : `Some(${popped[1]})`}) ${length} ${arg}`;
+  return `[${d.join(", ")}] ${front == null ? "None" : `Some(${front})`} ${back == null ? "None" : `Some(${back})`} (${removed[0] == null ? "None" : `Some(${removed[0]})`}, ${removed[1] == null ? "None" : `Some(${removed[1]})`}) (${popped[0] == null ? "None" : `Some(${popped[0]})`}, ${popped[1] == null ? "None" : `Some(${popped[1]})`}) ${length} ${arg}`;
 }
 
 export function reverses(a, b) {
@@ -266,9 +266,7 @@ export function report() {
     [0, 2],
     [1, 3],
     [2, 4],
-  ])
-    .map((item) => String(item))
-    .join(", ")}]\n`;
+  ]).join(", ")}]\n`;
   const words = new Map();
   for (const w of "the quick brown fox jumps over the lazy dog".split(" ")) {
     const key = Array.from(w).length;
@@ -277,11 +275,11 @@ export function report() {
   const lens = Array.from(words.keys());
   $sortUnstable(lens, (a, b) => $cmp(b, a) < 0, "network");
   const arg = $unwrap(words.get(5), "no entry found for key");
-  out += `[${lens.map((item) => String(item)).join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
+  out += `[${lens.join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
   const value$5 = deques();
   const value$6 = reverses(1, 2);
-  out += `${value$5}\n(${value$6[0]}, ${value$6[1]}, ${value$6[2]}, ${$debugStr(value$6[3])}, [${value$6[4].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].map((item) => String(item)).join(", ")}])`)(reverses(5, 3))}\n`;
+  out += `${value$5}\n(${value$6[0]}, ${value$6[1]}, ${value$6[2]}, ${$debugStr(value$6[3])}, [${value$6[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
   return out;
 }
 //# sourceMappingURL=queues.js.map

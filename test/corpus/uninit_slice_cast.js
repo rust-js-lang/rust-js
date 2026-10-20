@@ -14,7 +14,7 @@ function main() {
   const buf = [1, 2, 3];
   const all = slice_assume_init_mut(buf);
   all[$at(all, 1)] = 20;
-  console.log(`[${all.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${all.join(", ")}]`);
   const words = ["a", "b"];
   const ws = slice_assume_init_mut(words);
   const length = ws.length;

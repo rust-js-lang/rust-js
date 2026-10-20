@@ -85,13 +85,7 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} Fuse { iter: ${f.iter === undefined ? "None" : `Some(${flipDebug_fmt($iteratorValue(f.iter))})`} }`,
   );
-  console.log(
-    `[${copy
-      .take(4)
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${copy.take(4).toArray().join(", ")}]`);
   const v = $fuse($iter([1, 2, 3]), true);
   const value$3 = $sizeHint(v);
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
@@ -102,26 +96,10 @@ function main() {
   $next(v);
   const value$4 = $sizeHint(v);
   console.log(
-    `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) [${w
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}] Fuse { iter: ${
-      v.iter === undefined
-        ? "None"
-        : `Some(${((it) =>
-            `IntoIter([${it.items
-              .slice(it.at, it.end)
-              .map((item) => String(item))
-              .join(", ")}])`)($iteratorValue(v.iter))})`
-    } }`,
+    `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) [${w.toArray().join(", ")}] Fuse { iter: ${v.iter === undefined ? "None" : `Some(${((it) => `IntoIter([${it.items.slice(it.at, it.end).join(", ")}])`)($iteratorValue(v.iter))})`} }`,
   );
   console.log(
-    `[${$lent(v)
-      .toArray()
-      .map((item) => String(item))
-      .join(
-        ", ",
-      )}] ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(v))}`,
+    `[${$lent(v).toArray().join(", ")}] ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(v))}`,
   );
   const flips = pair($iterator([0], flipIterator_next));
   console.log(`${pairDebug_fmt(flips, flipDebug())}`);
@@ -135,13 +113,7 @@ function main() {
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${pairDebug_fmt(flips, flipDebug())}`,
   );
   console.log(`${pairDebug_fmt(again, flipDebug())}`);
-  console.log(
-    `[${$iterator(again, pairIterator_next, true)
-      .take(3)
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$iterator(again, pairIterator_next, true).take(3).toArray().join(", ")}]`);
   const loud = $fuse(
     $closing($iterator(["loud", 3], loudIterator_next), (it) => {
       loudDrop_drop(it.of);

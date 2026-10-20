@@ -561,9 +561,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
-- **No `.map((item) => item)`**: `{:?}` of a list of unit enums is
-  `` `[${lights.join(", ")}]` ``, and `cloned()` of strings is the strings
-  (ADR 0508).
+- **No `.map((item) => item)`**: `{:?}` of a list of unit enums or of
+  numbers is `` `[${v.join(", ")}]` ``, and `cloned()` of strings is the
+  strings (ADR 0508).
 - **Nested loops read as written**: a `let` in an inner loop is declared
   there, `const score = ..`, not before the outer one; an inner loop's
   way out that ends the outer turn is its `break`, not `continue bb4`; and

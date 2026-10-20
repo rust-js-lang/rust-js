@@ -149,7 +149,7 @@ export function report() {
     out += `${value$1.TAG === "Ok" ? `Ok([${value$1._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value$1._0)})`}\n`;
   }
   const value = pairs([1, 2, 3, 4, 5]);
-  out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].map((item) => String(item)).join(", ")}])`)(pairs([]))}\n`;
+  out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].join(", ")}])`)(pairs([]))}\n`;
   out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
   const words = $iter("one two three four".split(" "));
   const first = $next(words);

@@ -25,7 +25,7 @@ function main() {
     .map((c) => c.codePointAt(0))
     .toArray();
   console.log(
-    `${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`} [${rest.map((item) => $debugStr(item, "'")).join(", ")}] [${around.map((item) => String(item)).join(", ")}] [${down.map((item) => $debugStr(item, "'")).join(", ")}] [${back.map((item) => String(item)).join(", ")}]`,
+    `${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`} [${rest.map((item) => $debugStr(item, "'")).join(", ")}] [${around.join(", ")}] [${down.map((item) => $debugStr(item, "'")).join(", ")}] [${back.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -31,7 +31,7 @@ function main() {
   const l = Array.from(lens);
   l.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   console.log(
-    `[${c.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}] [${g.map((item) => `(${item[0]}, [${item[1].map((item) => String(item)).join(", ")}])`).join(", ")}] [${l.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`,
+    `[${c.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}] [${g.map((item) => `(${item[0]}, [${item[1].join(", ")}])`).join(", ")}] [${l.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

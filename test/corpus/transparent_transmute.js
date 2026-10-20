@@ -9,7 +9,7 @@ export function entry() {
 }
 
 function uuidDebug_fmt(uuid) {
-  return `Uuid([${uuid[0].map((item) => String(item)).join(", ")}])`;
+  return `Uuid([${uuid[0].join(", ")}])`;
 }
 
 const Uuid = {
@@ -51,11 +51,7 @@ function main() {
   const id = Uuid.from_bytes_ref(bytes);
   const value = Uuid.as_hyphenated(id);
   console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value)}`);
-  console.log(
-    `[${Uuid.as_bytes(id)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${Uuid.as_bytes(id).join(", ")}]`);
   const inner = Uuid.as_hyphenated(id)[0][0];
   console.log(`${inner[3]}`);
   const owned = [[9, 8, 7, 6]];
@@ -66,6 +62,6 @@ function main() {
   console.log(`${named.name} ${$byteLen(text)}`);
   const items = [1];
   widened(items).push(2);
-  console.log(`[${items.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${items.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

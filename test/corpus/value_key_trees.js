@@ -152,10 +152,7 @@ function main() {
           $cmpItems(a[1], b[1], $cmp),
       ),
     )
-      .map(
-        (item) =>
-          `(${item[0] == null ? "None" : `Some(${item[0]})`}, [${item[1].map((item) => String(item)).join(", ")}])`,
-      )
+      .map((item) => `(${item[0] == null ? "None" : `Some(${item[0]})`}, [${item[1].join(", ")}])`)
       .join(", ")}}`,
   );
 }

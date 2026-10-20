@@ -98,12 +98,7 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
   );
-  console.log(
-    `[${Iterator.from($encodeUtf16("hé𝄞"))
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${Iterator.from($encodeUtf16("hé𝄞")).toArray().join(", ")}]`);
   const value$3 = $fromUtf16([104, 55348, 56606]);
   const value$4 = $fromUtf16([55348, 104]);
   console.log(

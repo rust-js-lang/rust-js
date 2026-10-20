@@ -31,12 +31,12 @@ function main() {
   const all = $iterator([4], countdownIterator_next)
     .map((n) => Math.imul(n, 10) >>> 0)
     .toArray();
-  console.log(`[${all.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${all.join(", ")}]`);
   for (const n of $iterator([0], blinkerIterator_next)) {
     console.log(`blink ${n}`);
   }
   const lit = $iterator([3], blinkerIterator_next).toArray();
-  console.log(`[${lit.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${lit.join(", ")}]`);
   const sizes = [1, 22, 333];
   console.log(`${sizes.map((s) => s % 10).reduce((a, b) => (a + b) >>> 0, 0)}`);
   console.log(`${$debugStr(Array.from("héllo").toReversed().join(""))}`);

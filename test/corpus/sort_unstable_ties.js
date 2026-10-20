@@ -108,9 +108,7 @@ function main() {
     const last = (ends.length - 1) >>> 0;
     $selectNthUnstable(ends, last, (a, b) => a < b, "network", true);
     $selectNthUnstable(ends, 0, (a, b) => a < b, "network", true);
-    console.log(
-      `${n}: [${numbers.map((item) => String(item)).join(", ")}] [${ends.map((item) => String(item)).join(", ")}]`,
-    );
+    console.log(`${n}: [${numbers.join(", ")}] [${ends.join(", ")}]`);
   }
 }
 //# sourceMappingURL=case.js.map

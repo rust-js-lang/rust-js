@@ -50,16 +50,12 @@ function main() {
   const arg = NAMES.join(",");
   console.log(`${LIMIT} ${GREETING} ${arg}`);
   const value$2 = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(
-    `[${PRIMES.map((item) => String(item)).join(", ")}] ${value$2} [${EMPTY.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${PRIMES.join(", ")}] ${value$2} [${EMPTY.join(", ")}]`);
   console.log(
     `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
   );
   console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
-  console.log(
-    `${pointDebug_fmt(CORNER)} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
-  );
+  console.log(`${pointDebug_fmt(CORNER)} [${SIDES.join(", ")}] ${NAME}`);
   for (const name of NAMES) {
     $print(`${name} `);
   }

@@ -23,14 +23,14 @@ function describe(xs) {
       if (xs[2] === 3) {
         const n = xs[1];
         const rest = xs.slice(3);
-        return `one, ${n}, three, then [${rest.map((item) => String(item)).join(", ")}]`;
+        return `one, ${n}, three, then [${rest.join(", ")}]`;
       }
     }
   }
   const first = xs[0];
   const middle = xs.slice(1, xs.length - 1);
   const last = xs[xs.length - 1];
-  return `${first} .. ${last} around [${middle.map((item) => String(item)).join(", ")}]`;
+  return `${first} .. ${last} around [${middle.join(", ")}]`;
 }
 
 function greet(words) {
@@ -93,7 +93,7 @@ function main() {
   const first = value[0];
   const rest = value.slice(1, 4);
   const last = rest[2];
-  console.log(`${a} ${b} ${c$1} ${first} [${rest.map((item) => String(item)).join(", ")}] ${last}`);
+  console.log(`${a} ${b} ${c$1} ${first} [${rest.join(", ")}] ${last}`);
   console.log(`${sum3([1, 2, 3])}`);
 
   // A constant array as a pattern: its items.
@@ -113,7 +113,7 @@ function main() {
   const grid = [1, 2, 3];
   grid[0] = (grid[0] + 10) | 0;
   grid[2] = Math.imul(grid[2], 2);
-  console.log(`[${grid.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${grid.join(", ")}]`);
   const names = ["x", "y"];
   if (names.length >= 1) {
     names[0] += "!";

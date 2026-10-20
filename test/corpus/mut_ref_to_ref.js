@@ -32,7 +32,7 @@ function main() {
   const slot = { value: longest };
   pick(slot, b);
   longest = slot.value;
-  console.log(`[${longest.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${longest.join(", ")}]`);
   const words = ["a", "bb", "c"];
   for (const w of $mutItems(words)) {
     if ($byteLen(w.value) === 1) {

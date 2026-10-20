@@ -29,7 +29,7 @@ function main() {
     b.value = t;
     a.value = Math.imul(a.value, 10);
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   const value$1 = $getDisjointMut(v, [1, 9], true);
   console.log(
     `${value$1.TAG === "Ok" ? `Ok([${value$1._0.map((item) => String(item.value)).join(", ")}])` : `Err(${value$1._0})`}`,
@@ -62,7 +62,7 @@ function main() {
     $copyFromSlice(left, $slice(right, 1));
     right.reverse();
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   console.log(
     `${
       $getDisjointMut(v, [
@@ -100,10 +100,10 @@ function main() {
     const value = $index(b, 0);
     a[$at(a, 1)] = value;
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   const [x, y] = $getDisjointMut(v, [1, 4], true)._0;
   x.value = (x.value + y.value) | 0;
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 
   const cells = [{ n: 1 }, { n: 2 }, { n: 3 }];
   const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e) => e);

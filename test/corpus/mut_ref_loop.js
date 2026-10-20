@@ -11,7 +11,7 @@ function main() {
   for (const i of $mutItems(ints)) {
     i.value = (i.value + 22) | 0;
   }
-  console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${ints.join(", ")}]`);
 
   const halves = [1.5, 2.5];
   for (const x of $mutItems(halves)) {
@@ -23,7 +23,7 @@ function main() {
   for (const c of $mutItems(counts)) {
     c.value = (c.value * 200) & 255;
   }
-  console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${counts.join(", ")}]`);
 
   const words = ["a", "b"];
   for (const w of $mutItems(words)) {
@@ -34,7 +34,7 @@ function main() {
   for (const x of $mutItems($view(ints, 1))) {
     x.value = 0;
   }
-  console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${ints.join(", ")}]`);
 
   const ns = [1, 2, 3, 4];
   for (const x of $mutItems($view(ns, 1, 3))) {
@@ -43,7 +43,7 @@ function main() {
   for (const x of $mutItems($view(ns, 0, 1))) {
     x.value = 9;
   }
-  console.log(`[${ns.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${ns.join(", ")}]`);
 
   const v = [1, 2, 3, 4, 5];
   for (const n of $mutItems(v)) {
@@ -56,7 +56,7 @@ function main() {
     }
     break;
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 
   // The loop changes the collection it started with, whatever `cur`
   // holds after.
@@ -70,9 +70,7 @@ function main() {
     x.value = (x.value + 1) | 0;
   }
   cur[$at(cur, 0)] = (cur[0] + 5) | 0;
-  console.log(
-    `[${a.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
 
   // And if it's a field that holds the reference.
   const a$1 = [1, 2];
@@ -85,8 +83,6 @@ function main() {
     x$1.value = (x$1.value + 1) | 0;
   }
   h.list[$at(h.list, 0)] = (h.list[0] + 5) | 0;
-  console.log(
-    `[${a$1.map((item) => String(item)).join(", ")}] [${b$1.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${a$1.join(", ")}] [${b$1.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

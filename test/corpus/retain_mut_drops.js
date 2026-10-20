@@ -19,7 +19,7 @@ function main() {
   try {
     $retainMut(v, value, false, loudDrop_drop);
     const tmp = v.map((l) => l[0]);
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
     const value$1 = [[5], [6]];
     const tmp$1 = $iter(value$1);
     const d = tmp$1.toArray();
@@ -34,7 +34,7 @@ function main() {
         return x.value > 3;
       };
       $retainMut(n, value, true);
-      console.log(`[${n.map((item) => String(item)).join(", ")}]`);
+      console.log(`[${n.join(", ")}]`);
     } finally {
       for (const item of d) {
         loudDrop_drop(item);

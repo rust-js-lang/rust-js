@@ -23,7 +23,7 @@ function made(text, BFromIteratorChar) {
 }
 
 function bagDebug_fmt(bag) {
-  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
+  return `Bag([${bag[0].join(", ")}])`;
 }
 
 function bagFromIteratorU32_from_iter(items) {
@@ -51,13 +51,11 @@ function main() {
   const ok = parsed(["1", "2"], { from_iter: (items) => $collectResults(Array.from(items)) });
   const bad = parsed(["1", "x"], { from_iter: (items) => $collectResults(Array.from(items)) });
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] ${s.size} ${bagDebug_fmt(b)} ${t} {${Array.from(
-      $sortedEntries(pairs, $cmp),
-    )
+    `[${v.join(", ")}] ${s.size} ${bagDebug_fmt(b)} ${t} {${Array.from($sortedEntries(pairs, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(
         ", ",
-      )}} ${ok.TAG === "Ok" ? `Ok([${ok._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(ok._0)})`} ${bad.TAG === "Ok" ? `Ok([${bad._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(bad._0)})`}`,
+      )}} ${ok.TAG === "Ok" ? `Ok([${ok._0.join(", ")}])` : `Err(${$debugStr(ok._0)})`} ${bad.TAG === "Ok" ? `Ok([${bad._0.join(", ")}])` : `Err(${$debugStr(bad._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

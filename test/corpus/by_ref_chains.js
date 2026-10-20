@@ -23,13 +23,11 @@ function main() {
   const small = $lazyTakeWhile($lent(it), (x) => x < 5).toArray();
   const arg = $next(it);
   console.log(
-    `[${first.map((item) => String(item)).join(", ")}] [${small.map((item) => String(item)).join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`,
+    `[${first.join(", ")}] [${small.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`,
   );
   const found = $lent(it).find((x) => x % 7 === 0);
   const arg$1 = it.items.slice(it.at, it.end);
-  console.log(
-    `${found == null ? "None" : `Some(${found})`} [${arg$1.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${found == null ? "None" : `Some(${found})`} [${arg$1.join(", ")}]`);
 
   const words = $iter("one two three four five".split(" "));
   const sum = $lent(words)

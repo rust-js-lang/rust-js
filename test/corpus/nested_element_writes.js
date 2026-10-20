@@ -18,18 +18,14 @@ function main() {
   const row = grid[0].slice();
   grid[0][1] = 5;
   grid[1][2] = (grid[1][2] + 7) | 0;
-  console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${row.join(", ")}]`);
 
   const rows = [
     [0, 0],
     [0, 0],
   ];
   $index(rows, 1)[0] = 3;
-  console.log(
-    `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const cells = [[{ value: 1 }, { value: 2 }]];
   cells[0][1].value = Math.imul(cells[0][1].value, 10);
@@ -53,7 +49,7 @@ function main() {
   }
   deep[i][0][$at(deep[i][0], i)] = 9;
   console.log(
-    `[${deep.map((item) => `[${item.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`).join(", ")}] ${deep[1][0][1]}`,
+    `[${deep.map((item) => `[${item.map((item) => `[${item.join(", ")}]`).join(", ")}]`).join(", ")}] ${deep[1][0][1]}`,
   );
 }
 //# sourceMappingURL=case.js.map

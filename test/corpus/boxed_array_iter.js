@@ -20,7 +20,7 @@ function main() {
     n.value = Math.imul(n.value, 10);
   }
   const total = counts.reduce((a, b) => (a + b) | 0, 0);
-  console.log(`[${counts.map((item) => String(item)).join(", ")}] ${total}`);
+  console.log(`[${counts.join(", ")}] ${total}`);
 
   const points = [{ x: 1 }, { x: 2 }];
   for (const p of points) {
@@ -36,8 +36,6 @@ function main() {
     seen.push((n + 1) | 0);
   }
   const arg = [1, 2].toReversed();
-  console.log(
-    `[${seen.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${seen.join(", ")}] [${arg.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

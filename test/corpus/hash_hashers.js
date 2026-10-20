@@ -32,7 +32,7 @@ function tallyHasher_finish(tally) {
 }
 
 function tallyHasher_write(tally, bytes) {
-  tally[0].push(`[${bytes.map((item) => String(item)).join(", ")}]`);
+  tally[0].push(`[${bytes.join(", ")}]`);
 }
 
 function tallyHasher_write_u64(tally, n) {

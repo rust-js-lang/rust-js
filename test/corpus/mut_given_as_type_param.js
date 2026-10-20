@@ -89,7 +89,7 @@ function main() {
   const items$2 = { value: items };
   const value$2 = first(items$2, refMutTStableDeref());
   $assign(items, items$2.value);
-  console.log(`[${items.map((item) => String(item)).join(", ")}] ${value$2}`);
+  console.log(`[${items.join(", ")}] ${value$2}`);
   const counter = { text: "" };
   const out = { value: counter };
   render(out, 1, $mutWriter(counterWrite()));

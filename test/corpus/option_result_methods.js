@@ -59,10 +59,10 @@ function main() {
     inspected(none);
   }
   console.log(
-    `${kept == null ? "None" : `Some(${kept})`} [${seen.map((item) => String(item)).join(", ")}] ${some != null ? Math.imul(some, 10) : 0} ${none != null ? Math.imul(none, 10) : 0}`,
+    `${kept == null ? "None" : `Some(${kept})`} [${seen.join(", ")}] ${some != null ? Math.imul(some, 10) : 0} ${none != null ? Math.imul(none, 10) : 0}`,
   );
   console.log(
-    `[${(some != null ? [some] : []).map((item) => String(item)).join(", ")}] [${(none != null ? [none] : []).map((item) => String(item)).join(", ")}]`,
+    `[${(some != null ? [some] : []).join(", ")}] [${(none != null ? [none] : []).join(", ")}]`,
   );
   const name = "ann";
   const value$11 = name != null ? $byteLen(name) : undefined;
@@ -209,9 +209,7 @@ function main() {
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(
-    `[${Array.from(good.TAG === "Ok" ? [good._0] : [])
-      .map((item) => String(item))
-      .join(", ")}] ${Iterator.from(bad.TAG === "Ok" ? [bad._0] : []).reduce((n) => n + 1, 0)}`,
+    `[${Array.from(good.TAG === "Ok" ? [good._0] : []).join(", ")}] ${Iterator.from(bad.TAG === "Ok" ? [bad._0] : []).reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `${good.TAG === "Ok" ? (good._0 + 1) | 0 : 0} ${bad.TAG === "Ok" ? (bad._0 + 1) | 0 : 0}`,

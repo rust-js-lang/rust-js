@@ -200,7 +200,7 @@ export function report() {
     }
     popped.push(top);
   }
-  out += `[${popped.map((item) => String(item)).join(", ")}]\n`;
+  out += `[${popped.join(", ")}]\n`;
   out += `[${tallies(["a", "b", "a", "b", "c"])
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
     .join(", ")}] [${bands([0, 3, 42, 150, 250])

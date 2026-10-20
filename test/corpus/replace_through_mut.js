@@ -16,7 +16,7 @@ export function entry() {
 }
 
 function counterDebug_fmt(counter) {
-  return `Counter { n: ${counter.n}, label: ${$debugStr(counter.label)}, items: [${counter.items.map((item) => String(item)).join(", ")}] }`;
+  return `Counter { n: ${counter.n}, label: ${$debugStr(counter.label)}, items: [${counter.items.join(", ")}] }`;
 }
 
 const Counter = {
@@ -141,11 +141,7 @@ function main() {
   Counter.restart($index(row, 1), 6);
   console.log(`[${row.map((item) => counterDebug_fmt(item)).join(", ")}]`);
   const items = [4, 5];
-  console.log(
-    `[${take_all(items)
-      .map((item) => String(item))
-      .join(", ")}] [${items.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${take_all(items).join(", ")}] [${items.join(", ")}]`);
 
   const a = { x: 1, y: 2 };
   const b = { ...a };
@@ -197,7 +193,7 @@ function main() {
   console.log(`${shapeDebug_fmt(s)} ${arg$2}`);
   const v = [1, 2, 3];
   refill(v);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   let name = "pen";
   const copy = name;
   const s$1 = { value: name };

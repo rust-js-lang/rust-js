@@ -37,7 +37,7 @@ function main() {
   try {
     $retainMap(tree, value, $sortedEntries(tree, $cmp), false, noisyDrop_drop);
     const tmp = $sortedEntries(tree, $cmp).map((entry) => entry[0]);
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
     const value$1 = [
       [2, [21]],
       [7, [70]],
@@ -46,7 +46,7 @@ function main() {
     const tmp$1 = $sortedEntries(tree, $cmp)
       .map((entry) => entry[1])
       .map((v) => v[0]);
-    console.log(`[${tmp$1.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp$1.join(", ")}]`);
     const tmp$2 = $entry(tree, 4);
     const tmp$3 = [41];
     const entry = tmp$2;

@@ -13,11 +13,7 @@ function sorted(it) {
 }
 
 function main() {
-  console.log(
-    `[${sorted($iter([3, 1, 2]))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${sorted($iter([3, 1, 2])).join(", ")}]`);
   const v = [5, 4].map((x) => Math.imul(x, 2));
   const s = ["a", "b"].join("");
   const backwards = Array.from("abc").toReversed().join("");
@@ -25,13 +21,11 @@ function main() {
   const m = new Map([["a", 1]]);
   const d = $range(1, 4);
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] ${s} ${backwards} {${Array.from(
-      $sortedKeys(set, $cmp),
+    `[${v.join(", ")}] ${s} ${backwards} {${Array.from($sortedKeys(set, $cmp)).join(", ")}} {${Array.from(
+      m,
     )
-      .map((item) => String(item))
-      .join(", ")}} {${Array.from(m)
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
-      .join(", ")}} [${d.map((item) => String(item)).join(", ")}]`,
+      .join(", ")}} [${d.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

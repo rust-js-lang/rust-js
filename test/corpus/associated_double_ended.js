@@ -23,11 +23,7 @@ function rev_all(iterable) {
 }
 
 function main() {
-  console.log(
-    `[${backwards($iter([1, 2, 3]))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${backwards($iter([1, 2, 3])).join(", ")}]`);
   const value = last_even($iter([1, 2, 3, 4, 5]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`${$debugStr(rev_all(["a", "b"]).toArray().join(""))}`);

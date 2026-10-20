@@ -60,8 +60,8 @@ function main() {
   const value$11 = at(7) | 0;
   v[$at(v, 1)] = (v[1] + value$11) | 0;
   console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
+    `[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.join(", ")}]`,
   );
-  console.log(`[${log.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${log.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

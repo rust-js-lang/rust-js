@@ -16,7 +16,7 @@ function main() {
   last.value = (last.value + 5) | 0;
   const first = $insertMut(counts, 0, 7, true);
   first.value = Math.imul(first.value, 3);
-  console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${counts.join(", ")}]`);
   const entries = [{ hits: 0 }];
   const value$1 = $pushMut(entries, { hits: 4 });
   value$1.hits = (value$1.hits + 1) >>> 0;

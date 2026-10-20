@@ -28,6 +28,6 @@ function main() {
   const counter = { n: 1 };
   const doubled = counterDoubled_by_ref(counter);
   const rest = $lent($iterator(counter, counterIterator_next)).toArray();
-  console.log(`${doubled} [${rest.map((item) => String(item)).join(", ")}]`);
+  console.log(`${doubled} [${rest.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

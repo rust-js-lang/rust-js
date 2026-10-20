@@ -66,7 +66,7 @@ function main() {
   console.log(`${bits_of(1)} ${$displayF32($floatFromBits(1078530011, 4))}`);
   console.log(`${$displayF64($floatFromBits(4611686018427387904n, 8))}`);
   const value$1 = { low: 1, high: 2 };
-  console.log(`[${[value$1.low, value$1.high].map((item) => String(item)).join(", ")}]`);
+  console.log(`[${[value$1.low, value$1.high].join(", ")}]`);
   console.log("true");
   console.log(`${$debugStr(String.fromCodePoint(65), "'")}`);
   console.log(`${nothingDebug_fmt(undefined)}`);
@@ -74,11 +74,7 @@ function main() {
   // Read from the bytes of the whole.
   const value$2 = [120, 86, 52, 18];
   console.log(`0x${$fromBytes(value$2, 4, true, false).toString(16)}`);
-  console.log(
-    `[${$toBytes(305419896, 4, true)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${$toBytes(305419896, 4, true).join(", ")}]`);
   const value$3 = [1, 1];
   const bytes = [value$3[0], value$3[1]];
   console.log(`${$fromBytes(bytes, 2, true, false)}`);
@@ -94,7 +90,7 @@ function main() {
   );
   const bytes$3 = $toBytes(18446744073709551614n, 8, true);
   console.log(
-    `[${[$fromBytes(bytes$3.slice(0, 4), 4, true, true), $fromBytes(bytes$3.slice(4, 8), 4, true, true)].map((item) => String(item)).join(", ")}]`,
+    `[${[$fromBytes(bytes$3.slice(0, 4), 4, true, true), $fromBytes(bytes$3.slice(4, 8), 4, true, true)].join(", ")}]`,
   );
   const value$5 = [1, 1];
   const bytes$4 = [...$toBytes(value$5[0], 4, true), ...$toBytes(value$5[1], 4, true)];
@@ -140,16 +136,14 @@ function main() {
       $fromBytes(bytes$7.slice(2, 4), 2, true, false),
       $fromBytes(bytes$7.slice(4, 6), 2, true, false),
       $fromBytes(bytes$7.slice(6, 8), 2, true, false),
-    ]
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ].join(", ")}]`,
   );
   const value$8 = [0, 0, 128, 63];
   console.log(`${$displayF32($floatFromBits($fromBytes(value$8, 4, true, false), 4))}`);
   const value$9 = BigInt.asUintN(128, 1n << 64n) | 3n;
   const bytes$8 = $toBytes(value$9, 16, true);
   console.log(
-    `[${[$fromBytes(bytes$8.slice(0, 8), 8, true, false), $fromBytes(bytes$8.slice(8, 16), 8, true, false)].map((item) => String(item)).join(", ")}]`,
+    `[${[$fromBytes(bytes$8.slice(0, 8), 8, true, false), $fromBytes(bytes$8.slice(8, 16), 8, true, false)].join(", ")}]`,
   );
   const x = 16909060;
   const bytes$9 = $toBytes(x, 4, true);
@@ -169,7 +163,7 @@ function main() {
   const c = "\0";
   const arg = c.codePointAt(0);
   console.log(
-    `${n} (${pair[0]}, ${pair[1]}) [${items.map((item) => String(item)).join(", ")}] ${pointDebug_fmt(point)} ${arg} ()`,
+    `${n} (${pair[0]}, ${pair[1]}) [${items.join(", ")}] ${pointDebug_fmt(point)} ${arg} ()`,
   );
   console.log(`${$eq(point, { x: 0, y: 0n, on: false })}`);
   const halves = { low: 0, high: 0 };

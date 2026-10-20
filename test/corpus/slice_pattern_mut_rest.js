@@ -33,23 +33,23 @@ function main() {
     v[0] = 10;
     rest.sort((a, b) => $cmp(b, a));
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   ends(v);
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   if (v.length >= 1) {
     const x = { value: v[v.length - 1] };
     zero(x);
     v[v.length - 1] = x.value;
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   const a = [1, 2, 3];
   const rest = $view(a, 1, 3);
   a[0] = (a[0] + 1) | 0;
   rest[0] = 9;
-  console.log(`[${a.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${a.join(", ")}]`);
   const grid = [1, 2, 3, 4];
   const inner = $view(grid, 1, 3);
   inner.reverse();
-  console.log(`[${grid.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${grid.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

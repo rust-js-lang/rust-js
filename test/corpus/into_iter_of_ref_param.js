@@ -84,9 +84,7 @@ function main() {
   $assign(a, c$1.value);
   const value = total(v, { into_iter: (x) => $iter(x) });
   const arg = total(a, { into_iter: (x) => $iter(x) });
-  console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${value} ${arg}`,
-  );
+  console.log(`[${v.join(", ")}] [${a.join(", ")}] ${value} ${arg}`);
 
   let some = 7;
   const c$2 = { value: some };
@@ -105,7 +103,7 @@ function main() {
   const c$4 = { value: bag };
   const value$1 = double_then_total(c$4, refBagIntoIterator(), refMutBagIntoIterator());
   $assign(bag, c$4.value);
-  console.log(`${value$1} [${bag.items.map((item) => String(item)).join(", ")}]`);
+  console.log(`${value$1} [${bag.items.join(", ")}]`);
 
   const m = new Map([
     ["ab", 1],

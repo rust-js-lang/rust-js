@@ -161,20 +161,12 @@ function main() {
     Stack.push(numbers, n, 8, 4);
   }
   Stack.insert(numbers, 1, 9, 8);
-  console.log(
-    `[${Stack.as_slice(numbers, 8)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${Stack.as_slice(numbers, 8).join(", ")}]`);
   console.log(`${Stack.remove(numbers, 0, 8)}`);
   Stack.as_mut_slice(numbers, 8).sort((a, b) => a - b);
   const more = [20, 30, 40];
   Stack.extend_from_slice(numbers, $slice(more, 1), 8);
-  console.log(
-    `[${Stack.as_slice(numbers, 8)
-      .map((item) => String(item))
-      .join(", ")}] ${numbers.len}`,
-  );
+  console.log(`[${Stack.as_slice(numbers, 8).join(", ")}] ${numbers.len}`);
   const words = Stack.new(4);
   Stack.push(words, "b", 4, 12);
   Stack.insert(words, 0, "a", 4);
@@ -194,7 +186,7 @@ function main() {
   $ptrCopy($ptr(source, 0), $ptrAdd($ptr(copied, 0), 2), 3);
   const value$1 = $ptr(copied, 0);
   $ptrCopy($ptrAdd($ptr(source, 0), 1), value$1, 2);
-  console.log(`[${copied.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${copied.join(", ")}]`);
   // An array's pointer as its first item's.
   const row = [4, 5, 6];
   const first = $ptr(row, 0);
@@ -205,11 +197,7 @@ function main() {
   Stack.truncate(noisy, 0, 3, noisyDrop_drop);
   console.log(`${noisy.len}`);
   const full = Stack.from_array([7, 8, 9], 3);
-  console.log(
-    `${Stack.is_full(full, 3)} [${Stack.into_array(full, 3)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`${Stack.is_full(full, 3)} [${Stack.into_array(full, 3).join(", ")}]`);
   // A `Copy` value JS holds as an object, which a copy changes: each
   // place its own, as Rust's copy is.
   const points = Stack.new(4);

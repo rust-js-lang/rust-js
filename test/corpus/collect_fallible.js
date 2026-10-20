@@ -31,20 +31,17 @@ function halves(v) {
 function main() {
   const value = parse_all(["1", "22"]);
   console.log(
-    `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(value._0, "ParseIntError")})`} ${((
+    `${value.TAG === "Ok" ? `Ok([${value._0.join(", ")}])` : `Err(${$debugParseError(value._0, "ParseIntError")})`} ${((
       result,
     ) =>
       result.TAG === "Ok"
-        ? `Ok([${result._0.map((item) => String(item)).join(", ")}])`
+        ? `Ok([${result._0.join(", ")}])`
         : `Err(${$debugParseError(result._0, "ParseIntError")})`)(parse_all(["1", "x", "3"]))}`,
   );
   const value$1 = halves([2, 4]);
   console.log(
-    `${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${((
-      value,
-    ) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(
-      halves([2, 3, 4]),
-    )}`,
+    `${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} ${((value) =>
+      value == null ? "None" : `Some([${value.join(", ")}])`)(halves([2, 3, 4]))}`,
   );
   const seen = [];
   const r = $collectResults(
@@ -57,7 +54,7 @@ function main() {
     }),
   );
   console.log(
-    `${r.TAG === "Ok" ? `Ok([${r._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(r._0)})`} [${seen.map((item) => String(item)).join(", ")}]`,
+    `${r.TAG === "Ok" ? `Ok([${r._0.join(", ")}])` : `Err(${$debugStr(r._0)})`} [${seen.join(", ")}]`,
   );
   const nested = $collectOptions($iter([1, $some(undefined)]), true);
   const none = $collectOptions($iter([1, undefined]), true);
@@ -70,8 +67,6 @@ function main() {
       { TAG: "Ok", _0: 2 },
     ]),
   );
-  console.log(
-    `${deque.TAG === "Ok" ? `Ok([${deque._0.map((item) => String(item)).join(", ")}])` : "Err(())"}`,
-  );
+  console.log(`${deque.TAG === "Ok" ? `Ok([${deque._0.join(", ")}])` : "Err(())"}`);
 }
 //# sourceMappingURL=case.js.map

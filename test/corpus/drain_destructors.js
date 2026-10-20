@@ -45,7 +45,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`after statement [${tmp$1.map((item) => String(item)).join(", ")}]`);
+    console.log(`after statement [${tmp$1.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       nDrop_drop(item);
@@ -97,9 +97,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(
-      `taken [${tmp$3.map((item) => String(item)).join(", ")}] left [${tmp$5[1].map((item) => String(item)).join(", ")}]`,
-    );
+    console.log(`taken [${tmp$3.join(", ")}] left [${tmp$5[1].join(", ")}]`);
   } catch (error) {
     for (const item of taken) {
       nDrop_drop(item);
@@ -206,7 +204,7 @@ function main() {
   try {
     try {
       const tmp = ids(v);
-      console.log(`after loop [${tmp.map((item) => String(item)).join(", ")}]`);
+      console.log(`after loop [${tmp.join(", ")}]`);
       const w = $range(10, 14).map((value) => [value]);
       try {
         const d = $iter($drain(w, 0));

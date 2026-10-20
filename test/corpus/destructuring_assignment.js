@@ -32,8 +32,6 @@ function main() {
   slots[3] = 12;
   const first = 1;
   const last = 4;
-  console.log(
-    `[${slots.map((item) => String(item)).join(", ")}] ${first} ${last} ${fibonacci(10)}`,
-  );
+  console.log(`[${slots.join(", ")}] ${first} ${last} ${fibonacci(10)}`);
 }
 //# sourceMappingURL=case.js.map

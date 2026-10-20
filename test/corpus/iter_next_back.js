@@ -43,17 +43,14 @@ function main() {
   const value$4 = $sizeHint(it);
   const value$5 = hint(it);
   console.log(
-    `${value$3} (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) [${it.items
-      .slice(it.at, it.end)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `${value$3} (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
   const rest = it.items.slice(it.at, it.end);
-  console.log(`[${rest.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${rest.join(", ")}]`);
   const taken = $iter(v);
   $nextBack(taken);
   const front = taken.toArray();
-  console.log(`[${front.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${front.join(", ")}]`);
   for (const x of $lent(it)) {
     $print(`${x} `);
   }

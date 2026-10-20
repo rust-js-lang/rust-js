@@ -29,9 +29,9 @@ function main() {
   const arr = tIterExt().default_for_size({ start: 0, end: 10 }, 10, {
     default: () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   });
-  console.log(`[${arr.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${arr.join(", ")}]`);
   const z = zeros(3, { default: () => 0 }, { default: () => [0, 0, 0] });
-  console.log(`[${z.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${z.join(", ")}]`);
   const words = defaults(3, { default: () => ["", "", ""] });
   words[0] += "a";
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);

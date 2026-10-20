@@ -24,7 +24,7 @@ function main() {
     `${keyedDebug_fmt(keyed, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) }, "u32", "alloc::string::String")}`,
   );
   console.log(
-    `${shown({ len: 1 }, { fmt: (value) => $debugStr(value) }, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` }, "alloc::string::String", "alloc::vec::Vec<u8>")}`,
+    `${shown({ len: 1 }, { fmt: (value) => $debugStr(value) }, { fmt: (value) => `[${value.join(", ")}]` }, "alloc::string::String", "alloc::vec::Vec<u8>")}`,
   );
   console.log(`${marker("core::option::Option<i64>")}`);
 }

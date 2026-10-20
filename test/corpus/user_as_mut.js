@@ -36,17 +36,15 @@ function main() {
   const stack = { items: [3, 1, 2] };
   const value$1 = stackAsMutI32Slice_as_mut(stack);
   value$1[$at(value$1, 0)] = 9;
-  console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${stack.items.join(", ")}]`);
   const slice = stackBorrowMutI32Slice_borrow_mut(stack);
   slice.sort((a, b) => a - b);
   const value = (slice[$at(slice, 2)] + 1) | 0;
   slice[2] = value;
-  console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${stack.items.join(", ")}]`);
   const all = stackAsMutI32Slice_as_mut(stack);
   all.reverse();
-  console.log(
-    `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrowI32Slice_borrow(stack).length}`,
-  );
+  console.log(`[${stack.items.join(", ")}] ${stackBorrowI32Slice_borrow(stack).length}`);
 
   const grid = [[0, 0, 0, 0]];
   for (const [i, cell] of $mutItems(gridAsMutU8Slice_as_mut(grid)).entries()) {
@@ -54,6 +52,6 @@ function main() {
   }
   const result = gridAsMutU8Slice_as_mut(grid);
   $swap(result, 0, 3);
-  console.log(`[${grid[0].map((item) => String(item)).join(", ")}]`);
+  console.log(`[${grid[0].join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

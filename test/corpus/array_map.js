@@ -17,13 +17,7 @@ function double(n) {
 function main() {
   const numbers = [1, 2, 3];
   console.log(
-    `[${numbers
-      .map((n) => (n + 1) | 0)
-      .map((item) => String(item))
-      .join(", ")}] [${numbers
-      .map(double)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${numbers.map((n) => (n + 1) | 0).join(", ")}] [${numbers.map(double).join(", ")}]`,
   );
   console.log(
     `[${numbers
@@ -43,9 +37,7 @@ function main() {
     seen.push(n);
     return Math.imul(n, n);
   });
-  console.log(
-    `[${squares.map((item) => String(item)).join(", ")}] [${seen.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${squares.join(", ")}] [${seen.join(", ")}]`);
   const points = [{ x: 1 }, { x: 2 }];
   const moved = points
     .map((item) => ({ ...item }))

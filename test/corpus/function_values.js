@@ -56,9 +56,7 @@ function main() {
   // A number's method.
   const sizes = [-3, 4, -5].map((n) => Math.abs(n) | 0);
   const roots = [4, 9].map((n) => Math.sqrt(n));
-  console.log(
-    `[${sizes.map((item) => String(item)).join(", ")}] [${roots.map((item) => $debugF64(item)).join(", ")}]`,
-  );
+  console.log(`[${sizes.join(", ")}] [${roots.map((item) => $debugF64(item)).join(", ")}]`);
   // An `f32`'s, rounded to one as its call is: squared, it isn't 2.
   const single = [2].map((n) => Math.fround(Math.sqrt(n)));
   console.log(

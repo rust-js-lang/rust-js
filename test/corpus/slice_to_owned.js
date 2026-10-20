@@ -18,11 +18,7 @@ function decoded(bytes, n) {
 
 function main() {
   const bytes = [97, 98, 99, 37, 50, 48];
-  console.log(
-    `[${decoded(bytes, 3)
-      .map((item) => String(item))
-      .join(", ")}] [${bytes.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${decoded(bytes, 3).join(", ")}] [${bytes.join(", ")}]`);
   const tokens = [["a"], ["b"]];
   const copied = $slice(tokens, 1).map((item) => [item[0]]);
   $index(copied, 0)[0] += "!";
@@ -30,6 +26,6 @@ function main() {
     `[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}] [${copied.map((item) => tokenDebug_fmt(item)).join(", ")}]`,
   );
   const doubled = [1, 2].map((n) => Math.imul(n, 2) >>> 0).slice();
-  console.log(`[${doubled.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${doubled.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

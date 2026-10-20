@@ -22,13 +22,11 @@ function main() {
   const iter = { items: v, at: 0 };
   const taken = $iterator(iter, drainingIterator_next).toArray();
   drainingDrop_drop(iter);
-  console.log(
-    `[${taken.map((item) => String(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${taken.join(", ")}] [${v.join(", ")}]`);
   const w = [4, 5];
   const iter$1 = { items: w, at: 0 };
   const n = $iterator(iter$1, drainingIterator_next).reduce((n) => n + 1, 0);
   drainingDrop_drop(iter$1);
-  console.log(`${n} [${w.map((item) => String(item)).join(", ")}]`);
+  console.log(`${n} [${w.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

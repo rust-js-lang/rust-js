@@ -21,6 +21,6 @@ function main() {
     x.value = (x.value + 10) | 0;
   }
   const left = each.end - each.at;
-  console.log(`[${values.map((item) => String(item)).join(", ")}] ${left}`);
+  console.log(`[${values.join(", ")}] ${left}`);
 }
 //# sourceMappingURL=case.js.map

@@ -7,19 +7,13 @@ export function entry() {
 }
 
 function decodeDebug_fmt(decode) {
-  return `Decode { bytes: Iter([${decode.bytes.items
-    .slice(decode.bytes.at, decode.bytes.end)
-    .map((item) => String(item))
-    .join(", ")}]) }`;
+  return `Decode { bytes: Iter([${decode.bytes.items.slice(decode.bytes.at, decode.bytes.end).join(", ")}]) }`;
 }
 
 function rest(items) {
   const it = $iter(items);
   $next(it);
-  return `Iter([${it.items
-    .slice(it.at, it.end)
-    .map((item) => String(item))
-    .join(", ")}])`;
+  return `Iter([${it.items.slice(it.at, it.end).join(", ")}])`;
 }
 
 function tail(items) {
@@ -34,28 +28,13 @@ function main() {
   const it = $iter(data);
   $next(it);
   console.log(
-    `[${it.items
-      .slice(it.at, it.end)
-      .map((item) => String(item))
-      .join(", ")}] Iter([${it.items
-      .slice(it.at, it.end)
-      .map((item) => String(item))
-      .join(", ")}])`,
+    `[${it.items.slice(it.at, it.end).join(", ")}] Iter([${it.items.slice(it.at, it.end).join(", ")}])`,
   );
   const decode = { bytes: $iter(data) };
   console.log(`${decodeDebug_fmt(decode)}`);
   console.log(`${rest([7, 8, 9])}`);
-  console.log(
-    `Iter([${$slice(data, 1)
-      .map((item) => String(item))
-      .join(", ")}])`,
-  );
+  console.log(`Iter([${$slice(data, 1).join(", ")}])`);
   const value = tail(data);
-  console.log(
-    `Iter([${value.items
-      .slice(value.at, value.end)
-      .map((item) => String(item))
-      .join(", ")}])`,
-  );
+  console.log(`Iter([${value.items.slice(value.at, value.end).join(", ")}])`);
 }
 //# sourceMappingURL=case.js.map

@@ -18,9 +18,7 @@ function main() {
 
   const mixed = [111, 107, 255, 104, 195, 169, 226, 130, 32, 101, 110, 100, 240, 159];
   for (const chunk of $utf8Chunks(mixed)) {
-    console.log(
-      `${$debugStr(chunk.valid)} [${chunk.invalid.map((item) => String(item)).join(", ")}]`,
-    );
+    console.log(`${$debugStr(chunk.valid)} [${chunk.invalid.join(", ")}]`);
   }
   const text = Iterator.from($utf8Chunks([99, 97, 102, 195, 169, 195]))
     .map((c) => c.valid)

@@ -51,10 +51,7 @@ function main() {
   $next(a);
   const b = $iter(a.items.slice(a.at, a.end));
   console.log(
-    `[${b
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
+    `[${b.toArray().join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
   );
 
   // Owned items a clone copies: changing one doesn't change the other.
@@ -62,12 +59,12 @@ function main() {
   const again = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));
   for (const row of rows) {
     row.push(0);
-    $print(`[${row.map((item) => String(item)).join(", ")}] `);
+    $print(`[${row.join(", ")}] `);
   }
   console.log(
     `[${again
       .toArray()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
 }

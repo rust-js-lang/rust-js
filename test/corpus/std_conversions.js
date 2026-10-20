@@ -16,17 +16,13 @@ function main() {
 
   const v = [8, 9];
   const w = [1, 2];
-  console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${v.join(", ")}] [${w.join(", ")}]`);
 
   const deque = [3, 4].slice();
   const heap = $heapFrom([2, 7, 1], $cmp);
   const map = new Map([["k", 1]]);
   console.log(
-    `[${deque.map((item) => String(item)).join(", ")}] ${heap[0] == null ? "None" : `Some(${heap[0]})`} {${Array.from(
-      map,
-    )
+    `[${deque.join(", ")}] ${heap[0] == null ? "None" : `Some(${heap[0]})`} {${Array.from(map)
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
@@ -36,9 +32,7 @@ function main() {
   const owned = "yo";
   const items = [1, 2];
   const boxed = [5];
-  console.log(
-    `${rc} ${text} ${owned} [${items.map((item) => String(item)).join(", ")}] [${boxed.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${rc} ${text} ${owned} [${items.join(", ")}] [${boxed.join(", ")}]`);
 
   const lent = { TAG: "Borrowed", _0: "lent" };
   const made = { TAG: "Owned", _0: "made" };
@@ -48,7 +42,7 @@ function main() {
   const vec = { TAG: "Owned", _0: [3] };
   const kinds = [lent, made, ofRef].map((c) => c.TAG === "Borrowed");
   console.log(
-    `${lent._0} ${made._0} ${ofRef._0} [${slice._0.map((item) => String(item)).join(", ")}] [${vec._0.map((item) => String(item)).join(", ")}] [${kinds.map((item) => String(item)).join(", ")}] ${vec.TAG === "Owned"}`,
+    `${lent._0} ${made._0} ${ofRef._0} [${slice._0.join(", ")}] [${vec._0.join(", ")}] [${kinds.join(", ")}] ${vec.TAG === "Owned"}`,
   );
 }
 //# sourceMappingURL=case.js.map

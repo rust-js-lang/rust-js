@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const v = [1, 2, 3];
   $rotateLeft(v, 2, "mid");
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
   $rotateLeft(v, 4, "mid");
 }
 //# sourceMappingURL=case.js.map

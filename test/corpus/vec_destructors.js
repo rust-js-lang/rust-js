@@ -39,11 +39,11 @@ function main() {
   try {
     $insertAt(v, 1, [4]);
     const tmp = ids(v);
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
     const removed = $removeAt(v, 0);
     try {
       const tmp = [undefined, ids(v)];
-      console.log(`removed ${removed[0]} [${tmp[1].map((item) => String(item)).join(", ")}]`);
+      console.log(`removed ${removed[0]} [${tmp[1].join(", ")}]`);
     } finally {
       noisyDrop_drop(removed);
     }
@@ -56,7 +56,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`swapped ${swapped[0]} [${tmp$1[1].map((item) => String(item)).join(", ")}]`);
+      console.log(`swapped ${swapped[0]} [${tmp$1[1].join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -87,7 +87,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$2.map((item) => String(item)).join(", ")}]`);
+      console.log(`[${tmp$2.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -107,7 +107,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$3.map((item) => String(item)).join(", ")}]`);
+      console.log(`[${tmp$3.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -127,7 +127,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$4.map((item) => String(item)).join(", ")}]`);
+      console.log(`[${tmp$4.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -153,7 +153,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$5.map((item) => String(item)).join(", ")}]`);
+      console.log(`[${tmp$5.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -186,9 +186,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(
-        `[${tmp$6.map((item) => String(item)).join(", ")}] [${tmp$7[1].map((item) => String(item)).join(", ")}]`,
-      );
+      console.log(`[${tmp$6.join(", ")}] [${tmp$7[1].join(", ")}]`);
     } catch (error) {
       for (const item of tail) {
         noisyDrop_drop(item);
@@ -226,7 +224,7 @@ function main() {
     }
     const length = tmp$9.length;
     try {
-      console.log(`[${tmp$8.map((item) => String(item)).join(", ")}] ${length}`);
+      console.log(`[${tmp$8.join(", ")}] ${length}`);
     } catch (error) {
       for (const item of more) {
         noisyDrop_drop(item);
@@ -267,7 +265,7 @@ function main() {
     }
     const length$1 = tmp$11.length;
     try {
-      console.log(`taken [${tmp$10.map((item) => String(item)).join(", ")}] left ${length$1}`);
+      console.log(`taken [${tmp$10.join(", ")}] left ${length$1}`);
     } catch (error) {
       for (const item of taken) {
         noisyDrop_drop(item);
@@ -290,21 +288,21 @@ function main() {
         try {
           $retain(w, value, noisyDrop_drop);
           const tmp = ids(w);
-          console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+          console.log(`[${tmp.join(", ")}]`);
           const value$1 = (n) => {
             console.log(`key ${n[0]}`);
             return (n[0] / 4) >>> 0;
           };
           $dedupBy(w, (a, b) => value$1(a) === value$1(b), noisyDrop_drop);
           const tmp$1 = ids(w);
-          console.log(`[${tmp$1.map((item) => String(item)).join(", ")}]`);
+          console.log(`[${tmp$1.join(", ")}]`);
           $truncate(w, 3, noisyDrop_drop);
           const tmp$2 = ids(w);
-          console.log(`[${tmp$2.map((item) => String(item)).join(", ")}]`);
+          console.log(`[${tmp$2.join(", ")}]`);
           $resizeWith(w, 5, () => [30], noisyDrop_drop);
           $resizeWith(w, 2, () => [31], noisyDrop_drop);
           const tmp$3 = ids(w);
-          console.log(`[${tmp$3.map((item) => String(item)).join(", ")}]`);
+          console.log(`[${tmp$3.join(", ")}]`);
           $truncate(w, 0, noisyDrop_drop);
           const length = w.length;
           console.log(`cleared ${length}`);

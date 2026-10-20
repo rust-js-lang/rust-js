@@ -13,15 +13,13 @@ function main() {
   list.unshift(1);
   const value = list[0];
   console.log(
-    `[${list.map((item) => String(item)).join(", ")}] ${list.length} ${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.at(-1))}`,
+    `[${list.join(", ")}] ${list.length} ${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.at(-1))}`,
   );
   const more = [4, 5];
   $append(list, more);
-  console.log(`[${list.map((item) => String(item)).join(", ")}] ${more.length === 0}`);
+  console.log(`[${list.join(", ")}] ${more.length === 0}`);
   const tail = $splitOff(list, 3);
-  console.log(
-    `[${list.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${list.join(", ")}] [${tail.join(", ")}]`);
   const value$1 = list.shift();
   const value$2 = list.pop();
   console.log(
@@ -42,6 +40,6 @@ function main() {
       .join(", ")}]`,
   );
   list.length = 0;
-  console.log(`[${list.map((item) => String(item)).join(", ")}] ${list.length === 0}`);
+  console.log(`[${list.join(", ")}] ${list.length === 0}`);
 }
 //# sourceMappingURL=case.js.map

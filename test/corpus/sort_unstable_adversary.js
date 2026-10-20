@@ -112,10 +112,10 @@ function main() {
   for (const n of [64, 300, 1000]) {
     const [sorted, asked] = adversary(n);
     const arg = $slice(sorted, 0, 12);
-    console.log(`${n} sorted after ${asked}: [${arg.map((item) => String(item)).join(", ")}]`);
+    console.log(`${n} sorted after ${asked}: [${arg.join(", ")}]`);
     const [picked, asked$1] = adversary(n, (n / 3) >>> 0);
     const arg$1 = $slice(picked, 0, 12);
-    console.log(`${n} picked after ${asked$1}: [${arg$1.map((item) => String(item)).join(", ")}]`);
+    console.log(`${n} picked after ${asked$1}: [${arg$1.join(", ")}]`);
   }
 }
 //# sourceMappingURL=case.js.map

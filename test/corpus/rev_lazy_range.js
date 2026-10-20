@@ -33,7 +33,7 @@ function main() {
     .toReversed()
     .map((x) => (x + 1) >>> 0);
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}] [${z.map((item) => String(item)).join(", ")}] [${seen.map((item) => String(item)).join(", ")}] ${last == null ? "None" : `Some(${last})`} [${empty.map((item) => String(item)).join(", ")}]`,
+    `[${v.join(", ")}] [${w.join(", ")}] [${z.join(", ")}] [${seen.join(", ")}] ${last == null ? "None" : `Some(${last})`} [${empty.join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

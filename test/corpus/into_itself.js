@@ -40,10 +40,6 @@ function main() {
   const meters = distance();
   const arg = $eq(meters, [4.5]);
   console.log(`${metersDebug_fmt(meters)} ${arg}`);
-  console.log(
-    `[${pair(7)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${pair(7).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

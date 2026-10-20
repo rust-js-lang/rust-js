@@ -11,6 +11,6 @@ function main() {
   for (const x of $mutItems($view(v, 3, 9))) {
     x.value = 0;
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${v.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

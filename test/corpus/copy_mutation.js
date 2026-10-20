@@ -41,9 +41,7 @@ function main() {
   ];
   const row = grid[0].slice();
   grid[0][1] = 5;
-  console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${row.join(", ")}]`);
 
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
   const copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
@@ -73,7 +71,7 @@ function main() {
   const items = $index(nested, 1);
   items[$at(items, 0)] = 0;
   console.log(
-    `[${nested.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${nested.map((item) => `[${item.join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
 
   const tagged = { n: 1 };

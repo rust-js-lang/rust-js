@@ -32,9 +32,9 @@ function main() {
   $copyFromSlice(buf, [1, 2, 3]);
   const written = buf;
   written[$at(written, 0)] = 9;
-  console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${buf.join(", ")}]`);
   buf[$at(buf, 2)] = 7;
-  console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${buf.join(", ")}]`);
 
   const src = [[1], [2]];
   const slots = Array.from({ length: 2 });
@@ -86,7 +86,7 @@ function main() {
   const value = held[0];
   try {
     console.log(
-      `[${lists.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] ${$debugStr(value)} ${$debugStr(held[1])}`,
+      `[${lists.map((item) => `[${item.join(", ")}]`).join(", ")}] ${$debugStr(value)} ${$debugStr(held[1])}`,
     );
     console.log("end");
   } finally {

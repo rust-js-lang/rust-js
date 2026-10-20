@@ -78,7 +78,7 @@ function everything(s, SShape) {
       [1, 2],
       "x",
       { clone: (value) => value },
-      { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` },
+      { fmt: (value) => `[${value.join(", ")}]` },
       { fmt: (value) => value },
     ),
   ];

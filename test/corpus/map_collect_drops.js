@@ -52,7 +52,7 @@ function main() {
       const tmp = $sortedEntries(b, $cmp)
         .map((entry) => entry[1])
         .map((l) => l[0]);
-      console.log(`b [${tmp.map((item) => String(item)).join(", ")}]`);
+      console.log(`b [${tmp.join(", ")}]`);
       const value = (i) => {
         console.log(`make ${i}`);
         return [i % 2, [(10 + i) & 255]];

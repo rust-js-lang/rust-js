@@ -24,7 +24,7 @@ function main() {
       try {
         console.log(`${l.length}`);
         const s = [1, 2];
-        console.log(`[${s.map((item) => String(item)).join(", ")}]`);
+        console.log(`[${s.join(", ")}]`);
       } finally {
         for (const item of l) {
           loudDrop_drop(item);

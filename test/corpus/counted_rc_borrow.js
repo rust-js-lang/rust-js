@@ -22,7 +22,7 @@ function main() {
           const r = other.value;
           const plain = [1, 2];
           const v = plain;
-          console.log(`${r} [${v.map((item) => String(item)).join(", ")}]`);
+          console.log(`${r} [${v.join(", ")}]`);
         } finally {
           $rcDrop(d);
         }

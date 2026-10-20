@@ -60,7 +60,7 @@ function main() {
   const value = find(items, { clone: (value) => value }, "u8");
   const value$1 = find(items, { clone: (value) => value }, "&str");
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => $debugStr(item)).join(", ")}] [${find(
+    `[${value.join(", ")}] [${value$1.map((item) => $debugStr(item)).join(", ")}] [${find(
       items,
       { clone: (value) => value },
       "alloc::string::String",
@@ -75,7 +75,7 @@ function main() {
       : { TAG: "Err", _0: shared };
   if (value$2.TAG === "Ok") {
     const list = value$2._0;
-    console.log(`[${list.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${list.join(", ")}]`);
   } else {
     console.log("not a list");
   }

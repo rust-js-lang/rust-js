@@ -159,7 +159,7 @@ export function report() {
     out += `([${value[0].map((item) => $debugStr(item)).join(", ")}], [${value[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(value[2])}, [${value[3].map((item) => $debugStr(item)).join(", ")}], ${value[4]})\n`;
   }
   const value = slices([1, 2, 3, 4]);
-  out += `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], [${value[2].map((item) => String(item)).join(", ")}], [${value[3].map((item) => String(item)).join(", ")}], ${value[4]})\n${escapes()}\n`;
+  out += `([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}], [${value[3].join(", ")}], ${value[4]})\n${escapes()}\n`;
   out += `${$debugStr(templates(7))}\n`;
   return out;
 }

@@ -6,7 +6,7 @@ export function entry() {
 
 function check(val) {
   const { a, inner } = val;
-  console.log(`${a} [${inner.map((item) => String(item)).join(", ")}]`);
+  console.log(`${a} [${inner.join(", ")}]`);
   return inner.length;
 }
 

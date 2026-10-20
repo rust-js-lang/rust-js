@@ -90,21 +90,21 @@ function main() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { len: (iterator) => iterator.len() },
   );
-  console.log(`(${value[0]}, [${value[1].map((item) => String(item)).join(", ")}])`);
+  console.log(`(${value[0]}, [${value[1].join(", ")}])`);
   const value$1 = twice(
     [2],
     { next: countdownIterator_next },
     { clone: (value) => [value[0]] },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
   );
-  console.log(`(${value$1[0]}, [${value$1[1].map((item) => String(item)).join(", ")}])`);
+  console.log(`(${value$1[0]}, [${value$1[1].join(", ")}])`);
   const value$2 = twice(
     { start: 0, end: 3 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
     { len: $rangeLen },
   );
-  console.log(`(${value$2[0]}, [${value$2[1].map((item) => String(item)).join(", ")}])`);
+  console.log(`(${value$2[0]}, [${value$2[1].join(", ")}])`);
   const it = $iter([4, 5, 6]);
   $next(it);
   const value$3 = twice(
@@ -113,7 +113,7 @@ function main() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { len: (iterator) => iterator.len() },
   );
-  console.log(`(${value$3[0]}, [${value$3[1].map((item) => String(item)).join(", ")}])`);
+  console.log(`(${value$3[0]}, [${value$3[1].join(", ")}])`);
 
   const value$4 = ends(
     $iter(["a", "b", "c"]),
@@ -151,7 +151,7 @@ function main() {
     { len: (iterator) => iterator.len() },
   );
   console.log(
-    `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1]}, [${value$7[2].map((item) => String(item)).join(", ")}])`,
+    `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1]}, [${value$7[2].join(", ")}])`,
   );
   const value$8 = passed_on(
     [2],
@@ -161,7 +161,7 @@ function main() {
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
   );
   console.log(
-    `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1]}, [${value$8[2].map((item) => String(item)).join(", ")}])`,
+    `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1]}, [${value$8[2].join(", ")}])`,
   );
   const value$9 = passed_on(
     { start: 0, end: 3 },
@@ -171,7 +171,7 @@ function main() {
     { len: $rangeLen },
   );
   console.log(
-    `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1]}, [${value$9[2].map((item) => String(item)).join(", ")}])`,
+    `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1]}, [${value$9[2].join(", ")}])`,
   );
 
   const value$10 = handed_on(
@@ -190,32 +190,19 @@ function main() {
     `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
   );
   console.log(
-    `[${backwards(
-      [2],
-      { next: countdownIterator_next },
-      { clone: (value) => [value[0]] },
-      { next_back: countdownDoubleEndedIterator_next_back },
-    )
-      .map((item) => String(item))
-      .join(", ")}] [${backwards(
+    `[${backwards([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] }, { next_back: countdownDoubleEndedIterator_next_back }).join(", ")}] [${backwards(
       { start: 5, end: 7 },
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
       { next_back: $rangeNextBack },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${after([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] })
-      .map((item) => String(item))
-      .join(", ")}] [${after(
+    `[${after([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] }).join(", ")}] [${after(
       { start: 5, end: 7 },
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

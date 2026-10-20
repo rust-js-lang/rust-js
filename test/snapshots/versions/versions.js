@@ -143,7 +143,7 @@ export function tour() {
   const v = $range(1, 9);
   const tail = $splitOff(v, 5);
   const drained = $drain(v, 1, 3);
-  out += `[${running.map((item) => String(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}] [${drained.map((item) => String(item)).join(", ")}]\n`;
+  out += `[${running.join(", ")}] [${v.join(", ")}] [${tail.join(", ")}] [${drained.join(", ")}]\n`;
   const fs = [2.5, -1, 3.25, 0];
   fs.sort((a, b) => $totalCmp(a, b));
   const total = fs.reduce((a, b) => a + b, -0);
@@ -186,7 +186,7 @@ export function edges() {
     [35, 36],
   ].map(([n, r]) => $fromDigit(n, r));
   const points = [65, 233, 55296, 128512, 1114112].map((n) => $fromU32(n));
-  return `${versionDebug_fmt(v)} ${order.value} [${upto.map((item) => String(item)).join(", ")}]\n[${fs.map((item) => $debugF64(item)).join(", ")}]\n[${digits.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}] [${points.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}]\n${$lowerExp(1234)} ${$lowerExp(0)} ${$lowerExp(-0.00025)} ${$lowerExp(6.02e23).replace("e", "E")} ${$lowerExp(NaN)} ${$lowerExp(100)}`;
+  return `${versionDebug_fmt(v)} ${order.value} [${upto.join(", ")}]\n[${fs.map((item) => $debugF64(item)).join(", ")}]\n[${digits.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}] [${points.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}]\n${$lowerExp(1234)} ${$lowerExp(0)} ${$lowerExp(-0.00025)} ${$lowerExp(6.02e23).replace("e", "E")} ${$lowerExp(NaN)} ${$lowerExp(100)}`;
 }
 
 export function panics(i) {

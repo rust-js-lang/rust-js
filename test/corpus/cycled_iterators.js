@@ -76,9 +76,7 @@ function two(iter, dropI) {
 
 function main() {
   console.log(
-    `[${firsts([2], 5, { next: countdownIterator_next }, { clone: (value) => [value[0]] })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${firsts([2], 5, { next: countdownIterator_next }, { clone: (value) => [value[0]] }).join(", ")}]`,
   );
   console.log(
     `[${firsts(
@@ -86,9 +84,7 @@ function main() {
       7,
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
     `[${firsts(
@@ -107,7 +103,7 @@ function main() {
   )
     .take(5)
     .toArray();
-  console.log(`[${r.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${r.join(", ")}]`);
   const e = $cycleOf(
     { start: 3, end: 3 },
     (iterator) => ({ start: iterator.start, end: iterator.end }),
@@ -115,7 +111,7 @@ function main() {
   )
     .take(5)
     .toArray();
-  console.log(`[${e.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${e.join(", ")}]`);
 
   const tags = $cycleOf([0], (iterator) => [iterator[0]], genIterator_next)
     .take(3)
@@ -125,7 +121,7 @@ function main() {
       return result;
     })
     .toArray();
-  console.log(`[${tags.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${tags.join(", ")}]`);
   const held = firsts([0], 3, { next: genIterator_next }, { clone: (value) => [value[0]] });
   try {
     console.log(`held ${held.length}`);
@@ -146,13 +142,11 @@ function main() {
   )
     .take(5)
     .toArray();
-  console.log(`[${counted.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${counted.join(", ")}]`);
   console.log(
     `[${firsts({ n: 1, tag: [2] }, 3, { next: counterIterator_next }, counterClone(), (counter) => {
       loudDrop_drop(counter.tag);
-    })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    }).join(", ")}]`,
   );
   const unstepped = $cycleOf(
     { n: 3, tag: [3] },
@@ -171,9 +165,7 @@ function main() {
   console.log(
     `[${two($iterator({ n: 5, tag: [4] }, counterIterator_next), (it) => {
       loudDrop_drop(it.of.tag);
-    })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    }).join(", ")}]`,
   );
   console.log("end");
 }

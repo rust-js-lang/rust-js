@@ -14,17 +14,13 @@ function main() {
   const second = EMPTY.slice();
   const grid = Array.from({ length: 3 }, () => EMPTY.slice());
   console.log(
-    `[${first.map((item) => String(item)).join(", ")}] [${second.map((item) => String(item)).join(", ")}] [${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${first.join(", ")}] [${second.join(", ")}] [${grid.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
   // One of a value that isn't `Copy` is the one there is.
   const single = [[7]];
-  console.log(
-    `[${single.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${single.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const rows = Array.from({ length: 2 }, () => mainConst.slice());
   rows[0].push(1);
-  console.log(
-    `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

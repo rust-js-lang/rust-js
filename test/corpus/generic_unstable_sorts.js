@@ -62,14 +62,13 @@ function main() {
   const wide$1 = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
   console.log(`${$debugStr(wide$1.map((t) => t[3]).join(""))}`);
   console.log(
-    `[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, { clone: (value) => value }, "network")
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, { clone: (value) => value }, "network").join(
+      ", ",
+    )}]`,
   );
   console.log(
     `[${iSorted({ next: $next })
       .sorted_unstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")
-      .map((item) => String(item))
       .join(", ")}]`,
   );
 }

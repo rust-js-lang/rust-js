@@ -123,9 +123,7 @@ function main() {
     try {
       const tmp$1 = $borrow(text, true);
       try {
-        console.log(
-          `[${value$8.value.map((item) => String(item)).join(", ")}] ${tmp.value} ${tmp$1.value}`,
-        );
+        console.log(`[${value$8.value.join(", ")}] ${tmp.value} ${tmp$1.value}`);
       } finally {
         $unborrow(tmp$1);
       }
@@ -146,7 +144,7 @@ function main() {
   try {
     const tmp = $borrow(grid, true);
     try {
-      console.log(`[${value$11.value.map((item) => String(item)).join(", ")}] ${tmp.value[2]}`);
+      console.log(`[${value$11.value.join(", ")}] ${tmp.value[2]}`);
     } finally {
       $unborrow(tmp);
     }

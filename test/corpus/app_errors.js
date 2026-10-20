@@ -117,7 +117,7 @@ function main() {
   }
   const results = $collectResults(["a", "d"].values().map((k) => field(config, k)));
   console.log(
-    `${results.TAG === "Ok" ? `Ok([${results._0.map((item) => String(item)).join(", ")}])` : `Err(${appErrorDebug_fmt(results._0)})`}`,
+    `${results.TAG === "Ok" ? `Ok([${results._0.join(", ")}])` : `Err(${appErrorDebug_fmt(results._0)})`}`,
   );
   const e = $unwrapErr(field(config, "b"));
   console.log(`${appErrorDebug_fmt(e)}`);

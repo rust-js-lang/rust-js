@@ -234,31 +234,31 @@ function main() {
   );
   const value$11 = call_args(["(", "1", ",", "_", "2", ",", "_", "_", "3", ")"]);
   console.log(
-    `${value$11.TAG === "Ok" ? `Ok([${value$11._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$11._0)})`}`,
+    `${value$11.TAG === "Ok" ? `Ok([${value$11._0.join(", ")}])` : `Err(${errorDebug_fmt(value$11._0)})`}`,
   );
   const value$12 = call_args(["(", "1", ",", "_", "_", "_", ")"]);
   console.log(
-    `${value$12.TAG === "Ok" ? `Ok([${value$12._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$12._0)})`}`,
+    `${value$12.TAG === "Ok" ? `Ok([${value$12._0.join(", ")}])` : `Err(${errorDebug_fmt(value$12._0)})`}`,
   );
   const value$13 = call_args(["(", ")"]);
   console.log(
-    `${value$13.TAG === "Ok" ? `Ok([${value$13._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$13._0)})`}`,
+    `${value$13.TAG === "Ok" ? `Ok([${value$13._0.join(", ")}])` : `Err(${errorDebug_fmt(value$13._0)})`}`,
   );
   const value$14 = call_args(["(", "1", "2"]);
   console.log(
-    `${value$14.TAG === "Ok" ? `Ok([${value$14._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$14._0)})`}`,
+    `${value$14.TAG === "Ok" ? `Ok([${value$14._0.join(", ")}])` : `Err(${errorDebug_fmt(value$14._0)})`}`,
   );
   const value$15 = call_args(["(", "x"]);
   console.log(
-    `${value$15.TAG === "Ok" ? `Ok([${value$15._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$15._0)})`}`,
+    `${value$15.TAG === "Ok" ? `Ok([${value$15._0.join(", ")}])` : `Err(${errorDebug_fmt(value$15._0)})`}`,
   );
   const value$16 = call_args(["add"]);
   console.log(
-    `${value$16.TAG === "Ok" ? `Ok([${value$16._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$16._0)})`}`,
+    `${value$16.TAG === "Ok" ? `Ok([${value$16._0.join(", ")}])` : `Err(${errorDebug_fmt(value$16._0)})`}`,
   );
   const value$17 = call_args([]);
   console.log(
-    `${value$17.TAG === "Ok" ? `Ok([${value$17._0.map((item) => String(item)).join(", ")}])` : `Err(${errorDebug_fmt(value$17._0)})`}`,
+    `${value$17.TAG === "Ok" ? `Ok([${value$17._0.join(", ")}])` : `Err(${errorDebug_fmt(value$17._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

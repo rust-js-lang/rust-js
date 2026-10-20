@@ -50,11 +50,6 @@ function decode(bytes) {
 function main() {
   const chars = decode(Array.from(new TextEncoder().encode("aé€😀")));
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}] ${chars.length}`);
-  console.log(
-    `[${chars
-      .map((c) => c === $unwrap($fromU32(c.codePointAt(0))))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${chars.map((c) => c === $unwrap($fromU32(c.codePointAt(0)))).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

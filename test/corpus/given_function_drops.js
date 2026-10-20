@@ -90,7 +90,7 @@ function main() {
   const v = [3, 1, 2];
   v.sort((x, y) => $cmp($rem(x, Loud.get(a$4)) >>> 0, $rem(y, Loud.get(a$4)) >>> 0));
   loudDrop_drop(a$4);
-  console.log(`sorted [${v.map((item) => String(item)).join(", ")}]`);
+  console.log(`sorted [${v.join(", ")}]`);
   const a$5 = [6];
   const read = () => Loud.get(a$5);
   try {

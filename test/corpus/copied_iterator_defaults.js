@@ -165,28 +165,15 @@ function main() {
   console.log("louds skipped");
 
   console.log(`${tTotals({ next: genIterator_next }).total([0])}`);
-  console.log(
-    `[${tTotals({ next: genIterator_next })
-      .doubled([1])
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${tTotals({ next: genIterator_next }).doubled([1]).join(", ")}]`);
   console.log(`${tTotals({ next: $rangeNext }).looped({ start: 1, end: 4 })}`);
   const h = [0];
   console.log(
-    `[${tTotals({ next: genIterator_next })
-      .first_two(h)
-      .map((item) => String(item))
-      .join(
-        ", ",
-      )}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
+    `[${tTotals({ next: genIterator_next }).first_two(h).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
   );
   const range = { start: 0, end: 5 };
   console.log(
-    `[${tTotals({ next: $rangeNext })
-      .first_two(range)
-      .map((item) => String(item))
-      .join(", ")}] ${range.start}..${range.end}`,
+    `[${tTotals({ next: $rangeNext }).first_two(range).join(", ")}] ${range.start}..${range.end}`,
   );
 
   const held = [[0]];

@@ -31,9 +31,7 @@ function main() {
     slot.value = new Array((i + 1) >>> 0).fill(i & 255);
   }
   const lists$1 = lists.map((slot) => slot);
-  console.log(
-    `[${lists$1.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-  );
+  console.log(`[${lists$1.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const named = Array.from({ length: 2 }, () => EMPTY);
   named[1] = "n";
   console.log(`${named[1]}`);

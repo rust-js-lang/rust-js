@@ -80,7 +80,7 @@ function main() {
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end);
   console.log(
-    `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true ${Math.max(2 - 5, 0)}`,
+    `${r.start}..${r.end} [${v.join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true ${Math.max(2 - 5, 0)}`,
   );
 
   const steps = { start: 0, end: 4 };
@@ -95,9 +95,7 @@ function main() {
     `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${evens({
       start: inclusive.start,
       end: inclusive.end,
-    })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    }).join(", ")}]`,
   );
   const low = 3;
   const high = 9;
@@ -114,7 +112,7 @@ function main() {
     $iter(Array.from("abc")),
   ).toArray();
   console.log(
-    `[${ids.map((item) => String(item)).join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,
+    `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,
   );
 
   for (const x of [3, 7, 10]) {
@@ -180,7 +178,7 @@ function main() {
           const lens = spans.map((s) => Math.max(s.end - s.start, 0));
           const value = $eq(labelled, copy);
           console.log(
-            `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.map((item) => String(item)).join(", ")}]`,
+            `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
           );
           console.log(
             `${sum_all($lazyRange(1, 4))} ${sum_all($iterator(r_of(3), $rangeNext))} ${sum_all($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
@@ -197,13 +195,7 @@ function main() {
           const cut = { start: 1, end: 3 };
           const gone = $drain(numbers, cut.start, cut.end);
           console.log(
-            `[${gone.map((item) => String(item)).join(", ")}] [${numbers.map((item) => String(item)).join(", ")}] [${$slice(
-              numbers,
-              0,
-              2,
-            )
-              .map((item) => String(item))
-              .join(", ")}]`,
+            `[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`,
           );
 
           // `char`s step past the surrogates, which no `char` is.

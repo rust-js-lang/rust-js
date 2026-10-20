@@ -198,14 +198,12 @@ export function report() {
   for (const n of [0, 5]) {
     const value = iters(n);
     const value$1 = consumers(n);
-    out += `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], [${value[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${value[3].map((item) => String(item)).join(", ")}], [${value[4].map((item) => String(item)).join(", ")}], [${value[5].map((item) => String(item)).join(", ")}]) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2]}, ${value$1[3] == null ? "None" : `Some(${value$1[3]})`}, ${value$1[4] == null ? "None" : `Some(${value$1[4]})`}, ([${value$1[5][0].map((item) => String(item)).join(", ")}], [${value$1[5][1].map((item) => String(item)).join(", ")}])) ${((tuple) => `(${tuple[0]}, [${tuple[1].map((item) => String(item)).join(", ")}], ${tuple[2]}, [${tuple[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${tuple[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${tuple[5].map((item) => String(item)).join(", ")}])`)(vecs(n))}\n`;
-    out += `[${joined([1, n], (n + 1) >>> 0)
-      .map((item) => String(item))
-      .join(", ")}]\n`;
+    out += `([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${value[3].join(", ")}], [${value[4].join(", ")}], [${value[5].join(", ")}]) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2]}, ${value$1[3] == null ? "None" : `Some(${value$1[3]})`}, ${value$1[4] == null ? "None" : `Some(${value$1[4]})`}, ([${value$1[5][0].join(", ")}], [${value$1[5][1].join(", ")}])) ${((tuple) => `(${tuple[0]}, [${tuple[1].join(", ")}], ${tuple[2]}, [${tuple[3].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[4].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[5].join(", ")}])`)(vecs(n))}\n`;
+    out += `[${joined([1, n], (n + 1) >>> 0).join(", ")}]\n`;
     const value$2 = bumped(n > 0, [1, n]);
-    out += `${value$2 == null ? "None" : `Some([${value$2.map((item) => String(item)).join(", ")}])`}\n`;
+    out += `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}\n`;
     const value$3 = shifted(n, [1, n]);
-    out += `${value$3 == null ? "None" : `Some([${value$3.map((item) => String(item)).join(", ")}])`}\n`;
+    out += `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
     const value$4 = name_of(named);
     const value$5 = name_of(undefined);

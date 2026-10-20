@@ -38,15 +38,13 @@ function checksum(bytes) {
 function main() {
   const get = [71, 69, 84];
   const value = method(get);
-  console.log(`[${get.map((item) => String(item)).join(", ")}] ${get.length} ${value}`);
+  console.log(`[${get.join(", ")}] ${get.length} ${value}`);
   console.log(`${method([80, 79, 83, 84])} ${method([])}`);
   // Escapes, and every byte, not just ASCII.
   const raw = [97, 1, 255, 10, 92, 34];
-  console.log(`[${raw.map((item) => String(item)).join(", ")}] ${checksum(raw)}`);
+  console.log(`[${raw.join(", ")}] ${checksum(raw)}`);
   const joined = [97, 98, 99, 100];
-  console.log(
-    `[${joined.map((item) => String(item)).join(", ")}] ${$eq(joined, [97, 98, 99, 100])}`,
-  );
+  console.log(`[${joined.join(", ")}] ${$eq(joined, [97, 98, 99, 100])}`);
   const left = [122, 122];
   const right = [122, 97];
   console.log(`${$cmpItems(left, right, $cmp) > 0}`);
@@ -54,11 +52,7 @@ function main() {
   // A string's UTF-8 bytes: a multi-byte character is more than one.
   const word = "héllo €";
   const bytes = Array.from(new TextEncoder().encode(word));
-  console.log(
-    `${Array.from(word).length} ${bytes.length} [${$slice(bytes, 0, 3)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`${Array.from(word).length} ${bytes.length} [${$slice(bytes, 0, 3).join(", ")}]`);
   console.log(`${checksum(Array.from(new TextEncoder().encode("abc")))}`);
   console.log(`${method(Array.from(new TextEncoder().encode("GET")))}`);
 }

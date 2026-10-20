@@ -41,9 +41,9 @@ function widened(x, TIntoU64) {
 
 function main() {
   const w = make([1, 2], unitMakerVec());
-  console.log(`[${w[0].map((item) => String(item)).join(", ")}]`);
+  console.log(`[${w[0].join(", ")}]`);
   const w2 = build([3], { from: wrapFromVec_from });
-  console.log(`[${w2[0].map((item) => String(item)).join(", ")}]`);
+  console.log(`[${w2[0].join(", ")}]`);
   const n = conv(7, { from: (n) => n });
   const s = build("hi", { from: (s) => s });
   console.log(`${n} ${s}`);

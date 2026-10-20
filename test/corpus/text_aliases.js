@@ -30,20 +30,12 @@ function main() {
   let owned = "";
   owned += "héllo";
   console.log(
-    `[${Array.from(new TextEncoder().encode(owned))
-      .map((item) => String(item))
-      .join(", ")}] [${Array.from(new TextEncoder().encode(owned))
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${Array.from(new TextEncoder().encode(owned)).join(", ")}] [${Array.from(new TextEncoder().encode(owned)).join(", ")}]`,
   );
   const boxed = owned;
   const back = boxed;
   console.log(`${boxed} ${back}`);
-  console.log(
-    `[${Array.from(new TextEncoder().encode(boxed))
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from(new TextEncoder().encode(boxed)).join(", ")}]`);
   const bytes = [104, 105];
   const made = $utf8Decode(bytes);
   console.log(`${made}`);
@@ -52,16 +44,11 @@ function main() {
   const list = parts;
   list.push(3);
   const arg = ["a", "b"].join("-");
-  console.log(`[${list.map((item) => String(item)).join(", ")}] ${arg}`);
+  console.log(`[${list.join(", ")}] ${arg}`);
   const nested = [[1, 2], [3]];
   const value = $joinWith(nested, 0, false);
   const value$1 = $joinWith(nested, [7, 8], true);
-  console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${nested
-      .flat()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${value.join(", ")}] [${value$1.join(", ")}] [${nested.flat().join(", ")}]`);
   const words = [["a"], ["b"]];
   const joined = $joinWith(words, "-", false);
   joined[$at(joined, 0)] = joined[0] + "!";

@@ -72,39 +72,23 @@ function maybe_items(item) {
 // A `for` over an `Option` is one Rust warns of, but takes.
 
 function main() {
-  console.log(
-    `[${powers_of_two(100)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${countdown(4)
-      .map((item) => String(item))
-      .join(", ")}] [${countdown(0)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${powers_of_two(100).join(", ")}]`);
+  console.log(`[${countdown(4).join(", ")}] [${countdown(0).join(", ")}]`);
   console.log(
     `[${with_header("title", ["a", "b"])
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   const nothing = [];
-  console.log(`[${nothing.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${nothing.join(", ")}]`);
   const dashes = Iterator.from($repeating("-")).take(5).toArray().join("");
   const words = Iterator.from($repeating("hi")).take(3).toArray();
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
   const padded = $lazyChain($iter([1, 2]), Iterator.from($repeating(0)))
     .take(5)
     .toArray();
-  console.log(`[${padded.map((item) => String(item)).join(", ")}]`);
-  console.log(
-    `[${maybe_items(4)
-      .map((item) => String(item))
-      .join(", ")}] [${maybe_items(undefined)
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${padded.join(", ")}]`);
+  console.log(`[${maybe_items(4).join(", ")}] [${maybe_items(undefined).join(", ")}]`);
   const total =
     (Iterator.from(3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
       Iterator.from(undefined == null ? [] : [undefined]).reduce((a, b) => (a + b) | 0, 0)) |
@@ -114,20 +98,18 @@ function main() {
     [1, "a"],
     [2, "b"],
   ]);
-  console.log(
-    `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => $debugStr(item, "'")).join(", ")}]`,
-  );
+  console.log(`[${left.join(", ")}] [${right.map((item) => $debugStr(item, "'")).join(", ")}]`);
   const squares = $successors(2n, (n) => BigInt.asUintN(64, n * n))
     .take(4)
     .toArray();
-  console.log(`[${squares.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${squares.join(", ")}]`);
 
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
   const zipped = $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))).toArray();
   const labelled = $lazyZip($iter(Array.from("xyz")), Iterator.from($repeating(7))).toArray();
   console.log(
-    `[${chained.map((item) => String(item)).join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
+    `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
   const fours = Iterator.from($repeating(4));
   const bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
@@ -135,13 +117,11 @@ function main() {
   const b = $next(bigger);
   const rest = bigger.toArray();
   console.log(
-    `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.map((item) => String(item)).join(", ")}]`,
+    `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.join(", ")}]`,
   );
   const short = $lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2).toArray();
   console.log(
-    `[${short.map((item) => String(item)).join(", ")}] [${repeated(undefined, 2, {
-      clone: (value) => value,
-    })
+    `[${short.join(", ")}] [${repeated(undefined, 2, { clone: (value) => value })
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
@@ -157,7 +137,7 @@ function main() {
     .take(3)
     .toArray();
   console.log(
-    `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${squares$1.map((item) => String(item)).join(", ")}]`,
+    `[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}] [${squares$1.join(", ")}]`,
   );
   // `successors` finds the next item before it gives this one.
   let calls = 0;

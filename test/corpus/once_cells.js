@@ -78,18 +78,16 @@ function main() {
   );
 
   const lock = {};
-  console.log(
-    `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
-  );
+  console.log(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`);
   $getOrInitLock(lock, () => [1, 2]);
   const value$7 = $onceSet(lock, [3]);
   console.log(
-    `${value$7.TAG === "Ok" ? "Ok(())" : `Err([${value$7._0.map((item) => String(item)).join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
+    `${value$7.TAG === "Ok" ? "Ok(())" : `Err([${value$7._0.join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`,
   );
   console.log(`${greeting()} ${greeting()}`);
   const shown = {};
   console.log(
-    `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.map((item) => String(item)).join(", ")}]`}) ${$pretty(
+    `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
       "OnceCell(",
       [
         shown.value == null
@@ -103,13 +101,9 @@ function main() {
       ")",
     )}`,
   );
-  $unwrapOk(
-    $onceSet(shown, [1]),
-    undefined,
-    (e) => `[${e.map((item) => String(item)).join(", ")}]`,
-  );
+  $unwrapOk($onceSet(shown, [1]), undefined, (e) => `[${e.join(", ")}]`);
   console.log(
-    `OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.map((item) => String(item)).join(", ")}]`}) ${$pretty(
+    `OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.join(", ")}]`}) ${$pretty(
       "OnceCell(",
       [
         shown.value == null
@@ -129,8 +123,6 @@ function main() {
   console.log(
     `OnceCell(${unit.value == null ? "<uninit>" : "()"}) OnceCell(${nothing.value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`,
   );
-  console.log(
-    `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
-  );
+  console.log(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`);
 }
 //# sourceMappingURL=case.js.map

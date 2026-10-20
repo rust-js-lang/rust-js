@@ -102,7 +102,7 @@ function main() {
     cells[0] = 9;
   }
   console.log(
-    `${kept == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($someValue(kept))})`} ${grid == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($someValue(grid))})`}`,
+    `${kept == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($someValue(kept))})`} ${grid == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($someValue(grid))})`}`,
   );
   const value$7 = depth(DEEP);
   const arg = $eq(NOTHING_FOUND, lookup(table, 1));

@@ -80,9 +80,7 @@ function main() {
     [2, "two"],
   ]);
   console.log(
-    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, { clone: (value) => value })
-      .map((item) => String(item))
-      .join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
       { cmp: $cmp },
       { clone: (value) => value },
@@ -96,26 +94,10 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, { clone: (value) => value })
-      .map((item) => String(item))
-      .join(", ")}] [${sorted(
-      $iter($setAlgebra(a, b, "intersection")),
-      { cmp: $cmp },
-      { clone: (value) => value },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
   );
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, { clone: (value) => value })
-      .map((item) => String(item))
-      .join(", ")}] [${sorted(
-      $iter($setAlgebra(a, b, "symmetric")),
-      { cmp: $cmp },
-      { clone: (value) => value },
-    )
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
   );
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
@@ -135,9 +117,7 @@ function main() {
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
   console.log(
-    `[${sorted($iter(Array.from(taken)), { cmp: $cmp }, { clone: (value) => value })
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${sorted($iter(Array.from(taken)), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
   );
 
   const tree = new Map([
@@ -226,33 +206,20 @@ function main() {
       { TAG: "Excluded", _0: 7 },
     )
       .slice()
-      .map((item) => String(item))
       .join(", ")}]`,
   );
   const value$14 = $treeEnd(set, $cmp, false, true, true);
   const value$15 = $treeEnd(set, $cmp, true, true, true);
   console.log(
-    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} {${Array.from(
-      $sortedKeys(set, $cmp),
-    )
-      .map((item) => String(item))
-      .join(", ")}}`,
+    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} {${Array.from($sortedKeys(set, $cmp)).join(", ")}}`,
   );
   const other = new Set([1, 4, 9]);
   console.log(
-    `[${$setAlgebra(set, other, "union", $cmp)
-      .map((item) => String(item))
-      .join(", ")}] [${$setAlgebra(set, other, "symmetric", $cmp)
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${$setAlgebra(set, other, "union", $cmp).join(", ")}] [${$setAlgebra(set, other, "symmetric", $cmp).join(", ")}]`,
   );
   const upper = $treeSplitOff(set, 5, $cmp, true);
   console.log(
-    `{${Array.from($sortedKeys(set, $cmp))
-      .map((item) => String(item))
-      .join(", ")}} {${Array.from($sortedKeys(upper, $cmp))
-      .map((item) => String(item))
-      .join(", ")}}`,
+    `{${Array.from($sortedKeys(set, $cmp)).join(", ")}} {${Array.from($sortedKeys(upper, $cmp)).join(", ")}}`,
   );
 
   // A remove whose old value nothing reads: JS's own `delete`.

@@ -28,8 +28,6 @@ function kept() {
   $next(it);
   const at = $rposition(it, (x) => x === 9);
   const arg = it.toArray();
-  console.log(
-    `${at == null ? "None" : `Some(${at})`} [${arg.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`${at == null ? "None" : `Some(${at})`} [${arg.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

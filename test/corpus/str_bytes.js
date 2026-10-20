@@ -33,19 +33,14 @@ function leading_number(line) {
 function main() {
   const word = "héllo €";
   const all = Array.from(new TextEncoder().encode(word));
-  console.log(`[${all.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${all.join(", ")}]`);
   console.log(
     `${Array.from(new TextEncoder().encode(word)).length} ${Array.from(new TextEncoder().encode(word)).length} ${Array.from(word).length}`,
   );
   console.log(`${Array.from(new TextEncoder().encode(word)).filter((b) => b >= 128).length}`);
   const sum = Array.from(new TextEncoder().encode("abc")).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${sum}`);
-  console.log(
-    `[${Array.from(new TextEncoder().encode("abc"))
-      .toReversed()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from(new TextEncoder().encode("abc")).toReversed().join(", ")}]`);
   const value = Array.from(new TextEncoder().encode(word))[0];
   const value$1 = Array.from(new TextEncoder().encode(word)).at(-1);
   const value$2 = Array.from(new TextEncoder().encode(word))[2];
@@ -77,14 +72,6 @@ function main() {
   const first = $iter(Array.from(new TextEncoder().encode("héllo")));
   $next(first);
   const second = $iter(first.items.slice(first.at, first.end));
-  console.log(
-    `[${first
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}] [${second
-      .toArray()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`[${first.toArray().join(", ")}] [${second.toArray().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -21,11 +21,11 @@ function main() {
   for (const [i, slot] of $mutItems(squares).entries()) {
     slot.value = BigInt(Math.imul(i, i) >>> 0);
   }
-  console.log(`[${squares.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${squares.join(", ")}]`);
   const zero = [0, 0, false];
   console.log(`(${zero[0]}, ${$debugF64(zero[1])}, ${zero[2]})`);
   const zeros = new Array(3).fill(0);
-  console.log(`[${zeros.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${zeros.join(", ")}]`);
   let text = "t";
   text += "!";
   console.log(`${text}`);

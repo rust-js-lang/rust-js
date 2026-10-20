@@ -25,8 +25,6 @@ function main() {
   const h = { item: [1] };
   const c$1 = sTr().b(h, { clone: (value) => value });
   c$1.item.push(2);
-  console.log(
-    `[${h.item.map((item) => String(item)).join(", ")}] [${c$1.item.map((item) => String(item)).join(", ")}]`,
-  );
+  console.log(`[${h.item.join(", ")}] [${c$1.item.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

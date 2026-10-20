@@ -57,7 +57,7 @@ export function pointDebug() {
 }
 
 function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.map((item) => String(item)).join(", ")}] }`;
+  return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.join(", ")}] }`;
 }
 
 export function secretDebug() {
@@ -157,7 +157,7 @@ function main() {
   const itemsTaken = old$1;
   const textTaken = old$2;
   console.log(
-    `[${itemsTaken.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
+    `[${itemsTaken.join(", ")}] [${items.join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
   );
 
   const value$3 = Math.min(3, 7);
@@ -186,7 +186,7 @@ function main() {
       return item;
     })
     .map((x) => Math.imul(x, 2));
-  console.log(`[${doubled.map((item) => String(item)).join(", ")}]`);
+  console.log(`[${doubled.join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
   const value$8 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
@@ -199,7 +199,7 @@ function main() {
   } finally {
     $unborrow(value$9);
   }
-  console.log(`[${cell.value.map((item) => String(item)).join(", ")}] 5`);
+  console.log(`[${cell.value.join(", ")}] 5`);
   const front = [1];
   const back = [2, 3];
   $append(front, back);
@@ -207,7 +207,7 @@ function main() {
   const more = [8, 7].slice();
   $append(queue, more);
   console.log(
-    `[${front.map((item) => String(item)).join(", ")}] [${back.map((item) => String(item)).join(", ")}] [${queue.map((item) => String(item)).join(", ")}] [${more.map((item) => String(item)).join(", ")}]`,
+    `[${front.join(", ")}] [${back.join(", ")}] [${queue.join(", ")}] [${more.join(", ")}]`,
   );
   console.log(
     `${$displayF64(2 ** 3)} ${$displayF32(Math.fround(2 ** 0.5))} ${$displayF64(Math.expm1(1e-10))} ${$displayF64(Math.log1p(1e-10))}`,
