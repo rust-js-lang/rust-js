@@ -6,6 +6,7 @@ import {
   $dedupByCells,
   $extend,
   $index,
+  $iter,
   $popIfCell,
   $resize,
   $resizeWith,
@@ -54,11 +55,11 @@ function main() {
   const s = [1, 2, 3];
   s.push(...$copyRange(s, 1));
   console.log(`[${s.map((item) => String(item)).join(", ")}]`);
-  const removed = Iterator.from($splice(s, 1, 3, [7, 8, 9])).toArray();
+  const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
   console.log(
     `[${removed.map((item) => String(item)).join(", ")}] [${s.map((item) => String(item)).join(", ")}]`,
   );
-  Iterator.from($splice(s, 0, 1, []));
+  $iter($splice(s, 0, 1, []));
   console.log(`[${s.map((item) => String(item)).join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);

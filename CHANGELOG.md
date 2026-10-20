@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`splice`, and `inspect` of an `Option` or a `Result`, of values with
+  a destructor** (ADR 0501).
 - **`VecDeque::from(v)` and the like of values with a destructor** (ADR
   0500).
 - **`retain_mut` of values with a destructor**, dropping each it removes

@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "drain-of-destructors-refused",
     breaks: "`drain` of a vector of values with destructors is refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Text(TextOp::Drain)\n",
-    replace: "",
+    find: "                    | Std::Text(TextOp::Drain | TextOp::Splice)\n",
+    replace: "                    | Std::Text(TextOp::Splice)\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -449,5 +449,21 @@ export const mutations: Mutation[] = [
     find: "                    | Std::ToVec\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collection_from_drops.rs$"],
+  },
+  {
+    name: "splice-refused",
+    breaks: "`splice` of values with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Text(TextOp::Drain | TextOp::Splice)\n",
+    replace: "                    | Std::Text(TextOp::Drain)\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
+  },
+  {
+    name: "inspect-refused",
+    breaks: "`inspect` of an `Option` or a `Result` of a value with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Comb(Comb::Inspect | Comb::ResultInspect { .. })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
   },
 ];

@@ -3661,6 +3661,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 std_path(self.tcx, adt.did()).as_str(),
                 "std::vec::IntoIter"
                     | "std::vec::Drain"
+                    | "std::vec::Splice"
                     | "std::collections::vec_deque::Drain"
                     | "std::collections::binary_heap::Drain"
                     | "std::collections::hash_map::Drain"
@@ -3807,6 +3808,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if std_path(self.tcx, adt.did()) == "std::collections::hash_map::Drain" {
             let mut types = args.types();
             return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
+        }
+        // A `splice`'s, what it took out, its replacing iterator's items
+        // (ADR 0501).
+        if std_path(self.tcx, adt.did()) == "std::vec::Splice" {
+            let iterator = std_item(self.tcx, StdItem::Iterator);
+            let item = trait_method(self.tcx, iterator, "Item");
+            let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item, [args.types().next()?]);
+            return Some(
+                (self.tcx)
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+                    .unwrap_or(projection),
+            );
         }
         args.types().next()
     }

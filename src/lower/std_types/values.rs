@@ -150,6 +150,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::UnwrapOr
                     | Std::ResultOr
                     | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd | Comb::Xor | Comb::Zip)
+                    // Gives back what it's given, having shown it (ADR 0501).
+                    | Std::Comb(Comb::Inspect | Comb::ResultInspect { .. })
                     | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap
@@ -231,7 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::ToVec
                     // What it takes out, given back as what's drained, which
                     // drops what's left of it as an `IntoIter` does.
-                    | Std::Text(TextOp::Drain)
+                    | Std::Text(TextOp::Drain | TextOp::Splice)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:
