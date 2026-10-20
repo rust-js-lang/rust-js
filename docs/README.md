@@ -573,6 +573,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0502 `xor` drops its second value through a panic](decisions/0502-xor-drops-its-second-value-through-a-panic.md)
 - [0503 A counted `Rc`'s `borrow()` is its value](decisions/0503-a-counted-rcs-borrow-is-its-value.md)
 - [0504 A counted `Rc` of a reference shows what it refers to](decisions/0504-a-counted-rc-of-a-reference-shows-what-it-refers-to.md)
+- [0505 An `Rc`'s `as_ref()` is what it points at](decisions/0505-an-rcs-as-ref-is-what-it-points-at.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

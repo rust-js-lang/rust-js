@@ -19,6 +19,10 @@ function main() {
         const d = $rcClone(c);
         try {
           console.log(`${c.value} ${d.value} ${c.strong}`);
+          const r = other.value;
+          const plain = [1, 2];
+          const v = plain;
+          console.log(`${r} [${v.map((item) => String(item)).join(", ")}]`);
         } finally {
           $rcDrop(d);
         }

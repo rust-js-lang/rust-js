@@ -1100,11 +1100,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::Same);
         }
-        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a `Box`'s
-        // of what it holds (ADR 0331), or text's as a `Path` (ADR 0173).
+        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a `Box`'s,
+        // an `Rc`'s, or text's as a `Path` (ADRs 0331, 0505, 0173).
         if is_std_def(tcx, trait_, StdItem::AsRef)
             && tcx.item_name(def_id).as_str() == "as_ref"
-            && (ty.is_box() || self.is_path_like(args.type_at(1)))
+            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some() || self.is_path_like(args.type_at(1)))
             && self.borrows_as_itself(ty, args.type_at(1))
         {
             return Some(Std::Same);
@@ -3582,9 +3582,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id) {
             return rc_pointee(tcx, args.type_at(0)).map(|pointee| (false, pointee));
         }
-        // `rc.borrow()` to what it points at, as `*rc` is (ADR 0503).
+        // `rc.borrow()` and `rc.as_ref()` to what it points at, as `*rc` is
+        // (ADRs 0503, 0505).
         if let Some(trait_) = tcx.trait_of_assoc(def_id)
-            && is_std_def(tcx, trait_, StdItem::Borrow)
+            && (is_std_def(tcx, trait_, StdItem::Borrow) || is_std_def(tcx, trait_, StdItem::AsRef))
             && let Some(pointee) = rc_pointee(tcx, args.type_at(0))
             && args.types().nth(1) == Some(pointee)
         {

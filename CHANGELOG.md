@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rc.as_ref()` of an `Rc`** (ADR 0505).
 - **`{}` and `{:?}` of a counted `Rc` of a reference** (ADR 0504).
 - **`splice`, and `inspect` of an `Option` or a `Result`, of values with
   a destructor** (ADR 0501).

@@ -1,6 +1,7 @@
 # 0503. A counted `Rc`'s `borrow()` is its value
 
-Status: Accepted. Extends [0320](0320-counted-rcs.md).
+Status: Accepted. Extends [0320](0320-counted-rcs.md). Amended by
+[0505](0505-an-rcs-as-ref-is-what-it-points-at.md): `as_ref()` too.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): the value Rust's
 `Borrow` gives.
