@@ -256,8 +256,9 @@ function $dequeSwapRemove(v, i, front) {
 }
 
 // `retain_mut(f)`: the items `f` keeps, each given as itself, or as a handle
-// on a number or a string, whose change is kept.
-function $retainMut(v, f, handles) {
+// on a number or a string, whose change is kept; each it doesn't, given to
+// `drop` as it goes, as std drops it (ADR 0499).
+function $retainMut(v, f, handles, drop) {
   let kept = 0;
   for (let i = 0; i < v.length; i++) {
     const at = i;
@@ -272,6 +273,7 @@ function $retainMut(v, f, handles) {
         })
       : f(v[at]);
     if (keep) v[kept++] = v[at];
+    else drop?.(v[at]);
   }
   v.length = kept;
 }

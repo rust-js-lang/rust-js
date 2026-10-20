@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "  v.unshift(x);\n  return handle ? $mutAt(v, -1) : x;",
     tests: ["test/corpus.test.ts","-t","deque_push_mut"],
   },
+  {
+    name: "retain-mut-drop-unrun",
+    breaks: "`$retainMut` given a drop runs it on none it removes",
+    file: "src/runtime/slice_ops.js",
+    find: "    else drop?.(v[at]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
+  },
 ];

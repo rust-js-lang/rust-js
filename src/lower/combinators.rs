@@ -342,6 +342,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::var(&name))
     }
 
+    /// `a.xor(b)`, or `a.zip(b)`, of `a`, an `Option`, its value and its
+    /// `Some`'s type, and `b`, another, of type `other_ty`: what it makes,
+    /// with what it gives up of values with a destructor dropped after, of
+    /// `xor` both where both are `Some`, of `zip` the one that is where the
+    /// other isn't (ADR 0498).
+    fn unpaired(
+        &mut self,
+        xor: bool,
+        (a, a_value, a_ty): (Expr, Expr, Ty<'tcx>),
+        (b, other_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let a_some = Expr::bin(Op::LooseNe, a.clone(), Expr::null());
+        let b_some = Expr::bin(Op::LooseNe, b.clone(), Expr::null());
+        let b_ty = self.option_of(other_ty).expect("an `Option`");
+        let b_value = match self.boxed_payload(b_ty) {
+            true => self.some_value(b.clone()),
+            false => b.clone(),
+        };
+        let made = match xor {
+            true => {
+                let b_none = Expr::bin(Op::LooseEq, b.clone(), Expr::null());
+                Expr::cond(a_some.clone(), Expr::cond(b_none, a, Expr::undefined()), b)
+            }
+            false => {
+                let both = Expr::bin(Op::And, a_some.clone(), b_some.clone());
+                Expr::cond(
+                    both,
+                    Expr::array(vec![a_value.clone(), b_value.clone()]),
+                    Expr::undefined(),
+                )
+            }
+        };
+        if self.drops(a_ty) == Drops::Nothing && self.drops(b_ty) == Drops::Nothing {
+            return Ok(made);
+        }
+        let made = self.spill("value", made, out);
+        let js_span = self.js_span(span);
+        let mut dropped_a = Vec::new();
+        self.drop_value(a_value, a_ty, span, &mut dropped_a)?;
+        let mut dropped_b = Vec::new();
+        self.drop_value(b_value, b_ty, span, &mut dropped_b)?;
+        let not = |e: Expr| Expr::unary(js::UnaryOp::Not, e);
+        if xor {
+            let both = Expr::bin(Op::And, a_some, b_some);
+            out.push(StmtKind::If(both, [dropped_a, dropped_b].concat(), None).at(js_span));
+        } else {
+            let only_a = Expr::bin(Op::And, a_some.clone(), not(b_some.clone()));
+            out.push(StmtKind::If(only_a, dropped_a, None).at(js_span));
+            let only_b = Expr::bin(Op::And, not(a_some), b_some);
+            out.push(StmtKind::If(only_b, dropped_b, None).at(js_span));
+        }
+        Ok(made)
+    }
+
     /// `test ? kept : otherwise`, where `given_up`, the other variant's
     /// value std drops, has nothing to drop; else `or_dropped`'s (ADRs 0179,
     /// 0490).
@@ -697,21 +753,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // The one that's `Some`, where only one is.
             Comb::Xor | Comb::Zip => {
-                let other = next();
-                let other = once(self, other, "other", out);
-                let other_some = Expr::bin(Op::LooseNe, other.clone(), Expr::null());
-                if comb == Comb::Xor {
-                    let other_none = Expr::bin(Op::LooseEq, other.clone(), Expr::null());
-                    Expr::cond(some, Expr::cond(other_none, subject, Expr::undefined()), other)
-                } else {
-                    let other_inner = self.option_of(tys[1]).expect("an `Option`");
-                    let other_value = match self.boxed_payload(other_inner) {
-                        true => self.some_value(other),
-                        false => other,
-                    };
-                    let both = Expr::bin(Op::And, some, other_some);
-                    Expr::cond(both, Expr::array(vec![value, other_value]), Expr::undefined())
-                }
+                let other = once(self, next(), "other", out);
+                let own = (subject.clone(), value.clone(), generic_args.type_at(0));
+                self.unpaired(comb == Comb::Xor, own, (other, tys[1]), span, out)?
             }
             // A pair of `Option`s, each boxed where it looks like `None`.
             Comb::Unzip => {

@@ -18,10 +18,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`retain_mut` of values with a destructor**, dropping each it removes
+  (ADR 0499).
 - **A generic `a + b`, or another std operator's, whose `Output` has a
   destructor**, dropped by its dictionary's `$dropOutput` (ADR 0497).
-- **`and` of an `Option` or a `Result` of values with a destructor**,
-  dropping what it gives up (ADR 0496).
+- **`and`, `xor` and `zip` of values with a destructor**, dropping what
+  they give up (ADRs 0496, 0498).
 - **An `Rc` of a type parameter's value with a destructor**, itertools'
   `tee`'s buffer, counted and dropped by its last clone, and `pop_front`
   of a type parameter's items (ADR 0494).

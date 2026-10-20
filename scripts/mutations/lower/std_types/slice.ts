@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "retain-mut-no-handles",
     breaks: "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
     file: "src/lower/std_types/slice.rs",
-    find: "                let handles = self.is_boxable(item());\n",
-    replace: "                let handles = false;\n",
+    find: "                let handles = self.is_boxable(item());\n                let mut given",
+    replace: "                let handles = false;\n                let mut given",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
@@ -330,5 +330,21 @@ export const mutations: Mutation[] = [
     find: "        if item.has_param() {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
     replace: "        if false {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
     tests: ["test/diagnostics.test.ts", "-t", "an unstable sort of items that hold a type parameter"],
+  },
+  {
+    name: "retain-mut-undropped",
+    breaks: "`retain_mut` of values with a destructor leaves those it removes undropped",
+    file: "src/lower/std_types/slice.rs",
+    find: "                given.extend(self.std_drop_function(item(), span)?);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
+  },
+  {
+    name: "pop-front-if-no-handles",
+    breaks: "`pop_front_if(f)` of numbers gives `f` the number, not a handle on it",
+    file: "src/lower/std_types/slice.rs",
+    find: "                helper(\"$popFrontIf\", vec![arg(), arg(), Expr::bool(handles)])\n",
+    replace: "                helper(\"$popFrontIf\", vec![arg(), arg(), Expr::bool(false && handles)])\n",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
 ];
