@@ -112,7 +112,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).
                     | Std::CellNew
+                    | Std::CellSet
                     | Std::CellReplace
+                    // A `OnceCell`'s, which keeps what it's set to, or gives
+                    // it back, and gives its `Option` (ADR 0519).
+                    | Std::Once(_)
                     | Std::CellTake
                     | Std::CellReplaceWith
                     // A lock's `into_inner` gives its value back, `get_mut` a

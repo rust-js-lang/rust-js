@@ -1801,11 +1801,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-variable-drops-unchecked",
-    breaks: "a variable of a `Cell` of a value with a destructor is lowered, and never drops it",
+    breaks: "a variable of a `LazyCell` of a value with a destructor is lowered, and never drops it",
     file: "src/lower/mir.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_value_ty(ty, span)\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Cell of a value with a destructor"],
+    tests: ["test/diagnostics.test.ts", "-t", "a LazyCell of a value with a destructor"],
   },
   {
     name: "mir-flush-discriminant",

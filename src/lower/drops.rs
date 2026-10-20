@@ -520,10 +520,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             // A `RefCell`'s value (ADR 0320), and a `Mutex`'s or an
-            // `RwLock`'s, each `{ value }` as it is (ADR 0144); of a
-            // `RefCell<dyn T>`, the cell is the pair, `{ value, impl }` (ADR 0397).
+            // `RwLock`'s, each `{ value }` as it is (ADR 0144), and a `Cell`'s
+            // (ADR 0519); of a `RefCell<dyn T>`, the cell is the pair, `{
+            // value, impl }` (ADR 0397).
             ty::Adt(_, args)
-                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]
+                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]
                     .into_iter()
                     .any(|cell| self.is_std_type(ty, cell)) =>
             {
@@ -533,6 +534,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Expr::held(value),
                 };
                 self.drop_in(value, inner, span, made, out)?
+            }
+            // A `OnceCell`'s `Option`, `{ value }`, `undefined` where it's
+            // not set (ADR 0519).
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::OnceCell) => {
+                let held = Ty::new_option(self.tcx, args.type_at(0));
+                self.drop_in(Expr::held(value), held, span, made, out)?
             }
             // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
             // what it points at, if that has a destructor; a `Weak`: `$weakDrop`

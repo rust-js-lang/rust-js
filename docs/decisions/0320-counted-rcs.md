@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md)
 and [0098](0098-destructors.md); counted by
 [0314](0314-std-data-structures.md). Amended: a shared `Rc<RefCell<dyn T>>`
-is counted as the `Rc` it's made of (below).
+is counted as the `Rc` it's made of (below); and by
+[0519](0519-a-cell-of-what-has-a-destructor.md): a `Cell` or a `OnceCell` of
+a value with a destructor is allowed, and drops it as Rust does.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), A for an `Rc`
 whose counts aren't read, D for one another crate may share.

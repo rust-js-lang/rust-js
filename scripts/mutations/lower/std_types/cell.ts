@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
     snapshots: true,
   },
+  {
+    name: "cell-set-keeps-old",
+    breaks: "a `Cell`'s `set` drops none of the value it replaces",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    self.drop_value(old, item, span, out)?;\n                    return Ok(Some(Expr::undefined()));\n",
+    replace: "                    let _ = old;\n                    return Ok(Some(Expr::undefined()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
+  },
 ];

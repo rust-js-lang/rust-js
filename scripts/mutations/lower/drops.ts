@@ -306,8 +306,8 @@ export const mutations: Mutation[] = [
     name: "lock-value-undropped",
     breaks: "a `Mutex` or an `RwLock` holding a value with a destructor crashes the compiler, its fields asked of a cell",
     file: "src/lower/drops.rs",
-    find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]\n",
-    replace: "                if [StdItem::RefCell]\n",
+    find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]\n",
+    replace: "                if [StdItem::RefCell, StdItem::Cell]\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
   },
   {
@@ -374,5 +374,21 @@ export const mutations: Mutation[] = [
     find: "        self.exchange_drops(&mut outer);\n        let made = f(self);\n        self.exchange_drops(&mut outer);\n",
     replace: "        let made = f(self);\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
+  },
+  {
+    name: "cell-held-undropped",
+    breaks: "a `Cell` dropped drops none of its value",
+    file: "src/lower/drops.rs",
+    find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]\n",
+    replace: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
+  },
+  {
+    name: "once-cell-held-undropped",
+    breaks: "a `OnceCell` dropped drops none of its value",
+    file: "src/lower/drops.rs",
+    find: "            ty::Adt(_, args) if self.is_std_type(ty, StdItem::OnceCell) => {\n",
+    replace: "            ty::Adt(_, args) if false && self.is_std_type(ty, StdItem::OnceCell) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
 ];

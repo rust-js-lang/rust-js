@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Cell` or a `OnceCell` of a value with a destructor** (ADR 0519).
 - **A held `filter_map` or `map_while` of items with a destructor** (ADR 0518).
 - **`scan` of items with a destructor** (ADR 0517).
 - **`rev()` of an array's items with a destructor** (ADR 0516).

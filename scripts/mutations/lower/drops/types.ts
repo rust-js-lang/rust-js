@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "refcell-drops-refused",
     breaks: "a `RefCell` of a `Weak` is refused",
     file: "src/lower/drops/types.rs",
-    find: "                        || [StdItem::Cell, StdItem::OnceCell, StdItem::LazyCell]\n",
-    replace: "                        || [StdItem::Cell, StdItem::RefCell, StdItem::OnceCell, StdItem::LazyCell]\n",
+    find: "                        || std(StdItem::LazyCell) =>",
+    replace: "                        || std(StdItem::LazyCell) || std(StdItem::RefCell) =>",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
@@ -230,5 +230,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(..) if let Some(test) = self.recognition.extract_if_test(ty) => self.drops_in(test, walk),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
+  },
+  {
+    name: "cell-drops-refused",
+    breaks: "a `Cell` or a `OnceCell` of a value with a destructor is refused",
+    file: "src/lower/drops/types.rs",
+    find: "                        || std(StdItem::LazyCell) =>",
+    replace: "                        || std(StdItem::LazyCell) || std(StdItem::Cell) || std(StdItem::OnceCell) =>",
+    tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
 ];

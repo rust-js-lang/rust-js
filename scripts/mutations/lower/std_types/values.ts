@@ -578,4 +578,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
   },
+  {
+    name: "once-cell-ops-refused",
+    breaks: "a `OnceCell`'s `set` and `take` of a value with a destructor are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Once(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
+  },
 ];

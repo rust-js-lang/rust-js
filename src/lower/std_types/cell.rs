@@ -45,8 +45,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
             Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
             Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
+            // Of a value with a destructor, the old dropped once the new is
+            // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
+                let item = generic_args.type_at(0);
+                if self.drops(item) != crate::lower::drops::Drops::Nothing {
+                    let cell = self.spill("cell", cell, out);
+                    let old = self.spill("old", Expr::held(cell.clone()), out);
+                    out.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                    self.drop_value(old, item, span, out)?;
+                    return Ok(Some(Expr::undefined()));
+                }
                 out.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
                 Expr::undefined()
             }

@@ -472,17 +472,17 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                         Drops::Unsupported(ty, "a destructor of another crate's that its manifest doesn't export")
                     }
                     // A std type that drops what it holds its own way: an
-                    // `Rc` when its last clone goes, a map its entries. A `Cell`
-                    // drops the old value when it's set. A `RefCell` is its fields',
-                    // its value's, and a write through `borrow_mut()` a place's (ADR 0320),
-                    // as a `Mutex`'s and an `RwLock`'s are (ADR 0144).
-                    // And an iterator adapter, a JS iterator, of what has one;
-                    // a generic one's is its iterator's, whatever that is.
+                    // `Rc` when its last clone goes, a map its entries. A
+                    // `RefCell` is its fields', its value's, and a write through
+                    // `borrow_mut()` a place's (ADR 0320), as a `Mutex`'s and an
+                    // `RwLock`'s are (ADR 0144), and a `Cell`'s, whose `set`
+                    // drops the old, and a `OnceCell`'s, its `Option` (ADR
+                    // 0519). And an iterator adapter, a JS
+                    // iterator, of what has one; a generic one's is its
+                    // iterator's, whatever that is.
                     _ if own.is_some()
                         || (self.recognition.is_iter_adapter(ty) && !ty.has_non_region_param())
-                        || [StdItem::Cell, StdItem::OnceCell, StdItem::LazyCell]
-                            .into_iter()
-                            .any(std) =>
+                        || std(StdItem::LazyCell) =>
                     {
                         match all(self, &mut args.types(), walk) {
                             Drops::Nothing => Drops::Nothing,
