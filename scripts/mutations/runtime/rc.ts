@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "  } finally {\n  }",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
+  {
+    name: "rc-drop-dyn-value",
+    breaks: "a counted `Rc<dyn T>`'s last drop gives its drop the value, not its pair",
+    file: "src/runtime/rc.js",
+    find: "    const value = \"impl\" in rc ? { value: rc.value, impl: rc.impl } : rc.value;\n",
+    replace: "    const value = rc.value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
+  },
 ];

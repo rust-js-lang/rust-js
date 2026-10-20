@@ -586,4 +586,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
+  {
+    name: "any-downcasts-refused",
+    breaks: "a `dyn Any`'s downcasts of what may hold a destructor are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Any(AnyOp::Is | AnyOp::DowncastRef | AnyOp::DowncastMut | AnyOp::Downcast)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
+  },
 ];

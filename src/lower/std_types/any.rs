@@ -81,7 +81,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let found = if self.is_boxable(of) { pair } else { inside };
                 Expr::cond(is, found, Expr::undefined())
             }
-            AnyOp::Downcast => Expr::cond(is, result::ok(inside), result::err(pair)),
+            // A counted `Rc`'s, itself, as what it points at is (ADR 0520).
+            AnyOp::Downcast => {
+                let found = match self.counted_rc(tys[0].peel_refs()) {
+                    Some(_) => pair.clone(),
+                    None => inside,
+                };
+                Expr::cond(is, result::ok(found), result::err(pair))
+            }
             AnyOp::TypeIdOf | AnyOp::TypeIdOfValue => unreachable!("handled above"),
         }))
     }

@@ -54,8 +54,16 @@ export const mutations: Mutation[] = [
     name: "rc-of-ref-unpeeled",
     breaks: "`{}` of a counted `Rc<&i32>` is refused, the reference it holds left",
     file: "src/lower/std_types/rc.rs",
-    find: "            (value, ty) = self.through_refs(Expr::held(value), inside);\n",
-    replace: "            (value, ty) = (Expr::held(value), inside);\n",
+    find: "            (value, ty) = self.through_refs(held, inside);\n",
+    replace: "            (value, ty) = (held, inside);\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
+  {
+    name: "counted-dyn-pointee-held",
+    breaks: "what a counted `Rc<dyn T>` points at is read as its `value`, not its pair",
+    file: "src/lower/std_types/rc.rs",
+    find: "            ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates) => rc,\n",
+    replace: "            ty::Dynamic(predicates, ..) if false && self.recognition().is_pair_dyn(predicates) => rc,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
   },
 ];

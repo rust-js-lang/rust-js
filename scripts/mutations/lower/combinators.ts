@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     name: "as-deref-counted-whole",
     breaks: "`as_deref()` of a counted `Rc` gives the `Rc`",
     file: "src/lower/combinators.rs",
-    find: "            return Ok(Expr::held(value));",
+    find: "            return Ok(self.counted_pointee(value, pointee));",
     replace: "            return Ok(value);",
     tests: ["test/corpus.test.ts","-t","as_deref_counted"],
   },

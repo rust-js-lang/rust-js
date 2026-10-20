@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "downcast-err-value",
     breaks: "a failed `downcast` gives the value, not the `Box<dyn Any>`",
     file: "src/lower/std_types/any.rs",
-    find: "            AnyOp::Downcast => Expr::cond(is, result::ok(inside), result::err(pair)),",
-    replace: "            AnyOp::Downcast => Expr::cond(is, result::ok(inside.clone()), result::err(inside)),",
+    find: "                Expr::cond(is, result::ok(found), result::err(pair))\n",
+    replace: "                Expr::cond(is, result::ok(found), result::err(Expr::held(pair)))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
   {
@@ -74,5 +74,13 @@ export const mutations: Mutation[] = [
     find: "                _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),\n",
     replace: "                _ => made(&value).unwrap_or(value),\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
+  },
+  {
+    name: "counted-rc-downcast-value",
+    breaks: "a counted `Rc`'s downcast is what it points at, not the `Rc`",
+    file: "src/lower/std_types/any.rs",
+    find: "                    Some(_) => pair.clone(),\n",
+    replace: "                    Some(_) => inside,\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
   },
 ];

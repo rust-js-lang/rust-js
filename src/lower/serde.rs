@@ -525,7 +525,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             // A counted `Rc` writes what it points at (ADR 0320).
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
-                self.write_json(Expr::held(value), json, args.type_at(0), span, out)
+                let pointee = self.counted_pointee(value, args.type_at(0));
+                self.write_json(pointee, json, args.type_at(0), span, out)
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {
                 self.write_json(value, json, args.type_at(0), span, out)

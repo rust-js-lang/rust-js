@@ -239,9 +239,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Hashed::Text => out.push(hasher.write("write_str", vec![value])),
             Hashed::Pointer(pointee) => {
                 let (value, _) = self.through_refs(value, ty);
-                let value = match self.counted_rc(ty).is_some() {
-                    true => Expr::held(value),
-                    false => value,
+                let value = match self.counted_rc(ty) {
+                    Some(pointee) => self.counted_pointee(value, pointee),
+                    None => value,
                 };
                 self.hash_writes(value, pointee, hasher, span, out)?;
             }

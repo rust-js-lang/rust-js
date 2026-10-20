@@ -262,9 +262,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a `value` of `ty` points at, as `*value` reads it: a counted
     /// `Rc`'s value, or the `deref()` of a type with its own `Deref`.
     fn deref_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        // A counted `Rc`'s, its `value` (ADR 0320).
-        if self.counted_rc(ty).is_some() {
-            return Ok(Expr::held(value));
+        // A counted `Rc`'s, its `value` (ADRs 0320, 0520).
+        if let Some(pointee) = self.counted_rc(ty) {
+            return Ok(self.counted_pointee(value, pointee));
         }
         let deref = self.tcx.require_lang_item(LangItem::Deref, span);
         if self.has_user_impl(deref, ty) {

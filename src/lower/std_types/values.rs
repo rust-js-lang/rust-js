@@ -255,6 +255,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Slice(SliceOp::PopFrontIf)
                     | Std::Method("map")
                     | Std::Pointee
+                    // A `dyn Any`'s downcasts, which lend or move what they're
+                    // given, a `Box`'s or an `Rc`'s, or give it back (ADR 0520).
+                    | Std::Any(AnyOp::Is | AnyOp::DowncastRef | AnyOp::DowncastMut | AnyOp::Downcast)
                     // A `Peekable`'s, which lend the next item, or give it,
                     // keeping it where it's not taken (ADR 0514).
                     | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)

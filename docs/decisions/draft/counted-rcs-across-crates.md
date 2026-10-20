@@ -134,7 +134,7 @@ each where a counted `Rc` has a drop an uncounted one doesn't:
 - a boxed function that holds one, kept, `subscriptions`: "a function that
   holds a value with a destructor, kept by what it's given to";
 - `downcast_mut` of a `dyn Any`, and `Rc::downcast`, beside one,
-  `dyn_any` and `dyn_any_generic`;
+  `dyn_any` and `dyn_any_generic` (closed since, ADR 0520);
 - `{}` of an `Rc<&T>`, `rc_of_borrowed_param` (closed since, ADR 0504).
 
 Each is a gap of its own to close before this is accepted, or the user's

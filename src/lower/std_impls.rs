@@ -901,8 +901,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_vec_like(ty) => {
                 self.eq_items(a, b, (args.type_at(0), args.type_at(0)), span, out)
             }
-            ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
-                self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), span, out)
+            ty::Adt(_, args) if let Some(pointee) = self.counted_rc(ty) => {
+                let (a, b) = (self.counted_pointee(a, pointee), self.counted_pointee(b, pointee));
+                self.eq_value(a, b, args.type_at(0), span, out)
             }
             // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
             // their values' `==` may ask.

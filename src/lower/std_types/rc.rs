@@ -136,6 +136,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `&mut` to what a counted `Rc` points at: the object itself, or for
     /// a number or text, the `Rc`, whose `value` it is (ADR 0074).
+    /// What a counted `Rc` of `pointee` points at, as JS reads it: its
+    /// `value`; of a `dyn`'s, its pair, the `Rc` itself, `{ value, impl,
+    /// strong, weak }` (ADR 0520). The one answer, of each that reads it.
+    pub(in crate::lower) fn counted_pointee(&self, rc: Expr, pointee: Ty<'tcx>) -> Expr {
+        match pointee.kind() {
+            ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates) => rc,
+            _ => Expr::held(rc),
+        }
+    }
+
     fn through_rc(&self, rc: Expr, item: Ty<'tcx>) -> Expr {
         match self.is_boxable(item) {
             true => rc,
@@ -166,7 +176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (new, pointee) = self.recognition().rc_same(def_id, generic_args)?;
         self.krate.counted.counts(self.tcx, pointee).then(|| match new {
             true => Self::new_rc(value),
-            false => Expr::held(value),
+            false => self.counted_pointee(value, pointee),
         })
     }
 
@@ -196,8 +206,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => return (value, ty),
                 },
             };
-            // And the references it holds, an `Rc<&T>`'s (ADR 0504).
-            (value, ty) = self.through_refs(Expr::held(value), inside);
+            // And the references it holds, an `Rc<&T>`'s (ADR 0504); a
+            // guard's `value`, an `Rc`'s what it points at (ADR 0520).
+            let held = match self.is_guard(ty) {
+                true => Expr::held(value),
+                false => self.counted_pointee(value, inside),
+            };
+            (value, ty) = self.through_refs(held, inside);
         }
     }
 }

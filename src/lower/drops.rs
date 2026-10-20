@@ -542,8 +542,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_in(Expr::held(value), held, span, made, out)?
             }
             // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
-            // what it points at, if that has a destructor; a `Weak`: `$weakDrop`
-            // (ADR 0320).
+            // what it points at, if that has a destructor, of a `dyn` its
+            // pair, which it is (ADR 0520); a `Weak`: `$weakDrop` (ADR 0320).
             ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
                 let mut args = vec![value];
                 if self.drops(pointee) == Drops::Runs {

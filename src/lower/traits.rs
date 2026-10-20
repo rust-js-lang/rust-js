@@ -2930,8 +2930,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         self.check_value_ty(target, span)?;
-        // A counted `Rc` as an `Rc<dyn T>` is `{ value: pair, strong, weak }`
-        // (ADR 0320): of one made here, its value made the pair; of one made
+        // A counted `Rc` as an `Rc<dyn T>` is its pair, `{ value, impl,
+        // strong, weak }` (ADRs 0320, 0520): of one made here; of one made
         // elsewhere, which its other owners share as what it is, not yet.
         if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {
             return self.counted_unsized(source, target, value, span);
@@ -3006,8 +3006,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A counted `Rc` made here, `{ value: x, strong: 1, weak: 0 }`, as an
-    /// `Rc<dyn T>`: its value made the pair, `{ value: x, impl }`, as every
-    /// use of one reads it (ADR 0320); one of the same `dyn` already, itself.
+    /// `Rc<dyn T>`: the pair itself, `{ value: x, impl, strong: 1, weak: 0
+    /// }`, as `counted_pointee` reads it (ADRs 0320, 0520); one of the same
+    /// `dyn` already, itself.
     /// One made elsewhere, of another `dyn`, or a `Weak`, is refused: its
     /// other owners share it as the type it is.
     fn counted_unsized(&mut self, source: Ty<'tcx>, target: Ty<'tcx>, value: Expr, span: Span) -> R<Expr> {
@@ -3024,17 +3025,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &what));
         };
         let dictionary = self.dyn_dictionary(target, pointee, span)?;
-        let Some(Prop::Field(_, held)) = props
-            .iter_mut()
-            .find(|p| matches!(p, Prop::Field(name, _) if name == js::HELD))
+        let Some(at) = props
+            .iter()
+            .position(|p| matches!(p, Prop::Field(name, _) if name == js::HELD))
         else {
             return Err(self.unsupported(span, &what));
         };
-        let inner = std::mem::replace(held, Expr::undefined());
-        *held = Expr::object(vec![
-            Prop::Field(js::HELD.into(), inner),
-            Prop::Field(js::DICTIONARY.into(), dictionary),
-        ]);
+        props.insert(at + 1, Prop::Field(js::DICTIONARY.into(), dictionary));
         Ok(Expr::object(props))
     }
 

@@ -63,11 +63,7 @@ function main() {
   const unnamed = named;
   unnamed.impl.$drop?.(unnamed.value);
 
-  const shared = {
-    value: { value: ["shared"], impl: { $drop: noisyDrop_drop } },
-    strong: 1,
-    weak: 0,
-  };
+  const shared = { value: ["shared"], impl: { $drop: noisyDrop_drop }, strong: 1, weak: 0 };
   let again;
   try {
     again = $rcClone(shared);
@@ -91,19 +87,17 @@ function main() {
   let drops = 0;
   $rcDrop(
     {
-      value: {
-        value: [
-          {
-            get value() {
-              return drops;
-            },
-            set value(value) {
-              drops = value;
-            },
+      value: [
+        {
+          get value() {
+            return drops;
           },
-        ],
-        impl: { $drop: counterDrop_drop },
-      },
+          set value(value) {
+            drops = value;
+          },
+        },
+      ],
+      impl: { $drop: counterDrop_drop },
       strong: 1,
       weak: 0,
     },

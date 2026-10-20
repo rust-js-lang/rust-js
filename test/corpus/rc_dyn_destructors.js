@@ -24,11 +24,11 @@ function squareDrop_drop(square) {
 }
 
 function made(side) {
-  return { value: { value: [side], impl: squareShape() }, strong: 1, weak: 0 };
+  return { value: [side], impl: squareShape(), strong: 1, weak: 0 };
 }
 
 function main() {
-  const a = { value: { value: [3], impl: squareShape() }, strong: 1, weak: 0 };
+  const a = { value: [3], impl: squareShape(), strong: 1, weak: 0 };
   let b;
   try {
     b = $rcClone(a);
@@ -40,7 +40,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = b.value.impl.area(b.value.value);
+    tmp = b.impl.area(b.value);
   } catch (error) {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);
@@ -99,7 +99,7 @@ function main() {
         value.impl.$drop?.(value.value);
       });
     }
-    console.log(`first ${first.value.impl.area(first.value.value)}`);
+    console.log(`first ${first.impl.area(first.value)}`);
     console.log("end");
   } finally {
     $rcDrop(first, (value) => {

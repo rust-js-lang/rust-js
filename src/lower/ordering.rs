@@ -134,8 +134,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
             }
             // A counted `Rc`'s `value` (ADR 0320).
-            ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
-                let (a, b) = (Expr::held(a), Expr::held(b));
+            ty::Adt(_, args) if let Some(pointee) = self.counted_rc(ty) => {
+                let (a, b) = (self.counted_pointee(a, pointee), self.counted_pointee(b, pointee));
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {

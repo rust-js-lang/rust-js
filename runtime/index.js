@@ -2362,7 +2362,8 @@ export function $rcClone(rc) {
 // a destructor, and its `Weak`s can't upgrade.
 export function $rcDrop(rc, drop) {
   if (--rc.strong === 0) {
-    const value = rc.value;
+    // Of an `Rc<dyn T>`, which is its pair, `{ value, impl }` (ADR 0520).
+    const value = "impl" in rc ? { value: rc.value, impl: rc.impl } : rc.value;
     rc.value = undefined;
     drop?.(value);
   }
