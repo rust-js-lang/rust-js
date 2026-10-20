@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`map_while`** (ADR 0515).
 - **`peekable()` of what has a destructor** (ADR 0514).
 - **`iter::repeat_n` and a `Peekable`'s `peek_mut`** (ADR 0513).
 - **`flat_map` and `flatten` of what has a destructor** (ADR 0510).
@@ -631,6 +632,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`filter_map` and `flat_map` of what holds what looks like `None`**,
+  `Some(None)`'s or a type parameter's, kept their `Some`s boxed: `Some([object
+  Object])` (ADR 0515).
 - **An adapter a generic function makes of a type parameter given as it
   is**, closed, dropped the JS iterator stepping it, not the value (ADR
   0514).

@@ -22,7 +22,8 @@ function find(items, TClone, TId) {
       const value = item.impl.type_id() === TId ? $some(item.value) : undefined;
       return value == null ? value : $some(TClone.clone($someValue(value)));
     })
-    .filter((item) => item != null);
+    .filter((item) => item != null)
+    .map($someValue);
 }
 
 function erased(value, TId) {

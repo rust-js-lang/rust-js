@@ -165,6 +165,9 @@ pub(super) enum Comb {
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum IterComb {
     FilterMap,
+    /// `map_while(f)`: `map(f)`, then its `Some`s till the first `None`,
+    /// as `take_while` takes them (ADR 0515).
+    MapWhile,
     /// `scan(init, |acc, x| ..)`: the state in a box, which the closure's
     /// `&mut` parameter is (ADR 0074).
     Scan,
@@ -201,6 +204,7 @@ impl IterComb {
                 | IterComb::FlatMap
                 | IterComb::Flatten
                 | IterComb::TakeWhile
+                | IterComb::MapWhile
                 | IterComb::SkipWhile
                 | IterComb::StepBy
                 | IterComb::Inspect
@@ -1247,15 +1251,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         };
         let item_ty = || self.iterator_item(receiver_ty);
+        // Of a kept value that looks like `None`, each `Some` boxed, taken
+        // out of its box (ADR 0515).
+        let unboxed = |items: Expr, payload: Option<Ty<'tcx>>| match payload.is_some_and(|ty| self.boxed_payload(ty)) {
+            true => method(items, "map", vec![Expr::helper("$someValue")]),
+            false => items,
+        };
         Ok(match comb {
-            // `Some`s only: `.map(f).filter((item) => item != null)`.
-            IterComb::FilterMap => method(method(items, "map", vec![next()]), "filter", vec![present()]),
+            // `Some`s only: `.map(f).filter((item) => item != null)`; each
+            // taken out of its box where it looks like `None` (ADR 0515).
+            IterComb::FilterMap => unboxed(
+                method(method(items, "map", vec![next()]), "filter", vec![present()]),
+                kept,
+            ),
+            // Its `Option`, a `Some` boxed where what it holds looks like `None`.
             IterComb::FindMap => method(method(items, "map", vec![next()]), "find", vec![present()]),
             IterComb::FlatMap => {
                 // A closure that returns an `Option` is a `filter_map`.
                 let returned = generic_args.type_at(1);
-                if self.option_of(returned).is_some() {
-                    method(method(items, "map", vec![next()]), "filter", vec![present()])
+                if let Some(payload) = self.option_of(returned) {
+                    unboxed(
+                        method(method(items, "map", vec![next()]), "filter", vec![present()]),
+                        Some(payload),
+                    )
                 } else {
                     let f = next();
                     match self.closed_inner(Some(f.clone()), returned, span)? {
@@ -1308,6 +1326,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::Zip => Expr::call(Expr::helper("$zip"), vec![items, next()]),
             IterComb::Chain if lazy => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
             IterComb::Chain => method(items, "concat", vec![next()]),
+            IterComb::MapWhile => {
+                let mapped = method(items, "map", vec![next()]);
+                let name = if lazy { "$lazyTakeWhile" } else { "$takeWhile" };
+                unboxed(Expr::call(Expr::helper(name), vec![mapped, present()]), kept)
+            }
             IterComb::TakeWhile if lazy => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
             IterComb::TakeWhile => Expr::call(Expr::helper("$takeWhile"), vec![items, next()]),
             IterComb::SkipWhile if lazy => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),

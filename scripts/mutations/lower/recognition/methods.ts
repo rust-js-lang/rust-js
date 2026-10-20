@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
   },
+  {
+    name: "map-while-unrecognized",
+    breaks: "`map_while` is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"map_while\" => IterComb::MapWhile,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
+  },
 ];

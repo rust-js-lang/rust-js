@@ -309,6 +309,7 @@ pub(super) fn boolean(name: &str, boolean: bool) -> Option<Comb> {
 pub(super) fn iterator(name: &str) -> Option<IterComb> {
     Some(match name {
         "filter_map" => IterComb::FilterMap,
+        "map_while" => IterComb::MapWhile,
         "flat_map" => IterComb::FlatMap,
         "flatten" => IterComb::Flatten,
         "zip" => IterComb::Zip,
