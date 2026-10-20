@@ -196,8 +196,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => return (value, ty),
                 },
             };
-            value = Expr::held(value);
-            ty = inside;
+            // And the references it holds, an `Rc<&T>`'s (ADR 0504).
+            (value, ty) = self.through_refs(Expr::held(value), inside);
         }
     }
 }

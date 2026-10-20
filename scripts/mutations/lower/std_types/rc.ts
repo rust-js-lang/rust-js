@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "                        let given = vec![rc, self.clone_arg(item, span)?];\n",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
+  {
+    name: "rc-of-ref-unpeeled",
+    breaks: "`{}` of a counted `Rc<&i32>` is refused, the reference it holds left",
+    file: "src/lower/std_types/rc.rs",
+    find: "            (value, ty) = self.through_refs(Expr::held(value), inside);\n",
+    replace: "            (value, ty) = (Expr::held(value), inside);\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
 ];

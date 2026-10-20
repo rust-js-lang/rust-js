@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`{}` and `{:?}` of a counted `Rc` of a reference** (ADR 0504).
 - **`splice`, and `inspect` of an `Option` or a `Result`, of values with
   a destructor** (ADR 0501).
 - **`VecDeque::from(v)` and the like of values with a destructor** (ADR

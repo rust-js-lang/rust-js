@@ -135,7 +135,7 @@ each where a counted `Rc` has a drop an uncounted one doesn't:
   holds a value with a destructor, kept by what it's given to";
 - `downcast_mut` of a `dyn Any`, and `Rc::downcast`, beside one,
   `dyn_any` and `dyn_any_generic`;
-- `{}` of an `Rc<&T>`, `rc_of_borrowed_param`.
+- `{}` of an `Rc<&T>`, `rc_of_borrowed_param` (closed since, ADR 0504).
 
 Each is a gap of its own to close before this is accepted, or the user's
 call to accept by name. `rc.borrow()` of a counted `Rc`, which gave the

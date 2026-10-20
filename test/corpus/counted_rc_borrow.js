@@ -13,6 +13,18 @@ function main() {
     const text = shared.value;
     try {
       console.log(`${text} ${other.value} ${shared.strong}`);
+      const n = 5;
+      const c = { value: n, strong: 1, weak: 0 };
+      try {
+        const d = $rcClone(c);
+        try {
+          console.log(`${c.value} ${d.value} ${c.strong}`);
+        } finally {
+          $rcDrop(d);
+        }
+      } finally {
+        $rcDrop(c);
+      }
     } finally {
       $rcDrop(other);
     }
