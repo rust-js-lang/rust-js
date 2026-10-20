@@ -132,7 +132,8 @@ each where a counted `Rc` has a drop an uncounted one doesn't:
 - a closure that holds an `Rc`, made in a block, `closure_clone_shared`:
   "a closure that holds a value with a destructor, made here";
 - a boxed function that holds one, kept, `subscriptions`: "a function that
-  holds a value with a destructor, kept by what it's given to";
+  holds a value with a destructor, kept by what it's given to" (closed
+  since, ADR 0521);
 - `downcast_mut` of a `dyn Any`, and `Rc::downcast`, beside one,
   `dyn_any` and `dyn_any_generic` (closed since, ADR 0520);
 - `{}` of an `Rc<&T>`, `rc_of_borrowed_param` (closed since, ADR 0504).

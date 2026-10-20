@@ -557,7 +557,7 @@ export function $dropping(f, drop) {
 
 // A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
 export function $dispose(f) {
-  f[$disposeKey]();
+  f[$disposeKey]?.();
 }
 
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or

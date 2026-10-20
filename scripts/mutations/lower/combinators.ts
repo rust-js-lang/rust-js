@@ -527,8 +527,8 @@ export const mutations: Mutation[] = [
     name: "held-function-dropped",
     breaks: "a function a lazy adapter holds, `map(f)`'s, is dropped as `map` returns, before it's run",
     file: "src/lower/combinators.rs",
-    find: "            if when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {\n",
-    replace: "            if false && when.is_none() && output.walk().any(|part| part.as_type() == Some(ty)) {\n",
+    find: "            if when.is_none() && kept {\n",
+    replace: "            if false && when.is_none() && kept {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy take_while holds"],
   },
   {
@@ -818,5 +818,13 @@ export const mutations: Mutation[] = [
     find: "                | IterComb::Scan\n                | IterComb::FilterMap\n",
     replace: "                | IterComb::Scan\n",
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
+  },
+  {
+    name: "kept-dropped-anywhere-refused",
+    breaks: "`Box::new(f)` of a function that drops wherever it's dropped is refused",
+    file: "src/lower/combinators.rs",
+    find: "            if when.is_none() && kept && dropped_anywhere {\n",
+    replace: "            if when.is_none() && kept && false && dropped_anywhere {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
 ];

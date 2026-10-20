@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::lower::analysis::Counted;
+use crate::lower::analysis::{Counted, FnDyns};
 use crate::lower::recognition::{Recognition, StdItem, rc_pointee, weak_pointee};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -71,6 +71,9 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     pub(in crate::lower) library: bool,
     /// The `Rc`s counted, which drop (ADR 0320).
     pub(in crate::lower) counted: &'a Counted<'tcx>,
+    /// Whether a function holding a value with a destructor is made a `dyn
+    /// Fn`, which drops it then (ADR 0521).
+    pub(in crate::lower) fn_dyns: &'a FnDyns,
     pub(in crate::lower) state: &'a TypeDrops<'tcx>,
 }
 
@@ -90,7 +93,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         !target.is_ref()
             && match self.drops(from) {
                 Drops::Nothing => false,
-                Drops::Runs => !self.recognition.is_pair_dyn(predicates),
+                Drops::Runs => {
+                    !self.recognition.is_pair_dyn(predicates)
+                        && !crate::lower::recognition::is_fn_dyn(self.recognition.tcx, predicates)
+                }
                 Drops::Unsupported(..) => true,
             }
     }
@@ -497,6 +503,14 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {
                 match self.may_have_destructors() {
                     true => self.implementors_drop(predicates, walk),
+                    false => Drops::Nothing,
+                }
+            }
+            // A function's, the drop it carries, where a function holding a
+            // value with a destructor is made one (ADR 0521).
+            ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.recognition.tcx, predicates) => {
+                match self.fn_dyns.drops {
+                    true => Drops::Runs,
                     false => Drops::Nothing,
                 }
             }

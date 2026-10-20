@@ -355,8 +355,8 @@ export const mutations: Mutation[] = [
     name: "returned-closure-drop-refused",
     breaks: "a closure made elsewhere that carries its drop is refused where it's dropped",
     file: "src/lower/drops.rs",
-    find: "                    if super::recognition::carries_its_drop(self.tcx, *def_id) {\n",
-    replace: "                    if false && super::recognition::carries_its_drop(self.tcx, *def_id) {\n",
+    find: "                    if self.krate.fn_dyns.carries_its_drop(self.tcx, *def_id) {\n",
+    replace: "                    if false && self.krate.fn_dyns.carries_its_drop(self.tcx, *def_id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
@@ -390,5 +390,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(_, args) if self.is_std_type(ty, StdItem::OnceCell) => {\n",
     replace: "            ty::Adt(_, args) if false && self.is_std_type(ty, StdItem::OnceCell) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
+  },
+  {
+    name: "fn-dyn-dropped-as-pair",
+    breaks: "a `dyn Fn` is dropped by a dictionary it doesn't have",
+    file: "src/lower/drops.rs",
+    find: "            ty::Dynamic(predicates, ..) if super::recognition::is_fn_dyn(self.tcx, predicates) => {\n                out.push(",
+    replace: "            ty::Dynamic(predicates, ..) if false && super::recognition::is_fn_dyn(self.tcx, predicates) => {\n                out.push(",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
 ];

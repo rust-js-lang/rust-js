@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();
         match ty.kind() {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
-            ty::Dynamic(predicates, ..) => predicates.principal_def_id().is_some_and(fn_trait),
+            ty::Dynamic(predicates, ..) => super::recognition::is_fn_dyn(self.tcx, predicates),
             _ if self.is_unknown(ty) => (self.declared_bounds(ty, self.typing_env.param_env).into_iter()).any(fn_trait),
             _ => false,
         }

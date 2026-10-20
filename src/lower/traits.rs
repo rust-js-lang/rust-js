@@ -2926,6 +2926,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(given).at(js::Span::NONE));
             return Ok(value);
         }
+        // A function made a `dyn Fn`, holding a value with a destructor: the
+        // function carrying its drop, `$dropping(f, drop)`, which the `dyn`'s
+        // drop runs, `$dispose(f)` (ADR 0521). One that carries it already,
+        // itself.
+        if let ty::Dynamic(predicates, ..) = self.pointee(target).kind()
+            && super::recognition::is_fn_dyn(self.tcx, predicates)
+        {
+            let function = self.pointee(source);
+            let carried = matches!(function.kind(), ty::Closure(id, _) if self.krate.fn_dyns.carries_its_drop(self.tcx, *id))
+                || matches!(function.kind(), ty::Dynamic(..));
+            if carried || self.drops(function) == super::drops::Drops::Nothing {
+                return Ok(value);
+            }
+            let f = self.spill("f", value, out);
+            let mut dropped = Vec::new();
+            self.drop_value(f.clone(), function, span, &mut dropped)?;
+            return Ok(Expr::call_helper(
+                "$dropping",
+                vec![f, Expr::arrow(Vec::new(), dropped)],
+            ));
+        }
         if !self.is_pair_dyn(target) {
             return Ok(value);
         }

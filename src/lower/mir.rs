@@ -1174,10 +1174,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let closure = self.mir_closure_fn(state, def_id, captured, span, out)?;
-        // One its maker gives back, holding a value with a destructor: it
-        // carries its drop, what it took dropped, where it's made (ADR 0484).
+        // One its maker gives back or makes a `dyn Fn`, holding a value with
+        // a destructor: it carries its drop, what it took dropped, where it's
+        // made (ADRs 0484, 0521).
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        if !super::recognition::carries_its_drop(self.tcx, def_id) || self.drops(ty) == super::drops::Drops::Nothing {
+        if !self.krate.fn_dyns.carries_its_drop(self.tcx, def_id) || self.drops(ty) == super::drops::Drops::Nothing {
             return Ok(closure);
         }
         let mut dropped = Vec::new();

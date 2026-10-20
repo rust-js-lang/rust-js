@@ -5907,10 +5907,10 @@ pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
     }
 }
 
-/// Whether the closure `closure` carries its own drop, `$dropping`'s: one
-/// its maker gives back, the type its `impl Fn` hides, which is dropped
-/// where its maker's variables it took aren't seen (ADR 0484).
-pub(crate) fn carries_its_drop(tcx: TyCtxt<'_>, closure: DefId) -> bool {
+/// Whether the closure `closure` is one its maker gives back, the type its
+/// `impl Fn` hides, which carries its drop (ADR 0484): `FnDyns::carries_its_drop`'s
+/// to answer.
+pub(crate) fn given_back(tcx: TyCtxt<'_>, closure: DefId) -> bool {
     let maker = tcx.typeck_root_def_id(closure);
     if !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {
         return false;
@@ -6476,6 +6476,14 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// Is `id` std's `item`?
 /// What an `Rc` or `Arc` points at (ADR 0320).
+/// Whether a `dyn` of `predicates` is a function's, `dyn Fn(&str)`: the JS
+/// function itself, which carries its drop, `$dropping`'s (ADR 0521).
+pub(crate) fn is_fn_dyn(tcx: TyCtxt<'_>, predicates: &ty::List<ty::PolyExistentialPredicate<'_>>) -> bool {
+    predicates.principal_def_id().is_some_and(|id| {
+        tcx.fn_trait_kind_from_def_id(id).is_some() || tcx.async_fn_trait_kind_from_def_id(id).is_some()
+    })
+}
+
 pub(crate) fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)

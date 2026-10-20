@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Box<dyn Fn>` of a function holding a value with a destructor**
+  (ADR 0521).
 - **`Rc::downcast` of a counted `Rc<dyn Any>`, and a `dyn Any`'s
   downcasts of what may hold a value with a destructor** (ADR 0520).
 - **A `Cell` or a `OnceCell` of a value with a destructor** (ADR 0519).

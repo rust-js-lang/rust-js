@@ -239,4 +239,12 @@ export const mutations: Mutation[] = [
     replace: "                        || std(StdItem::LazyCell) || std(StdItem::Cell) || std(StdItem::OnceCell) =>",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
+  {
+    name: "fn-dyn-drops-nothing",
+    breaks: "a `dyn Fn` drops nothing, though a function holding a value with a destructor is made one",
+    file: "src/lower/drops/types.rs",
+    find: "                match self.fn_dyns.drops {\n                    true => Drops::Runs,\n",
+    replace: "                match self.fn_dyns.drops {\n                    true => Drops::Nothing,\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
+  },
 ];

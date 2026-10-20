@@ -39,21 +39,21 @@ use types::{DropQuery, TypeDrops, describe};
 /// counted, as its last drops it.
 pub(super) fn drop_runs<'tcx>(
     recognition: super::recognition::Recognition<'_, 'tcx>,
-    library: bool,
+    (library, fn_dyns): (bool, &super::analysis::FnDyns),
     counted: &super::analysis::Counted<'tcx>,
     ty: Ty<'tcx>,
 ) -> bool {
     let state = TypeDrops::default();
     // Its type parameters, of no drop given here, drop nothing: their drops
     // are their callers', passed on as they are.
-    without_dictionaries(recognition, library, counted, &state).drops(ty) == Drops::Runs
+    without_dictionaries(recognition, (library, fn_dyns), counted, &state).drops(ty) == Drops::Runs
 }
 
 /// What drops, asked in `recognition`'s typing environment with no
 /// dictionaries given: a type parameter's drop is a maybe.
 fn without_dictionaries<'a, 'tcx>(
     recognition: super::recognition::Recognition<'a, 'tcx>,
-    library: bool,
+    (library, fn_dyns): (bool, &'a super::analysis::FnDyns),
     counted: &'a super::analysis::Counted<'tcx>,
     state: &'a TypeDrops<'tcx>,
 ) -> DropQuery<'a, 'tcx> {
@@ -62,6 +62,7 @@ fn without_dictionaries<'a, 'tcx>(
         evidence: super::traits::EvidenceQuery::without_evidence(recognition),
         library,
         counted,
+        fn_dyns,
         state,
     }
 }
@@ -188,6 +189,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             evidence: self.evidence_query(),
             library: self.krate.library,
             counted: self.krate.counted,
+            fn_dyns: self.krate.fn_dyns,
             state: &self.drop_state.types,
         }
     }
@@ -591,7 +593,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 });
                 let Some((_, places)) = made_here else {
                     // One its maker gave back carries its drop (ADR 0484).
-                    if super::recognition::carries_its_drop(self.tcx, *def_id) {
+                    if self.krate.fn_dyns.carries_its_drop(self.tcx, *def_id) {
                         let js_span = self.js_span(span);
                         out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
                         return Ok(());
@@ -601,6 +603,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for (place, ty) in places {
                     self.drop_in(place, ty, span, made, out)?;
                 }
+            }
+            // A function's, the drop it carries, if any (ADR 0521).
+            ty::Dynamic(predicates, ..) if super::recognition::is_fn_dyn(self.tcx, predicates) => {
+                out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
             }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
             ty::Dynamic(..) => {
@@ -778,7 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 foreign: self.krate.foreign,
             };
             let state = TypeDrops::default();
-            let query = without_dictionaries(recognition, false, self.krate.counted, &state);
+            let query = without_dictionaries(recognition, (false, self.krate.fn_dyns), self.krate.counted, &state);
             let thir = &body.thir;
             let facts = find_facts(&query, thir, body.def_id.to_def_id());
             // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
@@ -853,7 +859,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             foreign: self.krate.foreign,
         };
         let state = TypeDrops::default();
-        let query = without_dictionaries(recognition, false, self.krate.counted, &state);
+        let query = without_dictionaries(recognition, (false, self.krate.fn_dyns), self.krate.counted, &state);
         plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
         plain
     }

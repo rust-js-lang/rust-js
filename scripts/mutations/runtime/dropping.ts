@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
+  {
+    name: "dispose-plain-function",
+    breaks: "a `dyn Fn` of a function that carries no drop throws as it's dropped",
+    file: "src/runtime/dropping.js",
+    find: "  f[$disposeKey]?.();\n",
+    replace: "  f[$disposeKey]();\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
+  },
 ];

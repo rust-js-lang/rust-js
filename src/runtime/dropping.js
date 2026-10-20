@@ -11,5 +11,5 @@ function $dropping(f, drop) {
 
 // A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
 function $dispose(f) {
-  f[$disposeKey]();
+  f[$disposeKey]?.();
 }

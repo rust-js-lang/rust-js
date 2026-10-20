@@ -3,6 +3,7 @@
 mod debug;
 mod drops;
 mod fmt_failures;
+mod fn_dyns;
 mod iterator_steps;
 mod mutation;
 mod naming;
@@ -24,6 +25,7 @@ use crate::lower::recognition::{
 };
 use debug::{uses_format_options, uses_pretty_debug};
 use drops::drop_params;
+pub(super) use fn_dyns::FnDyns;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
 use naming::{exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions};
@@ -358,6 +360,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
+    /// Whether a function holding a value with a destructor is made a `dyn
+    /// Fn`, which then drops it: a library's may be (ADR 0521).
+    pub fn_dyns: FnDyns,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
@@ -547,15 +552,31 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Not a library's, whose counted `Rc` its consumers would share
     // uncounted (ADR 0320).
     let params_may_drop = !library && crate::lower::traits::may_have_destructors(tcx, &foreign);
-    let counted = counted_rcs(tcx, all_bodies, params_may_drop, |counted, pointee| {
-        let recognition = Recognition {
-            tcx,
-            typing_env: ty::TypingEnv::fully_monomorphized(),
-            trait_impls: &trait_impls,
-            foreign: &foreign,
-        };
-        super::drops::drop_runs(recognition, library, counted, pointee)
-    });
+    let recognition = Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    let counted_with = |fn_dyns: &FnDyns| {
+        counted_rcs(tcx, all_bodies, params_may_drop, |counted, pointee| {
+            super::drops::drop_runs(recognition, (library, fn_dyns), counted, pointee)
+        })
+    };
+    // Whether a function holding a value with a destructor is made a `dyn
+    // Fn`, which then drops it (ADR 0521): a library's may be. A captured
+    // `Rc` counted may make one, and a `dyn Fn` that drops may count an
+    // `Rc`; both only grow, so a second pass settles them.
+    let mut fn_dyns = FnDyns::new(tcx, all_bodies, library);
+    let mut counted = counted_with(&fn_dyns);
+    if !fn_dyns.drops
+        && fn_dyns::fn_dyns_drop(tcx, all_bodies, (params_may_drop, foreign.any()), |ty| {
+            super::drops::drop_runs(recognition, (library, &fn_dyns), &counted, ty)
+        })
+    {
+        fn_dyns.drops = true;
+        counted = counted_with(&fn_dyns);
+    }
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -640,7 +661,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             trait_impls: &trait_impls,
             foreign: &foreign,
         };
-        super::drops::drop_runs(recognition, library, &counted, ty)
+        super::drops::drop_runs(recognition, (library, &fn_dyns), &counted, ty)
     };
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, library);
@@ -677,6 +698,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         paths,
         mutated,
         counted,
+        fn_dyns,
         changed_vecs,
         drop_params,
         copied,

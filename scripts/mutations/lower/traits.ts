@@ -1797,4 +1797,12 @@ export const mutations: Mutation[] = [
     replace: "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
+  {
+    name: "fn-dyn-unwrapped",
+    breaks: "a type parameter's function made a `dyn Fn` doesn't carry its drop",
+    file: "src/lower/traits.rs",
+    find: "            if carried || self.drops(function) == super::drops::Drops::Nothing {\n",
+    replace: "            if true || carried || self.drops(function) == super::drops::Drops::Nothing {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+  },
 ];
