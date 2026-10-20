@@ -811,4 +811,12 @@ export const mutations: Mutation[] = [
     replace: "                | IterComb::MapWhile\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
+  {
+    name: "filter-map-holds-none",
+    breaks: "`filter_map`'s source isn't closed, and drops none of what it hasn't given",
+    file: "src/lower/combinators.rs",
+    find: "                | IterComb::Scan\n                | IterComb::FilterMap\n",
+    replace: "                | IterComb::Scan\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
+  },
 ];

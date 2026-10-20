@@ -3763,7 +3763,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::iter::TakeWhile"
             | "std::iter::StepBy"
             | "std::iter::Inspect"
-            | "std::iter::Fuse" => self.closing_source(sources.next()?)?,
+            | "std::iter::Fuse"
+            // `filter_map`'s and `map_while`'s, a `map` and a `filter` or a
+            // `take_while` of it (ADR 0518).
+            | "std::iter::FilterMap"
+            | "std::iter::MapWhile" => self.closing_source(sources.next()?)?,
             "std::iter::Zip" | "std::iter::Chain" => {
                 let (a, b) = (sources.next()?, sources.next()?);
                 self.closing_both(a, self.closing_source(b)?)

@@ -39,13 +39,12 @@ function inner_left() {
 
 function source_left() {
   const v = [[1], [2], [3]];
-  const firsts = Iterator.from(
-    $closing($iter(v), $dropEach(loudDrop_drop)).flatMap((l) => {
+  const firsts = $closing($iter(v), $dropEach(loudDrop_drop))
+    .flatMap((l) => {
       const result = [l[0], (l[0] + 10) & 255];
       loudDrop_drop(l);
       return result;
-    }),
-  )
+    })
     .take(3)
     .toArray();
   console.log(`[${firsts.join(", ")}]`);
@@ -119,15 +118,14 @@ function options() {
       }
     })
     .filter((item) => item != null);
-  const opts = Iterator.from(
-    $closing($iter([[60], undefined, [61]]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          loudDrop_drop(item);
-        }
+  const opts = $closing($iter([[60], undefined, [61]]), (intoIter) => {
+    for (const item of intoIter) {
+      if (item != null) {
+        loudDrop_drop(item);
       }
-    }).filter((item) => item != null),
-  )
+    }
+  })
+    .filter((item) => item != null)
     .take(1)
     .toArray();
   try {

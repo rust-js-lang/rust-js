@@ -892,4 +892,13 @@ export const mutations: Mutation[] = [
     replace: "                    _ => \"$repeating\",\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
+  {
+    name: "closing-not-an-iterator",
+    breaks: "`$closing` is taken for what isn't a JS iterator, written inside `Iterator.from`, and its chain not made eager",
+    file: "src/lower/iterators.rs",
+    find: "    \"$closing\",\n",
+    replace: "    \"$peekable\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
+  },
 ];

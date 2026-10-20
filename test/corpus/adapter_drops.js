@@ -304,16 +304,13 @@ function main() {
   }
   console.log(`take_while ended ${ended}`);
 
-  const value$6 = $iter(louds(100, 5));
-  const stepped = Iterator.from(
-    $closing(value$6, $dropEach(loudDrop_drop)).filter((item, i) => {
-      if (i % 2 === 0) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
-  );
+  const stepped = $closing($iter(louds(100, 5)), $dropEach(loudDrop_drop)).filter((item, i) => {
+    if (i % 2 === 0) {
+      return true;
+    }
+    loudDrop_drop(item);
+    return false;
+  });
   let stepped$live;
   try {
     const tmp = $next(stepped);
@@ -337,22 +334,20 @@ function main() {
     stepped.return();
   }
 
-  const value$7 = $iter(louds(110, 3));
-  const value$8 = (l) => {
+  const value$6 = (l) => {
     console.log(`see ${l[0]}`);
   };
-  const value$9 = (l) => {
+  const value$7 = (l) => {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   };
-  const total = Iterator.from(
-    $closing(value$7, $dropEach(loudDrop_drop)).map((item) => {
-      value$8(item);
+  const total = $closing($iter(louds(110, 3)), $dropEach(loudDrop_drop))
+    .map((item) => {
+      value$6(item);
       return item;
-    }),
-  )
-    .map((item) => value$9(item))
+    })
+    .map((item) => value$7(item))
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`inspect ${total}`);
 
@@ -1103,12 +1098,12 @@ function main() {
     }
     throw error;
   }
-  const value$10 = { left: 3, _tag: [999] };
+  const value$8 = { left: 3, _tag: [999] };
   let tmp$13;
   try {
     tmp$13 = louds(240, 2);
   } catch (error) {
-    loudDrop_drop(value$10._tag);
+    loudDrop_drop(value$8._tag);
     if (fused$live) {
       fused.return();
     }
@@ -1141,7 +1136,7 @@ function main() {
   let counted;
   try {
     counted = chain(
-      $iterator(value$10, countdownIterator_next),
+      $iterator(value$8, countdownIterator_next),
       tmp$13,
       $dropEach(loudDrop_drop),
       (it) => {
@@ -1317,12 +1312,12 @@ function main() {
     }
     throw error;
   }
-  const value$11 = { left: 3, _tag: [998] };
+  const value$9 = { left: 3, _tag: [998] };
   let tmp$17;
   try {
     tmp$17 = louds(250, 2);
   } catch (error) {
-    loudDrop_drop(value$11._tag);
+    loudDrop_drop(value$9._tag);
     if (fused$live) {
       fused.return();
     }
@@ -1355,7 +1350,7 @@ function main() {
   let own;
   try {
     own = $lazyChain(
-      $closing($iterator(value$11, countdownIterator_next), (it) => {
+      $closing($iterator(value$9, countdownIterator_next), (it) => {
         loudDrop_drop(it.of._tag);
       }),
       $closing(Iterator.from(tmp$17), $dropEach(loudDrop_drop)),
@@ -1734,11 +1729,11 @@ function main() {
     }
     throw error;
   }
-  const value$12 = [1, 2, 3];
-  const value$13 = [4];
+  const value$10 = [1, 2, 3];
+  const value$11 = [4];
   let plain;
   try {
-    plain = zip(value$12, value$13);
+    plain = zip(value$10, value$11);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -2076,12 +2071,12 @@ function main() {
     }
     throw error;
   }
-  const value$14 = [[210], [5], [212]];
+  const value$12 = [[210], [5], [212]];
   let tmp$32;
   try {
     tmp$32 = $iterEq(
       $closing(tmp$31, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(value$14), $dropEach(loudDrop_drop)),
+      $closing(Iterator.from(value$12), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,

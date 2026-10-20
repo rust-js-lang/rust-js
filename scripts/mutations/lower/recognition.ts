@@ -2388,4 +2388,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
+  {
+    name: "held-filter-map-refused",
+    breaks: "a `filter_map` or `map_while` held of items with a destructor is a std type refused",
+    file: "src/lower/recognition.rs",
+    find: "            | \"std::iter::FilterMap\"\n            | \"std::iter::MapWhile\" => self.closing_source(sources.next()?)?,\n",
+    replace: "            => self.closing_source(sources.next()?)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
+  },
 ];

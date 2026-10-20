@@ -195,7 +195,7 @@ impl IterComb {
     /// after, `zip`'s and `chain`'s: an owning one given it is `$closing`,
     /// and it drops each it discards as it discards it (ADR 0465); and
     /// `flat_map`'s and `flatten`'s, which hold the inner one they step too,
-    /// closed as well (ADR 0510).
+    /// closed as well (ADR 0510); and `filter_map`'s (ADR 0518).
     pub(in crate::lower) fn holds_its_sources(self) -> bool {
         matches!(
             self,
@@ -206,6 +206,7 @@ impl IterComb {
                 | IterComb::TakeWhile
                 | IterComb::MapWhile
                 | IterComb::Scan
+                | IterComb::FilterMap
                 | IterComb::SkipWhile
                 | IterComb::StepBy
                 | IterComb::Inspect
