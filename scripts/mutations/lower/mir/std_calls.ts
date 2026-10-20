@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","map_index_missing"],
   },
   {
-    name: "mir-iter-comb-not-lazy",
-    breaks: "an iterator's combinator from MIR takes its items as an array, though they're a JS iterator",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?\n",
-    replace: "                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, false, span, out)?\n",
-    tests: ["test/corpus.test.ts","-t","iter_flatten"],
-  },
-  {
     name: "mir-radix-argument-unseen",
     breaks: "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
     file: "src/lower/mir/std_calls.rs",

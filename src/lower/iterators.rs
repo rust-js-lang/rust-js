@@ -1160,8 +1160,6 @@ fn fresh(items: &Expr) -> bool {
                 "$bigRange",
                 "$charRange",
                 "$zip",
-                "$takeWhile",
-                "$skipWhile",
                 "$windows",
                 "$chunks",
                 "$chunksExact",
@@ -1170,7 +1168,6 @@ fn fresh(items: &Expr) -> bool {
                 "$lines",
                 "$slice",
                 "$rest",
-                "$scan",
                 "$drain",
                 "$splitOff",
                 "$setAlgebra",
@@ -1710,7 +1707,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// `$rev` (ADR 0516), and
 /// each of its generators, which the runtime package's test holds this list
 /// to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 17] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 18] = [
     "$iterator",
     "$fuse",
     "$intoIter",
@@ -1722,6 +1719,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 17] = [
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",
     "$lazySkipWhile",
+    "$lazyScan",
     "$lazyChain",
     "$lazyZip",
     "$zipBack",

@@ -9,11 +9,11 @@ import {
   $dedup,
   $index,
   $iter,
+  $lazyScan,
   $lazyZip,
   $maxBy,
   $orInsertWith,
   $partialCmp,
-  $scan,
   $sortedEntries,
   $toFixed,
   $unwrap,
@@ -63,10 +63,10 @@ function main() {
     return BigInt.asIntN(64, value - BigInt($index(w, 0)));
   });
   console.log(`[${diffs.join(", ")}]`);
-  const running = $scan(units.slice(), 0, (acc, u) => {
+  const running = $lazyScan($iter(units), 0, (acc, u) => {
     acc.value = (acc.value + u) >>> 0;
     return acc.value;
-  });
+  }).toArray();
   console.log(`[${running.join(", ")}]`);
   const pairs = all
     .map((s) => s.item)

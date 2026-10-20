@@ -14,12 +14,12 @@ import {
   $fromU32,
   $index,
   $iter,
+  $lazyScan,
   $lowerExp,
   $maxBy,
   $nextSome,
   $partialCmp,
   $range,
-  $scan,
   $some,
   $someValue,
   $splitOff,
@@ -136,10 +136,10 @@ export function tour() {
   const value$4 = largest([1.5, -2], { partial_cmp: $partialCmp });
   const value$5 = largest([], { partial_cmp: $cmp });
   out += `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${$debugF64(value$4)})`} ${value$5 == null ? "None" : `Some(${value$5})`}\n`;
-  const running = $scan([1, 2, 3, 4], 0, (acc, x) => {
+  const running = $lazyScan($iter([1, 2, 3, 4]), 0, (acc, x) => {
     acc.value = (acc.value + x) >>> 0;
     return acc.value;
-  });
+  }).toArray();
   const v = $range(1, 9);
   const tail = $splitOff(v, 5);
   const drained = $drain(v, 1, 3);
@@ -169,13 +169,13 @@ export function edges() {
   // Rust works out the fields, then the base.
   const value = tick(order, 1);
   const v = { major: tick(order, 2), minor: made(order).minor, patch: value };
-  const upto = $scan([5, 3, 8, 1], 1, (acc, x) => {
+  const upto = $lazyScan($iter([5, 3, 8, 1]), 1, (acc, x) => {
     acc.value = Math.imul(acc.value, x) >>> 0;
     if (acc.value > 100) {
       return;
     }
     return acc.value;
-  });
+  }).toArray();
   const fs = [NaN, 1, -0, 0, -Infinity, -1, Infinity];
   fs.sort((a, b) => $totalCmp(a, b));
   const digits = [

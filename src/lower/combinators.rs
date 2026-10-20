@@ -205,6 +205,7 @@ impl IterComb {
                 | IterComb::Flatten
                 | IterComb::TakeWhile
                 | IterComb::MapWhile
+                | IterComb::Scan
                 | IterComb::SkipWhile
                 | IterComb::StepBy
                 | IterComb::Inspect
@@ -1222,7 +1223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// One of `IterComb`'s, on `items`: an array, or a JS iterator if `lazy`.
+    /// One of `IterComb`'s, on `items`, a JS iterator (ADR 0517).
     #[allow(clippy::too_many_arguments)]
     pub(super) fn iter_comb(
         &mut self,
@@ -1231,7 +1232,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mut rest: std::vec::IntoIter<Expr>,
         generic_args: ty::GenericArgsRef<'tcx>,
         receiver_ty: Ty<'tcx>,
-        lazy: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -1287,13 +1287,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::Flatten => match item_ty() {
                 Some(item) if self.option_of(item.peel_refs()).is_some() => method(items, "filter", vec![present()]),
                 // Of what owns items with a destructor, each closed (ADR 0510).
-                Some(item) if lazy && let Some(each) = self.closed_inner(None, item, span)? => {
+                Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {
                     self.flat_mapped(items, each, receiver_ty, span)?
                 }
                 // Of arrays, each stepped as an array is, `$iter(item)`: what
                 // `flat()` takes apart where the chain is made eager.
                 Some(item)
-                    if lazy && {
+                    if {
                         let item = item.peel_refs();
                         item.is_array() || item.is_slice() || self.is_vec_like(item)
                     } =>
@@ -1305,44 +1305,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     method(items, "flatMap", vec![each])
                 }
-                _ if lazy => {
+                _ => {
                     let each = Expr::arrow(
                         vec!["item".into()],
                         vec![StmtKind::Return(Some(Expr::var("item"))).at(js::Span::NONE)],
                     );
                     method(items, "flatMap", vec![each])
                 }
-                _ => method(items, "flat", Vec::new()),
             },
-            // `chain` and `zip` are lazy when either side is (ADR 0128):
-            // `iterator_call` says so in `lazy`.
             // Of items with a destructor, each of its own it steps where the
             // other's run out dropped (ADR 0465).
-            IterComb::Zip if lazy => {
+            IterComb::Zip => {
                 let mut args = vec![items, next()];
                 args.extend(self.item_drop_of(receiver_ty, span)?);
                 Expr::call(Expr::helper("$lazyZip"), args)
             }
-            IterComb::Zip => Expr::call(Expr::helper("$zip"), vec![items, next()]),
-            IterComb::Chain if lazy => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
-            IterComb::Chain => method(items, "concat", vec![next()]),
+            IterComb::Chain => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
             IterComb::MapWhile => {
                 let mapped = method(items, "map", vec![next()]);
-                let name = if lazy { "$lazyTakeWhile" } else { "$takeWhile" };
-                unboxed(Expr::call(Expr::helper(name), vec![mapped, present()]), kept)
+                unboxed(
+                    Expr::call(Expr::helper("$lazyTakeWhile"), vec![mapped, present()]),
+                    kept,
+                )
             }
-            IterComb::TakeWhile if lazy => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
-            IterComb::TakeWhile => Expr::call(Expr::helper("$takeWhile"), vec![items, next()]),
-            IterComb::SkipWhile if lazy => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
-            IterComb::SkipWhile => Expr::call(Expr::helper("$skipWhile"), vec![items, next()]),
+            IterComb::TakeWhile => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
+            IterComb::SkipWhile => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
+            // Lazy of a JS iterator, as Rust's is (ADR 0517).
             IterComb::Scan => {
-                let items = if lazy {
-                    method(items, "toArray", Vec::new())
-                } else {
-                    items
-                };
                 let (init, f) = (next(), next());
-                Expr::call(Expr::helper("$scan"), vec![items, init, f])
+                unboxed(
+                    Expr::call(Expr::helper("$lazyScan"), vec![items, init, f]),
+                    generic_args.types().nth(2),
+                )
             }
             // Of items with a destructor, each it steps over dropped as it's
             // passed, as std's `nth` drops it (ADR 0465).
@@ -1372,11 +1366,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self
                     .iterator_item(receiver_ty.peel_refs())
                     .ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
-                // Of an array's items, the array, as `$max`'s are.
-                let items = match lazy {
-                    true => method(items, "toArray", Vec::new()),
-                    false => items,
-                };
+                // Its items, listed, as `$max`'s are.
+                let items = method(items, "toArray", Vec::new());
                 let f = next();
                 match comb {
                     IterComb::MaxBy(_) => {
@@ -1419,12 +1410,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             IterComb::Nth => {
                 let n = next();
-                if lazy {
-                    let first = method(method(items, "drop", vec![n]), "take", vec![Expr::int(1)]);
-                    Expr::index(method(first, "toArray", Vec::new()), Expr::int(0))
-                } else {
-                    Expr::index(items, n)
-                }
+                let first = method(method(items, "drop", vec![n]), "take", vec![Expr::int(1)]);
+                Expr::index(method(first, "toArray", Vec::new()), Expr::int(0))
             }
             IterComb::Inspect => {
                 let f = next();
@@ -1444,11 +1431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method(items, "map", vec![each])
             }
             IterComb::Partition => {
-                let items = if lazy {
-                    method(items, "toArray", Vec::new())
-                } else {
-                    items
-                };
+                let items = method(items, "toArray", Vec::new());
                 Expr::call(Expr::helper("$partition"), vec![items, next()])
             }
             IterComb::Unzip => {
@@ -1456,11 +1439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !into {
                     return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`"));
                 }
-                let items = if lazy {
-                    method(items, "toArray", Vec::new())
-                } else {
-                    items
-                };
+                let items = method(items, "toArray", Vec::new());
                 Expr::call(Expr::helper("$unzip"), vec![items])
             }
         })

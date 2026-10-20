@@ -1220,17 +1220,16 @@ export function $peekSome(it) {
   return it.at < it.end ? $some(it.items[it.at]) : undefined;
 }
 
-export function $scan(items, init, f) {
+// `it.scan(init, f)` of a JS iterator, lazy as Rust's: each `Some` `f`
+// gives, given its state's box and an item, till its first `None`, which
+// ends it, closing what it steps, as `take_while`'s end does (ADR 0517).
+export function* $lazyScan(items, init, f) {
   const state = { value: init };
-  const out = [];
   for (const item of items) {
     const next = f(state, item);
-    if (next === undefined) {
-      break;
-    }
-    out.push(next);
+    if (next === undefined) return;
+    yield next;
   }
-  return out;
 }
 
 export class $JsonError extends Error {
@@ -8710,16 +8709,6 @@ export function $chunks(v, size, cut = (items, start, end) => items.slice(start,
 
 export function $zip(a, b) {
   return Array.from({ length: Math.min(a.length, b.length) }, (_, i) => [a[i], b[i]]);
-}
-
-export function $takeWhile(items, keep) {
-  const end = items.findIndex((item) => !keep(item));
-  return end < 0 ? items.slice() : items.slice(0, end);
-}
-
-export function $skipWhile(items, skip) {
-  const start = items.findIndex((item) => !skip(item));
-  return start < 0 ? [] : items.slice(start);
 }
 
 // `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; both closed as it

@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`scan` of items with a destructor** (ADR 0517).
 - **`rev()` of an array's items with a destructor** (ADR 0516).
 - **`map_while`** (ADR 0515).
 - **`peekable()` of what has a destructor** (ADR 0514).
@@ -635,6 +636,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`scan` after a lazy chain** ran the chain's closures for every item,
+  past where `scan` ended: it's lazy, as Rust's is (ADR 0517).
 - **`filter_map` and `flat_map` of what holds what looks like `None`**,
   `Some(None)`'s or a type parameter's, kept their `Some`s boxed: `Some([object
   Object])` (ADR 0515).

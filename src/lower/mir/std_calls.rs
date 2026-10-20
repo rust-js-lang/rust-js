@@ -748,7 +748,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let discard_when = comb == IterComb::SkipWhile;
                     exprs.insert(0, self.dropping_discarded(test, item, discard_when, span, out)?);
                 }
-                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
+                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?
             }
             // `cycle()` of another iterator than std's over an array, cloned
             // (ADR 0491).

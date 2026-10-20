@@ -291,8 +291,6 @@ helpers! {
     Windows,
     Chunks,
     Zip,
-    TakeWhile,
-    SkipWhile,
     LazyChain,
     LazyZip,
     FlatMap,
@@ -762,8 +760,6 @@ impl Helper {
             Helper::Chunks => include_str!("runtime/chunks.js"),
             // `a.zip(b)`: pairs, as many as the shorter has.
             Helper::Zip => include_str!("runtime/zip.js"),
-            Helper::TakeWhile => include_str!("runtime/take_while.js"),
-            Helper::SkipWhile => include_str!("runtime/skip_while.js"),
             // A JS iterator's adapters (ADR 0128), which take from it only as
             // far as they're used, as Rust's do: an endless one is fine.
             Helper::LazyChain => include_str!("runtime/lazy_chain.js"),
