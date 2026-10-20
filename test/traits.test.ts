@@ -245,7 +245,7 @@ for (const [name, source, diagnostic] of [
   // A loop that owns its items drops what it hasn't reached (ADR 0098): of a
   // `Vec`, an array, an `Option` or an iterator of the crate's own that holds
   // one, not yet of an adapter.
-  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().rev() { let _ = r; } }`, "a std type holding a value with a destructor"],
+  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().map(|r| r).rev() { let _ = r; } }`, "`rev` of a lazy iterator"],
   ["loop over an iterator holding one", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct It(R, u8); impl Iterator for It { type Item = R; fn next(&mut self) -> Option<R> { None } } pub fn f(it: It) { for r in it { let _ = r; } }`, null],
   // `collect()` drains a chain of owned items through `map`, `filter` and
   // `skip_while` (ADR 0098), not one that leaves some, as `take` does.

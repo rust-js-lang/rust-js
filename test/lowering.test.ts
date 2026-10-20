@@ -5766,7 +5766,7 @@ impl Drop for Noisy {
 }
 pub fn run() {
     let v = vec![Noisy("a"), Noisy("b")];
-    drop(v.into_iter().rev());
+    drop(v.into_iter().scan(0, |_, n| Some(n)));
 }
 `);
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {

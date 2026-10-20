@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rev()` of an array's items with a destructor** (ADR 0516).
 - **`map_while`** (ADR 0515).
 - **`peekable()` of what has a destructor** (ADR 0514).
 - **`iter::repeat_n` and a `Peekable`'s `peek_mut`** (ADR 0513).
@@ -565,6 +566,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`rev()` of what knows its back is `$rev(it)`**, not `$iterator(it,
+  $nextBackSome, true)` (ADR 0516).
 - **No list with holes**: `println!("{:?} {:?}", f(a), g(b))` reads `g(b)`
   as itself, not `[undefined, g(b)][1]` (ADR 0512).
 - **No `.map((item) => item)`**: `{:?}` of a list of unit enums or of

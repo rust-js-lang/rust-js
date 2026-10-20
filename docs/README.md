@@ -584,6 +584,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0513 `iter::repeat_n` and `Peekable::peek_mut`](decisions/0513-repeat-n-and-peek-mut.md)
 - [0514 A `Peekable` of what has a destructor](decisions/0514-a-peekable-of-what-has-a-destructor.md)
 - [0515 `map_while`, and the `Some`s an iterator keeps](decisions/0515-map-while-and-kept-somes.md)
+- [0516 `rev()` steps what it holds from its back](decisions/0516-rev-steps-what-it-holds-from-its-back.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

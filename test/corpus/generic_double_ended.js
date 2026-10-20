@@ -11,6 +11,7 @@ import {
   $rangeInclusiveNextBack,
   $rangeNext,
   $rangeNextBack,
+  $rev,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -53,7 +54,7 @@ function last_then_rest(t) {
 }
 
 function reversed(t) {
-  return $iterator(t, $nextBack).toArray();
+  return $rev(t).toArray();
 }
 
 function passed_on(t) {

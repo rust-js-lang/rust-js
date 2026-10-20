@@ -2380,4 +2380,12 @@ export const mutations: Mutation[] = [
     replace: "                let source = sources.next()?;\n",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic peekable takes none"],
   },
+  {
+    name: "rev-type-unclosed",
+    breaks: "a `Rev` of an array's items with a destructor held is a std type refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::iter::Rev\" => sources.next().filter(|&source| self.array_source(source).is_some()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
+  },
 ];

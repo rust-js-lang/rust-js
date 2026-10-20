@@ -717,26 +717,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper(helper, args))
     }
 
-    /// `peekable()` of a source or items with a destructor: `$peekable(it,
-    /// drop)`, its source closed to drop what it holds, then what it peeked
-    /// at dropped, as Rust drops a `Peekable`'s fields (ADR 0514). `None` of
-    /// one with nothing to drop.
-    fn dropping_peekable(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        if !self.peekable_closes(iter_ty) {
-            return Ok(None);
-        }
+    /// `peekable()` or `rev()` of what holds what has a destructor, closed to
+    /// drop it: `$peekable(it, drop)`, its source closed, then what it
+    /// peeked at dropped, as Rust drops a `Peekable`'s fields (ADR 0514);
+    /// `$rev(it)` of an array's items, stepped from its back, closed to drop
+    /// what's left front to back, as Rust's `Rev` drops what it holds (ADR
+    /// 0516). `None` of another.
+    fn closed_adapter(
+        &mut self,
+        method: Option<IterMethod>,
+        receiver: Expr,
+        iter_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
         let item = self.iterator_item(iter_ty).expect("an iterator's item");
-        let drop = self.std_drop_function(item, span)?;
+        let item_drop = self.std_drop_function(item, span)?;
+        let closed = match method {
+            Some(IterMethod::Peekable) if self.peekable_closes(iter_ty) => "$peekable",
+            Some(IterMethod::Rev) if item_drop.is_some() && self.array_source(iter_ty).is_some() => "$rev",
+            _ => return Ok(None),
+        };
         let it = match self.array_source(iter_ty) {
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
             Some(_) => self.std_iterator(receiver, iter_ty),
             None => self.as_js_iterator(receiver, iter_ty, span)?,
         };
         let it = self.closing(it, iter_ty, span)?;
-        Ok(Some(Expr::call_helper(
-            "$peekable",
-            Expr::optional_args(vec![it], vec![drop]),
-        )))
+        Ok(Some(match closed {
+            "$peekable" => Expr::call_helper("$peekable", Expr::optional_args(vec![it], vec![item_drop])),
+            _ => Expr::call_helper("$rev", vec![it]),
+        }))
     }
 
     /// Whether `peekable()` of a `source` is `$peekable`, closed to drop
@@ -759,10 +769,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
-        if std_method == Some(IterMethod::Peekable)
-            && let Some(peekable) = self.dropping_peekable(receiver.clone(), iter_ty, span)?
-        {
-            return Ok(peekable);
+        if let Some(closed) = self.closed_adapter(std_method, receiver.clone(), iter_ty, span)? {
+            return Ok(closed);
         }
         // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
         // it steps reversed (ADR 0473).
@@ -914,7 +922,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its
     /// back: of a generic or a `dyn` one, a JS iterator stepped from its
     /// back, its `Some` boxed where it may look like `None` (ADR 0051); of
-    /// one that knows its back, by `$nextBack` (ADR 0429), of a type
+    /// one that knows its back, `$rev(it)` (ADRs 0429, 0516), of a type
     /// parameter's given as it is, by its `DoubleEndedIterator` dictionary's
     /// `next_back` (ADR 0487); and of a zip of two arrays' iterators, made
     /// here, `$zipBack` of them, of items with nothing to drop (ADR 0493).
@@ -933,15 +941,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return (zip.helper_name() == Some("$lazyZip") && sides.len() == 2 && leaves_none(a) && leaves_none(b))
                 .then(|| Expr::call_helper("$zipBack", sides.clone()));
         }
+        // A JS iterator that knows its back, stepped from it, `$rev(it)`.
+        if self.knows_its_back(iter_ty) {
+            return Some(Expr::call_helper("$rev", vec![it.clone()]));
+        }
         let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
-        let back = match self.knows_its_back(iter_ty) {
-            true => Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }),
-            false => {
-                let double_ended = self.recognition().double_ended_iterator()?;
-                let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
-                Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back)
-            }
-        };
+        let double_ended = self.recognition().double_ended_iterator()?;
+        let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
+        let back = Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back);
         Some(crate::lower::iterators::stepped(it.clone(), back, boxed, None))
     }
 

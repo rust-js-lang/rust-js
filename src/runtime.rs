@@ -297,6 +297,7 @@ helpers! {
     LazyZip,
     FlatMap,
     PeekCell,
+    Rev,
     LazyTakeWhile,
     LazySkipWhile,
     Repeating,
@@ -769,6 +770,7 @@ impl Helper {
             Helper::LazyZip => include_str!("runtime/lazy_zip.js"),
             Helper::FlatMap => include_str!("runtime/flat_map.js"),
             Helper::PeekCell => include_str!("runtime/peek_cell.js"),
+            Helper::Rev => include_str!("runtime/rev.js"),
             Helper::LazyTakeWhile => include_str!("runtime/lazy_take_while.js"),
             Helper::LazySkipWhile => include_str!("runtime/lazy_skip_while.js"),
             // std's endless iterator sources (ADR 0128). `repeat` clones its

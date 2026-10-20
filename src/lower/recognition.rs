@@ -3779,6 +3779,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 let source = sources.next()?;
                 self.closing_both(source, self.closing_inner(self.iterator_item(source)?)?)
             }
+            // `rev()`'s of an array's items, stepped from its back (ADR 0516).
+            "std::iter::Rev" => sources.next().filter(|&source| self.array_source(source).is_some()),
             // `peekable()`'s: its source, and what it peeked at, whatever its
             // source holds; not of one that drops what it is (ADR 0514).
             "std::iter::Peekable" => {
