@@ -1063,4 +1063,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(ty) = unbound.filter(|_| false) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a map cloned where its source isn't bound by Clone"],
   },
+  {
+    name: "filter-ends-not-made",
+    breaks: "generic code's filter of what knows its back is a JS helper, which doesn't",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(IterMethod::Filter)\n                if self.knows_its_back(output)\n",
+    replace: "            Some(IterMethod::Filter)\n                if false && self.knows_its_back(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
 ];

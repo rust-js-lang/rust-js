@@ -1259,6 +1259,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => items,
         };
         Ok(match comb {
+            // Of one that knows its back, its `Some`s from either end, a map
+            // filtered, `$mapEnds` and `$filterEnds` (ADR 0526).
+            IterComb::FilterMap if self.knows_its_back(receiver_ty) => {
+                let some = Expr::call_helper(
+                    "$filterEnds",
+                    vec![Expr::call_helper("$mapEnds", vec![items, next()]), present()],
+                );
+                match kept.is_some_and(|ty| self.boxed_payload(ty)) {
+                    true => Expr::call_helper("$mapEnds", vec![some, Expr::helper("$someValue")]),
+                    false => some,
+                }
+            }
             // `Some`s only: `.map(f).filter((item) => item != null)`; each
             // taken out of its box where it looks like `None` (ADR 0515).
             IterComb::FilterMap => unboxed(

@@ -621,14 +621,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
-    name: "map-back-unknown",
-    breaks: "a map of an iterator that knows its back doesn't, so `rfind` of a generic one's map is refused",
-    file: "src/lower/iterators.rs",
-    find: "        if let Some(source) =\n            super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))\n        {\n            return self.knows_its_back(source)\n",
-    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.knows_its_back(source)\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
-  },
-  {
     name: "map-made-unstepped",
     breaks: "`rfind` of an array's map made in place, `v.iter().map(f)`, is refused",
     file: "src/lower/iterators.rs",
@@ -924,5 +916,13 @@ export const mutations: Mutation[] = [
     find: "        // What an `impl Iterator` hides, a function's result.\n        let ty = self.reveal(ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
+  {
+    name: "filter-made-here-backless",
+    breaks: "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
+    file: "src/lower/iterators.rs",
+    find: "            && method == \"filter\"\n",
+    replace: "            && method == \"filtered\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
 ];

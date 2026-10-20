@@ -835,4 +835,20 @@ export const mutations: Mutation[] = [
     replace: "            Some(super::recognition::Std::Forget)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
+  {
+    name: "filter-map-ends-native",
+    breaks: "a `filter_map` of what knows its back is a JS helper, which doesn't",
+    file: "src/lower/combinators.rs",
+    find: "            IterComb::FilterMap if self.knows_its_back(receiver_ty) => {\n",
+    replace: "            IterComb::FilterMap if false && self.knows_its_back(receiver_ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
+  {
+    name: "filter-map-ends-boxed",
+    breaks: "a `filter_map` from either end gives each `Some` that looks like `None` boxed",
+    file: "src/lower/combinators.rs",
+    find: "                    true => Expr::call_helper(\"$mapEnds\", vec![some, Expr::helper(\"$someValue\")]),\n",
+    replace: "                    true => some,\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
 ];

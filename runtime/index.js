@@ -1216,6 +1216,20 @@ export function $mapEnds(it, f) {
   return map;
 }
 
+// A filter of a JS iterator that knows its back, `it.filter(p)`, which
+// knows it too, as Rust's `Filter` is double-ended where its source is:
+// each of its source's items `p` keeps, from either end, `p` asked of each
+// as it's reached (ADR 0526).
+export function $filterEnds(it, p) {
+  const kept = (step) => () => {
+    for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
+    return { done: true, value: undefined };
+  };
+  const filter = Iterator.from({ next: kept(() => it.next()) });
+  if (it.back !== undefined) filter.back = kept(() => it.back());
+  return filter;
+}
+
 // How many numbers an exclusive range, `a..b`, has left: an
 // `ExactSizeIterator`'s `len()`, of its state (ADR 0456).
 export function $rangeLen(range) {

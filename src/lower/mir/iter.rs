@@ -956,6 +956,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
             }
+            // A filter of one, of items with nothing to drop as it passes
+            // them (ADR 0526).
+            Some(IterMethod::Filter)
+                if self.knows_its_back(output)
+                    && self
+                        .iterator_item(output)
+                        .is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing) =>
+            {
+                let it = (self.given_js_iterator(receiver.clone(), iter_ty, true, false))
+                    .unwrap_or_else(|| receiver.clone());
+                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+                let p = self.unary_callback(values.next().expect("the test"), own);
+                Expr::call_helper("$filterEnds", vec![it, p])
+            }
             _ => return Ok(None),
         }))
     }

@@ -414,11 +414,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         // A map of one, made one that knows its back too, `$mapEnds` (ADR
-        // 0455); a copy of one, which it is (ADR 0480); of a type parameter
-        // given as it is, of the JS iterator made of it (ADR 0488).
-        if let Some(source) =
-            super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
-        {
+        // 0455), a filter or a `filter_map`, `$filterEnds` (ADR 0526); a
+        // copy of one, which it is (ADR 0480); of a type parameter given as
+        // it is, of the JS iterator made of it (ADR 0488).
+        if let Some(source) = super::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source)
                 || self.made_knowing(source, self.recognition().double_ended_iterator());
         }
@@ -575,6 +574,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
+        }
+        // A filter made here, `src.filter(p)`: its source's items `p` keeps,
+        // from either end, as Rust's `Filter` steps them (ADR 0526).
+        if let Some(source) = super::recognition::filtered_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "filter"
+            && let [p] = args.as_slice()
+        {
+            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+            return Ok(Expr::call_helper("$filterEnds", vec![source_value, p.clone()]));
         }
         if let Some(double_ended) = self.own_next_back(ty)? {
             let iterator = std_item(self.tcx, StdItem::Iterator);
@@ -1735,10 +1745,12 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
-/// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), and
-/// each of its generators, which the runtime package's test holds this list
-/// to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 20] = [
+/// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), `$mapEnds`
+/// (ADR 0455) and `$filterEnds` (ADR 0526), and each of its generators,
+/// which the runtime package's test holds this list to; a range's, its own.
+pub(crate) const ITERATOR_HELPERS: [&str; 22] = [
+    "$mapEnds",
+    "$filterEnds",
     "$iterator",
     "$fuse",
     "$intoIter",

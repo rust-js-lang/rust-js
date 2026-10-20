@@ -10,7 +10,10 @@ Status: Draft. Would extend [0465](../0465-dropping-an-adapter-is-closing-it.md)
 Accepted in part: a clone of a `map` or a `filter`, made again of a clone
 of its source and its function
 ([0525](../0525-a-cloned-map-is-made-again.md)), with one owner of which
-types are cloned, `analysis::clones`. What follows is what's left.
+types are cloned, `analysis::clones`; and a `filter` or `filter_map` of a
+double-ended iterator stepped from its back
+([0526](../0526-a-filter-steps-from-its-back.md)). What follows is what's
+left.
 
 Case: C ([0262](../0262-when-rust-and-js-disagree.md)): closure effects,
 iteration state, cloning, and destruction are Rust's. Native JS adapters

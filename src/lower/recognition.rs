@@ -5916,6 +5916,31 @@ pub(crate) fn source_and_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
     }
 }
 
+/// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.
+pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Filter" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
+/// Of std's adapter of type `ty` that steps from its back where its source
+/// does, `Map`, `Filter`, `FilterMap` or `Copied`, its source (ADRs 0455,
+/// 0480, 0526).
+pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if matches!(
+                std_path(tcx, adt.did()).as_str(),
+                "std::iter::Map" | "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Copied"
+            ) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
 /// What std's `Zip` adapter of type `ty` zips, `A` and `B` of `Zip<A, B>`.
 pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     match ty.kind() {

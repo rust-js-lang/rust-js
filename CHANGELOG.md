@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `filter` or `filter_map` of a double-ended iterator, stepped from
+  its back** (ADR 0526).
 - **A clone of a lazy `map` or `filter`** (ADR 0525).
 - **A counted `Rc` in a library**: every `Rc` a library, or a crate
   using one, has is counted, one representation they share; libraries

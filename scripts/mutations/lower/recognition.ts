@@ -2396,4 +2396,28 @@ export const mutations: Mutation[] = [
     replace: "            => self.closing_source(sources.next()?)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
   },
+  {
+    name: "filter-not-back-stepped",
+    breaks: "a filter of what knows its back isn't seen to know its own, and generic code's is refused from its back",
+    file: "src/lower/recognition.rs",
+    find: "                \"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"\n",
+    replace: "                \"std::iter::Map\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
+  {
+    name: "filter-map-not-back-stepped",
+    breaks: "a `filter_map` of what knows its back isn't seen to know its own",
+    file: "src/lower/recognition.rs",
+    find: "                \"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"\n",
+    replace: "                \"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::Copied\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
+  {
+    name: "map-back-unknown",
+    breaks: "a map of an iterator that knows its back doesn't, so `rfind` of a generic one's map is refused",
+    file: "src/lower/recognition.rs",
+    find: "                \"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"\n",
+    replace: "                \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+  },
 ];

@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
+  {
+    name: "filter-ends-keeps-all",
+    breaks: "a filter stepped from either end keeps every item, its test asked of none",
+    file: "src/runtime/back_steps.js",
+    find: "    for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;\n",
+    replace: "    for (let at = step(); !at.done; at = step()) return at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
+  {
+    name: "filter-ends-backless",
+    breaks: "a filter of what knows its back doesn't know its own",
+    file: "src/runtime/back_steps.js",
+    find: "  if (it.back !== undefined) filter.back = kept(() => it.back());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
 ];
