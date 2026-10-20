@@ -190,12 +190,16 @@ pub(super) enum IterComb {
 impl IterComb {
     /// A lazy adapter that holds what it steps, and what it's given to step
     /// after, `zip`'s and `chain`'s: an owning one given it is `$closing`,
-    /// and it drops each it discards as it discards it (ADR 0465).
+    /// and it drops each it discards as it discards it (ADR 0465); and
+    /// `flat_map`'s and `flatten`'s, which hold the inner one they step too,
+    /// closed as well (ADR 0510).
     pub(in crate::lower) fn holds_its_sources(self) -> bool {
         matches!(
             self,
             IterComb::Zip
                 | IterComb::Chain
+                | IterComb::FlatMap
+                | IterComb::Flatten
                 | IterComb::TakeWhile
                 | IterComb::SkipWhile
                 | IterComb::StepBy
@@ -1160,6 +1164,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What `flat_map(f)` and `flatten()`, of no `f`, give JS's `flatMap`
+    /// of an `inner`, an `IntoIterator` that owns items with a destructor:
+    /// `(i) => $closing($iter(..), drop)`, each closed to drop what it
+    /// hasn't given, as `flatMap` closes it where it's closed early, and
+    /// Rust drops what's left of it with the adapter (ADR 0510); `f`'s own
+    /// parameter where it's an arrow of one value. `None` of one with
+    /// nothing to drop.
+    fn closed_inner(&mut self, f: Option<Expr>, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some(drop) = self.closing_drop(inner, span)? else {
+            return Ok(None);
+        };
+        let (param, value) = match f {
+            Some(f) => match &f.kind {
+                js::ExprKind::Arrow(params, body)
+                    if let [js::Pattern::Name(name)] = params.as_slice()
+                        && let [
+                            Stmt {
+                                kind: StmtKind::Return(Some(value)),
+                                ..
+                            },
+                        ] = body.as_slice() =>
+                {
+                    (name.clone(), value.clone())
+                }
+                _ => ("item".to_string(), Expr::call(f, vec![Expr::var("item")])),
+            },
+            None => ("item".to_string(), Expr::var("item")),
+        };
+        let it = match self.slice_item(inner) {
+            Some(_) => self.stepped_items(value),
+            None => self.as_js_iterator(value, inner, span)?,
+        };
+        let closed = Expr::call_helper("$closing", vec![it, drop]);
+        Ok(Some(Expr::arrow(
+            vec![param.into()],
+            vec![StmtKind::Return(Some(closed)).at(js::Span::NONE)],
+        )))
+    }
+
+    /// `items.flatMap(each)`, `each` closing each inner iterator, of a
+    /// `source` that may hold what has a destructor too: closed first, as
+    /// Rust drops a `FlatMap`'s source before its inner iterator, where
+    /// JS's `flatMap` closes the inner one first, `$flatMap(items, each)`
+    /// (ADR 0510).
+    fn flat_mapped(&mut self, items: Expr, each: Expr, source: Ty<'tcx>, span: Span) -> R<Expr> {
+        Ok(match self.closing_drop(source, span)? {
+            Some(_) => Expr::call_helper("$flatMap", vec![items, each]),
+            None => Expr::call(Expr::member(items, "flatMap"), vec![each]),
+        })
+    }
+
     /// One of `IterComb`'s, on `items`: an array, or a JS iterator if `lazy`.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn iter_comb(
@@ -1195,17 +1250,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::FindMap => method(method(items, "map", vec![next()]), "find", vec![present()]),
             IterComb::FlatMap => {
                 // A closure that returns an `Option` is a `filter_map`.
-                let returned = generic_args.types().nth(1);
-                if returned.is_some_and(|t| self.option_of(t).is_some()) {
+                let returned = generic_args.type_at(1);
+                if self.option_of(returned).is_some() {
                     method(method(items, "map", vec![next()]), "filter", vec![present()])
                 } else {
-                    method(items, "flatMap", vec![next()])
+                    let f = next();
+                    match self.closed_inner(Some(f.clone()), returned, span)? {
+                        Some(each) => self.flat_mapped(items, each, receiver_ty, span)?,
+                        None => method(items, "flatMap", vec![f]),
+                    }
                 }
             }
             // Of `Option`s, through a reference too, `iter()`'s `&Some(x)`,
             // which is `x`: the `Some`s.
             IterComb::Flatten => match item_ty() {
                 Some(item) if self.option_of(item.peel_refs()).is_some() => method(items, "filter", vec![present()]),
+                // Of what owns items with a destructor, each closed (ADR 0510).
+                Some(item) if lazy && let Some(each) = self.closed_inner(None, item, span)? => {
+                    self.flat_mapped(items, each, receiver_ty, span)?
+                }
                 // Of arrays, each stepped as an array is, `$iter(item)`: what
                 // `flat()` takes apart where the chain is made eager.
                 Some(item)

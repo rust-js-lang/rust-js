@@ -3764,17 +3764,43 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::iter::Inspect"
             | "std::iter::Fuse" => self.closing_source(sources.next()?)?,
             "std::iter::Zip" | "std::iter::Chain" => {
-                let held: Vec<Option<Ty<'tcx>>> = sources
-                    .take(2)
-                    .map(|source| self.closing_source(source))
-                    .collect::<Option<_>>()?;
-                match held.as_slice() {
-                    [Some(a), Some(b)] => Some(Ty::new_tup(self.tcx, &[*a, *b])),
-                    [Some(one), None] | [None, Some(one)] => Some(*one),
-                    _ => None,
-                }
+                let (a, b) = (sources.next()?, sources.next()?);
+                self.closing_both(a, self.closing_source(b)?)
+            }
+            // `flat_map`'s and `flatten`'s: its source, and the inner iterator
+            // it steps, of `U`, its function's, or its source's items (ADR
+            // 0510).
+            "std::iter::FlatMap" => {
+                let (source, inner) = (sources.next()?, sources.next()?);
+                self.closing_both(source, self.closing_inner(inner)?)
+            }
+            "std::iter::Flatten" => {
+                let source = sources.next()?;
+                self.closing_both(source, self.closing_inner(self.iterator_item(source)?)?)
             }
             _ => None,
+        }
+    }
+
+    /// What closing an adapter of `source` and another it holds, `other`,
+    /// as `closing_source` says of it, drops: what each holds, of each that
+    /// holds something; `None` where `source` can't be closed or neither
+    /// holds anything.
+    fn closing_both(&self, source: Ty<'tcx>, other: Option<Ty<'tcx>>) -> Option<Ty<'tcx>> {
+        match (self.closing_source(source)?, other) {
+            (Some(a), Some(b)) => Some(Ty::new_tup(self.tcx, &[a, b])),
+            (Some(one), None) | (None, Some(one)) => Some(one),
+            (None, None) => None,
+        }
+    }
+
+    /// What closing the inner iterator `flat_map` or `flatten` steps, of an
+    /// `inner`, an `IntoIterator`, drops, as `closing_source` says: a
+    /// `Vec`'s items too (ADR 0510).
+    fn closing_inner(&self, inner: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
+        match self.owned_into_items(inner) {
+            Some(item) => Some(Some(item)),
+            None => self.closing_source(inner),
         }
     }
 
@@ -3806,6 +3832,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)
     }
 
+    /// What an iterator of type `iterator` gives, its `Item`, normalized:
+    /// the one place that works it out.
+    pub(crate) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let item = trait_method(self.tcx, std_item(self.tcx, StdItem::Iterator), "Item");
+        let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item, [iterator]);
+        (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            .ok()
+    }
+
     /// What an iterator that owns its items gives, `vec::IntoIter`'s,
     /// `drain(..)`'s, a map's `(K, V)`, or `option::IntoIter`'s, each of which
     /// it drops with it.
@@ -3823,14 +3859,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // A `splice`'s, what it took out, its replacing iterator's items
         // (ADR 0501).
         if std_path(self.tcx, adt.did()) == "std::vec::Splice" {
-            let iterator = std_item(self.tcx, StdItem::Iterator);
-            let item = trait_method(self.tcx, iterator, "Item");
-            let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item, [args.types().next()?]);
-            return Some(
-                (self.tcx)
-                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
-                    .unwrap_or(projection),
-            );
+            return self.iterator_item(args.types().next()?);
         }
         args.types().next()
     }
@@ -3934,7 +3963,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "map" => IterMethod::Map,
             "filter" => IterMethod::Filter,
             "skip_while" => IterMethod::SkipWhile,
-            "flat_map" => IterMethod::FlatMap,
             "take" => IterMethod::Take,
             "skip" => IterMethod::Skip,
             "for_each" => IterMethod::ForEach,
@@ -6136,7 +6164,6 @@ pub(crate) enum IterMethod {
     Map,
     Filter,
     SkipWhile,
-    FlatMap,
     Take,
     Skip,
     ForEach,

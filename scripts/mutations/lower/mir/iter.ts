@@ -995,4 +995,16 @@ export const mutations: Mutation[] = [
     replace: "                Some(item) if self.is_copy(item.peel_refs()) => it,\n",
     tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
   },
+  {
+    "name": "mir-iterator-method-ungated",
+    "breaks": "a method of another trait than std's iterators', `AtomicU32::fetch_add`'s, is lowered as an iterator method's tail",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        if std_method.is_none() {\n            return Ok(None);\n        }\n",
+    "replace": "",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "^(atomics|std_odds).rs$"
+    ]
+  },
 ];

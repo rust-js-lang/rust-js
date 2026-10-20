@@ -77,3 +77,9 @@ question, `own_len` and `user_impl_defines`, never held: CI's mutations
 of them survived once `mir/iter.rs` changed. Both are removed, and the
 crate's iterator's `next` with them; `resolves_to_crate` is the one
 answer.
+
+And the iterator lowering asked again whether a method is `Iterator`'s,
+`is_std_def(trait_id, Iterator)`, after `iterator_method` had answered,
+so `iterator_method`'s own answer could never be seen. It now goes on only
+where `iterator_method` names one of std's iterator methods: `Ord::max`
+of numbers, which shares `Iterator::max`'s name, holds it.

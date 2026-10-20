@@ -578,6 +578,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0507 A vector's edits of values with a destructor](decisions/0507-a-vectors-edits-of-destructors.md)
 - [0508 No `.map((item) => item)`](decisions/0508-no-identity-maps.md)
 - [0509 More of std's calls of values with a destructor](decisions/0509-more-std-calls-of-destructors.md)
+- [0510 `flat_map` and `flatten` of what has a destructor](decisions/0510-flat-map-and-flatten-of-destructors.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

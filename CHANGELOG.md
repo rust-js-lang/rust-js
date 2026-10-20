@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`flat_map` and `flatten` of what has a destructor** (ADR 0510).
 - **An array's `map`, `unwrap_or_default`, `Option::as_mut`, `pop_if`,
   `pop_front_if` and capacity changes, of values with a destructor** (ADR
   0509).
@@ -626,6 +627,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`flat_map` of a function that gives an `Option`** threw, `flatMap
+  called on non-object`: it's the `Some`s (ADR 0510).
+- **`flat_map` whose inner iterators own what has a destructor**, stopped
+  early, never dropped what they hadn't given (ADR 0510).
 - **`extend_from_within` of objects** pushed the same objects again, so a
   change to one changed both: it pushes clones (ADR 0507).
 - **`fill` of a type with its own `clone_from`** cloned each: it calls

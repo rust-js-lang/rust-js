@@ -329,11 +329,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Err(self.unsupported(span, "`next` of this `&mut`, from its MIR")),
             };
         }
-        // Of the crate's iterator, what its impl takes from `Iterator`, `map`,
-        // `fuse`, `collect`, is std's of a JS iterator its `next` steps
-        // (`as_js_iterator`); its `next`, and what else its impl writes
-        // itself, is its own, never asked here (ADR 0492).
-        if !is_std_def(tcx, trait_id, StdItem::Iterator) {
+        // Only std's iterator methods, `iterator_method`'s; of the crate's
+        // iterator, what its impl takes from `Iterator` is std's of a JS
+        // iterator its `next` steps, and what it writes itself never comes
+        // here (ADR 0492).
+        if std_method.is_none() {
             return Ok(None);
         }
         let mut values = values.into_iter();
@@ -387,7 +387,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 method("filter", it, vec![test])
             }
-            Some(IterMethod::FlatMap) => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::Take) => method("take", it, vec![arg()]),
             // Of items with a destructor, each it skips dropped as it's
             // skipped, as Rust's `nth` drops it (ADRs 0422, 0465).

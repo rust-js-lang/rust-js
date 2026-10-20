@@ -769,16 +769,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::object(vec![js::Prop::Field("next".into(), next)]))
     }
 
-    /// What an iterator of type `iterator` yields: its `Item`.
-    pub(super) fn iterator_item(&self, iterator: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
-        let trait_id = std_item(self.tcx, StdItem::Iterator);
-        let item = trait_method(self.tcx, trait_id, "Item");
-        let projection = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, item, [iterator]);
-        self.tcx
-            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
-            .ok()
-    }
-
     /// What an `IntoIterator` of type `ty` gives, its `Item`.
     pub(in crate::lower) fn iterable_item(&self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
         let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
@@ -1467,6 +1457,11 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                 {
                     return None;
                 }
+                // One that closes what it holds, `$closing(..)`'s, listed, is
+                // stepped to its end and never closed (ADR 0510).
+                if list.mentions_var("$closing") {
+                    return None;
+                }
                 let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
                 Some(array_stepped(items))
             }
@@ -1709,7 +1704,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse` and
 /// `$intoIter`, and each of its generators, which the runtime package's
 /// test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 13] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 14] = [
     "$iterator",
     "$fuse",
     "$intoIter",
@@ -1721,6 +1716,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 13] = [
     "$lazyChain",
     "$lazyZip",
     "$zipBack",
+    "$flatMap",
     "$repeatingWith",
     "$successors",
 ];

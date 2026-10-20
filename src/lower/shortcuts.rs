@@ -18,6 +18,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().conversion(adt, convert, serialize)
     }
 
+    /// What an iterator of type `iterator` yields: its `Item`.
+    pub(super) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        self.recognition().iterator_item(iterator)
+    }
+
     /// Is `ty` a `Peekable`, which is always a `$iter` (ADR 0071)?
     pub(super) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_peekable(ty)

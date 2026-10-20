@@ -295,6 +295,7 @@ helpers! {
     SkipWhile,
     LazyChain,
     LazyZip,
+    FlatMap,
     LazyTakeWhile,
     LazySkipWhile,
     Repeating,
@@ -765,6 +766,7 @@ impl Helper {
             // far as they're used, as Rust's do: an endless one is fine.
             Helper::LazyChain => include_str!("runtime/lazy_chain.js"),
             Helper::LazyZip => include_str!("runtime/lazy_zip.js"),
+            Helper::FlatMap => include_str!("runtime/flat_map.js"),
             Helper::LazyTakeWhile => include_str!("runtime/lazy_take_while.js"),
             Helper::LazySkipWhile => include_str!("runtime/lazy_skip_while.js"),
             // std's endless iterator sources (ADR 0128). `repeat` clones its

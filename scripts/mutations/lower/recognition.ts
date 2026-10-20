@@ -1180,11 +1180,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "iterator-method-of-any-trait",
-    breaks: "a method of the crate's own trait named as std's iterator method is, `by_ref`, is taken for std's",
+    breaks: "a method of another trait named as std's iterator method is, `Ord::max`, is taken for `Iterator`'s",
     file: "src/lower/recognition.rs",
     find: "            _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "own_trait_by_ref"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_trait_by_ref|code_point_order).rs$"],
   },
   {
     name: "tree-extract-if-an-array",
@@ -1742,8 +1742,8 @@ export const mutations: Mutation[] = [
     name: "owned-iterator-item-first-arg",
     breaks: "a `Drain`'s items' type is read as its lifetime, and crashes",
     file: "src/lower/recognition.rs",
-    find: "                .unwrap_or(projection),\n            );\n        }\n        args.types().next()\n",
-    replace: "                .unwrap_or(projection),\n            );\n        }\n        Some(args.type_at(0))\n",
+    find: "            return self.iterator_item(args.types().next()?);\n        }\n        args.types().next()\n",
+    replace: "            return self.iterator_item(args.types().next()?);\n        }\n        Some(args.type_at(0))\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -2355,5 +2355,13 @@ export const mutations: Mutation[] = [
     find: "            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some() || self.is_path_like(args.type_at(1)))\n",
     replace: "            && (ty.is_box() || self.is_path_like(args.type_at(1)))\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
+  {
+    name: "flat-map-type-unclosed",
+    breaks: "a `FlatMap` held is a std type refused, not closed to drop what it holds",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::iter::FlatMap\" => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
+    replace: "            \"std::iter::FlatMapNot\" => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
 ];
