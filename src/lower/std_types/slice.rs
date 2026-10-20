@@ -821,14 +821,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$dequeInsert", given)
             }
             SliceOp::DequeSwapRemove { front } => helper("$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)]),
-            SliceOp::RetainMut | SliceOp::PopFrontIf => {
+            // What `retain_mut` doesn't keep, dropped as it goes (ADR 0499).
+            SliceOp::RetainMut => {
                 let handles = self.is_boxable(item());
-                let name = if op == SliceOp::RetainMut {
-                    "$retainMut"
-                } else {
-                    "$popFrontIf"
-                };
-                helper(name, vec![arg(), arg(), Expr::bool(handles)])
+                let mut given = vec![arg(), arg(), Expr::bool(handles)];
+                given.extend(self.std_drop_function(item(), span)?);
+                helper("$retainMut", given)
+            }
+            SliceOp::PopFrontIf => {
+                let handles = self.is_boxable(item());
+                helper("$popFrontIf", vec![arg(), arg(), Expr::bool(handles)])
             }
             SliceOp::CopyWithin => unreachable!("lowered above"),
         })

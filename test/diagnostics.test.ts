@@ -113,6 +113,7 @@ for (const [name, source, message, crate] of [
   ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "this call, for an `Option` of what could look like `None`"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
+  ["splice of values with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &mut Vec<D>, w: Vec<D>) { v.splice(0..1, w); }', "`std::vec::Vec::<T, A>::splice` of a value with a destructor"],
   ["a Box<dyn Debug> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: Box<dyn std::fmt::Debug> = Box::new(D); }', "a `dyn` of a value with a destructor"],
   ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: std::rc::Rc<dyn std::fmt::Debug> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
   // A std call given an iterator whose destructors rust-js can't follow would drop what it skips silently.
@@ -128,7 +129,6 @@ for (const [name, source, message, crate] of [
   // A caller gives a type parameter's sort, not one of a type that holds one (ADR 0471).
   ["an unstable sort of items that hold a type parameter", 'pub fn f<T: Ord>(mut v: Vec<(T, u8)>) -> Vec<(T, u8)> { v.sort_unstable(); v }', "an unstable sort of items that hold a type parameter"],
   // `xor` of two `Some`s drops both, which it doesn't give back (ADR 0098).
-  ["xor of options of values with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<D>, b: Option<D>) -> Option<D> { a.xor(b) }', "`std::option::Option::<T>::xor` of a value with a destructor"],
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).

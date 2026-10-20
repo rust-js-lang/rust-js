@@ -37,6 +37,7 @@ fn main() {
     });
     println!("{deque:?} {}", deque.partition_point(|&x| x < 50));
     println!("{:?} {:?} {deque:?}", deque.pop_front_if(|x| *x > 100), deque.pop_back_if(|x| *x > 100));
+    println!("{:?} {deque:?}", deque.pop_front_if(|x| *x < 100));
 
     for c in ['a', '\n', '\'', 'é', '\u{1F600}', '\u{7f}'] {
         println!("{} {} {}", c.escape_default(), c.escape_debug(), c.escape_unicode());

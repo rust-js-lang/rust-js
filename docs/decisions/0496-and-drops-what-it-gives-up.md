@@ -24,6 +24,7 @@ type parameters' drops are given, not a closure's alone.
 - **One form for `and` and `Result::or`**, `kept_or`'s, with a destructor
   or not: `some == null ? undefined : "x"`.
 - **`xor`**, which drops both where both are `Some`, is refused yet.
+  (Amended: it drops them, and `zip` the one it gives up, ADR 0498.)
 
 ## Why
 

@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // value it leaves unused is dropped there (ADR 0490).
                     | Std::UnwrapOr
                     | Std::ResultOr
-                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd)
+                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd | Comb::Xor | Comb::Zip)
                     | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap
@@ -225,6 +225,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Comb(Comb::Truncate | Comb::DedupBy | Comb::DedupByKey | Comb::ResizeWith)
                     | Std::Clear
                     | Std::Retain
+                    | Std::Slice(SliceOp::RetainMut)
                     // What it takes out, given back as what's drained, which
                     // drops what's left of it as an `IntoIter` does.
                     | Std::Text(TextOp::Drain)

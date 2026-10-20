@@ -92,6 +92,10 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} [${deque.map((item) => String(item)).join(", ")}]`,
   );
+  const value$8 = $popFrontIf(deque, (x) => x.value < 100, true);
+  console.log(
+    `${value$8 == null ? "None" : `Some(${value$8})`} [${deque.map((item) => String(item)).join(", ")}]`,
+  );
 
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
     console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
