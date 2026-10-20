@@ -79,8 +79,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::OptionIter
                     | Std::IterSource(IterSource::Once)
                     // Holds it, a clone each step, and drops it when it's
-                    // closed (ADR 0422).
+                    // closed (ADR 0422); `cycle()`'s, a clone of it each
+                    // round, dropping each it replaces (ADR 0491).
                     | Std::IterSource(IterSource::Repeat)
+                    | Std::Step(StepOp::Cycle)
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
                     // A map keeps what it takes, and gives back what it replaces or

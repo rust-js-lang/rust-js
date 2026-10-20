@@ -550,4 +550,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
     snapshots: true,
   },
+  {
+    name: "called-alone-kept-whole",
+    breaks: "`(iterator) => IClone.clone(iterator)` isn't `IClone.clone` where it's called with one argument alone",
+    file: "src/js.rs",
+    find: "            if !reads {\n                return (**callee).clone();\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    snapshots: true,
+  },
 ];

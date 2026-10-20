@@ -25,10 +25,10 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
 
 // The helpers the compiler takes for a JS iterator as they're made, and
 // writes no `Iterator.from` around, are `$iterator`, `$fuse` (ADR 0473),
-// `$intoIter` (ADR 0475) and
+// `$intoIter` (ADR 0475), `$cycleOf` (ADR 0491) and
 // each of the runtime's generators (ADR 0472): the compiler's list, held to
 // the runtime.
-test("the compiler's iterator helpers are $iterator, $fuse, $intoIter and the runtime's generators", () => {
+test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -39,7 +39,7 @@ test("the compiler's iterator helpers are $iterator, $fuse, $intoIter and the ru
   const listed = [...list.replace("super::std_types::range::LAZY_RANGE", `"${lazyRange}"`).matchAll(/"(\$[\w$]+)"/g)].map(
     (m) => m[1],
   );
-  expect(listed.toSorted()).toEqual(["$iterator", "$fuse", "$intoIter", ...generators].toSorted());
+  expect(listed.toSorted()).toEqual(["$iterator", "$fuse", "$intoIter", "$cycleOf", ...generators].toSorted());
 });
 
 // Each helper is a file of its own, `src/runtime/<name>.js`, that the

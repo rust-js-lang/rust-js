@@ -867,8 +867,8 @@ export const mutations: Mutation[] = [
     name: "consumed-generic-refused",
     breaks: "generic code that consumes an iterator its caller gives a drop of, `items.into_iter().last()`, takes none, and a caller's destructor is refused",
     file: "src/lower/mir/iter.rs",
-    find: "            true => self.given_drop(receiver).is_some() || holds_function,\n",
-    replace: "            true => holds_function,\n",
+    find: "            true => self.given_drop(receiver).is_some() || holds_function || closed,\n",
+    replace: "            true => holds_function || closed,\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
@@ -963,8 +963,8 @@ export const mutations: Mutation[] = [
     name: "consumed-held-function-kept",
     breaks: "a `map(f)` consumed by `collect` isn't dropped after, nor its function",
     file: "src/lower/mir/iter.rs",
-    find: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing);\n        let dropped = match params_only {\n",
-    replace: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing && false);\n        let dropped = match params_only {\n",
+    find: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing);\n        // Or an adapter closed",
+    replace: "            .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing && false);\n        // Or an adapter closed",
     tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
   {
@@ -998,5 +998,13 @@ export const mutations: Mutation[] = [
     find: "                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());\n",
     replace: "                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).filter(|_| false).unwrap_or_else(|| receiver.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_map_rfold.rs$"],
+  },
+  {
+    name: "consumed-closed-adapter-refused",
+    breaks: "`iter.take(2).collect()` of a type parameter given its drop is refused, its consumed `Take` not closed",
+    file: "src/lower/mir/iter.rs",
+    find: "            true => self.given_drop(receiver).is_some() || holds_function || closed,\n",
+    replace: "            true => self.given_drop(receiver).is_some() || holds_function,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
 ];

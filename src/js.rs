@@ -1591,6 +1591,36 @@ impl Expr {
         Expr::new(ExprKind::Arrow(params, body))
     }
 
+    /// This function, where it's called with one argument alone: of `(x)
+    /// => f(x)`, by what doesn't read `x`, the function called, `f`. Not
+    /// where it's given more, as a JS array's `map` gives an index too.
+    pub fn called_alone(self) -> Expr {
+        if let ExprKind::Arrow(params, body) = &self.kind
+            && let [Pattern::Name(param)] = params.as_slice()
+            && let [
+                Stmt {
+                    kind: StmtKind::Return(Some(value)),
+                    ..
+                },
+            ] = body.as_slice()
+            && let ExprKind::Call(callee, args) = &value.kind
+            && let [
+                Expr {
+                    kind: ExprKind::Var(arg),
+                    ..
+                },
+            ] = args.as_slice()
+            && arg == param
+        {
+            let mut reads = false;
+            callee.visit_vars(&mut |var| reads |= var == param);
+            if !reads {
+                return (**callee).clone();
+            }
+        }
+        self
+    }
+
     pub fn async_arrow(params: Vec<Pattern>, body: Vec<Stmt>) -> Expr {
         Expr::new(ExprKind::AsyncArrow(params, body))
     }

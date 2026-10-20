@@ -650,4 +650,20 @@ export const mutations: Mutation[] = [
     replace: "                        let e = match user {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
+  {
+    name: "cycle-of-other-refused",
+    breaks: "`cycle()` of a range, the crate's iterator or a type parameter's is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                self.cycled(it, arg_tys[0].peel_refs(), span)?\n",
+    replace: "                return Err(self.unsupported(span, \"cycle\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+  },
+  {
+    name: "cycle-array-drops-allowed",
+    breaks: "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            return Err(self.unsupported(span, \"`cycle()` of an array's items with a destructor\"));\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
+  },
 ];

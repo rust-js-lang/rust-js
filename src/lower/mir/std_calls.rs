@@ -744,6 +744,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }
+            // `cycle()` of another iterator than std's over an array, cloned
+            // (ADR 0491).
+            Std::Step(StepOp::Cycle)
+                if !arg_tys
+                    .first()
+                    .is_some_and(|t| self.array_source(t.peel_refs()).is_some()) =>
+            {
+                let it = values.map(|v| self.value_expr(v, span)).next().expect("the iterator")?;
+                self.cycled(it, arg_tys[0].peel_refs(), span)?
+            }
             // A `Peekable`'s or a slice's or string's iterator's own: of a `$iter`, which
             // knows where it is (ADR 0071).
             Std::Step(
@@ -772,6 +782,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     StepOp::Cycle => {
                         let iter_ty = arg_tys[0].peel_refs();
                         let owns = self.array_source(iter_ty).expect("matched");
+                        // Its items, owned, which it would drop as it's dropped.
+                        if owns
+                            && self
+                                .iterator_item(iter_ty)
+                                .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+                        {
+                            return Err(self.unsupported(span, "`cycle()` of an array's items with a destructor"));
+                        }
                         let it = match it.reads_same() || is_stepped_items(&it) {
                             true => it,
                             false => self.spill("it", it, out),

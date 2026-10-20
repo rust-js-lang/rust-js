@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`cycle()` of a range, the crate's own iterator or a type parameter's**,
+  a clone kept and stepped afresh each round, as std's `Cycle` (ADR 0491).
 - **`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a
   destructor**, the one they leave unused dropped there (ADR 0490).
 - **Items with a destructor of an iterator without one**, dropped where

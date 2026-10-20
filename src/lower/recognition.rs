@@ -1223,7 +1223,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "next" if !self.is_user_iterator(ty) => Std::Step(StepOp::Next),
                 // The iterator itself, which knows where it is (ADR 0071).
                 "by_ref" if !self.is_user_iterator(ty) => Std::IterByRef,
-                name if let Some(step) = self.iterator_step(name, ty) => Std::Step(step),
+                name if let Some(step) = iterator_step(name) => Std::Step(step),
                 "map" => Std::ArrayMethod("map"),
                 "filter" => Std::ArrayMethod("filter"),
                 "any" => Std::ArrayMethod("some"),
@@ -3641,17 +3641,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Reverse")
     }
 
-    /// Which `StepOp` an `Iterator` method of `ty` is, one that steps a
-    /// `$iter` (ADR 0071): `peekable()`, and `cycle()` of one over an array,
-    /// whose clone is what it has left (ADR 0181).
-    fn iterator_step(&self, name: &str, ty: Ty<'tcx>) -> Option<StepOp> {
-        match name {
-            "peekable" => Some(StepOp::Peekable),
-            "cycle" if self.array_source(ty.peel_refs()).is_some() => Some(StepOp::Cycle),
-            _ => None,
-        }
-    }
-
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
@@ -3739,7 +3728,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
-    /// value; and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
+    /// value, and `cycle()`'s iterator, of one not std's over an array (ADR
+    /// 0491); and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
     /// of what its sources hold, each closable, an iterator that owns its
     /// items given it as `$closing`, whose closing drops what it hasn't given,
     /// or one that holds nothing, a slice's or a range's. The one list of
@@ -3750,6 +3740,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let mut sources = args.types();
         match std_path(self.tcx, adt.did()).as_str() {
             "std::iter::Repeat" => sources.next(),
+            "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),
             "std::iter::Take"
             | "std::iter::Skip"
             | "std::iter::Map"
@@ -5869,9 +5860,11 @@ pub(crate) fn function_kind<'tcx>(tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>)
 
 /// Whether the `Iterator` method `name`, an `IterComb`, leaves no item with
 /// a destructor undropped (`IterComb::leaves_none`), or holds what it steps,
-/// closed to drop it (`IterComb::holds_its_sources`).
+/// closed to drop it (`IterComb::holds_its_sources`); or is `cycle()`, which
+/// gives each item it makes (ADR 0491).
 pub(crate) fn leaves_none(name: &str) -> bool {
     methods::iterator(name).is_some_and(|comb| comb.leaves_none() || comb.holds_its_sources())
+        || iterator_step(name) == Some(StepOp::Cycle)
 }
 
 /// The type parameters whose names `{:?}` of `ty` shows, each a
@@ -6717,4 +6710,15 @@ fn cell_method(name: &str, refcell: bool) -> Option<Std> {
         "replace_with" if refcell => Std::CellReplaceWith,
         _ => return None,
     })
+}
+
+/// Which `StepOp` an `Iterator` method is, one that steps a `$iter` (ADR
+/// 0071): `peekable()`, and `cycle()`, of one over an array, whose clone is
+/// what it has left (ADR 0181), or of another, cloned (ADR 0491).
+fn iterator_step(name: &str) -> Option<StepOp> {
+    match name {
+        "peekable" => Some(StepOp::Peekable),
+        "cycle" => Some(StepOp::Cycle),
+        _ => None,
+    }
 }

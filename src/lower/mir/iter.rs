@@ -111,8 +111,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // dropped with it (ADR 0485).
         let holds_function = (self.recognition().held_function(receiver))
             .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing);
+        // Or an adapter closed to drop what it holds, `take(n)`'s or
+        // `cycle()`'s, made of one given its drop, `$closing` as
+        // `closing_drop` makes it (ADR 0491).
+        let closed = (self.recognition().closed_on_drop(receiver)).is_some_and(|held| self.given_drop(held).is_some());
         let dropped = match params_only {
-            true => self.given_drop(receiver).is_some() || holds_function,
+            true => self.given_drop(receiver).is_some() || holds_function || closed,
             false => self.is_user_iterator(receiver) || holds_function,
         };
         let holds = output.walk().any(|part| part.as_type() == Some(receiver));

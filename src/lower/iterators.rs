@@ -621,17 +621,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.option_of(output).is_some_and(|item| self.boxed_payload(item))
         });
         let call = self.impl_call(next, args, vec![Expr::var("iterator")], span)?;
-        // `(iterator) => f(iterator)` is `f`.
-        let next = match &call.kind {
-            js::ExprKind::Call(callee, list) if matches!(list.as_slice(), [only] if matches!(&only.kind, js::ExprKind::Var(n) if n == "iterator")) => {
-                (**callee).clone()
-            }
-            _ => Expr::arrow(
-                vec!["iterator".into()],
-                vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
-            ),
-        };
-        Ok((next, boxed))
+        let next = Expr::arrow(
+            vec!["iterator".into()],
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        );
+        Ok((next.called_alone(), boxed))
     }
 
     /// The dictionary this function was given for `ty`, a type parameter
@@ -712,6 +706,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(entry) => Ok(Expr::object(vec![js::Prop::Field(name.into(), entry)])),
             None => Err(self.unsupported(span, &format!("the `{}` of a `{ty}`", self.tcx.item_name(trait_id)))),
         }
+    }
+
+    /// `it.cycle()` of `it`, of type `ty`, an iterator not std's over an
+    /// array (ADR 0181): `$cycleOf(it, clone, next, boxed)`, which keeps a
+    /// clone of it and steps a fresh clone of that each time what it steps
+    /// ends, as Rust's `Cycle` does (ADR 0491): a range's, the crate's own,
+    /// or a type parameter's given as it is, by its dictionaries; given its
+    /// drop, of one with a destructor, which drops each it replaces, and
+    /// both it holds as it's closed.
+    pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        let (next, boxed) = match self.range_kind(ty) {
+            Some(kind) => match kind.step(false) {
+                Some(step) => (Expr::helper(step), false),
+                None => return Err(self.unsupported(span, &format!("`cycle()` of a `{ty}`"))),
+            },
+            None if self.is_user_iterator(ty) => {
+                let iterator = std_item(self.tcx, StdItem::Iterator);
+                self.user_next(ty, iterator, "next", span)?
+            }
+            None => match self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator)) {
+                Some(dictionary) => {
+                    let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+                    (Expr::member(dictionary, "next"), boxed)
+                }
+                None => return Err(self.unsupported(span, &format!("`cycle()` of a `{ty}`"))),
+            },
+        };
+        let clone = self.clone_fn("iterator", ty, span)?.called_alone();
+        let drop = self.drop_function(ty, span)?;
+        let mut args = vec![it, clone, next];
+        if boxed || drop.is_some() {
+            args.push(Expr::bool(boxed));
+        }
+        args.extend(drop);
+        Ok(Expr::call_helper("$cycleOf", args))
     }
 
     /// `ty`'s `Iterator` dictionary, `{ next }` (ADR 0411): its `next`
@@ -1677,11 +1707,12 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse` and
 /// `$intoIter`, and each of its generators, which the runtime package's
 /// test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 11] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 12] = [
     "$iterator",
     "$fuse",
     "$intoIter",
     "$cycle",
+    "$cycleOf",
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",
     "$lazySkipWhile",

@@ -402,4 +402,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
+  {
+    name: "cycle-takes-drops-refused",
+    breaks: "`cycle()` of an iterator with a destructor is refused as taking a value it might drop",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Step(StepOp::Cycle)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+  },
 ];

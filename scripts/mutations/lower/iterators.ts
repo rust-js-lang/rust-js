@@ -858,4 +858,21 @@ export const mutations: Mutation[] = [
     replace: "            return self.knows_its_back(source);\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_map_rfold.rs$"],
   },
+  {
+    name: "cycle-iterator-undropped",
+    breaks: "`cycle()` of an iterator with a destructor drops neither the one it replaces nor those it holds",
+    file: "src/lower/iterators.rs",
+    find: "        let drop = self.drop_function(ty, span)?;\n        let mut args = vec![it, clone, next];\n",
+    replace: "        let drop: Option<Expr> = None;\n        let mut args = vec![it, clone, next];\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+  },
+  {
+    name: "cycle-clone-wrapped",
+    breaks: "`cycle()`'s clone of a type parameter given as it is is `(iterator) => IClone.clone(iterator)`",
+    file: "src/lower/iterators.rs",
+    find: "        let clone = self.clone_fn(\"iterator\", ty, span)?.called_alone();\n",
+    replace: "        let clone = self.clone_fn(\"iterator\", ty, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    snapshots: true,
+  },
 ];
