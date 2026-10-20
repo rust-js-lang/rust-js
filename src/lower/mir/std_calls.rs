@@ -731,10 +731,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if !matches!(comb, IterComb::Zip | IterComb::Chain) {
                             return Ok(e);
                         }
-                        let user = self.is_user_iterator(ty);
                         let e = self.iterable_items(e, ty, span, out)?;
+                        // Closed to drop what it holds, a JS iterator of it.
                         Ok(match self.closing_drop(ty, span)? {
-                            Some(drop) if user => Expr::call_helper("$closing", vec![e, drop]),
+                            Some(drop) if crate::lower::iterators::is_js_iterator(&e) => {
+                                Expr::call_helper("$closing", vec![e, drop])
+                            }
                             Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(e), drop]),
                             None => e,
                         })

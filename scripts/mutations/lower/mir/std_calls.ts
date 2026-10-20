@@ -343,18 +343,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-combinator-user-iterator-fields",
-    "breaks": "the crate's iterator given to `chain` from MIR is its fields, `[0]`, not its items",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                        let user = self.is_user_iterator(ty);\n",
-    "replace": "                        let user = false && self.is_user_iterator(ty);\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the crate's iterator from MIR"
-    ]
-  },
-  {
     "name": "mir-option-place-refused",
     "breaks": "`o.get_or_insert(x)` from MIR is refused",
     "file": "src/lower/mir/std_calls.rs",
