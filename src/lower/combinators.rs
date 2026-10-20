@@ -318,10 +318,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `name`, set by `then` where `test` holds, and otherwise to `otherwise`
-    /// once `given_up`, the other variant's value std drops, is dropped
-    /// (ADR 0179): `let holds; if (r.TAG === "Ok") { holds = f(r._0); } else
-    /// { eDrop_drop(r._0); holds = false; }`.
+    /// `name`, set by `then` where `test` holds, and otherwise to
+    /// `otherwise`, and then `given_up`, the other variant's value, dropped,
+    /// as std's drops it when the call returns (ADRs 0179, 0509): `let
+    /// holds; if (r.TAG === "Ok") { holds = f(r._0); } else { holds = false;
+    /// eDrop_drop(r._0); }`.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn or_dropped(
         &mut self,
@@ -334,9 +335,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let js_span = self.js_span(span);
-        let mut dropped = Vec::new();
+        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];
         self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;
-        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));
         out.push(StmtKind::Let(name.clone(), None).at(js_span));
         out.push(StmtKind::If(test, then, Some(dropped)).at(js_span));
         Ok(Expr::var(&name))
@@ -406,7 +406,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `test ? kept : otherwise`, where `given_up`, the other variant's
     /// value std drops, has nothing to drop; else `or_dropped`'s (ADRs 0179,
-    /// 0490).
+    /// 0490): `unwrap_or_default`'s `Err`, once the default's made (ADR
+    /// 0509).
     fn kept_or(
         &mut self,
         test: Expr,
@@ -738,9 +739,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(tag(true), inside(), fallback)
             }
             Comb::ResultUnwrapOrDefault => {
-                let ok_ty = generic_args.type_at(0);
-                let fallback = self.default_value(ok_ty, span)?;
-                Expr::cond(tag(true), inside(), fallback)
+                let fallback = self.default_value(generic_args.type_at(0), span)?;
+                let given_up = (inside(), generic_args.type_at(1));
+                self.kept_or(tag(true), inside(), given_up, fallback, span, out)?
             }
             // An `Ok` with a destructor is dropped (ADR 0179).
             Comb::Err if self.drops(generic_args.type_at(0)) != Drops::Nothing => {

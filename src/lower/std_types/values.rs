@@ -241,6 +241,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     )
                     // And what it replaces, `fill`'s (ADR 0507).
                     | Std::Slice(SliceOp::Fill)
+                    // What changes a collection's capacity, and drops nothing;
+                    // `pop_if` and `pop_front_if`, which give back what they
+                    // take; an array's `map`, whose function owns each item;
+                    // `unwrap_or_default`, whose `Err` it drops; and an
+                    // `Option`'s `as_mut`, a reference (ADR 0509).
+                    | Std::Capacity(_)
+                    | Std::Comb(Comb::PopIf | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrDefault)
+                    | Std::Slice(SliceOp::PopFrontIf)
+                    | Std::Method("map")
+                    | Std::Pointee
                     | Std::Clear
                     | Std::Retain
                     | Std::Slice(SliceOp::RetainMut)

@@ -104,8 +104,8 @@ function main() {
         if (d.TAG === "Ok") {
           value$1 = d._0;
         } else {
-          loudDrop_drop(d._0);
           value$1 = undefined;
+          loudDrop_drop(d._0);
         }
         console.log(`d ${value$1 == null ? "None" : `Some(${value$1})`}`);
         const value$2 = [8];
@@ -187,8 +187,8 @@ function main() {
               if (result.TAG === "Ok") {
                 value$2 = result._0;
               } else {
-                loudDrop_drop(result._0);
                 value$2 = 3;
+                loudDrop_drop(result._0);
               }
               const a = value$2;
               console.log(`a ${a}`);
@@ -198,8 +198,8 @@ function main() {
               if (result$1.TAG === "Ok") {
                 kept = result$1;
               } else {
-                loudDrop_drop(result$1._0);
                 kept = f$1;
+                loudDrop_drop(result$1._0);
               }
               const value$3 = kept;
               if (result$1.TAG === "Ok") {
@@ -212,8 +212,8 @@ function main() {
               if (b.TAG === "Ok") {
                 value$4 = b._0;
               } else {
-                loudDrop_drop(b._0);
                 value$4 = undefined;
+                loudDrop_drop(b._0);
               }
               console.log(`b ${value$4 == null ? "None" : `Some(${value$4})`}`);
               let kept$1;
@@ -222,8 +222,8 @@ function main() {
               if (result$2.TAG === "Ok") {
                 kept$1 = result$2;
               } else {
-                loudDrop_drop(result$2._0);
                 kept$1 = f$2;
+                loudDrop_drop(result$2._0);
               }
               const value$5 = kept$1;
               if (result$2.TAG === "Ok") {
@@ -236,8 +236,8 @@ function main() {
               if (c.TAG === "Ok") {
                 value$6 = c._0;
               } else {
-                loudDrop_drop(c._0);
                 value$6 = undefined;
+                loudDrop_drop(c._0);
               }
               console.log(`c ${value$6 == null ? "None" : `Some(${value$6})`}`);
               const p = pick([23], [24], loudDrop_drop);

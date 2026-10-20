@@ -739,4 +739,20 @@ export const mutations: Mutation[] = [
     replace: "            Expr::optional_args(list, vec![clone]),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
+  {
+    name: "or-dropped-before-otherwise",
+    breaks: "the variant a call gives up is dropped before what it gives otherwise is made, a `Default`'s",
+    file: "src/lower/combinators.rs",
+    find: "        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n",
+    replace: "        let mut dropped = Vec::new();\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
+  },
+  {
+    name: "unwrap-or-default-err-kept",
+    breaks: "`unwrap_or_default` of an `Err` with a destructor drops none of it",
+    file: "src/lower/combinators.rs",
+    find: "                self.kept_or(tag(true), inside(), given_up, fallback, span, out)?\n",
+    replace: "                Expr::cond(tag(true), inside(), fallback)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
+  },
 ];

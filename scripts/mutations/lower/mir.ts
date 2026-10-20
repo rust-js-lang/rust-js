@@ -236,11 +236,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-takes-drops-unchecked",
-    breaks: "`pop_if` of values with a destructor is lowered, unchecked",
+    breaks: "`successors` of values with a destructor is lowered, unchecked",
     file: "src/lower/mir.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "pop_if of values with a destructor"],
+    tests: ["test/diagnostics.test.ts", "-t", "successors of values with a destructor"],
   },
   {
     name: "mir-mut-borrowed-unchanged",

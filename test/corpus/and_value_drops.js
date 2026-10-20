@@ -15,8 +15,8 @@ function pick(a, b, dropT, dropU) {
   if (a == null) {
     kept = undefined;
   } else {
-    dropT?.($someValue(a));
     kept = b;
+    dropT?.($someValue(a));
   }
   const value = kept;
   if (a == null) {
@@ -34,8 +34,8 @@ function main() {
   if (option == null) {
     kept = undefined;
   } else {
-    loudDrop_drop(option);
     kept = f;
+    loudDrop_drop(option);
   }
   const value = kept;
   if (option == null) {
@@ -56,8 +56,8 @@ function main() {
   if (option$1 == null) {
     kept$1 = undefined;
   } else {
-    loudDrop_drop(option$1);
     kept$1 = f$1;
+    loudDrop_drop(option$1);
   }
   const b = kept$1;
   if (option$1 == null) {
@@ -73,8 +73,8 @@ function main() {
     if (c.TAG === "Err") {
       kept = c;
     } else {
-      loudDrop_drop(c._0);
       kept = f$1;
+      loudDrop_drop(c._0);
     }
     const value = kept;
     if (c.TAG === "Err") {
@@ -96,8 +96,8 @@ function main() {
     if (c$1.TAG === "Ok") {
       mapped = value$1(c$1._0);
     } else {
-      loudDrop_drop(c$1._0);
       mapped = fallback;
+      loudDrop_drop(c$1._0);
     }
     console.log(`c ${mapped}`);
     const d = { TAG: "Err", _0: [6] };
@@ -106,8 +106,8 @@ function main() {
     if (d.TAG === "Err") {
       kept$1 = d;
     } else {
-      loudDrop_drop(d._0);
       kept$1 = f$2;
+      loudDrop_drop(d._0);
     }
     const value$2 = kept$1;
     if (d.TAG === "Err") {
@@ -218,8 +218,8 @@ function main() {
       if (g.TAG === "Err") {
         kept$2 = g;
       } else {
-        loudDrop_drop(g._0);
         kept$2 = { TAG: "Ok", _0: 1 };
+        loudDrop_drop(g._0);
       }
     } catch (error) {
       if (f != null) {

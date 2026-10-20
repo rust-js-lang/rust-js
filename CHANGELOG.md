@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An array's `map`, `unwrap_or_default`, `Option::as_mut`, `pop_if`,
+  `pop_front_if` and capacity changes, of values with a destructor** (ADR
+  0509).
 - **`fill`, `resize`, `clone_from_slice`, `dedup`, `extend_from_within`
   and a slice's lending views, of values with a destructor; `dedup()` of
   structs** (ADR 0507).
