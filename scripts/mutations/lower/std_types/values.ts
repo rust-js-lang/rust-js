@@ -410,4 +410,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
+  {
+    name: "boxed-pop-front-refused",
+    breaks: "`pop_front` of a type parameter's items is refused, its `Some` unboxed",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::Method(\"pop\" | \"shift\")\n",
+    replace: "            | Std::Method(\"pop\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+  },
 ];

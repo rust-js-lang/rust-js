@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^deque_range_mut.rs$"],
     snapshots: true,
   },
+  {
+    name: "boxed-pop-front-unboxed",
+    breaks: "`pop_front` of a type parameter's items gives its item unboxed, which generic code reads as `Some` of what's in it",
+    file: "src/lower/std_types/vec.rs",
+    find: "            Std::Method(\"shift\") if boxed => Expr::call(Expr::helper(\"$shift\"), vec![arg()]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+  },
 ];

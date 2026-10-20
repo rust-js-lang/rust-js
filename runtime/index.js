@@ -462,6 +462,12 @@ export function $pop(items) {
   return items.length === 0 ? undefined : $some(items.pop());
 }
 
+// `VecDeque::pop_front` of a generic `T`: `None` for an empty one, else
+// `Some` of the first (ADR 0494).
+export function $shift(items) {
+  return items.length === 0 ? undefined : $some(items.shift());
+}
+
 // A Rust iterator of the crate's own as a JS one: its `next` returns the
 // item, or `None` at the end. JS's iterator helpers are lazy, like Rust's
 // adapters, so an endless one is fine until something wants all of it. A

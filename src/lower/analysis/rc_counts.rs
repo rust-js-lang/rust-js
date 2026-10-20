@@ -36,13 +36,20 @@ impl<'tcx> Counted<'tcx> {
 /// those is counted as Rust counts it, where it's made, cloned and dropped.
 /// What a type drops depends on which `Rc`s are counted, so the second to a
 /// fixed point.
+/// And an `Rc` of a value of a type parameter's, `Rc<RefCell<Buffer<I>>>`,
+/// where `params_may_drop`, a type may have a destructor: what it's made of
+/// may be one whose last clone drops it, so every `Rc` is (ADR 0494).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
+    params_may_drop: bool,
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
     let mut types: HashSet<Ty<'tcx>> = HashSet::new();
     let mut generic_rc = false;
+    // Whether an `Rc` holds a type parameter's value itself, not one it
+    // points at.
+    let mut holds_param = false;
     // What each `Rc` of a known type points at.
     let mut pointees: HashSet<Ty<'tcx>> = HashSet::new();
     let mut found = |ty: Ty<'tcx>, types: &mut HashSet<Ty<'tcx>>, generic_rc: &mut bool| {
@@ -51,7 +58,10 @@ pub(super) fn counted_rcs<'tcx>(
                 types.insert(tcx.erase_and_anonymize_regions(pointee));
             }
             match rc_pointee(tcx, part) {
-                Some(pointee) if pointee.has_non_region_param() => *generic_rc = true,
+                Some(pointee) if pointee.has_non_region_param() => {
+                    *generic_rc = true;
+                    holds_param |= owns_param(pointee);
+                }
                 Some(pointee) => {
                     pointees.insert(tcx.erase_and_anonymize_regions(pointee));
                 }
@@ -110,6 +120,22 @@ pub(super) fn counted_rcs<'tcx>(
         }
         counted.types.extend(dropping);
     }
-    counted.all = counted.types.iter().any(|t| t.has_non_region_param()) || !counted.types.is_empty() && generic_rc;
+    counted.all = counted.types.iter().any(|t| t.has_non_region_param())
+        || !counted.types.is_empty() && generic_rc
+        || params_may_drop && holds_param;
     counted
+}
+
+/// Whether `ty` holds a value of a type parameter, or of an associated type
+/// of one, itself: not behind a reference, which drops nothing.
+fn owns_param(ty: Ty<'_>) -> bool {
+    let mut walk = ty.walk();
+    while let Some(part) = walk.next() {
+        match part.as_type().map(|t| *t.kind()) {
+            Some(rustc_middle::ty::Ref(..)) => walk.skip_current_subtree(),
+            Some(rustc_middle::ty::Param(_) | rustc_middle::ty::Alias(..)) => return true,
+            _ => {}
+        }
+    }
+    false
 }

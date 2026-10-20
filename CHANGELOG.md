@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `Rc` of a type parameter's value with a destructor**, itertools'
+  `tee`'s buffer, counted and dropped by its last clone, and `pop_front`
+  of a type parameter's items (ADR 0494).
 - **`rev()` of a zip of two arrays' iterators**, `iter_mut()`'s too, paired
   from their backs as std's `Zip` pairs them (ADR 0493).
 - **`cycle()` of a range, the crate's own iterator or a type parameter's**,

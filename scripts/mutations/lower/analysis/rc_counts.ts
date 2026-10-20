@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "rc-generic-uncounted",
     breaks: "a generic function's `Rc<T>` isn't counted where its caller's is",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "    counted.all = counted.types.iter().any(|t| t.has_non_region_param()) || !counted.types.is_empty() && generic_rc;\n",
-    replace: "    counted.all = false && generic_rc;\n",
-    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
+    find: "        || !counted.types.is_empty() && generic_rc\n",
+    replace: "        || false && generic_rc\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_count_through_generic.rs$"],
   },
   {
     name: "rc-destructor-uncounted",
@@ -37,5 +37,22 @@ export const mutations: Mutation[] = [
       "-t",
       "rc_dyn_sinks"
     ]
+  },
+  {
+    name: "generic-rc-uncounted",
+    breaks: "an `Rc` of a type parameter's value, in a crate with a destructor, isn't counted, and its drop is refused",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        || params_may_drop && holds_param;\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+  },
+  {
+    name: "generic-rc-of-reference-counted",
+    breaks: "an `Rc` of a reference to a type parameter's value is counted, though it drops nothing it points at",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            Some(rustc_middle::ty::Ref(..)) => walk.skip_current_subtree(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_borrowed_param.rs$"],
+    snapshots: true,
   },
 ];

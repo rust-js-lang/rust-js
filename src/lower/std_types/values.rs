@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Std::Same
             | Std::OptionFrom
             | Std::OptionMap
-            | Std::Method("pop")
+            | Std::Method("pop" | "shift")
             | Std::First
             | Std::SliceLast
             | Std::SliceGet

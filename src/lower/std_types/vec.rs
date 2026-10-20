@@ -81,6 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$joinWith"), vec![arg(), arg(), Expr::bool(spread), clone])
             }
             Std::Method("pop") if boxed => Expr::call(Expr::helper("$pop"), vec![arg()]),
+            Std::Method("shift") if boxed => Expr::call(Expr::helper("$shift"), vec![arg()]),
             Std::First if boxed => {
                 let items = arg();
                 self.some_at(items, Expr::int(0))

@@ -226,4 +226,12 @@ export const mutations: Mutation[] = [
     replace: "        && [StdItem::Debug].into_iter().any(|item| {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
+  {
+    name: "library-generic-rc-counted",
+    breaks: "a library's `Rc` of a type parameter's value is counted, which its consumers would share uncounted",
+    file: "src/lower/analysis.rs",
+    find: "    let params_may_drop = !library && crate::lower::traits::may_have_destructors(tcx, &foreign);\n",
+    replace: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, &foreign);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+  },
 ];
