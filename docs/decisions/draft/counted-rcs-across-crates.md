@@ -1,96 +1,122 @@
-# A library's manifest says which `Rc`s it counts
+# Libraries share one counted `Rc` representation
 
-Status: Draft. Would extend [0320](../0320-counted-rcs.md), whose counted
-`Rc` in a library is refused, and [0494](../0494-a-generic-rc-is-counted-where-it-may-drop.md),
-whose generic `Rc` counts every `Rc` of a binary; and
-[0414](../0414-a-library-on-npm-as-rescripts-are.md), whose manifest lists
-a library's drops.
+Status: Draft. Would amend [0320](../0320-counted-rcs.md) and
+[0494](../0494-a-generic-rc-is-counted-where-it-may-drop.md), whose
+representation analysis is local to a crate; extend
+[0414](../0414-a-library-on-npm-as-rescripts-are.md).
 
-Case: C ([0262](../0262-when-rust-and-js-disagree.md)): each count is
-Rust's at each point, and the last `Rc` drops what it points at, once, in
-every crate that holds it.
+Case: C ([0262](../0262-when-rust-and-js-disagree.md)): counts, identity,
+weak references, and the last owner's destruction must agree across crates.
+Elision is A only where the whole program cannot observe it.
 
 ## Context
 
-An `Rc<T>` is counted, `{ value, strong, weak }`, where its counts are
-read or its value's drop runs; every other is its value (ADR 0320). A
-counted `Rc` in a library is refused: a consumer would hold the same `Rc`
-as the value, and the two would disagree on what one is. ADR 0494 made a
-generic `Rc` of a type parameter's value count every `Rc`, and left a
-library's, itertools' `tee` of an `Rc<RefCell<TeeBuffer>>`, refused: the
-one thing itertools still refuses.
+Today `Counted` decides whether an `Rc<T>` is its value or a counted
+handle. A library and its consumer cannot make that choice independently
+for a value they share. Generic functions, callbacks, trait objects and
+fields make a list of public function signatures insufficient.
 
-The question "is this `Rc` counted" has one owner inside a crate,
-`Counted`. Across the crate boundary it has none: the library knows what
-it counts, and the consumer works it out again from its own bodies, which
-never see the library's. The rule for a boundary is that the owner reports
-and the other side reads (AGENTS.md), as a library's manifest already
-reports each item's drops.
+The earlier proposal exported counted pointee paths. That leaves two
+holes: absence from the list means either "not used" or "used uncounted",
+and a path alone does not identify a generic instantiation or distinguish
+types from different crate versions. Reading a count in a library merely
+to change its ABI would also shape valid Rust for the compiler.
 
 ## Decision
 
-**A library's manifest reports which `Rc`s it counts, `counted`: the
-pointee types whose `Rc` is `{ value, strong, weak }`, by path, and
-`counts_every_rc` where a generic `Rc` makes every one counted (ADR 0494).
-A consumer's `Counted` starts from every library it uses, and reaches its
-fixed point from there: an `Rc` a library counts is counted in every crate
-that holds it, and one a library holds as a value is never counted by a
-consumer.**
+**Separately compiled rust-js libraries use the counted representation
+for every `Rc` and `Weak`. A binary using any such library uses the same
+representation throughout.** The existing `Counted` owner answers this by
+setting its all-counted result before drop analysis. No consumer computes
+a second answer for an imported value.
 
-```json
-{ "name": "itertools", "counted": [], "counts_every_rc": true }
-{ "name": "tree", "counted": ["tree::Node"], "counts_every_rc": false }
+This is deliberately conservative: even a library with no `Rc` requires
+the same ABI of its consumers. An erased type parameter may carry one,
+and a precompiled library must not change representation when a new
+caller reads a count.
+
+```text
+library A ---- counted handle ----> application ----> library B
+                     |
+              one shared count
 ```
 
-- **One owner each way**: the library's `Counted` answers for its own
-  bodies and fields and writes the manifest; the consumer's reads every
-  dependency's before it looks at its own bodies, in `Dependencies`,
-  beside each library's `Exports`. Nothing re-derives a library's answer
-  from its types.
-- **A consumer that must count what a library doesn't is refused, loud**:
-  `Rc::strong_count` of an `Rc<Foo>` a library makes and holds as its
-  value, naming the library and the type, as ADR 0320 refuses it today.
-  The fix is the library's: read a count there, or hold a counted type.
-  (Later, a library could count every `Rc` on request, a `Cargo.toml`
-  key; not now, one way first.)
-- **`counts_every_rc` is contagious**: a consumer of a library that counts
-  every `Rc` counts every `Rc`, as a binary with a generic `Rc` does (ADR
-  0494); a library that holds no `Rc` at all reports neither, and costs
-  its consumers nothing.
-- **Two libraries that disagree**, one counting `Rc<Foo>` and one holding
-  it as a value, are refused where the app uses both, naming each: no
-  representation serves both.
-- **The manifest's version rises**, `library::VERSION`, so a library built
-  before this is rebuilt, never read with no `counted`.
+- **One library ABI, recorded once.** Bump `library::VERSION` and define
+  that version to require counted `Rc`s. The existing compiler identity,
+  crate hash and dependency checks still apply. Older libraries are
+  rebuilt; a missing contract is never interpreted as an uncounted one.
+  There is no per-type path list, representation flag, or Cargo option.
+- **One handle survives every boundary.** Arguments, returns, fields,
+  closures, dictionaries and generic instantiations pass that handle
+  unchanged. Never wrap a plain value at a call boundary: doing so would
+  split counts and identity from aliases that already exist.
+- **Drops remain the existing drop machinery's.** A library passes its
+  generic drop requirements as today; the last owner runs the pointee's
+  drop exactly once, whichever crate removes it. Counting must be chosen
+  before determining which values need drops or writing their manifests.
+- **Standalone binaries retain the existing elision analysis.** Only a
+  binary with no separately compiled rust-js library can prove the
+  existing whole-program choice. Native-only binding crates do not share
+  Rust `Rc`s by this contract. Exposing an `Rc` directly to JS requires
+  an explicit ownership contract; this proposal does not invent one.
+- **Unsupported operations remain explicit refusals.** Agreeing on
+  representation does not by itself implement every unsizing, raw-pointer
+  or serialization operation on an `Rc`.
+
+`Arc` follows the existing single-agent representation policy where the
+compiler shares this machinery. This proposal does not add threads,
+shared-memory atomics, or a cross-worker ABI.
 
 ## Why
 
-- **It's std's**: the crates test shares a counted `Rc` between a library
-  and its consumer, cloned in one and dropped in the other, with
-  `strong_count` read on both sides, and a `Drop` type dropped by the last
-  clone wherever it is, with native Rust; and itertools' `tee` runs as a
-  library, two iterators over one buffer, dropped by the last.
-- **It's the boundary rule**: the owner reports, the reader reads, and a
-  test holds them equal, as a library's drops are today.
+A library's internal change from ignoring a count to reading it must not
+break callers whose Rust is still valid. The stable representation makes
+that a local change. It also avoids an analysis that would need to
+recompile dependencies after examining their consumers.
+
+This costs more output than the earlier per-type proposal, but gives one
+answer at the boundary and requires no application workaround.
+
+## Acceptance
+
+The crates suite must run these against native Rust:
+
+- Three crates share an `Rc`; clone in one, read counts in another, and
+  drop the last owner in each possible crate. Include `Weak::upgrade`
+  before and after the final strong drop.
+- A generic library creates and returns an `Rc<T>`; another accepts it
+  inside a container, callback or trait object. Include `T` with a
+  destructor, nested `Rc`s, `get_mut` and `make_mut`.
+- Add a count read to a consumer without changing library source; then
+  change a library to read a count without changing its public API.
+  Rebuild through the normal dependency workflow and preserve behavior.
+- A library with no visible `Rc` signature receives one through a type
+  parameter. Standalone output still elides counts where unobservable.
+- Reject an old library ABI, including one reached through a transitive
+  dependency. Do not silently load its old representation.
+
+Mutations disable all-counted selection in either producer or consumer,
+lose a count at a boundary, or accept the old ABI. Measure generated bytes
+and cleanup code for a representative multi-crate app. `itertools::tee`
+is an integration case, not evidence that every itertools API works.
 
 ## Alternatives
 
-- **Count every `Rc` everywhere**: no analysis, no manifest field, and
-  every `Rc` nobody counts `{ value, strong, weak }` in a `try`. Against
-  the output promise and ADR 0320's choice; it would also change every
-  snapshot.
-- **Count every `Rc` of any library**, coarser than the manifest: a flag
-  with no types, so a library holding one plain `Rc` would count its
-  consumers' every `Rc`. A step that becomes this draft's `counts_every_rc`
-  alone, so start with the whole.
-- **Refuse, as now**: itertools' `tee` stays the one thing it refuses, and
-  every library that holds an `Rc` of a `Drop` type is refused.
+- **Export counted types only:** cannot describe uncounted use or erased
+  generic requirements completely, and can make valid dependencies
+  incompatible.
+- **Choose after linking and rebuild the dependency graph:** potentially
+  enables more elision, but changes the separate-compilation contract.
+  Not a hidden second mode of this proposal.
+- **Count every `Rc` in every program:** simpler still, but loses the
+  existing proven elision for standalone binaries.
 
 ## Consequences
 
-- **What compiles grows**: a library's counted `Rc`, a library's `Rc` of a
-  type with a destructor, itertools whole.
-- **A library's consumers may count more `Rc`s than their own code asks**,
-  where the library does: the price of agreement, paid in the output
-  ADR 0320 already prices.
-- **`docs/crate-corpus.md`**: itertools runs.
+Library-backed applications pay for counts even where their own code
+does not observe them. This cost must be shown in snapshots and measured,
+not dismissed as cosmetic. A future elision change must prove it preserves
+this ABI; it cannot add a user option or require artificial count reads.
+
+The library refusal is removed only after the boundary tests pass.
+Crate-corpus results change only for probes actually run successfully.

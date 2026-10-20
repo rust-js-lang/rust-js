@@ -11,32 +11,54 @@ and when, as std's.
 
 `Option::xor` of values with a destructor is refused: `Some(a).xor(Some(b))`
 is `None`, and std drops both `a` and `b` as it returns; `Some(a).xor(None)`
-is `Some(a)` and drops nothing. ADR 0496 gave `and` its drops from one
-table, `std_leaves_unused`, of what each std combinator drops of its
-subject and its argument, by which is `Some`.
+is `Some(a)` and drops nothing. ADR 0496 gave `and` its argument's drop
+through `unused_arguments`, the existing table, and its subject's through
+`kept_or`. `xor` needs a condition involving both options.
 
 ## Decision
 
-**`xor` is a row of ADR 0496's table: both `Some`, its subject's payload
-and its argument's are dropped, the subject's first, as `Option::xor`'s
-match drops them; one `Some`, nothing; neither, nothing.**
+**Extend the existing unused-value decision to express `xor`'s joint
+condition: both `Some`, drop the subject's payload then the argument's;
+one `Some`, move that option to the result; neither, return `None`.**
+The pinned std's `Option::xor` matches the pair and releases the discarded
+pair in that order.
 
-```js
-const r = $xor(a, b, loudDrop_drop);
-```
+Evaluate the subject and argument once, in Rust's order, before selecting
+the branch. Use the existing `Option` representation helpers: `Some` may
+contain a falsy value or a payload whose JS representation is `undefined`.
+JS truthiness is not an option-discriminant test.
 
-- **No new form**: `kept_or` has the shape, a helper that takes the drop
-  and gives the kept value; `xor` is one more.
-- **Of a type parameter's values**, the drop given to the function is the
-  one passed, as `and`'s is.
+The unused-value owner decides which values are discarded; the existing
+drop machinery emits their cleanup. Do not leave an old refusal or a
+second drop condition in another lowering path. A new standalone `$xor`
+helper is not required merely to add destructor support.
+
+**Cleanup must survive a panic in the first destructor.** Transfer
+ownership before each drop and arrange the second's cleanup through the
+existing unwind machinery. Two consecutive calls would skip it if the
+first throws. An option moved into the result must not also be cleaned
+up by the caller.
+
+For a type parameter, use the existing caller-provided drop evidence.
+Keep the same selection rule whether that evidence does work or is absent.
+General double-panic behavior remains the existing documented limitation;
+this draft does not claim to resolve the [panic proposal](catch-unwind.md).
 
 ## Why
 
-- **It's std's**: a corpus case `xor`s each of the four pairs, of values
-  with a destructor and of a type parameter's, with native Rust.
-- **It's the table's**: one place says what std leaves unused, and `xor`
-  joins it.
+- **It's std's**: corpus cases cover all four pairs, concrete and generic
+  values, nested options, falsy payloads and side effects while making
+  the two arguments. Record the result and the exact destructor sequence.
+- **Unwind cleanup is tested**: run a case whose first discarded payload
+  panics and whose second records its drop. Use the existing native/JS
+  panic oracle; `catch_unwind` support is not a prerequisite.
+- **Mutations prove the checks**: reverse the drop order, skip cleanup
+  after a panic, drop the surviving result, evaluate an operand twice,
+  or test option presence by truthiness.
+- **It's the existing owner's**: one place says what std leaves unused;
+  extend it rather than invent a parallel `std_leaves_unused` table.
 
 ## Consequences
 
-- itertools' and the memory's last `Option` combinator refusal goes.
+- Remove the specific `xor` refusal only when these cases pass.
+  Do not infer that an entire dependent crate is supported.

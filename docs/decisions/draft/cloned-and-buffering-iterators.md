@@ -1,112 +1,172 @@
 # An iterator that's cloned, or holds items with a destructor, is rust-js's own
 
 Status: Draft. Would extend [0465](../0465-dropping-an-adapter-is-closing-it.md),
-whose adapters are closed to drop, [0485](../0485-an-adapter-holding-a-function-is-closed-to-drop-it.md),
-[0429](../0429-a-double-ended-iterator-knows-its-back.md) and
-[0493](../0493-a-zip-steps-from-its-back.md); and amend
-[0164](../0164-double-ended-iterators.md), whose `rev()` of a lazy iterator
-is refused, and [0181](../0181-iterator-clones.md), whose clone is
-of an array's iterator alone.
+[0485](../0485-an-adapter-holding-a-function-is-closed-to-drop-it.md),
+[0429](../0429-a-double-ended-iterator-knows-its-back.md), and
+[0493](../0493-a-zip-steps-from-its-back.md); amend
+[0164](../0164-double-ended-iterators.md) and
+[0181](../0181-iterator-clones.md).
 
-Case: C ([0262](../0262-when-rust-and-js-disagree.md)): each closure runs
-once, in Rust's order, and each item is dropped once, where Rust drops it.
+Case: C ([0262](../0262-when-rust-and-js-disagree.md)): closure effects,
+iteration state, cloning, and destruction are Rust's. Native JS adapters
+are an optimization only where those observations are preserved.
 
 ## Context
 
-A lazy iterator is a JS iterator: `items.values().map(f)`, stepped by
-`next()`, closed by `return()` (ADR 0465). A JS iterator can't be cloned,
-and holds what it has stepped where nothing can reach it. So rust-js
-refuses:
+A JS iterator hides the state needed to clone its current position or
+step from its back. A generator also cannot clean up captures merely by
+calling `return()` before its first `next()`: its body has not started.
+Buffering an entire chain changes when closures run and values drop.
 
-- a clone of a lazy iterator, `it.clone()` of a `Map` or a `Filter`;
-- `peekable`, `rev`, `flat_map` and `scan` of items with a destructor,
-  which hold an item they've stepped, or step from the back;
-- generic code given a `Peekable` of a type with a destructor.
-
-Each is idiomatic Rust, and itertools, chrono and smallvec meet them. The
-counted `Rc` (ADR 0320) met the same shape of problem: a representation
-JS has, a value, serves most uses, and a few need one with more in it.
-Its answer, a second representation chosen by an analysis, to a fixed
-point, and the two never mixed, is the precedent.
+These are limits of that representation, not of JavaScript. Rust's
+`Map::next_back` asks its source for the last remaining item and then
+calls the mapping closure. An explicit adapter can do the same.
 
 ## Decision
 
-**An iterator the crate clones, or an adapter that holds items with a
-destructor, is made of rust-js's own adapters, `$map(src, f)`, `$filter`,
-`$peekable`, `$flatMap`, `$scan`, `$rev`: each an object with `next`,
-`return`, and `clone`, over a source that knows its position, a slice's,
-a range's, or a `Vec`'s own items. Every other lazy iterator is the JS
-iterator it is today.**
+**Keep explicit state for a std iterator wherever Rust needs operations
+the native JS representation cannot preserve.** The iterator owner
+chooses once, before lowering, and passes that answer to every use.
+Native adapters remain only where the analysis proves them sufficient.
+
+The explicit adapters use the existing runtime iterator conventions.
+They implement JS iteration for consumers, with Rust capabilities
+available only when rustc proves the corresponding trait bounds:
+
+| Operation | Contract |
+|---|---|
+| `next()` | One forward step; no eager evaluation |
+| `back()` | One backward step, only for `DoubleEndedIterator` |
+| `len()` | Exact remaining length, only for `ExactSizeIterator` |
+| `clone()` | Rust's `Clone` of the current state and owned fields |
+| `return()` | Release owned state once; safe even before the first step |
+| `[Symbol.iterator]()` | Return the same iterator without copying state |
+
+Runtime objects must support the JS helper methods lowering calls
+through the established iterator prototype or its existing bridge.
+Merely providing `next()` does not supply `.toArray()`. Rust's
+`Iterator::count` keeps its existing lowering; do not assume a JS
+`.count()` method exists. A bridge must retain Rust capabilities and
+ownership rather than erase `back` or `clone` from a value later given
+to generic Rust code.
+
+### Representation and ownership
+
+- **One analysis owns the choice.** In the iterator analysis domain,
+  propagate requirements through sources, adapters, assignments, aliases,
+  returns and generic calls to a fixed point. Cloning, backward stepping,
+  and ownership of buffered items, state or closures can require explicit
+  state independently of the yielded item's drop. Lowering consumes the
+  result; it does not rediscover it from emitted helper names.
+- **No midstream conversion.** Once a native iterator has hidden its
+  state, wrapping it cannot recover a clone or its back. All uses of one
+  live iterator agree on its representation before it is constructed.
+  If the analysis cannot prove agreement, use explicit state throughout
+  the connected uses, conservatively throughout generic code if needed.
+- **Clone uses the concrete Rust impl.** Copy current front/back positions
+  and clone each owned field with its Rust `Clone`, in its impl's order.
+  Clone captured closure state, buffered items and the remaining owned
+  items of a vector iterator; do not rerun the chain from its beginning.
+  A clone that panics drops completed cloned fields and leaves the
+  original in the state Rust leaves it.
+- **A lent source remains its lender's.** Closing an owning adapter
+  releases its source; closing one over `by_ref()` does not destroy the
+  lender's iterator. Preserve [0468](../0468-a-lent-adapter-leaves-its-source-to-its-lender.md).
+
+### Backward stepping
+
+`$rev` swaps forward and backward stepping; it does not buffer a forward
+traversal. A mapped source's `back()` calls its source's `back()` and then
+the mapping closure. For example:
 
 ```rust
-let it = (1..4).map(|x| x * 2);
-let v: Vec<_> = it.clone().collect();
-println!("{v:?} {}", it.count());
+let values: Vec<_> = (1..4)
+    .map(|x| {
+        println!("{x}");
+        x * 2
+    })
+    .rev()
+    .collect();
 ```
 
-```js
-const it = $map($range(1, 4), (x) => (x * 2) | 0);
-const v = it.clone().toArray();
-console.log(`${$debug(v)} ${it.count()}`);
-```
+The closure prints `3`, `2`, `1`, and `values` is `[6, 4, 2]`. Alternating
+`next` and `next_back` consumes one shared remaining interval.
 
-- **Which iterators are rust-js's own is one analysis's to say**,
-  `iterators::is_own`, to a fixed point as `Counted` is: one that's
-  cloned, one that `peek`s, `rev`s, `flat_map`s or `scan`s items with a
-  destructor, one given to generic code that does, and every adapter
-  below it, since its source must be clonable or closable too. A type
-  parameter's iterator in a crate where any is rust-js's own makes every
-  one so, as a generic `Rc` does (ADR 0494): the two must agree on what an
-  iterator is.
-- **A clone is Rust's `Clone`**: the source's position copied, a slice's
-  index, a range's current, and each adapter's function and state cloned
-  by the clone the crate's `Clone` gives; a `Vec`'s own items cloned by
-  their `Clone`, as `vec::IntoIter::clone` does. A source with no clone, a
-  closed-over generator, is refused at the clone, naming the source.
-- **What an adapter holds is dropped when it's closed**: `$peekable`'s
-  peeked item, `$flatMap`'s inner iterator, `$scan`'s state, `$rev`'s
-  buffered back, each by the drop its item's type has, given as ADR 0489
-  gives one, in the order Rust's `Drop` runs: the inner then the outer.
-- **`$rev` steps from its source's back** as `$zipBack` does (ADR 0493),
-  of a source that knows it, a slice's or a `Vec`'s own items; of a
-  `map` whose closure would run in another order, it's refused still
-  (ADR 0164), the one case no representation fixes.
-- **Across the crate boundary**, a library's generic iterator is its
-  consumer's: the manifest says which of the library's iterators are its
-  own, as [the counted `Rc` draft](counted-rcs-across-crates.md) says
-  which `Rc`s it counts.
+A filter searches backward using its predicate; zip follows Rust's
+alignment and trimming rules, including drops of discarded items.
+Only rustc-approved capabilities are implemented: `scan` does not become
+double-ended just because its source is. Missing implementations remain
+compiler refusals, not claims that faithful reversal is impossible.
 
-## Why
+### Buffering and cleanup
 
-- **It's std's**: a corpus case clones a map, a filter and a chain of a
-  range and of a `Vec`, steps both, counts both, and drops a peeked item
-  with a destructor, a reversed `Vec`'s, a flat-mapped inner, each with
-  native Rust; `itertools`' `tee`, `multipeek` and `rev` compile.
-- **It's one representation per iterator**: the analysis answers, and
-  nothing mixes the two, as nothing mixes a counted `Rc` with a plain one.
-- **The JS a person writes stays**: every iterator nobody clones or
-  buffers is `items.values().map(f)`, as today.
+Each adapter's state machine follows the pinned std implementation.
+`Peekable` distinguishes "not peeked", "peeked end", and "peeked item",
+including an item whose JS representation is `undefined`. `Scan` owns
+its state and closure; `FlatMap` may hold both front and back inner
+iterators. A non-fused source can yield after `None`, so exhaustion is
+not automatically permanent closure.
 
-## Alternatives
+**Drop order is per adapter, never a universal "inner then outer".**
+For the pinned std, `Map` declares source then function, `Peekable`
+source then cached item, and `Scan` source, function, then state.
+`FlatMap` requires inspecting its nested state and drop order rather than
+guessing from its API. Record those orders in differential fixtures.
 
-- **Materialize on clone**, `[...it]` then iterate twice: runs each
-  closure before Rust would, and once where Rust runs it twice. Case C,
-  not allowed.
-- **Re-run the chain from its start**, a clone as a factory call: a clone
-  copies the current position, not the first; and the source's items,
-  a `Vec`'s with a destructor, are moved, not re-readable.
-- **Every lazy iterator rust-js's own**: one representation, no analysis,
-  and every `map` a helper call. Against the output promise, for a case
-  most programs never meet.
+Release each still-owned field once, including unstarted and partially
+consumed iterators. Clear ownership before invoking user drop code, and
+use the existing unwind cleanup machinery so one panicking destructor
+does not skip the remaining required cleanup. Yielded or moved items no
+longer belong to the adapter. General double-panic behavior remains the
+existing documented limitation; changing it belongs to
+[the panic proposal](catch-unwind.md).
 
-## Consequences
+### Separate compilation
 
-- **Runtime helpers**: six adapters with `clone` and `return`, each a
-  file in `src/runtime/`, held by mutations that lose a clone's position,
-  drop a peeked item twice, or close an inner iterator late.
-- **The limitations page loses four lines**: a clone of a lazy iterator;
-  `peekable`, `rev`, `flat_map` or `scan` of items with a destructor;
-  generic code given a `Peekable` of one; and gains one: `rev()` of a
-  `map` whose closure would run in another order.
-- **ADR 0181 is subsumed**: an array's iterator's clone becomes one case
-  of this.
+Every std iterator represented by a separately compiled rust-js library
+uses the explicit protocol. A binary using such a library makes the same
+choice for its std iterators. Bump `library::VERSION` to record that
+contract, validate transitive dependencies, and reject old artifacts.
+There is no list of iterator names whose absence could mean either
+"unused" or "represented natively".
+
+The iterator owner answers this policy once, as the `Rc` owner answers
+[its stable library policy](counted-rcs-across-crates.md). Crate-defined
+iterators continue to use their Rust trait implementations; generic calls
+use existing dictionaries and bridges, not replacement std adapters.
+Library boundaries do not authorize calling capabilities rustc rejects.
+
+## Acceptance
+
+Add corpus cases and mutations for:
+
+- Clone after partial forward and backward consumption; interleave the
+  original and clone. Include stateful closures and owned `Drop` values.
+- Reverse a side-effecting map and filter; alternate ends; reverse unequal
+  zips and check the dropped surplus. Cover exact-size and non-exact-size
+  sources separately.
+- Drop before first use, after peeking, after exhaustion, after an early
+  exit, and after a callback or clone panics. Include closure/state drops
+  when the yielded item itself needs no drop.
+- Nested flat maps with front and back state, `by_ref()`, non-fused
+  sources, and `Option` payloads that need boxing.
+- Pass and return iterators through generic functions and two libraries,
+  including callbacks and trait bounds. Verify the old ABI is rejected.
+
+Mutations lose clone position, share cloned owned state, eagerly map
+before reversing, conflate peek states, close a lender, skip unstarted
+cleanup, or drop a moved item twice. Existing native-adapter snapshots
+must stay readable for standalone programs that need no explicit state.
+Measure bytes and allocation cost for library-backed iterator workloads.
+
+## Alternatives and consequences
+
+Materializing on clone or reversal changes effects and ownership.
+Recreating a chain loses its current position. Using native JS adapters
+for library values and converting at the call site loses hidden state.
+
+Explicit state costs runtime code and may select more helpers in generic
+or library-backed programs. The first implementation covers a named set
+of adapters and rejects the rest. Do not promise a fixed count of six
+helpers, remove limitation entries wholesale, or mark an entire crate
+supported before its corresponding cases pass.
