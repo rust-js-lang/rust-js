@@ -2779,4 +2779,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n            && let [option] = args.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
+  {
+    name: "crate-impl-iterator-route",
+    breaks: "a copied default's `self.next()` of the crate's iterator is stepped as a JS iterator",
+    file: "src/lower/mir.rs",
+    find: "        if tcx.trait_of_assoc(def_id).is_some() && !self.resolves_to_crate(def_id, generic_args)? {\n",
+    replace: "        if tcx.trait_of_assoc(def_id).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
+  },
 ];

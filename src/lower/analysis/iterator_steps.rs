@@ -14,6 +14,9 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
+/// A function's, or an impl's, type parameter, by its index.
+type Param = (DefId, u32);
+
 /// Each `(function, parameter, trait)` whose dictionary is given: one given
 /// as it is that the function steps by the trait, a method of it of a value
 /// of it, `Iterator`'s of an `IntoIterator`'s, or of another iterator it's
@@ -29,7 +32,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     let next = trait_method(tcx, iterator, "next");
     let mut stepped: HashSet<(DefId, u32, DefId)> = HashSet::new();
     // A caller's parameter given on as a callee's, which steps it if that does.
-    let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
+    let mut passed: Vec<(Param, Param)> = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
@@ -130,6 +133,44 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         }
     }
+    // A trait's default an impl keeps is copied into it (ADR 0049): what it
+    // steps of its `Self`, or of a trait's parameter, it steps of the impl's
+    // argument for it, a type parameter of the impl's, `T` of `impl<T:
+    // Iterator> Trait for T`, as a function steps one passed on; or, of the
+    // crate's iterator holding them, `Holder<I>`, what its impl's `next`
+    // steps, where it's stepped (ADR 0492).
+    let mut kept_through: Vec<(Param, (Param, Param))> = Vec::new();
+    for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
+        for &imp in impls {
+            let imp = imp.to_def_id();
+            let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+            let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+            let overridden = tcx.impl_item_implementor_ids(imp);
+            let kept = (tcx.associated_items(trait_id).in_definition_order()).filter(|item| {
+                item.is_fn() && item.defaultness(tcx).has_value() && !overridden.contains_key(&item.def_id)
+            });
+            for item in kept {
+                for (index, arg) in trait_ref.args.iter().enumerate() {
+                    let Some(ty) = arg.as_type() else { continue };
+                    let default = (item.def_id, index as u32);
+                    if let ty::Param(param) = ty.kind() {
+                        passed.push(((imp, param.index), default));
+                    } else if let Ok(Some(instance)) =
+                        ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
+                        && fns.contains_key(&instance.def_id())
+                    {
+                        for (at, held) in instance.args.iter().enumerate() {
+                            if let Some(held) = held.as_type()
+                                && let ty::Param(param) = held.kind()
+                            {
+                                kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     // An impl's, of each item's.
     let items: Vec<(DefId, DefId)> = fns
         .keys()
@@ -138,9 +179,14 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // A parameter given as a JS iterator (ADR 0061), not as it is, takes
     // one made of the dictionaries its bounds ask: its `Iterator`'s, and its
     // extensions', its back and its length (ADR 0487).
+    // Not a trait's own, its `Self`, the impl's argument for it, which no
+    // caller makes a JS iterator.
     let as_js_iterator = |(id, index): (DefId, u32)| -> Vec<DefId> {
         let generics = tcx.generics_of(id);
-        if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) || generics.count() <= index as usize {
+        if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+            || generics.count() <= index as usize
+            || (tcx.trait_of_assoc(id).is_some() && (index as usize) < generics.parent_count)
+        {
             return Vec::new();
         }
         let param = generics.param_at(index as usize, tcx);
@@ -165,6 +211,14 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     let mut changed = true;
     while changed {
         changed = false;
+        // The crate's iterator a kept default steps, its `Self`: its impl's
+        // `next`'s, passed on.
+        for &(default, edge) in &kept_through {
+            if stepped.iter().any(|&(id, index, _)| (id, index) == default) && !passed.contains(&edge) {
+                passed.push(edge);
+                changed = true;
+            }
+        }
         for &(from, to) in &passed {
             let by: Vec<DefId> = (stepped.iter())
                 .filter(|&&(id, index, _)| (id, index) == to)

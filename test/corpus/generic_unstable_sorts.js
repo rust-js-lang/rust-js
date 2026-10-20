@@ -4,10 +4,13 @@ import {
   $cmp,
   $debugStr,
   $iter,
+  $iterator,
+  $next,
   $range,
   $selectNthUnstable,
   $slice,
   $sortUnstable,
+  $traitImpl,
 } from "@rust-js/runtime";
 
 var $iSorted;
@@ -30,17 +33,17 @@ function smallest(items, k, TOrd, TClone, TSort) {
   return $slice(items, 0, k).map((item) => TClone.clone(item));
 }
 
-function iSorted() {
+function iSorted(IIterator) {
   if ($iSorted === undefined) {
-    $iSorted = {
-      sorted_unstable: (self, SelfItemOrd, SelfItemSort) => {
-        const v = Iterator.from(self).toArray();
-        $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
-        return v;
-      },
-    };
+    $iSorted = new WeakMap();
   }
-  return $iSorted;
+  return $traitImpl($iSorted, [IIterator], () => ({
+    sorted_unstable: (self, SelfItemOrd, SelfItemSort) => {
+      const v = $iterator(self, IIterator.next, true).toArray();
+      $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
+      return v;
+    },
+  }));
 }
 
 function main() {
@@ -64,7 +67,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${iSorted()
+    `[${iSorted({ next: $next })
       .sorted_unstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")
       .map((item) => String(item))
       .join(", ")}]`,

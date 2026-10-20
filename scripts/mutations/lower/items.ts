@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_deref_dictionary.rs$"],
   },
+  {
+    name: "crate-resolution-trait-terms",
+    breaks: "a copied default's `self.next()` of the crate's iterator isn't seen to be its impl's",
+    file: "src/lower/items.rs",
+    find: "        let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;\n",
+    replace: "        let resolved = self.resolve_self_instance(def_id, generic_args)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
+  },
 ];

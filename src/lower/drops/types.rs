@@ -53,10 +53,10 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     /// Each one a caller would give a drop for, given one or not: one none
     /// gives one drops nothing, as no caller's has one (ADR 0489).
     pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
-    /// A copied default's impl's arguments for its trait's parameters,
-    /// whose body names a slot in the trait's terms, `Self::Item` of the
-    /// impl's `T::Item` (ADR 0421).
-    pub(super) self_args: Option<ty::GenericArgsRef<'tcx>>,
+    /// A copied default's impl's arguments for its trait's parameters, and
+    /// the impl's typing environment, whose body names a slot in the trait's
+    /// terms, `Self::Item` of the impl's `T::Item` (ADR 0421).
+    pub(super) self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>)>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -102,7 +102,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// An associated type's trait and item, `<Z as Zone>::Offset`'s
     /// `Z: Zone` and `Offset`, whose drop its impl's dictionary has where
-    /// its type has one (ADR 0178). Not an `async fn`'s, which has no name.
+    /// its type has one (ADR 0178). Not an `async fn`'s, which has no name,
+    /// nor a std trait's, whose dictionary has none: its drop is given apart,
+    /// as its function's (ADRs 0421, 0489).
     pub(in crate::lower) fn item_drop_of(&self, ty: Ty<'tcx>) -> Option<(ty::TraitRef<'tcx>, DefId)> {
         let tcx = self.recognition.tcx;
         let ty::Alias(
@@ -115,7 +117,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         else {
             return None;
         };
-        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))
+        let owner = alias.trait_ref(tcx);
+        (!tcx.is_impl_trait_in_trait(def_id) && !crate::lower::recognition::is_std_crate(tcx, owner.def_id))
+            .then_some((owner, def_id))
     }
 
     /// The index of the drop given for `alias`, a std associated type of a
@@ -136,24 +140,35 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 .is_some_and(|alias| self.state.slots.contains(&alias))
     }
 
-    /// `alias`, of a copied default's trait's terms, in its impl's.
+    /// `alias`, of a copied default's trait's terms, in its impl's,
+    /// normalized there: `<Holder<I> as Iterator>::Item` of `Self::Item` is
+    /// `I::Item`.
     fn in_impl_terms(&self, alias: ty::AliasTy<'tcx>) -> Option<ty::AliasTy<'tcx>> {
         let tcx = self.recognition.tcx;
-        Some(
-            ty::EarlyBinder::bind(tcx, alias)
-                .instantiate(tcx, self.state.self_args?)
-                .skip_normalization(),
-        )
+        let ty::AliasTy {
+            kind: ty::Projection { def_id },
+            args,
+            ..
+        } = alias
+        else {
+            return None;
+        };
+        let ty = Ty::new_projection(tcx, ty::IsRigid::No, def_id, args);
+        let (self_args, impl_env) = self.state.self_args?;
+        let ty = ty::EarlyBinder::bind(tcx, ty)
+            .instantiate(tcx, self_args)
+            .skip_normalization();
+        let ty = (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty);
+        match *ty.kind() {
+            ty::Alias(_, alias) => Some(alias),
+            _ => None,
+        }
     }
 
     /// Is an associated type's drop given, in a dictionary this function has?
-    /// Not a std trait's, whose dictionary has none: its drop is given
-    /// apart, as its function's (ADRs 0421, 0489).
     fn has_item_drop(&self, ty: Ty<'tcx>) -> bool {
-        self.item_drop_of(ty).is_some_and(|(owner, _)| {
-            !crate::lower::recognition::is_std_crate(self.recognition.tcx, owner.def_id)
-                && self.evidence.has_evidence(owner)
-        })
+        self.item_drop_of(ty)
+            .is_some_and(|(owner, _)| self.evidence.has_evidence(owner))
     }
 
     /// What dropping a `ty` runs.

@@ -359,4 +359,12 @@ export const mutations: Mutation[] = [
     replace: "                    if false && super::recognition::carries_its_drop(self.tcx, *def_id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
+  {
+    name: "slot-default-env",
+    breaks: "a copied default's slots are normalized in the trait's typing environment, which can't see `Holder<I>`'s impl",
+    file: "src/lower/drops.rs",
+    find: "                .replace((self_args, self.impl_typing_env().unwrap_or(self.typing_env))),\n",
+    replace: "                .replace((self_args, self.typing_env)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
+  },
 ];

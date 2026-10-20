@@ -297,6 +297,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|instance| (instance.def_id(), instance.args)))
     }
 
+    /// Whether a call of `def_id` with `generic_args` runs a function of the
+    /// crate's, its impl's or its trait's default: in a copied default as
+    /// its impl calls it, `self.next()` of a `Self` that's the crate's
+    /// iterator, its own `next` (ADRs 0049, 0492). The one answer, of what's
+    /// std's and what's the crate's.
+    pub(super) fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
+        let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;
+        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id())))
+    }
+
     /// `ty`, of a function's own generics, in a call of it, `generic_args`.
     pub(super) fn instantiated(&self, ty: Ty<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
         let ty = ty::EarlyBinder::bind(self.tcx, ty)

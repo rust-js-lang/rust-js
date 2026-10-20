@@ -633,7 +633,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an extension's, `DoubleEndedIterator`'s or `ExactSizeIterator`'s
     /// (ADR 0487).
     pub(super) fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
-        let ty = ty.peel_refs();
+        // Of a copied default, in its impl's terms: `T` of its trait's `Self`
+        // in `impl<T: Iterator> Trait for T` (ADR 0492).
+        let ty = self.impl_type(ty.peel_refs());
         // Only of one given as it is: another's is a JS iterator (ADR 0061),
         // whatever bound names `Iterator`, a supertrait's too.
         let ty::Param(param) = ty.kind() else {

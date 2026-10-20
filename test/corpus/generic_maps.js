@@ -7,9 +7,13 @@ import {
   $eq,
   $hashSlice,
   $iter,
+  $iterator,
+  $next,
+  $nextSome,
   $orInsert,
   $orInsertWith,
   $toBytes,
+  $traitImpl,
 } from "@rust-js/runtime";
 
 var $tCounting, $pHash;
@@ -30,31 +34,31 @@ function distinct(items, THash, TPartialEq, TClone, TSet) {
   return new TSet(items.values().map((item) => TClone.clone(item)));
 }
 
-function tCounting() {
+function tCounting(TIterator) {
   if ($tCounting === undefined) {
-    $tCounting = {
-      counts_by: (self, f, KHash, KPartialEq, KMap) => {
-        const counts = new KMap();
-        Iterator.from(self)
-          .map((item) => f(item))
-          .forEach((k) => {
-            const current = $orInsert(counts, k, 0);
-            counts.set(k, (current + 1) >>> 0);
-          });
-        return counts;
-      },
-      counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) =>
-        tCounting().counts_by(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
-      tally_by: (self, f, KHash, KPartialEq, KMap) =>
-        tCounting().counts(
-          Iterator.from(self).map((item) => f(item)),
-          KHash,
-          KPartialEq,
-          KMap,
-        ),
-    };
+    $tCounting = new WeakMap();
   }
-  return $tCounting;
+  return $traitImpl($tCounting, [TIterator], () => ({
+    counts_by: (self, f, KHash, KPartialEq, KMap) => {
+      const counts = new KMap();
+      $iterator(self, TIterator.next, true)
+        .map((item) => f(item))
+        .forEach((k) => {
+          const current = $orInsert(counts, k, 0);
+          counts.set(k, (current + 1) >>> 0);
+        });
+      return counts;
+    },
+    counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) =>
+      tCounting(TIterator).counts_by(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
+    tally_by: (self, f, KHash, KPartialEq, KMap) =>
+      tCounting({ next: $nextSome }).counts(
+        $iterator(self, TIterator.next, true).map((item) => f(item)),
+        KHash,
+        KPartialEq,
+        KMap,
+      ),
+  }));
 }
 
 function pHash_hash(p, state, HHasher) {
@@ -119,7 +123,7 @@ function main() {
   );
   const arg = d.has([2, 2]);
   console.log(`${d.size} ${arg}`);
-  const c = tCounting().counts(
+  const c = tCounting({ next: $next }).counts(
     $iter(["x", "y", "x"]),
     {
       hash: (value, state, H) => {
@@ -136,7 +140,7 @@ function main() {
   );
   const value$2 = c.get("x");
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const cp = tCounting().counts_by(
+  const cp = tCounting({ next: $next }).counts_by(
     $iter([
       [0, 1],
       [0, 1],
@@ -155,7 +159,7 @@ function main() {
   );
   const value$3 = cp.get(0);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const cs = tCounting().counts(
+  const cs = tCounting({ next: $next }).counts(
     $iter([
       [0, 1],
       [0, 1],
@@ -166,7 +170,7 @@ function main() {
   );
   const value$4 = cs.get([0, 1]);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const by = tCounting().tally_by(
+  const by = tCounting({ next: $next }).tally_by(
     $iter(["ab", "cd", "a"]),
     (s) => $byteLen(s),
     {

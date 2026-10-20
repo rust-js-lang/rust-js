@@ -5443,7 +5443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(false);
         }
-        Ok(!(self.resolve_instance(def_id, generic_args)?).is_some_and(|i| self.is_rust_fn(i.def_id())))
+        Ok(!self.resolves_to_crate(def_id, generic_args)?)
     }
 
     fn mir_call_values_of(
@@ -5580,8 +5580,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
-        // to one is it, an object its helpers step in place.
-        if tcx.trait_of_assoc(def_id).is_some() {
+        // to one is it, an object its helpers step in place. Not one the
+        // crate's impl has, in a copied default as its impl calls it (ADR
+        // 0492).
+        if tcx.trait_of_assoc(def_id).is_some() && !self.resolves_to_crate(def_id, generic_args)? {
             let mut exprs = (values.clone().into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
@@ -5613,10 +5615,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
         let known = self.known_trait_call(def_id, generic_args);
-        let rust_impl = tcx.trait_of_assoc(def_id).is_some()
-            && self
-                .resolve_instance(def_id, generic_args)?
-                .is_some_and(|i| self.is_rust_fn(i.def_id()));
+        let rust_impl = tcx.trait_of_assoc(def_id).is_some() && self.resolves_to_crate(def_id, generic_args)?;
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));

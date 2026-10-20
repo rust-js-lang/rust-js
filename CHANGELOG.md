@@ -598,6 +598,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A trait's default that steps its `Self`, kept by a blanket impl or an
+  impl for the crate's iterator**, stepped it as a JS iterator and threw;
+  it's stepped as the impl's own methods step it (ADR 0492).
 - **A `Vec`'s iterator a generic function made and gave back**, its
   `len()`, clone and `size_hint()`, read `NaN` or threw: generic code's
   `into_iter()` is the iterator concrete code has (ADR 0475).

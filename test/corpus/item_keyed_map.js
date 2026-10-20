@@ -6,7 +6,9 @@ import {
   $eq,
   $hashSlice,
   $iter,
+  $iterator,
   $mutGet,
+  $next,
   $orInsert,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -17,11 +19,11 @@ export function entry() {
   main();
 }
 
-function tCounting(dropT, dropTItem) {
+function tCounting(TIterator, dropT, dropTItem) {
   if ($tCounting === undefined) {
     $tCounting = new WeakMap();
   }
-  return $traitImpl($tCounting, [dropT, dropTItem], () => ({
+  return $traitImpl($tCounting, [TIterator, dropT, dropTItem], () => ({
     counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) => {
       let counts;
       try {
@@ -39,7 +41,7 @@ function tCounting(dropT, dropTItem) {
       let result;
       try {
         iter = self;
-        result = Iterator.from(iter).forEach((item) => value(item));
+        result = $iterator(iter, TIterator.next, true).forEach((item) => value(item));
         dropT?.(iter);
       } catch (error) {
         for (const item of counts.keys()) {
@@ -85,7 +87,7 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  const words = tCounting().counts(
+  const words = tCounting({ next: $next }).counts(
     $iter(["x", "y", "x"]),
     {
       hash: (value, state, H) => {
@@ -105,7 +107,7 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const points = tCounting().counts(
+  const points = tCounting({ next: $next }).counts(
     $iter([
       [0, 1],
       [0, 1],
@@ -117,7 +119,7 @@ function main() {
   );
   const value$2 = points.get([0, 1]);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${points.size}`);
-  const louds = tCounting($dropEach(loudDrop_drop), loudDrop_drop).counts(
+  const louds = tCounting({ next: $next }, $dropEach(loudDrop_drop), loudDrop_drop).counts(
     $iter([[1], [1]]),
     loudHash(),
     { eq: $eq },

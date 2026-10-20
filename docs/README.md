@@ -560,6 +560,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0489 A std associated type is given its drop by its own type](decisions/0489-a-yielded-item-is-given-its-drop-by-its-own-type.md)
 - [0490 A value std leaves unused is dropped there](decisions/0490-a-value-std-leaves-unused-is-dropped-there.md)
 - [0491 `cycle()` keeps a clone of its iterator](decisions/0491-cycle-clones-its-iterator.md)
+- [0492 A kept default steps its impl's iterator as the impl does](decisions/0492-a-kept-default-steps-its-impls-iterator.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
