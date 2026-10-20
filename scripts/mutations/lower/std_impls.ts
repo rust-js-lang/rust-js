@@ -472,4 +472,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Closure(id, _) => false && self.krate.closure_facts.clones_apart(*id),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
+  {
+    name: "iterator-clone-is-itself",
+    breaks: "a clone of a `map` cloned apart is the `map` itself",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.iterator_cloned_apart(ty) {\n            return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
+    replace: "        if self.iterator_cloned_apart(ty) {\n            return Ok(place);\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
+  {
+    name: "copied-clone-refused",
+    breaks: "a clone of a `copied()` is refused, though it's the iterator it copies",
+    file: "src/lower/std_impls.rs",
+    find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.clone_value(place, source, span, out);\n",
+    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.clone_value(place, source, span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
 ];

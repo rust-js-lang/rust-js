@@ -258,6 +258,8 @@ struct CrateFacts<'a, 'tcx> {
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn` (ADR 0521).
     closure_facts: &'a analysis::ClosureFacts,
+    /// The types the crate clones (ADR 0525).
+    cloned: &'a HashSet<Ty<'tcx>>,
     /// The trait constants generic code reads (ADR 0106).
     generic_consts: &'a HashSet<DefId>,
     changed_vecs: &'a HashSet<Ty<'tcx>>,

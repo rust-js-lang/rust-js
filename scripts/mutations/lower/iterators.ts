@@ -901,4 +901,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "cloned-param-matches-every-adapter",
+    breaks: "a type parameter generic code clones stands for every `map` and `filter`, each made cloned apart, which refuses what it can't clone",
+    file: "src/lower/iterators.rs",
+    find: "                .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))\n",
+    replace: "                .any(|&cloned| self.instance_of(generic_closures(cloned), generic_closures(ty)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+  },
+  {
+    name: "cloned-closures-not-generic",
+    breaks: "a `map` generic code makes isn't seen as the one its caller clones, whose closure is the caller's instance",
+    file: "src/lower/iterators.rs",
+    find: "                        ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),\n",
+    replace: "                        ty::Closure(..) => t,\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
+  {
+    name: "cloned-apart-unrevealed",
+    breaks: "a `map` a function gives as an `impl Iterator` isn't made cloned apart",
+    file: "src/lower/iterators.rs",
+    find: "        // What an `impl Iterator` hides, a function's result.\n        let ty = self.reveal(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
 ];

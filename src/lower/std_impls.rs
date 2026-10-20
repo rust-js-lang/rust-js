@@ -138,6 +138,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Err(self.unsupported(span, "cloning a closure where it isn't seen to be cloned")),
             };
         }
+        // An iterator cloned apart makes itself again (ADR 0525); a copy of
+        // one is the iterator it copies (ADR 0480), its clone that one's.
+        if self.iterator_cloned_apart(ty) {
+            return Ok(Expr::call_helper("$clone", vec![place]));
+        }
+        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
+            return self.clone_value(place, source, span, out);
+        }
         // A channel's sender: one more, of the same queue (ADR 0142).
         if self.recognition().channel_end(ty) == Some(super::recognition::ChannelEnd::Sender) {
             return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));

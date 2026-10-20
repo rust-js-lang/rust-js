@@ -28,9 +28,15 @@ pub struct ClosureFacts {
 }
 
 impl ClosureFacts {
-    /// What `all_bodies` make `dyn Fn`s of and clone, whose drop is a
-    /// library's where `library`.
-    pub(super) fn new<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> ClosureFacts {
+    /// What `all_bodies` make `dyn Fn`s of, and of the types the crate
+    /// clones, `cloned`, the closures, whose drop is a library's where
+    /// `library`.
+    pub(super) fn new<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        all_bodies: &[&Body<'tcx>],
+        cloned: &HashSet<Ty<'tcx>>,
+        library: bool,
+    ) -> ClosureFacts {
         let closure_of = |ty: Ty<'tcx>| match ty.kind() {
             ty::Closure(id, _) => Some(*id),
             _ => None,
@@ -39,8 +45,7 @@ impl ClosureFacts {
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
             .filter_map(closure_of)
             .collect();
-        let cloned = (all_bodies.iter())
-            .flat_map(|body| cloned_types(tcx, &body.thir))
+        let cloned = (cloned.iter())
             .flat_map(|ty| {
                 ty.walk()
                     .filter_map(|part| part.as_type())
@@ -89,42 +94,31 @@ impl ClosureFacts {
 
 /// Whether a clone of the closure of type `closure` can be the closure
 /// itself, the one JS function: one nothing could tell from it, that never
-/// changes what it holds, holds no `Cell`, and holds nothing a clone of
-/// which counts or drops, as `drops` says (ADR 0522).
+/// writes what it took, holds no `Cell`, and holds nothing a clone of which
+/// counts or drops, as `drops` says (ADRs 0522, 0525).
 pub(in crate::lower) fn clone_shares<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     closure: Ty<'tcx>,
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> bool {
-    let ty::Closure(_, args) = closure.kind() else {
+    let ty::Closure(id, args) = *closure.kind() else {
         return true;
     };
     let closure = args.as_closure();
-    closure.kind() == ty::ClosureKind::Fn
-        && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))
-}
-
-/// The types `thir` clones: of each call, each type a `Clone` bound of the
-/// function called, or of a trait that extends it, is given, `Clone::clone`'s
-/// own `Self: Clone` too.
-fn cloned_types<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'a {
-    let clone = tcx.lang_items().clone_trait();
-    let is_clone =
-        move |tr: DefId| Some(tr) == clone || ty::elaborate::supertrait_def_ids(tcx, tr).any(|s| Some(s) == clone);
-    thir.exprs.iter().flat_map(move |expr| {
-        let ExprKind::Call { fun, .. } = expr.kind else {
-            return Vec::new();
-        };
-        let ty::FnDef(id, args) = *thir[fun].ty.kind() else {
-            return Vec::new();
-        };
-        (tcx.clauses_of(id).instantiate(tcx, args.skip_binder()).into_iter())
-            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-            .filter(|p| is_clone(p.def_id()))
-            .map(|p| p.self_ty().skip_binder())
-            .collect()
-    })
+    // One that writes what it took, by value or through a `&mut`: a
+    // `FnMut` may be one only by the bound it's given to, `map(|x| x * 2)`.
+    let writes = match id.as_local() {
+        Some(local) => tcx
+            .closure_captures(local)
+            .iter()
+            .any(|captured| match captured.info.capture_kind {
+                ty::UpvarCapture::ByRef(kind) => kind != ty::BorrowKind::Immutable,
+                ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse => captured.mutability == ty::Mutability::Mut,
+            }),
+        None => closure.kind() != ty::ClosureKind::Fn,
+    };
+    !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))
 }
 
 /// Whether any of `all_bodies` makes a function a `dyn Fn` that `drops`

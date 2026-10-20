@@ -5899,6 +5899,23 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// Of std's adapter of type `ty` that holds its source and a function
+/// alone, `Map<I, F>` or `Filter<I, P>`, its source and its function: all
+/// it keeps, a JS iterator helper's state being its source's (ADR 0525).
+pub(crate) fn source_and_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if matches!(
+                std_path(tcx, adt.did()).as_str(),
+                "std::iter::Map" | "std::iter::Filter"
+            ) =>
+        {
+            Some((args.type_at(0), args.type_at(1)))
+        }
+        _ => None,
+    }
+}
+
 /// What std's `Zip` adapter of type `ty` zips, `A` and `B` of `Zip<A, B>`.
 pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     match ty.kind() {

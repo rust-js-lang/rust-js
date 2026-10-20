@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A clone of a lazy `map` or `filter`** (ADR 0525).
 - **A counted `Rc` in a library**: every `Rc` a library, or a crate
   using one, has is counted, one representation they share; libraries
   are ABI 3 (ADR 0523). And an `Rc` written through a `&mut`.

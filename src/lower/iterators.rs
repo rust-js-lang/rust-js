@@ -375,6 +375,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(own.then_some(double_ended))
     }
 
+    /// Whether an iterator of type `ty` is cloned apart (ADR 0525): an
+    /// adapter that holds its source and a function alone, a `Map` or a
+    /// `Filter`, the crate clones, made by a function of them that its clone
+    /// calls again with a clone of each, `$cloning`'s, as a closure cloned
+    /// apart is (ADR 0522). The one answer, of what's made and what's cloned.
+    pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
+        // What an `impl Iterator` hides, a function's result.
+        let ty = self.reveal(ty);
+        // A closure as generic code makes it, which stands for each its
+        // callers' instances of it.
+        let tcx = self.tcx;
+        let generic_closures = |ty: ty::Ty<'tcx>| {
+            rustc_middle::ty::TypeFoldable::fold_with(
+                ty,
+                &mut ty::BottomUpFolder {
+                    tcx,
+                    ty_op: |t: ty::Ty<'tcx>| match *t.kind() {
+                        ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),
+                        _ => t,
+                    },
+                    lt_op: |r| r,
+                    ct_op: |c| c,
+                },
+            )
+        };
+        let adapter = |ty| super::recognition::source_and_function(tcx, ty).is_some();
+        adapter(ty)
+            && (self.krate.cloned.iter())
+                .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))
+    }
+
     /// Whether `ty`'s JS iterator knows its back, which `$nextBack` steps
     /// (ADR 0429): a `dyn DoubleEndedIterator`'s, or a type parameter's
     /// bound by one, given a JS iterator (ADR 0061), not as it is (ADR 0411).

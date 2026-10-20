@@ -230,4 +230,13 @@ test("the app's crate is a program, and a library once another uses it", async (
   expect([printed(user.js), counted(user.crates.get("app")!.js)]).toEqual(["5 5\n", true]);
   const again = await check(manifest, { packageName: "app" });
   expect([printed(again.js), counted(again.js)]).toEqual(["5 5\n", false]);
+  // The whole workspace, each member a package Cargo was asked for: no app,
+  // so the app's crate is a library, its `Rc`s counted, though no crate of
+  // it is the one asked for.
+  await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
+  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
+  const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libapp-") && f.endsWith(".rust-js"))!);
+  const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
+  const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
+  expect(counted(root)).toBe(true);
 }, 600_000);

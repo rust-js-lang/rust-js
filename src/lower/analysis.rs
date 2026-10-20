@@ -1,5 +1,6 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
+mod clones;
 mod closures;
 mod debug;
 mod drops;
@@ -363,6 +364,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be (ADR 0521).
     pub closure_facts: ClosureFacts,
+    /// The types the crate clones, and those their clones clone (ADR 0525).
+    pub cloned: HashSet<Ty<'tcx>>,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
@@ -550,7 +553,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
     // destructor (ADR 0320); every one, in a library or a crate using one,
     // which share their `Rc`s (ADR 0523).
-    let params_may_drop = !library && crate::lower::traits::may_have_destructors(tcx, &foreign);
+    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, &foreign);
     let shares_rcs = library || foreign.any();
     let recognition = Recognition {
         tcx,
@@ -567,7 +570,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Fn`, which then drops it (ADR 0521): a library's may be. A captured
     // `Rc` counted may make one, and a `dyn Fn` that drops may count an
     // `Rc`; both only grow, so a second pass settles them.
-    let mut closure_facts = ClosureFacts::new(tcx, all_bodies, library);
+    // The types the crate clones (ADRs 0522, 0525).
+    let cloned = clones::cloned_types(tcx, all_bodies);
+    let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
     if !closure_facts.fn_dyns_drop
         && closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, foreign.any()), |ty| {
@@ -709,6 +714,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         mutated,
         counted,
         closure_facts,
+        cloned,
         changed_vecs,
         drop_params,
         copied,

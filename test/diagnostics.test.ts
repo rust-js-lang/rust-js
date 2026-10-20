@@ -143,6 +143,8 @@ for (const [name, source, message, crate] of [
   ["a path's components", "use std::path::Path;\npub fn f(a: &Path) -> usize { a.components().count() }", "calling `std::path::Path::components`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::net::ToSocketAddrs for C { type Iter = std::vec::IntoIter<std::net::SocketAddr>; fn to_socket_addrs(&self) -> std::io::Result<Self::Iter> { Ok(Vec::new().into_iter()) } }', "user implementations of `std::net::ToSocketAddrs`"],
   ["comparing another crate's struct", 'pub fn f(a: std::net::Ipv4Addr, b: std::net::Ipv4Addr) -> bool { a < b }', "does not support"],
+  // Generic code given no `Clone` of its source can't clone the map it makes (ADR 0525).
+  ["a map cloned where its source isn't bound by Clone", "pub fn doubled<I: Iterator<Item = i32>>(it: I) -> std::iter::Map<I, fn(i32) -> i32> { it.map(|x| x * 2) }\npub fn f() -> usize { let d = doubled(1..4); d.clone().count() }", "made where `I` isn't bound by `Clone`"],
   ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a `C`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
