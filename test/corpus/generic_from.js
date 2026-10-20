@@ -35,6 +35,10 @@ function conv(x, TFromU8) {
   return TFromU8.from(x);
 }
 
+function widened(x, TIntoU64) {
+  return TIntoU64.into(x);
+}
+
 function main() {
   const w = make([1, 2], unitMakerVec());
   console.log(`[${w[0].map((item) => String(item)).join(", ")}]`);
@@ -47,6 +51,9 @@ function main() {
     `[${queued(["a", "b"])
       .map((item) => $debugStr(item, "'"))
       .join(", ")}]`,
+  );
+  console.log(
+    `${widened(true, { into: (x) => (x ? 1n : 0n) })} ${widened(7, { into: (n) => BigInt(n) })} ${widened("a", { into: (c) => BigInt(c.codePointAt(0)) })}`,
   );
 }
 //# sourceMappingURL=case.js.map

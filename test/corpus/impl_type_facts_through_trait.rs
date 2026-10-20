@@ -55,6 +55,10 @@ fn twice<C: Push<T>, T: Clone>(into: &mut C, item: T) {
     into.put(item);
 }
 
+fn grow<T>(stack: &mut Stack<T>, items: Vec<T>) {
+    stack.extend(items);
+}
+
 fn fill<T: Clone>(stack: &mut Stack<T>, item: T) {
     twice(stack, item);
 }
@@ -96,4 +100,8 @@ fn main() {
     let (a, b) = (copied(&[1u32, 2]), copied(&[(), ()]));
     let (c, d) = (parsed::<u16>("abc"), parsed::<()>("abc"));
     println!("{} {} {} {}", a.sized, b.sized, c.sized, d.sized);
+    let (mut e, mut f) = (Stack { items: vec![1u8], sized: 1 }, Stack { items: vec![()], sized: 0 });
+    grow(&mut e, vec![2, 3]);
+    grow(&mut f, vec![(), ()]);
+    println!("{} {} {} {}", e.items.len(), e.sized, f.items.len(), f.sized);
 }

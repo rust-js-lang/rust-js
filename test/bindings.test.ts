@@ -10,6 +10,31 @@ import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
+// A closure called by `&` that holds a value with a destructor, given to a
+// binding, which JS holds and never drops: refused, as nothing would drop
+// what it holds (ADR 0098).
+test("a listener holding a value with a destructor is refused", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-listener-drop");
+  const source = `use webapi::events::Click;
+use webapi::{EventTargetExt, document};
+pub struct Guard;
+impl Drop for Guard {
+    fn drop(&mut self) {}
+}
+pub fn wire() {
+    let guard = Guard;
+    document.add_event_listener(Click, move |_| {
+        let _g = &guard;
+    }, None);
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr.toString()).toContain("given away without being called once");
+});
+
 // ADR 0223: an event's name gives its listener the event its target takes,
 // and a tag's name the element it makes, from `@webref/events` and
 // `@webref/elements`, as TypeScript's `HTMLElementEventMap` and

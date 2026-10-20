@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,",
     replace: "            Std::Cast { .. } => x,",
-    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
     name: "extern-fn-value-accepted",

@@ -1717,7 +1717,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                state.refs.insert(place.local, list);\n                return Ok(());\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
   },
   {
     name: "mir-through-alias-handle",
@@ -1949,7 +1949,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.check_closure_drops()?;\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Fn closure holding"],
+    tests: ["test/traits.test.ts", "-t", "closure assigned"],
   },
   {
     name: "mir-json-calls-refused",

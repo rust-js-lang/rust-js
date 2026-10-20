@@ -57,6 +57,10 @@ function twice(into, item, CPushT, TClone) {
   CPushT.put(into, item);
 }
 
+function grow(stack, items, TSize) {
+  stackExtendT_extend(stack, items, TSize);
+}
+
 function fill(stack, item, TClone, TSize) {
   const into = { value: stack };
   twice(into, item, stackPushT(TSize), TClone);
@@ -103,5 +107,10 @@ function main() {
   const c = parsed("abc", 2);
   const d = parsed("abc", 0);
   console.log(`${a.sized} ${b.sized} ${c.sized} ${d.sized}`);
+  const e = { items: [1], sized: 1 };
+  const f = { items: [undefined], sized: 0 };
+  grow(e, [2, 3], 1);
+  grow(f, [undefined, undefined], 0);
+  console.log(`${e.items.length} ${e.sized} ${f.items.length} ${f.sized}`);
 }
 //# sourceMappingURL=case.js.map

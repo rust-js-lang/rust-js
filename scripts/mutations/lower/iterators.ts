@@ -370,10 +370,11 @@ export const mutations: Mutation[] = [
     "find": "                {\n                    return None;\n                }\n                let items = Expr::call(",
     "replace": "                {}\n                let items = Expr::call(",
     "tests": [
-      "test/lowering.test.ts",
+      "test/corpus.test.ts",
       "-t",
-      "a chain collected from MIR is a spread"
-    ]
+      "^vec_edits.rs$"
+    ],
+    "snapshots": true
   },
   {
     "name": "flat-of-arrays-flatmap",

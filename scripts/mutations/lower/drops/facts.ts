@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce)",
     replace: "        false",
-    tests: ["test/traits.test.ts", "-t", "Fn closure given away"],
+    tests: ["test/bindings.test.ts", "-t", "listener holding a value with a destructor"],
   },
   {
     name: "closure-assigned",

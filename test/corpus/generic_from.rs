@@ -35,6 +35,10 @@ fn conv<T: From<u8>>(x: u8) -> T {
     T::from(x)
 }
 
+fn widened<T: Into<u64>>(x: T) -> u64 {
+    x.into()
+}
+
 fn main() {
     let w: Wrap = make::<Unit>(vec![1, 2]);
     println!("{:?}", w.0);
@@ -44,4 +48,5 @@ fn main() {
     let s: String = build("hi");
     println!("{n} {s}");
     println!("{:?}", queued(vec!['a', 'b']));
+    println!("{} {} {}", widened(true), widened(7u32), widened('a'));
 }

@@ -257,7 +257,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            \"sum\" => \"sum\",\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","user_collections"],
+    tests: ["test/corpus.test.ts", "-t", "^user_collections.rs$"],
+    snapshots: true,
   },
   {
     name: "delegated-own-param-dropped",

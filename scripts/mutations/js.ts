@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
     replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
-    tests: ["test/lowering.test.ts","-t","returned after a loop"],
+    tests: ["test/lowering.test.ts", "-t", "returns in a loop are where they"],
   },
   {
     name: "mir-tidy-not-de-morgan",
