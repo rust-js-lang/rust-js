@@ -91,4 +91,28 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
+  {
+    name: "item-slot-of-callers-item-unseen",
+    breaks: "`second(Gen(0))`, whose iterator has no destructor but its items do, is given no drop for them, and leaks the one it skips",
+    file: "src/lower/analysis/drops.rs",
+    find: "                    _ if !item.has_param() && runs(item, caller) => {\n                        given.insert(slot);\n",
+    replace: "                    _ if !item.has_param() && runs(item, caller) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+  },
+  {
+    name: "item-slot-of-callers-param-unseen",
+    breaks: "`made_second::<Loud>`'s iterator's items, its `T`, aren't given `second` its drop",
+    file: "src/lower/analysis/drops.rs",
+    find: "                    ty::Param(param) => passed.push(((caller, param.index), slot)),\n",
+    replace: "                    ty::Param(_) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+  },
+  {
+    name: "item-slot-of-callers-item-slot-unseen",
+    breaks: "`relayed`'s `J::Item` drop isn't passed on to `second`'s `I::Item`",
+    file: "src/lower/analysis/drops.rs",
+    find: "                        if let Some(own) = callers_items.iter().position(|&own| own == item) {\n",
+    replace: "                        if let Some(own) = callers_items.iter().position(|&own| own == item).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+  },
 ];

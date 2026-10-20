@@ -199,4 +199,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, args) if let Some(function) = self.recognition.held_function(ty).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
+  {
+    name: "item-slot-ungiven-refused",
+    breaks: "`counted(0..3)`, whose items no caller gives a drop, is refused as of an associated type that may have a destructor",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Alias(_, alias) if self.state.slots.contains(alias) => Drops::Nothing,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+  },
+  {
+    name: "std-item-drop-from-dictionary",
+    breaks: "a std trait's associated type's drop is looked for in its dictionary, `IIterator.$dropItem`, which std's has none of",
+    file: "src/lower/drops/types.rs",
+    find: "            !crate::lower::recognition::is_std_crate(self.recognition.tcx, owner.def_id)\n                && self.evidence.has_evidence(owner)\n",
+    replace: "            self.evidence.has_evidence(owner)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "associated type's value no drop is given for"],
+  },
 ];

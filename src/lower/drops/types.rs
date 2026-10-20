@@ -50,6 +50,9 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     /// The std traits' associated types a caller gives a drop for,
     /// `<I as IntoIterator>::IntoIter`, and each one's index (ADR 0421).
     pub(super) items: HashMap<ty::AliasTy<'tcx>, u32>,
+    /// Each one a caller would give a drop for, given one or not: one none
+    /// gives one drops nothing, as no caller's has one (ADR 0489).
+    pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -112,9 +115,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     }
 
     /// Is an associated type's drop given, in a dictionary this function has?
+    /// Not a std trait's, whose dictionary has none: its drop is given
+    /// apart, as its function's (ADRs 0421, 0489).
     fn has_item_drop(&self, ty: Ty<'tcx>) -> bool {
-        self.item_drop_of(ty)
-            .is_some_and(|(owner, _)| self.evidence.has_evidence(owner))
+        self.item_drop_of(ty).is_some_and(|(owner, _)| {
+            !crate::lower::recognition::is_std_crate(self.recognition.tcx, owner.def_id)
+                && self.evidence.has_evidence(owner)
+        })
     }
 
     /// What dropping a `ty` runs.
@@ -318,6 +325,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // A std trait's, `<I as IntoIterator>::IntoIter`, whose drop a
             // caller gives (ADR 0421).
             ty::Alias(_, alias) if self.state.items.contains_key(alias) => Drops::Runs,
+            // One a caller would give a drop for, that none does: none of
+            // theirs has one, as of a type parameter none's given for (ADR
+            // 0489).
+            ty::Alias(_, alias) if self.state.slots.contains(alias) => Drops::Nothing,
             ty::Alias(
                 _,
                 ty::AliasTy {

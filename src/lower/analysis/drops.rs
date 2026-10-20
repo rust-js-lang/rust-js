@@ -120,6 +120,9 @@ pub(super) fn drop_params<'tcx>(
     }
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `consume::<U>`.
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
+    // Each function's std associated types given drops, after its type
+    // parameters (ADR 0421).
+    let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         for expr in body.thir.exprs.iter() {
@@ -158,6 +161,42 @@ pub(super) fn drop_params<'tcx>(
                     }
                 }
             }
+            // A std trait's associated type of one, `<I as Iterator>::Item`,
+            // given a drop where it's what the caller's has one, which its
+            // type parameter needn't: an iterator with none may give items
+            // with one (ADR 0489).
+            let count = tcx.generics_of(callee).count() as u32;
+            let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+            let callers_items = items
+                .entry(caller)
+                .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, caller))
+                .clone();
+            let held = items
+                .entry(callee)
+                .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, callee))
+                .clone();
+            for (at, item) in held.into_iter().enumerate() {
+                let slot = (callee, count + at as u32);
+                let item = ty::EarlyBinder::bind(tcx, item)
+                    .instantiate(tcx, args)
+                    .skip_normalization();
+                let item = tcx
+                    .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(item))
+                    .unwrap_or(item);
+                match item.kind() {
+                    ty::Param(param) => passed.push(((caller, param.index), slot)),
+                    ty::Alias(..) => {
+                        let callers_count = tcx.generics_of(caller).count() as u32;
+                        if let Some(own) = callers_items.iter().position(|&own| own == item) {
+                            passed.push(((caller, callers_count + own as u32), slot));
+                        }
+                    }
+                    _ if !item.has_param() && runs(item, caller) => {
+                        given.insert(slot);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
     let mut changed = true;
@@ -173,7 +212,6 @@ pub(super) fn drop_params<'tcx>(
     // `<I as IntoIterator>::IntoIter`, holds what it does: given one too
     // (ADR 0421); and so, in turn, one of that, `<I::Item as
     // IntoIterator>::IntoIter` (ADR 0478).
-    let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
     let mut work: Vec<(DefId, u32)> = given.iter().copied().collect();
     while let Some((id, index)) = work.pop() {
         let count = tcx.generics_of(id).count() as u32;

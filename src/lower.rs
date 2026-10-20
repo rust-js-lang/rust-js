@@ -215,8 +215,10 @@ enum Nested<'tcx> {
         drops: HashMap<u32, String>,
         unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
         /// And of a std associated type of one, `Self::Item`, its slot's
-        /// (`drop_slot`), the impl's (ADR 0421).
+        /// (`drop_slot`), the impl's (ADR 0421), and each it could be given
+        /// (ADR 0489).
         items: HashMap<ty::AliasTy<'tcx>, u32>,
+        slots: HashSet<ty::AliasTy<'tcx>>,
     },
 }
 

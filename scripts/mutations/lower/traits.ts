@@ -1757,4 +1757,20 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
   },
+  {
+    name: "default-item-drop-impl-terms-only",
+    breaks: "a copied default's `Self::Item`, its trait's terms, finds no drop its impl's `T::Item` is given",
+    file: "src/lower/traits.rs",
+    find: "                    items.insert(own_alias, index);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
+  },
+  {
+    name: "drop-slots-ungiven",
+    breaks: "a function's associated types a caller could give a drop for aren't known as such, and one none gives is refused",
+    file: "src/lower/traits.rs",
+    find: "        self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+  },
 ];

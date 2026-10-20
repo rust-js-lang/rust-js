@@ -557,6 +557,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0486 An `Option` of what could look like `None` is changed in place](decisions/0486-an-option-of-a-boxed-payload-is-changed-in-place.md)
 - [0487 An iterator given as it is has its extensions' dictionaries](decisions/0487-an-iterator-given-as-it-is-has-its-extensions-dictionaries.md)
 - [0488 An iterator bound by an extension alone is bound by `Iterator`](decisions/0488-an-extension-bound-iterator-is-an-iterator.md)
+- [0489 A std associated type is given its drop by its own type](decisions/0489-a-yielded-item-is-given-its-drop-by-its-own-type.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

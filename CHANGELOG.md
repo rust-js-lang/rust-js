@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **Items with a destructor of an iterator without one**, dropped where
+  generic code discards them, where they leaked (ADR 0489).
 - **A type holding an iterator bound by `DoubleEndedIterator` or
   `ExactSizeIterator` alone**, given as it is, as one bound by `Iterator`
   is, either's `IterEither` among them (ADR 0488).

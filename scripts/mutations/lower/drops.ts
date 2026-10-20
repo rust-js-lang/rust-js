@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "given-item-drop-unfound",
     breaks: "a std trait's associated type's drop, given, isn't found by its type, and isn't called",
     file: "src/lower/drops.rs",
-    find: "            ty::Alias(_, alias) => *(self.drop_state.types.items.get(alias)).or_else(|| {\n                let ty::Alias(_, alias) = self.in_impl_terms(ty).kind() else {\n                    return None;\n                };\n                self.drop_state.types.items.get(alias)\n            })?,\n",
+    find: "            ty::Alias(_, alias) => *self.drop_state.types.items.get(alias)?,\n",
     replace: "            ty::Alias(..) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
