@@ -24,14 +24,13 @@ Estimated difficulty, hardest first; this is not implementation order:
 3. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.
 4. [Libraries share one counted `Rc` representation](counted-rcs-across-crates.md).
-5. [`xor` completes cleanup when a discarded payload panics](xor-drops.md):
-   follow-up to the ordinary drops accepted in ADR 0498.
 
-Suggested order: `xor`, the library representation contract, iterators,
+Suggested order: the library representation contract, iterators,
 panic support once its abort gate is resolved, then shipped crates one at
 a time. A std trait's associated-type drops are already accepted in
 [0497](../0497-a-std-traits-dictionary-drops-its-associated-type.md); its
-former draft is no longer a separate proposal. Ordinary `xor` and `zip`
-drops are now accepted in
-[0498](../0498-xor-and-zip-drop-what-they-give-up.md); the remaining `xor`
-draft addresses unwinding rather than proposing their implementation again.
+former draft is no longer a separate proposal. `xor` and `zip`
+drops are accepted in
+[0498](../0498-xor-and-zip-drop-what-they-give-up.md), and `xor`'s cleanup
+through a panic in
+[0502](../0502-xor-drops-its-second-value-through-a-panic.md).

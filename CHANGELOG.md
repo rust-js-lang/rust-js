@@ -613,6 +613,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`xor` of two `Some`s whose first value's destructor panicked** never
+  dropped the second: it's dropped in a `finally` (ADR 0502).
 - **A trait's default that calls its impl's own method, or another default,
   of an impl for a generic type of the crate's**, gave it its `Self`'s drop
   where its type parameter's goes, and threw: it's given the impl's (ADR

@@ -1,6 +1,8 @@
 # 0498. `xor` and `zip` drop what they give up
 
 Status: Accepted. Amends [0496](0496-and-drops-what-it-gives-up.md).
+Amended by [0502](0502-xor-drops-its-second-value-through-a-panic.md):
+the second value is dropped in a `finally`.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.

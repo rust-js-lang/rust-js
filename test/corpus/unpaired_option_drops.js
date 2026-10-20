@@ -13,8 +13,11 @@ function main() {
   const other = [2];
   const value = option != null ? (other == null ? option : undefined) : other;
   if (option != null && other != null) {
-    loudDrop_drop(option);
-    loudDrop_drop(other);
+    try {
+      loudDrop_drop(option);
+    } finally {
+      loudDrop_drop(other);
+    }
   }
   const a = value;
   try {
@@ -22,8 +25,11 @@ function main() {
     const option = [3];
     const value = option != null ? (undefined == null ? option : undefined) : undefined;
     if (option != null && undefined != null) {
-      loudDrop_drop(option);
-      loudDrop_drop(undefined);
+      try {
+        loudDrop_drop(option);
+      } finally {
+        loudDrop_drop(undefined);
+      }
     }
     const b = value;
     const value$1 = (l) => l[0];
@@ -33,8 +39,11 @@ function main() {
       const other = [4];
       const value$2 = undefined != null ? (other == null ? undefined : undefined) : other;
       if (undefined != null && other != null) {
-        loudDrop_drop(undefined);
-        loudDrop_drop(other);
+        try {
+          loudDrop_drop(undefined);
+        } finally {
+          loudDrop_drop(other);
+        }
       }
       const c = value$2;
       const value$3 = (l) => l[0];

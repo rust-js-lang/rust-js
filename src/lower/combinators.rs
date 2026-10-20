@@ -387,8 +387,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_value(b_value, b_ty, span, &mut dropped_b)?;
         let not = |e: Expr| Expr::unary(js::UnaryOp::Not, e);
         if xor {
+            // `b` dropped even where `a`'s drop panics, as Rust's unwinding
+            // drops it (ADR 0502).
             let both = Expr::bin(Op::And, a_some, b_some);
-            out.push(StmtKind::If(both, [dropped_a, dropped_b].concat(), None).at(js_span));
+            let dropped = match dropped_b.is_empty() {
+                true => dropped_a,
+                false => vec![StmtKind::Try(dropped_a, dropped_b).at(js_span)],
+            };
+            out.push(StmtKind::If(both, dropped, None).at(js_span));
         } else {
             let only_a = Expr::bin(Op::And, a_some.clone(), not(b_some.clone()));
             out.push(StmtKind::If(only_a, dropped_a, None).at(js_span));

@@ -687,7 +687,7 @@ export const mutations: Mutation[] = [
     name: "xor-both-undropped",
     breaks: "`Some(a).xor(Some(b))` leaves `a` and `b` undropped",
     file: "src/lower/combinators.rs",
-    find: "            out.push(StmtKind::If(both, [dropped_a, dropped_b].concat(), None).at(js_span));\n",
+    find: "            out.push(StmtKind::If(both, dropped, None).at(js_span));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unpaired_option_drops.rs$"],
   },
@@ -706,5 +706,13 @@ export const mutations: Mutation[] = [
     find: "            out.push(StmtKind::If(only_b, dropped_b, None).at(js_span));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unpaired_option_drops.rs$"],
+  },
+  {
+    name: "xor-cleanup-skipped-on-panic",
+    breaks: "where `xor`'s first dropped value's destructor panics, the second is never dropped",
+    file: "src/lower/combinators.rs",
+    find: "                false => vec![StmtKind::Try(dropped_a, dropped_b).at(js_span)],\n",
+    replace: "                false => [dropped_a, dropped_b].concat(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^xor_drop_panics.rs$"],
   },
 ];
