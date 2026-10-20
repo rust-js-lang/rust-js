@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "                writers_take_options: false,\n",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },
+  {
+    name: "library-old-abi-accepted",
+    breaks: "a library of the ABI before every `Rc` was counted is loaded as if it counted them",
+    file: "src/library.rs",
+    find: "            if library.version != VERSION {\n",
+    replace: "            if library.version != VERSION && library.version != 2 {\n",
+    tests: ["test/cargo-link.test.ts", "-t", "a real Cargo dependency links functions"],
+  },
 ];

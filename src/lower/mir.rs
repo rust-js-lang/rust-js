@@ -2927,18 +2927,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.is_cell_pointee(pointee)
             && (self.is_object(pointee) || self.iterator_given_as_it_is(pointee))
         {
-            // An `Rc` or a `Weak` is a pointer its owners share: the place
-            // given another, not the one it holds changed, which every
-            // owner would see.
-            // Of a guard's `value`, `*cell.borrow_mut() = w`, that place
-            // given it.
-            if self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some() {
-                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == js::HELD) {
-                    out.push(StmtKind::Assign(target, value).at(js_span));
-                    return Ok(());
-                }
-                return Err(self.unsupported(span, "an `Rc` or a `Weak` written through a `&mut`, from its MIR"));
-            }
             let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());

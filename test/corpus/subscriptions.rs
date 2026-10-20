@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A program's RAII: a subscription whose drop removes its handler from
 // its bus, held in a component's `Vec`, a bus an `Rc<RefCell<..>>` it
 // reaches by a `Weak`: each drops where Rust's does, a scope's end,

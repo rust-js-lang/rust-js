@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-pub const VERSION: u32 = 2;
+/// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
+/// library and in a crate that uses one (ADR 0523).
+pub const VERSION: u32 = 3;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

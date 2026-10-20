@@ -39,10 +39,12 @@ impl<'tcx> Counted<'tcx> {
 /// And an `Rc` of a value of a type parameter's, `Rc<RefCell<Buffer<I>>>`,
 /// where `params_may_drop`, a type may have a destructor: what it's made of
 /// may be one whose last clone drops it, so every `Rc` is (ADR 0494).
+/// And every `Rc` is where `shares_rcs`, a library or a crate using one,
+/// whose `Rc`s another crate shares, as one representation (ADR 0523).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    params_may_drop: bool,
+    (params_may_drop, shares_rcs): (bool, bool),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
     let mut types: HashSet<Ty<'tcx>> = HashSet::new();
@@ -120,7 +122,8 @@ pub(super) fn counted_rcs<'tcx>(
         }
         counted.types.extend(dropping);
     }
-    counted.all = counted.types.iter().any(|t| t.has_non_region_param())
+    counted.all = shares_rcs
+        || counted.types.iter().any(|t| t.has_non_region_param())
         || !counted.types.is_empty() && generic_rc
         || params_may_drop && holds_param;
     counted

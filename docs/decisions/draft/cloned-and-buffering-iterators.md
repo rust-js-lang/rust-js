@@ -131,7 +131,7 @@ There is no list of iterator names whose absence could mean either
 "unused" or "represented natively".
 
 The iterator owner answers this policy once, as the `Rc` owner answers
-[its stable library policy](counted-rcs-across-crates.md). Crate-defined
+[its stable library policy](../0523-libraries-share-one-counted-rc.md). Crate-defined
 iterators continue to use their Rust trait implementations; generic calls
 use existing dictionaries and bridges, not replacement std adapters.
 Library boundaries do not authorize calling capabilities rustc rejects.

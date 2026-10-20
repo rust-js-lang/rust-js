@@ -66,7 +66,7 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // rustc's key for it, with its JS name and the drops it's given.
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 2, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: 3, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate", drops: [] },
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, drops: [0] }],
     impls: ["ef56"], libraries: ["base"],
@@ -77,7 +77,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
   expect(mapped.library.inputs[0].file).toBe("/local/shared.rs");
   expect(mapped.library.items).toEqual(library.items);
   const item = library.items[0];
-  for (const invalid of [null, { ...library, version: 1 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
+  for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
     { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, drops: ["T"] }] },
     { ...library, items: [{ ...item, module: "root" }] }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");

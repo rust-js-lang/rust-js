@@ -904,11 +904,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::undefined()
             }
-            // `Rc::make_mut(&mut rc)` of a local `Rc` of this body: the local
-            // given the one `$makeMut` gives. Through a reference the place
-            // isn't here, which a variable given another would leave.
+            // `Rc::make_mut(&mut rc)` of a local `Rc` of this body, or one a
+            // `&mut` reaches, its place's box (ADR 0523): the place given the
+            // one `$makeMut` gives. Through a shared reference the place isn't
+            // here, which a variable given another would leave.
             Std::Rc(RcOp::MakeMut) => {
-                let place = self.value_expr(values.next().expect("the `Rc`"), span)?;
+                // `&mut rc` of a place: the place itself, not a box for it.
+                let place = match values.next().expect("the `Rc`") {
+                    Value::Ref(place) => place,
+                    value => self.value_expr(value, span)?,
+                };
                 let item = self.counted_rc(arg_tys[0].peel_refs());
                 // Of a variable of this body or a field of one, `copy.pages`.
                 let local = match root_var(&place) {
@@ -918,10 +923,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (Some(item), Some((local, _))) = (item, local) else {
                     return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
                 };
-                if state.body.local_kind(local) == LocalKind::Arg || state.body.local_decls[local].ty.is_ref() {
+                let local_ty = state.body.local_decls[local].ty;
+                let boxed =
+                    matches!(local_ty.kind(), ty::Ref(_, rc, ty::Mutability::Mut) if self.counted_rc(*rc).is_some());
+                if !boxed && (state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref()) {
                     return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
                 }
-                self.counted_here(item, span)?;
                 self.flush(state, out)?;
                 self.make_mut_values(place, item, span, out)?
             }

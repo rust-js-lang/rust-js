@@ -17,7 +17,7 @@ dropped as a function that drops nothing. Rust drops what it holds as the
 `Box` is dropped: a scope's end, a `Vec`'s `pop`, a map's replaced value.
 `subscriptions`, a handler `Box<dyn Fn>` holding an `Rc`, was one of the
 four gaps the [counted-`Rc`s-across-crates
-draft](draft/counted-rcs-across-crates.md)'s trial found.
+draft](0523-libraries-share-one-counted-rc.md)'s trial found.
 
 ## Decision
 

@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Dynamic(predicates, ..) if false && self.recognition().is_pair_dyn(predicates) => rc,\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
   },
+  {
+    name: "rc-op-of-mut-box",
+    breaks: "an `Rc`'s op given a `&mut` to one reads its box, not the `Rc`",
+    file: "src/lower/std_types/rc.rs",
+    find: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => Expr::held(rc),\n",
+    replace: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => rc,\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
 ];

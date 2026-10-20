@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A `dyn` of no trait but auto traits, `dyn Send`, is a pair as any `dyn`
 // is, whose dictionary is its value's drop alone: dropped where Rust drops
 // it, through a `Box`, a `Vec`, an `Rc` and an upcast (rustc's

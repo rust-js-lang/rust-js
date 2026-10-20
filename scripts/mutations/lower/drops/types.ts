@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: "                match self.closure_facts.fn_dyns_drop {\n                    true => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
+  {
+    name: "foreign-closure-drop-refused",
+    breaks: "a closure another crate gives back, holding a value with a destructor, is refused where it's dropped",
+    file: "src/lower/drops/types.rs",
+    find: "            || !closure.is_local() && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
+    replace: "            || false && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
 ];

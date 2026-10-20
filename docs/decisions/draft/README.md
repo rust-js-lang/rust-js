@@ -23,11 +23,11 @@ Estimated difficulty, hardest first; this is not implementation order:
 2. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md).
 3. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.
-4. [Libraries share one counted `Rc` representation](counted-rcs-across-crates.md).
 
-Suggested order: the library representation contract, iterators,
-panic support once its abort gate is resolved, then shipped crates one at
-a time. A std trait's associated-type drops are already accepted in
+Suggested order: iterators, panic support once its abort gate is
+resolved, then shipped crates one at a time. The library representation
+contract is accepted in
+[0523](../0523-libraries-share-one-counted-rc.md). A std trait's associated-type drops are already accepted in
 [0497](../0497-a-std-traits-dictionary-drops-its-associated-type.md); its
 former draft is no longer a separate proposal. `xor` and `zip`
 drops are accepted in

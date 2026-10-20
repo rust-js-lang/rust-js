@@ -7,7 +7,9 @@ is counted as the `Rc` it's made of (below); and by
 [0519](0519-a-cell-of-what-has-a-destructor.md): a `Cell` or a `OnceCell` of
 a value with a destructor is allowed, and drops it as Rust does; and by
 [0520](0520-a-counted-rc-of-a-dyn-is-its-pair.md): a counted `Rc<dyn T>` is
-its pair, `{ value, impl, strong, weak }`.
+its pair, `{ value, impl, strong, weak }`; and by
+[0523](0523-libraries-share-one-counted-rc.md): a library, and a crate using
+one, counts every `Rc`, and a `&mut` to a counted `Rc` is a cell.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), A for an `Rc`
 whose counts aren't read, D for one another crate may share.

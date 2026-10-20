@@ -131,25 +131,60 @@ test("a consumer given a library but not the libraries it uses is refused", () =
 // Two crates at a time (`test/crates/pairs/<case>/`): a library, `dep`, and an
 // `app` using it, for each thing crossing between them that a consumer must
 // be told, or must assume. Found in review: each had printed another answer.
+// Three at a time (`test/crates/triples/<case>/`): `dep`, `mid` using it, and
+// `app` using both, sharing what one makes through the others (ADR 0523).
 const pairs = join(root, "test", "crates", "pairs");
-for (const name of readdirSync(pairs).sort()) {
-  test(`two crates: ${name}`, () => {
-    const dir = fixture(`pair-${name}`);
-    const native = join(dir, "native"), out = join(dir, "js");
-    mkdirSync(native, { recursive: true });
-    const rustc = ["rustc", "--edition=2024", "-Coverflow-checks=off"];
-    run([...rustc, "--crate-type=rlib", "--crate-name", "dep", join(pairs, name, "dep.rs"), "-o", join(native, "libdep.rlib")]);
-    run([...rustc, "--crate-type=rlib", "--crate-name", "app", join(pairs, name, "app.rs"), "-o", join(native, "libapp.rlib"), "--extern", `dep=${join(native, "libdep.rlib")}`]);
-    writeFileSync(join(native, "main.rs"), "fn main() {\n    app::main();\n}\n");
-    run([...rustc, join(native, "main.rs"), "-o", join(native, "program"), "--extern", `app=${join(native, "libapp.rlib")}`, "-L", `dependency=${native}`]);
-    const lib = join(out, "dep");
-    run([compiler, join(pairs, name, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
-      "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
-    const app = join(out, "app", "lib.js");
-    run([compiler, join(pairs, name, "app.rs"), "-o", app, "--dependency", join(lib, "lib.manifest.json"), "--", "--crate-name", "app", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
-    expect(printed(app)).toBe(run([join(native, "program")]));
-  }, 300_000);
+const triples = join(root, "test", "crates", "triples");
+
+/** `crates` of `cases/name`, each a library of the ones before it but the
+ * last, the app, compiled natively and by rust-js: the app's JS prints what
+ * the native program does. */
+function chain(cases: string, name: string, crates: string[]) {
+  const dir = fixture(`${crates.length === 2 ? "pair" : "triple"}-${name}`);
+  const native = join(dir, "native"), out = join(dir, "js");
+  mkdirSync(native, { recursive: true });
+  const rustc = ["rustc", "--edition=2024", "-Coverflow-checks=off"];
+  crates.forEach((crate, i) => {
+    const externs = crates.slice(0, i).flatMap((used) => ["--extern", `${used}=${join(native, `lib${used}.rlib`)}`]);
+    run([...rustc, "--crate-type=rlib", "--crate-name", crate, join(cases, name, `${crate}.rs`), "-o", join(native, `lib${crate}.rlib`), ...externs, "-L", `dependency=${native}`]);
+  });
+  const app = crates[crates.length - 1];
+  writeFileSync(join(native, "main.rs"), `fn main() {\n    ${app}::main();\n}\n`);
+  run([...rustc, join(native, "main.rs"), "-o", join(native, "program"), "--extern", `${app}=${join(native, `lib${app}.rlib`)}`, "-L", `dependency=${native}`]);
+  crates.forEach((crate, i) => {
+    const used = crates.slice(0, i);
+    const library = i < crates.length - 1
+      ? ["--library", "--manifest", join(out, crate, "lib.manifest.json")]
+      : [];
+    const metadata = i < crates.length - 1 ? [`--emit=metadata=${join(out, crate, `lib${crate}.rmeta`)}`] : [];
+    run([compiler, join(cases, name, `${crate}.rs`), "-o", join(out, crate, "lib.js"), ...library,
+      ...used.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
+      "--", "--crate-name", crate, ...metadata,
+      ...used.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`, "-L", `dependency=${join(out, u)}`])]);
+  });
+  expect(printed(join(out, app, "lib.js"))).toBe(run([join(native, "program")]));
 }
+
+for (const name of readdirSync(pairs).sort()) {
+  test(`two crates: ${name}`, () => chain(pairs, name, ["dep", "app"]), 300_000);
+}
+for (const name of readdirSync(triples).sort()) {
+  test(`three crates: ${name}`, () => chain(triples, name, ["dep", "mid", "app"]), 300_000);
+}
+
+// A library edited to read an `Rc`'s count, its API the same: rebuilt with
+// its consumers, they share its counted `Rc`s as before, and print what
+// native Rust does (ADR 0523).
+test("a library that starts reading a count is what its consumers share once rebuilt", () => {
+  const cases = fixture("triples-edited");
+  cpSync(join(triples, "rc_shared"), join(cases, "rc_shared"), { recursive: true });
+  chain(cases, "rc_shared", ["dep", "mid", "app"]);
+  const dep = join(cases, "rc_shared", "dep.rs");
+  const read = 'println!("dep drops {} of {}", rc.0, Rc::strong_count(&rc));';
+  writeFileSync(dep, readFileSync(dep, "utf8").replace('println!("dep drops {}", rc.0);', read));
+  expect(readFileSync(dep, "utf8")).toContain(read);
+  chain(cases, "rc_shared", ["dep", "mid", "app"]);
+}, 300_000);
 
 // A library's generic function is given a drop for a type parameter only
 // where its body drops one, itself or through what it calls (ADR 0300): one

@@ -47,7 +47,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.is_unknown(ty) => return None,
             ty::Dynamic(predicates, ..)
                 if predicates.principal_def_id().is_none_or(|id| {
-                    id.is_local() && self.dyn_supported(id) || self.recognition().is_std_pair_trait(id)
+                    // The crate's own or a library's (ADR 0100), whose
+                    // `dyn` is its pair either way.
+                    self.recognition().is_rust_trait(id) && self.dyn_supported(id)
+                        || self.recognition().is_std_pair_trait(id)
                 }) =>
             {
                 return None;

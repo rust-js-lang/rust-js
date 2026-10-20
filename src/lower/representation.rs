@@ -238,8 +238,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !self.is_generic_iter(inner);
             return self.is_cell_pointee(inner) || plain_object;
         }
+        // A counted `Rc` or a `Weak` is an object its owners share: a `&mut`
+        // to one is a cell, so `*r = v` gives the place another (ADR 0523).
+        let shared = self.counted_rc(ty).is_some() || self.weak_of(ty).is_some();
         !self.is_unknown(ty)
-            && !self.is_object(ty)
+            && (!self.is_object(ty) || shared)
             // A `&mut dyn FnMut()` is the function (ADR 0099).
             && !self.is_callable(ty)
             && self.unsupported_part(ty).is_none()

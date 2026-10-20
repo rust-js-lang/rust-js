@@ -15,7 +15,7 @@ an `Rc<T>`'s `value` is `x`, its `dyn` clones' was the pair. No object
 could be both, so the downcast was refused, as were a `dyn Any`'s
 `downcast_mut` and an `Rc<dyn Any>`'s `downcast` where the `dyn` might
 hold a value with a destructor. These were two of the four gaps the
-[counted-`Rc`s-across-crates draft](draft/counted-rcs-across-crates.md)'s
+[counted-`Rc`s-across-crates draft](0523-libraries-share-one-counted-rc.md)'s
 trial found.
 
 ## Decision

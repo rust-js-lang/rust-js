@@ -203,6 +203,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => todo.push(ty),
             }
         }
+        // Each field's type in `def_id`'s own terms, as its signature is: in
+        // the caller's, `I::Item` could be the caller's `A`.
+        let own_env = ty::TypingEnv::non_body_analysis(self.tcx, def_id);
+        let field_ty = |field: &ty::FieldDef, args| {
+            let ty = field.ty(self.tcx, args).skip_normalization();
+            (self.tcx)
+                .try_normalize_erasing_regions(own_env, ty::Unnormalized::new_wip(ty))
+                .unwrap_or(ty)
+        };
         let mut seen = HashSet::new();
         while let Some(ty) = todo.pop() {
             for part in ty.walk().filter_map(|part| part.as_type()) {
@@ -230,7 +239,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let ty::Adt(adt, args) = *part.kind()
                     && !self.is_std(adt.did())
                 {
-                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));
+                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));
                 }
             }
         }

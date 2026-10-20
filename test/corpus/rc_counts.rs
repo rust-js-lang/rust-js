@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // An `Rc` whose counts the crate reads is `{ value, strong, weak }`, counted
 // as Rust counts it: cloned, dropped, downgraded, upgraded and unwrapped.
 

@@ -240,8 +240,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         Some(held)
     }
 
+    /// Whether a closure's drop drops what it holds whole: one that takes
+    /// no part of a value, or another crate's its maker gives back, which
+    /// carries its drop (ADRs 0484, 0523).
     fn takes_whole(&self, closure: DefId) -> bool {
         self.held(closure).is_some()
+            || !closure.is_local() && crate::lower::recognition::given_back(self.recognition.tcx, closure)
     }
 
     /// The parts a pattern moves out of what it's matched against, by value:

@@ -79,9 +79,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.counted_rc(first).or(self.weak_of(first))
         });
         let mut values = values.into_iter();
-        if let Some(pointee) = pointee {
-            self.counted_here(pointee, span)?;
-        }
         let helper = |name: &'static str, args: Vec<Expr>| Expr::call_helper(name, args);
         Ok(match op {
             RcOp::WeakNew => Expr::object(vec![
@@ -95,6 +92,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             RcOp::MakeMut => return Err(self.unsupported(span, "`Rc::make_mut`, of its value alone")),
             _ => {
                 let rc = values.next().expect("an `Rc`");
+                // A `&mut` to one is its place's box (ADR 0523).
+                let rc = match tys.first().map(|t| t.kind()) {
+                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => Expr::held(rc),
+                    _ => rc,
+                };
                 let item = pointee.expect("a counted `Rc` or a `Weak`");
                 match op {
                     RcOp::StrongCount | RcOp::WeakStrongCount => Expr::member(rc, "strong"),
@@ -155,16 +157,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A counted `Rc` of `pointee` here, which only this crate counts: not
-    /// one another crate may hold, a library's, or this one's if it's a
-    /// library, which would be its value there.
-    pub(in crate::lower) fn counted_here(&self, pointee: Ty<'tcx>, span: Span) -> R<()> {
-        match self.krate.library || self.crosses_crates(pointee) {
-            true => Err(self.unsupported(span, &format!("a counted `Rc<{pointee}>` another crate may share"))),
-            false => Ok(()),
-        }
-    }
-
     /// `Rc::new(x)` or `*rc` of a counted `Rc`, each `Std::Same` of one that
     /// isn't: `{ value: x, strong: 1, weak: 0 }`, or `rc.value`.
     pub(in crate::lower) fn counted_same(

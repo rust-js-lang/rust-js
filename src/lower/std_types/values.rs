@@ -390,15 +390,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             def_id,
             generic_args,
             tys,
-            span,
             ..
         } = call;
         let mut values = values.into_iter();
         // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
         // what it points at is its `value`.
         if known == Std::Same && self.counted_same_by(def_id, generic_args).is_some() {
-            let (_, pointee) = self.recognition().rc_same(def_id, generic_args).expect("an `Rc`'s");
-            self.counted_here(pointee, span)?;
             let value = values.next().expect("rustc checked the arguments");
             return Ok(self
                 .counted_same(def_id, generic_args, value)

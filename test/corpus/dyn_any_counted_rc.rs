@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A counted `Rc<dyn Any>` is its pair, `{ value, impl, strong, weak }`, so
 // a downcast is the same `Rc`, its counts shared with each clone left of
 // the `dyn`; one that fails gives it back (ADR 0520).

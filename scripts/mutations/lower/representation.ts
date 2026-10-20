@@ -485,4 +485,12 @@ export const mutations: Mutation[] = [
     replace: "            true => Expr::int(n),\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
+  {
+    name: "rc-mut-ref-is-object",
+    breaks: "a `&mut` to a counted `Rc` is the `Rc` its owners share, so writing one through it is refused",
+    file: "src/lower/representation.rs",
+    find: "            && (!self.is_object(ty) || shared)\n",
+    replace: "            && !self.is_object(ty)\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
 ];

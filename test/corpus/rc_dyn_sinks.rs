@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // An `Rc<RefCell<Counter>>` made an `Rc<RefCell<dyn Sink>>`, counted as
 // one of `Loud`, which another `Sink` is, drops (ADR 0320): it's counted
 // too, as the two share their counts, `strong_count` 2 of the `dyn`'s, and the

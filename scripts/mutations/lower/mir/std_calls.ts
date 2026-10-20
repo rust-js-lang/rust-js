@@ -674,4 +674,20 @@ export const mutations: Mutation[] = [
     replace: "                        Some(item) if false && self.is_boxable(item) => Expr::call_helper(\"$peekCell\", vec![it]),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
+  {
+    name: "make-mut-of-borrow-boxed",
+    breaks: "`Rc::make_mut(&mut rc)` of a variable is given a box for it, and refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    Value::Ref(place) => place,\n                    value => self.value_expr(value, span)?,\n",
+    replace: "                    value => self.value_expr(value, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_clone_sees_owners.rs$"],
+  },
+  {
+    name: "make-mut-through-mut-refused",
+    breaks: "`Rc::make_mut` of an `Rc` a `&mut` argument reaches is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                if !boxed && (state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref()) {\n",
+    replace: "                if state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref() {\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
 ];

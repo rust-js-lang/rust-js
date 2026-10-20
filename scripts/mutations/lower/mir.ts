@@ -1824,14 +1824,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
-    name: "mir-guard-rc-assign-refused",
-    breaks: "MIR's write of a `Weak` to a guard's `value` is refused",
-    file: "src/lower/mir.rs",
-    find: "                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == js::HELD) {\n",
-    replace: "                if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
-  },
-  {
     name: "mir-mut-temp-expr-spilled",
     breaks: "MIR's `&mut copy.pages` temporary is a `const` of the `Rc`, which `make_mut` can't give another",
     file: "src/lower/mir.rs",

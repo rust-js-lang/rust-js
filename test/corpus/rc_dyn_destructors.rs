@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // An `Rc<dyn T>` of a value with a destructor is a counted `Rc` of the
 // pair, `{ value: { value, impl }, strong, weak }`, made where the `Rc` is
 // made (ADR 0320): its methods are the pair's, and the last of it drops

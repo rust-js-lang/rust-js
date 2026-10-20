@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // An `Rc` of a value with a destructor is counted, as one whose counts are
 // read is (ADR 0320): the last of it drops what it points at, where Rust's
 // does, through a clone, a `Vec` of them, a `RefCell` in it, one a

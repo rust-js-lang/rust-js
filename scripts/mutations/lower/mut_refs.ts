@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "nested-mut-object-fields-unread",
     breaks: "a generic struct's `r: &mut T` field, built of an object by the caller, is read as a cell",
     file: "src/lower/mut_refs.rs",
-    find: "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));",
-    replace: "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)).filter(|_| false));",
+    find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));",
+    replace: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)).filter(|_| false));",
     tests: ["test/diagnostics.test.ts","-t","in a struct"],
   },
   {
@@ -146,5 +146,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call_helper(\"$writeOf\", vec![value]));\n",
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
+  {
+    name: "callee-fields-caller-terms",
+    breaks: "a generic function's fields are read in its caller's terms, whose type parameters it doesn't have, and rustc panics",
+    file: "src/lower/mut_refs.rs",
+    find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));\n",
+    replace: "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^callee_field_own_terms.rs$"],
   },
 ];

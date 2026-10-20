@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A count read of a concrete `Rc` in a crate with no destructor, where
 // generic code clones an `Rc` of its type parameter: every `Rc` is counted,
 // as the generic one may be the counted one (ADRs 0320, 0494).

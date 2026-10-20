@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // `as_deref()` of an `Rc` whose count is read, `{ value, strong, weak }`
 // (ADR 0320): its `value`, one layer of it.
 use std::rc::Rc;

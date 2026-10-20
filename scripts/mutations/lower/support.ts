@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "                let given = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
+  {
+    name: "library-dyn-refused",
+    breaks: "a library's trait's `dyn` is refused in its consumer",
+    file: "src/lower/support.rs",
+    find: "                    self.recognition().is_rust_trait(id) && self.dyn_supported(id)\n",
+    replace: "                    id.is_local() && self.dyn_supported(id)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: dyn_trait"],
+  },
 ];

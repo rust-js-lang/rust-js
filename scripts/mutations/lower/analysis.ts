@@ -234,4 +234,20 @@ export const mutations: Mutation[] = [
     replace: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, &foreign);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
   },
+  {
+    name: "consumer-rcs-uncounted",
+    breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts every one it shares",
+    file: "src/lower/analysis.rs",
+    find: "    let shares_rcs = library || foreign.any();\n",
+    replace: "    let shares_rcs = library;\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
+  {
+    name: "library-rcs-uncounted",
+    breaks: "a library counts only the `Rc`s it reads, though its consumers count every one",
+    file: "src/lower/analysis.rs",
+    find: "    let shares_rcs = library || foreign.any();\n",
+    replace: "    let shares_rcs = foreign.any();\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_shared"],
+  },
 ];

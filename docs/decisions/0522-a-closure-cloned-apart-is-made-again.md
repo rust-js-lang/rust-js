@@ -15,7 +15,7 @@ of one was the function itself where nothing could tell, a `Fn` holding no
 captured"). A clone of a `Fn` holding a counted `Rc` could tell: it counts
 one more, and drops on its own. It was the function itself, so counts and
 drops came out wrong. That was `closure_clone_shared` under the
-[counted-`Rc`s-across-crates draft](draft/counted-rcs-across-crates.md)'s
+[counted-`Rc`s-across-crates draft](0523-libraries-share-one-counted-rc.md)'s
 trial, the last of its four gaps.
 
 ## Decision

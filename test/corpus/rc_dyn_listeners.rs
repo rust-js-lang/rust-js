@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // Listeners, `Rc<RefCell<dyn Listener>>`, shared with their owner, beside a
 // tree whose parent is a `Weak`, which counts its `Rc`s (ADR 0320). No
 // implementor of `Listener` drops anything, so neither does a `dyn

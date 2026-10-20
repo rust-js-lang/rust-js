@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A lock holding a value with a destructor drops it with the lock, as a
 // `RefCell` does: alone, shared by an `Arc`, of a `Vec`, in a struct, and
 // taken out by `into_inner`.

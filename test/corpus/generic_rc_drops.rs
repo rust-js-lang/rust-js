@@ -1,4 +1,3 @@
-//@ library-refused: a std type holding a value with a destructor
 // An `Rc` of a type parameter's value, `Rc<RefCell<TeeBuffer<I::Item, I>>>`
 // as itertools' `tee` holds, in a crate where a type may have a destructor,
 // is counted, as every `Rc` is then: its last clone drops what it holds,

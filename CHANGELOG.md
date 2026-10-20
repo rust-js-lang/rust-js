@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A counted `Rc` in a library**: every `Rc` a library, or a crate
+  using one, has is counted, one representation they share; libraries
+  are ABI 3 (ADR 0523). And an `Rc` written through a `&mut`.
+- **A library's `dyn Trait` in its consumer** (ADR 0524).
 - **A clone of a closure that changes what it took, holds a `Cell`, or
   holds a counted `Rc`** (ADR 0522).
 - **A `Box<dyn Fn>` of a function holding a value with a destructor**

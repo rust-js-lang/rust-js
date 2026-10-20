@@ -548,10 +548,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
-    // destructor.
-    // Not a library's, whose counted `Rc` its consumers would share
-    // uncounted (ADR 0320).
+    // destructor (ADR 0320); every one, in a library or a crate using one,
+    // which share their `Rc`s (ADR 0523).
     let params_may_drop = !library && crate::lower::traits::may_have_destructors(tcx, &foreign);
+    let shares_rcs = library || foreign.any();
     let recognition = Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -559,7 +559,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         foreign: &foreign,
     };
     let counted_with = |closure_facts: &ClosureFacts| {
-        counted_rcs(tcx, all_bodies, params_may_drop, |counted, pointee| {
+        counted_rcs(tcx, all_bodies, (params_may_drop, shares_rcs), |counted, pointee| {
             super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee)
         })
     };

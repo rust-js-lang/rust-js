@@ -1,4 +1,3 @@
-//@ library-refused: another crate may share
 // A clone of a closure holding a counted `Rc` holds a clone of it, which
 // it drops on its own; one that changes what it took changes its own copy;
 // a `T: Clone` clones it too, and each drops its own (ADR 0522).
