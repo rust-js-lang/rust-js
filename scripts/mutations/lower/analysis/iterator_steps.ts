@@ -2,13 +2,14 @@
 import type { Mutation } from "../../../mutations";
 
 const adapters = ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"];
+const extensions = ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"];
 
 export const mutations: Mutation[] = [
   {
     name: "stepped-param-unseen",
     breaks: "an adapter's `next`, which steps its `I`, is given no dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    stepped.insert((caller, param.index));\n",
+    find: "                    stepped.extend(by.iter().map(|&by| (caller, param.index, by)));\n",
     replace: "",
     tests: adapters,
   },
@@ -24,8 +25,8 @@ export const mutations: Mutation[] = [
     name: "stepped-passed-on-unseen",
     breaks: "a function that passes its `I` to one that steps it is given no dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "            if stepped.contains(&to) && stepped.insert(from) {\n",
-    replace: "            if false && stepped.contains(&to) && stepped.insert(from) {\n",
+    find: "                if stepped.insert((from.0, from.1, by)) {\n",
+    replace: "                if false && stepped.insert((from.0, from.1, by)) {\n",
     tests: adapters,
   },
   {
@@ -35,6 +36,47 @@ export const mutations: Mutation[] = [
     find: "                    given_as_it_is(tcx, id, ty::ParamTy::new(param.index, param.name))\n",
     replace: "                    true\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "stepped-given-adapter-unseen",
+    breaks: "`chain(iter)` of an `I` given as it is gives no dictionary for it, and spreads its value as a JS iterator",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        stepped.insert((caller, param.index, iterator));\n",
+    replace: "",
+    tests: extensions,
+  },
+  {
+    name: "stepped-asked-extension-unseen",
+    breaks: "`rev()` of an `I` given as it is, whose `Self: DoubleEndedIterator` it asks, is given no `DoubleEndedIterator` dictionary",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))\n",
+    replace: "                        .filter(|_| false)\n",
+    tests: extensions,
+  },
+  {
+    name: "stepped-extension-unseen",
+    breaks: "`next_back(&mut it)` of an `I` given as it is is given no `DoubleEndedIterator` dictionary",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                Some(tr) if is_iterator_extension(tcx, tr) => vec![tr],\n",
+    replace: "",
+    tests: extensions,
+  },
+  {
+    name: "stepped-as-js-iterator-unseen",
+    breaks: "an `I` given as it is passed to `last<K: DoubleEndedIterator>` is given no dictionary for its back",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                .chain(as_js_iterator(to))\n",
+    replace: "",
+    tests: extensions,
+  },
+  {
+    name: "stepped-by-every-trait",
+    breaks: "`back(ends)`, which only steps its `I` from its back, is given its `Iterator` dictionary too",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                Some(tr) if is_iterator_extension(tcx, tr) => vec![tr],\n",
+    replace: "                Some(tr) if is_iterator_extension(tcx, tr) => vec![iterator, tr],\n",
+    tests: ["test/corpus.test.ts", "-t", "^next_back_generic.rs$"],
     snapshots: true,
   },
 ];

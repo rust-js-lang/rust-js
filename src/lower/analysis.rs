@@ -364,9 +364,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub drop_params: HashMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
     pub copied: HashSet<(DefId, u32)>,
-    /// The type parameters given as they are whose `Iterator` dictionary is
-    /// given, as they're stepped (ADR 0411).
-    pub stepped: HashSet<(DefId, u32)>,
+    /// The type parameters given as they are whose `Iterator` dictionary,
+    /// or an extension's, is given, as they're stepped by it (ADRs 0411,
+    /// 0487), with the trait's id.
+    pub stepped: HashSet<(DefId, u32, DefId)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,

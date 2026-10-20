@@ -273,11 +273,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"))),
                 };
             }
-            if std_method == Some(IterMethod::Rev) && self.knows_its_back(iter_ty) {
-                return Ok(Some(self.reversed(receiver, iter_ty)));
-            }
             let range = self.range_kind(iter_ty);
             return Ok(Some(match (std_method, range) {
+                (Some(IterMethod::Rev), None) if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 (Some(IterMethod::Rev), Some(kind)) if let Some(step) = kind.step(true) => {
                     self.stepped_by(receiver, Expr::helper(step))
                 }
@@ -876,30 +874,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())))
     }
 
-    /// `rev()` of `it`, a generic or a `dyn` iterator of type `iter_ty` that
-    /// knows its back (ADR 0429): a JS iterator stepped by `$nextBack`, its
-    /// `Some` boxed where it may look like `None` (ADR 0051).
-    fn reversed(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
+    /// `rev()` of `it`, a generic or a `dyn` iterator of type `iter_ty`: a
+    /// JS iterator stepped from its back, its `Some` boxed where it may look
+    /// like `None` (ADR 0051); of one that knows its back, by `$nextBack`
+    /// (ADR 0429), of a type parameter's given as it is, by its
+    /// `DoubleEndedIterator` dictionary's `next_back` (ADR 0487). `None` of
+    /// another.
+    fn reversed(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
         let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
-        let back = Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" });
-        crate::lower::iterators::stepped(it, back, boxed, None)
+        let back = match self.knows_its_back(iter_ty) {
+            true => Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }),
+            false => {
+                let double_ended = self.recognition().double_ended_iterator()?;
+                Expr::member(self.iterator_evidence(iter_ty, double_ended)?, "next_back")
+            }
+        };
+        Some(crate::lower::iterators::stepped(it.clone(), back, boxed, None))
     }
 
     /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
     /// to it, it itself, which its own `next` steps; and of a type parameter
     /// given as it is, with its `Iterator` dictionary (ADR 0411), `by_ref()`
-    /// and `into_iter()`, itself, and `next(&mut it)`, the dictionary's.
+    /// and `into_iter()`, itself, and `next(&mut it)`, the dictionary's, as
+    /// `next_back(&mut it)` and `len(&it)` are its extensions' (ADR 0487).
     fn given_iterator_call(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, values: &[Expr]) -> Option<Expr> {
         let receiver = values.first()?.clone();
         if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {
             return Some(receiver);
         }
-        let dictionary = self.iterator_evidence(iter_ty)?;
-        match method? {
-            IterMethod::Next => Some(Expr::call(Expr::member(dictionary, "next"), vec![receiver])),
-            IterMethod::ByRef | IterMethod::IntoIter => Some(receiver),
-            _ => None,
-        }
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let (trait_id, entry) = match method? {
+            IterMethod::ByRef | IterMethod::IntoIter => {
+                self.iterator_evidence(iter_ty, iterator)?;
+                return Some(receiver);
+            }
+            IterMethod::Next => (iterator, "next"),
+            IterMethod::NextBack => (self.recognition().double_ended_iterator()?, "next_back"),
+            IterMethod::Len => (self.recognition().exact_size_iterator()?, "len"),
+            _ => return None,
+        };
+        let dictionary = self.iterator_evidence(iter_ty, trait_id)?;
+        Some(Expr::call(Expr::member(dictionary, entry), vec![receiver]))
     }
 
     /// The iterator `it`, of type `iter_ty`, a method is called on, of items
@@ -1099,15 +1114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // One given its dictionary, stepped by it, its `Some` unboxed
             // (ADR 0411).
-            None if let Some(dictionary) = self.iterator_evidence(ty) => {
-                let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-                Ok(crate::lower::iterators::stepped(
-                    value,
-                    Expr::member(dictionary, "next"),
-                    boxed,
-                    None,
-                ))
-            }
+            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(it),
             // A type parameter's, which may be given an array (ADR 0061): JS's
             // iterator of it. An associated type's is what a dictionary
             // gives, a JS iterator already.

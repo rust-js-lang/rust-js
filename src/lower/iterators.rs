@@ -462,6 +462,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
             return Ok(value);
         }
+        if let Some(it) = self.given_js_iterator(value.clone(), ty, back, true) {
+            return Ok(it);
+        }
         // A copy of one, which it is (ADR 0480).
         if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
             return self.as_exact_size(value, source, back, span);
@@ -497,6 +500,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = self.reveal(ty);
         if self.knows_its_back(ty) {
             return Ok(value);
+        }
+        if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
+            return Ok(it);
         }
         // A copy of one, which it is (ADR 0480).
         if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
@@ -610,9 +616,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((next, boxed))
     }
 
-    /// The `Iterator` dictionary this function was given for `ty`, a type
-    /// parameter given as it is (ADR 0411).
-    pub(super) fn iterator_evidence(&self, ty: ty::Ty<'tcx>) -> Option<Expr> {
+    /// The dictionary this function was given for `ty`, a type parameter
+    /// given as it is, of its bound `trait_id`: `Iterator`'s (ADR 0411), or
+    /// an extension's, `DoubleEndedIterator`'s or `ExactSizeIterator`'s
+    /// (ADR 0487).
+    pub(super) fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
         let ty = ty.peel_refs();
         // Only of one given as it is: another's is a JS iterator (ADR 0061),
         // whatever bound names `Iterator`, a supertrait's too.
@@ -622,8 +630,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param) {
             return None;
         }
-        let iterator = std_item(self.tcx, StdItem::Iterator);
-        self.evidence_for(ty::TraitRef::new(self.tcx, iterator, [ty]))
+        self.evidence_for(ty::TraitRef::new(self.tcx, trait_id, [ty]))
+    }
+
+    /// `value`, of `ty`, a type parameter given as it is, as a JS iterator
+    /// stepped by its dictionaries (ADRs 0411, 0487): `$iterator(it,
+    /// IIterator.next, boxed)`, given its back, `IDoubleEndedIterator.next_back`,
+    /// and its length, `IExactSizeIterator.len`, where `back` and `len` ask
+    /// them. `None` of another, or of one not given what's asked.
+    pub(in crate::lower) fn given_js_iterator(&self, value: Expr, ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
+        let dictionary = self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator))?;
+        let entry = |asked: bool, trait_id: Option<DefId>, name: &str| -> Option<Option<Expr>> {
+            match asked {
+                true => Some(Some(Expr::member(self.iterator_evidence(ty, trait_id?)?, name))),
+                false => Some(None),
+            }
+        };
+        let back = entry(back, self.recognition().double_ended_iterator(), "next_back")?;
+        let len = entry(len, self.recognition().exact_size_iterator(), "len")?;
+        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+        Some(stepped_ends(value, Expr::member(dictionary, "next"), boxed, back, len))
+    }
+
+    /// `ty`'s dictionary of an iterator's extension trait, `trait_id`, given
+    /// generic code that steps it as it is (ADR 0487): `DoubleEndedIterator`'s,
+    /// `{ next_back }`, a range's `$rangeNextBack`, the crate's own its
+    /// impl's, a JS iterator's that knows its back `$nextBack`; and
+    /// `ExactSizeIterator`'s, `{ len }`, a range's `$rangeLen`, the crate's
+    /// own its impl's, a JS iterator's that knows it its own `len()`.
+    pub(super) fn iterator_extension_dictionary(&mut self, trait_id: DefId, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        let range = self.range_kind(ty);
+        let (name, entry) = match super::recognition::is_double_ended(self.tcx, trait_id) {
+            true => {
+                let back = match range {
+                    Some(kind) => kind.step(true).map(Expr::helper),
+                    None if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, "next_back", span)?.0),
+                    None if self.steps_an_array(ty) || self.knows_its_back(ty) => {
+                        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+                        Some(Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }))
+                    }
+                    None => None,
+                };
+                ("next_back", back)
+            }
+            false => {
+                let len = match range {
+                    Some(RangeKind::Exclusive) => Some(Expr::helper("$rangeLen")),
+                    Some(_) => None,
+                    None if self.is_user_iterator(ty) => {
+                        let mut made = Vec::new();
+                        let len = self.exact_len_of(Expr::var("iterator"), ty, span, &mut made)?;
+                        made.is_empty().then(|| {
+                            Expr::arrow(
+                                vec!["iterator".into()],
+                                vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
+                            )
+                        })
+                    }
+                    None if self.steps_an_array(ty) || self.knows_its_length(ty) => {
+                        let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
+                        Some(Expr::arrow(
+                            vec!["iterator".into()],
+                            vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
+                        ))
+                    }
+                    None => None,
+                };
+                ("len", len)
+            }
+        };
+        match entry {
+            Some(entry) => Ok(Expr::object(vec![js::Prop::Field(name.into(), entry)])),
+            None => Err(self.unsupported(span, &format!("the `{}` of a `{ty}`", self.tcx.item_name(trait_id)))),
+        }
     }
 
     /// `ty`'s `Iterator` dictionary, `{ next }` (ADR 0411): its `next`

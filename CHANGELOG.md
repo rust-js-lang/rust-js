@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`next_back()`, `len()` and `rev()` of an iterator given as it is**, by
+  its `DoubleEndedIterator` and `ExactSizeIterator` dictionaries, and one
+  given on where its back or length is asked, or to `chain` (ADR 0487).
 - **`get_or_insert_with`, `insert`, `take_if` and the rest of an
   `Option<Option<T>>`'s place-changing methods**, through its `Some`'s box
   (ADR 0486).

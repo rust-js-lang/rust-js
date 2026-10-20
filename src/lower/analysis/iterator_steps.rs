@@ -1,9 +1,10 @@
 //! Which type parameters given as they are, with an `Iterator` dictionary
-//! (ADR 0411), each function steps: it's given the dictionary only then, as
-//! a parameter nothing steps needs none.
+//! (ADR 0411), or an extension's, `DoubleEndedIterator`'s or
+//! `ExactSizeIterator`'s (ADR 0487), each function steps by each: it's given
+//! a dictionary only then, as a parameter nothing steps by it needs none.
 
 use crate::lower::iterators::given_as_it_is;
-use crate::lower::recognition::{StdItem, is_std_def, std_item, trait_method};
+use crate::lower::recognition::{StdItem, is_iterator_extension, is_std_def, std_item, trait_method};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
@@ -11,18 +12,20 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
-/// Each `(function, parameter)` whose `Iterator` dictionary is given: one
-/// given as it is that the function steps, an `Iterator` method of a value
-/// of it, the crate's iterator holding it, or a function it's passed to
-/// that does. An impl's, of its dictionary, if any of its items does.
+/// Each `(function, parameter, trait)` whose dictionary is given: one given
+/// as it is that the function steps by the trait, a method of it of a value
+/// of it, `Iterator`'s of an `IntoIterator`'s, or of another iterator it's
+/// given to, `chain(it)`'s; the crate's iterator holding it, or a function
+/// it's passed to that does. An impl's, of its dictionary, if any of its
+/// items does.
 pub(in crate::lower) fn stepped_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
-) -> HashSet<(DefId, u32)> {
+) -> HashSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
-    let mut stepped: HashSet<(DefId, u32)> = HashSet::new();
+    let mut stepped: HashSet<(DefId, u32, DefId)> = HashSet::new();
     // A caller's parameter given on as a callee's, which steps it if that does.
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
     for body in all_bodies {
@@ -41,14 +44,36 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
-            let of_iterator = tcx
-                .trait_of_assoc(callee)
-                .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator) || is_std_def(tcx, tr, StdItem::IntoIterator));
-            if of_iterator && let Some(self_ty) = args.types().next() {
+            // What it steps by: `Iterator`, of its own methods and
+            // `IntoIterator`'s, with the extensions one asks of its `Self`,
+            // `rev()`'s `DoubleEndedIterator`; or an extension, of
+            // `next_back` or `len`.
+            let by: Vec<DefId> = match tcx.trait_of_assoc(callee) {
+                Some(tr) if is_std_def(tcx, tr, StdItem::Iterator) || is_std_def(tcx, tr, StdItem::IntoIterator) => {
+                    let self_param = ty::Ty::new_param(tcx, 0, rustc_span::symbol::kw::SelfUpper);
+                    let asked = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+                        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+                        .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))
+                        .map(|p| p.def_id());
+                    std::iter::once(iterator).chain(asked).collect()
+                }
+                Some(tr) if is_iterator_extension(tcx, tr) => vec![tr],
+                _ => Vec::new(),
+            };
+            if !by.is_empty()
+                && let Some(self_ty) = args.types().next()
+            {
                 let self_ty = self_ty.peel_refs();
+                // Another iterator it's given, `chain(other)`'s, stepped
+                // with it.
+                for given in args.types().skip(1) {
+                    if let ty::Param(param) = given.peel_refs().kind() {
+                        stepped.insert((caller, param.index, iterator));
+                    }
+                }
                 // A value of the parameter itself, stepped.
                 if let ty::Param(param) = self_ty.kind() {
-                    stepped.insert((caller, param.index));
+                    stepped.extend(by.iter().map(|&by| (caller, param.index, by)));
                     continue;
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`.
@@ -87,24 +112,61 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         .keys()
         .filter_map(|&id| Some((id, tcx.trait_impl_of_assoc(id)?)))
         .collect();
+    // A parameter given as a JS iterator (ADR 0061), not as it is, takes
+    // one made of the dictionaries its bounds ask: its `Iterator`'s, and its
+    // extensions', its back and its length (ADR 0487).
+    let as_js_iterator = |(id, index): (DefId, u32)| -> Vec<DefId> {
+        let generics = tcx.generics_of(id);
+        if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) || generics.count() <= index as usize {
+            return Vec::new();
+        }
+        let param = generics.param_at(index as usize, tcx);
+        if !matches!(param.kind, ty::GenericParamDefKind::Type { .. }) {
+            return Vec::new();
+        }
+        let param = ty::ParamTy::new(param.index, param.name);
+        let bounds: Vec<DefId> = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .filter(|p| p.self_ty().skip_binder() == param.to_ty(tcx))
+            .map(|p| p.def_id())
+            .collect();
+        let iterates = bounds
+            .iter()
+            .any(|&tr| tr == iterator || is_iterator_extension(tcx, tr));
+        if !iterates || given_as_it_is(tcx, id, param) {
+            return Vec::new();
+        }
+        let extensions = bounds.into_iter().filter(|&tr| is_iterator_extension(tcx, tr));
+        std::iter::once(iterator).chain(extensions).collect()
+    };
     let mut changed = true;
     while changed {
         changed = false;
         for &(from, to) in &passed {
-            if stepped.contains(&to) && stepped.insert(from) {
-                changed = true;
+            let by: Vec<DefId> = (stepped.iter())
+                .filter(|&&(id, index, _)| (id, index) == to)
+                .map(|&(.., by)| by)
+                .chain(as_js_iterator(to))
+                .collect();
+            for by in by {
+                if stepped.insert((from.0, from.1, by)) {
+                    changed = true;
+                }
             }
         }
         for &(item, imp) in &items {
-            let asked: Vec<u32> = stepped.iter().filter(|(id, _)| *id == item).map(|&(_, i)| i).collect();
-            for index in asked {
-                if stepped.insert((imp, index)) {
+            let asked: Vec<(u32, DefId)> = (stepped.iter())
+                .filter(|(id, ..)| *id == item)
+                .map(|&(_, index, by)| (index, by))
+                .collect();
+            for (index, by) in asked {
+                if stepped.insert((imp, index, by)) {
                     changed = true;
                 }
             }
         }
     }
-    stepped.retain(|&(id, index)| {
+    stepped.retain(|&(id, index, _)| {
         matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn | DefKind::Impl { .. })
             && tcx.generics_of(id).count() > index as usize
             && match tcx.generics_of(id).param_at(index as usize, tcx).kind {

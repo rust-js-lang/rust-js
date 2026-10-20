@@ -976,7 +976,7 @@ export const mutations: Mutation[] = [
     name: "iterator-bound-not-evidence",
     breaks: "an adapter's `I: Iterator` takes no dictionary, so its `next` has none to step `I` by",
     file: "src/lower/traits.rs",
-    find: "        return given.stepped.contains(&(id, param.index)).then_some(tr);\n",
+    find: "        return given.stepped.contains(&(id, param.index, tr.def_id)).then_some(tr);\n",
     replace: "        return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
@@ -1740,5 +1740,13 @@ export const mutations: Mutation[] = [
     find: "            let mut props = vec![Prop::Field(\"borrow_mut\".into(), same)];\n",
     replace: "            let mut props: Vec<Prop> = vec![Prop::Field(\"borrowed\".into(), same)];\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
+  },
+  {
+    name: "extension-bound-undictionaried",
+    breaks: "an `I` given as it is is given no `DoubleEndedIterator` or `ExactSizeIterator` dictionary, and its `len()` is refused",
+    file: "src/lower/traits.rs",
+    find: "    if (is_std_def(tcx, tr.def_id, StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, tr.def_id))\n",
+    replace: "    if is_std_def(tcx, tr.def_id, StdItem::Iterator)\n",
+    tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
 ];

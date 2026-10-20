@@ -713,12 +713,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => it,
                 };
                 // Another iterator it's given, `chain(Counter(0))`'s, the
-                // crate's: stepped by its own `next`, not its fields; one that
-                // owns items with a destructor, `zip(v)`'s, `$closing`.
+                // crate's: stepped by its own `next`, not its fields, as a
+                // type parameter's given as it is is by its dictionary (ADR
+                // 0487); one that owns items with a destructor, `zip(v)`'s,
+                // `$closing`.
                 let mut exprs = (exprs.into_iter().zip(&arg_tys[1..]))
                     .map(|(e, &ty)| {
                         let user = self.is_user_iterator(ty);
-                        let e = match user {
+                        let e = match user || self.iterator_given_as_it_is(ty.peel_refs()) {
                             true => self.as_js_iterator(e, ty.peel_refs(), span)?,
                             false => e,
                         };

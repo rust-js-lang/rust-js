@@ -122,11 +122,12 @@ fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
 /// (ADR 0201).
 /// What the crate's analyses say of its type parameters' bounds: those
 /// whose `Copy` takes a copy function (ADR 0289), and those whose
-/// `Iterator` is given its dictionary (ADR 0411), by their indices.
+/// `Iterator`, or an extension of it, is given its dictionary (ADRs 0411,
+/// 0487), by their indices, with the trait's.
 #[derive(Clone, Copy)]
 pub(super) struct Given<'a> {
     pub copied: &'a HashSet<(DefId, u32)>,
-    pub stepped: &'a HashSet<(DefId, u32)>,
+    pub stepped: &'a HashSet<(DefId, u32, DefId)>,
 }
 
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a
@@ -378,11 +379,11 @@ fn bound_of<'tcx>(
         return None;
     }
     // An `Iterator` a type holds or a function gives back: its dictionary,
-    // which steps it as it is (ADR 0411).
-    if is_std_def(tcx, tr.def_id, StdItem::Iterator)
+    // which steps it as it is (ADR 0411), and its extensions' (ADR 0487).
+    if (is_std_def(tcx, tr.def_id, StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, tr.def_id))
         && let ty::Param(param) = tr.self_ty().kind()
     {
-        return given.stepped.contains(&(id, param.index)).then_some(tr);
+        return given.stepped.contains(&(id, param.index, tr.def_id)).then_some(tr);
     }
     (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }
@@ -1321,6 +1322,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
             return self.iterator_dictionary(tr.self_ty(), span);
+        }
+        // An iterator's extension's, of one given as it is (ADR 0487).
+        if super::recognition::is_iterator_extension(self.tcx, tr.def_id) {
+            return self.iterator_extension_dictionary(tr.def_id, tr.self_ty(), span);
         }
         // `Any`'s: its type's key, `{ type_id: () => "i32" }` (ADR 0331).
         if any_trait(self.tcx) == Some(tr.def_id) {
