@@ -105,7 +105,7 @@ function fill() {
           from,
         );
       });
-      console.log(`[${modes.map((item) => item).join(", ")}]`);
+      console.log(`[${modes.join(", ")}]`);
     } finally {
       for (const item of none) {
         loudDrop_drop(item);

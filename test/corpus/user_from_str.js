@@ -114,7 +114,7 @@ function main() {
   console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`}`);
   const roles = $collectResults(["admin", "member"].values().map((s) => roleFromStr_from_str(s)));
   console.log(
-    `${roles.TAG === "Ok" ? `Ok([${roles._0.map((item) => item).join(", ")}])` : `Err(${$debugStr(roles._0)})`}`,
+    `${roles.TAG === "Ok" ? `Ok([${roles._0.join(", ")}])` : `Err(${$debugStr(roles._0)})`}`,
   );
 
   const value$4 = pointFromStr_from_str("3, 4");

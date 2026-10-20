@@ -456,7 +456,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Copied) => it,
             Some(IterMethod::Cloned) => match item {
-                Some(item) if self.is_copy(item.peel_refs()) => it,
+                Some(item) if !self.needs_clone(item.peel_refs()) => it,
                 Some(item) => {
                     let x = self.fresh("item");
                     let mut body = Vec::new();

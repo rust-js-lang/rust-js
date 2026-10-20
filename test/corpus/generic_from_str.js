@@ -92,7 +92,7 @@ function main() {
   );
   const value$6 = parse_all(["lb", "st"], unitFromStr());
   console.log(
-    `${value$6.TAG === "Ok" ? `Ok([${value$6._0.map((item) => item).join(", ")}])` : `Err(${$debugStr(value$6._0)})`}`,
+    `${value$6.TAG === "Ok" ? `Ok([${value$6._0.join(", ")}])` : `Err(${$debugStr(value$6._0)})`}`,
   );
   console.log(
     `${explain("ab", { from_str: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr(), unitDebug(), { fmt: (value) => $debugStr(value) })} | ${explain(

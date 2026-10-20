@@ -637,4 +637,12 @@ export const mutations: Mutation[] = [
     replace: "                let held = some;\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
+  {
+    name: "debug-list-maps-itself",
+    breaks: "`{:?}` of a list of unit enums maps each to itself before `join`",
+    file: "src/lower/display.rs",
+    find: "        let mapped = match each_its_own {\n",
+    replace: "        let mapped = match false {\n",
+    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+  },
 ];

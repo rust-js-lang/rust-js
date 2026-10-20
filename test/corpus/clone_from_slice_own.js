@@ -69,6 +69,6 @@ function main() {
       from,
     );
   });
-  console.log(`[${lights.map((item) => item).join(", ")}]`);
+  console.log(`[${lights.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -1023,4 +1023,12 @@ export const mutations: Mutation[] = [
     replace: "                        .is_some()\n",
     tests: ["test/diagnostics.test.ts", "-t", "reversing a zip"],
   },
+  {
+    name: "cloned-strings-mapped",
+    breaks: "`cloned()` of strings maps each to itself",
+    file: "src/lower/mir/iter.rs",
+    find: "                Some(item) if !self.needs_clone(item.peel_refs()) => it,\n",
+    replace: "                Some(item) if self.is_copy(item.peel_refs()) => it,\n",
+    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+  },
 ];

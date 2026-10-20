@@ -434,7 +434,7 @@ function main() {
       console.log(`${line} !! ${calcErrorDisplay_fmt(value._0)}`);
     }
   }
-  const names = Array.from(calc.vars.keys()).map((item) => item);
+  const names = Array.from(calc.vars.keys());
   names.sort($cmp);
   console.log(`${names.join(", ")}`);
 }

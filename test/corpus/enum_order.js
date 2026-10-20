@@ -22,7 +22,7 @@ function main() {
   const value = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const arg = $cmpIn(["Below", "Low", "High"], "Low", "High");
   console.log(
-    `[${levels.map((item) => item).join(", ")}] ${value == null ? "None" : `Some(${value})`} ${
+    `[${levels.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${
       ["Less", "Equal", "Greater"][arg + 1]
     }`,
   );

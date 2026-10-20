@@ -28,6 +28,21 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   expect(js).not.toContain("$rcClone(logger)");
 });
 
+// ADR 0508: no `.map((item) => item)`: a list of unit enums is shown by
+// `join` alone, and `cloned()` of strings is the strings.
+test("no item is mapped to itself", () => {
+  const dir = fixture("no-identity-maps");
+  writeFileSync(join(dir, "enums.rs"), readFileSync(join(root, "test/corpus/enum_order.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  writeFileSync(join(dir, "calc.rs"), readFileSync(join(root, "test/corpus/calculator.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "enums.rs"), "-o", join(dir, "enums.js")]);
+  run([compiler, join(dir, "calc.rs"), "-o", join(dir, "calc.js")]);
+  const enums = readFileSync(join(dir, "enums.js"), "utf8");
+  const calc = readFileSync(join(dir, "calc.js"), "utf8");
+  expect(enums).toContain("`[${levels.join(\", \")}] ${value == null");
+  expect(calc).toContain("const names = Array.from(calc.vars.keys());");
+  expect(enums + calc).not.toContain(".map((item) => item)");
+});
+
 // ADR 0489: an iterator's items no caller gives a drop for drop nothing,
 // as a type parameter's none's given for: `counted(0..3)`'s `count()` is
 // `(n) => n + 1`, not a hook for a drop no dictionary has.

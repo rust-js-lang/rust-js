@@ -1608,7 +1608,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::index(Expr::object(table), value)
     }
 
-    /// A sequence's `{:?}`: `"[" + items.map((item) => ..).join(", ") + "]"`.
+    /// A sequence's `{:?}`: `"[" + items.map((item) => ..).join(", ") + "]"`;
+    /// of items each their own text, a unit enum's name, `items.join(", ")`
+    /// (ADR 0508).
     fn debug_items(
         &mut self,
         items: Expr,
@@ -1619,6 +1621,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
     ) -> R<Expr> {
         let shown = self.debug_string_with(Expr::var("item"), item, span, pretty)?;
+        let each_its_own = is_var(&shown, "item");
         let f = Expr::arrow(
             vec!["item".into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
@@ -1628,7 +1631,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             items
         };
-        let mapped = Expr::call(Expr::member(items, "map"), vec![f]);
+        let mapped = match each_its_own {
+            true => items,
+            false => Expr::call(Expr::member(items, "map"), vec![f]),
+        };
         let joined = Expr::call(Expr::member(mapped.clone(), "join"), vec![Expr::str(", ")]);
         let plain = join(vec![Expr::str(open), joined, Expr::str(close)]);
         Ok(self.pretty_or(pretty, plain, open, mapped, close))

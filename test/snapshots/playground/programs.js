@@ -41,7 +41,7 @@ export function link(files) {
   const imports = /^import ([^;]+?) from "([^"]+)";/gm;
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
   const entries = [];
-  for (const [path, code] of files.values().map((item) => item)) {
+  for (const [path, code] of files) {
     const from = path;
     const body = code.replace(imports, (_, names, specifier) => {
       const target = JSON.stringify(`rust-js:${resolve(from, specifier)}`);
@@ -125,7 +125,7 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
       }
       return [path, code];
     });
-  $extend(sources, Array.from(modules.values().map((item) => item)));
+  $extend(sources, Array.from($iter(modules)));
   let runnable;
   if (test) {
     runnable = tests;
