@@ -55,8 +55,9 @@ pub(in crate::lower) fn stepped_ends(
 /// only itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
-    // Bound by `Iterator` itself, as `bounds` reads its clauses, which make
-    // its evidence: not by a trait it's a supertrait of.
+    // Bound by `Iterator` itself, or an extension of it, whose `Iterator`
+    // `bounds` gives it (ADR 0488), as `bounds` reads its clauses, which
+    // make its evidence: not by another trait it's a supertrait of.
     let iterator = std_item(tcx, StdItem::Iterator);
     let of_param: Vec<DefId> = tcx
         .clauses_of(id)
@@ -66,7 +67,10 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         .filter(|p| p.self_ty().skip_binder() == Ty::new_param(tcx, param.index, param.name))
         .map(|p| p.def_id())
         .collect();
-    if !of_param.contains(&iterator) {
+    if !of_param
+        .iter()
+        .any(|&tr| tr == iterator || super::recognition::is_iterator_extension(tcx, tr))
+    {
         return false;
     }
     // A bound whose methods read its value as its own type, `Clone`'s or
@@ -387,11 +391,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         // A map of one, made one that knows its back too, `$mapEnds` (ADR
-        // 0455); a copy of one, which it is (ADR 0480).
+        // 0455); a copy of one, which it is (ADR 0480); of a type parameter
+        // given as it is, of the JS iterator made of it (ADR 0488).
         if let Some(source) =
             super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
         {
-            return self.knows_its_back(source);
+            return self.knows_its_back(source)
+                || self.made_knowing(source, self.recognition().double_ended_iterator());
         }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
             return super::recognition::is_double_ended(self.tcx, id);
@@ -435,6 +441,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param))
     }
 
+    /// Whether an adapter of `source`, a type parameter given as it is, is
+    /// one of a JS iterator that knows what `extension` asks, its back or its
+    /// length: made of it by `given_js_iterator`, asked what it's given, a
+    /// map's by `back_kept` (ADR 0488). Not `source`'s own value, its
+    /// caller's.
+    fn made_knowing(&self, source: ty::Ty<'tcx>, extension: Option<DefId>) -> bool {
+        let source = source.peel_refs();
+        matches!(source.kind(), ty::Param(_))
+            && extension.is_some_and(|extension| self.iterator_evidence(source, extension).is_some())
+    }
+
     /// Whether a value of `ty` is a JS iterator that knows its length, its
     /// `len()` (ADR 0456): a type parameter's bound by `ExactSizeIterator`,
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
@@ -444,7 +461,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) =
             super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
         {
-            return self.knows_its_length(source);
+            return self.knows_its_length(source)
+                || self.made_knowing(source, self.recognition().exact_size_iterator());
         }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
             return super::recognition::is_exact_size(self.tcx, id);
@@ -640,14 +658,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// them. `None` of another, or of one not given what's asked.
     pub(in crate::lower) fn given_js_iterator(&self, value: Expr, ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
         let dictionary = self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator))?;
-        let entry = |asked: bool, trait_id: Option<DefId>, name: &str| -> Option<Option<Expr>> {
-            match asked {
-                true => Some(Some(Expr::member(self.iterator_evidence(ty, trait_id?)?, name))),
-                false => Some(None),
-            }
+        let entry = |asked: bool, trait_id: Option<DefId>| -> Option<Option<Expr>> {
+            let trait_id = match asked {
+                true => trait_id?,
+                false => return Some(None),
+            };
+            let name = super::recognition::extension_entry(self.tcx, trait_id);
+            Some(Some(Expr::member(self.iterator_evidence(ty, trait_id)?, name)))
         };
-        let back = entry(back, self.recognition().double_ended_iterator(), "next_back")?;
-        let len = entry(len, self.recognition().exact_size_iterator(), "len")?;
+        let back = entry(back, self.recognition().double_ended_iterator())?;
+        let len = entry(len, self.recognition().exact_size_iterator())?;
         let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
         Some(stepped_ends(value, Expr::member(dictionary, "next"), boxed, back, len))
     }
@@ -660,45 +680,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// own its impl's, a JS iterator's that knows it its own `len()`.
     pub(super) fn iterator_extension_dictionary(&mut self, trait_id: DefId, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
-        let range = self.range_kind(ty);
-        let (name, entry) = match super::recognition::is_double_ended(self.tcx, trait_id) {
-            true => {
-                let back = match range {
-                    Some(kind) => kind.step(true).map(Expr::helper),
-                    None if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, "next_back", span)?.0),
-                    None if self.steps_an_array(ty) || self.knows_its_back(ty) => {
-                        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-                        Some(Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }))
-                    }
-                    None => None,
-                };
-                ("next_back", back)
+        let name = super::recognition::extension_entry(self.tcx, trait_id);
+        let double_ended = super::recognition::is_double_ended(self.tcx, trait_id);
+        let returned = |value: Expr| {
+            Expr::arrow(
+                vec!["iterator".into()],
+                vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
+            )
+        };
+        let entry = match (double_ended, self.range_kind(ty)) {
+            (true, Some(kind)) => kind.step(true).map(Expr::helper),
+            (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),
+            (_, Some(_)) => None,
+            (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
+            (false, None) if self.is_user_iterator(ty) => {
+                let mut made = Vec::new();
+                let len = self.exact_len_of(Expr::var("iterator"), ty, span, &mut made)?;
+                made.is_empty().then(|| returned(len))
             }
-            false => {
-                let len = match range {
-                    Some(RangeKind::Exclusive) => Some(Expr::helper("$rangeLen")),
-                    Some(_) => None,
-                    None if self.is_user_iterator(ty) => {
-                        let mut made = Vec::new();
-                        let len = self.exact_len_of(Expr::var("iterator"), ty, span, &mut made)?;
-                        made.is_empty().then(|| {
-                            Expr::arrow(
-                                vec!["iterator".into()],
-                                vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
-                            )
-                        })
-                    }
-                    None if self.steps_an_array(ty) || self.knows_its_length(ty) => {
-                        let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
-                        Some(Expr::arrow(
-                            vec!["iterator".into()],
-                            vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
-                        ))
-                    }
-                    None => None,
-                };
-                ("len", len)
+            (true, None) if self.steps_an_array(ty) || self.knows_its_back(ty) => {
+                let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+                Some(Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }))
             }
+            (false, None) if self.steps_an_array(ty) || self.knows_its_length(ty) => Some(returned(Expr::call(
+                Expr::member(Expr::var("iterator"), "len"),
+                Vec::new(),
+            ))),
+            (_, None) => None,
         };
         match entry {
             Some(entry) => Ok(Expr::object(vec![js::Prop::Field(name.into(), entry)])),

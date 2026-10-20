@@ -1749,4 +1749,12 @@ export const mutations: Mutation[] = [
     replace: "    if is_std_def(tcx, tr.def_id, StdItem::Iterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
+  {
+    name: "extension-implies-no-iterator",
+    breaks: "an `I: DoubleEndedIterator` given as it is is given no `Iterator` dictionary, and its `next()` is refused",
+    file: "src/lower/traits.rs",
+    find: "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n",
+    replace: "        if true {\n            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
+  },
 ];

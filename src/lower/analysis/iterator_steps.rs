@@ -4,7 +4,9 @@
 //! a dictionary only then, as a parameter nothing steps by it needs none.
 
 use crate::lower::iterators::given_as_it_is;
-use crate::lower::recognition::{StdItem, is_iterator_extension, is_std_def, std_item, trait_method};
+use crate::lower::recognition::{
+    StdItem, is_extension_entry, is_iterator_extension, is_std_crate, is_std_def, std_item, trait_method,
+};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
@@ -57,7 +59,13 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         .map(|p| p.def_id());
                     std::iter::once(iterator).chain(asked).collect()
                 }
-                Some(tr) if is_iterator_extension(tcx, tr) => vec![tr],
+                // One's own entry, by its dictionary alone; another of its
+                // methods, run on a JS iterator made of it, by `Iterator` too
+                // (ADR 0488).
+                Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {
+                    true => vec![tr],
+                    false => vec![tr, iterator],
+                },
                 _ => Vec::new(),
             };
             if !by.is_empty()
@@ -71,10 +79,25 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         stepped.insert((caller, param.index, iterator));
                     }
                 }
-                // A value of the parameter itself, stepped.
+                // A value of the parameter itself, stepped; or a std adapter
+                // of it, `it.map(f)`'s, stepped from its back or counted,
+                // which asks that of it, as a `Map` is double-ended where its
+                // source is (ADR 0488). Its `Iterator`'s, made where the
+                // adapter's made, by `map`.
                 if let ty::Param(param) = self_ty.kind() {
                     stepped.extend(by.iter().map(|&by| (caller, param.index, by)));
                     continue;
+                }
+                if let ty::Adt(adt, adapted) = self_ty.kind()
+                    && is_std_crate(tcx, adt.did())
+                {
+                    for param in adapted.types().filter_map(|ty| match ty.peel_refs().kind() {
+                        ty::Param(param) => Some(param.index),
+                        _ => None,
+                    }) {
+                        let asked = by.iter().filter(|&&by| by != iterator);
+                        stepped.extend(asked.map(|&by| (caller, param, by)));
+                    }
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`.
                 if let Ok(Some(instance)) =

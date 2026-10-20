@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A type holding an iterator bound by `DoubleEndedIterator` or
+  `ExactSizeIterator` alone**, given as it is, as one bound by `Iterator`
+  is, either's `IterEither` among them (ADR 0488).
 - **`next_back()`, `len()` and `rev()` of an iterator given as it is**, by
   its `DoubleEndedIterator` and `ExactSizeIterator` dictionaries, and one
   given on where its back or length is asked, or to `chain` (ADR 0487).

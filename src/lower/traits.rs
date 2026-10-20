@@ -18,7 +18,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::elaborate::supertrait_def_ids;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt, Upcast};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 use std::collections::{HashMap, HashSet};
@@ -160,14 +160,34 @@ pub(super) fn bounds<'tcx>(
         result.push(ty::TraitRef::identity(tcx, trait_id));
     }
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
-        let clause = clause.skip_normalization();
-        if let Some(tr) = bound_of(tcx, foreign, given, clause, id)
-            && !result.contains(&tr)
-        {
-            result.push(tr);
+        for tr in bounds_of(tcx, foreign, given, clause.skip_normalization(), id) {
+            if !result.contains(&tr) {
+                result.push(tr);
+            }
         }
     }
     result
+}
+
+/// A clause's bounds that are given evidence: its own, `bound_of`'s, after
+/// the `Iterator` an iterator's extension on a type parameter given as it
+/// is implies, `I: DoubleEndedIterator`'s, as its supertrait (ADR 0488).
+fn bounds_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    given: Given<'_>,
+    clause: ty::Clause<'tcx>,
+    id: DefId,
+) -> impl Iterator<Item = ty::TraitRef<'tcx>> {
+    let implied = clause.as_trait_clause().and_then(|p| {
+        let tr = p.skip_binder().trait_ref;
+        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {
+            return None;
+        }
+        let iterator = ty::TraitRef::new(tcx, std_item(tcx, StdItem::Iterator), [tr.self_ty()]);
+        bound_of(tcx, foreign, given, ty::Binder::dummy(iterator).upcast(tcx), id)
+    });
+    implied.into_iter().chain(bound_of(tcx, foreign, given, clause, id))
 }
 
 /// Whether `param`, of the generics `typing_env` is of, is a type its caller
@@ -430,7 +450,7 @@ pub(super) fn own_bounds<'tcx>(
         .clauses_of(id)
         .clauses
         .iter()
-        .filter_map(|&(clause, _)| bound_of(tcx, foreign, given, clause, id))
+        .flat_map(|&(clause, _)| bounds_of(tcx, foreign, given, clause, id))
         .collect();
     bounds(tcx, foreign, given, id)
         .into_iter()

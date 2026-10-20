@@ -4651,6 +4651,24 @@ pub(crate) fn is_exact_size(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "ExactSizeIterator"
 }
 
+/// The method of an iterator's extension, `id`, that its dictionary holds,
+/// of an iterator given as it is (ADR 0487): `DoubleEndedIterator`'s
+/// `next_back`, `ExactSizeIterator`'s `len`. Its others run on a JS iterator
+/// made of it, which its `Iterator` dictionary steps too (ADR 0488).
+pub(crate) fn extension_entry(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
+    match is_double_ended(tcx, id) {
+        true => "next_back",
+        false => "len",
+    }
+}
+
+/// Whether `method`, of an iterator's extension, is the one its dictionary
+/// holds, `extension_entry` (ADR 0488).
+pub(crate) fn is_extension_entry(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    tcx.trait_of_assoc(method)
+        .is_some_and(|tr| is_iterator_extension(tcx, tr) && tcx.item_name(method).as_str() == extension_entry(tcx, tr))
+}
+
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
 /// no diagnostic items?
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {

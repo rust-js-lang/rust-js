@@ -69,4 +69,5 @@ twice({ start: 0, end: 3 }, { next: $rangeNext }, { clone: .. }, { len: $rangeLe
   method, though it steps only from the back.
 - **One bound only through a supertrait, `I: DoubleEndedIterator` a type
   holds, is still a JS iterator** in its impl, which its caller's value
-  isn't; that's the next gap.
+  isn't; that's the next gap. (Amended: it's given as it is, its extension
+  bound an `Iterator` bound too, ADR 0488.)

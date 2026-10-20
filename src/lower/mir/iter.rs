@@ -813,8 +813,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
             // A map of one that knows its length, too (ADR 0456).
+            // Of a type parameter given as it is, of the JS iterator made of
+            // it (ADR 0488).
             Some(IterMethod::Map) if self.knows_its_back(output) || self.knows_its_length(output) => {
-                let it = receiver.clone();
+                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));
+                let it =
+                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
@@ -886,7 +890,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }),
             false => {
                 let double_ended = self.recognition().double_ended_iterator()?;
-                Expr::member(self.iterator_evidence(iter_ty, double_ended)?, "next_back")
+                let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
+                Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back)
             }
         };
         Some(crate::lower::iterators::stepped(it.clone(), back, boxed, None))
@@ -909,12 +914,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Some(receiver);
             }
             IterMethod::Next => (iterator, "next"),
-            IterMethod::NextBack => (self.recognition().double_ended_iterator()?, "next_back"),
-            IterMethod::Len => (self.recognition().exact_size_iterator()?, "len"),
+            IterMethod::NextBack => self.extension_entry_of(self.recognition().double_ended_iterator()?),
+            IterMethod::Len => self.extension_entry_of(self.recognition().exact_size_iterator()?),
             _ => return None,
         };
         let dictionary = self.iterator_evidence(iter_ty, trait_id)?;
         Some(Expr::call(Expr::member(dictionary, entry), vec![receiver]))
+    }
+
+    /// An iterator's extension, `trait_id`, and the method its dictionary
+    /// holds (ADR 0487).
+    fn extension_entry_of(&self, trait_id: DefId) -> (DefId, &'static str) {
+        (trait_id, crate::lower::recognition::extension_entry(self.tcx, trait_id))
     }
 
     /// The iterator `it`, of type `iter_ty`, a method is called on, of items
