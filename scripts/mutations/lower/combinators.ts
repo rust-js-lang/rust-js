@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n            && self.given_drop(ty).is_none()\n",
     replace: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n",
-    tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
     name: "ok-or-else-unrun-kept",

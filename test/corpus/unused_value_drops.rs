@@ -20,6 +20,21 @@ fn maybe<T>(keep: bool, v: T) -> Option<T> {
     keep.then_some(v)
 }
 
+struct Gen(u8);
+
+impl Iterator for Gen {
+    type Item = Loud;
+
+    fn next(&mut self) -> Option<Loud> {
+        self.0 += 1;
+        if self.0 < 3 { Some(Loud(self.0 + 30)) } else { None }
+    }
+}
+
+fn first_or<I: Iterator>(mut it: I, fallback: I::Item) -> I::Item {
+    it.next().unwrap_or(fallback)
+}
+
 fn main() {
     let a = Some(Loud(1)).unwrap_or(Loud(2));
     println!("a {}", a.0);
@@ -60,4 +75,8 @@ fn main() {
     println!("m {}", m.is_none());
     let k = maybe(true, Loud(27));
     println!("k {}", k.map_or(0, |l| l.0));
+    let first = first_or(Gen(0), Loud(40));
+    println!("first {}", first.0);
+    let empty = first_or(Gen(5), Loud(41));
+    println!("empty {}", empty.0);
 }
