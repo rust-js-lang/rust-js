@@ -16,3 +16,17 @@ function* $lazyZip(a, b, dropA) {
     right.return?.();
   }
 }
+
+// `a.zip(b).rev()` of two iterators that know their backs and lengths,
+// `$iter`s: the longer trimmed from its back to the shorter's length, then
+// each's back paired, as Rust's `Zip::next_back` does (ADR 0493).
+function* $zipBack(a, b) {
+  for (let n = a.len() - b.len(); n > 0; n--) a.back();
+  for (let n = b.len() - a.len(); n > 0; n--) b.back();
+  while (true) {
+    const x = a.back();
+    const y = b.back();
+    if (x.done || y.done) return;
+    yield [x.value, y.value];
+  }
+}

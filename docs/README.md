@@ -561,6 +561,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0490 A value std leaves unused is dropped there](decisions/0490-a-value-std-leaves-unused-is-dropped-there.md)
 - [0491 `cycle()` keeps a clone of its iterator](decisions/0491-cycle-clones-its-iterator.md)
 - [0492 A kept default steps its impl's iterator as the impl does](decisions/0492-a-kept-default-steps-its-impls-iterator.md)
+- [0493 A zip of arrays' iterators steps from its back](decisions/0493-a-zip-steps-from-its-back.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

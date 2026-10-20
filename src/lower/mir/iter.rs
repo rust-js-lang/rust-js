@@ -882,13 +882,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())))
     }
 
-    /// `rev()` of `it`, a generic or a `dyn` iterator of type `iter_ty`: a
-    /// JS iterator stepped from its back, its `Some` boxed where it may look
-    /// like `None` (ADR 0051); of one that knows its back, by `$nextBack`
-    /// (ADR 0429), of a type parameter's given as it is, by its
-    /// `DoubleEndedIterator` dictionary's `next_back` (ADR 0487). `None` of
-    /// another.
+    /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its
+    /// back: of a generic or a `dyn` one, a JS iterator stepped from its
+    /// back, its `Some` boxed where it may look like `None` (ADR 0051); of
+    /// one that knows its back, by `$nextBack` (ADR 0429), of a type
+    /// parameter's given as it is, by its `DoubleEndedIterator` dictionary's
+    /// `next_back` (ADR 0487); and of a zip of two arrays' iterators, made
+    /// here, `$zipBack` of them, of items with nothing to drop (ADR 0493).
+    /// `None` of another.
     fn reversed(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
+        if let Some((a, b)) = crate::lower::recognition::zipped_sources(self.tcx, iter_ty) {
+            let js::ExprKind::Call(zip, sides) = &it.kind else {
+                return None;
+            };
+            let leaves_none = |side: Ty<'tcx>| {
+                self.steps_an_array(side)
+                    && self
+                        .iterator_item(side)
+                        .is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
+            };
+            return (zip.helper_name() == Some("$lazyZip") && sides.len() == 2 && leaves_none(a) && leaves_none(b))
+                .then(|| Expr::call_helper("$zipBack", sides.clone()));
+        }
         let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
         let back = match self.knows_its_back(iter_ty) {
             true => Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }),

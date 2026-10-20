@@ -1709,7 +1709,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse` and
 /// `$intoIter`, and each of its generators, which the runtime package's
 /// test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 12] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 13] = [
     "$iterator",
     "$fuse",
     "$intoIter",
@@ -1720,6 +1720,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 12] = [
     "$lazySkipWhile",
     "$lazyChain",
     "$lazyZip",
+    "$zipBack",
     "$repeatingWith",
     "$successors",
 ];

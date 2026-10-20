@@ -1007,4 +1007,20 @@ export const mutations: Mutation[] = [
     replace: "            true => self.given_drop(receiver).is_some() || holds_function,\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
+  {
+    name: "zip-back-forward",
+    breaks: "`rev()` of a zip of two arrays' iterators steps it from its front",
+    file: "src/lower/mir/iter.rs",
+    find: "                .then(|| Expr::call_helper(\"$zipBack\", sides.clone()));\n",
+    replace: "                .then(|| it.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_from_back.rs$"],
+  },
+  {
+    name: "zip-back-drops-allowed",
+    breaks: "`rev()` of a zip of owned items with a destructor is allowed, and leaks what it trims",
+    file: "src/lower/mir/iter.rs",
+    find: "                        .is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)\n",
+    replace: "                        .is_some()\n",
+    tests: ["test/diagnostics.test.ts", "-t", "reversing a zip"],
+  },
 ];

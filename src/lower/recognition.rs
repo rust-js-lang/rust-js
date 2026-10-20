@@ -5814,6 +5814,14 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// What std's `Zip` adapter of type `ty` zips, `A` and `B` of `Zip<A, B>`.
+pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Zip" => Some((args.type_at(0), args.type_at(1))),
+        _ => None,
+    }
+}
+
 /// Whether the closure `closure` carries its own drop, `$dropping`'s: one
 /// its maker gives back, the type its `impl Fn` hides, which is dropped
 /// where its maker's variables it took aren't seen (ADR 0484).

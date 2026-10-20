@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "zip-back-untrimmed",
+    breaks: "`rev()` of a zip pairs the longer one's last items, not those the shorter has",
+    file: "src/runtime/lazy_zip.js",
+    find: "  for (let n = a.len() - b.len(); n > 0; n--) a.back();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_from_back.rs$"],
+  },
 ];
