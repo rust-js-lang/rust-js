@@ -43,17 +43,51 @@ pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 /// Set in the process that tries a dependency, which compiles it as its own.
 const TRYING: &str = "RUST_JS_TRYING";
 
-/// The crates of crates.io's rust-js reads as rustc builds them, never
-/// compiled by it: serde's (ADR 0077), and hashbrown, with what it alone
-/// uses, and indexmap, whose maps are std's (ADRs 0423, 0424).
-const READ_AS_RUSTC_BUILDS_THEM: [&str; 7] = [
-    "serde",
-    "serde_core",
-    "serde_json",
-    "hashbrown",
-    "foldhash",
-    "allocator-api2",
-    "indexmap",
+/// A crate of crates.io's rust-js reads as rustc builds it, never compiled
+/// by it, by its package's name; of one whose API rust-js writes the JS of,
+/// the versions of crates.io's it's qualified at, and none else (ADR 0529).
+struct ReadAsRustc {
+    name: &'static str,
+    qualified: Option<&'static [&'static str]>,
+}
+
+/// The crates of crates.io's rust-js reads as rustc builds them: serde's
+/// (ADR 0077), and hashbrown, with what it alone uses, and indexmap, whose
+/// maps are std's (ADRs 0423, 0424); and memchr, whose searches rust-js
+/// writes (ADR 0529). The one catalog.
+const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 8] = [
+    ReadAsRustc {
+        name: "serde",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "serde_core",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "serde_json",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "hashbrown",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "foldhash",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "allocator-api2",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "indexmap",
+        qualified: None,
+    },
+    ReadAsRustc {
+        name: "memchr",
+        qualified: Some(&["2.8.3"]),
+    },
 ];
 
 pub fn translate(args: Vec<String>) -> Invocation {
@@ -92,6 +126,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
         Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),
         Ok(Whose::Dependency) => {}
         Ok(Whose::Rustc) => return rustc_itself(&rustc, given),
+        Ok(Whose::Unqualified(why)) => return refused(&rustc, given, &flags, why),
         Err(error) => {
             eprintln!("rust-js: {error}");
             return Invocation::Rustc(ExitCode::FAILURE);
@@ -115,6 +150,9 @@ enum Whose {
     Dependency,
     /// rustc: a binding crate, or one rust-js reads as rustc builds it.
     Rustc,
+    /// A crate of the catalog's not at a version it's qualified at, or not
+    /// crates.io's: its types alone, as rustc builds it, and why (ADR 0529).
+    Unqualified(String),
 }
 
 /// Who compiles the crate Cargo builds, by where Cargo has it.
@@ -129,9 +167,30 @@ fn whose() -> Result<Whose, String> {
     };
     let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
     let dir = std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))?;
-    // One rust-js reads as rustc builds it is rustc's, wherever it is.
-    if std::env::var("CARGO_PKG_NAME").is_ok_and(|name| READ_AS_RUSTC_BUILDS_THEM.contains(&name.as_str())) {
-        return Ok(Whose::Rustc);
+    // One rust-js reads as rustc builds it is rustc's, wherever it is; one
+    // whose API rust-js writes, only crates.io's, at a version it's
+    // qualified at (ADR 0529).
+    let name = std::env::var("CARGO_PKG_NAME").unwrap_or_default();
+    if let Some(read) = READ_AS_RUSTC_BUILDS_THEM.iter().find(|read| read.name == name) {
+        let Some(versions) = read.qualified else {
+            return Ok(Whose::Rustc);
+        };
+        let version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
+        let crates_io =
+            (dir.components()).any(|part| part.as_os_str().to_string_lossy().starts_with("index.crates.io-"));
+        if crates_io && versions.contains(&version.as_str()) {
+            return Ok(Whose::Rustc);
+        }
+        let from = match crates_io {
+            true => String::new(),
+            false => format!(" from {}, not crates.io,", dir.display()),
+        };
+        return Ok(Whose::Unqualified(format!(
+            "{name} {version}{from} isn't the {name} rust-js writes the JS of, crates.io's {}: depend on it, \
+             `cargo update -p {name} --precise {}`",
+            versions.join(" or "),
+            versions[0]
+        )));
     }
     if listed(CRATES)?.contains(&dir) {
         return Ok(Whose::Own);
@@ -166,7 +225,12 @@ fn try_dependency(rustc: &str, given: &[String], flags: &[String]) -> Invocation
         let _ = std::io::stderr().write_all(&tried.stderr);
         return Invocation::Rustc(ExitCode::SUCCESS);
     }
-    let why = refused_for(&tried.stderr);
+    refused(rustc, given, flags, refused_for(&tried.stderr))
+}
+
+/// A crate rust-js doesn't compile, `why`: its types alone, as rustc checks
+/// them, and why, written beside its metadata, for a call into it to say.
+fn refused(rustc: &str, given: &[String], flags: &[String], why: String) -> Invocation {
     match (rustc_itself(rustc, given), metadata_path(flags)) {
         (Invocation::Rustc(exit), Some(metadata)) => Invocation::Refused(exit, crate::library::refusal(&metadata), why),
         (checked, _) => checked,

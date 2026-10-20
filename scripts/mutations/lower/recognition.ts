@@ -2444,4 +2444,20 @@ export const mutations: Mutation[] = [
     replace: "                \"std::iter::Copied\" | \"std::iter::Fuse\" | \"std::iter::Enumerate\"\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
+  {
+    name: "memchr-refused-recognized",
+    breaks: "a call into a memchr Cargo refused, not qualified, is lowered as the qualified one's",
+    file: "src/lower/recognition.rs",
+    find: "            && super::refusal::uncompiled(self.tcx, id).is_none()\n",
+    replace: "",
+    tests: ["test/registry-crates.test.ts", "-t", "a memchr that isn't crates.io's qualified one"],
+  },
+  {
+    name: "memrchr-forward",
+    breaks: "`memrchr` finds the first, not the last",
+    file: "src/lower/recognition.rs",
+    find: "            \"memrchr\" | \"memrchr2\" | \"memrchr3\" => MemchrOp::Find { back: true },\n",
+    replace: "            \"memrchr\" | \"memrchr2\" | \"memrchr3\" => MemchrOp::Find { back: false },\n",
+    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
+  },
 ];

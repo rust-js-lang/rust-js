@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **memchr 2.8.3's searches**, `memchr`, `memchr2`, `memchr3`, their
+  `memrchr`s and their iterators, over the byte arrays slices are; another
+  memchr, a fork or another version, is refused where it's called, saying
+  which to depend on (ADR 0529).
 - **A `fuse` and an `enumerate` of a double-ended or exact-size
   iterator, from either end** (ADR 0528).
 - **An impl whose associated type is an iterator over its type

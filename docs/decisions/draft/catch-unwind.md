@@ -108,6 +108,31 @@ resolves this gate.** It must cover the following:
 This draft chooses no silent new divergence. Resolving the gate may
 require a dedicated ADR before this one can be accepted.
 
+#### A proposed resolution, for the user's acceptance
+
+Written 2026-10-21 while accepting the other drafts; nothing of it is
+implemented, and it isn't accepted until the user accepts the browser
+difference it names.
+
+- **An abort is the runtime's one state, `$aborting`**, set where a panic
+  starts while another unwinds: the panic runtime already knows when it's
+  unwinding, as the destructor contract's drop helpers run in `finally`.
+- **On Node, an abort is the process's end**, `process.abort()`, after
+  writing what native Rust writes: the same exit as native Rust's, no
+  further JS. Equivalent, as far as an observer outside the process can
+  tell.
+- **Where a host can't end its realm, a browser's**, an abort throws a
+  branded `$Abort`, which no `catch_unwind` catches and no Rust frame
+  recovers from, and leaves the runtime poisoned: every later call that
+  enters the panic runtime, a panic, `catch_unwind`, a drop helper, throws
+  the same `$Abort`. JS `finally` blocks between the abort and the host
+  still run, which native Rust's abort never would: that's the difference
+  to accept by name, of Case B under [0262](../0262-when-rust-and-js-disagree.md)
+  only if no Rust code can observe it, which the poisoning is for.
+- **`panic = "abort"`** is the same state from the first panic.
+
+Without that acceptance, `catch_unwind` stays refused.
+
 ## Acceptance
 
 Differential cases cover normal returns, literal and formatted panics,

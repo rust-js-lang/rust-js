@@ -425,6 +425,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.process_call(known, &mut values) {
             return Ok(js);
         }
+        if let Some(js) = self.memchr_call(known, &mut values) {
+            return Ok(js);
+        }
         if let Some(js) = self.io_error_call(known, call, &mut values)? {
             return Ok(js);
         }
@@ -592,6 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
+            Std::Memchr(_) => unreachable!("lowered by memchr_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
             Std::IoError(_) => unreachable!("lowered by io_error_call"),
             Std::Hash(_) => unreachable!("lowered by hash_call"),

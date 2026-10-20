@@ -77,6 +77,7 @@ version = "0.0.0"
 dependencies = [
  "hashbrown",
  "indexmap",
+ "memchr",
  "serde",
  "serde_json",
 ]

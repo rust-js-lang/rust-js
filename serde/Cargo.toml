@@ -1,6 +1,6 @@
 # The crates of crates.io rust-js reads as rustc builds them, serde,
-# serde_derive and serde_json (ADR 0077), hashbrown (ADR 0423) and indexmap
-# (ADR 0424), built
+# serde_derive and serde_json (ADR 0077), hashbrown (ADR 0423), indexmap
+# (ADR 0424) and memchr (ADR 0529), built
 # with rust-js's pinned toolchain, for a crate rust-js compiles to depend
 # on. `serde/build.sh` builds them and prints the `--extern` flags that
 # find them.
@@ -15,6 +15,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 hashbrown = "=0.17.1"
 indexmap = "=2.14.2"
+memchr = "=2.8.3"
 
 # Standalone: not part of the rust-js package one directory up.
 [workspace]

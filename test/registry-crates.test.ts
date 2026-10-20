@@ -115,3 +115,19 @@ test("a crate rust-js reads as rustc builds it isn't compiled, though it could b
   expect(own.code).not.toBe(0);
   expect(own.stderr).toContain("`hashbrown::one`");
 }, 600_000);
+
+// One whose API rust-js writes, memchr (ADR 0529), is rustc's only where
+// it's qualified, crates.io's, at a version rust-js writes it at: a fork of
+// it, by its name and version, is its types alone, and a call into it is
+// refused, saying which memchr to depend on, never lowered as memchr's.
+test("a memchr that isn't crates.io's qualified one is refused where it's called", () => {
+  const dir = fixture("registry-memchr-fork");
+  const fork = gitCrate(dir, "memchr", "2.8.3", "pub fn memchr(needle: u8, haystack: &[u8]) -> Option<usize> {\n    haystack.iter().position(|&b| b == needle)\n}\n");
+  const at = app(dir, { memchr: fork }, "pub fn first(text: &[u8]) -> Option<usize> {\n    memchr::memchr(b'o', text)\n}\n");
+  const built = build(at);
+  expect(built.code).not.toBe(0);
+  expect(built.stderr).toContain("`memchr::memchr`");
+  expect(built.stderr).toContain("isn't the memchr rust-js writes the JS of, crates.io's 2.8.3");
+  expect(existsSync(join(at, "src", "lib.js"))).toBe(false);
+}, 600_000);
+

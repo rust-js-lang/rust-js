@@ -270,6 +270,7 @@ and answer. Each is checked to stay that way.
 | `traits.rs`, `std_impls.rs`, `ordering.rs` | Traits: dictionaries, evidence, `dyn`, calls of an impl's method; `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
 | `serde.rs`, `serde/` | serde's derives and serde_json |
+| `shipped.rs` | The API of a crate rustc builds that rust-js writes the JS of, as it writes std's: memchr's searches, over the byte arrays slices are (ADR 0529); which crates are such, and at which versions, is Cargo's catalog's, `cargo::READ_AS_RUSTC_BUILDS_THEM` |
 | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214); and what JS reads, the fields of a struct given a binding, which rustc's dead-code lint can't see (ADR 0440) |
 | `declarations.rs` | A module's TypeScript declarations, what it exports as Rust types it (ADR 0196) |
 | `library.rs`, `sources.rs`, `pipeline.rs` | Libraries' contracts, source files, and the crate as a whole |

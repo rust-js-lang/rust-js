@@ -64,6 +64,7 @@ mod recognition;
 mod refusal;
 mod representation;
 mod serde;
+mod shipped;
 mod shortcuts;
 mod sources;
 pub mod std_coverage;

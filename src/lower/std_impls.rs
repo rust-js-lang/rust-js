@@ -140,7 +140,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An iterator cloned apart makes itself again (ADR 0525); a copy of
         // one is the iterator it copies (ADR 0480), its clone that one's.
-        if self.iterator_cloned_apart(ty) {
+        // So does memchr's iterator, which carries its clone (ADR 0529).
+        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {
             return Ok(Expr::call_helper("$clone", vec![place]));
         }
         if let Some(source) = super::recognition::copied_source(self.tcx, ty) {

@@ -1,7 +1,7 @@
 # A shipped regex validates Rust patterns before matching
 
 Status: Draft; blocked on the pattern and resource-bound gates below.
-A candidate under [the shipped-crate contract](shipped-crates.md).
+A candidate under [the shipped-crate contract](../0529-a-shipped-memchr-searches-bytes.md).
 
 Case: C ([0262](../0262-when-rust-and-js-disagree.md)) for matching,
 validation, offsets and observable errors; D where faithful execution

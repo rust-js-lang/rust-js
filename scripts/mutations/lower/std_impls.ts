@@ -476,8 +476,8 @@ export const mutations: Mutation[] = [
     name: "iterator-clone-is-itself",
     breaks: "a clone of a `map` cloned apart is the `map` itself",
     file: "src/lower/std_impls.rs",
-    find: "        if self.iterator_cloned_apart(ty) {\n            return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
-    replace: "        if self.iterator_cloned_apart(ty) {\n            return Ok(place);\n",
+    find: "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n            return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
+    replace: "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n            return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
@@ -487,5 +487,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.clone_value(place, source, span, out);\n",
     replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.clone_value(place, source, span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
+  {
+    name: "memchr-iter-clone-refused",
+    breaks: "a clone of memchr's iterator is refused, though it carries its clone",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n",
+    replace: "        if self.iterator_cloned_apart(ty) {\n",
+    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
   },
 ];

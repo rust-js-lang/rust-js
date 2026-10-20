@@ -950,4 +950,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
     snapshots: true,
   },
+  {
+    name: "memchr-iter-backless",
+    breaks: "memchr's iterator isn't seen to know its back, and `next_back` of it is refused",
+    file: "src/lower/iterators.rs",
+    find: "        if self.recognition().is_memchr_iter(ty) {\n",
+    replace: "        if false && self.recognition().is_memchr_iter(ty) {\n",
+    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
+  },
 ];

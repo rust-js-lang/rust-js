@@ -442,6 +442,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
             return super::recognition::is_double_ended(self.tcx, id);
         }
+        // memchr's, `$memchrIter`'s (ADR 0529).
+        if self.recognition().is_memchr_iter(ty) {
+            return true;
+        }
         self.double_ended_param(self.tcx.typeck_root_def_id(self.item), ty)
     }
 
@@ -1766,10 +1770,11 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), `$mapEnds`
-/// (ADR 0455), `$filterEnds` (ADR 0526) and `$enumerateEnds` (ADR 0528),
-/// and each of its generators,
+/// (ADR 0455), `$filterEnds` (ADR 0526), `$enumerateEnds` (ADR 0528) and
+/// `$memchrIter` (ADR 0529), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 23] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
+    "$memchrIter",
     "$mapEnds",
     "$filterEnds",
     "$enumerateEnds",

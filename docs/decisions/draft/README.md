@@ -17,15 +17,17 @@ replaces it.
 
 Estimated difficulty, hardest first; this is not implementation order:
 
-1. [A shipped crate preserves its Rust API's contract](shipped-crates.md):
-   separate qualification for [memchr](shipped-memchr.md),
-   [regex](shipped-regex.md), and [url](shipped-url.md).
+1. Shipped crates under the contract accepted in
+   [0529](../0529-a-shipped-memchr-searches-bytes.md), with memchr:
+   [regex](shipped-regex.md) and [url](shipped-url.md), each qualified on
+   its own.
 2. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md).
 3. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.
 
 Suggested order: iterators, panic support once its abort gate is
-resolved, then shipped crates one at a time. The library representation
+resolved, then shipped crates one at a time (memchr's is accepted in
+[0529](../0529-a-shipped-memchr-searches-bytes.md)). The library representation
 contract is accepted in
 [0523](../0523-libraries-share-one-counted-rc.md). A std trait's associated-type drops are already accepted in
 [0497](../0497-a-std-traits-dictionary-drops-its-associated-type.md); its

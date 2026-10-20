@@ -43,7 +43,7 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
 /// Why rust-js didn't compile the crate of `id`, a crate of crates.io's it
 /// refused, which rustc checked, its types alone (ADR 0415), as written
 /// beside its metadata.
-fn uncompiled(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
+pub(crate) fn uncompiled(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
     if id.is_local() {
         return None;
     }

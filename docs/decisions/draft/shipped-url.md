@@ -1,6 +1,6 @@
 # A shipped url preserves parsing and mutation
 
-Status: Draft. A candidate under [the shipped-crate contract](shipped-crates.md).
+Status: Draft. A candidate under [the shipped-crate contract](../0529-a-shipped-memchr-searches-bytes.md).
 
 Case: C ([0262](../0262-when-rust-and-js-disagree.md)) for parsing,
 serialization, errors and mutation; A for internal storage differences

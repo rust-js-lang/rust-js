@@ -167,6 +167,8 @@ pub(super) enum Std {
     Any(AnyOp),
     /// The process a program runs in, Node's (ADR 0391): `env::args()`.
     Process(ProcessOp),
+    /// memchr's searches, of the crate rustc builds (ADR 0529).
+    Memchr(super::shipped::MemchrOp),
     /// `panic::Location`'s (ADR 0427).
     Location(super::std_types::location::LocationOp),
     /// An `io::Error`'s: made, or its kind asked (ADR 0462).
@@ -715,6 +717,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // The allocator's, an array of slots (ADR 0417).
         if let Some(op) = super::std_types::alloc::alloc_op(&std_path(tcx, def_id)) {
             return Some(Some(Std::Alloc(op)));
+        }
+        // memchr's searches, of the crate rustc builds (ADR 0529).
+        if let Some(op) = self.memchr_op(def_id) {
+            return Some(Some(Std::Memchr(op)));
         }
         // The process a program runs in, Node's (ADR 0391).
         if let Some(op) = node_only(tcx, def_id) {
@@ -5465,6 +5471,41 @@ fn map_entry_item(tcx: TyCtxt<'_>, id: DefId, name: &str) -> bool {
     match bound_map_item(tcx, id) {
         Some(item) => item == name,
         None => is_std_item(tcx, id) && tcx.item_name(id).as_str() == name,
+    }
+}
+
+impl<'tcx> Recognition<'_, 'tcx> {
+    /// Whether `id` is the memchr rustc builds, not one rust-js compiled
+    /// (ADR 0529), nor one Cargo built as its types alone, not qualified,
+    /// which says so beside its metadata.
+    fn is_shipped_memchr(&self, id: DefId) -> bool {
+        self.tcx.crate_name(id.krate).as_str() == "memchr"
+            && !self.foreign.in_library(id)
+            && super::refusal::uncompiled(self.tcx, id).is_none()
+    }
+
+    /// Which of memchr's searches `id` is (ADR 0529): `memchr`, `memchr2`
+    /// and `memchr3`, their `memrchr`s, and each one's iterator, by its name.
+    fn memchr_op(&self, id: DefId) -> Option<super::shipped::MemchrOp> {
+        use super::shipped::MemchrOp;
+        if !self.is_shipped_memchr(id) {
+            return None;
+        }
+        Some(match self.tcx.item_name(id).as_str() {
+            "memchr" | "memchr2" | "memchr3" => MemchrOp::Find { back: false },
+            "memrchr" | "memrchr2" | "memrchr3" => MemchrOp::Find { back: true },
+            "memchr_iter" | "memchr2_iter" | "memchr3_iter" => MemchrOp::Iter { back: false },
+            "memrchr_iter" | "memrchr2_iter" | "memrchr3_iter" => MemchrOp::Iter { back: true },
+            _ => return None,
+        })
+    }
+
+    /// Whether `ty` is memchr's iterator of its searches, `Memchr`,
+    /// `Memchr2` or `Memchr3`: a JS iterator that knows its back and
+    /// carries its clone (ADR 0529).
+    pub(crate) fn is_memchr_iter(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.is_shipped_memchr(adt.did())
+            && matches!(self.tcx.item_name(adt.did()).as_str(), "Memchr" | "Memchr2" | "Memchr3"))
     }
 }
 
