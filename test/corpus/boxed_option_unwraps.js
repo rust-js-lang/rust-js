@@ -21,7 +21,7 @@ function first_or(cur, it) {
 
 function least(it, f) {
   const option = $minBy(Iterator.from(it).toArray(), f, true);
-  return Array.from(option == null ? [] : [$someValue(option)]);
+  return option == null ? [] : [$someValue(option)];
 }
 
 function most(items, TOrd, TClone) {

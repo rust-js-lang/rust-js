@@ -5925,18 +5925,47 @@ pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
 }
 
 /// Of std's adapter of type `ty` that steps from its back where its source
-/// does, `Map`, `Filter`, `FilterMap` or `Copied`, its source (ADRs 0455,
-/// 0480, 0526).
+/// does, `Map`, `Filter`, `FilterMap`, `Copied` or `Fuse`, its source
+/// (ADRs 0455, 0480, 0526, 0528).
 pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map" | "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Copied"
+                "std::iter::Map"
+                    | "std::iter::Filter"
+                    | "std::iter::FilterMap"
+                    | "std::iter::Copied"
+                    | "std::iter::Fuse"
             ) =>
         {
             Some(args.type_at(0))
         }
+        _ => None,
+    }
+}
+
+/// Of std's adapter of type `ty` that knows its length where its source
+/// does, `Map`, `Copied`, `Fuse` or `Enumerate`, its source (ADRs 0456,
+/// 0528).
+pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if matches!(
+                std_path(tcx, adt.did()).as_str(),
+                "std::iter::Map" | "std::iter::Copied" | "std::iter::Fuse" | "std::iter::Enumerate"
+            ) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
+/// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.
+pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Enumerate" => Some(args.type_at(0)),
         _ => None,
     }
 }

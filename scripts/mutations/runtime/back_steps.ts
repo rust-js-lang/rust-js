@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
+  {
+    name: "enumerate-back-index-past",
+    breaks: "an `enumerate`'s index from the back is one past where the item is",
+    file: "src/runtime/back_steps.js",
+    find: "      return pair(it.back(), count + left - 1);\n",
+    replace: "      return pair(it.back(), count + left);\n",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
+  },
 ];

@@ -303,18 +303,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "extend-range-as-array",
-    breaks: "`extend` of a range takes its object as an array, `Array.from({ start, end })`, which adds nothing",
-    file: "src/lower/combinators.rs",
-    find: "                    Some(_) => self.as_js_iterator(items, tys[1].peel_refs(), span)?,\n",
-    replace: "                    Some(_) => items,\n",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "char ranges step by code point"
-    ]
-  },
-  {
     "name": "flatten-arrays-lazy",
     "breaks": "arrays of arrays flattened stay a lazy `flatMap`, never `flat()`",
     "file": "src/lower/combinators.rs",

@@ -56,3 +56,27 @@ function $filterEnds(it, p) {
   if (it.back !== undefined) filter.back = kept(() => it.back());
   return filter;
 }
+
+// `it.enumerate()` of a JS iterator that knows its back or its length,
+// which knows them too, as Rust's `Enumerate` does: each item and its
+// index, `[i, x]`, counted from the front; one from the back is where it
+// is, the count so far and how many were left before it, as Rust's
+// `next_back` counts it (ADR 0528).
+function $enumerateEnds(it) {
+  let count = 0;
+  const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
+  const enumerated = Iterator.from({
+    next: () => {
+      const step = it.next();
+      return step.done ? step : pair(step, count++);
+    },
+  });
+  if (it.back !== undefined && it.len !== undefined) {
+    enumerated.back = () => {
+      const left = it.len();
+      return pair(it.back(), count + left - 1);
+    };
+  }
+  if (it.len !== undefined) enumerated.len = () => it.len();
+  return enumerated;
+}

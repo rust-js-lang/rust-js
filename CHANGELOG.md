@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `fuse` and an `enumerate` of a double-ended or exact-size
+  iterator, from either end** (ADR 0528).
 - **An impl whose associated type is an iterator over its type
   parameter, in a library** (ADR 0527).
 - **A `filter` or `filter_map` of a double-ended iterator, stepped from
@@ -653,6 +655,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`extend`, `chain` and `zip` of an `Option` or a range**: a `Some` was
+  dropped, and a range given to `chain` or `zip` threw (ADR 0528).
 - **`scan` after a lazy chain** ran the chain's closures for every item,
   past where `scan` ended: it's lazy, as Rust's is (ADR 0517).
 - **`filter_map` and `flat_map` of what holds what looks like `None`**,

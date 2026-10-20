@@ -633,7 +633,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             match self.mapped_range(&it, iter_ty) {
                 Some(items) => items,
-                None => match self.iterable_items(&it, iter_ty) {
+                None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
                     None => method("toArray", it, Vec::new()),
                 },
@@ -955,6 +955,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
+            }
+            // An enumeration of one, its index from the back where it is
+            // (ADR 0528).
+            Some(IterMethod::Enumerate) if self.knows_its_back(output) || self.knows_its_length(output) => {
+                let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
+                let it =
+                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());
+                Expr::call_helper("$enumerateEnds", vec![it])
             }
             // A filter of one, of items with nothing to drop as it passes
             // them (ADR 0526).
@@ -1395,7 +1403,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of a binding's list. Not of a generic
     /// value's, which may be an iterator with only a `next`, of which
     /// `Array.from` makes an empty array (ADR 0140).
-    fn iterable_items(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
+    fn collected_items(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
         let mut source = self.reveal(iter_ty);
         while let ty::Adt(_, args) = source.kind()
             && let Some(inner) = args.types().next()

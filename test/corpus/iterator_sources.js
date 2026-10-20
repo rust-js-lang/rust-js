@@ -64,8 +64,8 @@ function with_header(header, lines) {
 
 function maybe_items(item) {
   return [
-    ...Iterator.from(item == null ? [] : [item]),
-    ...Iterator.from(item == null ? [] : [item]).map((n) => Math.imul(n, 10)),
+    ...$iter(item == null ? [] : [item]),
+    ...(item == null ? [] : [item]).values().map((n) => Math.imul(n, 10)),
   ];
 }
 
@@ -90,8 +90,8 @@ function main() {
   console.log(`[${padded.join(", ")}]`);
   console.log(`[${maybe_items(4).join(", ")}] [${maybe_items(undefined).join(", ")}]`);
   const total =
-    (Iterator.from(3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
-      Iterator.from(undefined == null ? [] : [undefined]).reduce((a, b) => (a + b) | 0, 0)) |
+    ((3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
+      (undefined == null ? [] : [undefined]).reduce((a, b) => (a + b) | 0, 0)) |
     0;
   console.log(`${total}`);
   const [left, right] = $unzip([

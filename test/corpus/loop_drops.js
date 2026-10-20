@@ -153,7 +153,7 @@ function main() {
           noisyDrop_drop(item);
         }
         const option = ["some"];
-        const iter = Iterator.from(option == null ? [] : [option]);
+        const iter = $iter(option == null ? [] : [option]);
         while (true) {
           try {
             tmp$2 = $next(iter);
@@ -168,7 +168,7 @@ function main() {
               noisyDrop_drop(item);
             }
             const none = undefined;
-            const iter$1 = Iterator.from(none == null ? [] : [none]);
+            const iter$1 = $iter(none == null ? [] : [none]);
             while (true) {
               try {
                 tmp$3 = $next(iter$1);

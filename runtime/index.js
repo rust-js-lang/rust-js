@@ -519,20 +519,22 @@ export function $add(set, item, drop) {
 // again. Of one that isn't a `FusedIterator`, not `fused`, `iter` is closed
 // as it ends, which drops it as std's does, and `undefined` then, as its
 // `Debug` shows it; a `FusedIterator`'s, which stays ended, is kept, and
-// stepped again, as std's is (ADR 0473).
+// stepped again, as std's is (ADR 0473). Of one that knows its back or its
+// length, it knows them too, as Rust's `Fuse` does (ADR 0528).
 export function $fuse(iter, fused = false) {
+  const stepped = (step) => () => {
+    if (it.iter === undefined) {
+      return { done: true, value: undefined };
+    }
+    const at = step();
+    if (at.done && !fused) {
+      it.iter.return?.();
+      it.iter = undefined;
+    }
+    return at;
+  };
   const it = Iterator.from({
-    next() {
-      if (it.iter === undefined) {
-        return { done: true, value: undefined };
-      }
-      const step = it.iter.next();
-      if (step.done && !fused) {
-        it.iter.return?.();
-        it.iter = undefined;
-      }
-      return step;
-    },
+    next: stepped(() => it.iter.next()),
     return() {
       it.iter?.return?.();
       it.iter = undefined;
@@ -541,6 +543,8 @@ export function $fuse(iter, fused = false) {
   });
   it.iter = iter;
   it.fused = fused;
+  if (iter.back !== undefined) it.back = stepped(() => it.iter.back());
+  if (iter.len !== undefined) it.len = () => (it.iter === undefined ? 0 : it.iter.len());
   return it;
 }
 
@@ -1228,6 +1232,30 @@ export function $filterEnds(it, p) {
   const filter = Iterator.from({ next: kept(() => it.next()) });
   if (it.back !== undefined) filter.back = kept(() => it.back());
   return filter;
+}
+
+// `it.enumerate()` of a JS iterator that knows its back or its length,
+// which knows them too, as Rust's `Enumerate` does: each item and its
+// index, `[i, x]`, counted from the front; one from the back is where it
+// is, the count so far and how many were left before it, as Rust's
+// `next_back` counts it (ADR 0528).
+export function $enumerateEnds(it) {
+  let count = 0;
+  const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
+  const enumerated = Iterator.from({
+    next: () => {
+      const step = it.next();
+      return step.done ? step : pair(step, count++);
+    },
+  });
+  if (it.back !== undefined && it.len !== undefined) {
+    enumerated.back = () => {
+      const left = it.len();
+      return pair(it.back(), count + left - 1);
+    };
+  }
+  if (it.len !== undefined) enumerated.len = () => it.len();
+  return enumerated;
 }
 
 // How many numbers an exclusive range, `a..b`, has left: an

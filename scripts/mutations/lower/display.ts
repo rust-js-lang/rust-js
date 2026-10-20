@@ -661,4 +661,12 @@ export const mutations: Mutation[] = [
     replace: "            || (true\n",
     tests: ["test/corpus.test.ts", "-t", "^(pretty_debug|pretty_debug_derived|std_enum_debug|int_error_kind).rs$"],
   },
+  {
+    name: "debug-entries-raw",
+    breaks: "a `Debug` builder's `entries` of an `Option` or a range shows nothing",
+    file: "src/lower/display.rs",
+    find: "                    let items = self.iterable_items(items, iterable, span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
+  },
 ];

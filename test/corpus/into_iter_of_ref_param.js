@@ -88,13 +88,13 @@ function main() {
 
   let some = 7;
   const c$2 = { value: some };
-  double_all(c$2, { into_iter: (cell) => Iterator.from(cell.value == null ? [] : [cell]) });
+  double_all(c$2, { into_iter: (cell) => $iter(cell.value == null ? [] : [cell]) });
   some = c$2.value;
   let none;
   const c$3 = { value: none };
-  double_all(c$3, { into_iter: (cell) => Iterator.from(cell.value == null ? [] : [cell]) });
+  double_all(c$3, { into_iter: (cell) => $iter(cell.value == null ? [] : [cell]) });
   none = c$3.value;
-  const arg$1 = total(some, { into_iter: (x) => Iterator.from(x == null ? [] : [x]) });
+  const arg$1 = total(some, { into_iter: (x) => $iter(x == null ? [] : [x]) });
   console.log(
     `${some == null ? "None" : `Some(${some})`} ${none == null ? "None" : `Some(${none})`} ${arg$1}`,
   );

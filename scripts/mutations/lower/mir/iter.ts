@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     "name": "mir-iterable-collected-lazy",
     "breaks": "a binding's list collected stays `Iterator.from(nodes).map(f).toArray()`, not `Array.from(nodes).map(f)`",
     "file": "src/lower/mir/iter.rs",
-    "find": "None => match self.iterable_items(&it, iter_ty) {",
+    "find": "None => match self.collected_items(&it, iter_ty) {",
     "replace": "None => match None::<Expr> {",
     "tests": [
       "test/compiler.test.ts",
@@ -959,8 +959,8 @@ export const mutations: Mutation[] = [
     name: "given-map-source-raw",
     breaks: "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
     file: "src/lower/mir/iter.rs",
-    find: "                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());\n",
-    replace: "                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).filter(|_| false).unwrap_or_else(|| receiver.clone());\n",
+    find: "                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));\n                let it =\n                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());\n",
+    replace: "                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));\n                let it =\n                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).filter(|_| false).unwrap_or_else(|| receiver.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_map_rfold.rs$"],
   },
   {
@@ -1070,5 +1070,13 @@ export const mutations: Mutation[] = [
     find: "            Some(IterMethod::Filter)\n                if self.knows_its_back(output)\n",
     replace: "            Some(IterMethod::Filter)\n                if false && self.knows_its_back(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
+  {
+    name: "enumerate-ends-native",
+    breaks: "generic code's `enumerate` of what knows its back is a JS helper, which doesn't",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(IterMethod::Enumerate) if self.knows_its_back(output) || self.knows_its_length(output) => {\n",
+    replace: "            Some(IterMethod::Enumerate) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
   },
 ];

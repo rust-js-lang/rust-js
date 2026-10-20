@@ -635,14 +635,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
-    name: "given-adapter-arg-spread",
-    breaks: "`chain(iter)` of an `I` given as it is spreads its value, a range or the crate's iterator, as a JS iterator",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        let e = match user || self.iterator_given_as_it_is(ty.peel_refs()) {\n",
-    replace: "                        let e = match user {\n",
-    tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
-  },
-  {
     name: "cycle-of-other-refused",
     breaks: "`cycle()` of a range, the crate's iterator or a type parameter's is refused",
     file: "src/lower/mir/std_calls.rs",
@@ -689,5 +681,13 @@ export const mutations: Mutation[] = [
     find: "                if !boxed && (state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref()) {\n",
     replace: "                if state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref() {\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+  },
+  {
+    name: "chained-into-iter-raw",
+    breaks: "what `chain` or `zip` is given is passed as it is, a range's object or an `Option`",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        let e = self.iterable_items(e, ty, span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
   },
 ];

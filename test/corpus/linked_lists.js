@@ -32,7 +32,7 @@ function main() {
   }
   console.log("");
   const words = [];
-  $extend(words, Array.from(["a", "b"]));
+  $extend(words, ["a", "b"]);
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] [${Array.from(words)
       .toReversed()

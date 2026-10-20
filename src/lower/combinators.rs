@@ -984,14 +984,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Comb::Extend => {
-                let items = next();
-                // A range is an object: its items as its `next` gives them,
-                // a `char`'s by code point.
-                let items = match self.range_kind(tys[1].peel_refs()) {
-                    Some(_) => self.as_js_iterator(items, tys[1].peel_refs(), span)?,
-                    None => items,
+                let items = self.iterable_items(next(), tys[1], span, out)?;
+                let spread = match super::iterators::made_array(&items) {
+                    true => items,
+                    false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
                 };
-                let spread = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
                 helper("$extend", vec![subject, spread])
             }
             // Each item a clone, as `to_vec()` makes them.

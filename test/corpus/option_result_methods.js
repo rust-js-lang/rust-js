@@ -209,7 +209,7 @@ function main() {
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(
-    `[${Array.from(good.TAG === "Ok" ? [good._0] : []).join(", ")}] ${Iterator.from(bad.TAG === "Ok" ? [bad._0] : []).reduce((n) => n + 1, 0)}`,
+    `[${(good.TAG === "Ok" ? [good._0] : []).join(", ")}] ${(bad.TAG === "Ok" ? [bad._0] : []).length}`,
   );
   console.log(
     `${good.TAG === "Ok" ? (good._0 + 1) | 0 : 0} ${bad.TAG === "Ok" ? (bad._0 + 1) | 0 : 0}`,

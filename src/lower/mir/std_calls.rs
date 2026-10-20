@@ -725,14 +725,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `$closing`.
                 let mut exprs = (exprs.into_iter().zip(&arg_tys[1..]))
                     .map(|(e, &ty)| {
-                        let user = self.is_user_iterator(ty);
-                        let e = match user || self.iterator_given_as_it_is(ty.peel_refs()) {
-                            true => self.as_js_iterator(e, ty.peel_refs(), span)?,
-                            false => e,
-                        };
+                        // What `zip` and `chain` take, an `IntoIterator`'s
+                        // items (ADR 0528); another's argument, a function or
+                        // a value, as it is.
                         if !matches!(comb, IterComb::Zip | IterComb::Chain) {
                             return Ok(e);
                         }
+                        let user = self.is_user_iterator(ty);
+                        let e = self.iterable_items(e, ty, span, out)?;
                         Ok(match self.closing_drop(ty, span)? {
                             Some(drop) if user => Expr::call_helper("$closing", vec![e, drop]),
                             Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(e), drop]),

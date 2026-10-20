@@ -95,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "this `Debug` builder, from its MIR"));
             };
             if let BuilderStep::Finish { non_exhaustive } = step {
-                let written = self.builder_written(kind, type_name, steps, non_exhaustive, span)?;
+                let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
                 self.flush(state, out)?;
                 crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
             } else {

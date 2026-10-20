@@ -20,7 +20,7 @@ export function entry() {
 
 function main() {
   const v = [];
-  $extend(v, Array.from([5, 1, 4, 1, 3]));
+  $extend(v, [5, 1, 4, 1, 3]);
   // What it's given still runs.
   let asked = 0;
   const ask = () => {

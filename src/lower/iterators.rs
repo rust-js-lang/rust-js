@@ -339,9 +339,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
     }
 
-    /// An iterator of the crate's own as a JS one, `$iterator(it,
-    /// countdownIterator_next)`. Anything else is `value` itself.
-    pub(super) fn iter_source(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+    /// The items of `value`, an `IntoIterator` of type `ty` a function takes
+    /// as it is, `extend(xs)`'s, `chain(xs)`'s or a `Debug` builder's
+    /// `entries(xs)`'s, as JS steps them: an
+    /// `Option`'s, `[]` or `[x]` (ADR 0128); a range's, the crate's own
+    /// iterator's or a type parameter's given as it is, its JS iterator; an
+    /// array's or a JS iterator's, itself. The one answer (ADR 0528).
+    pub(in crate::lower) fn iterable_items(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let ty = self.reveal(ty);
         // A `&mut` range is stepped through as it's taken from.
         if let ty::Ref(_, inner, _) = ty.kind()
@@ -349,11 +359,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.unsupported(span, &format!("iterating over a `{ty}`, which steps it")));
         }
-        if !self.is_user_iterator(ty) {
-            return Ok(value);
+        let ty = ty.peel_refs();
+        if let Some(item) = self.option_of(ty) {
+            return Ok(self.option_items(value, item, out));
         }
-        let iterator = std_item(self.tcx, StdItem::Iterator);
-        self.user_iterator(value, ty, iterator, "next", span)
+        if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
+            return self.as_js_iterator(value, ty, span);
+        }
+        Ok(value)
     }
 
     /// `DoubleEndedIterator`, if `ty` is an iterator of the crate's whose
@@ -421,6 +434,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.knows_its_back(source)
                 || self.made_knowing(source, self.recognition().double_ended_iterator());
         }
+        // An enumeration of one that knows its length too, `$enumerateEnds`,
+        // whose index from the back is where it is (ADR 0528).
+        if let Some(source) = super::recognition::enumerated_source(self.tcx, ty) {
+            return self.knows_its_back(source) && self.knows_its_length(source);
+        }
         if let Some(id) = super::recognition::dyn_iter_trait(self.tcx, ty) {
             return super::recognition::is_double_ended(self.tcx, id);
         }
@@ -487,9 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return true;
         }
-        if let Some(source) =
-            super::recognition::mapped_source(self.tcx, ty).or_else(|| super::recognition::copied_source(self.tcx, ty))
-        {
+        if let Some(source) = super::recognition::length_kept_source(self.tcx, ty) {
             return self.knows_its_length(source)
                 || self.made_knowing(source, self.recognition().exact_size_iterator());
         }
@@ -1180,6 +1196,8 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
 fn fresh(items: &Expr) -> bool {
     match &items.kind {
         js::ExprKind::Array(_) => true,
+        // Of two made here, either, an `Option`'s items, `o == null ? [] : [o]`.
+        js::ExprKind::Cond(_, then, otherwise) => fresh(then) && fresh(otherwise),
         js::ExprKind::Call(callee, _) => match &callee.kind {
             js::ExprKind::Member(_, name) => [
                 "map",
@@ -1704,6 +1722,8 @@ pub(super) fn does(f: &Expr) -> bool {
 pub(super) fn made_array(e: &Expr) -> bool {
     match &e.kind {
         js::ExprKind::Array(_) => true,
+        // An `Option`'s items, `o == null ? [] : [o]`.
+        js::ExprKind::Cond(..) => fresh(e),
         // A helper's that makes one, `$windows(v, 2)`.
         js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),
         js::ExprKind::Call(callee, _) => match &callee.kind {
@@ -1746,11 +1766,13 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), `$mapEnds`
-/// (ADR 0455) and `$filterEnds` (ADR 0526), and each of its generators,
+/// (ADR 0455), `$filterEnds` (ADR 0526) and `$enumerateEnds` (ADR 0528),
+/// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 22] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 23] = [
     "$mapEnds",
     "$filterEnds",
+    "$enumerateEnds",
     "$iterator",
     "$fuse",
     "$intoIter",

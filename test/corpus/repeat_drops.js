@@ -280,7 +280,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(v, Array.from([["h"]]));
+      $extend(v, [["h"]]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -290,8 +290,10 @@ function main() {
       }
       throw error;
     }
+    let option;
     try {
-      $extend(v, Array.from(["i"]));
+      option = ["i"];
+      $extend(v, option == null ? [] : [option]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

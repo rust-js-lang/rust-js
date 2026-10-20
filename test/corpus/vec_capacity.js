@@ -17,7 +17,7 @@ export function entry() {
 function main() {
   const v = $withCapacity(10);
   console.log(`${v.length} ${$capacity(v) >= 10}`);
-  $extend(v, Array.from([1, 2, 3]));
+  $extend(v, [1, 2, 3]);
   const before = $capacity(v);
   $keepCapacity(v);
   v.length = 0;
