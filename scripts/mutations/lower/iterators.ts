@@ -739,14 +739,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_read_as_itself.rs$"],
   },
   {
-    name: "own-trait-read",
-    breaks: "an extension trait's blanket impl's `Self: Trait` is taken for a bound that reads its iterator, and its default refused",
-    file: "src/lower/iterators.rs",
-    find: "            && Some(tr) != own_trait\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
-  },
-  {
     name: "into-iter-for-kept",
     breaks: "a `for` of a generic `into_iter()` steps `$intoIter(xs)`, where a `for` steps `xs` as it is",
     file: "src/lower/iterators.rs",
@@ -847,7 +839,7 @@ export const mutations: Mutation[] = [
     name: "extension-bound-not-given-as-is",
     breaks: "an `I: DoubleEndedIterator` a type holds is a JS iterator in its impl, which its caller's range isn't",
     file: "src/lower/iterators.rs",
-    find: "        .any(|&tr| tr == iterator || super::recognition::is_iterator_extension(tcx, tr))\n",
+    find: "        .any(|&tr| tr == iterator || super::recognition::implies_iterator(tcx, tr))\n",
     replace: "        .any(|&tr| tr == iterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
   },

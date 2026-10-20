@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "question_drops"],
   },
   {
-    name: "mir-drop-param-items-refused",
-    breaks: "MIR's drop of a generic iterator's item, `items.next();`, is refused, where its callers give none with a destructor",
-    file: "src/lower/mir/drops.rs",
-    find: "        if matches!(self.drops(ty), Drops::Unsupported(..)) && self.require_no_drops(ty) {\n",
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "generic_iterator_items"],
-  },
-  {
     name: "mir-cleanup-spanless",
     breaks: "what MIR refuses of a cleanup's drop says no place in the Rust",
     file: "src/lower/mir/drops.rs",

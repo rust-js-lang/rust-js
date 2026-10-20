@@ -2364,4 +2364,12 @@ export const mutations: Mutation[] = [
     replace: "            \"std::iter::FlatMapNot\" => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
+  {
+    name: "crate-extension-not-iterator",
+    breaks: "a type parameter bound by the crate's trait that extends `Iterator` is a JS iterator, which its trait's dictionary steps as the impl's own type",
+    file: "src/lower/recognition.rs",
+    find: "    id != iterator && rustc_middle::ty::elaborate::supertrait_def_ids(tcx, id).any(|s| s == iterator)\n",
+    replace: "    is_iterator_extension(tcx, id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
+  },
 ];

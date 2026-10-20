@@ -55,9 +55,9 @@ pub(in crate::lower) fn stepped_ends(
 /// only itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
-    // Bound by `Iterator` itself, or an extension of it, whose `Iterator`
-    // `bounds` gives it (ADR 0488), as `bounds` reads its clauses, which
-    // make its evidence: not by another trait it's a supertrait of.
+    // Bound by `Iterator` itself, or a trait that extends it, std's or the
+    // crate's, whose `Iterator` `bounds` gives it (ADRs 0488, 0511), as
+    // `bounds` reads its clauses, which make its evidence.
     let iterator = std_item(tcx, StdItem::Iterator);
     let of_param: Vec<DefId> = tcx
         .clauses_of(id)
@@ -69,25 +69,17 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         .collect();
     if !of_param
         .iter()
-        .any(|&tr| tr == iterator || super::recognition::is_iterator_extension(tcx, tr))
+        .any(|&tr| tr == iterator || super::recognition::implies_iterator(tcx, tr))
     {
         return false;
     }
     // A bound whose methods read its value as its own type, `Clone`'s or
-    // `Debug`'s: not a marker's, nor the trait `id` is of, whose `Self:
-    // Trait` is how it's called, an extension trait's of any iterator.
-    let own_trait = match tcx.def_kind(id) {
-        rustc_hir::def::DefKind::Impl { .. } => Some(id),
-        _ => tcx.impl_of_assoc(id),
-    }
-    .and_then(|imp| tcx.impl_opt_trait_ref(imp))
-    .map(|tr| tr.skip_binder().def_id)
-    .or_else(|| tcx.trait_of_assoc(id));
-    // Not an iterator's extension trait either, `DoubleEndedIterator`, whose
-    // methods its JS iterator answers (ADRs 0164, 0456).
+    // `Debug`'s, or the crate's trait that extends `Iterator` (ADR 0511):
+    // not a marker's, nor std's extension of `Iterator`,
+    // `DoubleEndedIterator`, whose methods its JS iterator answers (ADRs
+    // 0164, 0456).
     let read = of_param.iter().any(|&tr| {
         tr != iterator
-            && Some(tr) != own_trait
             && !super::recognition::is_iterator_extension(tcx, tr)
             && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
     });

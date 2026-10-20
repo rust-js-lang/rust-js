@@ -736,7 +736,9 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
           name: v.name,
           index: r.chance(0.8) ? 0 : r.int(4),
           op: r.pick(["=", "=", "+=", "-=", "^="]),
-          write: w && { name: w.name, value: expr(r, w.ty, inner, 2) },
+          // What the index writes, read with `v` borrowed to be written,
+          // reads none of `v`.
+          write: w && { name: w.name, value: expr(r, w.ty, inner.filter((u) => u.name !== v.name), 2) },
           note: r.chance(0.3) ? r.int(100) : undefined,
           // Sometimes what the index wrote, read after it.
           value: w && w.ty === elem && r.chance(0.5) ? { kind: "var", ty: elem, name: w.name } : expr(r, elem, inner, 2),

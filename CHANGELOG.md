@@ -627,6 +627,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A type parameter bound by the crate's trait that extends `Iterator`**,
+  `T: Sorted`, of the crate's iterator, was stepped as its fields: it's
+  given as it is, as its trait's impl takes it (ADR 0511).
+- **A `&mut dyn` of a trait that extends `Iterator`** gave its method the
+  pair, which it stepped as the value: it's given the value (ADR 0511).
 - **`flat_map` of a function that gives an `Option`** threw, `flatMap
   called on non-object`: it's the `Some`s (ADR 0510).
 - **`flat_map` whose inner iterators own what has a destructor**, stopped

@@ -1753,8 +1753,8 @@ export const mutations: Mutation[] = [
     name: "extension-implies-no-iterator",
     breaks: "an `I: DoubleEndedIterator` given as it is is given no `Iterator` dictionary, and its `next()` is refused",
     file: "src/lower/traits.rs",
-    find: "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n",
-    replace: "        if true {\n            return None;\n",
+    find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator",
+    replace: "        if true {\n            return None;\n        }\n        let iterator",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
   },
   {
@@ -1780,5 +1780,21 @@ export const mutations: Mutation[] = [
     find: "            let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;\n",
     replace: "            let dictionary = self.dictionary(tr, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
+  },
+  {
+    name: "dyn-mut-self-always-pair",
+    breaks: "a `&mut dyn` of a trait that extends `Iterator` is given its pair, which its dictionary steps as the value",
+    file: "src/lower/traits.rs",
+    find: "            let by_mut = self.param_is_box(id, 0);\n",
+    replace: "            let by_mut = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
+  },
+  {
+    name: "extension-iterator-ungiven",
+    breaks: "a type parameter given as it is bound by the crate's trait that extends `Iterator` is given no `Iterator` dictionary, and stepping it asks its trait's",
+    file: "src/lower/traits.rs",
+    find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
+    replace: "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
 ];

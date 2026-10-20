@@ -4714,6 +4714,15 @@ pub(crate) fn is_extension_entry(tcx: TyCtxt<'_>, method: DefId) -> bool {
 
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
 /// no diagnostic items?
+/// Whether a bound of `id` makes what it bounds an iterator, by its
+/// supertraits: std's extensions of `Iterator`, `DoubleEndedIterator`'s,
+/// and the crate's, `trait Sorted: Iterator`, whose `Iterator` a type
+/// parameter given as it is is given too (ADRs 0488, 0511).
+pub(crate) fn implies_iterator(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    id != iterator && rustc_middle::ty::elaborate::supertrait_def_ids(tcx, id).any(|s| s == iterator)
+}
+
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
         && tcx.def_kind(id) == DefKind::Trait

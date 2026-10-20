@@ -170,8 +170,9 @@ pub(super) fn bounds<'tcx>(
 }
 
 /// A clause's bounds that are given evidence: its own, `bound_of`'s, after
-/// the `Iterator` an iterator's extension on a type parameter given as it
-/// is implies, `I: DoubleEndedIterator`'s, as its supertrait (ADR 0488).
+/// the `Iterator` a trait that extends it on a type parameter given as it
+/// is implies, `I: DoubleEndedIterator`'s or `T: Sorted`'s, as its
+/// supertrait (ADRs 0488, 0511).
 fn bounds_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
@@ -181,7 +182,7 @@ fn bounds_of<'tcx>(
 ) -> impl Iterator<Item = ty::TraitRef<'tcx>> {
     let implied = clause.as_trait_clause().and_then(|p| {
         let tr = p.skip_binder().trait_ref;
-        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {
+        if !super::recognition::implies_iterator(tcx, tr.def_id) {
             return None;
         }
         let iterator = ty::TraitRef::new(tcx, std_item(tcx, StdItem::Iterator), [tr.self_ty()]);
@@ -2217,18 +2218,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut values = values;
             let receiver = values.remove(0);
-            // A `&mut self` method is given the pair, whose `value` a box's is: a
-            // number's impl writes the place it reads (ADR 0099).
-            let by_mut = matches!(
-                self.tcx
-                    .fn_sig(id)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .skip_binder()
-                    .inputs()[0]
-                    .kind(),
-                ty::Ref(_, _, Mutability::Mut)
-            );
+            // A `&mut self` method its dictionary takes a box for is given the
+            // pair, whose `value` a box's is: a number's impl writes the place
+            // it reads (ADR 0099). One of a trait whose `Self` is an iterator,
+            // `trait Summed: Iterator`'s, takes the value, as generic code holds
+            // it (ADRs 0061, 0511).
+            let by_mut = self.param_is_box(id, 0);
             // A pair made here of parts read the same, a struct's last field's
             // `{ value: x.ptr, impl: x.impl }` (ADR 0409), is its parts.
             let parts = match &receiver.kind {
