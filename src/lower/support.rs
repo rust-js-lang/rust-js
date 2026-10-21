@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = args.type_at(0);
                 // A type parameter's, a hash map's, its class its caller's
                 // (ADR 0466).
-                let given = matches!(key.kind(), ty::Param(_) | ty::Alias(..)) && !self.is_sorted(ty);
+                let given = super::recognition::known_by_bounds(key) && !self.is_sorted(ty);
                 if !given && !self.is_key(key, self.is_sorted(ty)) {
                     return Some(key);
                 }

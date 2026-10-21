@@ -384,6 +384,11 @@ fn bound_of<'tcx>(
         return None;
     };
     let mut tr = predicate.trait_ref;
+    // `Vec<T>: Index<J>` holds by `J: SliceIndex<[T]>`, whose dictionary
+    // indexes (ADR 0534).
+    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr) {
+        tr = slice_index;
+    }
     // `Eq` promises more than `PartialEq`, but it's `PartialEq`'s `eq`
     // that's called.
     if is_std_def(tcx, tr.def_id, StdItem::Eq) {
@@ -819,9 +824,7 @@ fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known
         || is_std_def(tcx, trait_id, StdItem::FromIterator);
     let into_iter =
         is_std_def(tcx, trait_id, StdItem::IntoIterator) && !into_iter_by_dictionary(tcx, trait_id, self_ty);
-    (writer && known_here)
-        || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))
-        || into_iter
+    (writer && known_here) || (holder && !super::recognition::known_by_bounds(self_ty.peel_refs())) || into_iter
 }
 
 /// Whether only generic code reads a dictionary of `trait_id`'s: an

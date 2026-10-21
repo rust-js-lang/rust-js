@@ -3809,7 +3809,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         source
             .walk()
             .filter_map(|part| part.as_type())
-            .any(|ty| self.is_user_iterator(ty) || matches!(ty.kind(), ty::Param(_) | ty::Alias(..)))
+            .any(|ty| self.is_user_iterator(ty) || known_by_bounds(ty))
     }
 
     /// What closing an adapter of `source` and another it holds, `other`,
@@ -4254,10 +4254,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .iter()
             .any(|&imp| self.tcx.impl_opt_trait_id(imp) == Some(clone) && self.has_clone_from(imp));
         any && ty.walk().skip(1).any(|part| {
-            part.as_type().is_some_and(|t| {
-                matches!(t.kind(), ty::Param(_) | ty::Alias(..) | ty::Dynamic(..)) || self.own_clone_from(t)
-            })
-        }) || any && matches!(ty.kind(), ty::Param(_) | ty::Alias(..) | ty::Dynamic(..))
+            part.as_type()
+                .is_some_and(|t| known_by_bounds(t) || matches!(t.kind(), ty::Dynamic(..)) || self.own_clone_from(t))
+        }) || any && (known_by_bounds(ty) || matches!(ty.kind(), ty::Dynamic(..)))
     }
 
     /// Does the impl `imp` write its own `clone_from`?
@@ -4764,6 +4763,35 @@ pub(crate) fn implies_iterator(tcx: TyCtxt<'_>, id: DefId) -> bool {
     id != iterator && rustc_middle::ty::elaborate::supertrait_def_ids(tcx, id).any(|s| s == iterator)
 }
 
+/// Whether `ty` is known here only by its bounds: a type parameter, or an
+/// associated type of one, `T::Buffer`, whose dictionaries are given (ADR
+/// 0533). The one place that answers it.
+pub(crate) fn known_by_bounds(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Param(_) | ty::Alias(..))
+}
+
+/// A bound of std's `Index<J>` or `IndexMut<J>` on a `Vec<T>`, an array or a
+/// slice, by an index generic code is given: the `J: SliceIndex<[T]>` it
+/// holds by, std's one impl of them, whose dictionary is its evidence (ADR
+/// 0534).
+pub(crate) fn index_by_slice_index<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> Option<ty::TraitRef<'tcx>> {
+    use rustc_middle::ty::TypeVisitableExt;
+    if !(tcx.is_lang_item(tr.def_id, LangItem::Index) || tcx.is_lang_item(tr.def_id, LangItem::IndexMut)) {
+        return None;
+    }
+    let index = tr.args.type_at(1);
+    if !index.has_param() {
+        return None;
+    }
+    let item = match *tr.self_ty().kind() {
+        ty::Slice(item) | ty::Array(item, _) => item,
+        ty::Adt(adt, args) if tcx.is_diagnostic_item(sym::Vec, adt.did()) => args.type_at(0),
+        _ => return None,
+    };
+    let slice_index = std_item(tcx, StdItem::SliceIndex);
+    Some(ty::TraitRef::new(tcx, slice_index, [index, Ty::new_slice(tcx, item)]))
+}
+
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
         && tcx.def_kind(id) == DefKind::Trait
@@ -4782,7 +4810,7 @@ pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// JS iterator (ADR 0061).
 pub(crate) fn into_iter_by_dictionary(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>) -> bool {
     tcx.is_diagnostic_item(sym::IntoIterator, trait_id)
-        && matches!(self_ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Param(_) | ty::Alias(..)))
+        && matches!(self_ty.kind(), ty::Ref(_, inner, _) if known_by_bounds(*inner))
 }
 
 pub(super) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
@@ -5817,7 +5845,7 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<
         _ => return None,
     };
     let key = args.types().next()?;
-    matches!(key.kind(), ty::Param(_) | ty::Alias(..)).then_some((key, fact))
+    known_by_bounds(key).then_some((key, fact))
 }
 
 /// A slice's unstable sort, or its `select_nth_unstable`, by its method's

@@ -1647,7 +1647,7 @@ export const mutations: Mutation[] = [
     "name": "mir-param-dictionary-of-ref-refused",
     "breaks": "`w.write_char(c)` of a generic writer from MIR, its dictionary's, is refused",
     "file": "src/lower/mir.rs",
-    "find": "                        || generic_args.types().next().is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_))))))\n",
+    "find": "                        || (generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs())))))\n",
     "replace": "                        || false)))\n",
     "tests": [
       "test/corpus.test.ts",
@@ -2788,5 +2788,13 @@ export const mutations: Mutation[] = [
     find: "            clones.push(self.clone_value(Expr::var(name), *ty, span, &mut cloned)?);\n",
     replace: "            clones.push(Expr::var(name));\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
+  },
+  {
+    name: "mir-associated-type-as-mut-refused",
+    breaks: "`as_mut()` of an associated type, `T::Buffer`, is refused, not its dictionary's",
+    file: "src/lower/mir.rs",
+    find: "(generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs()))",
+    replace: "(generic_args.types().next()).is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_)))",
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_as_mut.rs$"],
   },
 ];

@@ -1422,7 +1422,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             source = inner;
         }
-        if matches!(source.kind(), ty::Param(_) | ty::Alias(..)) {
+        if crate::lower::recognition::known_by_bounds(source) {
             return None;
         }
         collected(it)

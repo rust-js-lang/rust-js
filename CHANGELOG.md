@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A bound of `Index<J>` or `IndexMut<J>` on a `Vec`, an array or a
+  slice**, of a generic index (ADR 0534).
+- **`as_mut()` of an associated type**, `T::Buffer` (ADR 0533).
 - **A `Debug` builder held in a variable**, stepped in a branch or a loop
   (ADR 0532).
 - **`try_rfold`** (ADR 0531).

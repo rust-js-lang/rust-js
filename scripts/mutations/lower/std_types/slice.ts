@@ -355,4 +355,20 @@ export const mutations: Mutation[] = [
     replace: "                        let drop = None;\n                        helper(\n                            \"$fill\",",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
+  {
+    name: "generic-index-mut-known-boxed",
+    breaks: "`index_mut` by a generic index whose output is known here, `[u32]`, is left in its box",
+    file: "src/lower/std_types/slice.rs",
+    find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    replace: "                    Some(output) if false && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
+  },
+  {
+    name: "generic-index-mut-cell-unboxed",
+    breaks: "`index_mut` by a generic index of a `String`, a cell, is taken out of its handle",
+    file: "src/lower/std_types/slice.rs",
+    find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    replace: "                    Some(_) if mutable => Expr::held(indexed),",
+    tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
+  },
 ];

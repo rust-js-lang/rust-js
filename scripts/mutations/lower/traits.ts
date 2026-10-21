@@ -587,8 +587,8 @@ export const mutations: Mutation[] = [
     name: "known-writer-through-dictionary",
     breaks: "`write!` of a writer whose type is known goes through its dictionary, given the writer unboxed, and JS throws",
     file: "src/lower/traits.rs",
-    find: "    (writer && known_here)\n        || (holder",
-    replace: "    (writer && false)\n        || (holder",
+    find: "    (writer && known_here) || (holder",
+    replace: "    (writer && false) || (holder",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
   },
   {
@@ -1313,8 +1313,8 @@ export const mutations: Mutation[] = [
     name: "known-extend-by-dictionary",
     breaks: "a known collection's `extend` of generic items goes through a dictionary, given the collection where it takes its box",
     file: "src/lower/traits.rs",
-    find: "        || (holder && !matches!(self_ty.peel_refs().kind(), ty::Param(_) | ty::Alias(..)))\n",
-    replace: "        || (holder && known_here)\n",
+    find: "|| (holder && !super::recognition::known_by_bounds(self_ty.peel_refs()))",
+    replace: "|| (holder && known_here)",
     tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|generic_guard_deref).rs$"],
   },
   {
@@ -1804,5 +1804,13 @@ export const mutations: Mutation[] = [
     find: "            if carried || self.drops(function) == super::drops::Drops::Nothing {\n",
     replace: "            if true || carried || self.drops(function) == super::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+  },
+  {
+    name: "index-bound-as-itself",
+    breaks: "a bound of `Index<J>` on a `Vec<T>` isn't its `J: SliceIndex<[T]>`, whose dictionary indexes",
+    file: "src/lower/traits.rs",
+    find: "    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr) {",
+    replace: "    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr).filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },
 ];

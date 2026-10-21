@@ -828,6 +828,15 @@ test("lowering returns symbolic output and leaves linking to the driver", () => 
 // A refusal is said one way, by `refusal.rs` (ADR 0390): eleven places
 // wrote "rust-js does not support .. yet" themselves, so a refusal of
 // addressable memory couldn't say so wherever it was made.
+// Whether a type is known only by its bounds, a type parameter or an
+// associated type of one, is `recognition::known_by_bounds`'s question:
+// written in place at nine sites, one missed associated types (ADR 0533).
+test("a type known by its bounds is one by known_by_bounds alone", () => {
+  const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /matches!\(.*ty::Param\(_\) \| ty::Alias\(\.\.\)/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(asking).toEqual(["src/lower/recognition.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
+});
+
 test("only refusal.rs words a refusal", () => {
   const wording = sources.filter(file => file !== "src/lower/refusal.rs" && read(file).includes("rust-js does not support"));
   expect(wording).toEqual([]);

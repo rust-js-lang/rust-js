@@ -198,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.payload(ty);
         ty.is_unit()
-            || matches!(ty.kind(), ty::Param(_) | ty::Alias(..))
+            || super::recognition::known_by_bounds(ty)
             || self.option_of(ty).is_some()
             // `undefined` before it's written (ADR 0332).
             || self.recognition().uninit_of(ty).is_some()

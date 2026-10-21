@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     "name": "mir-iterable-collected-generic",
     "breaks": "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
     "file": "src/lower/mir/iter.rs",
-    "find": "        if matches!(source.kind(), ty::Param(_) | ty::Alias(..)) {\n            return None;\n        }\n        collected(",
+    "find": "        if crate::lower::recognition::known_by_bounds(source) {\n            return None;\n        }\n        collected(",
     "replace": "        collected(",
     "tests": [
       "test/lowering.test.ts",

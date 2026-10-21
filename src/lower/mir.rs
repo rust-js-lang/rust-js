@@ -42,7 +42,8 @@ use super::combinators::{IterComb, StepOp};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{
-    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, pure_std, std_item, trait_method,
+    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, known_by_bounds, pure_std, std_item,
+    trait_method,
 };
 use super::refusal::{Refused, refuse};
 use super::representation::{const_js, variant_field};
@@ -5661,9 +5662,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || (super::recognition::operational(tcx, self.krate.foreign, trait_id)
                     && (!gives_ref
                         || self.is_rust_trait(trait_id)
-                        // A type parameter's, its dictionary's, `W::write_char(w, c)`
-                        // of a generic writer (ADR 0180).
-                        || generic_args.types().next().is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_))))))
+                        // One known by its bounds, its dictionary's: `W::write_char(w, c)`
+                        // of a generic writer, `T::Buffer`'s `as_mut()` (ADRs 0180, 0533).
+                        || (generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs())))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {

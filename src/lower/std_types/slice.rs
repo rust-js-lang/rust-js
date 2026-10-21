@@ -548,7 +548,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tr = ty::TraitRef::new(self.tcx, slice_index, [generic_args.type_at(1), slice]);
                 let dictionary = self.dictionary(tr, span)?;
                 let method = if mutable { "index_mut" } else { "index" };
-                Expr::call(Expr::member(dictionary, method), vec![index, items])
+                let indexed = Expr::call(Expr::member(dictionary, method), vec![index, items]);
+                // `index_mut` gives generic code's `&mut`, a box: where what
+                // it gives is known here, a bound's `IndexMut<J, Output =
+                // [u32]>`, what's in it, as a generic function's result is
+                // (ADR 0534).
+                let index_trait = self
+                    .tcx
+                    .require_lang_item(rustc_hir::attrs::lang_items::LangItem::Index, span);
+                let output = crate::lower::recognition::trait_method(self.tcx, index_trait, "Output");
+                let output = ty::Ty::new_projection(
+                    self.tcx,
+                    ty::IsRigid::No,
+                    output,
+                    [generic_args.type_at(0), generic_args.type_at(1)],
+                );
+                let known = (self.tcx)
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+                    .ok()
+                    .filter(|&ty| !crate::lower::recognition::known_by_bounds(ty));
+                match known {
+                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),
+                    _ => indexed,
+                }
             }
             // A clone of the value in each but the last, by its type's
             // `clone_from` where it may have one, as std's is; of items with
