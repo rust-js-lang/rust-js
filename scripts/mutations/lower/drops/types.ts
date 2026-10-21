@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "channels"],
   },
   {
-    name: "library-item-drops-skipped",
-    breaks: "a library with no destructor of its own drops nothing of an associated type, though its consumers' may have one",
-    file: "src/lower/drops/types.rs",
-    find: "                (true, may) if may || self.library => Drops::Runs,\n",
-    replace: "                (true, may) if may => Drops::Runs,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: assoc_drop"],
-  },
-  {
     name: "params-drop-as-own",
     breaks: "what a generic iterator drops of its type parameters is taken as its own, and a generic peekable is refused",
     file: "src/lower/drops/types.rs",

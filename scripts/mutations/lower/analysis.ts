@@ -236,10 +236,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-rcs-uncounted",
-    breaks: "a library counts only the `Rc`s it reads, though its consumers count every one",
+    breaks: "a library counts only the `Rc`s it reads, though its consumers count every one, and, taken to have no destructor, drops nothing of an associated type its consumers' may give one",
     file: "src/lower/analysis.rs",
     find: "    let shares_rcs = library || foreign.any();\n",
     replace: "    let shares_rcs = foreign.any();\n",
-    tests: ["test/crates.test.ts", "-t", "three crates: rc_shared"],
+    tests: ["test/crates.test.ts", "-t", "three crates: rc_shared|two crates: assoc_drop"],
   },
 ];
