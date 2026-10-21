@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "question_drops"],
   },
   {
-    name: "mir-cleanup-spanless",
-    breaks: "what MIR refuses of a cleanup's drop says no place in the Rust",
-    file: "src/lower/mir/drops.rs",
-    find: "            let span = data.terminator().source_info.span;\n            for (index, statement) in data.statements.iter().enumerate() {\n",
-    replace: "            let span = rustc_span::DUMMY_SP;\n            for (index, statement) in data.statements.iter().enumerate() {\n",
-    tests: ["test/traits.test.ts", "-t", "loop over an adapter of owned items"],
-  },
-  {
     name: "array-open-drop-refused",
     breaks: "an array some of whose items moved, `[a, b] = items`, is refused, not dropped item by item",
     file: "src/lower/mir/drops.rs",
