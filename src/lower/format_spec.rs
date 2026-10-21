@@ -28,7 +28,8 @@ pub(super) struct Spec {
     pub(super) plus: bool,
     pub(super) alternate: bool,
     pub(super) zero: bool,
-    pub(super) debug_hex: bool,
+    /// `{:x?}` or `{:X?}`: `Debug` with its integers in hex (ADR 0559).
+    pub(super) debug_hex: Option<Radix>,
     pub(super) width: Option<u16>,
     pub(super) precision: Option<u16>,
     /// `{:>w$}`, `{:.*}`: the width or precision is this argument's value.
@@ -57,7 +58,11 @@ impl Spec {
             plus: flags & (1 << 21) != 0,
             alternate: flags & (1 << 23) != 0,
             zero: flags & (1 << 24) != 0,
-            debug_hex: flags & (3 << 25) != 0,
+            debug_hex: match (flags & (1 << 25) != 0, flags & (1 << 26) != 0) {
+                (true, _) => Some(Radix::LowerHex),
+                (_, true) => Some(Radix::UpperHex),
+                _ => None,
+            },
             // A width or precision of 0 is only a flag: its field is left out.
             width: (flags & (1 << 27) != 0).then_some(0),
             precision: (flags & (1 << 28) != 0).then_some(0),
@@ -140,8 +145,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let num = Num::of(ty);
-        if spec.debug_hex {
-            return Err(self.unsupported(span, "`{:x?}`"));
+        // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559).
+        if let Some(radix) = spec.debug_hex {
+            if !num.is_some_and(|n| !n.float()) {
+                return Err(self.unsupported(span, &format!("`{{:x?}}` of a `{ty}`")));
+            }
+            let spec = Spec {
+                debug_hex: None,
+                ..spec
+            };
+            return self.format_value(value, (Std::FmtRadix(radix), ty), spec, (width, precision), span);
         }
         // Rust gives a placeholder's options to the `fmt` that shows the value,
         // which gives a `{:?}`'s to each part of what it shows, and hands its

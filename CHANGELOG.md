@@ -19,6 +19,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`{:x?}` and `{:X?}` of an integer** (ADR 0559).
+- **A trait's default indexing by the crate's own `Index` impl** of its
+  type parameter (ADR 0560).
 - **A `Vec` into an array of its length**, `<[T; N]>::try_from(v)` (ADR
   0557); and **a byte's escape**, `ascii::escape_default(b)` and
   `b.escape_ascii()`, iterated and shown (ADR 0558).

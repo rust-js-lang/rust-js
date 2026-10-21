@@ -837,6 +837,16 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
   expect(asking).toEqual(["src/lower/recognition.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
 });
 
+// Where a copied default's types are known, the impl's environment with the
+// default's own bounds, is `impl_typing_env`'s question: resolving a call
+// read the impl's alone, and missed a bound of the default's own type
+// parameter (ADR 0560).
+test("a copied default's typing environment is impl_typing_env's alone", () => {
+  const reading = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /self\.given\.self_env\b(?!\s*=)/.test(line) && !/self_env:/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(reading).toEqual(["src/lower/traits.rs: let impl_env = self.given.self_env?;"]);
+});
+
 test("only refusal.rs words a refusal", () => {
   const wording = sources.filter(file => file !== "src/lower/refusal.rs" && read(file).includes("rust-js does not support"));
   expect(wording).toEqual([]);

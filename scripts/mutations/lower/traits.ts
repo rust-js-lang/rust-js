@@ -433,7 +433,7 @@ export const mutations: Mutation[] = [
     name: "default-resolved-in-trait-env",
     breaks: "a default copied into `impl<T> Getter<T> for Option<T>` calls the impl's methods through its dictionary, not directly: right, but not the JS a person writes",
     file: "src/lower/traits.rs",
-    find: "        let typing_env = self.given.self_env.unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
+    find: "        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
     replace: "        let typing_env = self.typing_env;\n        super::items::resolve_instance_in(",
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
     snapshots: true,
@@ -1868,5 +1868,13 @@ export const mutations: Mutation[] = [
     find: "                || (is_std_def(self.tcx, trait_id, StdItem::IntoIterator) && self.holds_into_iter(self_ty)))",
     replace: "                || false)",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
+  {
+    name: "default-resolved-without-own-bounds",
+    breaks: "a call in a copied default resolves in the impl's environment alone, and the crate's `Index<Id> for [T]` of the default's own `[B]` isn't found",
+    file: "src/lower/traits.rs",
+    find: "        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
+    replace: "        let typing_env = self.given.self_env.unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
+    tests: ["test/corpus.test.ts", "-t", "^default_crate_index.rs$"],
   },
 ];

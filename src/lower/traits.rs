@@ -1087,7 +1087,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return ty;
         }
         let ty = self.in_impl_terms(ty);
-        let typing_env = self.given.self_env.unwrap_or(self.typing_env);
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         self.tcx
             .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
@@ -1101,7 +1101,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
-        let typing_env = self.given.self_env.unwrap_or(self.typing_env);
+        // The impl's, with the default's own bounds, which its own type
+        // parameters need, `[B]: Index<PatternID>` (ADR 0560).
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         super::items::resolve_instance_in(self.tcx, typing_env, def_id, args)
     }
 
