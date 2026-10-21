@@ -43,7 +43,10 @@ export function parseManifest(text) {
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")
-          && Array.isArray(item.drops) && item.drops.every(Number.isInteger))) {
+          && Array.isArray(item.drops) && item.drops.every(Number.isInteger)
+          // ADR 0548: the type parameters it steps, each by its index and its trait's key.
+          && Array.isArray(item.stepped) && item.stepped.every(step => Array.isArray(step) && step.length === 2
+            && Number.isInteger(step[0]) && typeof step[1] === "string"))) {
       throw new Error("Invalid rust-js library contract; expected library ABI 4");
     }
   }
