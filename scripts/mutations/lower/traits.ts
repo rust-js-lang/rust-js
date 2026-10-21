@@ -1763,7 +1763,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "        self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(associated_into_iter|back_steps).rs$"],
   },
   {
     name: "impl-call-default-drops",
