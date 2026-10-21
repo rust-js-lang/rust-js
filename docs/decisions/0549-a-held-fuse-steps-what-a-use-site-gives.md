@@ -43,7 +43,7 @@ range, and steps each from its back and counts it, against native Rust.
 
 - itertools' `pad_using` steps from its back.
 - `$knowing(..)` is written at each use, twice in `PadUsing`'s
-  `next_back`. The std-bodies draft, proposed, would retire
+  `next_back`. The [std-bodies draft](draft/std-bodies.md) would retire
   held adapters' hand-modeling for std's own bodies.
 - Mutations leave the use site's dictionaries ungiven, a `Fuse` off the
   list, `$closing`'s source unreachable, and `$fuse`'s ends fixed where
