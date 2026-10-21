@@ -1,6 +1,8 @@
 # 0061. `impl Iterator` is the type it hides; a generic iterator is any JS iterable
 
-Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
+Status: Accepted, amended by [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md):
+an `IntoIterator` whose iterator is held as it is is given as it is.
+Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 Amended by [0421](0421-std-associated-type-drops-are-given.md): the JS
 iterator made of one of the crate's, `$iterator(value, next)`, has `of`,
 `value`, which its drop drops; and a trait impl's method is given one, as

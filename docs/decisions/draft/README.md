@@ -29,9 +29,7 @@ Estimated difficulty, hardest first; this is not implementation order:
 3. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md).
 4. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.
-5. [An `IntoIterator` whose iterator is held as it is is given as it is](into-iter-held-as-it-is.md):
-   one representation where ADR 0061's JS iterator meets ADR 0411's value
-   given as it is; itertools' last probe difference.
+
 
 Suggested order: iterators, panic support once its abort gate is
 resolved, then shipped crates one at a time (memchr's is accepted in

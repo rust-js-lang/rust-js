@@ -1210,4 +1210,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
+  {
+    name: "into-iter-held-as-given-iterable",
+    breaks: "`into_iter()` of one whose `IntoIter` is held as it is is `$intoIter`, a JS iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "        if std_method == Some(IterMethod::IntoIter) && !self.holds_into_iter(receiver_ty) {\n",
+    replace: "        if std_method == Some(IterMethod::IntoIter) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
 ];

@@ -759,9 +759,10 @@ export const mutations: Mutation[] = [
     name: "extension-bound-read",
     breaks: "a `DoubleEndedIterator` bound is taken for one that reads its iterator as its own type, which is then given as it is",
     file: "src/lower/iterators.rs",
-    find: "            && !super::recognition::is_iterator_extension(tcx, tr)\n",
+    find: "        && !super::recognition::is_iterator_extension(tcx, tr)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
+    snapshots: true,
   },
   {
     name: "given-js-iterator-backless",
@@ -1022,5 +1023,21 @@ export const mutations: Mutation[] = [
     find: " && !self.iterator_given_as_it_is(ty.peel_refs())",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
+  },
+  {
+    name: "into-iter-never-held",
+    breaks: "no `IntoIterator`'s `IntoIter` is held as it is, so a range is given as a JS iterator and stepped as a range",
+    file: "src/lower/iterators.rs",
+    find: "                && reads_its_value(tcx, p.def_id())\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
+  {
+    name: "into-iter-param-made-js-iterator",
+    breaks: "a type parameter whose `IntoIter` is held as it is is made a JS iterator by its caller",
+    file: "src/lower/iterators.rs",
+    find: "    if into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, param.index, param.name)) {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
 ];

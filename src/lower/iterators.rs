@@ -57,6 +57,35 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
     (callee.helper_name() == Some("$iterator")).then(|| args.first().cloned())?
 }
 
+/// Whether a bound of `tr` reads its value as its own type, `Clone`'s or
+/// `Debug`'s, or the crate's trait that extends `Iterator` (ADR 0511): not
+/// a marker's, nor `Iterator`'s or std's extension of it, whose methods
+/// its JS iterator answers (ADRs 0164, 0456). The one rule of what's
+/// given as it is, of an iterator and of what an `IntoIterator` makes.
+fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
+    tr != std_item(tcx, StdItem::Iterator)
+        && !super::recognition::is_iterator_extension(tcx, tr)
+        && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
+}
+
+/// Whether `id` holds what `into` makes as an `IntoIterator`, its
+/// `IntoIter`, as it is: bounds it by a trait that reads its value,
+/// `<T as IntoIterator>::IntoIter: Clone`. Then `into`, a type parameter or
+/// an associated type, is given as it is, with its `IntoIterator`
+/// dictionary, which makes its `IntoIter` as it is (ADR 0552).
+pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
+    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .any(|p| {
+            matches!(*p.self_ty().skip_binder().kind(), ty::Alias(_, ty::AliasTy {
+                kind: ty::Projection { def_id }, args, ..
+            }) if def_id == into_iter && args.type_at(0) == into)
+                && reads_its_value(tcx, p.def_id())
+        })
+}
+
 /// Whether `callee`'s type parameter `index` is its trait's, `Self` or a
 /// parameter of the trait a method of it is called through: given as the
 /// trait's impl takes it, never made a JS iterator for it, which only a
@@ -77,6 +106,10 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     // Bound by `Iterator` itself, or a trait that extends it, std's or the
     // crate's, whose `Iterator` `bounds` gives it (ADRs 0488, 0511), as
     // `bounds` reads its clauses, which make its evidence.
+    // An `IntoIterator` whose `IntoIter` it holds as it is (ADR 0552).
+    if into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, param.index, param.name)) {
+        return true;
+    }
     let iterator = std_item(tcx, StdItem::Iterator);
     let of_param: Vec<DefId> = tcx
         .clauses_of(id)
@@ -97,11 +130,7 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     // not a marker's, nor std's extension of `Iterator`,
     // `DoubleEndedIterator`, whose methods its JS iterator answers (ADRs
     // 0164, 0456).
-    let read = of_param.iter().any(|&tr| {
-        tr != iterator
-            && !super::recognition::is_iterator_extension(tcx, tr)
-            && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
-    });
+    let read = of_param.iter().any(|&tr| reads_its_value(tcx, tr));
     // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
     // projection isn't given back.
     let has = |ty: Ty<'tcx>| {
@@ -514,6 +543,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let env = ty::TypingEnv::post_analysis(self.tcx, id);
         js_iterator && (self.declared_bounds(ty, env.param_env).into_iter()).any(|bound| is(self.tcx, bound))
+    }
+
+    /// Whether this function holds what `ty` makes as an `IntoIterator` as
+    /// it is, `into_iter_held_as_it_is` of it (ADR 0552).
+    pub(in crate::lower) fn holds_into_iter(&self, ty: Ty<'tcx>) -> bool {
+        into_iter_held_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), ty)
     }
 
     /// Whether `ty` is a type parameter of the function being lowered given

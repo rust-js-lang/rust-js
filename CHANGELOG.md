@@ -19,6 +19,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `IntoIterator` whose iterator a generic function holds**, cloned
+  and stepped as it is: itertools runs as native Rust does (ADR 0552).
 - **A `&mut Self` given on where an `IntoIterator` goes**, through a
   dictionary too: itertools' `collect_tuple` (ADR 0551).
 - **A `Fuse` a struct holds, stepped from its back** where it's known to

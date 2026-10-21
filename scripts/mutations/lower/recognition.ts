@@ -2581,4 +2581,12 @@ export const mutations: Mutation[] = [
     replace: "\"std::iter::Enumerate\"",
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
+  {
+    name: "into-iter-itself-unknown",
+    breaks: "an iterator's own `IntoIterator`, std's of every iterator, is refused",
+    file: "src/lower/recognition.rs",
+    find: "            Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
+    replace: "            Ok(ImplSource::UserDefined(imp)) if false && self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
 ];

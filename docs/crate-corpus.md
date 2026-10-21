@@ -20,7 +20,7 @@ newest release its requirement allows.
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
 | either 1.15 | compiles | no probe yet |
-| itertools 0.14 | refused | `IntoIterator::into_iter` in its generic code |
+| itertools 0.14 | runs | measured 2026-10-21, after ADR 0552 |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
 | smallvec 1.15 | runs | |
@@ -55,7 +55,11 @@ it drops, and when, of items with a destructor: a `Drain` taken in part,
 either, measured 2026-10-16, after ADR 0425, compiles past its `Future`,
 `io::Read`, `BufRead` and `Seek` impls, now allowed and never lowered, and
 stops at generic code that calls `Extend::extend` on an `L: Extend<A>`;
-itertools stops there too.
+itertools stopped there too.
+itertools, measured 2026-10-21, after ADRs 0532 to 0552, runs whole: its
+probe's 36 lines of adapters and consumers, `pad_using` from its back, `tuples`,
+`collect_tuple`, `multi_cartesian_product`, `chunk_by`, `tee` and the rest,
+as native Rust gives them.
 arrayvec, measured 2026-10-16, after ADRs 0407 and 0392's amendments, runs
 whole: its `ArrayVec` and `ArrayString`, of raw pointers into an array of
 `MaybeUninit`s, and its `io::Write`. Earlier, 4 of 16 compiled, and each of

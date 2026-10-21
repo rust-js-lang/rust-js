@@ -209,8 +209,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(stepped));
         }
         // `x.into_iter()`: a range stays one, an iterator is itself, and a
-        // collection's items are a JS iterator of them.
-        if std_method == Some(IterMethod::IntoIter) {
+        // collection's items a JS iterator; not one held as it is (ADR 0552).
+        if std_method == Some(IterMethod::IntoIter) && !self.holds_into_iter(receiver_ty) {
             let value = values.into_iter().next().expect("the receiver");
             if self.recognition().is_given_iterable(receiver_ty) {
                 return Ok(Some(crate::lower::iterators::given_into_iter(value)));
