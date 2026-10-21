@@ -91,3 +91,14 @@ same; a refusal is lifted.
 mutations `dyn-shown-of-read-pair-refused`,
 `dyn-to-string-of-read-pair-refused`, `dyn-tail-through-wrapper` and
 `dyn-field-through-wrapper`.
+
+## Amendment: an `Rc` of one
+
+An `Rc` or an `Arc` of such a struct, `Rc<Entry<dyn Display>>`, was
+refused: only a reference or a `Box` held one. An `Rc` never counted is
+the struct, as a `Box` is; a counted one, `{ value, strong, weak }` (ADR
+0320), holds it in `value`, which is given the `impl`, as a counted `Rc`
+of a `dyn` is. Which pointers hold one is `holds_a_dyn_tail`'s, which
+`dyn_tail` and `check_unsize` both ask. `test/corpus/rc_dyn_struct_tail.rs`
+holds a counted `Rc`, one never counted and an `Arc`; mutations
+`rc-dyn-tail-refused` and `counted-rc-dyn-tail-uncelled`.

@@ -2970,7 +2970,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// either way.
     pub(super) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
         let (from, to) = (self.pointee(source), self.pointee(target));
-        if !(target.is_ref() || target.is_box())
+        if !self.holds_a_dyn_tail(target)
             || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did()))
         {
             return None;
@@ -3000,6 +3000,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a `target` pointer to a struct whose last field is a `dyn`
+    /// can hold it (ADR 0409): a reference, a `Box` or an `Rc`, each the
+    /// struct, or a counted `Rc` the cell that holds it (ADR 0320).
+    fn holds_a_dyn_tail(&self, target: Ty<'tcx>) -> bool {
+        target.is_ref() || target.is_box() || self.is_rc(target)
+    }
+
     /// An unsizing JS can't make: of a pointer of the crate's own, or to a
     /// struct whose last field is a `dyn`.
     pub(super) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
@@ -3025,7 +3032,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if pointee.is_adt()
             && matches!(tail.kind(), ty::Dynamic(traits, ..)
                 if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))
-            && (!(target.is_ref() || target.is_box()) || self.is_dyn_debug(tail))
+            && (!self.holds_a_dyn_tail(target) || self.is_dyn_debug(tail))
         {
             return Err(self.unsupported(span, &format!("a `{pointee}`, whose last field is a `dyn`")));
         }
@@ -3109,14 +3116,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let dictionary = self.dyn_dictionary(tail, concrete, span)?;
             // The struct itself holds it: given its `impl` as it's made.
             let path = self.tail_path(self.pointee(target));
-            if path.is_empty() {
+            let counted = self.counted_rc(target).is_some();
+            if path.is_empty() && !counted {
                 return self.given_impl(value, (concrete, trait_id), dictionary, target, span);
             }
             let value = match value.reads_same() {
                 true => value,
-                false => self.spill("value", value, out),
+                false => self.spill(if counted { "rc" } else { "value" }, value, out),
             };
-            let parent = (path.into_iter()).fold(value.clone(), |parent, (ty, i)| self.project(parent, ty, i));
+            // A counted `Rc`'s struct, in its cell.
+            let root = match counted {
+                true => Expr::member(value.clone(), js::HELD),
+                false => value.clone(),
+            };
+            let parent = (path.into_iter()).fold(root, |parent, (ty, i)| self.project(parent, ty, i));
             let given = self.given_impl(parent, (concrete, trait_id), dictionary, target, span)?;
             out.push(StmtKind::Expr(given).at(js::Span::NONE));
             return Ok(value);

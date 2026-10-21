@@ -27,7 +27,7 @@ released any more: `rust-js build` is the one way to build an app.
 - **A struct's `dyn` last field shown** (ADR 0409): `format!("{}",
   &tagged.value)` of a `&Tagged<dyn Display>` is
   `tagged.impl.fmt(tagged.value)`, where it was refused, and so is one held
-  in a `ManuallyDrop`.
+  in a `ManuallyDrop`. An `Rc` or an `Arc` of such a struct is allowed.
 - **A `&mut` shown is what it points at** (ADR 0099): `println!("{r}
   {r:?}")` of `let r = &mut n` is `${n} ${n}`, where it was a handle on `n`
   in a variable named `value`. So is a pinned `&mut`.
