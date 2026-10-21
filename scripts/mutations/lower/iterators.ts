@@ -1115,4 +1115,12 @@ export const mutations: Mutation[] = [
     replace: "                        None\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
   },
+  {
+    name: "counted-adapter-not-apart",
+    breaks: "an `enumerate`, a `take` or a `skip` cloned is refused",
+    file: "src/lower/iterators.rs",
+    find: "                || super::recognition::source_and_count(tcx, ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "cloned_counted_adapters"],
+  },
 ];

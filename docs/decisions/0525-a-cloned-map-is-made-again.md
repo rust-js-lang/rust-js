@@ -67,3 +67,34 @@ field holds, against native Rust.
 - Mutations stop following impl bounds, revealing an `impl Clone`, or
   matching generic code's closure; share a source or a closure; and make
   every `map` cloned apart where a type parameter is cloned.
+
+## Amendment: an `enumerate`, a `take` and a `skip`
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): what's given is the
+same; a refusal is lifted.
+
+**An adapter that holds its source and a count alone, an `Enumerate`, a
+`Take` or a `Skip` (`recognition::source_and_count`), is cloned apart as
+a `Map` is**: made by a function of its source and its count, which it
+keeps as it steps and its clone is made at.
+
+```js
+const makeEnumerate = (it, count) =>
+  $cloning(
+    it.map((item) => {
+      const index = count;
+      count += 1;
+      return [index, item];
+    }),
+    () => makeEnumerate($iter(it.items.slice(it.at, it.end)), count),
+  );
+```
+
+`take(left)` counts `left` down as it gives each item, so its clone takes
+what's left; `skip(n)` sets `n` to none once it gives an item, as it's
+skipped them by then. A JS iterator helper's own count, `map`'s index or
+`take`'s, can't be read, so each keeps its own where its clone can.
+`test/corpus/cloned_counted_adapters.rs` clones each before and after it
+steps, against native Rust; mutations `enumerate-apart-count-unkept`,
+`take-left-unkept`, `skip-n-unkept`, `count-clone-from-start` and
+`counted-adapter-not-apart`.

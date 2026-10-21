@@ -21,6 +21,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `enumerate`, a `take` and a `skip` cloned** (ADR 0525): each is made
+  by a function of its source and the count it keeps, and its clone is made
+  again where it is, where it was refused.
 - **A struct's `dyn` last field shown** (ADR 0409): `format!("{}",
   &tagged.value)` of a `&Tagged<dyn Display>` is
   `tagged.impl.fmt(tagged.value)`, where it was refused, and so is one held

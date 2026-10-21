@@ -70,7 +70,6 @@ depends on what the program does:
 ## Iterators and collections
 
 - A clone of a lazy iterator generic code makes where its source isn't bound by `Clone`: `fn doubled<I: Iterator<Item = i32>>(it: I) -> std::iter::Map<I, fn(i32) -> i32> { it.map(|x| x * 2) } let d = doubled(1..4); let e = d.clone(); println!("{:?} {:?}", d.count(), e.count());`
-- A clone of a lazy iterator that keeps a count of its own, an `enumerate`'s, a `take`'s or a `skip`'s: `let it = (1..4).enumerate(); let c = it.clone(); println!("{} {}", it.count(), c.count());`
 - Looking a key up by what the crate's own `Borrow` gives: `use std::borrow::Borrow; use std::collections::HashMap; #[derive(PartialEq, Eq, Hash)] struct K(String); impl Borrow<str> for K { fn borrow(&self) -> &str { &self.0 } } let mut m = HashMap::new(); m.insert(K("a".into()), 1); println!("{:?}", m.get("a"));`
 
 ## Numbers and text

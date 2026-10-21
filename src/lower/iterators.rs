@@ -488,7 +488,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether an iterator of type `ty` is cloned apart (ADR 0525): an
     /// adapter that holds its source and a function alone, a `Map` or a
-    /// `Filter`, the crate clones, made by a function of them that its clone
+    /// `Filter`, or a count, an `Enumerate`, a `Take` or a `Skip`, the crate
+    /// clones, made by a function of them that its clone
     /// calls again with a clone of each, `$cloning`'s, as a closure cloned
     /// apart is (ADR 0522). The one answer, of what's made and what's cloned.
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
@@ -511,7 +512,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             )
         };
-        let adapter = |ty| super::recognition::source_and_function(tcx, ty).is_some();
+        let adapter = |ty| {
+            super::recognition::source_and_function(tcx, ty).is_some()
+                || super::recognition::source_and_count(tcx, ty).is_some()
+        };
         adapter(ty)
             && (self.krate.cloned.iter())
                 .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))

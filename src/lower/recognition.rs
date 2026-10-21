@@ -6417,6 +6417,22 @@ pub(crate) fn source_and_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
     }
 }
 
+/// The source of std's adapter of type `ty` that holds its source and a
+/// count alone, an `Enumerate`, a `Take` or a `Skip` (ADR 0525).
+pub(crate) fn source_and_count<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if matches!(
+                std_path(tcx, adt.did()).as_str(),
+                "std::iter::Enumerate" | "std::iter::Take" | "std::iter::Skip"
+            ) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
 /// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.
 pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
