@@ -1,4 +1,4 @@
-//! What's measured of std (ADR 0314, the `std-bodies` draft), each by its
+//! What's measured of std (ADR 0314, ADR 0552), each by its
 //! name and where std defines it: its data structures, the iterator traits
 //! whose provided methods are bodies, and the adapters that implement them.
 
@@ -171,7 +171,7 @@ fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
 }
 
 /// The item at `path` in the crate named `krate`, through its modules' children.
-fn by_path(tcx: TyCtxt<'_>, krate: &str, path: &[&str]) -> Option<DefId> {
+pub(super) fn by_path(tcx: TyCtxt<'_>, krate: &str, path: &[&str]) -> Option<DefId> {
     let root = tcx.crates(()).iter().find(|&&c| tcx.crate_name(c).as_str() == krate)?;
     let mut at = root.as_def_id();
     for part in path {

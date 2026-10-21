@@ -951,12 +951,12 @@
 + FilterMap::size_hint	safe
 - FilterMap::try_fold	safe
 - FilterMap::try_rfold	safe
-# Peekable 10 of 16; bodies: 11 safe, 2 spec, 0 opaque, 3 memory, 0 none
+# Peekable 12 of 16; bodies: 11 safe, 2 spec, 0 opaque, 3 memory, 0 none
 + Peekable::count	safe
 + Peekable::fold	safe
 + Peekable::last	safe
 + Peekable::next	safe
-- Peekable::next_back	safe
++ Peekable::next_back	safe
 + Peekable::next_if	safe
 + Peekable::next_if_eq	safe
 - Peekable::next_if_map	safe
@@ -964,7 +964,7 @@
 + Peekable::nth	safe
 + Peekable::peek	memory
 + Peekable::peek_mut	memory
-- Peekable::rfold	safe
++ Peekable::rfold	safe
 + Peekable::size_hint	memory
 - Peekable::try_fold	spec
 - Peekable::try_rfold	spec

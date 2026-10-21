@@ -44,6 +44,7 @@ pub fn lower_crate<'tcx>(
     serde_attrs: &super::SerdeAttributes,
     dependencies: &crate::library::Dependencies,
     export_library: bool,
+    std_bodies: bool,
 ) -> Option<Unlinked> {
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
@@ -84,7 +85,7 @@ pub fn lower_crate<'tcx>(
         quiet_locals,
         named_expressions,
         local_functions,
-    } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library)?;
+    } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
     let defaults: HashMap<LocalModId, DefId> = (modules.iter())
@@ -132,7 +133,7 @@ pub fn lower_crate<'tcx>(
             ),
         };
         let Some(value) = value else {
-            let initializer = initializers.iter().find(|body| body.def_id == def_id);
+            let initializer = initializers.iter().find(|body| body.def_id == def_id.to_def_id());
             // A `const { .. }` block's type is its value's.
             let ty = match (tcx.def_kind(def_id), initializer) {
                 (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,
@@ -180,7 +181,7 @@ pub fn lower_crate<'tcx>(
         });
     }
 
-    let function_bodies = bodies.iter().map(|body| (body.def_id.to_def_id(), *body)).collect();
+    let function_bodies = bodies.iter().map(|body| (body.def_id, *body)).collect();
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
     let no_body = rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit));
@@ -249,12 +250,12 @@ pub fn lower_crate<'tcx>(
         // A trait's default is copied into each impl (ADR 0049); a library's
         // is a function of its own too, for its consumers' impls (ADR 0185).
         .filter(|b| {
-            let id = b.def_id.to_def_id();
+            let id = b.def_id;
             tcx.trait_of_assoc(id).is_none() || (export_library && super::library::reachable(tcx, id))
         })
-        .map(|b| (b.def_id.to_def_id(), Some(*b)))
+        .map(|b| (b.def_id, Some(*b)))
         .chain(dictionaries.iter().map(|id| (*id, None)))
-        .chain(initialized.iter().map(|body| (body.def_id.to_def_id(), Some(*body))))
+        .chain(initialized.iter().map(|body| (body.def_id, Some(*body))))
         .collect();
     let (mut used, mut queued) = (HashSet::new(), HashSet::new());
     let no_facts = super::body_queries::BodyFacts::default();
@@ -395,7 +396,7 @@ pub fn lower_crate<'tcx>(
         .filter(|(id, _)| !derived.contains(id) || reached.contains(id))
     {
         let module = fns[&def_id].module;
-        let initializer = initialized.iter().any(|body| body.def_id.to_def_id() == def_id);
+        let initializer = initialized.iter().any(|body| body.def_id == def_id);
         pass.references.extend(lowered.dependencies.references.drain());
         pass.package_uses.extend(lowered.dependencies.package_uses.drain());
         if dictionaries.contains(&def_id) {
@@ -403,10 +404,9 @@ pub fn lower_crate<'tcx>(
         }
         match lowered {
             lowered
-                if let Some(key) = thread_local_inits
-                    .get(&def_id.expect_local())
-                    .copied()
-                    .or_else(|| initializer.then(|| def_id.expect_local())) =>
+                if let Some(key) = def_id.as_local().and_then(|local| {
+                    (thread_local_inits.get(&local).copied()).or_else(|| initializer.then_some(local))
+                }) =>
             {
                 // `const COUNT = { value: 0 };`: made when the module loads.
                 let function = lowered.function;

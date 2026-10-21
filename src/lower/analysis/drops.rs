@@ -34,7 +34,7 @@ pub(super) fn drop_params<'tcx>(
         body.thir
             .exprs
             .iter()
-            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id.to_def_id()))
+            .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id))
     });
     if !library && !drops_any {
         return HashMap::new();
@@ -82,7 +82,7 @@ pub(super) fn drop_params<'tcx>(
     // to drop. So its `Self`, and each type parameter of its trait that isn't
     // `Copy`, count as given a drop, here to be passed on.
     for body in all_bodies {
-        let method = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let method = tcx.typeck_root_def_id(body.def_id);
         let Some(trait_id) = tcx.trait_of_assoc(method) else {
             continue;
         };
@@ -124,7 +124,7 @@ pub(super) fn drop_params<'tcx>(
     // parameters (ADR 0421).
     let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let caller = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;

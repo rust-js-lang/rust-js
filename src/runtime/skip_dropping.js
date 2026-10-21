@@ -11,7 +11,7 @@ function $skipDropping(it, n, drop) {
           skipping = 0;
           return step;
         }
-        drop(step.value);
+        drop?.(step.value);
       }
       return it.next();
     },

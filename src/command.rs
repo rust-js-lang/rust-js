@@ -50,11 +50,14 @@ pub(crate) struct Build {
     pub manifest: Option<PathBuf>,
     /// `--std-coverage <file>` (ADR 0314).
     pub std_coverage: Option<PathBuf>,
+    /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
+    /// lower, each from the MIR the toolchain ships (ADR 0552).
+    pub std_bodies: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
 
-const USAGE: &str = "usage: rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>] [--library] [--dependency <manifest.json>] [--declarations] [-- <rustc flags>]";
+const USAGE: &str = "usage: rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>] [--library] [--std-bodies] [--dependency <manifest.json>] [--declarations] [-- <rustc flags>]";
 
 /// The command `args` asks for, or what's wrong with them.
 pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
@@ -89,6 +92,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let cargo = flag(&mut ours, "--cargo");
     let library = flag(&mut ours, "--library");
     let declarations = flag(&mut ours, "--declarations");
+    let std_bodies = flag(&mut ours, "--std-bodies");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
@@ -104,6 +108,9 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     if library && manifest.is_none() {
         return Err("--library requires --manifest".into());
     }
+    if std_bodies && !library {
+        return Err("--std-bodies requires --library".into());
+    }
     Ok(Command::Build(Build {
         input,
         output,
@@ -114,6 +121,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         declarations,
         manifest,
         std_coverage,
+        std_bodies,
         rustc: rustc.to_vec(),
     }))
 }

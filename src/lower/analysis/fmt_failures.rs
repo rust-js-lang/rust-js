@@ -30,7 +30,7 @@ pub(super) fn failing_fns<'tcx>(
     let mut failing: HashSet<DefId> = HashSet::new();
     let mut calls: Vec<(DefId, Callee)> = Vec::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
         for expr in body.thir.exprs.iter() {
             match expr.kind {

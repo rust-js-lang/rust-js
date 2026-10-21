@@ -312,31 +312,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }));
         }
-        // `rev()` and `peekable()`: of the crate's iterator, its own
-        // `next_back`; of a range, stepped from its end; of items made
-        // already, an array's, a `$iter` of them; not of a lazy one, whose
-        // closures would run in another order (ADR 0164).
-        if matches!(std_method, Some(IterMethod::Rev | IterMethod::Peekable)) {
+        // `rev()`: of the crate's iterator, its own `next_back`; of a range,
+        // stepped from its end; of items made already, an array's, a `$iter`
+        // of them; not of a lazy one, whose closures would run in another
+        // order (ADR 0164).
+        if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
+            let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
             if self.is_user_iterator(iter_ty) {
                 return match self.own_next_back(iter_ty)? {
-                    Some(double_ended) if std_method == Some(IterMethod::Rev) => self
-                        .user_iterator(receiver, iter_ty, double_ended, "next_back", span)
-                        .map(Some),
-                    _ => Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"))),
+                    Some(back) => self.user_iterator(receiver, iter_ty, back, "next_back", span).map(Some),
+                    None => Err(unsupported(self)),
                 };
             }
-            let range = self.range_kind(iter_ty);
-            return Ok(Some(match (std_method, range) {
-                (Some(IterMethod::Rev), None) if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
-                (Some(IterMethod::Rev), Some(kind)) if let Some(step) = kind.step(true) => {
-                    self.stepped_by(receiver, Expr::helper(step))
-                }
-                (_, Some(_)) => {
-                    return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
-                }
-                _ => self.rev_or_peekable_items(receiver, (iter_ty, output), std_method, span)?,
+            return Ok(Some(match self.range_kind(iter_ty) {
+                None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
+                Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
+                Some(_) => return Err(unsupported(self)),
+                None => self.rev_items(receiver, (iter_ty, output), span)?,
             }));
+        }
+        // A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
+        // struct (ADR 0552).
+        if std_method == Some(IterMethod::SizeHint) && self.is_peekable(iter_ty) {
+            let it = values.into_iter().next().expect("the receiver");
+            return Ok(Some(crate::lower::iterators::peekable_hint(it)));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
         // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
@@ -794,118 +794,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper(helper, args))
     }
 
-    /// `peekable()` or `rev()` of what holds what has a destructor, closed to
-    /// drop it: `$peekable(it, drop)`, its source closed, then what it
-    /// peeked at dropped, as Rust drops a `Peekable`'s fields (ADR 0514);
+    /// `rev()` of what holds what has a destructor, closed to drop it:
     /// `$rev(it)` of an array's items, stepped from its back, closed to drop
     /// what's left front to back, as Rust's `Rev` drops what it holds (ADR
     /// 0516). `None` of another.
-    fn closed_adapter(
-        &mut self,
-        method: Option<IterMethod>,
-        receiver: Expr,
-        iter_ty: Ty<'tcx>,
-        span: Span,
-    ) -> R<Option<Expr>> {
+    fn closed_rev(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let item = self.iterator_item(iter_ty).expect("an iterator's item");
         let item_drop = self.std_drop_function(item, span)?;
-        let closed = match method {
-            Some(IterMethod::Peekable) if self.peekable_closes(iter_ty) => "$peekable",
-            Some(IterMethod::Rev) if item_drop.is_some() && self.array_source(iter_ty).is_some() => "$rev",
-            _ => return Ok(None),
-        };
+        if item_drop.is_none() || self.array_source(iter_ty).is_none() {
+            return Ok(None);
+        }
         let it = match self.array_source(iter_ty) {
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
             Some(_) => self.std_iterator(receiver, iter_ty),
             None => self.as_js_iterator(receiver, iter_ty, span)?,
         };
         let it = self.closing(it, iter_ty, span)?;
-        Ok(Some(match closed {
-            "$peekable" => Expr::call_helper("$peekable", Expr::optional_args(vec![it], vec![item_drop])),
-            _ => Expr::call_helper("$rev", vec![it]),
-        }))
+        Ok(Some(Expr::call_helper("$rev", vec![it])))
     }
 
-    /// Whether `peekable()` of a `source` is `$peekable`, closed to drop
-    /// what it holds: of a source or items with a destructor (ADR 0514). The
-    /// one answer, of what makes it and what asks its length.
-    pub(in crate::lower) fn peekable_closes(&self, source: Ty<'tcx>) -> bool {
-        let drops = |ty: Ty<'tcx>| self.drops(ty) != crate::lower::drops::Drops::Nothing;
-        !self.recognition().drops_what_it_is(source) && (drops(source) || self.iterator_item(source).is_some_and(drops))
-    }
-
-    /// `rev()` or `peekable()` of a std iterator neither a range nor the
-    /// crate's own: of items made already, an array's, a `$iter` of them,
-    /// reversed for `rev`; a lazy chain made of its items reversed where its
-    /// closures run in the same order; else what steps it from its back,
-    /// reversed (ADR 0535).
-    fn rev_or_peekable_items(
-        &mut self,
-        receiver: Expr,
-        (iter_ty, output): (Ty<'tcx>, Ty<'tcx>),
-        std_method: Option<IterMethod>,
-        span: Span,
-    ) -> R<Expr> {
-        if let Some(closed) = self.closed_adapter(std_method, receiver.clone(), iter_ty, span)? {
+    /// `rev()` of a std iterator neither a range nor the crate's own: of
+    /// items made already, an array's, a `$iter` of them reversed; a lazy
+    /// chain made of its items reversed where its closures run in the same
+    /// order; else what steps it from its back, reversed (ADR 0535).
+    fn rev_items(&mut self, receiver: Expr, (iter_ty, output): (Ty<'tcx>, Ty<'tcx>), span: Span) -> R<Expr> {
+        if let Some(closed) = self.closed_rev(receiver.clone(), iter_ty, span)? {
             return Ok(closed);
-        }
-        // One a struct holds, which keeps what it peeked at: `$peekable` of
-        // what it steps, whatever that is (ADR 0543).
-        if std_method == Some(IterMethod::Peekable) && self.held_adapter(output) {
-            let it = self.held_source(receiver, iter_ty, span)?;
-            return Ok(Expr::call_helper("$peekable", vec![it]));
         }
         // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
         // it steps reversed (ADR 0473).
-        if std_method == Some(IterMethod::Rev)
-            && let Some(inner) = self.recognition().fuse_of(iter_ty)
+        if let Some(inner) = self.recognition().fuse_of(iter_ty)
             && let js::ExprKind::Call(callee, given) = &receiver.kind
             && callee.helper_name() == Some("$fuse")
         {
             let mut given = given.clone();
-            given[0] = self.rev_or_peekable_items(given[0].clone(), (inner, output), std_method, span)?;
+            given[0] = self.rev_items(given[0].clone(), (inner, output), span)?;
             return Ok(Expr::call_helper("$fuse", given));
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
         let items = match self.steps_an_array(iter_ty).then_some(()) {
             // One a variable or a field holds, its `$iter`, stepped or
             // not: what's left of it.
-            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => match std_method {
-                Some(IterMethod::Peekable) => return Ok(receiver),
-                _ => Expr::call_helper("$rest", vec![receiver]),
-            },
+            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
+                Expr::call_helper("$rest", vec![receiver])
+            }
             Some(_) => match self.std_iterator(receiver, iter_ty) {
-                it if std_method == Some(IterMethod::Peekable) => return Ok(it),
                 // Of one just made, the array, which `toReversed`
                 // copies anyway.
-                it if std_method == Some(IterMethod::Rev) && crate::lower::iterators::is_stepped_items(&it) => {
-                    crate::lower::iterators::iterated(it)
-                }
+                it if crate::lower::iterators::is_stepped_items(&it) => crate::lower::iterators::iterated(it),
                 it => Expr::call_helper("$rest", vec![it]),
             },
             // A `$iter` of an array, just made: the array.
-            None if crate::lower::iterators::is_stepped_items(&receiver) => match std_method {
-                Some(IterMethod::Peekable) => return Ok(receiver),
-                _ => crate::lower::iterators::iterated(receiver),
-            },
+            None if crate::lower::iterators::is_stepped_items(&receiver) => crate::lower::iterators::iterated(receiver),
             // Of such an array's skipped and taken from, the array
             // sliced: no closure runs over it.
-            None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),
+            None if counted_chain(&receiver) => sliced(&receiver),
             // A chain over an array's items of callbacks that read
             // no index: the chain over them reversed, each called
             // from the back, as Rust's `next_back` calls them.
-            None if std_method == Some(IterMethod::Rev)
-                && let Some(reversed) = reversed_inward(&receiver) =>
-            {
+            None if let Some(reversed) = reversed_inward(&receiver) => {
                 return Ok(reversed);
             }
             None => match from_iterator(receiver) {
                 Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
-                // Of a lazy one, `peekable()`: what steps it when asked, as
-                // Rust's `Peekable` does, its closures run in the same order.
-                Err(lazy) if std_method == Some(IterMethod::Peekable) => {
-                    return Ok(Expr::call_helper("$peekable", vec![lazy]));
-                }
                 // Of a lazy one, `rev()`, which rustc found steps from its
                 // back, a map's say: what steps it from there, as Rust's `Rev`
                 // does, its closures run as `next_back` runs them (ADR 0535).
@@ -917,10 +868,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             },
         };
-        let items = match std_method {
-            Some(IterMethod::Rev) => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
-            _ => items,
-        };
+        let items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
         Ok(self.stepped_items(items))
     }
 
@@ -1124,12 +1072,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.steps_an_array(iter_ty)
-            || self.knows_its_back(iter_ty)
-            || self.held_knows_its_back(iter_ty)
-            || (self.recognition().is_peekable(iter_ty)
-                && matches!(iter_ty.kind(), ty::Adt(_, args)
-                    if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())))
+        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty) || self.held_knows_its_back(iter_ty)
     }
 
     /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its

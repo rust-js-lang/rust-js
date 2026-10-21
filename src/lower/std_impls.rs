@@ -181,6 +181,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let args = self.args_of(self.clone_trait(), ty);
             return self.impl_call(method, args, vec![place], span);
         }
+        // A bound on the type itself, `Peekable<I>: Clone`'s, whose dictionary
+        // the caller gives (ADR 0049): its `clone`.
+        if ty.has_param()
+            && let Some(dictionary) = self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))
+        {
+            return Ok(Expr::call(Expr::member(dictionary, "clone"), vec![place]));
+        }
         // A constant, like `"Dot"`, is a value no one else holds.
         if place.is_constant() {
             return Ok(place);
@@ -405,14 +412,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // read: a copy, read on its own (ADR 0428).
             ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {
                 Ok(Expr::call(Expr::member(place, "slice"), Vec::new()))
-            }
-            // A `Peekable` a struct holds (ADR 0543): one of a clone of what it
-            // steps, and of what it peeked at.
-            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) => {
-                let iter = self.clone_value(Expr::member(place.clone(), "iter"), args.type_at(0), span, out)?;
-                let item = self.iterator_item(ty).expect("an iterator's item");
-                let clone = self.clone_fn("value", item, span)?;
-                Ok(Expr::call_helper("$peekableClone", vec![place, iter, clone]))
             }
             // A `Cycle` a struct holds: the one it carries, of clones of what
             // it started with and what it steps (ADR 0544).

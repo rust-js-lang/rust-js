@@ -87,11 +87,127 @@ impl<'tcx> Mir<'tcx> {
                 *unwind = UnwindAction::Unreachable;
             }
         }
+        // An optimized body's, std's, switch that goes one way whatever it
+        // tests, which drop elaboration leaves of a flag it settled, is the
+        // way it goes; the discriminant it read and nothing else does, nothing.
+        if !body.source.def_id().is_local() {
+            let unreachable: Vec<BasicBlock> = (body.basic_blocks.iter_enumerated())
+                .filter(|(_, data)| matches!(data.terminator().kind, TerminatorKind::Unreachable))
+                .map(|(block, _)| block)
+                .collect();
+            for data in body.basic_blocks.as_mut() {
+                let terminator = data.terminator_mut();
+                if let TerminatorKind::SwitchInt { targets, .. } = &terminator.kind {
+                    let mut ways: Vec<BasicBlock> = (targets.all_targets().iter().copied())
+                        .filter(|b| !unreachable.contains(b))
+                        .collect();
+                    ways.dedup();
+                    if let [way] = ways[..] {
+                        terminator.kind = TerminatorKind::Goto { target: way };
+                    }
+                }
+            }
+            // A discriminant read in more than one block into one local, as an
+            // inlined `is_none` reads it, is each block's own: a temporary
+            // read once, where it's tested, as a body of the crate's reads it.
+            let mut assigned: IndexVec<Local, usize> = IndexVec::from_elem(0, &body.local_decls);
+            for data in body.basic_blocks.iter() {
+                for statement in &data.statements {
+                    if let StatementKind::Assign(assign) = &statement.kind
+                        && let Some(local) = assign.0.as_local()
+                    {
+                        assigned[local] += 1;
+                    }
+                }
+            }
+            let mut decls = body.local_decls.clone();
+            for data in body.basic_blocks.as_mut() {
+                for i in 0..data.statements.len() {
+                    let StatementKind::Assign(assign) = &data.statements[i].kind else {
+                        continue;
+                    };
+                    let (Some(local), Rvalue::Discriminant(_)) = (assign.0.as_local(), &assign.1) else {
+                        continue;
+                    };
+                    if assigned[local] < 2 {
+                        continue;
+                    }
+                    let fresh = decls.push(decls[local].clone());
+                    let mut rename = RenameLocal {
+                        tcx,
+                        from: local,
+                        to: fresh,
+                    };
+                    for statement in &mut data.statements[i..] {
+                        rustc_middle::mir::visit::MutVisitor::visit_statement(
+                            &mut rename,
+                            statement,
+                            mir::Location::START,
+                        );
+                    }
+                    rustc_middle::mir::visit::MutVisitor::visit_terminator(
+                        &mut rename,
+                        data.terminator_mut(),
+                        mir::Location::START,
+                    );
+                }
+            }
+            body.local_decls = decls;
+            // A discriminant read for a switch that went, which the block's
+            // terminator no longer tests: dropped with it.
+            for data in body.basic_blocks.as_mut() {
+                let tested = match &data.terminator().kind {
+                    TerminatorKind::SwitchInt { discr, .. } => discr.place().and_then(|place| place.as_local()),
+                    _ => None,
+                };
+                let mut read = ReadLocals(Vec::new());
+                for statement in &data.statements {
+                    Visitor::visit_statement(&mut read, statement, mir::Location::START);
+                }
+                data.statements.retain(|statement| {
+                    !matches!(&statement.kind, StatementKind::Assign(assign)
+                        if matches!(assign.1, Rvalue::Discriminant(_))
+                            && assign.0.as_local().is_some_and(|local| tested != Some(local) && !read.0.contains(&local)))
+                });
+            }
+        }
         let awaits = match body.coroutine.is_some() {
             true => awaits::awaits(tcx, &mut body),
             false => Default::default(),
         };
         Mir { body, promoted, awaits }
+    }
+}
+
+/// A local renamed in a block's statements and terminator: a discriminant's
+/// temporary, which an optimized body assigns in more than one block.
+struct RenameLocal<'tcx> {
+    tcx: ty::TyCtxt<'tcx>,
+    from: Local,
+    to: Local,
+}
+
+impl<'tcx> rustc_middle::mir::visit::MutVisitor<'tcx> for RenameLocal<'tcx> {
+    fn tcx(&self) -> ty::TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    fn visit_local(&mut self, local: &mut Local, _: PlaceContext, _: mir::Location) {
+        if *local == self.from {
+            *local = self.to;
+        }
+    }
+}
+
+/// The locals a body reads, as an operand or in a place: what its
+/// optimized form's dead switches leave unread is dropped with them.
+struct ReadLocals(Vec<Local>);
+
+impl<'tcx> Visitor<'tcx> for ReadLocals {
+    fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+        if !matches!(context, PlaceContext::MutatingUse(MutatingUseContext::Store)) && !self.0.contains(&local) {
+            self.0.push(local);
+        }
     }
 }
 
@@ -357,7 +473,7 @@ type Built<'tcx> = (
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {
-        let def_id = body.def_id.to_def_id();
+        let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
         if self.krate.fns.get(&def_id).is_none() {
             return Err(self.unsupported(span, "this item from its MIR"));
@@ -391,10 +507,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
-                span: self.js_span(
-                    self.tcx
-                        .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
-                ),
+                // A body of the crate's maps to where it's written; a std one,
+                // read from its MIR, nowhere (ADR 0364, 0552).
+                span: match body.def_id.as_local() {
+                    Some(local) => self.js_span(self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))),
+                    None => js::Span::NONE,
+                },
                 name_span: self
                     .tcx
                     .def_ident_span(def_id)
@@ -414,7 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mir: &Mir<'tcx>,
         into: &mut Vec<Stmt>,
     ) -> R<(Vec<js::Pattern>, bool)> {
-        let def_id = body.def_id.to_def_id();
+        let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
         let (mut params, mut out) = self.mir_function(mir, None)?;
         // An `async fn`'s body is its coroutine's, an async arrow called
@@ -1237,11 +1355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(body) = def_id
-            .as_local()
-            .and_then(|local| self.krate.closures.get(&local))
-            .copied()
-        else {
+        let Some(body) = self.krate.closures.get(&def_id).copied() else {
             return Err(self.unsupported(span, "this closure, from its MIR"));
         };
         let Some(mir) = &body.mir else {
@@ -1327,7 +1441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its directives, `"use server";`, its body's first statements
         // (ADR 0349).
-        let directives = self.directives(def_id.expect_local());
+        let directives = self.directives(def_id);
         // An `async` body runs as soon as it's made: an async arrow, called
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
@@ -4168,13 +4282,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
+                // An enum's discriminant compared with a variant's, `is_none`'s
+                // inlined into a std body (ADR 0552): the test
+                // of that variant, as a switch on it is.
+                if let (BinOp::Eq | BinOp::Ne, Value::Discriminant(..), Some(variant)) = (op, &l, known) {
+                    let test = self.switch_test(&l, ty, variant as u128, span)?;
+                    return Ok(Value::Expr(match op {
+                        BinOp::Eq => test,
+                        _ => test.negated_test(),
+                    }));
+                }
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
                 let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
                 match op {
                     // A constant's, whose MIR checks as rustc's evaluation does:
                     // rustc evaluates it, so it never overflows; the operation,
-                    // and that it didn't.
+                    // and that it didn't. And a std body's, checked as the crate
+                    // that calls it is, `#[rustc_inherit_overflow_checks]`: as
+                    // the release profile's, which rust-js's is (ADR 0011), it
+                    // wraps, and the check is never made.
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow
                         if matches!(
                             tcx.def_kind(state.body.source.def_id()),
@@ -4182,7 +4309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 | DefKind::AssocConst { .. }
                                 | DefKind::AnonConst
                                 | DefKind::Static { .. }
-                        ) =>
+                        ) || !state.body.source.def_id().is_local() =>
                     {
                         let wrapping = op.overflowing_to_wrapping().expect("an overflowing operation");
                         let value = self.binary(wrapping, l, r, known, ty, span)?;

@@ -1,6 +1,8 @@
 # 0071. An iterator stepped through is a `$iter`, which knows where it is
 
-Status: Accepted. (Amended: `for x in &mut it` and `for x in it.by_ref()` of an
+Status: Accepted. Amended by [0552](0552-std-bodies.md): a `Peekable` is
+std's own struct, not a `$iter`, `peekable()` of any iterator its
+compiled body, and `peek()` the rewrite `$peek(p, next)` over it. (Amended: `for x in &mut it` and `for x in it.by_ref()` of an
 iterator step through `it` itself, so a `break` leaves the rest in it,
 where a loop that stopped early had left `it` as it was, a wrong answer;
 `count()` of one is what it has left, where it was `undefined`; and

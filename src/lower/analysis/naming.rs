@@ -34,7 +34,7 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
         required: HashSet::new(),
     };
     for body in all_bodies {
-        let module = tcx.parent_module_from_def_id(body.def_id);
+        let module = crate::lower::body_module(tcx, body.def_id);
         // What `js::import!` imports when it's asked for, which nothing
         // imports statically (ADR 0304).
         let dynamic: HashSet<ExprId> = (body.thir.exprs.iter())
@@ -283,7 +283,7 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
 /// unique among the type's. The last result says whether it all went well.
 pub(super) fn name_items(
     tcx: TyCtxt<'_>,
-    items: &[LocalDefId],
+    items: &[DefId],
     modules: &[LocalModId],
     globals: &HashSet<String>,
     trait_impls: &[DefId],
@@ -295,17 +295,17 @@ pub(super) fn name_items(
     let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
     let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
     for &def_id in items {
-        let module = tcx.parent_module_from_def_id(def_id);
+        let module = crate::lower::body_module(tcx, def_id);
         let names = taken.entry(module).or_default();
-        let js_name = item_js_name(tcx, def_id.to_def_id(), trait_impls);
-        if trait_impls.contains(&def_id.to_def_id()) && names.contains(&js_name) {
+        let js_name = item_js_name(tcx, def_id, trait_impls);
+        if trait_impls.contains(&def_id) && names.contains(&js_name) {
             let message = format!(
                 "rust-js: generated trait implementation name `{js_name}` collides; put the implementations in separate modules"
             );
             tcx.dcx().span_err(tcx.def_span(def_id), message);
             failed = true;
         }
-        let owner_type = tcx.inherent_impl_of_assoc(def_id.to_def_id()).and_then(|imp| {
+        let owner_type = tcx.inherent_impl_of_assoc(def_id).and_then(|imp| {
             match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
                 ty::Adt(adt, _) => Some(adt.did()),
                 _ => None,
@@ -321,10 +321,10 @@ pub(super) fn name_items(
                 let name = crate::names::fresh_apart(names, &js_name);
                 (name, Some(owner.clone()))
             }
-            None if named_expressions.contains(&def_id.to_def_id()) => (js_name, None),
+            None if named_expressions.contains(&def_id) => (js_name, None),
             None => (fresh_in(names, &js_name), None),
         };
-        fns.insert(def_id.to_def_id(), FnInfo { module, name, owner });
+        fns.insert(def_id, FnInfo { module, name, owner });
     }
     (taken, fns, failed)
 }
@@ -339,7 +339,7 @@ pub(super) fn exported_across_modules<'tcx>(
 ) -> HashSet<DefId> {
     let mut exported = HashSet::new();
     for body in all_bodies {
-        let from = tcx.parent_module_from_def_id(body.def_id);
+        let from = crate::lower::body_module(tcx, body.def_id);
         for expr in body.thir.exprs.iter() {
             let def_id = match (&expr.kind, expr.ty.kind()) {
                 (ExprKind::ZstLiteral { .. }, ty::FnDef(def_id, _))
@@ -392,7 +392,7 @@ pub(super) fn local_functions<'a, 'tcx: 'a>(
 ) -> HashMap<DefId, rustc_span::Span> {
     let mut users: HashMap<DefId, HashSet<DefId>> = HashMap::new();
     for body in bodies {
-        let root = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let root = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
             if let ExprKind::ZstLiteral { .. } = expr.kind
                 && let ty::FnDef(def_id, _) = *expr.ty.kind()

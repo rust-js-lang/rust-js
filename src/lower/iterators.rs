@@ -22,6 +22,25 @@ use rustc_span::def_id::DefId;
 /// boxed (ADR 0051), `boxed`, unboxed; given `back`, its `next_back`, one
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
+/// The `next` of an `Iterator` dictionary, `{ next: $next }`'s `$next`: the
+/// field's value of one written here, else the member.
+pub(in crate::lower) fn next_of(dictionary: Expr) -> Expr {
+    if let js::ExprKind::Object(props) = &dictionary.kind
+        && let [js::Prop::Field(name, value)] = props.as_slice()
+        && name == "next"
+    {
+        return value.clone();
+    }
+    Expr::member(dictionary, "next")
+}
+
+/// A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
+/// struct, `{ iter, peeked }` (ADR 0552): what it steps',
+/// and what it peeked at. The one rewrite, of `size_hint()` and `len()`.
+pub(in crate::lower) fn peekable_hint(peekable: Expr) -> Expr {
+    Expr::call_helper("$peekableHint", vec![peekable])
+}
+
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
     stepped_ends(value, next, boxed, back, None)
 }
@@ -120,10 +139,13 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         _ => tcx.impl_of_assoc(id),
     }
     .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));
+    // A trait's own method takes `Self` as its dictionary gives it, but one
+    // compiled into `@rust-js/std` as a function over `Self`, `peekable`'s
+    // (ADR 0185, 0552), as a function's signature says.
     let signature = matches!(
         tcx.def_kind(id),
         rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
-    ) && tcx.trait_of_assoc(id).is_none()
+    ) && (tcx.trait_of_assoc(id).is_none() || super::recognition::is_compiled_std(tcx, id))
         && tcx.trait_impl_of_assoc(id).is_none()
         && {
             let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
@@ -538,17 +560,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a value of `ty` is a JS iterator that knows its length, its
     /// `len()` (ADR 0456): a type parameter's bound by `ExactSizeIterator`,
-    /// a `dyn`'s, a map of one, or a `Peekable` closed to drop what it holds,
-    /// `$peekable`'s (ADR 0514). The one answer, of what generic code asks
+    /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        if let ty::Adt(_, args) = ty.kind()
-            && self.is_peekable(ty)
-            && self.peekable_closes(args.type_at(0))
-        {
-            return true;
-        }
         if let Some(source) = super::recognition::length_kept_source(self.tcx, ty) {
             return self.knows_its_length(source)
                 || self.made_knowing(source, self.recognition().exact_size_iterator());
@@ -677,6 +692,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // A `Peekable`'s, whose body reaches memory, over std's struct (ADR
+        // 0552).
+        if self.is_peekable(ty) {
+            return Ok(Expr::call(Expr::helper("$exactLen"), vec![peekable_hint(value)]));
+        }
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
         let args = self.args_of(iterator, ty);
@@ -1148,13 +1168,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Closure(ref closure) = self.thir[self.strip(e)].kind else {
             return false;
         };
-        self.closure_calls_rust(self.krate.closures[&closure.closure_id], dyn_fn)
+        self.closure_calls_rust(self.krate.closures[&closure.closure_id.to_def_id()], dyn_fn)
     }
 
     /// `calls_rust`, of a closure's body.
     pub(super) fn closure_calls_rust(&self, body: &super::Body<'tcx>, dyn_fn: bool) -> bool {
         let thir = &body.thir;
-        let mut call = super::body_queries::strip(thir, body.expr);
+        let Some(root) = body.root() else { return false };
+        let mut call = super::body_queries::strip(thir, root);
         if let ExprKind::Block { block } = thir[call].kind
             && thir[block].stmts.is_empty()
             && let Some(value) = thir[block].expr
@@ -1862,7 +1883,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// (ADR 0455), `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528) and
 /// `$memchrIter` (ADR 0529), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 23] = [
     "$memchrIter",
     "$mapEnds",
     "$filterEnds",
@@ -1876,7 +1897,6 @@ pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
     "$repeatingN",
     "$rev",
     "$closing",
-    "$peekable",
     super::std_types::range::LAZY_RANGE,
     "$lazyTakeWhile",
     "$lazySkipWhile",

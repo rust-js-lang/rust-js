@@ -113,15 +113,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // rustc's `ElaborateDrops`, of the paths whose drop JS sees.
         let move_data = MoveData::gather_moves(body, tcx, drops);
-        let mut inits = MaybeInitializedPlaces::new(tcx, body, &move_data)
-            .exclude_inactive_in_otherwise()
-            .skipping_unreachable_unwind()
-            .iterate_to_fixpoint(tcx, body, None)
-            .into_results_cursor(body);
-        let mut uninits = MaybeUninitializedPlaces::new(tcx, body, &move_data)
-            .mark_inactive_variants_as_uninit()
-            .iterate_to_fixpoint(tcx, body, None)
-            .into_results_cursor(body);
+        // A std body, read from the MIR the toolchain ships, has its drops
+        // elaborated by rustc already: each `Drop` left drops what's there,
+        // and its flags are the body's own locals. Its dataflow isn't run,
+        // which its optimized switches wouldn't let be.
+        let elaborated = !body.source.def_id().is_local();
+        let mut cursors = (!elaborated).then(|| {
+            let inits = MaybeInitializedPlaces::new(tcx, body, &move_data)
+                .exclude_inactive_in_otherwise()
+                .skipping_unreachable_unwind()
+                .iterate_to_fixpoint(tcx, body, None)
+                .into_results_cursor(body);
+            let uninits = MaybeUninitializedPlaces::new(tcx, body, &move_data)
+                .mark_inactive_variants_as_uninit()
+                .iterate_to_fixpoint(tcx, body, None)
+                .into_results_cursor(body);
+            (inits, uninits)
+        });
         let mut states = HashMap::new();
         let mut flagged = IndexVec::from_elem(false, &move_data.move_paths);
         let mut behind = HashSet::new();
@@ -138,10 +146,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 LookupResult::Parent(_) => continue,
             };
             let at = body.terminator_loc(block);
-            inits.seek_before_primary_effect(at);
-            uninits.seek_before_primary_effect(at);
+            if let Some((inits, uninits)) = &mut cursors {
+                inits.seek_before_primary_effect(at);
+                uninits.seek_before_primary_effect(at);
+            }
             on_all_children_bits(&move_data, path, |child| {
-                let state = (inits.get().contains(child), uninits.get().contains(child));
+                let state = match &cursors {
+                    Some((inits, uninits)) => (inits.get().contains(child), uninits.get().contains(child)),
+                    None => (true, false),
+                };
                 states.insert((block, child), state);
                 // One that may be there and may not: a flag says (`collect_drop_flags`).
                 if state.0 && state.1 {
@@ -149,8 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
-        drop(inits);
-        drop(uninits);
+        drop(cursors);
         let mut initial = IndexVec::from_elem(false, &move_data.move_paths);
         drop_flag_effects_for_function_entry(body, &move_data, |path, state| {
             initial[path] = state == DropFlagState::Present;

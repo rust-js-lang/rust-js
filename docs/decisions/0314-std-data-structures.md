@@ -72,7 +72,7 @@ for some types counts as known.
 
 ## Amendment: the iterator traits and the adapters are measured too
 
-The `std-bodies` draft measures what each std body is made of, and its
+ADR 0552 measures what each std body is made of, and its
 stratum is the iterator traits' provided methods and the adapters, not the
 data structures. The registry's `measured` lists, beside the data
 structures and their inherent impls, `Iterator`, `DoubleEndedIterator`,

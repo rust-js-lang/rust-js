@@ -304,7 +304,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's and what's the crate's.
     pub(super) fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
         let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;
-        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id())))
+        // Or it's a std trait's provided method compiled into `@rust-js/std`,
+        // `peekable`'s, a function over `Self` called on a type parameter
+        // too (ADR 0185, 0552).
+        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()))
+            || (self.krate.foreign.item(def_id).is_some() && self.tcx.defaultness(def_id).has_value()))
     }
 
     /// `ty`, of a function's own generics, in a call of it, `generic_args`.

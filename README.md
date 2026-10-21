@@ -110,7 +110,10 @@ Runtime helpers are imported where the required behavior needs them, from
 [`@rust-js/runtime`](runtime/README.md), released with the compiler, as
 ReScript's are from `@rescript/runtime`: `import { $index } from "@rust-js/runtime";`.
 Each helper should earn its place; readable output is a design constraint
-throughout the compiler.
+throughout the compiler. What std does that reaches no memory, a
+`Peekable`'s `next`, is std's own body, compiled from the MIR the toolchain
+ships into [`@rust-js/std`](std/README.md), imported the same way
+([ADR 0552](docs/decisions/0552-std-bodies.md)).
 
 ### Work with JavaScript's runtime
 

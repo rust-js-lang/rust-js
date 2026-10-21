@@ -11,6 +11,7 @@
     "tooling",
     "typescript",
     "runtime",
+    "std",
     "examples/vite-react",
     "examples/next"
   ],
@@ -57,7 +58,8 @@
     "timings": "bun scripts/timing.ts",
     "architecture": "bun scripts/architecture-report.ts",
     "matrix": "bun scripts/matrix.ts",
-    "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js"
+    "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js",
+    "std": "cargo build && ./target/debug/rust-js std/lib.rs -o std/index.js --library --manifest std/manifest.json --std-bodies -- --crate-name rust_js_std"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
@@ -65,6 +67,7 @@
     "@playwright/test": "1.63.0",
     "@rolldown/plugin-babel": "0.2.4",
     "@rust-js/runtime": "workspace:*",
+    "@rust-js/std": "workspace:*",
     "@rust-js/typescript": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@types/bun": "1.4.3",

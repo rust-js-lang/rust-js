@@ -215,7 +215,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let strip = |e| super::body_queries::strip(thir, e);
-        let mut value = strip(body.expr);
+        let Some(root) = body.root() else { return false };
+        let mut value = strip(root);
         if let ExprKind::Block { block } = thir[value].kind {
             let block = &thir[block];
             let (true, Some(expr)) = (block.stmts.is_empty(), block.expr) else {

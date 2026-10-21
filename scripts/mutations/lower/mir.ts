@@ -2806,4 +2806,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
     snapshots: true,
   },
+  {
+    name: "discriminant-compared-refused",
+    breaks: "an enum's discriminant compared with a variant's, an inlined `is_none`'s, is refused as read as a value",
+    file: "src/lower/mir.rs",
+    find: "                if let (BinOp::Eq | BinOp::Ne, Value::Discriminant(..), Some(variant)) = (op, &l, known) {\n",
+    replace: "                if let (BinOp::Eq | BinOp::Ne, Value::Discriminant(..), Some(variant)) = (op, &l, known) && false {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

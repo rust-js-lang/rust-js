@@ -17,6 +17,62 @@ use std::collections::{HashMap, HashSet};
 /// A function's, or an impl's, type parameter, by its index.
 type Param = (DefId, u32);
 
+/// Each struct or enum a body read from its MIR alone makes, by its type:
+/// what it holds of the body's parameters, its impls may step.
+fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
+    if !body.thir.exprs.is_empty() {
+        return Vec::new();
+    }
+    let Some(mir) = body.mir.as_ref() else {
+        return Vec::new();
+    };
+    let mut made = Vec::new();
+    for data in mir.body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
+                && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1
+                && let rustc_middle::mir::AggregateKind::Adt(..) = **kind
+            {
+                made.push(assign.0.ty(&mir.body.local_decls, tcx).ty);
+            }
+        }
+    }
+    made
+}
+
+/// Each function a body names, called or taken as a value, with its
+/// arguments: of its THIR, each function value; of a body read from its
+/// MIR alone, a std one's (ADR 0552), each constant of a
+/// function's type.
+fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+    if !body.thir.exprs.is_empty() {
+        return (body.thir.exprs.iter())
+            .filter_map(|expr| match (&expr.kind, fn_def(expr.ty)) {
+                (ExprKind::ZstLiteral { .. }, Some(def)) => Some(def),
+                _ => None,
+            })
+            .collect();
+    }
+    let Some(mir) = body.mir.as_ref() else {
+        return Vec::new();
+    };
+    struct FnDefs<'tcx>(Vec<(DefId, ty::GenericArgsRef<'tcx>)>);
+    impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for FnDefs<'tcx> {
+        fn visit_const_operand(
+            &mut self,
+            constant: &rustc_middle::mir::ConstOperand<'tcx>,
+            _: rustc_middle::mir::Location,
+        ) {
+            if let Some(def) = fn_def(constant.ty()) {
+                self.0.push(def);
+            }
+        }
+    }
+    let mut found = FnDefs(Vec::new());
+    rustc_middle::mir::visit::Visitor::visit_body(&mut found, &mir.body);
+    found.0
+}
+
 /// Each `(function, parameter, trait)` whose dictionary is given: one given
 /// as it is that the function steps by the trait, a method of it of a value
 /// of it, `Iterator`'s of an `IntoIterator`'s, or of another iterator it's
@@ -27,6 +83,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> HashSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
@@ -34,8 +91,34 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // A caller's parameter given on as a callee's, which steps it if that does.
     let mut passed: Vec<(Param, Param)> = Vec::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+        // A caller's parameter given to a library's function, a compiled std
+        // body's among them (ADR 0552), which its manifest says it steps by
+        // a trait: stepped by it here.
+        let steps_through =
+            |stepped: &mut HashSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
+                for (index, arg) in args.iter().enumerate() {
+                    let Some(ty) = arg.as_type() else { continue };
+                    let ty::Param(param) = ty.peel_refs().kind() else {
+                        continue;
+                    };
+                    let generics = tcx.generics_of(callee);
+                    if generics.count() <= index {
+                        continue;
+                    }
+                    let theirs = generics.param_at(index, tcx);
+                    let theirs = ty::Ty::new_param(tcx, theirs.index, theirs.name);
+                    for (clause, _) in tcx.clauses_of(callee).instantiate_identity(tcx) {
+                        if let Some(bound) = clause.skip_normalization().as_trait_clause()
+                            && bound.self_ty().skip_binder() == theirs
+                            && foreign.steps(callee, index as u32, bound.def_id())
+                        {
+                            stepped.insert((caller, param.index, bound.def_id()));
+                        }
+                    }
+                }
+            };
         let pass_on = |passed: &mut Vec<_>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
             for (index, arg) in args.iter().enumerate() {
                 // Or a reference to one, `&mut Self` given as an `I:
@@ -48,10 +131,19 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 }
             }
         };
-        for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                continue;
-            };
+        // A parameter a body read from its MIR holds in a struct, `Peekable {
+        // iter: self, .. }` of std's `peekable` (ADR 0552):
+        // stepped as the struct's impl steps it, its `next`'s.
+        for held in body_aggregates(tcx, body) {
+            if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[held.into()])) {
+                if fns.contains_key(&instance.def_id()) {
+                    pass_on(&mut passed, instance.def_id(), instance.args);
+                } else if foreign.item(instance.def_id()).is_some() {
+                    steps_through(&mut stepped, instance.def_id(), instance.args);
+                }
+            }
+        }
+        for (callee, args) in body_fn_defs(body) {
             // What it steps by: `Iterator`, of its own methods and
             // `IntoIterator`'s, with the extensions one asks of its `Self`,
             // `rev()`'s `DoubleEndedIterator`; or an extension, of
@@ -110,19 +202,43 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         }
                     }
                 }
-                // The crate's iterator holding it, stepped by its impl's `next`.
+                // The crate's iterator holding it, stepped by its impl's `next`;
+                // a library's, std's `Peekable<I>` among them (ADR 0552), by
+                // what its manifest says its `next` steps.
                 if let Ok(Some(instance)) =
                     ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
-                    && fns.contains_key(&instance.def_id())
                 {
-                    pass_on(&mut passed, instance.def_id(), instance.args);
+                    if fns.contains_key(&instance.def_id()) {
+                        pass_on(&mut passed, instance.def_id(), instance.args);
+                    } else if foreign.item(instance.def_id()).is_some() {
+                        steps_through(&mut stepped, instance.def_id(), instance.args);
+                    }
                 }
+                continue;
+            }
+            // A std type's own method rewritten over its struct, a
+            // `Peekable<I>`'s `peek()` (ADR 0552), steps what it holds as its
+            // `next` does.
+            if let Some(imp) = tcx.inherent_impl_of_assoc(callee)
+                && let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind()
+                && crate::lower::recognition::is_compiled_std_type(tcx, adt.did())
+                && let Some(self_ty) = args.types().next()
+                && let Ok(Some(instance)) =
+                    ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.peel_refs().into()]))
+                && foreign.item(instance.def_id()).is_some()
+            {
+                steps_through(&mut stepped, instance.def_id(), instance.args);
                 continue;
             }
             // A function of the crate's, or an impl's item, a dictionary's
             // made of the impl's evidence.
             let resolved = match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
                 Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance,
+                // A library's, by what its manifest says it steps.
+                Ok(Some(instance)) if foreign.item(instance.def_id()).is_some() => {
+                    steps_through(&mut stepped, instance.def_id(), instance.args);
+                    continue;
+                }
                 // A trait's method of a type parameter, its dictionary's: what
                 // it's given as the trait declares it, a parameter given as a
                 // JS iterator made of one given on (ADR 0551).

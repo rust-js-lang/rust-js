@@ -1,6 +1,6 @@
 //! Versioned build-tool contract. Paths are resolved by artifact planning.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -107,6 +107,64 @@ pub struct Artifact {
 }
 
 impl Manifest {
+    /// The manifest with each path relative to `dir`, its own directory:
+    /// `@rust-js/std`'s, committed and built into the compiler, which reads
+    /// it wherever the checkout is (ADR 0552).
+    pub fn relative_to(mut self, dir: &Path) -> Self {
+        let rel = |path: &mut PathBuf| *path = PathBuf::from(crate::paths::relative(dir, path));
+        rel(&mut self.input);
+        rel(&mut self.output);
+        self.sources.iter_mut().for_each(rel);
+        for module in &mut self.modules {
+            rel(&mut module.file);
+            rel(&mut module.map);
+            module.types.iter_mut().for_each(rel);
+            module.source.iter_mut().for_each(rel);
+            module.in_source.iter_mut().for_each(rel);
+            module.imports.iter_mut().for_each(rel);
+        }
+        self.artifacts.iter_mut().for_each(|a| rel(&mut a.file));
+        self.stale.iter_mut().for_each(|a| rel(&mut a.file));
+        if let Some(library) = &mut self.library {
+            library.inputs.iter_mut().for_each(|a| rel(&mut a.file));
+        }
+        self
+    }
+
+    /// The manifest at `path`, each relative path in it, `@rust-js/std`'s,
+    /// resolved against its directory: the one way a manifest file is read.
+    pub fn read_from(path: &Path) -> Result<Self, String> {
+        let manifest = Self::read(&std::fs::read(path).map_err(|e| e.to_string())?)?;
+        let dir = path.parent().ok_or("a manifest has a directory")?;
+        Ok(manifest.resolved_from(dir))
+    }
+
+    /// Each relative path, resolved against `dir`.
+    fn resolved_from(mut self, dir: &Path) -> Self {
+        let abs = |path: &mut PathBuf| {
+            if path.is_relative() {
+                *path = dir.join(&*path);
+            }
+        };
+        abs(&mut self.input);
+        abs(&mut self.output);
+        self.sources.iter_mut().for_each(abs);
+        for module in &mut self.modules {
+            abs(&mut module.file);
+            abs(&mut module.map);
+            module.types.iter_mut().for_each(abs);
+            module.source.iter_mut().for_each(abs);
+            module.in_source.iter_mut().for_each(abs);
+            module.imports.iter_mut().for_each(abs);
+        }
+        self.artifacts.iter_mut().for_each(|a| abs(&mut a.file));
+        self.stale.iter_mut().for_each(|a| abs(&mut a.file));
+        if let Some(library) = &mut self.library {
+            library.inputs.iter_mut().for_each(|a| abs(&mut a.file));
+        }
+        self
+    }
+
     pub fn read(bytes: &[u8]) -> Result<Self, String> {
         let manifest: Self = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
         if manifest.version != VERSION {

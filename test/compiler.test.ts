@@ -1140,11 +1140,14 @@ test("the report's JS: function values, case mapping, and plain array reads", as
 
 // ADR 0071: an iterator stepped through is a `$iter`, which knows where it is;
 // a `Peekable` a struct holds, `$peekable` of it (ADR 0543).
+// A `Peekable` is std's own, `{ iter, peeked }` over the `$iter`, its `next`
+// and `next_if` compiled into `@rust-js/std`, its `peek` rewritten (ADR 0552).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
-  expect(js).toContain("return { chars: $peekable($iter(Array.from(src))), line: 1 };");
-  expect(js).toContain("const c = $peek(lexer.chars);");
-  expect(js).toContain('if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {');
+  expect(js).toContain("return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };");
+  expect(js).toContain("const c = $peek(lexer.chars, $next);");
+  expect(js).toContain("Peekable.next_if_eq(");
+  expect(js).toContain('Peekable.next_if(lexer.chars, (c) => c !== "\\n", { next: $next }) == null');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = it.toArray();");
   expect(js).toContain("return c.toUpperCase() + $restStr(chars);");

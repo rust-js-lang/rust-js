@@ -77,6 +77,7 @@ const vitePackages = [
   "@rust-js/typescript",
   "@rust-js/native",
   "@rust-js/runtime",
+  "@rust-js/std",
   ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm }) => npm),
 ];
 
@@ -238,6 +239,7 @@ async function main() {
           "@rust-js/build": dependency("@rust-js/build"),
           "@rust-js/native": dependency("@rust-js/native"),
           "@rust-js/runtime": dependency("@rust-js/runtime"),
+          "@rust-js/std": dependency("@rust-js/std"),
         },
         overrides: { "@rust-js/build": dependency("@rust-js/build"), "@rust-js/typescript": dependency("@rust-js/typescript") },
       }),

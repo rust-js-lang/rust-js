@@ -67,8 +67,57 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     let mut bodies = lowered_bodies(tcx);
     // What only an unlowered impl reaches is no JS either (ADR 0425).
     let unreached = reached_only_unlowered(tcx, &bodies);
-    bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id.to_def_id())));
+    bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id)));
     bodies
+}
+
+/// std's bodies compiled into `@rust-js/std` (ADR 0552):
+/// each from the optimized MIR the toolchain ships, with no THIR beside it,
+/// as a dictionary has none (`pipeline.rs`'s `no_body`).
+pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+    // Each body named, and each closure a body makes, which its MIR names
+    // as it's made: a body of its own, as the crate's closures are.
+    let mut ids: Vec<DefId> = super::recognition::compiled_std(tcx).to_vec();
+    let mut at = 0;
+    while at < ids.len() {
+        let def_id = ids[at];
+        at += 1;
+        if !tcx.is_mir_available(def_id) {
+            continue;
+        }
+        for data in tcx.optimized_mir(def_id).basic_blocks.iter() {
+            for statement in &data.statements {
+                if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
+                    && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1
+                    && let rustc_middle::mir::AggregateKind::Closure(closure, _) = **kind
+                    && !ids.contains(&closure)
+                {
+                    ids.push(closure);
+                }
+            }
+        }
+    }
+    (ids.into_iter())
+        .filter(|&def_id| tcx.is_mir_available(def_id))
+        .map(|def_id| {
+            // What rustc clears of MIR across crates, each local's kind, is
+            // what an optimized body has none of but the plain: rustc's own
+            // dataflow, which says what's dropped, asks it of each local.
+            let mut body = tcx.optimized_mir(def_id).clone();
+            for decl in body.local_decls.iter_mut() {
+                decl.local_info =
+                    rustc_middle::mir::ClearCrossCrate::Set(Box::new(rustc_middle::mir::LocalInfo::Boring));
+            }
+            let mir = super::mir::Mir::new(tcx, body, tcx.promoted_mir(def_id).clone());
+            Body {
+                def_id,
+                thir: rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit)),
+                expr: rustc_middle::thir::ExprId::from_u32(0),
+                facts: super::body_queries::BodyFacts::default(),
+                mir: Some(mir),
+            }
+        })
+        .collect()
 }
 
 /// A derived impl whose methods are lowered, written only where they're
@@ -133,7 +182,7 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             let thir = (*thir.borrow()).clone();
             let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
             Some(Body {
-                def_id,
+                def_id: def_id.to_def_id(),
                 thir,
                 expr,
                 facts,
@@ -160,7 +209,7 @@ fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> HashSet<DefId
         }
     };
     for body in bodies {
-        calls_in(tcx.typeck_root_def_id(body.def_id.to_def_id()), &body.thir);
+        calls_in(tcx.typeck_root_def_id(body.def_id), &body.thir);
     }
     let unlowered: HashSet<DefId> = (tcx.hir_crate_items(()).definitions())
         .filter(|&def_id| {
@@ -208,9 +257,11 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
         ) || tcx.is_const_fn(def_id.to_def_id())
     };
     let mut order: Vec<usize> = (0..bodies.len()).collect();
-    order.sort_by_key(|&i| !evaluated(bodies[i].def_id));
+    order.sort_by_key(|&i| !bodies[i].def_id.as_local().is_some_and(evaluated));
     for i in order {
         let body = &mut bodies[i];
+        // A std body has its MIR already, the toolchain's.
+        let Some(local) = body.def_id.as_local() else { continue };
         if !matches!(
             tcx.def_kind(body.def_id),
             DefKind::Fn
@@ -223,15 +274,15 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
         ) {
             continue;
         }
-        let (built, promoted) = tcx.mir_promoted(body.def_id);
-        body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(body.def_id)) {
+        let (built, promoted) = tcx.mir_promoted(local);
+        body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(local)) {
             (false, _) => Some(super::mir::Mir::new(
                 tcx,
                 built.borrow().clone(),
                 promoted.borrow().clone(),
             )),
             (true, true) => {
-                let def_id = body.def_id.to_def_id();
+                let def_id = body.def_id;
                 Some(super::mir::Mir::new(
                     tcx,
                     tcx.mir_for_ctfe(def_id).clone(),
@@ -328,7 +379,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             let thir = (*thir.borrow()).clone();
             let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
             Some(Body {
-                def_id,
+                def_id: def_id.to_def_id(),
                 thir,
                 expr,
                 facts,
@@ -342,7 +393,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
 /// into the captured THIR; all collections are owned by this analysis result.
 pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub bodies: Vec<&'a Body<'tcx>>,
-    pub closures: HashMap<LocalDefId, &'a Body<'tcx>>,
+    pub closures: HashMap<DefId, &'a Body<'tcx>>,
     pub trait_impls: Vec<DefId>,
     pub dictionaries: Vec<DefId>,
     pub import_names: HashMap<LocalModId, HashMap<Export, String>>,
@@ -418,6 +469,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     initializers: &[Body<'tcx>],
     dependencies: &crate::library::Dependencies,
     library: bool,
+    std_bodies: bool,
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
     let foreign = super::library::Foreign::new(tcx, dependencies);
     if !bindings::validate(tcx)
@@ -442,8 +494,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .test
         .then(|| tcx.entry_fn(()).map(|(main, _)| main))
         .flatten();
-    let is_harness = |def_id: LocalDefId| {
-        let root = tcx.typeck_root_def_id(def_id.to_def_id());
+    let is_harness = |def_id: DefId| {
+        let root = tcx.typeck_root_def_id(def_id);
         Some(root) == harness_main || markers.iter().any(|&(marker, _)| marker.to_def_id() == root)
     };
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
@@ -466,7 +518,18 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 && (!from_serde_derive(tcx, id) || serde_impl(tcx, id.to_def_id()).is_some())
         })
         .map(|id| id.to_def_id())
-        .collect();
+        // And std's, whose methods a crate given std's bodies lowers (ADR
+        // 0552): each impl of a body of std's, once.
+        .chain(all_bodies.iter().filter_map(|body| match body.def_id.is_local() {
+            true => None,
+            false => tcx.trait_impl_of_assoc(body.def_id),
+        }))
+        .fold(Vec::new(), |mut impls, id| {
+            if !impls.contains(&id) {
+                impls.push(id);
+            }
+            impls
+        });
     // The impls that get a dictionary: not `From`'s (ADR 0052), nor serde's,
     // whose evidence is a codec (ADR 0081), nor a JS object's `Deref` to the
     // class it extends, which is never lowered: its dictionary is std's,
@@ -493,7 +556,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .iter()
         .partition(|body| matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn));
     let all_bodies = &all_bodies;
-    let closures: HashMap<LocalDefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
+    let closures: HashMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     let mut uses = js_uses(tcx, all_bodies);
     // What the crate's libraries export (ADR 0100) is named before lowering,
@@ -531,7 +594,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // in its block, whose value is.
     let thread_local_inits: HashMap<LocalDefId, LocalDefId> = bodies
         .iter()
-        .map(|body| body.def_id)
+        .filter_map(|body| body.def_id.as_local())
         .filter(|&d| tcx.def_kind(d) == DefKind::Fn)
         .chain(
             consts
@@ -545,7 +608,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A closure `with_borrow` runs while its thread-local is borrowed, that
     // can't ask whether it is (ADR 0328).
     let quiet = |closure: LocalDefId| {
-        closures.get(&closure).is_some_and(|body| {
+        closures.get(&closure.to_def_id()).is_some_and(|body| {
             let recognition = Recognition {
                 tcx,
                 typing_env: ty::TypingEnv::post_analysis(tcx, closure),
@@ -616,12 +679,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
     // What gets a JS name: functions and methods, `const`s, dictionaries,
     // and codecs.
-    let items: Vec<LocalDefId> = bodies
+    let items: Vec<DefId> = bodies
         .iter()
         .map(|body| body.def_id)
-        .chain(consts.iter().copied())
-        .chain(dictionaries.iter().map(|id| id.expect_local()))
-        .chain(codecs.iter().map(|id| id.expect_local()))
+        .chain(consts.iter().map(|id| id.to_def_id()))
+        .chain(dictionaries.iter().copied())
+        .chain(codecs.iter().copied())
         .collect();
     // The modules that get a JS file: every module with one of those, in the
     // order the first one appears. The root is no other: a root of `mod`s
@@ -629,7 +692,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut modules = Vec::new();
     let mut seen_modules = HashSet::new();
     for &def_id in &items {
-        let module = tcx.parent_module_from_def_id(def_id);
+        let module = super::body_module(tcx, def_id);
         if seen_modules.insert(module) {
             modules.push(module);
         }
@@ -692,7 +755,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, library);
-    let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns);
+    let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     let given = crate::lower::traits::Given {
         copied: &copied,
         stepped: &stepped,
@@ -702,7 +765,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
-    let pretty_debug = uses_pretty_debug(tcx, all_bodies);
+    // `@rust-js/std`'s writers take whether they're pretty: its consumers
+    // are every program, any of which may ask `{:#?}` of a `Peekable`.
+    let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
     let format_options = uses_format_options(tcx, all_bodies);
 
     Some(AnalyzedCrate {
@@ -761,7 +826,7 @@ fn collect_tests<'tcx>(
         let name = tcx.item_name(marker.to_def_id());
         let Some(test) = bodies
             .iter()
-            .map(|body| body.def_id)
+            .filter_map(|body| body.def_id.as_local())
             .find(|&f| tcx.parent_module_from_def_id(f) == module && tcx.item_name(f.to_def_id()) == name)
         else {
             continue;
@@ -798,7 +863,7 @@ fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> HashSet<DefId> {
         // may not evaluate, `B = Self::A` (rustc's defaults-cyclic-pass).
         .filter(|body| {
             !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })
-                && tcx.trait_of_assoc(body.def_id.to_def_id()).is_some())
+                && tcx.trait_of_assoc(body.def_id).is_some())
         })
         .flat_map(|body| body.thir.exprs.iter())
         .filter_map(|expr| match expr.kind {

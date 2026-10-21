@@ -26,12 +26,12 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
 // The helpers the compiler takes for a JS iterator as they're made, and
 // writes no `Iterator.from` around, are `$iterator`, `$fuse` (ADR 0473),
 // `$intoIter` (ADR 0475), `$cycleOf` (ADR 0491), `$repeating` and
-// `$repeatingN` (ADR 0513), `$rev` (ADR 0516), `$closing` and `$peekable`
-// (ADR 0518), `$mapEnds` (ADR 0455), `$filterEnds` (ADR 0526),
+// `$repeatingN` (ADR 0513), `$rev` (ADR 0516), `$closing` (ADR 0518),
+// `$mapEnds` (ADR 0455), `$filterEnds` (ADR 0526),
 // `$enumerate` (ADR 0528) and `$memchrIter` (ADR 0529), and each of the
 // runtime's generators (ADR 0472): the
 // compiler's list, held to the runtime.
-test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $peekable, $mapEnds, $filterEnds, $enumerate, $memchrIter and the runtime's generators", () => {
+test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $mapEnds, $filterEnds, $enumerate, $memchrIter and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -52,7 +52,6 @@ test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf,
       "$repeatingN",
       "$rev",
       "$closing",
-      "$peekable",
       "$mapEnds",
       "$filterEnds",
       "$enumerate",

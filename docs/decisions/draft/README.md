@@ -21,13 +21,10 @@ Estimated difficulty, hardest first; this is not implementation order:
    [0529](../0529-a-shipped-memchr-searches-bytes.md), with memchr:
    [regex](shipped-regex.md) and [url](shipped-url.md), each qualified on
    its own.
-2. [std's bodies are std's own; a recognizer is a proved rewrite to an idiom](std-bodies.md):
-   a second reading of MIR, optimized and without THIR, into a generated
-   `@rust-js/std`; the measure beside each method in
-   [`docs/std-coverage.txt`](../../std-coverage.txt) says which bodies it
-   would take. It would take in most of the iterators draft below.
-3. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md).
-4. [`catch_unwind` catches a Rust panic](catch-unwind.md):
+2. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md):
+   what [0552](../0552-std-bodies.md) takes in as each adapter's body is
+   compiled, `Peekable`'s first.
+3. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.
 
 Suggested order: iterators, panic support once its abort gate is

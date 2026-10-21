@@ -2,8 +2,8 @@
 //! of its data structures, each provided method of the iterator traits and
 //! each method of the adapters' impls, and whether recognition knows it,
 //! for the ratchet in `test/std-coverage.test.ts`, which no method may
-//! leave. And, beside each, what its body in std is made of (the
-//! `std-bodies` draft): whether rust-js could lower it from the MIR the
+//! leave. And, beside each, what its body in std is made of (ADR
+//! 0552): whether rust-js could lower it from the MIR the
 //! toolchain ships, or it reaches what JS hasn't, addressable memory.
 
 use std::collections::HashMap;
@@ -105,12 +105,15 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
                     }
                     _ => None,
                 };
-                let known = match as_called {
-                    Some((trait_item, trait_args)) => recognition.classify(trait_item, trait_args).is_some(),
-                    None => [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
-                        .into_iter()
-                        .any(|pattern| recognition.classify(def_id, given(pattern)).is_some()),
-                };
+                // Known as an idiom `classify` writes, or as std's own body,
+                // compiled into `@rust-js/std` (ADR 0552).
+                let known = recognition::is_compiled_std(tcx, def_id)
+                    || match as_called {
+                        Some((trait_item, trait_args)) => recognition.classify(trait_item, trait_args).is_some(),
+                        None => [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
+                            .into_iter()
+                            .any(|pattern| recognition.classify(def_id, given(pattern)).is_some()),
+                    };
                 let body = bodies.of(tcx, def_id);
                 let method = format!("{name}::{}", tcx.item_name(def_id));
                 match methods.iter_mut().find(|(m, _, _)| *m == method) {

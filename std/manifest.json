@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "compiler": {
+    "version": "0.0.4",
+    "toolchain": "1.99.0",
+    "abi": 1
+  },
+  "library": {
+    "version": 4,
+    "name": "rust_js_std",
+    "crate_hash": "a42aaceb09a4e59be67452c30c359b7e",
+    "items": [
+      {
+        "key": "608f92abc48d28da7243376338849ce",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableClone",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da38cab17ab1fac150",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableClone_clone",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa79dd9d70cde8ae6",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableDebug",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28dac5a3ee4a5aa565e2",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableDebug_fmt",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28da1d6e948359746f0c",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableDoubleEndedIterator_next_back",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28daea76782e41ad439b",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableDoubleEndedIterator_rfold",
+        "member": null,
+        "drops": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ],
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2b45c09784066f3f",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_count",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2a17b78c8c046b2e",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_fold",
+        "member": null,
+        "drops": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28dacce619e70f8723ad",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_last",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [
+          0
+        ],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da70aa29bfeee429e4",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2d140cabef561ebf",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_nth",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28dac64ab3a680f6d81c",
+        "rust_path": "rust_js_std::core::iter::Iterator::peekable",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_peekable",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28dad12216f944f1246d",
+        "rust_path": "rust_js_std::core::iter::Peekable::<I>::next_if",
+        "module": [
+          "iter"
+        ],
+        "export": "Peekable",
+        "member": "next_if",
+        "drops": [
+          0,
+          1,
+          2
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da728f660cb07d24ff",
+        "rust_path": "rust_js_std::core::iter::Peekable::<I>::next_if_eq",
+        "module": [
+          "iter"
+        ],
+        "export": "Peekable",
+        "member": "next_if_eq",
+        "drops": [
+          0,
+          1,
+          2
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      }
+    ],
+    "impls": [
+      "608f92abc48d28da2b3a75d574f34954",
+      "608f92abc48d28da7243376338849ce",
+      "608f92abc48d28daa79dd9d70cde8ae6",
+      "608f92abc48d28dac4289554910bba96"
+    ],
+    "libraries": [],
+    "inputs": [
+      {
+        "file": "lib.rs",
+        "hash": "5fd2ef15cbcf8969"
+      }
+    ],
+    "keeps_capacity": false,
+    "writers_take_options": true
+  },
+  "input": "lib.rs",
+  "output": "index.js",
+  "sources": [
+    "lib.rs"
+  ],
+  "modules": [
+    {
+      "module": [
+        "iter"
+      ],
+      "file": "iter.js",
+      "map": "iter.js.map",
+      "source": "lib.rs",
+      "in_source": "iter.js",
+      "imports": [],
+      "exports": [
+        "Peekable",
+        "peekableIterator_next",
+        "peekableIterator_count",
+        "peekableIterator_nth",
+        "peekableIterator_last",
+        "peekableIterator_fold",
+        "peekableDoubleEndedIterator_next_back",
+        "peekableDoubleEndedIterator_rfold",
+        "peekableClone_clone",
+        "peekableDebug_fmt",
+        "iterator_peekable",
+        "peekableClone",
+        "peekableDebug"
+      ],
+      "links": [],
+      "type_links": []
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "iter.js",
+      "hash": "6e38d0b0d8b07fa8"
+    },
+    {
+      "file": "iter.js.map",
+      "hash": "e0d3ebedcf8aca7f"
+    }
+  ]
+}

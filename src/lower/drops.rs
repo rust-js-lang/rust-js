@@ -792,7 +792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Each body's own facts, asked where it is, of its own type
             // parameters, with no dictionaries: a type parameter's drop is
             // then a maybe, and its borrow counted.
-            let owner = tcx.typeck_root_def_id(body.def_id.to_def_id());
+            let owner = tcx.typeck_root_def_id(body.def_id);
             let recognition = super::recognition::Recognition {
                 tcx,
                 typing_env: ty::TypingEnv::post_analysis(tcx, owner),
@@ -807,7 +807,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &state,
             );
             let thir = &body.thir;
-            let facts = find_facts(&query, thir, body.def_id.to_def_id());
+            let facts = find_facts(&query, thir, body.def_id);
             // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
             let mut for_a_moment = HashSet::new();
             for expr in thir.exprs.iter() {

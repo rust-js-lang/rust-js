@@ -3,7 +3,7 @@
 // it refuses it, listed in docs/std-coverage.txt. A method known before and
 // refused now fails here, as one newly known does until it's blessed
 // (`BLESS=1`), so the diff shows it. Beside each, after a tab, what its body
-// in std is made of (the `std-bodies` draft): `safe`, MIR rust-js could
+// in std is made of (ADR 0552): `safe`, MIR rust-js could
 // lower down to its vocabulary; `spec`, reaching a std-private trait's
 // method on a type parameter; `opaque`, reaching a body the toolchain
 // ships no MIR of; `memory`, reaching addressable memory; or `none`, no

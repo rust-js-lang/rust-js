@@ -26,6 +26,9 @@ pub struct OutputPlan {
     pub dep_info: Option<(PathBuf, DepInfo)>,
     /// The crate's settings for the JS (ADR 0117).
     pub settings: crate::settings::Settings,
+    /// `@rust-js/std`'s build, whose manifest is committed beside its JS:
+    /// its paths relative to it (ADR 0552).
+    pub std_bodies: bool,
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     /// What the build read besides the crate, once planned: the app's
@@ -445,6 +448,7 @@ impl OutputPlan {
             extra: Vec::new(),
             dep_info: None,
             settings: crate::settings::Settings::default(),
+            std_bodies: false,
             written: Vec::new(),
             read: Vec::new(),
             jsx: HashSet::new(),
@@ -589,8 +593,8 @@ impl OutputPlan {
             // Only remove files owned by this input/output pair, still containing
             // exactly the bytes this compiler wrote. User edits are preserved.
             if path.exists() {
-                let previous = Manifest::read(&std::fs::read(&path).map_err(|e| e.to_string())?)
-                    .map_err(|e| format!("invalid manifest `{}`: {e}", path.display()))?;
+                let previous =
+                    Manifest::read_from(&path).map_err(|e| format!("invalid manifest `{}`: {e}", path.display()))?;
                 if previous.input != input || previous.output != output {
                     return Err(format!("manifest `{}` belongs to another compilation", path.display()));
                 }
@@ -635,6 +639,10 @@ impl OutputPlan {
                     Vec::new()
                 },
                 tests,
+            };
+            let manifest = match self.std_bodies {
+                true => manifest.relative_to(parent_dir(&path)),
+                false => manifest,
             };
             // What Cargo is told of the build, then the manifest, last: a
             // host that sees it sees all the build wrote.
