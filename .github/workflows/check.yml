@@ -40,13 +40,18 @@ on:
 permissions:
   contents: read
 
-# One run at a time, of any branch: a new one, a push's too, cancels the
-# one running; the next finished one runs the mutations of its changes.
-# rustc-tests.yml, started by hand, is one of them too. Called by
-# nightly.yml, a group of its own, so neither cancels the other.
+# One run at a time of each branch, and no branch's touches another's. A
+# push's run waits for the one running, then runs; of several pushes
+# waiting, only the newest runs, and the next finished run's mutations are
+# of all their changes (the `plan` job). A run started by hand, `bun run
+# ci:check`'s or rustc-tests.yml's, cancels the branch's one running: the
+# latest is what's wanted of it. (When every run cancelled the one before,
+# a push's or another branch's, half of `main`'s runs were cancelled, at
+# fifty to a hundred and fifty pushes a day.) Called by nightly.yml, a
+# group of its own, so neither cancels the other.
 concurrency:
-  group: ${{ github.workflow == 'Check' && 'ci' || format('ci-{0}', github.workflow) }}
-  cancel-in-progress: true
+  group: ${{ github.workflow == 'Check' && format('ci-{0}', github.ref) || format('ci-{0}', github.workflow) }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   # Which mutations, those of what changed since `main`'s last finished
@@ -97,11 +102,16 @@ jobs:
       - run: cargo test --locked
 
   # The suite, on one machine, or split across `test_shards`, by how long
-  # each file took (`bun test --shard`).
+  # each file took in the last run that kept its timings (`bun test
+  # --shard`): each shard uploads what it measured, `timings-<shard>`, and
+  # the next run's shards read them all, so the shards finish together.
   test:
     name: test (${{ matrix.shard }}/${{ inputs.test_shards || '2' }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -128,8 +138,19 @@ jobs:
           restore-keys: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bunx --bun playwright install --with-deps chromium
+      - name: Read the last run's timings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/ci.ts timings
       - id: test
         run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: timings-${{ matrix.shard }}
+          path: target/test-timings.json
+          if-no-files-found: ignore
+          retention-days: 7
       # What differs, blessed, as a patch to read and apply: never pushed.
       - name: Bless what differs
         if: failure() && steps.test.outcome == 'failure'

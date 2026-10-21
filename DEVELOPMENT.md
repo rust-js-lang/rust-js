@@ -38,8 +38,8 @@ Keep two loops.
    │ test fails, fix, test passes  │                         │
    │ (inner loop, local)           │                         │
    │ commit on main, push ────────▶│ push starts it ───────▶ │ check  ~10 min
-   │                               │                         │  (jobs at once; a
-   │                               │                         │   newer push cancels it)
+   │                               │                         │  (jobs at once; a newer
+   │                               │                         │   push waits its turn)
    │ next change                   │                         │
    │ ...                           │                         │
    │ ◀── bun run ci:status ────────┼─────────────────────────│ before each commit
@@ -54,9 +54,13 @@ we don't wait for it; we only come back to it.
 
 The repository is public, so GitHub's machines cost it nothing: every push
 to `main` is checked, all of it, the suite on two machines, about ten
-minutes. One run at a time: a newer push cancels the run of the one
-before, and the next finished run's mutations are of what changed since
-the last finished run, the cancelled one's changes too.
+minutes. One run at a time of each branch: a newer push waits for the one
+running, and of several waiting only the newest runs, so each finished
+run's mutations are of what changed since the last finished run, the
+skipped pushes' changes too. (Each run cancelling the one before, a push's
+or another branch's, left half of `main`'s runs unfinished, at fifty to a
+hundred and fifty pushes a day.) A run started by hand cancels the
+branch's one running, and no branch's run touches another's.
 
 ## What runs where
 
@@ -165,7 +169,7 @@ next thing to look at: what made it slower, before the loop is built on it.
 What keeps them there:
 
 - **`check:fast` runs its checks at once**, each a process of its own, and
-  the corpus in parts, a third of the cases each (`RUST_JS_CASES=i/n`,
+  the corpus in parts, one for each two cores (`RUST_JS_CASES=i/n`,
   test/support.ts): one after another they took four minutes. The corpus,
   lowering, compiler and bindings tests always run; the JSX tests where the
   change touches JSX, the snapshot and diagnostic tests where it touches
@@ -203,9 +207,11 @@ What keeps them there:
 - **The check comes with the push**: its mutations are those of what
   changed since `main`'s last finished check, or the commit before (its
   `plan` job). A red run is fixed at once, with another commit.
-- **One run at a time.** A new check, a push's, another branch's, or a
-  `rustc tests` run started by hand, cancels the one running: the latest
-  is what's checked.
+- **One run at a time of each branch.** A push's check waits for the one
+  running; of several waiting, the newest runs. A check started by hand,
+  `bun run ci:check` or a `rustc tests` run, cancels the branch's one
+  running: the latest is what's wanted of it. Another branch's run is
+  neither waited for nor cancelled.
 
 ## When CI writes something: bless patches
 
@@ -257,14 +263,15 @@ splits the suite across four machines.
 
 Each push to `main`, its suite on 2 machines; or `workflow_dispatch` of a
 branch, by `bun run ci:check`, with `test_shards`, 1, 2 or 4, and
-`since`, the commit the mutations are of what changed since. A new run, of
-any branch, cancels the one in progress. Its jobs run at once:
+`since`, the commit the mutations are of what changed since. A push's run
+waits for the branch's one in progress; one started by hand cancels it.
+Its jobs run at once:
 
 | Job | What | Time, about |
 |---|---|---|
 | `plan` | of a push, the commit its mutations are since, `main`'s last finished check, and their machines | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
-| `test` | `bun run test`, or a shard of it; a bless patch on failure | 9 min, 5 in 2 shards |
+| `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`; a bless patch on failure | 9 min, 5 in 2 shards |
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
@@ -302,7 +309,8 @@ cost nothing. Started by hand too: `gh workflow run nightly.yml`.
   registry and `target/debug` by `Cargo.lock` and the toolchain; the WASM
   build's by its lockfile and patches.
 - `scripts/test.ts --shard=i/n`, which `bun test --shard` splits by how
-  long each file took.
+  long each file took, in this checkout and in the last run's shards,
+  whose `timings-*` artifacts `bun scripts/ci.ts timings` fetches.
 - `scripts/mutations.ts --changed=<base>` and `--shard=i/n`, by
   `scripts/shard.ts`.
 - `scripts/ci.ts`: `bun run ci:check`, `ci:status`, `ci:bless`, and a

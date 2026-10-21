@@ -2,7 +2,7 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { checkedSince, latestRuns, mutationShards } from "../scripts/ci";
+import { checkedSince, latestRuns, mutationShards, timingsRun } from "../scripts/ci";
 import { changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 
@@ -133,4 +133,21 @@ test("main's mutations are of what changed since its last finished check", () =>
   const runs = [run("main", 1, "completed", "success"), run("main", 2, "completed", "failure"), run("main", 3, "completed", "cancelled"), run("main", 4, "in_progress", ""), run("b", 5, "completed", "success")];
   expect(checkedSince(runs, "main")).toBe("sha2");
   expect(checkedSince(runs, "c")).toBeUndefined();
+});
+
+// The shards balance by the newest run's timings that are still kept, of
+// any branch; none, and they split by file count.
+test("the shards balance by the newest kept timings", () => {
+  const artifact = (name: string, run: number, createdAt: string, expired = false) => ({ name, run, createdAt, expired });
+  const artifacts = [
+    artifact("results-1", 5, "2026-10-21T10:00:00Z"),
+    artifact("timings-1", 3, "2026-10-21T08:00:00Z"),
+    artifact("timings-2", 3, "2026-10-21T08:01:00Z"),
+    artifact("timings-1", 4, "2026-10-21T09:00:00Z", true),
+    artifact("timings-1", 2, "2026-10-21T07:00:00Z"),
+    artifact("timings-extra", 6, "2026-10-21T11:00:00Z"),
+  ];
+  expect(timingsRun(artifacts)).toBe(3);
+  expect(timingsRun(artifacts.filter((a) => a.run !== 3))).toBe(2);
+  expect(timingsRun([artifact("bless-test-1", 7, "2026-10-21T12:00:00Z")])).toBeUndefined();
 });
