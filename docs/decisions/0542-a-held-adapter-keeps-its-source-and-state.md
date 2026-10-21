@@ -76,3 +76,43 @@ to an iterator a struct holds stepped from its back, against native Rust.
   back, take an array's for unknowing, make a range unknowing its length,
   lend it, refuse its hint, keep no count, install nothing, read neither
   hint, and skip what an adapter's impl asks or what's behind a `&mut`.
+
+## Amendment: a `Take`, a `Skip`, and one the crate clones
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): what's given, shown
+and counted is Rust's; refusals are lifted.
+
+**An adapter that keeps a count of its own, an `Enumerate`, a `Take` or a
+`Skip` (`recognition::counted_adapter`), is explicit where the crate's
+types hold its kind, as before, or where the crate clones one**
+(`analysis::explicit_adapters`, which `explicit_adapter(ty)`, renamed from
+`held_adapter`, answers):
+
+- `$taking(iter, n, drop)` and `$skipping(iter, n, drop)` keep what they
+  step and how many they have left to take or skip, `n`, as Rust's `Take`
+  and `Skip` do: forward, from the back as Rust's `next_back` steps them,
+  their length, size hint and `Debug`, `Take { iter: .., n: .. }`.
+  `$skipping` replaces `$skipDropping`, the skip of items with a
+  destructor, which kept its count hidden: one stateful skip.
+- **A clone of one is one of a clone of what it steps, at its count**:
+  `$enumerate(it, numbered.count)`, where `it` is a clone of
+  `$iteratorValue(numbered.iter)`, the value its type has, made as
+  capable as a held one's source is. Cloning one was refused.
+- Closing one closes what it steps, `$closed(iter)`, as closing an
+  adapter does (ADR 0465).
+
+A count is state a JS iterator helper hides, `map`'s index or `take`'s,
+so it's the adapter's own, where a clone, a `Debug` and a back can read
+it: the state ADR 0525's made-again adapters don't have.
+The readability measure's `$iter` share grows, 61.6 to 61.9 in ten
+thousand lines, and its renamed one, 824.7 to 825.2: a clone of an
+array's iterator is a `$iter` of what it has left (ADR 0530), and the
+value a clone is made of is held, `value`, `value$1`, read twice, for
+its iterator and its count, in the new corpus cases that clone them.
+`test/corpus/cloned_counted_adapters.rs` clones each before and after it
+steps, and holds a `Take` and a `Skip` in a struct, stepped from either
+end, counted and shown, against native Rust. Mutations
+`cloned-counted-not-explicit`, `counted-clone-from-start`,
+`counted-length-unknown`, `held-steps-enumerate-only`,
+`take-debug-as-enumerate`, `enumerate-clone-count-ignored`, and
+`taking.ts`'s and `skipping.ts`'s.

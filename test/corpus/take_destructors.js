@@ -8,7 +8,7 @@ import {
   $lent,
   $next,
   $range,
-  $skipDropping,
+  $skipping,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -288,7 +288,7 @@ function main() {
         }
         let skip;
         try {
-          skip = $skipDropping($closing(tmp$5, $dropEach(nDrop_drop)), 2, nDrop_drop);
+          skip = $skipping($closing(tmp$5, $dropEach(nDrop_drop)), 2, nDrop_drop);
         } catch (error) {
           for (const item of all) {
             nDrop_drop(item);
@@ -448,7 +448,7 @@ function main() {
             throw error;
           }
           try {
-            skipped = $skipDropping($closing(tmp, $dropEach(nDrop_drop)), 1, nDrop_drop);
+            skipped = $skipping($closing(tmp, $dropEach(nDrop_drop)), 1, nDrop_drop);
           } catch (error) {
             for (const item of all) {
               nDrop_drop(item);
@@ -549,7 +549,7 @@ function main() {
           }
           let tmp$4;
           try {
-            tmp$4 = $skipDropping($closing(tmp$1, $dropEach(nDrop_drop)), 1, nDrop_drop);
+            tmp$4 = $skipping($closing(tmp$1, $dropEach(nDrop_drop)), 1, nDrop_drop);
           } catch (error) {
             for (const item of all) {
               nDrop_drop(item);

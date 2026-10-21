@@ -2360,8 +2360,8 @@ export const mutations: Mutation[] = [
     name: "rev-type-unclosed",
     breaks: "a `Rev` of an array's items with a destructor held is a std type refused",
     file: "src/lower/recognition.rs",
-    find: "            \"std::iter::Rev\" => sources.next().filter(|&source| self.array_source(source).is_some()),\n",
-    replace: "",
+    find: "            \"std::iter::Rev\" => {\n                let source = sources.next()?;\n",
+    replace: "            \"std::iter::Rev\" if false => {\n                let source = sources.next()?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
   {
@@ -2702,5 +2702,21 @@ export const mutations: Mutation[] = [
     find: "        if self.tcx.is_lang_item(def_id, LangItem::IntoFutureIntoFuture) {\n            return None;\n        }\n",
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "async"],
+  },
+  {
+    name: "held-steps-enumerate-only",
+    breaks: "an explicit `take` or `skip` can't be stepped from its back, refused",
+    file: "src/lower/recognition.rs",
+    find: "    counted_adapter(tcx, ty).map(|(_, _, source)| source)\n",
+    replace: "    enumerated_source(tcx, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+  },
+  {
+    name: "rev-of-closing-unclosed",
+    breaks: "a `rev()` of a chain over items with a destructor isn't closed as it's dropped, so what it never gave isn't dropped",
+    file: "src/lower/recognition.rs",
+    find: "                    None => self.closing_source(source)?,\n",
+    replace: "                    None => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
 ];

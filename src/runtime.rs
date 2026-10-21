@@ -83,7 +83,8 @@ helpers! {
     InstantCheckedSince,
     FindDropping,
     Closing,
-    SkipDropping,
+    Skipping,
+    Taking,
     Round,
     Checked,
     CheckedDiv,
@@ -816,7 +817,8 @@ impl Helper {
             Helper::InstantCheckedSince => include_str!("runtime/instant_checked_since.js"),
             Helper::FindDropping => include_str!("runtime/find_dropping.js"),
             Helper::Closing => include_str!("runtime/closing.js"),
-            Helper::SkipDropping => include_str!("runtime/skip_dropping.js"),
+            Helper::Skipping => include_str!("runtime/skipping.js"),
+            Helper::Taking => include_str!("runtime/taking.js"),
             // `x.round()`: a half away from zero, where `Math.round` goes up.
             Helper::Round => include_str!("runtime/round.js"),
             // `a.checked_add(b)`: the exact result, or `None` out of range. An

@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "    let shares_rcs = foreign.any();\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_shared|two crates: assoc_drop"],
   },
+  {
+    name: "cloned-counted-not-explicit",
+    breaks: "an `enumerate`, a `take` or a `skip` the crate clones isn't explicit, and its clone is refused",
+    file: "src/lower/analysis.rs",
+    find: "    explicit_adapters.extend(\n        cloned\n",
+    replace: "    drop(\n        cloned\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+  },
 ];

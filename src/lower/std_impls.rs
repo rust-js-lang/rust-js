@@ -2,7 +2,7 @@
 //! implementation: derived ones and std types' (ADRs 0052, 0053). A
 //! hand-written one is called instead.
 
-use super::recognition::{StdItem, std_item};
+use super::recognition::{Counted, StdItem, std_item};
 use super::representation::Num;
 use super::{FnCx, R, Shape, lower_first};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
@@ -415,8 +415,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `Cycle` a struct holds: the one it carries, of clones of what
             // it started with and what it steps (ADR 0544).
-            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {
+            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {
                 Ok(Expr::call_helper("$clone", vec![place]))
+            }
+            // An explicit `Enumerate`, `Take` or `Skip` (ADR 0542): one of a
+            // clone of what it steps, as its type has it, made as capable as a
+            // held one's, at its count, given its items' drop (ADR 0525).
+            ty::Adt(..)
+                if self.explicit_adapter(ty)
+                    && let Some((kind, _, source)) = super::recognition::counted_adapter(self.tcx, ty) =>
+            {
+                let place = match place.reads_same() {
+                    true => place,
+                    false => self.spill("it", place, out),
+                };
+                let stepped = Expr::call_helper("$iteratorValue", vec![Expr::member(place.clone(), "iter")]);
+                let cloned = self.clone_value(stepped, source, span, out)?;
+                let it = self.held_source(cloned, source, span)?;
+                let (helper, kept) = match kind {
+                    Counted::Enumerate => ("$enumerate", "count"),
+                    Counted::Take => ("$taking", "n"),
+                    Counted::Skip => ("$skipping", "n"),
+                };
+                let mut args = vec![it, Expr::member(place, kept)];
+                if kind != Counted::Enumerate
+                    && let Some(item) = self.iterator_item(ty)
+                {
+                    args.extend(self.std_drop_function(item, span)?);
+                }
+                Ok(Expr::call_helper(helper, args))
             }
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left, each item a

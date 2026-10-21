@@ -52,3 +52,17 @@ parameter given as it is in a variable and steps it from its back.
   `$mapEnds(..)`.
 - Mutations see no such type, make it unknowing, give its range as it is,
   and leave out ADR 0488's back or a source's dictionaries.
+
+## Amendment: a map of a `Vec`'s items with a destructor
+
+`vec.into_iter().map(f).rev()` of items with a destructor was refused once
+the map was held in a variable: an array's map is left to native forms,
+which can't step a source closed to drop its items (ADR 0465), `$closing`.
+Such a map, `back_stepped`'s `dropping_items`, is made knowing its back
+where it's made, the type `rev()` asks too: `$mapEnds` of its source
+closed to drop what it hasn't given, which `$mapEnds` closes as it's
+closed, and the `Rev` of it is closed as it's dropped
+(`closed_on_drop`). What it never gave is dropped front to back, as Rust
+drops it. `test/corpus/rev_lazy_drops.rs` against native Rust; mutations
+`rev-of-dropping-map-unasked`, `map-ends-source-unclosed`,
+`map-ends-unclosed` and `rev-of-closing-unclosed`.

@@ -436,9 +436,11 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: HashSet<Ty<'tcx>>,
-    /// The kinds of std's iterator adapters the crate's types hold, each
-    /// explicit wherever the crate makes one (ADR 0542).
-    pub held_adapters: HashSet<DefId>,
+    /// The kinds of std's iterator adapters explicit wherever the crate
+    /// makes one (ADR 0542): those its types hold, and those that keep a
+    /// count it clones, an `Enumerate`, a `Take` or a `Skip`, whose clone
+    /// is of their source and their count (ADR 0525).
+    pub explicit_adapters: HashSet<DefId>,
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub back_stepped: HashSet<Ty<'tcx>>,
@@ -662,10 +664,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // `Rc`; both only grow, so a second pass settles them.
     // The types the crate clones (ADRs 0522, 0525).
     let cloned = clones::cloned_types(tcx, all_bodies);
-    // The kinds of adapters the crate's types hold (ADR 0542).
-    let held_adapters = held_adapters::held_adapters(tcx);
-    // The map and filter types it steps from their back (ADR 0545).
-    let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies);
+    // The kinds of adapters explicit wherever the crate makes one: those its
+    // types hold (ADR 0542), and those that keep a count it clones.
+    let mut explicit_adapters = held_adapters::held_adapters(tcx);
+    explicit_adapters.extend(
+        cloned
+            .iter()
+            .filter_map(|&ty| super::recognition::counted_adapter(tcx, ty).map(|(_, id, _)| id)),
+    );
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
     if !closure_facts.fn_dyns_drop
@@ -676,6 +682,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts);
     }
+    // The map and filter types it steps from their back (ADR 0545), and of
+    // an array's items with a destructor, which its native forms don't step.
+    let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
+        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
+    });
     // A closure cloned apart, made by a function of what it holds, where a
     // clone of it isn't the closure itself (ADR 0522).
     let cloned_apart = closure_facts.find_cloned_apart(|id| {
@@ -812,7 +823,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         counted,
         closure_facts,
         cloned,
-        held_adapters,
+        explicit_adapters,
         back_stepped,
         changed_vecs,
         drop_params,

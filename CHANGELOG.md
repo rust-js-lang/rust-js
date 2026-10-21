@@ -21,9 +21,14 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
-- **An `enumerate`, a `take` and a `skip` cloned** (ADR 0525): each is made
-  by a function of its source and the count it keeps, and its clone is made
-  again where it is, where it was refused.
+- **An `enumerate`, a `take` and a `skip` cloned** (ADR 0542): each one the
+  crate clones keeps its count explicit, `$enumerate`, `$taking` and
+  `$skipping`, and its clone is one of a clone of what it steps, at its
+  count, where it was refused. A `Take` or a `Skip` a struct holds is
+  explicit too, stepped from its back and shown as std shows it.
+  `$skipping` replaces `$skipDropping`.
+- **A `rev()` of a map of a `Vec`'s items with a destructor** (ADR 0545),
+  held in a variable, where it was refused.
 - **A struct's `dyn` last field shown** (ADR 0409): `format!("{}",
   &tagged.value)` of a `&Tagged<dyn Display>` is
   `tagged.impl.fmt(tagged.value)`, where it was refused, and so is one held

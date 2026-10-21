@@ -785,7 +785,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0491); and one a struct holds, of an array's too, which
             // keeps both it cycles (ADR 0544).
             Std::Step(StepOp::Cycle)
-                if self.held_adapter(output)
+                if self.explicit_adapter(output)
                     || !arg_tys
                         .first()
                         .is_some_and(|t| self.array_source(t.peel_refs()).is_some()) =>

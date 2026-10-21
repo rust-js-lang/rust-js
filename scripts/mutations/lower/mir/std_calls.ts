@@ -682,7 +682,7 @@ export const mutations: Mutation[] = [
     name: "held-cycle-of-array-generated",
     breaks: "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
     file: "src/lower/mir/std_calls.rs",
-    find: "                if self.held_adapter(output)\n                    || !arg_tys\n",
+    find: "                if self.explicit_adapter(output)\n                    || !arg_tys\n",
     replace: "                if !arg_tys\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },

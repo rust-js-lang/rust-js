@@ -532,8 +532,16 @@ export const mutations: Mutation[] = [
     name: "held-cycle-clone-refused",
     breaks: "a held `Cycle`'s clone is refused",
     file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {\n",
-    replace: "            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() && false => {\n",
+    find: "            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {\n",
+    replace: "            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
+  {
+    name: "counted-clone-from-start",
+    breaks: "a clone of an explicit `enumerate`, `take` or `skip` starts its count again, not where it is",
+    file: "src/lower/std_impls.rs",
+    find: "                let mut args = vec![it, Expr::member(place, kept)];\n",
+    replace: "                let mut args = vec![it, Expr::int(0)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
 ];

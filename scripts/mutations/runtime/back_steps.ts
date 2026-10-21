@@ -82,4 +82,20 @@ export const mutations: Mutation[] = [
     replace: "      return step.done ? step : pair(step, enumerated.count);\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
+  {
+    name: "map-ends-unclosed",
+    breaks: "closing a map made knowing its back doesn't close its source",
+    file: "src/runtime/back_steps.js",
+    find: "return: () => $closed(it) });",
+    replace: "});",
+    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
+  },
+  {
+    name: "enumerate-clone-count-ignored",
+    breaks: "an explicit `enumerate` given a count starts at 0",
+    file: "src/runtime/back_steps.js",
+    find: "  enumerated.count = count;\n",
+    replace: "  enumerated.count = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+  },
 ];

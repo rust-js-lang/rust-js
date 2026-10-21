@@ -285,8 +285,9 @@ struct CrateFacts<'a, 'tcx> {
     closure_facts: &'a analysis::ClosureFacts,
     /// The types the crate clones (ADR 0525).
     cloned: &'a HashSet<Ty<'tcx>>,
-    /// The kinds of std's adapters the crate's types hold (ADR 0542).
-    held_adapters: &'a HashSet<DefId>,
+    /// The kinds of std's adapters explicit wherever the crate makes one
+    /// (ADR 0542): those its types hold, and those with a count it clones.
+    explicit_adapters: &'a HashSet<DefId>,
     /// The map and filter types the crate steps from their back (ADR 0545).
     back_stepped: &'a HashSet<Ty<'tcx>>,
     /// The trait constants generic code reads (ADR 0106).

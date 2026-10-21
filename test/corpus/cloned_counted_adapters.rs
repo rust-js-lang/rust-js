@@ -1,6 +1,15 @@
-// An `enumerate`, a `take` and a `skip` cloned where they've stepped (ADR
-// 0525): each made by a function of its source and the count it keeps, its
-// clone made again at the count it's at.
+// An `enumerate`, a `take` and a `skip` that keep their count explicit (ADR
+// 0542): cloned where they've stepped, each a clone of what it steps at the
+// count it's at; and held by a struct, stepped from either end, its length
+// asked, and shown as std shows it.
+use std::iter::{Skip, Take};
+
+#[derive(Debug)]
+struct Window {
+    rows: Take<std::vec::IntoIter<u32>>,
+    rest: Skip<std::ops::Range<u32>>,
+}
+
 fn main() {
     let mut numbered = "abcde".chars().enumerate();
     numbered.next();
@@ -23,4 +32,13 @@ fn main() {
         stepped.collect::<Vec<_>>(),
         after.collect::<Vec<_>>()
     );
+
+    let mut window = Window {
+        rows: vec![1, 2, 3, 4, 5].into_iter().take(3),
+        rest: (0..6).skip(2),
+    };
+    println!("{:?} {} {}", window, window.rows.len(), window.rest.len());
+    println!("{:?} {:?} {}", window.rows.next_back(), window.rows.next(), window.rows.len());
+    println!("{:?} {:?} {}", window.rest.next_back(), window.rest.next(), window.rest.len());
+    println!("{window:?}");
 }

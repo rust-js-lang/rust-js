@@ -701,4 +701,12 @@ export const mutations: Mutation[] = [
     replace: "            if !value.reads_same() {\n",
     tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
   },
+  {
+    name: "take-debug-as-enumerate",
+    breaks: "an explicit `Take` shows its count as `count`, not std's `n`",
+    file: "src/lower/display.rs",
+    find: "                    super::recognition::Counted::Take => (\"Take\", \"n\"),\n",
+    replace: "                    super::recognition::Counted::Take => (\"Take\", \"count\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+  },
 ];

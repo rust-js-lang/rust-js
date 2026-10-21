@@ -31,13 +31,20 @@ function $findBack(it, p, found = (item) => item, drop) {
   return undefined;
 }
 
+// `it` closed, `return()`, where it can be, as an adapter closed closes
+// what it steps (ADR 0465): done.
+function $closed(it) {
+  it.return?.();
+  return { done: true, value: undefined };
+}
+
 // A map of a JS iterator that knows its back or its length, `it.map(f)`,
 // which knows them too, as Rust's `Map` is double-ended and exact-sized
 // where its source is: each of its source's items, `f`'s, from either end
-// (ADRs 0455, 0456).
+// (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
 function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
-  const map = Iterator.from({ next: () => mapped(it.next()) });
+  const map = Iterator.from({ next: () => mapped(it.next()), return: () => $closed(it) });
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
   return map;
@@ -63,17 +70,19 @@ function $filterEnds(it, p) {
 // counted from the front; one from the back is where it is, the count so
 // far and how many were left before it, as Rust's `next_back` counts it
 // (ADR 0528). Its back and its length are its source's, asked as they're
-// asked: a use site may give a source its own, `$knowing`'s.
-function $enumerate(iter) {
+// asked: a use site may give a source its own, `$knowing`'s. A clone starts
+// at the `count` it's given; closing it closes what it steps.
+function $enumerate(iter, count = 0) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = Iterator.from({
     next: () => {
       const step = enumerated.iter.next();
       return step.done ? step : pair(step, enumerated.count++);
     },
+    return: () => $closed(enumerated.iter),
   });
   enumerated.iter = iter;
-  enumerated.count = 0;
+  enumerated.count = count;
   enumerated.hint = () => $sizeHint(enumerated.iter);
   enumerated.back = () => {
     const left = enumerated.iter.len();

@@ -19,15 +19,6 @@ use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R, bindings};
 
-/// What an adapter cloned apart holds besides its source (ADR 0525): a
-/// function, `map`'s or `filter`'s, of its type and whether it's a function
-/// of the crate's; or a count, `enumerate`'s, `take`'s or `skip`'s.
-#[derive(Clone, Copy)]
-enum Held<'tcx> {
-    Function(Ty<'tcx>, bool),
-    Count,
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
     /// iterator, from MIR: `None` if it's another.
@@ -61,10 +52,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
     }
 
-    /// `mir_iter_call`'s, of a `map` or a `filter`, an `enumerate`, a `take`
-    /// or a `skip` cloned apart (ADR 0525): made by a function of its source
-    /// and its function or its count, which its clone calls again, of a
-    /// source generic code is given too.
+    /// `mir_iter_call`'s, of a `map` or a `filter` cloned apart (ADR 0525):
+    /// made by a function of its source and its function, which its clone
+    /// calls again, of a source generic code is given too.
     fn cloned_apart_call(
         &mut self,
         def_id: DefId,
@@ -75,34 +65,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let std_method = self.recognition().iterator_method(def_id);
-        let Some(
-            method @ (IterMethod::Map
-            | IterMethod::Filter
-            | IterMethod::Enumerate
-            | IterMethod::Take
-            | IterMethod::Skip),
-        ) = std_method.filter(|_| self.iterator_cloned_apart(output))
-        else {
+        if !(matches!(std_method, Some(IterMethod::Map | IterMethod::Filter)) && self.iterator_cloned_apart(output)) {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
-        };
+        }
+        let name = self.tcx.item_name(def_id);
         let receiver_ty = arg_tys[0];
         let mut values = values.into_iter();
-        let receiver = values.next().expect("the receiver");
-        let (held, value) = match method {
-            IterMethod::Map | IterMethod::Filter => {
-                let own = self.is_crate_fn_item(arg_tys[1]);
-                (Held::Function(arg_tys[1], own), values.next().expect("the function"))
-            }
-            // Counted from 0.
-            IterMethod::Enumerate => (Held::Count, Expr::int(0)),
-            _ => (Held::Count, values.next().expect("the count")),
-        };
+        let (receiver, f) = (
+            values.next().expect("the receiver"),
+            values.next().expect("the function"),
+        );
+        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
-        let name = self.tcx.item_name(def_id);
         let adapter = self.cloned_apart_adapter(
-            (name.as_str(), receiver, value),
-            (receiver_ty, output),
-            (held, lent),
+            (name.as_str(), receiver, f),
+            (receiver_ty, arg_tys[1], output),
+            (lent, own),
             span,
             made,
         )?;
@@ -566,7 +544,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One a struct holds, its own of its source's (ADR 0542).
         self.array_source(iter_ty).is_some()
             || self.is_unknown(iter_ty)
-            || self.held_adapter(iter_ty)
+            || self.explicit_adapter(iter_ty)
             || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)
     }
 
@@ -880,15 +858,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0525): made by a function of its source and its function, `make`,
     /// which its clone, `$cloning`'s, calls again with a clone of each, as a
     /// closure cloned apart is (ADR 0522). Its source's position is all its
-    /// state, a JS iterator helper's, so a clone of it is where it is. Of
-    /// `enumerate()`, `take(n)` and `skip(n)`, a function of its source and
-    /// its count, which it keeps as it steps, `count`, `left` or `n`, and
-    /// its clone is made at.
+    /// state, a JS iterator helper's, so a clone of it is where it is.
     fn cloned_apart_adapter(
         &mut self,
-        (name, source, value): (&str, Expr, Expr),
-        (source_ty, output): (Ty<'tcx>, Ty<'tcx>),
-        (held, lent): (Held<'tcx>, bool),
+        (name, source, f): (&str, Expr, Expr),
+        (source_ty, f_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        (lent, own): (bool, bool),
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -903,11 +878,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of generic code's source or function, cloned by its `Clone`'s
         // dictionary, which it's given only where it's bound by one.
-        let f_ty = match held {
-            Held::Function(f_ty, _) => Some(f_ty),
-            Held::Count => None,
-        };
-        let unbound = std::iter::once(source_ty).chain(f_ty).find(|&ty| {
+        let unbound = [source_ty, f_ty].into_iter().find(|&ty| {
             self.is_unknown(ty)
                 && self
                     .evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))
@@ -919,73 +890,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("cloning a `{output}` made where `{ty}` isn't bound by `Clone`"),
             ));
         }
-        let kept = match (held, name) {
-            (Held::Function(..), _) => "f",
-            (Held::Count, "enumerate") => "count",
-            (Held::Count, "take") => "left",
-            (Held::Count, _) => "n",
-        };
-        let (it, kept) = (self.fresh("it"), self.fresh(kept));
-        // `makeMap`, `makeFilter`, `makeEnumerate`.
+        let (it, function) = (self.fresh("it"), self.fresh("f"));
+        // `makeMap`, `makeFilter`.
         let make = self.fresh(&format!("make{}{}", name[..1].to_uppercase(), &name[1..]));
         let stepped = self.as_js_iterator(Expr::var(&it), source_ty, span)?;
-        let adapter = match held {
-            Held::Function(_, own) => {
-                let callback = self.unary_callback(Expr::var(&kept), own);
-                Expr::call(Expr::member(stepped, name), vec![callback])
-            }
-            Held::Count => self.counting(stepped, name, &kept),
-        };
+        let callback = self.unary_callback(Expr::var(&function), own);
+        let adapter = Expr::call(Expr::member(stepped, name), vec![callback]);
         let mut cloned = Vec::new();
         let clones = vec![
             self.clone_value(Expr::var(&it), source_ty, span, &mut cloned)?,
-            match f_ty {
-                Some(f_ty) => self.clone_value(Expr::var(&kept), f_ty, span, &mut cloned)?,
-                None => Expr::var(&kept),
-            },
+            self.clone_value(Expr::var(&function), f_ty, span, &mut cloned)?,
         ];
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let carried = Expr::call_helper("$cloning", vec![adapter, Expr::arrow(Vec::new(), cloned)]);
         let maker = Expr::arrow(
-            vec![it.as_str().into(), kept.as_str().into()],
+            vec![it.as_str().into(), function.as_str().into()],
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
         made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
-        Ok(Expr::call(Expr::var(&make), vec![source, value]))
-    }
-
-    /// `stepped`'s `enumerate()`, `take(left)` or `skip(n)`, `name`'s, that
-    /// keeps its count in `kept` as it steps, for its clone to start at:
-    /// each item paired with `count`, counted up; `left` counted down; `n`
-    /// none once an item is given, which skipped them.
-    fn counting(&mut self, stepped: Expr, name: &str, kept: &str) -> Expr {
-        let item = self.fresh("item");
-        let given = |mut body: Vec<Stmt>, last: Expr| {
-            body.push(StmtKind::Return(Some(last)).at(js::Span::NONE));
-            Expr::arrow(vec![item.as_str().into()], body)
-        };
-        let count = |op, by| StmtKind::Compound(op, Expr::var(kept), Expr::int(by)).at(js::Span::NONE);
-        match name {
-            "enumerate" => {
-                let index = self.fresh("index");
-                let body = vec![
-                    StmtKind::Const(index.clone(), Expr::var(kept)).at(js::Span::NONE),
-                    count(js::Op::Add, 1),
-                ];
-                let pair = Expr::array(vec![Expr::var(&index), Expr::var(&item)]);
-                Expr::call(Expr::member(stepped, "map"), vec![given(body, pair)])
-            }
-            "take" => {
-                let taken = Expr::call(Expr::member(stepped, "take"), vec![Expr::var(kept)]);
-                let f = given(vec![count(js::Op::Sub, 1)], Expr::var(&item));
-                Expr::call(Expr::member(taken, "map"), vec![f])
-            }
-            _ => {
-                let skipped = Expr::call(Expr::member(stepped, "drop"), vec![Expr::var(kept)]);
-                let none = StmtKind::Assign(Expr::var(kept), Expr::int(0)).at(js::Span::NONE);
-                Expr::call(Expr::member(skipped, "map"), vec![given(vec![none], Expr::var(&item))])
-            }
-        }
+        Ok(Expr::call(Expr::var(&make), vec![source, f]))
     }
 
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
@@ -1005,7 +928,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         Ok(Some(match method {
             // One a struct holds, itself, which closing doesn't end (ADR 0542).
-            Some(IterMethod::ByRef) if self.held_adapter(iter_ty) => receiver.clone(),
+            Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
@@ -1024,6 +947,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => receiver.clone(),
                 };
+                // An owning source of items with a destructor, closed to drop
+                // what it hasn't given, as a map's is (ADR 0465).
+                let it = self.closing(it, iter_ty, span)?;
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
@@ -1034,15 +960,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // knowing its back, a generic one's given it where it's asked
             // (ADR 0542).
             Some(IterMethod::Enumerate)
-                if self.knows_its_back(output) || self.knows_its_length(output) || self.held_adapter(output) =>
+                if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>
             {
                 let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
-                    None if self.held_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
+                    None if self.explicit_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
                     None => receiver.clone(),
                 };
                 Expr::call_helper("$enumerate", vec![it])
+            }
+            // A take or a skip of a kind explicit, which keeps its source and
+            // how many it has left, `n`, `$taking` and `$skipping` (ADR 0542),
+            // given its items' drop, of what it skips past.
+            Some(method @ (IterMethod::Take | IterMethod::Skip)) if self.explicit_adapter(output) => {
+                let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
+                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
+                    Some(it) => it,
+                    None => self.held_source(receiver.clone(), iter_ty, span)?,
+                };
+                let mut args = vec![it, values.next().expect("how many")];
+                if let Some(item) = self.iterator_item(output) {
+                    args.extend(self.std_drop_function(item, span)?);
+                }
+                let helper = match method {
+                    IterMethod::Take => "$taking",
+                    _ => "$skipping",
+                };
+                Expr::call_helper(helper, args)
             }
             // A filter of one, of items with nothing to drop as it passes
             // them (ADR 0526).
@@ -1120,7 +1065,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The source of an adapter a struct holds (ADR 0542), `receiver` of type
     /// `iter_ty`, as capable as its type is: a range's knowing its back, and
     /// an exclusive one's its length; another's, its JS iterator.
-    fn held_source(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn held_source(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match self.range_kind(iter_ty) {
             Some(crate::lower::std_types::range::RangeKind::Exclusive) => {
                 self.as_exact_size(receiver, iter_ty, true, span)
@@ -1300,13 +1245,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `skip(n)` of `it`: JS's `drop(n)`; of items with a destructor,
-    /// `$skipDropping`, each it skips dropped as it's skipped, as Rust's `nth`
+    /// `$skipping`, each it skips dropped as it's skipped, as Rust's `nth`
     /// drops it (ADRs 0422, 0465).
     fn skipped(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
         Ok(match dropping {
             Some(item) => {
                 let drop = self.std_drop_function(item, span)?.expect("a destructor");
-                Expr::call_helper("$skipDropping", vec![it, n, drop])
+                Expr::call_helper("$skipping", vec![it, n, drop])
             }
             None => Expr::call(Expr::member(it, "drop"), vec![n]),
         })

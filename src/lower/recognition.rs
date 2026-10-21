@@ -3854,8 +3854,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 let source = sources.next()?;
                 self.closing_both(source, self.closing_inner(self.iterator_item(source)?)?)
             }
-            // `rev()`'s of an array's items, stepped from its back (ADR 0516).
-            "std::iter::Rev" => sources.next().filter(|&source| self.array_source(source).is_some()),
+            // `rev()`'s of an array's items, stepped from its back (ADR 0516),
+            // and of a chain closed to drop what it holds, `$rev`, which
+            // closes it as it's closed.
+            "std::iter::Rev" => {
+                let source = sources.next()?;
+                match self.array_source(source) {
+                    Some(_) => Some(source),
+                    None => self.closing_source(source)?,
+                }
+            }
             _ => None,
         }
     }
@@ -6417,22 +6425,6 @@ pub(crate) fn source_and_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
     }
 }
 
-/// The source of std's adapter of type `ty` that holds its source and a
-/// count alone, an `Enumerate`, a `Take` or a `Skip` (ADR 0525).
-pub(crate) fn source_and_count<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args)
-            if matches!(
-                std_path(tcx, adt.did()).as_str(),
-                "std::iter::Enumerate" | "std::iter::Take" | "std::iter::Skip"
-            ) =>
-        {
-            Some(args.type_at(0))
-        }
-        _ => None,
-    }
-}
-
 /// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.
 pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
@@ -6531,22 +6523,40 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     }))
 }
 
-/// What std's adapter of type `ty` a struct may hold (ADR 0542) steps
-/// from its back and counts as its source does, `I` of `Enumerate<I>`: the
-/// one answer, of what a use site makes knowing them.
+/// What std's adapter of type `ty` that may be explicit (ADR 0542) steps
+/// from its back and counts as its source does, `I` of `Enumerate<I>`, of
+/// `Take<I>` or of `Skip<I>`: the one answer, of what a use site makes
+/// knowing them.
 pub(crate) fn held_steps_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Enumerate" => Some(args.type_at(0)),
-        _ => None,
-    }
+    counted_adapter(tcx, ty).map(|(_, _, source)| source)
 }
 
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.
 pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Enumerate" => Some(args.type_at(0)),
-        _ => None,
-    }
+    counted_adapter(tcx, ty).and_then(|(kind, _, source)| (kind == Counted::Enumerate).then_some(source))
+}
+
+/// A std adapter that keeps a count of its own: `Enumerate`'s, how many it's
+/// given; `Take`'s and `Skip`'s, `n`, how many it has left to take or skip.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) enum Counted {
+    Enumerate,
+    Take,
+    Skip,
+}
+
+/// Which `Counted` adapter `ty` is, its definition, and what it steps.
+pub(crate) fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Counted, DefId, Ty<'tcx>)> {
+    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
+        return None;
+    };
+    let kind = match std_path(tcx, adt.did()).as_str() {
+        "std::iter::Enumerate" => Counted::Enumerate,
+        "std::iter::Take" => Counted::Take,
+        "std::iter::Skip" => Counted::Skip,
+        _ => return None,
+    };
+    Some((kind, adt.did(), args.type_at(0)))
 }
 
 /// What std's `Cycle` adapter of type `ty` cycles, `I` of `Cycle<I>`.

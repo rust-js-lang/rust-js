@@ -1132,28 +1132,72 @@ export function $closing(it, drop) {
   return closing;
 }
 
-// `skip(n)` of items with a destructor: the first `n` dropped by `drop` as
-// it's first stepped, as Rust's `nth` drops what it skips; closing it closes
-// what it steps, which drops what it holds (ADRs 0422, 0465).
-export function $skipDropping(it, n, drop) {
-  let skipping = n;
-  return Iterator.from({
+// `it.skip(n)` explicit, Rust's `Skip` (ADR 0542): what it steps, `iter`,
+// and how many it has left to skip, `n`, kept, which a clone reads. The
+// first `n` are skipped as it's first stepped, each dropped by `drop`
+// where items have a destructor, as Rust's `nth` drops what it skips;
+// closing it closes what it steps, which drops what it holds (ADRs 0422,
+// 0465). Its back and length are its source's less what it skips, as
+// Rust's `next_back` and `len` are.
+export function $skipping(iter, n, drop) {
+  const skipping = Iterator.from({
     next() {
-      for (; skipping > 0; skipping--) {
-        const step = it.next();
+      for (; skipping.n > 0; skipping.n--) {
+        const step = skipping.iter.next();
         if (step.done) {
-          skipping = 0;
+          skipping.n = 0;
           return step;
         }
         drop?.(step.value);
       }
-      return it.next();
+      return skipping.iter.next();
     },
-    return() {
-      it.return?.();
-      return { done: true, value: undefined };
-    },
+    return: () => $closed(skipping.iter),
   });
+  skipping.iter = iter;
+  skipping.n = n;
+  skipping.hint = () => {
+    const [low, high] = $sizeHint(skipping.iter);
+    return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
+  };
+  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
+  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
+  return skipping;
+}
+
+// `it.take(n)` explicit, Rust's `Take` (ADR 0542): what it steps, `iter`,
+// and how many it has left to take, `n`, kept, which a clone reads. Its
+// back is the last of those it has left, the ones past it dropped by
+// `drop` where items have a destructor, as Rust's `next_back` steps its
+// source's `nth_back`; its length the fewer of its source's and `n`.
+export function $taking(iter, n, drop) {
+  const taking = Iterator.from({
+    next() {
+      if (taking.n === 0) return { done: true, value: undefined };
+      taking.n--;
+      return taking.iter.next();
+    },
+    return: () => $closed(taking.iter),
+  });
+  taking.iter = iter;
+  taking.n = n;
+  taking.hint = () => {
+    const [low, high] = $sizeHint(taking.iter);
+    return [Math.min(low, taking.n), high === undefined ? taking.n : Math.min(high, taking.n)];
+  };
+  taking.back = () => {
+    if (taking.n === 0) return { done: true, value: undefined };
+    const past = Math.max(taking.iter.len() - taking.n, 0);
+    taking.n--;
+    for (let k = 0; k < past; k++) {
+      const step = taking.iter.back();
+      if (step.done) return step;
+      drop?.(step.value);
+    }
+    return taking.iter.back();
+  };
+  taking.len = () => Math.min(taking.iter.len(), taking.n);
+  return taking;
 }
 
 export function $round(x) {
@@ -1304,13 +1348,20 @@ export function $findBack(it, p, found = (item) => item, drop) {
   return undefined;
 }
 
+// `it` closed, `return()`, where it can be, as an adapter closed closes
+// what it steps (ADR 0465): done.
+export function $closed(it) {
+  it.return?.();
+  return { done: true, value: undefined };
+}
+
 // A map of a JS iterator that knows its back or its length, `it.map(f)`,
 // which knows them too, as Rust's `Map` is double-ended and exact-sized
 // where its source is: each of its source's items, `f`'s, from either end
-// (ADRs 0455, 0456).
+// (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
 export function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
-  const map = Iterator.from({ next: () => mapped(it.next()) });
+  const map = Iterator.from({ next: () => mapped(it.next()), return: () => $closed(it) });
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
   return map;
@@ -1336,17 +1387,19 @@ export function $filterEnds(it, p) {
 // counted from the front; one from the back is where it is, the count so
 // far and how many were left before it, as Rust's `next_back` counts it
 // (ADR 0528). Its back and its length are its source's, asked as they're
-// asked: a use site may give a source its own, `$knowing`'s.
-export function $enumerate(iter) {
+// asked: a use site may give a source its own, `$knowing`'s. A clone starts
+// at the `count` it's given; closing it closes what it steps.
+export function $enumerate(iter, count = 0) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = Iterator.from({
     next: () => {
       const step = enumerated.iter.next();
       return step.done ? step : pair(step, enumerated.count++);
     },
+    return: () => $closed(enumerated.iter),
   });
   enumerated.iter = iter;
-  enumerated.count = 0;
+  enumerated.count = count;
   enumerated.hint = () => $sizeHint(enumerated.iter);
   enumerated.back = () => {
     const left = enumerated.iter.len();

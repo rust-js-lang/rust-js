@@ -1487,30 +1487,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
-            // An `Enumerate` a struct holds, which keeps what it steps and its
-            // count (ADR 0542): `Enumerate { iter: .., count: n }`.
+            // An explicit `Enumerate`, `Take` or `Skip`, which keeps what it
+            // steps and its count (ADR 0542): `Enumerate { iter: .., count: n
+            // }`, `Take { iter: .., n: n }`.
             ty::Adt(..)
-                if self.held_adapter(ty)
-                    && let Some(inner) = super::recognition::enumerated_source(self.tcx, ty) =>
+                if self.explicit_adapter(ty)
+                    && let Some((kind, _, inner)) = super::recognition::counted_adapter(self.tcx, ty) =>
             {
-                let it = Expr::var("enumerate");
+                let (name, kept) = match kind {
+                    super::recognition::Counted::Enumerate => ("Enumerate", "count"),
+                    super::recognition::Counted::Take => ("Take", "n"),
+                    super::recognition::Counted::Skip => ("Skip", "n"),
+                };
+                let it = Expr::var(&super::lower_first(name));
                 let stepped = Expr::call_helper("$iteratorValue", vec![Expr::member(it.clone(), "iter")]);
                 let shown = self.debug_string_with(stepped, inner, span, pretty)?;
-                let count = Expr::member(it, "count");
+                let count = Expr::member(it, kept);
                 let plain = join(vec![
-                    Expr::str("Enumerate { iter: "),
+                    Expr::str(format!("{name} {{ iter: ")),
                     shown.clone(),
-                    Expr::str(", count: "),
+                    Expr::str(format!(", {kept}: ")),
                     count.clone(),
                     Expr::str(" }"),
                 ]);
                 let fields = vec![
                     join(vec![Expr::str("iter: "), shown]),
-                    join(vec![Expr::str("count: "), count]),
+                    join(vec![Expr::str(format!("{kept}: ")), count]),
                 ];
-                let shown = self.pretty_or(pretty, plain, "Enumerate {", Expr::array(fields), "}");
+                let shown = self.pretty_or(pretty, plain, &format!("{name} {{"), Expr::array(fields), "}");
                 let show = Expr::arrow(
-                    vec!["enumerate".into()],
+                    vec![super::lower_first(name).as_str().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(show, value))
@@ -1520,7 +1526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cycle` a struct holds, which keeps what it started with and
             // what it steps (ADR 0544): `Cycle { orig: .., iter: .. }`.
             ty::Adt(..)
-                if self.held_adapter(ty)
+                if self.explicit_adapter(ty)
                     && let Some(source) = super::recognition::cycled_source(self.tcx, ty) =>
             {
                 let it = Expr::var("cycle");

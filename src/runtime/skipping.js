@@ -1,0 +1,32 @@
+// `it.skip(n)` explicit, Rust's `Skip` (ADR 0542): what it steps, `iter`,
+// and how many it has left to skip, `n`, kept, which a clone reads. The
+// first `n` are skipped as it's first stepped, each dropped by `drop`
+// where items have a destructor, as Rust's `nth` drops what it skips;
+// closing it closes what it steps, which drops what it holds (ADRs 0422,
+// 0465). Its back and length are its source's less what it skips, as
+// Rust's `next_back` and `len` are.
+function $skipping(iter, n, drop) {
+  const skipping = Iterator.from({
+    next() {
+      for (; skipping.n > 0; skipping.n--) {
+        const step = skipping.iter.next();
+        if (step.done) {
+          skipping.n = 0;
+          return step;
+        }
+        drop?.(step.value);
+      }
+      return skipping.iter.next();
+    },
+    return: () => $closed(skipping.iter),
+  });
+  skipping.iter = iter;
+  skipping.n = n;
+  skipping.hint = () => {
+    const [low, high] = $sizeHint(skipping.iter);
+    return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
+  };
+  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
+  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
+  return skipping;
+}

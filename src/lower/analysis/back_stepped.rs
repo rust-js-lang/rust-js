@@ -1,6 +1,8 @@
 //! The adapter types the crate steps from their back (ADR 0545): a `map` or
 //! a `filter` whose `next_back`, `rfold` and the like are called, of a
-//! source not an array's, whose own forms step it. A map of such a type is
+//! source not an array's, whose own forms step it, or of an array's items
+//! with a destructor, an owning source closed to drop them, which they
+//! don't. A map of such a type is
 //! made knowing its back where it's made, as the iterators draft asks of
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
@@ -16,6 +18,7 @@ pub(super) fn back_stepped<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
+    drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> HashSet<Ty<'tcx>> {
     let mut stepped = HashSet::new();
     for body in all_bodies {
@@ -40,9 +43,12 @@ pub(super) fn back_stepped<'tcx>(
                 let mut walk = asked.walk();
                 while let Some(part) = walk.next() {
                     let Some(held) = part.as_type() else { continue };
-                    if matches!(held.kind(), ty::Adt(adt, _) if is_iter_adapter_def(tcx, adt.did())) {
-                        if held != asked {
-                            stepped.extend(back_stepped_adapter(tcx, recognition, held));
+                    if matches!(held.kind(), ty::Adt(adapter, _) if is_iter_adapter_def(tcx, adapter.did())) {
+                        // The type asked itself too where it's of an array's
+                        // items with a destructor, which `rev()` can't step
+                        // from its back once it's held in a variable.
+                        if held != asked || dropping_items(recognition, held, &drops) {
+                            stepped.extend(back_stepped_adapter(tcx, recognition, held, &drops));
                         }
                         walk.skip_current_subtree();
                     }
@@ -54,22 +60,40 @@ pub(super) fn back_stepped<'tcx>(
             let Some(adapter) = args.types().next().map(|ty| ty.peel_refs()) else {
                 continue;
             };
-            stepped.extend(back_stepped_adapter(tcx, recognition, adapter));
+            stepped.extend(back_stepped_adapter(tcx, recognition, adapter, &drops));
         }
     }
     stepped
 }
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not
-/// an array's, which its own forms step from their back.
+/// an array's, which its own forms step from their back, or of an array's
+/// items whose drop runs, `drops`'s.
 fn back_stepped_adapter<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     adapter: Ty<'tcx>,
+    drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> Option<Ty<'tcx>> {
-    let source = mapped_source(tcx, adapter).or_else(|| filtered_source(tcx, adapter))?;
-    recognition
-        .array_source(source.peel_refs())
-        .is_none()
-        .then(|| tcx.erase_and_anonymize_regions(adapter))
+    let source = mapped_source(tcx, adapter)
+        .or_else(|| filtered_source(tcx, adapter))?
+        .peel_refs();
+    let native = recognition.array_source(source).is_some() && !dropping_items(recognition, adapter, &drops);
+    (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
+}
+
+/// Whether `adapter`, a map or a filter, is of an array's items whose drop
+/// runs, `drops`'s: an owning source closed to drop them (ADR 0465).
+fn dropping_items<'tcx>(
+    recognition: Recognition<'_, 'tcx>,
+    adapter: Ty<'tcx>,
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    let tcx = recognition.tcx;
+    mapped_source(tcx, adapter)
+        .or_else(|| filtered_source(tcx, adapter))
+        .map(|source| source.peel_refs())
+        .is_some_and(|source| {
+            recognition.array_source(source).is_some() && recognition.iterator_item(source).is_some_and(drops)
+        })
 }
