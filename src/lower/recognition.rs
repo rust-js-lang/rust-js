@@ -1719,18 +1719,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         Some(match tcx.item_name(def_id).as_str() {
             // A map's, a set's or an entry's (ADRs 0059, 0325, 0345).
             name if let Some(op) = map_method(name, of) => Std::Map(op),
-            "from_str" | "from_str_nonconst" if arguments => Std::FmtStr,
-            "new" if arguments => Std::FmtNew,
-            "new_display" if argument => Std::FmtDisplay,
-            "new_debug" if argument => Std::FmtDebug,
-            "new_lower_hex" if argument => Std::FmtRadix(Radix::LowerHex),
-            "new_upper_hex" if argument => Std::FmtRadix(Radix::UpperHex),
-            "new_binary" if argument => Std::FmtRadix(Radix::Binary),
-            "new_octal" if argument => Std::FmtRadix(Radix::Octal),
-            "new_lower_exp" if argument => Std::FmtExp(false),
-            "new_upper_exp" if argument => Std::FmtExp(true),
-            "new_pointer" if argument => Std::FmtPointer,
-            "from_usize" if argument => Std::FmtUsize,
+            _ if arguments || argument => return format_args_method(name.as_str(), arguments),
             "new" if adt(StdItem::Rc) || adt(StdItem::Arc) => Std::Same,
             // What only a counted one answers (ADR 0320).
             "strong_count" if rc => Std::Rc(RcOp::StrongCount),
@@ -7277,6 +7266,29 @@ pub(crate) fn io_write_default(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
 /// (ADR 0166).
 pub(crate) fn is_writer_default(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_method(tcx, id, StdItem::FmtWrite, "write_char") || is_std_method(tcx, id, StdItem::FmtWrite, "write_fmt")
+}
+
+/// What `format_args!` makes, by its method: an `Arguments`' (`arguments`),
+/// or an `Argument`'s. `as_str()` is `Some` of the text the arguments are
+/// already (ADR 0034): its contract promises only the literal case, and
+/// allows `Some` of any.
+fn format_args_method(name: &str, arguments: bool) -> Option<Std> {
+    Some(match (name, arguments) {
+        ("from_str" | "from_str_nonconst", true) => Std::FmtStr,
+        ("new", true) => Std::FmtNew,
+        ("as_str", true) => Std::Same,
+        ("new_display", false) => Std::FmtDisplay,
+        ("new_debug", false) => Std::FmtDebug,
+        ("new_lower_hex", false) => Std::FmtRadix(Radix::LowerHex),
+        ("new_upper_hex", false) => Std::FmtRadix(Radix::UpperHex),
+        ("new_binary", false) => Std::FmtRadix(Radix::Binary),
+        ("new_octal", false) => Std::FmtRadix(Radix::Octal),
+        ("new_lower_exp", false) => Std::FmtExp(false),
+        ("new_upper_exp", false) => Std::FmtExp(true),
+        ("new_pointer", false) => Std::FmtPointer,
+        ("from_usize", false) => Std::FmtUsize,
+        _ => return None,
+    })
 }
 
 /// `fmt::Arguments::new` and its kin, what `format_args!` makes.

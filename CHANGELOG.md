@@ -64,6 +64,9 @@ released any more: `rust-js build` is the one way to build an app.
   wouldn't write, `port measure`'s seven, are counted over the corpus's
   and the snapshots' JS in `docs/readability.txt`, and no shape's share may
   grow unblessed; `bun run bless` blesses it with the snapshots.
+- **`fmt::Arguments::as_str()`** (ADR 0034 amended): `Some` of the text the
+  arguments are, within its contract, which promises the literal case
+  alone; anyhow's `format_err` compiles.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

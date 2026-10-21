@@ -123,3 +123,17 @@ list, so a clone of one is what it has left, `$iter` of it (ADR 0181), as
 a slice's is, and `steps_an_array` asks no list of its own. The corpus's
 `str_bytes.rs` clones one part-stepped; rustc's
 `iterators/bytes-iterator-clone-12677.rs` passes.
+
+## Amendment: `Arguments::as_str()` is the text
+
+`fmt::Arguments::as_str()` (2026-10-21) is `Some` of the text the
+arguments are already in JS: its contract promises `Some` of a literal
+alone and says the rest "is not guaranteed, and should not be relied upon
+for anything but optimization", so `Some` of any is within it, and no
+program can tell (ADR 0262's first case). anyhow's `format_err`, which
+keeps a literal as a `&'static str` and formats the rest, takes its first
+way for both, the same string either way. The corpus's
+`fmt_arguments_as_str.rs` holds it against native Rust, comparing the
+literal cases and a placeholder's text alone, since which way a
+placeholder's takes the contract leaves open: native Rust formats it,
+rust-js keeps it, the same string.

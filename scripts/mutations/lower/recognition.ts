@@ -2639,4 +2639,12 @@ export const mutations: Mutation[] = [
     replace: "}\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
+  {
+    name: "arguments-as-str-refused",
+    breaks: "`fmt::Arguments::as_str()` is refused, where the arguments are their text already",
+    file: "src/lower/recognition.rs",
+    find: "        (\"as_str\", true) => Std::Same,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
+  },
 ];
