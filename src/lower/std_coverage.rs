@@ -1,20 +1,57 @@
 //! How much of std's data structures rust-js lowers (ADR 0314): each stable
 //! inherent method of each, and whether recognition knows it, for the
-//! ratchet in `test/std-coverage.test.ts`, which no method may leave.
+//! ratchet in `test/std-coverage.test.ts`, which no method may leave. And,
+//! beside each, what its body in std is made of (the `std-bodies` draft):
+//! whether rust-js could lower it from the MIR the toolchain ships, or it
+//! reaches what JS hasn't, addressable memory.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 
+use rustc_middle::mir::{
+    self, CastKind, Operand, ProjectionElem, RuntimeChecks, Rvalue, StatementKind, TerminatorKind,
+};
 use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::def_id::DefId;
 
-use super::recognition::{Recognition, registry};
+use super::recognition::{self, Recognition, registry};
+
+/// What a std method's body is made of, through every std body it calls
+/// whose MIR the toolchain ships.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Body {
+    /// MIR all the way down to the vocabulary rust-js lowers: a trait's
+    /// method on a type parameter, a closure's call, `?`, a drop, a panic.
+    Safe,
+    /// Reaches addressable memory: a raw pointer made or read through, a
+    /// transmute, an intrinsic, or one of `std::ptr`'s.
+    Memory,
+    /// Reaches a std body the toolchain ships no MIR of, before any memory.
+    Opaque,
+    /// The method itself has no MIR: not generic, not inlined.
+    None,
+}
+
+impl Body {
+    fn name(self) -> &'static str {
+        match self {
+            Body::Safe => "safe",
+            Body::Memory => "memory",
+            Body::Opaque => "opaque",
+            Body::None => "none",
+        }
+    }
+}
 
 /// Each type's stable methods, `+ Vec::push` where rust-js knows it and
-/// `- Vec::shrink_to` where it doesn't, under `# Vec 35 of 160`.
+/// `- Vec::shrink_to` where it doesn't, each with what its body is made
+/// of, under `# Vec 35 of 160; bodies: 20 safe, 10 memory, 3 opaque, 2 none`.
 pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependencies) -> String {
     let foreign = super::library::Foreign::new(tcx, dependencies);
+    let mut bodies = Bodies::default();
     let mut out = String::new();
     for (name, impls) in registry::data_structures(tcx) {
-        let mut methods: Vec<(String, bool)> = Vec::new();
+        let mut methods: Vec<(String, bool, Body)> = Vec::new();
         for imp in impls {
             for item in tcx.associated_items(imp).in_definition_order() {
                 let def_id = item.def_id;
@@ -44,19 +81,197 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
                 let known = [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
                     .into_iter()
                     .any(|pattern| recognition.classify(def_id, given(pattern)).is_some());
+                let body = bodies.of(tcx, def_id);
                 let method = format!("{name}::{}", tcx.item_name(def_id));
-                match methods.iter_mut().find(|(m, _)| *m == method) {
-                    Some((_, k)) => *k |= known,
-                    None => methods.push((method, known)),
+                match methods.iter_mut().find(|(m, _, _)| *m == method) {
+                    // A method of two impls, a slice's `to_vec` say: its
+                    // worse body, as the reader must take it.
+                    Some((_, k, b)) => {
+                        *k |= known;
+                        *b = (*b).max(body);
+                    }
+                    None => methods.push((method, known, body)),
                 }
             }
         }
         methods.sort();
-        let known = methods.iter().filter(|(_, k)| *k).count();
-        let _ = writeln!(out, "# {name} {known} of {}", methods.len());
-        for (method, known) in methods {
-            let _ = writeln!(out, "{} {method}", if known { "+" } else { "-" });
+        let known = methods.iter().filter(|(_, k, _)| *k).count();
+        let count = |kind: Body| methods.iter().filter(|(_, _, b)| *b == kind).count();
+        let _ = writeln!(
+            out,
+            "# {name} {known} of {}; bodies: {} safe, {} memory, {} opaque, {} none",
+            methods.len(),
+            count(Body::Safe),
+            count(Body::Memory),
+            count(Body::Opaque),
+            count(Body::None)
+        );
+        for (method, known, body) in methods {
+            let _ = writeln!(out, "{} {method}\t{}", if known { "+" } else { "-" }, body.name());
         }
     }
     out
+}
+
+/// What each std function's body is made of, each asked once: the measure
+/// follows calls, so one function's answer is many methods'.
+#[derive(Default)]
+struct Bodies {
+    known: HashMap<DefId, Body>,
+}
+
+impl Bodies {
+    fn of(&mut self, tcx: TyCtxt<'_>, def_id: DefId) -> Body {
+        if let Some(&body) = self.known.get(&def_id) {
+            return body;
+        }
+        if !tcx.is_mir_available(def_id) {
+            self.known.insert(def_id, Body::None);
+            return Body::None;
+        }
+        // A cycle, `fold` through `try_fold` through `fold`, is read as safe
+        // until a body on it says otherwise, as its other calls do.
+        self.known.insert(def_id, Body::Safe);
+        let body = tcx.optimized_mir(def_id);
+        let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
+        let mut worst = Body::Safe;
+        for block in reachable(body) {
+            let data = &body.basic_blocks[block];
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && (addresses_memory(tcx, body, &assign.0) || rvalue_addresses_memory(tcx, body, &assign.1))
+                {
+                    worst = Body::Memory;
+                }
+            }
+            let Some(terminator) = &data.terminator else { continue };
+            let (TerminatorKind::Call { func, .. } | TerminatorKind::TailCall { func, .. }) = &terminator.kind else {
+                continue;
+            };
+            let Some((callee, args)) = func.const_fn_def() else {
+                continue;
+            };
+            let called = match super::items::resolve_instance_in(tcx, typing_env, callee, args) {
+                Ok(Some(instance)) => match instance.def {
+                    // A callee the toolchain ships, read as this body is.
+                    ty::InstanceKind::Item(def) => self.of_callee(tcx, def),
+                    ty::InstanceKind::Intrinsic(def) if recognition::memory_intrinsic(tcx, def) => Body::Memory,
+                    // A shim, a drop, a `dyn`'s or a closure's call: the vocabulary.
+                    _ => Body::Safe,
+                },
+                // A trait's method of a type parameter: the vocabulary.
+                _ => Body::Safe,
+            };
+            worst = worst.max(called);
+        }
+        // The worse of what it reaches: memory over opaque, which may hide memory.
+        let worst = match worst {
+            Body::None => Body::Opaque,
+            other => other,
+        };
+        self.known.insert(def_id, worst);
+        worst
+    }
+
+    /// A callee's body: a panic's or an abort's, which never returns, is
+    /// the vocabulary (ADR 0012), and so is `std::ptr`'s, memory.
+    fn of_callee(&mut self, tcx: TyCtxt<'_>, def: DefId) -> Body {
+        if recognition::addresses_memory(tcx, def) {
+            return Body::Memory;
+        }
+        if matches!(
+            tcx.def_kind(def),
+            rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+        ) && tcx.fn_sig(def).skip_binder().output().skip_binder().is_never()
+        {
+            return Body::Safe;
+        }
+        match self.of(tcx, def) {
+            // A callee with no MIR is opaque to its caller.
+            Body::None => Body::Opaque,
+            other => other,
+        }
+    }
+}
+
+/// The blocks a body runs, with `UbChecks` read as off (ADR 0364): a
+/// precondition check's blocks are left out, as rust-js leaves them out.
+fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
+    let ub_checks: Vec<mir::Local> = (body.basic_blocks.iter())
+        .flat_map(|data| &data.statements)
+        .filter_map(|statement| match &statement.kind {
+            StatementKind::Assign(assign)
+                if matches!(
+                    assign.1,
+                    Rvalue::Use(Operand::RuntimeChecks(RuntimeChecks::UbChecks), _)
+                ) =>
+            {
+                assign.0.as_local()
+            }
+            _ => None,
+        })
+        .collect();
+    let mut seen = vec![mir::START_BLOCK];
+    let mut at = 0;
+    while at < seen.len() {
+        let block = seen[at];
+        at += 1;
+        let Some(terminator) = &body.basic_blocks[block].terminator else {
+            continue;
+        };
+        let next: Vec<mir::BasicBlock> = match &terminator.kind {
+            TerminatorKind::SwitchInt { discr, targets }
+                if matches!(discr, Operand::RuntimeChecks(RuntimeChecks::UbChecks))
+                    || discr
+                        .place()
+                        .and_then(|place| place.as_local())
+                        .is_some_and(|local| ub_checks.contains(&local)) =>
+            {
+                vec![targets.target_for_value(0)]
+            }
+            _ => terminator.successors().collect(),
+        };
+        for block in next {
+            if !seen.contains(&block) {
+                seen.push(block);
+            }
+        }
+    }
+    seen
+}
+
+/// Whether a place reads through a raw pointer.
+fn addresses_memory<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: &mir::Place<'tcx>) -> bool {
+    place.iter_projections().any(|(base, elem)| {
+        elem == ProjectionElem::Deref && super::pointers::raw_pointee(tcx, base.ty(&body.local_decls, tcx).ty).is_some()
+    })
+}
+
+/// Whether a value is addressable memory's: a raw pointer made of a
+/// place, a transmute, a pointer cast, or a read through one.
+fn rvalue_addresses_memory<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, rvalue: &Rvalue<'tcx>) -> bool {
+    match rvalue {
+        Rvalue::RawPtr(kind, _) => *kind != mir::RawPtrKind::FakeForPtrMetadata,
+        Rvalue::Cast(
+            CastKind::Transmute
+            | CastKind::PtrToPtr
+            | CastKind::FnPtrToPtr
+            | CastKind::PointerExposeProvenance
+            | CastKind::PointerWithExposedProvenance,
+            ..,
+        ) => true,
+        Rvalue::Use(operand, _) | Rvalue::Cast(_, operand, _) | Rvalue::UnaryOp(_, operand) => {
+            operand.place().is_some_and(|place| addresses_memory(tcx, body, &place))
+        }
+        Rvalue::Ref(_, _, place) | Rvalue::CopyForDeref(place) | Rvalue::Discriminant(place) => {
+            addresses_memory(tcx, body, place)
+        }
+        Rvalue::BinaryOp(_, operands) => [&operands.0, &operands.1]
+            .into_iter()
+            .any(|o| o.place().is_some_and(|p| addresses_memory(tcx, body, &p))),
+        Rvalue::Aggregate(_, operands) => operands
+            .iter()
+            .any(|o| o.place().is_some_and(|p| addresses_memory(tcx, body, &p))),
+        _ => false,
+    }
 }

@@ -1,859 +1,859 @@
-# Vec 42 of 48
-+ Vec::append
-+ Vec::as_mut_ptr
-+ Vec::as_mut_slice
-+ Vec::as_ptr
-+ Vec::as_slice
-+ Vec::capacity
-+ Vec::clear
-+ Vec::dedup
-+ Vec::dedup_by
-+ Vec::dedup_by_key
-+ Vec::drain
-+ Vec::extend_from_slice
-+ Vec::extend_from_within
-+ Vec::extract_if
-- Vec::from_parts
-+ Vec::from_raw_parts
-+ Vec::insert
-+ Vec::insert_mut
-+ Vec::into_boxed_slice
-+ Vec::into_flattened
-- Vec::into_parts
-- Vec::into_raw_parts
-+ Vec::is_empty
-+ Vec::leak
-+ Vec::len
-+ Vec::new
-+ Vec::pop
-+ Vec::pop_if
-+ Vec::push
-+ Vec::push_mut
-+ Vec::remove
-+ Vec::reserve
-+ Vec::reserve_exact
-+ Vec::resize
-+ Vec::resize_with
-+ Vec::retain
-+ Vec::retain_mut
-+ Vec::set_len
-+ Vec::shrink_to
-+ Vec::shrink_to_fit
-- Vec::spare_capacity_mut
-+ Vec::splice
-+ Vec::split_off
-+ Vec::swap_remove
-+ Vec::truncate
-- Vec::try_reserve
-- Vec::try_reserve_exact
-+ Vec::with_capacity
-# VecDeque 50 of 55
-+ VecDeque::append
-- VecDeque::as_mut_slices
-- VecDeque::as_slices
-+ VecDeque::back
-+ VecDeque::back_mut
-+ VecDeque::binary_search
-+ VecDeque::binary_search_by
-+ VecDeque::binary_search_by_key
-+ VecDeque::capacity
-+ VecDeque::clear
-+ VecDeque::contains
-+ VecDeque::drain
-+ VecDeque::front
-+ VecDeque::front_mut
-+ VecDeque::get
-+ VecDeque::get_mut
-+ VecDeque::insert
-+ VecDeque::insert_mut
-+ VecDeque::is_empty
-+ VecDeque::iter
-+ VecDeque::iter_mut
-+ VecDeque::len
-+ VecDeque::make_contiguous
-+ VecDeque::new
-+ VecDeque::partition_point
-+ VecDeque::pop_back
-+ VecDeque::pop_back_if
-+ VecDeque::pop_front
-+ VecDeque::pop_front_if
-+ VecDeque::push_back
-+ VecDeque::push_back_mut
-+ VecDeque::push_front
-+ VecDeque::push_front_mut
-+ VecDeque::range
-+ VecDeque::range_mut
-+ VecDeque::remove
-+ VecDeque::reserve
-+ VecDeque::reserve_exact
-+ VecDeque::resize
-+ VecDeque::resize_with
-+ VecDeque::retain
-- VecDeque::retain_back
-+ VecDeque::retain_mut
-+ VecDeque::rotate_left
-+ VecDeque::rotate_right
-+ VecDeque::shrink_to
-+ VecDeque::shrink_to_fit
-+ VecDeque::split_off
-+ VecDeque::swap
-+ VecDeque::swap_remove_back
-+ VecDeque::swap_remove_front
-+ VecDeque::truncate
-- VecDeque::try_reserve
-- VecDeque::try_reserve_exact
-+ VecDeque::with_capacity
-# LinkedList 20 of 20
-+ LinkedList::append
-+ LinkedList::back
-+ LinkedList::back_mut
-+ LinkedList::clear
-+ LinkedList::contains
-+ LinkedList::extract_if
-+ LinkedList::front
-+ LinkedList::front_mut
-+ LinkedList::is_empty
-+ LinkedList::iter
-+ LinkedList::iter_mut
-+ LinkedList::len
-+ LinkedList::new
-+ LinkedList::pop_back
-+ LinkedList::pop_front
-+ LinkedList::push_back
-+ LinkedList::push_back_mut
-+ LinkedList::push_front
-+ LinkedList::push_front_mut
-+ LinkedList::split_off
-# HashMap 26 of 33
-- HashMap::capacity
-+ HashMap::clear
-+ HashMap::contains_key
-+ HashMap::drain
-+ HashMap::entry
-+ HashMap::extract_if
-+ HashMap::get
-- HashMap::get_disjoint_mut
-- HashMap::get_disjoint_unchecked_mut
-+ HashMap::get_key_value
-+ HashMap::get_mut
-- HashMap::hasher
-+ HashMap::insert
-+ HashMap::into_keys
-+ HashMap::into_values
-+ HashMap::is_empty
-+ HashMap::iter
-+ HashMap::iter_mut
-+ HashMap::keys
-+ HashMap::len
-+ HashMap::new
-+ HashMap::remove
-+ HashMap::remove_entry
-+ HashMap::reserve
-+ HashMap::retain
-+ HashMap::shrink_to
-+ HashMap::shrink_to_fit
-- HashMap::try_reserve
-+ HashMap::values
-+ HashMap::values_mut
-+ HashMap::with_capacity
-- HashMap::with_capacity_and_hasher
-- HashMap::with_hasher
-# HashSet 25 of 30
-- HashSet::capacity
-+ HashSet::clear
-+ HashSet::contains
-+ HashSet::difference
-+ HashSet::drain
-+ HashSet::extract_if
-+ HashSet::get
-- HashSet::hasher
-+ HashSet::insert
-+ HashSet::intersection
-+ HashSet::is_disjoint
-+ HashSet::is_empty
-+ HashSet::is_subset
-+ HashSet::is_superset
-+ HashSet::iter
-+ HashSet::len
-+ HashSet::new
-+ HashSet::remove
-+ HashSet::replace
-+ HashSet::reserve
-+ HashSet::retain
-+ HashSet::shrink_to
-+ HashSet::shrink_to_fit
-+ HashSet::symmetric_difference
-+ HashSet::take
-- HashSet::try_reserve
-+ HashSet::union
-+ HashSet::with_capacity
-- HashSet::with_capacity_and_hasher
-- HashSet::with_hasher
-# BTreeMap 31 of 31
-+ BTreeMap::append
-+ BTreeMap::clear
-+ BTreeMap::contains_key
-+ BTreeMap::entry
-+ BTreeMap::extract_if
-+ BTreeMap::first_entry
-+ BTreeMap::first_key_value
-+ BTreeMap::get
-+ BTreeMap::get_key_value
-+ BTreeMap::get_mut
-+ BTreeMap::insert
-+ BTreeMap::into_keys
-+ BTreeMap::into_values
-+ BTreeMap::is_empty
-+ BTreeMap::iter
-+ BTreeMap::iter_mut
-+ BTreeMap::keys
-+ BTreeMap::last_entry
-+ BTreeMap::last_key_value
-+ BTreeMap::len
-+ BTreeMap::new
-+ BTreeMap::pop_first
-+ BTreeMap::pop_last
-+ BTreeMap::range
-+ BTreeMap::range_mut
-+ BTreeMap::remove
-+ BTreeMap::remove_entry
-+ BTreeMap::retain
-+ BTreeMap::split_off
-+ BTreeMap::values
-+ BTreeMap::values_mut
-# BTreeSet 27 of 27
-+ BTreeSet::append
-+ BTreeSet::clear
-+ BTreeSet::contains
-+ BTreeSet::difference
-+ BTreeSet::extract_if
-+ BTreeSet::first
-+ BTreeSet::get
-+ BTreeSet::insert
-+ BTreeSet::intersection
-+ BTreeSet::is_disjoint
-+ BTreeSet::is_empty
-+ BTreeSet::is_subset
-+ BTreeSet::is_superset
-+ BTreeSet::iter
-+ BTreeSet::last
-+ BTreeSet::len
-+ BTreeSet::new
-+ BTreeSet::pop_first
-+ BTreeSet::pop_last
-+ BTreeSet::range
-+ BTreeSet::remove
-+ BTreeSet::replace
-+ BTreeSet::retain
-+ BTreeSet::split_off
-+ BTreeSet::symmetric_difference
-+ BTreeSet::take
-+ BTreeSet::union
-# BinaryHeap 21 of 23
-+ BinaryHeap::append
-+ BinaryHeap::as_slice
-+ BinaryHeap::capacity
-+ BinaryHeap::clear
-+ BinaryHeap::drain
-+ BinaryHeap::into_sorted_vec
-+ BinaryHeap::into_vec
-+ BinaryHeap::is_empty
-+ BinaryHeap::iter
-+ BinaryHeap::len
-+ BinaryHeap::new
-+ BinaryHeap::peek
-+ BinaryHeap::peek_mut
-+ BinaryHeap::pop
-+ BinaryHeap::push
-+ BinaryHeap::reserve
-+ BinaryHeap::reserve_exact
-+ BinaryHeap::retain
-+ BinaryHeap::shrink_to
-+ BinaryHeap::shrink_to_fit
-- BinaryHeap::try_reserve
-- BinaryHeap::try_reserve_exact
-+ BinaryHeap::with_capacity
-# Option 42 of 46
-+ Option::and
-+ Option::and_then
-+ Option::as_deref
-- Option::as_deref_mut
-+ Option::as_mut
-- Option::as_mut_slice
-- Option::as_pin_mut
-- Option::as_pin_ref
-+ Option::as_ref
-+ Option::as_slice
-+ Option::cloned
-+ Option::copied
-+ Option::expect
-+ Option::filter
-+ Option::flatten
-+ Option::get_or_insert
-+ Option::get_or_insert_default
-+ Option::get_or_insert_with
-+ Option::insert
-+ Option::inspect
-+ Option::is_none
-+ Option::is_none_or
-+ Option::is_some
-+ Option::is_some_and
-+ Option::iter
-+ Option::iter_mut
-+ Option::map
-+ Option::map_or
-+ Option::map_or_default
-+ Option::map_or_else
-+ Option::ok_or
-+ Option::ok_or_else
-+ Option::or
-+ Option::or_else
-+ Option::replace
-+ Option::take
-+ Option::take_if
-+ Option::transpose
-+ Option::unwrap
-+ Option::unwrap_or
-+ Option::unwrap_or_default
-+ Option::unwrap_or_else
-+ Option::unwrap_unchecked
-+ Option::unzip
-+ Option::xor
-+ Option::zip
-# Result 35 of 36
-+ Result::and
-+ Result::and_then
-+ Result::as_deref
-- Result::as_deref_mut
-+ Result::as_mut
-+ Result::as_ref
-+ Result::cloned
-+ Result::copied
-+ Result::err
-+ Result::expect
-+ Result::expect_err
-+ Result::flatten
-+ Result::inspect
-+ Result::inspect_err
-+ Result::is_err
-+ Result::is_err_and
-+ Result::is_ok
-+ Result::is_ok_and
-+ Result::iter
-+ Result::iter_mut
-+ Result::map
-+ Result::map_err
-+ Result::map_or
-+ Result::map_or_default
-+ Result::map_or_else
-+ Result::ok
-+ Result::or
-+ Result::or_else
-+ Result::transpose
-+ Result::unwrap
-+ Result::unwrap_err
-+ Result::unwrap_err_unchecked
-+ Result::unwrap_or
-+ Result::unwrap_or_default
-+ Result::unwrap_or_else
-+ Result::unwrap_unchecked
-# Rc 12 of 23
-- Rc::as_ptr
-- Rc::assume_init
-- Rc::decrement_strong_count
-+ Rc::downcast
-+ Rc::downgrade
-- Rc::from_raw
-+ Rc::get_mut
-- Rc::increment_strong_count
-+ Rc::into_inner
-- Rc::into_raw
-+ Rc::make_mut
-+ Rc::new
-+ Rc::new_cyclic
-- Rc::new_uninit
-- Rc::new_uninit_slice
-- Rc::new_zeroed
-- Rc::new_zeroed_slice
-- Rc::pin
-+ Rc::ptr_eq
-+ Rc::strong_count
-+ Rc::try_unwrap
-+ Rc::unwrap_or_clone
-+ Rc::weak_count
-# Arc 12 of 23
-- Arc::as_ptr
-- Arc::assume_init
-- Arc::decrement_strong_count
-+ Arc::downcast
-+ Arc::downgrade
-- Arc::from_raw
-+ Arc::get_mut
-- Arc::increment_strong_count
-+ Arc::into_inner
-- Arc::into_raw
-+ Arc::make_mut
-+ Arc::new
-+ Arc::new_cyclic
-- Arc::new_uninit
-- Arc::new_uninit_slice
-- Arc::new_zeroed
-- Arc::new_zeroed_slice
-- Arc::pin
-+ Arc::ptr_eq
-+ Arc::strong_count
-+ Arc::try_unwrap
-+ Arc::unwrap_or_clone
-+ Arc::weak_count
-# RcWeak 5 of 8
-- RcWeak::as_ptr
-- RcWeak::from_raw
-- RcWeak::into_raw
-+ RcWeak::new
-+ RcWeak::ptr_eq
-+ RcWeak::strong_count
-+ RcWeak::upgrade
-+ RcWeak::weak_count
-# ArcWeak 5 of 8
-- ArcWeak::as_ptr
-- ArcWeak::from_raw
-- ArcWeak::into_raw
-+ ArcWeak::new
-+ ArcWeak::ptr_eq
-+ ArcWeak::strong_count
-+ ArcWeak::upgrade
-+ ArcWeak::weak_count
-# Cell 12 of 13
-+ Cell::as_array_of_cells
-- Cell::as_ptr
-+ Cell::as_slice_of_cells
-+ Cell::from_mut
-+ Cell::get
-+ Cell::get_mut
-+ Cell::into_inner
-+ Cell::new
-+ Cell::replace
-+ Cell::set
-+ Cell::swap
-+ Cell::take
-+ Cell::update
-# RefCell 11 of 13
-- RefCell::as_ptr
-+ RefCell::borrow
-+ RefCell::borrow_mut
-+ RefCell::get_mut
-+ RefCell::into_inner
-+ RefCell::new
-+ RefCell::replace
-+ RefCell::replace_with
-+ RefCell::swap
-+ RefCell::take
-+ RefCell::try_borrow
-+ RefCell::try_borrow_mut
-- RefCell::try_borrow_unguarded
-# Mutex 7 of 7
-+ Mutex::clear_poison
-+ Mutex::get_mut
-+ Mutex::into_inner
-+ Mutex::is_poisoned
-+ Mutex::lock
-+ Mutex::new
-+ Mutex::try_lock
-# RwLock 9 of 9
-+ RwLock::clear_poison
-+ RwLock::get_mut
-+ RwLock::into_inner
-+ RwLock::is_poisoned
-+ RwLock::new
-+ RwLock::read
-+ RwLock::try_read
-+ RwLock::try_write
-+ RwLock::write
-# Cow 2 of 2
-+ Cow::into_owned
-+ Cow::to_mut
-# Instant 7 of 7
-+ Instant::checked_add
-+ Instant::checked_duration_since
-+ Instant::checked_sub
-+ Instant::duration_since
-+ Instant::elapsed
-+ Instant::now
-+ Instant::saturating_duration_since
-# OnceCell 7 of 7
-+ OnceCell::get
-+ OnceCell::get_mut
-+ OnceCell::get_or_init
-+ OnceCell::into_inner
-+ OnceCell::new
-+ OnceCell::set
-+ OnceCell::take
-# LazyCell 5 of 5
-+ LazyCell::force
-+ LazyCell::force_mut
-+ LazyCell::get
-+ LazyCell::get_mut
-+ LazyCell::new
-# OnceLock 7 of 8
-+ OnceLock::get
-+ OnceLock::get_mut
-+ OnceLock::get_or_init
-+ OnceLock::into_inner
-+ OnceLock::new
-+ OnceLock::set
-+ OnceLock::take
-- OnceLock::wait
-# LazyLock 5 of 5
-+ LazyLock::force
-+ LazyLock::force_mut
-+ LazyLock::get
-+ LazyLock::get_mut
-+ LazyLock::new
-# SystemTime 5 of 5
-+ SystemTime::checked_add
-+ SystemTime::checked_sub
-+ SystemTime::duration_since
-+ SystemTime::elapsed
-+ SystemTime::now
-# String 32 of 43
-+ String::as_bytes
-+ String::as_mut_str
-- String::as_mut_vec
-+ String::as_str
-- String::capacity
-+ String::clear
-+ String::drain
-+ String::extend_from_within
-- String::from_raw_parts
-+ String::from_utf16
-+ String::from_utf16_lossy
-- String::from_utf16be
-- String::from_utf16be_lossy
-- String::from_utf16le
-- String::from_utf16le_lossy
-+ String::from_utf8
-+ String::from_utf8_lossy
-- String::from_utf8_lossy_owned
-+ String::from_utf8_unchecked
-+ String::insert
-+ String::insert_str
-+ String::into_boxed_str
-+ String::into_bytes
-- String::into_raw_parts
-+ String::is_empty
-+ String::leak
-+ String::len
-+ String::new
-+ String::pop
-+ String::push
-+ String::push_str
-+ String::remove
-+ String::replace_range
-+ String::reserve
-+ String::reserve_exact
-+ String::retain
-+ String::shrink_to
-+ String::shrink_to_fit
-+ String::split_off
-+ String::truncate
-- String::try_reserve
-- String::try_reserve_exact
-+ String::with_capacity
-# Box 13 of 17
-- Box::as_mut_ptr
-- Box::as_ptr
-+ Box::assume_init
-+ Box::downcast
-- Box::from_non_null
-+ Box::from_raw
-- Box::into_non_null
-+ Box::into_pin
-+ Box::into_raw
-+ Box::leak
-+ Box::new
-+ Box::new_uninit
-+ Box::new_uninit_slice
-+ Box::new_zeroed
-+ Box::new_zeroed_slice
-+ Box::pin
-+ Box::write
-# Pin 15 of 16
-- Pin::as_deref_mut
-+ Pin::as_mut
-+ Pin::as_ref
-+ Pin::get_mut
-+ Pin::get_ref
-+ Pin::get_unchecked_mut
-+ Pin::into_inner
-+ Pin::into_inner_unchecked
-+ Pin::into_ref
-+ Pin::map_unchecked
-+ Pin::map_unchecked_mut
-+ Pin::new
-+ Pin::new_unchecked
-+ Pin::set
-+ Pin::static_mut
-+ Pin::static_ref
-# str 80 of 83
-+ str::as_bytes
-- str::as_bytes_mut
-- str::as_mut_ptr
-+ str::as_ptr
-+ str::bytes
-+ str::ceil_char_boundary
-+ str::char_indices
-+ str::chars
-+ str::contains
-+ str::encode_utf16
-+ str::ends_with
-+ str::eq_ignore_ascii_case
-+ str::escape_debug
-+ str::escape_default
-+ str::escape_unicode
-+ str::find
-+ str::floor_char_boundary
-+ str::from_utf8
-+ str::from_utf8_mut
-+ str::from_utf8_unchecked
-+ str::from_utf8_unchecked_mut
-+ str::get
-+ str::get_mut
-+ str::get_unchecked
-+ str::get_unchecked_mut
-+ str::into_boxed_bytes
-+ str::into_string
-+ str::is_ascii
-+ str::is_char_boundary
-+ str::is_empty
-+ str::len
-+ str::lines
-+ str::lines_any
-+ str::make_ascii_lowercase
-+ str::make_ascii_uppercase
-+ str::match_indices
-+ str::matches
-+ str::parse
-+ str::repeat
-+ str::replace
-+ str::replacen
-+ str::rfind
-+ str::rmatch_indices
-+ str::rmatches
-+ str::rsplit
-+ str::rsplit_once
-+ str::rsplit_terminator
-+ str::rsplitn
-+ str::slice_mut_unchecked
-+ str::slice_unchecked
-+ str::split
-+ str::split_ascii_whitespace
-+ str::split_at
-+ str::split_at_checked
-+ str::split_at_mut
-+ str::split_at_mut_checked
-+ str::split_inclusive
-+ str::split_once
-+ str::split_terminator
-+ str::split_whitespace
-+ str::splitn
-+ str::starts_with
-+ str::strip_circumfix
-+ str::strip_prefix
-+ str::strip_suffix
-- str::substr_range
-+ str::to_ascii_lowercase
-+ str::to_ascii_uppercase
-+ str::to_lowercase
-+ str::to_uppercase
-+ str::trim
-+ str::trim_ascii
-+ str::trim_ascii_end
-+ str::trim_ascii_start
-+ str::trim_end
-+ str::trim_end_matches
-+ str::trim_left
-+ str::trim_left_matches
-+ str::trim_matches
-+ str::trim_right
-+ str::trim_right_matches
-+ str::trim_start
-+ str::trim_start_matches
-# slice 127 of 133
-- slice::align_to
-- slice::align_to_mut
-+ slice::array_windows
-+ slice::as_array
-+ slice::as_chunks
-+ slice::as_chunks_mut
-+ slice::as_chunks_unchecked
-+ slice::as_chunks_unchecked_mut
-+ slice::as_flattened
-+ slice::as_flattened_mut
-+ slice::as_mut_array
-+ slice::as_mut_ptr
-- slice::as_mut_ptr_range
-+ slice::as_ptr
-- slice::as_ptr_range
-+ slice::as_rchunks
-+ slice::as_rchunks_mut
-+ slice::assume_init_drop
-+ slice::assume_init_mut
-+ slice::assume_init_ref
-+ slice::binary_search
-+ slice::binary_search_by
-+ slice::binary_search_by_key
-+ slice::chunk_by
-+ slice::chunk_by_mut
-+ slice::chunks
-+ slice::chunks_exact
-+ slice::chunks_exact_mut
-+ slice::chunks_mut
-+ slice::clone_from_slice
-+ slice::concat
-+ slice::connect
-+ slice::contains
-+ slice::copy_from_slice
-+ slice::copy_within
-- slice::element_offset
-+ slice::ends_with
-+ slice::eq_ignore_ascii_case
-+ slice::escape_ascii
-+ slice::fill
-+ slice::fill_with
-+ slice::first
-+ slice::first_chunk
-+ slice::first_chunk_mut
-+ slice::first_mut
-+ slice::get
-+ slice::get_disjoint_mut
-+ slice::get_disjoint_unchecked_mut
-+ slice::get_mut
-+ slice::get_unchecked
-+ slice::get_unchecked_mut
-+ slice::into_vec
-+ slice::is_ascii
-+ slice::is_empty
-+ slice::is_sorted
-+ slice::is_sorted_by
-+ slice::is_sorted_by_key
-+ slice::iter
-+ slice::iter_mut
-+ slice::join
-+ slice::last
-+ slice::last_chunk
-+ slice::last_chunk_mut
-+ slice::last_mut
-+ slice::len
-+ slice::make_ascii_lowercase
-+ slice::make_ascii_uppercase
-+ slice::partition_point
-+ slice::rchunks
-+ slice::rchunks_exact
-+ slice::rchunks_exact_mut
-+ slice::rchunks_mut
-+ slice::repeat
-+ slice::reverse
-+ slice::rotate_left
-+ slice::rotate_right
-+ slice::rsplit
-+ slice::rsplit_mut
-+ slice::rsplitn
-+ slice::rsplitn_mut
-+ slice::select_nth_unstable
-+ slice::select_nth_unstable_by
-+ slice::select_nth_unstable_by_key
-+ slice::sort
-+ slice::sort_by
-+ slice::sort_by_cached_key
-+ slice::sort_by_key
-+ slice::sort_unstable
-+ slice::sort_unstable_by
-+ slice::sort_unstable_by_key
-+ slice::split
-+ slice::split_at
-+ slice::split_at_checked
-+ slice::split_at_mut
-+ slice::split_at_mut_checked
-+ slice::split_at_mut_unchecked
-+ slice::split_at_unchecked
-+ slice::split_first
-+ slice::split_first_chunk
-+ slice::split_first_chunk_mut
-+ slice::split_first_mut
-+ slice::split_inclusive
-+ slice::split_inclusive_mut
-+ slice::split_last
-+ slice::split_last_chunk
-+ slice::split_last_chunk_mut
-+ slice::split_last_mut
-+ slice::split_mut
-+ slice::split_off
-+ slice::split_off_first
-+ slice::split_off_first_mut
-+ slice::split_off_last
-+ slice::split_off_last_mut
-+ slice::split_off_mut
-+ slice::splitn
-+ slice::splitn_mut
-+ slice::starts_with
-+ slice::strip_circumfix
-+ slice::strip_prefix
-+ slice::strip_suffix
-- slice::subslice_range
-+ slice::swap
-+ slice::swap_with_slice
-+ slice::to_ascii_lowercase
-+ slice::to_ascii_uppercase
-+ slice::to_vec
-+ slice::trim_ascii
-+ slice::trim_ascii_end
-+ slice::trim_ascii_start
-+ slice::utf8_chunks
-+ slice::windows
-+ slice::write_clone_of_slice
-+ slice::write_copy_of_slice
-# array 5 of 5
-+ array::as_mut_slice
-+ array::as_slice
-+ array::each_mut
-+ array::each_ref
-+ array::map
-# char 37 of 38
-+ char::decode_utf16
-- char::encode_utf16
-+ char::encode_utf8
-+ char::eq_ignore_ascii_case
-+ char::escape_debug
-+ char::escape_default
-+ char::escape_unicode
-+ char::from_digit
-+ char::from_u32
-+ char::from_u32_unchecked
-+ char::is_alphabetic
-+ char::is_alphanumeric
-+ char::is_ascii
-+ char::is_ascii_alphabetic
-+ char::is_ascii_alphanumeric
-+ char::is_ascii_control
-+ char::is_ascii_digit
-+ char::is_ascii_graphic
-+ char::is_ascii_hexdigit
-+ char::is_ascii_lowercase
-+ char::is_ascii_punctuation
-+ char::is_ascii_uppercase
-+ char::is_ascii_whitespace
-+ char::is_control
-+ char::is_digit
-+ char::is_lowercase
-+ char::is_numeric
-+ char::is_uppercase
-+ char::is_whitespace
-+ char::len_utf16
-+ char::len_utf8
-+ char::make_ascii_lowercase
-+ char::make_ascii_uppercase
-+ char::to_ascii_lowercase
-+ char::to_ascii_uppercase
-+ char::to_digit
-+ char::to_lowercase
-+ char::to_uppercase
+# Vec 42 of 48; bodies: 4 safe, 44 memory, 0 opaque, 0 none
++ Vec::append	memory
++ Vec::as_mut_ptr	memory
++ Vec::as_mut_slice	memory
++ Vec::as_ptr	memory
++ Vec::as_slice	memory
++ Vec::capacity	memory
++ Vec::clear	memory
++ Vec::dedup	memory
++ Vec::dedup_by	memory
++ Vec::dedup_by_key	memory
++ Vec::drain	memory
++ Vec::extend_from_slice	memory
++ Vec::extend_from_within	memory
++ Vec::extract_if	safe
+- Vec::from_parts	memory
++ Vec::from_raw_parts	memory
++ Vec::insert	memory
++ Vec::insert_mut	memory
++ Vec::into_boxed_slice	memory
++ Vec::into_flattened	memory
+- Vec::into_parts	memory
+- Vec::into_raw_parts	memory
++ Vec::is_empty	safe
++ Vec::leak	memory
++ Vec::len	safe
++ Vec::new	memory
++ Vec::pop	memory
++ Vec::pop_if	memory
++ Vec::push	memory
++ Vec::push_mut	memory
++ Vec::remove	memory
++ Vec::reserve	memory
++ Vec::reserve_exact	memory
++ Vec::resize	memory
++ Vec::resize_with	memory
++ Vec::retain	memory
++ Vec::retain_mut	memory
++ Vec::set_len	safe
++ Vec::shrink_to	memory
++ Vec::shrink_to_fit	memory
+- Vec::spare_capacity_mut	memory
++ Vec::splice	memory
++ Vec::split_off	memory
++ Vec::swap_remove	memory
++ Vec::truncate	memory
+- Vec::try_reserve	memory
+- Vec::try_reserve_exact	memory
++ Vec::with_capacity	memory
+# VecDeque 50 of 55; bodies: 2 safe, 53 memory, 0 opaque, 0 none
++ VecDeque::append	memory
+- VecDeque::as_mut_slices	memory
+- VecDeque::as_slices	memory
++ VecDeque::back	memory
++ VecDeque::back_mut	memory
++ VecDeque::binary_search	memory
++ VecDeque::binary_search_by	memory
++ VecDeque::binary_search_by_key	memory
++ VecDeque::capacity	memory
++ VecDeque::clear	memory
++ VecDeque::contains	memory
++ VecDeque::drain	memory
++ VecDeque::front	memory
++ VecDeque::front_mut	memory
++ VecDeque::get	memory
++ VecDeque::get_mut	memory
++ VecDeque::insert	memory
++ VecDeque::insert_mut	memory
++ VecDeque::is_empty	safe
++ VecDeque::iter	memory
++ VecDeque::iter_mut	memory
++ VecDeque::len	safe
++ VecDeque::make_contiguous	memory
++ VecDeque::new	memory
++ VecDeque::partition_point	memory
++ VecDeque::pop_back	memory
++ VecDeque::pop_back_if	memory
++ VecDeque::pop_front	memory
++ VecDeque::pop_front_if	memory
++ VecDeque::push_back	memory
++ VecDeque::push_back_mut	memory
++ VecDeque::push_front	memory
++ VecDeque::push_front_mut	memory
++ VecDeque::range	memory
++ VecDeque::range_mut	memory
++ VecDeque::remove	memory
++ VecDeque::reserve	memory
++ VecDeque::reserve_exact	memory
++ VecDeque::resize	memory
++ VecDeque::resize_with	memory
++ VecDeque::retain	memory
+- VecDeque::retain_back	memory
++ VecDeque::retain_mut	memory
++ VecDeque::rotate_left	memory
++ VecDeque::rotate_right	memory
++ VecDeque::shrink_to	memory
++ VecDeque::shrink_to_fit	memory
++ VecDeque::split_off	memory
++ VecDeque::swap	memory
++ VecDeque::swap_remove_back	memory
++ VecDeque::swap_remove_front	memory
++ VecDeque::truncate	memory
+- VecDeque::try_reserve	memory
+- VecDeque::try_reserve_exact	memory
++ VecDeque::with_capacity	memory
+# LinkedList 20 of 20; bodies: 8 safe, 12 memory, 0 opaque, 0 none
++ LinkedList::append	memory
++ LinkedList::back	memory
++ LinkedList::back_mut	memory
++ LinkedList::clear	safe
++ LinkedList::contains	safe
++ LinkedList::extract_if	safe
++ LinkedList::front	memory
++ LinkedList::front_mut	memory
++ LinkedList::is_empty	safe
++ LinkedList::iter	safe
++ LinkedList::iter_mut	safe
++ LinkedList::len	safe
++ LinkedList::new	safe
++ LinkedList::pop_back	memory
++ LinkedList::pop_front	memory
++ LinkedList::push_back	memory
++ LinkedList::push_back_mut	memory
++ LinkedList::push_front	memory
++ LinkedList::push_front_mut	memory
++ LinkedList::split_off	memory
+# HashMap 26 of 33; bodies: 5 safe, 25 memory, 3 opaque, 0 none
+- HashMap::capacity	safe
++ HashMap::clear	memory
++ HashMap::contains_key	memory
++ HashMap::drain	memory
++ HashMap::entry	opaque
++ HashMap::extract_if	memory
++ HashMap::get	memory
+- HashMap::get_disjoint_mut	memory
+- HashMap::get_disjoint_unchecked_mut	memory
++ HashMap::get_key_value	memory
++ HashMap::get_mut	memory
+- HashMap::hasher	safe
++ HashMap::insert	memory
++ HashMap::into_keys	memory
++ HashMap::into_values	memory
++ HashMap::is_empty	safe
++ HashMap::iter	memory
++ HashMap::iter_mut	memory
++ HashMap::keys	memory
++ HashMap::len	safe
++ HashMap::new	memory
++ HashMap::remove	memory
++ HashMap::remove_entry	memory
++ HashMap::reserve	opaque
++ HashMap::retain	memory
++ HashMap::shrink_to	memory
++ HashMap::shrink_to_fit	memory
+- HashMap::try_reserve	opaque
++ HashMap::values	memory
++ HashMap::values_mut	memory
++ HashMap::with_capacity	memory
+- HashMap::with_capacity_and_hasher	memory
+- HashMap::with_hasher	safe
+# HashSet 25 of 30; bodies: 5 safe, 23 memory, 2 opaque, 0 none
+- HashSet::capacity	safe
++ HashSet::clear	memory
++ HashSet::contains	memory
++ HashSet::difference	memory
++ HashSet::drain	memory
++ HashSet::extract_if	memory
++ HashSet::get	memory
+- HashSet::hasher	safe
++ HashSet::insert	memory
++ HashSet::intersection	memory
++ HashSet::is_disjoint	memory
++ HashSet::is_empty	safe
++ HashSet::is_subset	memory
++ HashSet::is_superset	memory
++ HashSet::iter	memory
++ HashSet::len	safe
++ HashSet::new	memory
++ HashSet::remove	memory
++ HashSet::replace	memory
++ HashSet::reserve	opaque
++ HashSet::retain	memory
++ HashSet::shrink_to	memory
++ HashSet::shrink_to_fit	memory
++ HashSet::symmetric_difference	memory
++ HashSet::take	memory
+- HashSet::try_reserve	opaque
++ HashSet::union	memory
++ HashSet::with_capacity	memory
+- HashSet::with_capacity_and_hasher	memory
+- HashSet::with_hasher	safe
+# BTreeMap 31 of 31; bodies: 11 safe, 20 memory, 0 opaque, 0 none
++ BTreeMap::append	memory
++ BTreeMap::clear	safe
++ BTreeMap::contains_key	memory
++ BTreeMap::entry	memory
++ BTreeMap::extract_if	memory
++ BTreeMap::first_entry	memory
++ BTreeMap::first_key_value	memory
++ BTreeMap::get	memory
++ BTreeMap::get_key_value	memory
++ BTreeMap::get_mut	memory
++ BTreeMap::insert	memory
++ BTreeMap::into_keys	safe
++ BTreeMap::into_values	safe
++ BTreeMap::is_empty	safe
++ BTreeMap::iter	safe
++ BTreeMap::iter_mut	safe
++ BTreeMap::keys	safe
++ BTreeMap::last_entry	memory
++ BTreeMap::last_key_value	memory
++ BTreeMap::len	safe
++ BTreeMap::new	safe
++ BTreeMap::pop_first	memory
++ BTreeMap::pop_last	memory
++ BTreeMap::range	memory
++ BTreeMap::range_mut	memory
++ BTreeMap::remove	memory
++ BTreeMap::remove_entry	memory
++ BTreeMap::retain	memory
++ BTreeMap::split_off	memory
++ BTreeMap::values	safe
++ BTreeMap::values_mut	safe
+# BTreeSet 27 of 27; bodies: 7 safe, 20 memory, 0 opaque, 0 none
++ BTreeSet::append	memory
++ BTreeSet::clear	safe
++ BTreeSet::contains	memory
++ BTreeSet::difference	memory
++ BTreeSet::extract_if	memory
++ BTreeSet::first	memory
++ BTreeSet::get	memory
++ BTreeSet::insert	memory
++ BTreeSet::intersection	memory
++ BTreeSet::is_disjoint	memory
++ BTreeSet::is_empty	safe
++ BTreeSet::is_subset	memory
++ BTreeSet::is_superset	memory
++ BTreeSet::iter	safe
++ BTreeSet::last	memory
++ BTreeSet::len	safe
++ BTreeSet::new	safe
++ BTreeSet::pop_first	memory
++ BTreeSet::pop_last	memory
++ BTreeSet::range	memory
++ BTreeSet::remove	memory
++ BTreeSet::replace	memory
++ BTreeSet::retain	memory
++ BTreeSet::split_off	memory
++ BTreeSet::symmetric_difference	safe
++ BTreeSet::take	memory
++ BTreeSet::union	safe
+# BinaryHeap 21 of 23; bodies: 4 safe, 19 memory, 0 opaque, 0 none
++ BinaryHeap::append	memory
++ BinaryHeap::as_slice	memory
++ BinaryHeap::capacity	memory
++ BinaryHeap::clear	memory
++ BinaryHeap::drain	memory
++ BinaryHeap::into_sorted_vec	memory
++ BinaryHeap::into_vec	safe
++ BinaryHeap::is_empty	safe
++ BinaryHeap::iter	memory
++ BinaryHeap::len	safe
++ BinaryHeap::new	memory
++ BinaryHeap::peek	memory
++ BinaryHeap::peek_mut	safe
++ BinaryHeap::pop	memory
++ BinaryHeap::push	memory
++ BinaryHeap::reserve	memory
++ BinaryHeap::reserve_exact	memory
++ BinaryHeap::retain	memory
++ BinaryHeap::shrink_to	memory
++ BinaryHeap::shrink_to_fit	memory
+- BinaryHeap::try_reserve	memory
+- BinaryHeap::try_reserve_exact	memory
++ BinaryHeap::with_capacity	memory
+# Option 42 of 46; bodies: 39 safe, 7 memory, 0 opaque, 0 none
++ Option::and	safe
++ Option::and_then	safe
++ Option::as_deref	safe
+- Option::as_deref_mut	safe
++ Option::as_mut	safe
+- Option::as_mut_slice	memory
+- Option::as_pin_mut	safe
+- Option::as_pin_ref	safe
++ Option::as_ref	safe
++ Option::as_slice	memory
++ Option::cloned	safe
++ Option::copied	safe
++ Option::expect	safe
++ Option::filter	safe
++ Option::flatten	safe
++ Option::get_or_insert	memory
++ Option::get_or_insert_default	memory
++ Option::get_or_insert_with	memory
++ Option::insert	memory
++ Option::inspect	safe
++ Option::is_none	safe
++ Option::is_none_or	safe
++ Option::is_some	safe
++ Option::is_some_and	safe
++ Option::iter	safe
++ Option::iter_mut	safe
++ Option::map	safe
++ Option::map_or	safe
++ Option::map_or_default	safe
++ Option::map_or_else	safe
++ Option::ok_or	safe
++ Option::ok_or_else	safe
++ Option::or	safe
++ Option::or_else	safe
++ Option::replace	safe
++ Option::take	safe
++ Option::take_if	safe
++ Option::transpose	safe
++ Option::unwrap	safe
++ Option::unwrap_or	safe
++ Option::unwrap_or_default	safe
++ Option::unwrap_or_else	safe
++ Option::unwrap_unchecked	memory
++ Option::unzip	safe
++ Option::xor	safe
++ Option::zip	safe
+# Result 35 of 36; bodies: 34 safe, 2 memory, 0 opaque, 0 none
++ Result::and	safe
++ Result::and_then	safe
++ Result::as_deref	safe
+- Result::as_deref_mut	safe
++ Result::as_mut	safe
++ Result::as_ref	safe
++ Result::cloned	safe
++ Result::copied	safe
++ Result::err	safe
++ Result::expect	safe
++ Result::expect_err	safe
++ Result::flatten	safe
++ Result::inspect	safe
++ Result::inspect_err	safe
++ Result::is_err	safe
++ Result::is_err_and	safe
++ Result::is_ok	safe
++ Result::is_ok_and	safe
++ Result::iter	safe
++ Result::iter_mut	safe
++ Result::map	safe
++ Result::map_err	safe
++ Result::map_or	safe
++ Result::map_or_default	safe
++ Result::map_or_else	safe
++ Result::ok	safe
++ Result::or	safe
++ Result::or_else	safe
++ Result::transpose	safe
++ Result::unwrap	safe
++ Result::unwrap_err	safe
++ Result::unwrap_err_unchecked	memory
++ Result::unwrap_or	safe
++ Result::unwrap_or_default	safe
++ Result::unwrap_or_else	safe
++ Result::unwrap_unchecked	memory
+# Rc 12 of 23; bodies: 0 safe, 23 memory, 0 opaque, 0 none
+- Rc::as_ptr	memory
+- Rc::assume_init	memory
+- Rc::decrement_strong_count	memory
++ Rc::downcast	memory
++ Rc::downgrade	memory
+- Rc::from_raw	memory
++ Rc::get_mut	memory
+- Rc::increment_strong_count	memory
++ Rc::into_inner	memory
+- Rc::into_raw	memory
++ Rc::make_mut	memory
++ Rc::new	memory
++ Rc::new_cyclic	memory
+- Rc::new_uninit	memory
+- Rc::new_uninit_slice	memory
+- Rc::new_zeroed	memory
+- Rc::new_zeroed_slice	memory
+- Rc::pin	memory
++ Rc::ptr_eq	memory
++ Rc::strong_count	memory
++ Rc::try_unwrap	memory
++ Rc::unwrap_or_clone	memory
++ Rc::weak_count	memory
+# Arc 12 of 23; bodies: 0 safe, 23 memory, 0 opaque, 0 none
+- Arc::as_ptr	memory
+- Arc::assume_init	memory
+- Arc::decrement_strong_count	memory
++ Arc::downcast	memory
++ Arc::downgrade	memory
+- Arc::from_raw	memory
++ Arc::get_mut	memory
+- Arc::increment_strong_count	memory
++ Arc::into_inner	memory
+- Arc::into_raw	memory
++ Arc::make_mut	memory
++ Arc::new	memory
++ Arc::new_cyclic	memory
+- Arc::new_uninit	memory
+- Arc::new_uninit_slice	memory
+- Arc::new_zeroed	memory
+- Arc::new_zeroed_slice	memory
+- Arc::pin	memory
++ Arc::ptr_eq	memory
++ Arc::strong_count	memory
++ Arc::try_unwrap	memory
++ Arc::unwrap_or_clone	memory
++ Arc::weak_count	memory
+# RcWeak 5 of 8; bodies: 1 safe, 7 memory, 0 opaque, 0 none
+- RcWeak::as_ptr	memory
+- RcWeak::from_raw	memory
+- RcWeak::into_raw	memory
++ RcWeak::new	safe
++ RcWeak::ptr_eq	memory
++ RcWeak::strong_count	memory
++ RcWeak::upgrade	memory
++ RcWeak::weak_count	memory
+# ArcWeak 5 of 8; bodies: 1 safe, 7 memory, 0 opaque, 0 none
+- ArcWeak::as_ptr	memory
+- ArcWeak::from_raw	memory
+- ArcWeak::into_raw	memory
++ ArcWeak::new	safe
++ ArcWeak::ptr_eq	memory
++ ArcWeak::strong_count	memory
++ ArcWeak::upgrade	memory
++ ArcWeak::weak_count	memory
+# Cell 12 of 13; bodies: 3 safe, 10 memory, 0 opaque, 0 none
++ Cell::as_array_of_cells	memory
+- Cell::as_ptr	memory
++ Cell::as_slice_of_cells	memory
++ Cell::from_mut	memory
++ Cell::get	memory
++ Cell::get_mut	safe
++ Cell::into_inner	safe
++ Cell::new	safe
++ Cell::replace	memory
++ Cell::set	memory
++ Cell::swap	memory
++ Cell::take	memory
++ Cell::update	memory
+# RefCell 11 of 13; bodies: 3 safe, 10 memory, 0 opaque, 0 none
+- RefCell::as_ptr	memory
++ RefCell::borrow	memory
++ RefCell::borrow_mut	memory
++ RefCell::get_mut	safe
++ RefCell::into_inner	safe
++ RefCell::new	safe
++ RefCell::replace	memory
++ RefCell::replace_with	memory
++ RefCell::swap	memory
++ RefCell::take	memory
++ RefCell::try_borrow	memory
++ RefCell::try_borrow_mut	memory
+- RefCell::try_borrow_unguarded	memory
+# Mutex 7 of 7; bodies: 5 safe, 2 memory, 0 opaque, 0 none
++ Mutex::clear_poison	safe
++ Mutex::get_mut	safe
++ Mutex::into_inner	safe
++ Mutex::is_poisoned	safe
++ Mutex::lock	memory
++ Mutex::new	safe
++ Mutex::try_lock	memory
+# RwLock 9 of 9; bodies: 5 safe, 4 memory, 0 opaque, 0 none
++ RwLock::clear_poison	safe
++ RwLock::get_mut	safe
++ RwLock::into_inner	safe
++ RwLock::is_poisoned	safe
++ RwLock::new	safe
++ RwLock::read	memory
++ RwLock::try_read	memory
++ RwLock::try_write	memory
++ RwLock::write	memory
+# Cow 2 of 2; bodies: 2 safe, 0 memory, 0 opaque, 0 none
++ Cow::into_owned	safe
++ Cow::to_mut	safe
+# Instant 7 of 7; bodies: 0 safe, 0 memory, 0 opaque, 7 none
++ Instant::checked_add	none
++ Instant::checked_duration_since	none
++ Instant::checked_sub	none
++ Instant::duration_since	none
++ Instant::elapsed	none
++ Instant::now	none
++ Instant::saturating_duration_since	none
+# OnceCell 7 of 7; bodies: 4 safe, 3 memory, 0 opaque, 0 none
++ OnceCell::get	memory
++ OnceCell::get_mut	safe
++ OnceCell::get_or_init	memory
++ OnceCell::into_inner	safe
++ OnceCell::new	safe
++ OnceCell::set	memory
++ OnceCell::take	safe
+# LazyCell 5 of 5; bodies: 2 safe, 3 memory, 0 opaque, 0 none
++ LazyCell::force	memory
++ LazyCell::force_mut	memory
++ LazyCell::get	memory
++ LazyCell::get_mut	safe
++ LazyCell::new	safe
+# OnceLock 7 of 8; bodies: 1 safe, 7 memory, 0 opaque, 0 none
++ OnceLock::get	memory
++ OnceLock::get_mut	memory
++ OnceLock::get_or_init	memory
++ OnceLock::into_inner	memory
++ OnceLock::new	safe
++ OnceLock::set	memory
++ OnceLock::take	memory
+- OnceLock::wait	memory
+# LazyLock 5 of 5; bodies: 1 safe, 4 memory, 0 opaque, 0 none
++ LazyLock::force	memory
++ LazyLock::force_mut	memory
++ LazyLock::get	memory
++ LazyLock::get_mut	memory
++ LazyLock::new	safe
+# SystemTime 5 of 5; bodies: 0 safe, 0 memory, 0 opaque, 5 none
++ SystemTime::checked_add	none
++ SystemTime::checked_sub	none
++ SystemTime::duration_since	none
++ SystemTime::elapsed	none
++ SystemTime::now	none
+# String 32 of 43; bodies: 6 safe, 27 memory, 1 opaque, 9 none
++ String::as_bytes	memory
++ String::as_mut_str	memory
+- String::as_mut_vec	safe
++ String::as_str	memory
+- String::capacity	memory
++ String::clear	memory
++ String::drain	memory
++ String::extend_from_within	memory
+- String::from_raw_parts	memory
++ String::from_utf16	none
++ String::from_utf16_lossy	memory
+- String::from_utf16be	none
+- String::from_utf16be_lossy	none
+- String::from_utf16le	none
+- String::from_utf16le_lossy	none
++ String::from_utf8	opaque
++ String::from_utf8_lossy	none
+- String::from_utf8_lossy_owned	none
++ String::from_utf8_unchecked	safe
++ String::insert	memory
++ String::insert_str	memory
++ String::into_boxed_str	memory
++ String::into_bytes	safe
+- String::into_raw_parts	memory
++ String::is_empty	safe
++ String::leak	memory
++ String::len	safe
++ String::new	safe
++ String::pop	memory
++ String::push	memory
++ String::push_str	memory
++ String::remove	memory
++ String::replace_range	memory
++ String::reserve	memory
++ String::reserve_exact	memory
++ String::retain	memory
++ String::shrink_to	memory
++ String::shrink_to_fit	memory
++ String::split_off	memory
++ String::truncate	memory
+- String::try_reserve	none
+- String::try_reserve_exact	none
++ String::with_capacity	memory
+# Box 13 of 17; bodies: 2 safe, 15 memory, 0 opaque, 0 none
+- Box::as_mut_ptr	memory
+- Box::as_ptr	safe
++ Box::assume_init	memory
++ Box::downcast	memory
+- Box::from_non_null	memory
++ Box::from_raw	memory
+- Box::into_non_null	memory
++ Box::into_pin	safe
++ Box::into_raw	memory
++ Box::leak	memory
++ Box::new	memory
++ Box::new_uninit	memory
++ Box::new_uninit_slice	memory
++ Box::new_zeroed	memory
++ Box::new_zeroed_slice	memory
++ Box::pin	memory
++ Box::write	memory
+# Pin 15 of 16; bodies: 16 safe, 0 memory, 0 opaque, 0 none
+- Pin::as_deref_mut	safe
++ Pin::as_mut	safe
++ Pin::as_ref	safe
++ Pin::get_mut	safe
++ Pin::get_ref	safe
++ Pin::get_unchecked_mut	safe
++ Pin::into_inner	safe
++ Pin::into_inner_unchecked	safe
++ Pin::into_ref	safe
++ Pin::map_unchecked	safe
++ Pin::map_unchecked_mut	safe
++ Pin::new	safe
++ Pin::new_unchecked	safe
++ Pin::set	safe
++ Pin::static_mut	safe
++ Pin::static_ref	safe
+# str 80 of 83; bodies: 15 safe, 60 memory, 2 opaque, 6 none
++ str::as_bytes	memory
+- str::as_bytes_mut	memory
+- str::as_mut_ptr	memory
++ str::as_ptr	memory
++ str::bytes	memory
++ str::ceil_char_boundary	memory
++ str::char_indices	memory
++ str::chars	memory
++ str::contains	safe
++ str::encode_utf16	memory
++ str::ends_with	safe
++ str::eq_ignore_ascii_case	memory
++ str::escape_debug	none
++ str::escape_default	memory
++ str::escape_unicode	memory
++ str::find	safe
++ str::floor_char_boundary	memory
++ str::from_utf8	none
++ str::from_utf8_mut	none
++ str::from_utf8_unchecked	memory
++ str::from_utf8_unchecked_mut	memory
++ str::get	safe
++ str::get_mut	safe
++ str::get_unchecked	memory
++ str::get_unchecked_mut	memory
++ str::into_boxed_bytes	memory
++ str::into_string	memory
++ str::is_ascii	memory
++ str::is_char_boundary	memory
++ str::is_empty	memory
++ str::len	memory
++ str::lines	memory
++ str::lines_any	memory
++ str::make_ascii_lowercase	memory
++ str::make_ascii_uppercase	memory
++ str::match_indices	safe
++ str::matches	safe
++ str::parse	safe
++ str::repeat	memory
++ str::replace	memory
++ str::replacen	memory
++ str::rfind	safe
++ str::rmatch_indices	safe
++ str::rmatches	safe
++ str::rsplit	memory
++ str::rsplit_once	memory
++ str::rsplit_terminator	memory
++ str::rsplitn	memory
++ str::slice_mut_unchecked	memory
++ str::slice_unchecked	memory
++ str::split	memory
++ str::split_ascii_whitespace	memory
++ str::split_at	memory
++ str::split_at_checked	memory
++ str::split_at_mut	opaque
++ str::split_at_mut_checked	opaque
++ str::split_inclusive	memory
++ str::split_once	memory
++ str::split_terminator	memory
++ str::split_whitespace	memory
++ str::splitn	memory
++ str::starts_with	safe
++ str::strip_circumfix	safe
++ str::strip_prefix	safe
++ str::strip_suffix	safe
+- str::substr_range	none
++ str::to_ascii_lowercase	memory
++ str::to_ascii_uppercase	memory
++ str::to_lowercase	none
++ str::to_uppercase	none
++ str::trim	memory
++ str::trim_ascii	memory
++ str::trim_ascii_end	memory
++ str::trim_ascii_start	memory
++ str::trim_end	memory
++ str::trim_end_matches	memory
++ str::trim_left	memory
++ str::trim_left_matches	memory
++ str::trim_matches	memory
++ str::trim_right	memory
++ str::trim_right_matches	memory
++ str::trim_start	memory
++ str::trim_start_matches	memory
+# slice 127 of 133; bodies: 43 safe, 90 memory, 0 opaque, 0 none
+- slice::align_to	memory
+- slice::align_to_mut	memory
++ slice::array_windows	memory
++ slice::as_array	memory
++ slice::as_chunks	memory
++ slice::as_chunks_mut	memory
++ slice::as_chunks_unchecked	memory
++ slice::as_chunks_unchecked_mut	memory
++ slice::as_flattened	memory
++ slice::as_flattened_mut	memory
++ slice::as_mut_array	memory
++ slice::as_mut_ptr	memory
+- slice::as_mut_ptr_range	memory
++ slice::as_ptr	memory
+- slice::as_ptr_range	memory
++ slice::as_rchunks	memory
++ slice::as_rchunks_mut	memory
++ slice::assume_init_drop	memory
++ slice::assume_init_mut	memory
++ slice::assume_init_ref	memory
++ slice::binary_search	memory
++ slice::binary_search_by	memory
++ slice::binary_search_by_key	memory
++ slice::chunk_by	safe
++ slice::chunk_by_mut	safe
++ slice::chunks	memory
++ slice::chunks_exact	memory
++ slice::chunks_exact_mut	memory
++ slice::chunks_mut	memory
++ slice::clone_from_slice	safe
++ slice::concat	safe
++ slice::connect	safe
++ slice::contains	safe
++ slice::copy_from_slice	memory
++ slice::copy_within	memory
+- slice::element_offset	memory
++ slice::ends_with	memory
++ slice::eq_ignore_ascii_case	safe
++ slice::escape_ascii	memory
++ slice::fill	safe
++ slice::fill_with	memory
++ slice::first	safe
++ slice::first_chunk	memory
++ slice::first_chunk_mut	memory
++ slice::first_mut	safe
++ slice::get	safe
++ slice::get_disjoint_mut	memory
++ slice::get_disjoint_unchecked_mut	memory
++ slice::get_mut	safe
++ slice::get_unchecked	memory
++ slice::get_unchecked_mut	memory
++ slice::into_vec	memory
++ slice::is_ascii	memory
++ slice::is_empty	safe
++ slice::is_sorted	memory
++ slice::is_sorted_by	safe
++ slice::is_sorted_by_key	memory
++ slice::iter	memory
++ slice::iter_mut	memory
++ slice::join	safe
++ slice::last	safe
++ slice::last_chunk	memory
++ slice::last_chunk_mut	memory
++ slice::last_mut	safe
++ slice::len	safe
++ slice::make_ascii_lowercase	safe
++ slice::make_ascii_uppercase	safe
++ slice::partition_point	memory
++ slice::rchunks	memory
++ slice::rchunks_exact	memory
++ slice::rchunks_exact_mut	memory
++ slice::rchunks_mut	memory
++ slice::repeat	memory
++ slice::reverse	memory
++ slice::rotate_left	memory
++ slice::rotate_right	memory
++ slice::rsplit	safe
++ slice::rsplit_mut	safe
++ slice::rsplitn	safe
++ slice::rsplitn_mut	safe
++ slice::select_nth_unstable	memory
++ slice::select_nth_unstable_by	memory
++ slice::select_nth_unstable_by_key	memory
++ slice::sort	memory
++ slice::sort_by	memory
++ slice::sort_by_cached_key	memory
++ slice::sort_by_key	memory
++ slice::sort_unstable	memory
++ slice::sort_unstable_by	memory
++ slice::sort_unstable_by_key	memory
++ slice::split	safe
++ slice::split_at	memory
++ slice::split_at_checked	memory
++ slice::split_at_mut	memory
++ slice::split_at_mut_checked	memory
++ slice::split_at_mut_unchecked	memory
++ slice::split_at_unchecked	memory
++ slice::split_first	safe
++ slice::split_first_chunk	memory
++ slice::split_first_chunk_mut	memory
++ slice::split_first_mut	safe
++ slice::split_inclusive	safe
++ slice::split_inclusive_mut	safe
++ slice::split_last	safe
++ slice::split_last_chunk	memory
++ slice::split_last_chunk_mut	memory
++ slice::split_last_mut	safe
++ slice::split_mut	safe
++ slice::split_off	memory
++ slice::split_off_first	safe
++ slice::split_off_first_mut	safe
++ slice::split_off_last	safe
++ slice::split_off_last_mut	safe
++ slice::split_off_mut	memory
++ slice::splitn	safe
++ slice::splitn_mut	safe
++ slice::starts_with	memory
++ slice::strip_circumfix	memory
++ slice::strip_prefix	memory
++ slice::strip_suffix	memory
+- slice::subslice_range	memory
++ slice::swap	memory
++ slice::swap_with_slice	memory
++ slice::to_ascii_lowercase	memory
++ slice::to_ascii_uppercase	memory
++ slice::to_vec	safe
++ slice::trim_ascii	safe
++ slice::trim_ascii_end	safe
++ slice::trim_ascii_start	safe
++ slice::utf8_chunks	safe
++ slice::windows	memory
++ slice::write_clone_of_slice	memory
++ slice::write_copy_of_slice	memory
+# array 5 of 5; bodies: 2 safe, 3 memory, 0 opaque, 0 none
++ array::as_mut_slice	safe
++ array::as_slice	safe
++ array::each_mut	memory
++ array::each_ref	memory
++ array::map	memory
+# char 37 of 38; bodies: 21 safe, 9 memory, 8 opaque, 0 none
++ char::decode_utf16	safe
+- char::encode_utf16	memory
++ char::encode_utf8	memory
++ char::eq_ignore_ascii_case	safe
++ char::escape_debug	opaque
++ char::escape_default	memory
++ char::escape_unicode	memory
++ char::from_digit	memory
++ char::from_u32	memory
++ char::from_u32_unchecked	memory
++ char::is_alphabetic	opaque
++ char::is_alphanumeric	opaque
++ char::is_ascii	safe
++ char::is_ascii_alphabetic	safe
++ char::is_ascii_alphanumeric	safe
++ char::is_ascii_control	safe
++ char::is_ascii_digit	safe
++ char::is_ascii_graphic	safe
++ char::is_ascii_hexdigit	safe
++ char::is_ascii_lowercase	safe
++ char::is_ascii_punctuation	safe
++ char::is_ascii_uppercase	safe
++ char::is_ascii_whitespace	safe
++ char::is_control	safe
++ char::is_digit	memory
++ char::is_lowercase	opaque
++ char::is_numeric	opaque
++ char::is_uppercase	opaque
++ char::is_whitespace	safe
++ char::len_utf16	safe
++ char::len_utf8	safe
++ char::make_ascii_lowercase	safe
++ char::make_ascii_uppercase	safe
++ char::to_ascii_lowercase	safe
++ char::to_ascii_uppercase	safe
++ char::to_digit	memory
++ char::to_lowercase	opaque
++ char::to_uppercase	opaque
