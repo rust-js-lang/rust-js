@@ -80,7 +80,7 @@ depends on what the program does:
 
 ## Formatting
 
-- `{:x?}`, a `Debug` in hex: `println!("{:x?}", vec![10, 11]);`
+- A placeholder's options, a width or `{:x?}`, for a `dyn Debug`, which is the string it shows already (ADR 0060): `let b: Box<dyn std::fmt::Debug> = Box::new(31u8); println!("{:x?}", b);`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
 
 ## Hashing
