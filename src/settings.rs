@@ -19,8 +19,9 @@ pub struct Settings {
     /// (ADR 0196): the build's `--declarations`, which `rust-js build`'s,
     /// through Cargo, always says (ADR 0412).
     pub declarations: bool,
-    /// Where its `Cargo.toml` is, which its hooks are run in, and what's
-    /// said of a file is said from.
+    /// Where the crate is: its `Cargo.toml`'s directory, or a file compiled
+    /// alone's own where none is above it. Its hooks, TypeScript and
+    /// Prettier are run there, and what's said of a file is said from it.
     pub dir: PathBuf,
     /// Whether `dir` is Cargo's, the crate's own, of a crate Cargo builds:
     /// a module's header names its Rust from it (ADR 0414). A file compiled
@@ -107,7 +108,7 @@ mod cargo_toml {
 
     /// The settings of the crate whose root is `input`: its `Cargo.toml`'s,
     /// Cargo's for a crate it builds, `CARGO_MANIFEST_DIR`, or else the
-    /// nearest above it. None without one.
+    /// nearest above it. None without one, the crate where the file is.
     pub fn read(input: &Path, cargo: bool) -> Result<Settings, String> {
         let dir = if cargo {
             std::env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from)
@@ -120,7 +121,10 @@ mod cargo_toml {
                 .map(PathBuf::from)
         };
         let Some(dir) = dir else {
-            return Ok(Settings::default());
+            return Ok(Settings {
+                dir: crate::paths::parent_dir(&crate::paths::absolute(input)?).to_path_buf(),
+                ..Settings::default()
+            });
         };
         let path = dir.join("Cargo.toml");
         let text = std::fs::read_to_string(&path).map_err(|e| format!("cannot read `{}`: {e}", path.display()))?;

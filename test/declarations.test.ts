@@ -975,6 +975,22 @@ test("declarations where @rust-js/typescript isn't say to install @rust-js/build
   }
 });
 
+// A file compiled alone with no Cargo.toml above it has no crate directory
+// but its own, where TypeScript is run (ADR 0207). Run nowhere, the error
+// was "`node` can't be run: No such file or directory".
+test("a file with no Cargo.toml above it has its declarations printed where it is", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-no-manifest-"));
+  try {
+    writeFileSync(join(dir, "lib.rs"), "pub fn answer(n: u32) -> u32 {\n    n + 1\n}\n");
+    const env = { ...process.env, RUST_JS_TYPESCRIPT: Bun.resolveSync("@rust-js/typescript", root) };
+    const p = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: dir, env });
+    expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+    expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function answer(n: number): number;");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // React's own element attributes, flattened (ADR 0208): the props are an
 // anchor's, as TypeScript's `AnchorHTMLAttributes & ButtonLinkProps` is.
 test("props that flatten React's attributes are typed as React types them", async () => {

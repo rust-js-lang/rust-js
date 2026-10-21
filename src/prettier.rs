@@ -62,11 +62,11 @@ pub struct LaidOut {
 /// `files`, each a path and the text written there, as the app's Prettier
 /// lays them out, or why it couldn't.
 pub fn laid_out(settings: &Settings, files: &[(PathBuf, &str)]) -> Result<LaidOut, String> {
-    // A crate with no `Cargo.toml` has no app, nor does the playground; nor
-    // does a file compiled alone, a test's (ADR 0414): the `Cargo.toml`
-    // above it is maybe another's, its JS is nobody's to check, and asking
-    // is Node started and Prettier imported, 30 ms of a small file's 80.
-    if files.is_empty() || settings.dir.as_os_str().is_empty() || !settings.cargo || cfg!(target_os = "wasi") {
+    // The playground has no app; nor does a file compiled alone, a test's
+    // (ADR 0414): the `Cargo.toml` above it is maybe another's, its JS is
+    // nobody's to check, and asking is Node started and Prettier imported,
+    // 30 ms of a small file's 80.
+    if files.is_empty() || !settings.cargo || cfg!(target_os = "wasi") {
         return Ok(LaidOut {
             texts: vec![None; files.len()],
             configs: Vec::new(),
