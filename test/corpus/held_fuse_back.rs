@@ -58,18 +58,11 @@ impl DoubleEndedIterator for Countdown {
 
 impl ExactSizeIterator for Countdown {}
 
-impl Drop for Countdown {
-    fn drop(&mut self) {
-        println!("dropped at {}..{}", self.0, self.1);
-    }
-}
-
 fn main() {
     let back: Vec<i32> = pad(vec![1, 2, 3].into_iter(), 2).rev().collect();
     println!("{back:?}");
     let mut it = pad(Countdown(0, 5), 1);
     println!("{:?} {:?} {:?}", it.next(), it.next_back(), it.next_back());
-    drop(it);
     let ranged: Vec<u8> = pad(0..4u8, 0).rev().collect();
     println!("{ranged:?}");
 }

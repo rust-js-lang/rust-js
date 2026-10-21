@@ -835,6 +835,7 @@ export const mutations: Mutation[] = [
     find: "                || self.made_knowing(source, self.recognition().double_ended_iterator())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "cycle-iterator-undropped",

@@ -22,9 +22,30 @@ where
     iterable.into_iter().rev()
 }
 
+struct Slice<'a>(&'a [u32]);
+
+impl<'a> Iterator for Slice<'a> {
+    type Item = &'a u32;
+
+    fn next(&mut self) -> Option<&'a u32> {
+        let (first, rest) = self.0.split_first()?;
+        self.0 = rest;
+        Some(first)
+    }
+}
+
+impl<'a> DoubleEndedIterator for Slice<'a> {
+    fn next_back(&mut self) -> Option<&'a u32> {
+        let (last, rest) = self.0.split_last()?;
+        self.0 = rest;
+        Some(last)
+    }
+}
+
 fn main() {
     println!("{:?}", backwards(vec![1, 2, 3].into_iter()));
     println!("{:?}", last_even([1u32, 2, 3, 4, 5].iter().copied()));
+    println!("{:?}", last_even(Slice(&[2, 4, 5, 7]).copied()));
     println!("{:?}", rev_all(vec!['a', 'b']).collect::<String>());
     println!("{:?}", last_of(vec![7, 8].into_iter()));
 }
