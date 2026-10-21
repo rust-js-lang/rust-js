@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0422](0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
 from `take` and `skip` to std's lazy adapters, and
 [0421](0421-std-associated-type-drops-are-given.md); amends
-[0190](0190-generic-no-destructor.md).
+[0190](0190-generic-no-destructor.md). Amended by
+[0570](0570-a-closing-source-is-dropped-when-done.md): a source is dropped
+when it's done, not only when it's closed.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for what's dropped and
 how many times; B for when, where an adapter ends before what it steps,

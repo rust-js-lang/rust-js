@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back_drops.rs$"],
   },
+  {
+    name: "closing-not-dropped-when-done",
+    breaks: "an adapter's source of the crate's, stepped to its end by a consumer, is never dropped, as no JS consumer calls `return()` at its end",
+    file: "src/runtime/closing.js",
+    find: "    if (step.done) closing.return();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
+  },
 ];

@@ -1098,7 +1098,13 @@ export function $closing(it, drop) {
   let closed = false;
   const closing = Object.create(Iterator.prototype);
   closing.iter = it;
-  closing.next = () => it.next();
+  // Stepped to its end, it's done with, as a chain consumed to its end
+  // drops what it holds where the statement or the loop ends (ADR 0570).
+  closing.next = () => {
+    const step = it.next();
+    if (step.done) closing.return();
+    return step;
+  };
   closing.back = () => it.back();
   closing.len = () => it.len();
   // Its size hint, what it closes' (ADR 0543).

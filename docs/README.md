@@ -638,6 +638,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0567 A corpus case's runs are kept by what they ran](decisions/0567-a-corpus-cases-runs-are-kept-by-what-they-ran.md)
 - [0568 A backtrace is disabled unless forced](decisions/0568-a-backtrace-is-disabled-unless-forced.md)
 - [0569 A temporary is named as rust-analyzer suggests](decisions/0569-a-temporary-is-named-as-rust-analyzer-suggests.md)
+- [0570 A closing source is dropped when it's done](decisions/0570-a-closing-source-is-dropped-when-done.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

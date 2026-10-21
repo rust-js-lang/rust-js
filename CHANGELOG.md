@@ -86,6 +86,9 @@ released any more: `rust-js build` is the one way to build an app.
   mut` made of a `&'a mut` by `transmute` writes through to it.
 - **Fixed: `size_hint()` of the crate's iterator in generic code** was
   `(0, None)` where its impl has its own; it's the impl's now (ADR 0170).
+- **Fixed: an adapter's source is dropped when it's done** (ADR 0570):
+  `Counter { .. }.map(f).sum()` of a source with a `Drop` never ran it;
+  it runs where the chain is consumed to its end, as Rust's does.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
