@@ -60,6 +60,8 @@ pub(in crate::lower) enum Hashed<'tcx> {
     Option(Ty<'tcx>),
     /// A `Result`'s discriminant, then what it holds.
     Result(Ty<'tcx>, Ty<'tcx>),
+    /// A raw pointer's address, a `usize`, of a pointer to the type (ADR 0562).
+    Address(Ty<'tcx>),
 }
 
 /// A hasher, as hashing writes to it: given to a type's `hash<H>` as
@@ -237,6 +239,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(hasher.write("write_u32", vec![code]));
             }
             Hashed::Text => out.push(hasher.write("write_str", vec![value])),
+            // A raw pointer's address, as `usize` (ADR 0562).
+            Hashed::Address(pointee) => {
+                let size = self.pointee_size(pointee, span)?;
+                let addr = Expr::call(Expr::helper("$addr"), vec![value, size]);
+                out.push(hasher.write("write_usize", vec![addr]));
+            }
             Hashed::Pointer(pointee) => {
                 let (value, _) = self.through_refs(value, ty);
                 let value = match self.counted_rc(ty) {

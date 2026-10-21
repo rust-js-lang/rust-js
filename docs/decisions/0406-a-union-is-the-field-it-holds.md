@@ -1,6 +1,6 @@
 # 0406. A union is the object of the field it holds
 
-Status: Accepted. Amends [0390](0390-addressable-memory-is-refused-as-such.md).
+Status: Accepted. Amends [0390](0390-addressable-memory-is-refused-as-such.md); and by [0562](0562-a-pointer-is-a-place-and-an-address.md): a field read as another plain type's is its bytes decoded, when that stage lands.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for a field read
 through the field it holds, or one of the same type, whose bytes are the

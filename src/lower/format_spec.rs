@@ -204,7 +204,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let text = match kind {
             // A raw pointer's address, which JS hasn't (ADR 0407).
-            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value),
+            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,
             Std::FmtPointer => return Err(self.unsupported(span, &format!("`{{:p}}` of a `{ty}`"))),
             Std::FmtRadix(radix) => {
                 let Some(num) = num.filter(|&n| !n.float()) else {

@@ -35,18 +35,19 @@ or between a `#[repr(transparent)]` struct and its field, by value or
 through a `&`, `slice::from_raw_parts` of an array's pointer. What reads memory by where
 it is, it refuses:
 
-- A pointer's address as a number: `let x = 1; let a = &x as *const i32 as usize;`
 - A raw address of a `static`, or a `&mut` to a `static mut`: `static mut N: u32 = 0; let r = unsafe { &mut *std::ptr::addr_of_mut!(N) }; *r += 1;`
-- A pointer's address shown, `{:p}`: `let x = 5; println!("{:p}", &x);`
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
 - A `transmute` of a `&mut` to a `#[repr(transparent)]` struct's field as one to the struct, whose whole a write through it replaces: `#[repr(transparent)] struct W(String); let mut s = String::new(); let w = unsafe { std::mem::transmute::<&mut String, &mut W>(&mut s) }; *w = W(String::from("x"));`
 
 And refused when it runs, as a panic that says so, since which it is
 depends on what the program does:
 
-- An address shown, `{:?}` of a raw pointer or a function pointer, but
-  `0x0` of a null one; and a `TypeId`'s hash shown, which rust-js doesn't
-  keep. Only an assertion that fails shows one: `assert_eq!` of two compiles.
+- A `TypeId`'s hash shown, which rust-js doesn't keep. Only an assertion
+  that fails shows one: `assert_eq!` of two compiles. A pointer's address
+  is shown, a number of rust-js's own (ADR 0562).
+- Reading through a pointer with no place, an integer made a pointer, or
+  the address of a value JS holds as itself, a number reached through a
+  `&`.
 - A union's field read while it holds another, its bytes read as another
   type's.
 - A pointer read as another type's, bytes read as another type's, a pointer

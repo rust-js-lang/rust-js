@@ -803,9 +803,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {}
             }
         }
-        // A raw pointer, its handle, one for each place (ADR 0407).
+        // A raw pointer: the same place, or the same address (ADR 0562).
         if self.is_handle_pointer(ty) {
-            return Ok(Expr::bin(Op::Eq, a, b));
+            return Ok(Expr::call(Expr::helper("$ptrEq"), vec![a, b]));
         }
         // A path's components, `a/b` and `a//b` alike (ADR 0401).
         if self.recognition().is_path(ty) {

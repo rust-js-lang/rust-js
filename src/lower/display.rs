@@ -1011,7 +1011,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A raw pointer shows its address, which JS hasn't (ADR 0407), and
         // so does a function pointer.
         if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {
-            return Ok(self.pointer_shown(value));
+            return self.pointer_shown(value, ty, span);
         }
         // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't;
         // a `TypeId` its hash, which rust-js doesn't keep: its error where

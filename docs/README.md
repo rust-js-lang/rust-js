@@ -630,6 +630,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0559 `{:x?}` of an integer is its hex](decisions/0559-debug-hex-of-an-integer.md)
 - [0560 A copied default resolves a call with its own bounds](decisions/0560-a-copied-default-resolves-with-its-own-bounds.md)
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](decisions/0561-std-bodies.md)
+- [0562 A pointer is a place and an address; bytes are plain data's](decisions/0562-a-pointer-is-a-place-and-an-address.md)
 - [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](decisions/0564-a-std-body-is-tidied-as-the-apps-are.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
