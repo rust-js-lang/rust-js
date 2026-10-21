@@ -277,6 +277,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // stepped, and leaves what it doesn't reach (ADR 0506).
                     | Std::Slice(SliceOp::ExtractIf { .. })
                     | Std::Map(MapOp::ExtractIf)
+                    // `successors`, whose items are the consumer's and which
+                    // drops the one it holds where it's closed (ADR 0465).
+                    | Std::IterSource(IterSource::Successors)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

@@ -77,3 +77,14 @@ return $lazyZip($closing(tmp, dropIIntoIter), $closing(Iterator.from(j), dropJ),
   what its caller gives with a destructor compile; a `peekable`, `rev`,
   `flat_map` or `scan` of one, which hold an item, or step from the back,
   are refused still.
+
+## Amendment: `successors` of a value with a destructor (2026-10-22)
+
+`iter::successors(first, f)` of a value with a destructor was refused. It
+holds the next item it gives, as Rust's `Successors` does: `$successors`
+is an iterator, not a generator, whose `return()` drops what it holds,
+its item's drop given where it's made, so one closed before its first
+step drops its first item too, which a generator's `finally` wouldn't.
+Each item it gives is the consumer's. `closed_on_drop`, the one list of
+what's closed to drop, names it beside `repeat`. `successors_drops`
+holds `count()`, `find()` and one never stepped against native Rust.

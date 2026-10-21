@@ -1107,4 +1107,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(fused_iterators|double_ended_iterators).rs$"],
     snapshots: true,
   },
+  {
+    name: "successors-drop-not-given",
+    breaks: "`successors` of a value with a destructor isn't given its item's drop, so what it holds is never dropped",
+    file: "src/lower/iterators.rs",
+    find: "                        self.drop_function(item, span)?\n",
+    replace: "                        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
+  },
 ];

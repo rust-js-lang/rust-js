@@ -618,4 +618,12 @@ export const mutations: Mutation[] = [
     replace: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::OptionTake",
     tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
   },
+  {
+    name: "successors-takes-drops-refused",
+    breaks: "`successors` of a value with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::IterSource(IterSource::Successors)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
+  },
 ];

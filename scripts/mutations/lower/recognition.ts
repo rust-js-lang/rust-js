@@ -2647,4 +2647,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
   },
+  {
+    name: "successors-not-closed-on-drop",
+    breaks: "a `Successors` holding a value with a destructor is refused, as a std type that holds one",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::iter::Repeat\" | \"std::iter::RepeatN\" | \"std::iter::Successors\" => sources.next(),\n",
+    replace: "            \"std::iter::Repeat\" | \"std::iter::RepeatN\" => sources.next(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
+  },
 ];

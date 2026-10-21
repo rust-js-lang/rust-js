@@ -3792,7 +3792,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// An iterator of std's whose drop is closing it, JS's `return()`, and
     /// what it holds that its closing drops (ADRs 0422, 0465): `iter::repeat`'s
-    /// value, and `cycle()`'s iterator, of one not std's over an array (ADR
+    /// value, `successors`' next item, and `cycle()`'s iterator, of one not std's over an array (ADR
     /// 0491); and a lazy adapter's, `take`'s, `map`'s, `zip`'s and the rest,
     /// of what its sources hold, each closable, an iterator that owns its
     /// items given it as `$closing`, whose closing drops what it hasn't given,
@@ -3803,7 +3803,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
         match std_path(self.tcx, adt.did()).as_str() {
-            "std::iter::Repeat" | "std::iter::RepeatN" => sources.next(),
+            // And `successors`' next item, which its closing drops.
+            "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::Successors" => sources.next(),
             "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),
             "std::iter::Take"
             | "std::iter::Skip"

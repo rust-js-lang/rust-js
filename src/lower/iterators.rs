@@ -1309,9 +1309,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let boxed = self.boxed_payload(item);
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
-                if boxed {
-                    list.push(Expr::bool(true));
+                // What it holds dropped where it's closed, `successors`'
+                // next item (ADR 0465).
+                let drop = match source {
+                    IterSource::Successors if self.drops(item) != super::drops::Drops::Nothing => {
+                        self.drop_function(item, span)?
+                    }
+                    _ => None,
+                };
+                if boxed || drop.is_some() {
+                    list.push(Expr::bool(boxed));
                 }
+                list.extend(drop);
                 Expr::call(Expr::helper(name), list)
             }
             _ => return Ok(None),

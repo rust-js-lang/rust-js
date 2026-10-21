@@ -94,6 +94,9 @@ released any more: `rust-js build` is the one way to build an app.
   hex, `{:X?}` upper-case and `{:#x?}` with `0x`, as Rust's does.
 - **Fixed: `==` of two `*const dyn` pointers to one value** was `false`;
   it's the values' comparison now, and `ptr::addr_eq` compiles (ADR 0562).
+- **`iter::successors` of a value with a destructor** (ADR 0465 amended):
+  each item is the consumer's, and the next one it holds is dropped where
+  it's stopped early or never stepped, as Rust's is.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
