@@ -1096,6 +1096,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some((size, encode, decode)) => helper("$ptrBytes", vec![pointer, size, encode, decode]),
                 None => helper("$ptrBytes", vec![pointer]),
             }),
+            // A struct's pointer as its first field's, anyhow's `*const
+            // ErrorImpl` as `*const &'static ErrorVTable`: the handle on the
+            // field rustc lays out at offset 0 (ADR 0562).
+            (ty::Adt(adt, args), _)
+                if adt.is_struct()
+                    && let Some(field) = self.field_at_zero(a, args, b) =>
+            {
+                let object = self.pointee_place(pointer);
+                let key = super::bindings::field_key(self.tcx, field);
+                self.pointer_to(Expr::member(object, key), b, Some(0), span)
+            }
+            // Two layouts of one `#[repr(C)]` struct, anyhow's `ErrorImpl<E>`
+            // as its prefix `ErrorImpl<()>` and back: the same handle, its
+            // fields read by name (ADR 0562).
+            (ty::Adt(x, _), ty::Adt(y, _)) if x.did() == y.did() && x.is_struct() && x.repr().c() => Ok(pointer),
             // Between integers of two widths, and plain data read as an
             // integer or as bytes: through the bytes.
             (_, _)
@@ -1150,11 +1165,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// The field of a struct `of` that rustc's layout puts at its offset 0
+    /// and that is a `target` in JS, `same_place`: `None` of a struct whose
+    /// layout isn't known here, or that has none.
+    fn field_at_zero(
+        &self,
+        of: Ty<'tcx>,
+        args: ty::GenericArgsRef<'tcx>,
+        target: Ty<'tcx>,
+    ) -> Option<&'tcx ty::FieldDef> {
+        let ty::Adt(adt, _) = of.kind() else {
+            return None;
+        };
+        let layout = self.layout(of)?;
+        adt.non_enum_variant()
+            .fields
+            .iter_enumerated()
+            .find_map(|(index, field)| {
+                let placed = layout.fields.offset(index.index()).bytes() == 0;
+                (placed && self.same_place(self.field_ty(field, args), target)).then_some(field)
+            })
+    }
+
     /// Whether what an `a` and a `b` are is one value in JS: the same type,
     /// or a `MaybeUninit` of it, which is its value (ADR 0332), or arrays of
     /// as many of those.
     fn same_place(&self, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
-        let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);
+        let value = |t: Ty<'tcx>| {
+            self.tcx
+                .erase_and_anonymize_regions(self.recognition().uninit_of(t).unwrap_or(t))
+        };
         let (a, b) = (value(a), value(b));
         match (a.kind(), b.kind()) {
             _ if a == b => true,

@@ -48,8 +48,14 @@ released any more: `rust-js build` is the one way to build an app.
   `*mut dyn Trait` are the `dyn`'s pair, as `&dyn Trait` and `Box<dyn
   Trait>` are: made of a thin pointer, called and written through, made
   thin again with `as *const T`, and a `Box<dyn Trait>` taken apart with
-  `into_raw` and put back with `from_raw`, as anyhow does. Stages 1 to 3
-  of the model; relayout and constants to come as its ADR says.
+  `into_raw` and put back with `from_raw`, as anyhow does.
+- **A pointer cast keeps the place where rustc's layout puts the target**
+  (ADR 0562): a `#[repr(C)]` struct's pointer as its first field's,
+  anyhow's `*const ErrorImpl` as `*const &'static ErrorVTable`, is the
+  handle on that field, `p.value.vtable`; one layout of a `#[repr(C)]`
+  struct as another, `ErrorImpl<E>` erased to `ErrorImpl<()>` and back,
+  is the same handle. Stages 1 to 4 of the model; constants to come as
+  its ADR says.
 - **How the generated JS reads is a gate** (ADR 0565): the shapes a person
   wouldn't write, `port measure`'s seven, are counted over the corpus's
   and the snapshots' JS in `docs/readability.txt`, and no shape's share may

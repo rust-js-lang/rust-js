@@ -183,10 +183,11 @@ const back = $ptrFrom(($addr(tagged, 1) & ~1) >>> 0, 1);
   whose layouts share a prefix**, `#[repr(C)]` `ErrorImpl<E>` as
   `ErrorImpl<()>`: the same handle, the fields read by name. A field read
   that the target has and the object hasn't is `undefined`, which only
-  undefined behaviour in the Rust reaches (case A). The five helpers
-  that answered this by kind, `$ptrFirst`, `$ptrWhole`, `$ptrBytes`,
-  `$ptrTyped` and `$ptrRecast`, become this one rule, asked of rustc's
-  layout: `pointers::relayout` is its one owner.
+  undefined behaviour in the Rust reaches (case A). `pointers::recast` is
+  the one owner of a cast between pointees, asked of rustc's layout where
+  it's known here; where only the value can tell, a type parameter's, it
+  emits a check made where the pointer is, `$ptrFirst`, `$ptrWhole`,
+  `$ptrRecast`.
 
 ### Fat pointers
 
@@ -322,8 +323,10 @@ rustc's suite reblessed.
 3. **Fat pointers** (landed): `*const dyn Trait` as the pair, unsized
    from a thin pointer, called and written through, made thin again, a
    `Box<dyn Trait>` taken apart and put back. `dyn_pointers`.
-4. **Relayout**: the first-field and prefix rules, the five helpers
-   folded into `relayout`. `pointer_relayout`; anyhow and semver measured.
+4. **Relayout** (landed): the first-field and prefix rules, in `recast`,
+   the one owner of a cast between pointees; `$ptrFirst`, `$ptrWhole` and
+   `$ptrRecast` stay its checks of what only the value can tell, a type
+   parameter's. `pointer_relayout`; anyhow and semver measured.
 5. **Constants and statics** holding pointers. `pointer_constants`.
 
 ## What holds it
@@ -361,6 +364,11 @@ rustc's suite reblessed.
   `Box<dyn Shape>` taken apart with `into_raw`, written through and put
   back with `from_raw`, and a struct holding `*const dyn Shape`s called
   later, against native Rust.
+- `test/corpus/pointer_relayout.rs`: an anyhow-shaped `#[repr(C)]`
+  `Impl<E>` with its vtable first, read through `*(p as *const &'static
+  VTable)`, erased to `Impl<()>` and unerased in generic code, its fields
+  read through each, and taken back as a `Box<Impl<u32>>`, against native
+  Rust.
 - rustc's suite: `supported-cast.rs`, `coercion-as-explicit-cast.rs`,
   `negative-integer-cast-to-pointer.rs`, `dyn-fn-alignment.rs`,
   `misaligned-reference-drop-field-99838.rs` and
