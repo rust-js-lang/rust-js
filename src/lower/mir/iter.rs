@@ -517,7 +517,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it steps, or none once it's ended (ADR 0473).
     fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
         let stepped = self.recognition().fuse_of(iter_ty).unwrap_or(iter_ty);
-        self.array_source(stepped).is_some() || self.is_unknown(stepped)
+        // One a struct holds, its own of its source's (ADR 0542).
+        self.array_source(stepped).is_some() || self.is_unknown(stepped) || self.held_adapter(stepped)
     }
 
     /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
@@ -967,6 +968,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         Ok(Some(match method {
+            // One a struct holds, itself, which closing doesn't end (ADR 0542).
+            Some(IterMethod::ByRef) if self.held_adapter(iter_ty) => receiver.clone(),
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
@@ -982,12 +985,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call_helper("$mapEnds", vec![it, f])
             }
             // An enumeration of one, its index from the back where it is
-            // (ADR 0528).
-            Some(IterMethod::Enumerate) if self.knows_its_back(output) || self.knows_its_length(output) => {
+            // (ADR 0528); and one a struct holds, which keeps its source and
+            // count, made of a source as capable as its type is, a range's
+            // knowing its back, a generic one's given it where it's asked
+            // (ADR 0542).
+            Some(IterMethod::Enumerate)
+                if self.knows_its_back(output) || self.knows_its_length(output) || self.held_adapter(output) =>
+            {
                 let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
-                let it =
-                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());
-                Expr::call_helper("$enumerateEnds", vec![it])
+                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
+                    Some(it) => it,
+                    None if self.held_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
+                    None => receiver.clone(),
+                };
+                Expr::call_helper("$enumerate", vec![it])
             }
             // A filter of one, of items with nothing to drop as it passes
             // them (ADR 0526).
@@ -1057,9 +1068,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper(helper, given))
     }
 
+    /// The source of an adapter a struct holds (ADR 0542), `receiver` of type
+    /// `iter_ty`, as capable as its type is: a range's knowing its back, and
+    /// an exclusive one's its length; another's, its JS iterator.
+    fn held_source(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.range_kind(iter_ty) {
+            Some(crate::lower::std_types::range::RangeKind::Exclusive) => {
+                self.as_exact_size(receiver, iter_ty, true, span)
+            }
+            Some(_) => self.as_double_ended(receiver, iter_ty, span),
+            None => self.as_js_iterator(receiver, iter_ty, span),
+        }
+    }
+
     fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
         self.steps_an_array(iter_ty)
             || self.knows_its_back(iter_ty)
+            || self.held_knows_its_back(iter_ty)
             || (self.recognition().is_peekable(iter_ty)
                 && matches!(iter_ty.kind(), ty::Adt(_, args)
                     if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())))

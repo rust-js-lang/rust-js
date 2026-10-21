@@ -3686,7 +3686,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,
     /// whose fields JS doesn't have.
     pub(super) fn is_iter_adapter(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()).starts_with("std::iter::"))
+        matches!(ty.kind(), ty::Adt(adt, _) if is_iter_adapter_def(self.tcx, adt.did()))
     }
 
     /// The name std's `Debug` gives an iterator over an array, which shows
@@ -6059,6 +6059,12 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
         }
         _ => None,
     }
+}
+
+/// Whether `id` is std's iterator adapter, `iter::Map` and the like: the
+/// one answer, of a type and of a kind the crate holds (ADR 0542).
+pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id).starts_with("std::iter::")
 }
 
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.

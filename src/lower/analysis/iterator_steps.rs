@@ -94,12 +94,17 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 if let ty::Adt(adt, adapted) = self_ty.kind()
                     && is_std_crate(tcx, adt.did())
                 {
-                    for param in adapted.types().filter_map(|ty| match ty.peel_refs().kind() {
-                        ty::Param(param) => Some(param.index),
-                        _ => None,
-                    }) {
-                        let asked = by.iter().filter(|&&by| by != iterator);
-                        stepped.extend(asked.map(|&by| (caller, param, by)));
+                    for &by in by.iter().filter(|&&by| by != iterator) {
+                        // What its impl of it asks of what it holds, as rustc
+                        // proves it: `Enumerate<I>`'s back asks `I`'s length
+                        // too (ADR 0542); else the same of each.
+                        match impl_asks(tcx, typing_env, by, self_ty) {
+                            Some(asked) => stepped.extend(asked.into_iter().map(|(param, by)| (caller, param, by))),
+                            None => stepped.extend(adapted.types().filter_map(|ty| match ty.peel_refs().kind() {
+                                ty::Param(param) => Some((caller, param.index, by)),
+                                _ => None,
+                            })),
+                        }
                     }
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`.
@@ -291,4 +296,34 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
     });
     stepped
+}
+
+/// What std's impl of `by`, an iterator's extension, for `adapter` asks of
+/// the type parameters it holds, as rustc proves it: `I: ExactSizeIterator`
+/// and `I: DoubleEndedIterator` of `Enumerate<I>: DoubleEndedIterator` (ADR
+/// 0542). `None` where rustc names no impl.
+fn impl_asks<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    by: DefId,
+    adapter: ty::Ty<'tcx>,
+) -> Option<Vec<(u32, DefId)>> {
+    let tr = ty::TraitRef::new(tcx, by, [adapter]);
+    let Ok(rustc_middle::traits::ImplSource::UserDefined(imp)) =
+        tcx.codegen_select_candidate(typing_env.as_query_input(tr))
+    else {
+        return None;
+    };
+    let clauses = tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args);
+    Some(
+        (clauses.into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .filter(|p| is_iterator_extension(tcx, p.def_id()))
+            // Through what refers to it, `&mut R` of `Map<&mut R, F>`.
+            .filter_map(|p| match p.self_ty().skip_binder().peel_refs().kind() {
+                ty::Param(param) => Some((param.index, p.def_id())),
+                _ => None,
+            })
+            .collect(),
+    )
 }

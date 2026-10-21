@@ -162,4 +162,28 @@ export const mutations: Mutation[] = [
     replace: "                            matches!(**kind, mir::AggregateKind::Adt(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
   },
+  {
+    name: "captured-writer-own-string",
+    breaks: "a closure that writes its maker's `Formatter` writes a string of its own, which its maker never reads",
+    file: "src/lower/mir/writer.rs",
+    find: "            .filter(|_| !self.writes_captured)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+  },
+  {
+    name: "captured-writer-own-options",
+    breaks: "a closure that writes its maker's `Formatter` has none of its options, its padding lost",
+    file: "src/lower/mir/writer.rs",
+    find: "            true => self.given_to_writer(None),\n",
+    replace: "            true => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+  },
+  {
+    name: "captured-writer-unknown",
+    breaks: "a closure that captured its maker's `Formatter` isn't a writer of it",
+    file: "src/lower/mir/writer.rs",
+    find: "            (None, Some(captures)) => match self.captured_formatter(body, captures)? {\n",
+    replace: "            (None, Some(_)) => match None::<(FieldIdx, String)> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+  },
 ];

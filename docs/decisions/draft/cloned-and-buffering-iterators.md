@@ -12,7 +12,9 @@ of its source and its function
 ([0525](../0525-a-cloned-map-is-made-again.md)), with one owner of which
 types are cloned, `analysis::clones`; and a `filter` or `filter_map` of a
 double-ended iterator stepped from its back
-([0526](../0526-a-filter-steps-from-its-back.md)). What follows is what's
+([0526](../0526-a-filter-steps-from-its-back.md)). Its analysis's first part, a kind of
+adapter the crate's types hold made explicit, `Enumerate` first
+([0542](../0542-a-held-adapter-keeps-its-source-and-state.md)). What follows is what's
 left.
 
 Case: C ([0262](../0262-when-rust-and-js-disagree.md)): closure effects,

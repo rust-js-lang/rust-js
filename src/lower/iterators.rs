@@ -430,6 +430,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))
     }
 
+    /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
+    /// crate's types hold, which keeps its source and its state wherever the
+    /// crate makes one. The one answer, of what's made and what's asked of it.
+    pub(in crate::lower) fn held_adapter(&self, ty: ty::Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adapter, _) if self.krate.held_adapters.contains(&adapter.did()))
+    }
+
     /// Whether `ty`'s JS iterator knows its back, which `$nextBack` steps
     /// (ADR 0429): a `dyn DoubleEndedIterator`'s, or a type parameter's
     /// bound by one, given a JS iterator (ADR 0061), not as it is (ADR 0411).
@@ -445,7 +452,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.knows_its_back(source)
                 || self.made_knowing(source, self.recognition().double_ended_iterator());
         }
-        // An enumeration of one that knows its length too, `$enumerateEnds`,
+        // An enumeration of one that knows its length too, `$enumerate`,
         // whose index from the back is where it is (ADR 0528).
         if let Some(source) = super::recognition::enumerated_source(self.tcx, ty) {
             return self.knows_its_back(source) && self.knows_its_length(source);
@@ -579,6 +586,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = stepped_value(&value).unwrap_or(value);
         if self.knows_its_back(ty) {
             return Ok(value);
+        }
+        // One a struct holds, which keeps its source (ADR 0542): of one given
+        // as it is, its back and length this use's dictionaries'; of one made
+        // knowing them, an array's or a range's, itself.
+        if self.held_adapter(ty)
+            && let Some(source) = super::recognition::enumerated_source(self.tcx, ty.peel_refs())
+        {
+            if let Some(knowing) = self.knowing_source(value.clone(), source) {
+                return Ok(knowing);
+            }
+            if self.held_knows_its_back(ty) {
+                return Ok(value);
+            }
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
             return Ok(it);
@@ -717,6 +737,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         self.evidence_for(ty::TraitRef::new(self.tcx, trait_id, [ty]))
+    }
+
+    /// Whether `ty` is an adapter a struct holds (ADR 0542) made knowing its
+    /// back where it's made, of an array's iterator or a range, which it
+    /// steps as it is: the one answer, of what steps it from its back.
+    pub(in crate::lower) fn held_knows_its_back(&self, ty: Ty<'tcx>) -> bool {
+        self.held_adapter(ty)
+            && super::recognition::enumerated_source(self.tcx, ty.peel_refs())
+                .is_some_and(|source| self.steps_an_array(source) || self.range_kind(source).is_some())
+    }
+
+    /// `it`, an adapter a struct holds (ADR 0542), of a `source` given as it
+    /// is: it, stepped from its back by this use's dictionaries of what it
+    /// steps, `$knowing(it, IDoubleEndedIterator.next_back,
+    /// IExactSizeIterator.len)`. `None` where this use has none.
+    fn knowing_source(&self, it: Expr, source: Ty<'tcx>) -> Option<Expr> {
+        let entry = |trait_id: Option<DefId>| -> Option<Expr> {
+            let trait_id = trait_id?;
+            let name = super::recognition::extension_entry(self.tcx, trait_id);
+            Some(Expr::member(self.iterator_evidence(source, trait_id)?, name))
+        };
+        let back = entry(self.recognition().double_ended_iterator())?;
+        let len = entry(self.recognition().exact_size_iterator())?;
+        Some(Expr::call_helper("$knowing", vec![it, back, len]))
     }
 
     /// `value`, of `ty`, a type parameter given as it is, as a JS iterator
@@ -1783,14 +1827,14 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), `$mapEnds`
-/// (ADR 0455), `$filterEnds` (ADR 0526), `$enumerateEnds` (ADR 0528) and
+/// (ADR 0455), `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528) and
 /// `$memchrIter` (ADR 0529), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
 pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
     "$memchrIter",
     "$mapEnds",
     "$filterEnds",
-    "$enumerateEnds",
+    "$enumerate",
     "$iterator",
     "$fuse",
     "$intoIter",

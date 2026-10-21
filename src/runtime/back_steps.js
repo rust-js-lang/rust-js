@@ -57,26 +57,28 @@ function $filterEnds(it, p) {
   return filter;
 }
 
-// `it.enumerate()` of a JS iterator that knows its back or its length,
-// which knows them too, as Rust's `Enumerate` does: each item and its
-// index, `[i, x]`, counted from the front; one from the back is where it
-// is, the count so far and how many were left before it, as Rust's
-// `next_back` counts it (ADR 0528).
-function $enumerateEnds(it) {
-  let count = 0;
+// `it.enumerate()`, Rust's `Enumerate`, explicit (ADR 0542): what it
+// steps, `iter`, and how many it's given, `count`, kept, which its size
+// hint, its `Debug` and a clone read. Each item and its index, `[i, x]`,
+// counted from the front; one from the back is where it is, the count so
+// far and how many were left before it, as Rust's `next_back` counts it
+// (ADR 0528). Its back and its length are its source's, asked as they're
+// asked: a use site may give a source its own, `$knowing`'s.
+function $enumerate(iter) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = Iterator.from({
     next: () => {
-      const step = it.next();
-      return step.done ? step : pair(step, count++);
+      const step = enumerated.iter.next();
+      return step.done ? step : pair(step, enumerated.count++);
     },
   });
-  if (it.back !== undefined && it.len !== undefined) {
-    enumerated.back = () => {
-      const left = it.len();
-      return pair(it.back(), count + left - 1);
-    };
-  }
-  if (it.len !== undefined) enumerated.len = () => it.len();
+  enumerated.iter = iter;
+  enumerated.count = 0;
+  enumerated.hint = () => $sizeHint(enumerated.iter);
+  enumerated.back = () => {
+    const left = enumerated.iter.len();
+    return pair(enumerated.iter.back(), enumerated.count + left - 1);
+  };
+  enumerated.len = () => enumerated.iter.len();
   return enumerated;
 }

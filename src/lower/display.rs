@@ -1464,6 +1464,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
+            // An `Enumerate` a struct holds, which keeps what it steps and its
+            // count (ADR 0542): `Enumerate { iter: .., count: n }`.
+            ty::Adt(..)
+                if self.held_adapter(ty)
+                    && let Some(inner) = super::recognition::enumerated_source(self.tcx, ty) =>
+            {
+                let it = Expr::var("enumerate");
+                let stepped = Expr::call_helper("$iteratorValue", vec![Expr::member(it.clone(), "iter")]);
+                let shown = self.debug_string_with(stepped, inner, span, pretty)?;
+                let count = Expr::member(it, "count");
+                let plain = join(vec![
+                    Expr::str("Enumerate { iter: "),
+                    shown.clone(),
+                    Expr::str(", count: "),
+                    count.clone(),
+                    Expr::str(" }"),
+                ]);
+                let fields = vec![
+                    join(vec![Expr::str("iter: "), shown]),
+                    join(vec![Expr::str("count: "), count]),
+                ];
+                let shown = self.pretty_or(pretty, plain, "Enumerate {", Expr::array(fields), "}");
+                let show = Expr::arrow(
+                    vec!["enumerate".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                Ok(self.applied(show, value))
+            }
             // A `Fuse`, `Fuse { iter: Some(..) }` of what it steps, or `None`
             // once it's ended (ADR 0473).
             ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {

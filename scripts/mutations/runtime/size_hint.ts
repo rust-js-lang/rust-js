@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
+  {
+    name: "size-hint-not-adapters-own",
+    breaks: "an explicit adapter's size hint isn't its own",
+    file: "src/runtime/size_hint.js",
+    find: "  if (it.hint !== undefined) return it.hint();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+  },
+  {
+    name: "size-hint-not-what-it-steps",
+    breaks: "a `$iterator`'s size hint isn't that of the JS iterator it steps",
+    file: "src/runtime/size_hint.js",
+    find: "  if (typeof it.of?.next === \"function\") return $sizeHint(it.of);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+  },
 ];

@@ -36,6 +36,8 @@ where the item is, the count so far and what was left, as Rust's
   `length_kept_source` (`Map`, `Copied`, `Fuse`, `Enumerate`), beside
   `back_stepped_source`'s (ADR 0526), now with `Fuse`.
 - `$enumerateEnds` is a JS iterator as it's made, in `ITERATOR_HELPERS`.
+  (Amended: `$enumerate`, which keeps its source and count too,
+  [ADR 0542](0542-a-held-adapter-keeps-its-source-and-state.md).)
 
 **What a function takes as an `IntoIterator` is its items, as JS steps
 them: `iterable_items`, the one answer.** An `Option`'s are `o == null ?

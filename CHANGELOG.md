@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **An `Enumerate` a struct holds**: its size hint, its back where its
+  impl's bounds give it, and its `Debug`, as Rust's (ADR 0542).
 - **A trait's default that calls its trait on an adapter of `Self`**,
   `self.enumerate().minmax()`, of an impl over `?Sized` types (ADR 0541).
 - **A closure that writes to its writer's `Formatter`**, `|disp| disp.fmt(f)`;

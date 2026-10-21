@@ -5,6 +5,7 @@ mod closures;
 mod debug;
 mod drops;
 mod fmt_failures;
+mod held_adapters;
 mod iterator_steps;
 mod mutation;
 mod naming;
@@ -366,6 +367,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: HashSet<Ty<'tcx>>,
+    /// The kinds of std's iterator adapters the crate's types hold, each
+    /// explicit wherever the crate makes one (ADR 0542).
+    pub held_adapters: HashSet<DefId>,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
@@ -572,6 +576,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // `Rc`; both only grow, so a second pass settles them.
     // The types the crate clones (ADRs 0522, 0525).
     let cloned = clones::cloned_types(tcx, all_bodies);
+    // The kinds of adapters the crate's types hold (ADR 0542).
+    let held_adapters = held_adapters::held_adapters(tcx);
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
     if !closure_facts.fn_dyns_drop
@@ -715,6 +721,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         counted,
         closure_facts,
         cloned,
+        held_adapters,
         changed_vecs,
         drop_params,
         copied,

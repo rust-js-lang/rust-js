@@ -975,4 +975,20 @@ export const mutations: Mutation[] = [
     replace: "        let ty = self.reveal(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
+  {
+    name: "held-enumerate-not-knowing",
+    breaks: "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
+    file: "src/lower/iterators.rs",
+    find: "            if let Some(knowing) = self.knowing_source(value.clone(), source) {\n",
+    replace: "            if let Some(knowing) = self.knowing_source(value.clone(), source).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+  },
+  {
+    name: "held-enumerate-array-refused",
+    breaks: "a held kind's `Enumerate` of an array's iterator, made knowing its back, is refused from its back",
+    file: "src/lower/iterators.rs",
+    find: "                .is_some_and(|source| self.steps_an_array(source) || self.range_kind(source).is_some())\n",
+    replace: "                .is_some_and(|source| self.range_kind(source).is_some())\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+  },
 ];

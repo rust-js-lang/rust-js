@@ -70,8 +70,16 @@ export const mutations: Mutation[] = [
     name: "enumerate-back-index-past",
     breaks: "an `enumerate`'s index from the back is one past where the item is",
     file: "src/runtime/back_steps.js",
-    find: "      return pair(it.back(), count + left - 1);\n",
-    replace: "      return pair(it.back(), count + left);\n",
+    find: "    return pair(enumerated.iter.back(), enumerated.count + left - 1);\n",
+    replace: "    return pair(enumerated.iter.back(), enumerated.count + left);\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
+  },
+  {
+    name: "enumerate-count-unkept",
+    breaks: "an explicit `Enumerate` keeps no count, each index `0`",
+    file: "src/runtime/back_steps.js",
+    find: "      return step.done ? step : pair(step, enumerated.count++);\n",
+    replace: "      return step.done ? step : pair(step, enumerated.count);\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
 ];

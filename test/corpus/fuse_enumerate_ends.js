@@ -2,7 +2,7 @@
 
 import {
   $debugStr,
-  $enumerateEnds,
+  $enumerate,
   $extend,
   $fuse,
   $iter,
@@ -19,11 +19,11 @@ export function entry() {
 }
 
 function back_pairs(it) {
-  return $rev($enumerateEnds(it)).toArray();
+  return $rev($enumerate(it)).toArray();
 }
 
 function ends(it) {
-  const e = $enumerateEnds(it);
+  const e = $enumerate(it);
   const first = $next(e);
   const last = $nextBack(e);
   return [first, last, e.len()];

@@ -22,5 +22,22 @@ function $iterator(iterator, next, boxed = false, nextBack, len) {
   if (len !== undefined) {
     it.len = () => len(iterator);
   }
+  // Its back and its length, a use site's, where they weren't given where
+  // it was made, of the value it steps (ADR 0542).
+  it.knowing = (back, size) => {
+    if (back !== undefined) it.back = () => step(back(iterator));
+    if (size !== undefined) it.len = () => size(iterator);
+  };
+  return it;
+}
+
+// `it`, an explicit adapter (ADR 0542), stepped by a use site that knows its
+// source's back and length, `back` and `len`, functions of the value the
+// `$iterator` it steps steps, which that's given: what it steps from its
+// back as Rust's does.
+function $knowing(it, back, len) {
+  let source = it;
+  while (source.of === undefined && source.iter !== undefined) source = source.iter;
+  source.knowing?.(back, len);
   return it;
 }
