@@ -18,8 +18,8 @@ captures `self.orig` itself, there's no field to write.
 
 ## Decision
 
-**`mem::replace`, `mem::take` and `mem::swap` of a `&mut` borrowing a
-field, `&mut self.orig`, write the field, as of a variable; of another,
+**`mem::replace`, `mem::take` and `mem::swap` whose every `&mut` borrows
+a field, `&mut self.orig`, write the fields, as of variables; of another,
 what's written in place is changed in place, `$take(captured, value)`, as
 `*r = v` of it is `$assign`.**
 
@@ -37,11 +37,15 @@ captures the field, against native Rust.
 
 ## Consequences
 
-- Any field `mem::swap`, `mem::replace` or `mem::take` borrows is written
-  as a place, `const t = pair.left; pair.left = pair.right; pair.right =
-  t;`, not changed in place, `$exchange(pair.left, pair.right)`: nothing
-  else names it while the call has it, as borrowck says, so no one sees
-  the difference, and it reads as Rust's. `swap_replace`'s snapshot shows
-  it.
-- Mutations take the field for no place, refuse what's written in place
-  but isn't an object, and write an iterator given as it is otherwise.
+- Fields `mem::swap`, `mem::replace` or `mem::take` borrow, each of them,
+  are written as places, `const t = pair.left; pair.left = pair.right;
+  pair.right = t;`, not changed in place, `$exchange(pair.left,
+  pair.right)`: nothing else names them while the call has them, as
+  borrowck says, so no one sees the difference, and it reads as Rust's.
+  `swap_replace`'s snapshot shows it. A swap of a variable and a field is
+  still `$exchange`: the field alone a place would leave the variable's
+  object swapped with a handle (amended: it was, and rustc's
+  `borrowck-mut-uniq` caught it on CI).
+- Mutations take the field for no place, or one field of two for one,
+  refuse what's written in place but isn't an object, and write an
+  iterator given as it is otherwise.

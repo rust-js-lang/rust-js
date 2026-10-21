@@ -50,5 +50,11 @@ fn main() {
     mem::swap(&mut loud, &mut third);
     println!("holding {} {}", loud.0, third.0);
 
+    let mut spare = vec![7];
+    mem::swap(&mut spare, &mut pair.left);
+    spare.push(8);
+    mem::swap(&mut spare, &mut pair.left);
+    println!("{:?} {spare:?}", pair.left);
+
     println!("{}", black_box(40) + black_box(2));
 }

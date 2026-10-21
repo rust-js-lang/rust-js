@@ -5822,6 +5822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // for a `&mut` to it, which assigning would only rebind.
         let borrowed = if known == Std::Swap { 2 } else { 1 };
         let variables = (0..borrowed).all(|i| self.borrows_variable(def_id, span, i));
+        let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));
         let own = |e: &Expr| {
             matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
                 .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
@@ -5833,11 +5834,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, value) in values.enumerate() {
             given.push(match value {
                 Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
-                // Of a field, `&mut self.orig`: the field, written in place.
+                // Of fields, `&mut self.orig`: each field, written as a place.
                 Value::Expr(e) | Value::Place(e)
-                    if i < borrowed
-                        && matches!(e.kind, js::ExprKind::Member(..))
-                        && self.borrows_field(def_id, span, i) =>
+                    if i < borrowed && fields && matches!(e.kind, js::ExprKind::Member(..)) =>
                 {
                     Value::Ref(e)
                 }

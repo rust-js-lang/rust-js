@@ -2815,4 +2815,12 @@ export const mutations: Mutation[] = [
     replace: "|| !self.is_object(pointee) {",
     tests: ["test/corpus.test.ts", "-t", "^replace_held_given_iterator.rs$"],
   },
+  {
+    name: "swap-some-fields-as-places",
+    breaks: "a swap of a variable and a field takes the field for a place where the variable is an object, and swaps a handle's keys into the array",
+    file: "src/lower/mir.rs",
+    find: "        let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));\n",
+    replace: "        let fields = (0..borrowed).any(|i| self.borrows_field(def_id, span, i));\n",
+    tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
+  },
 ];
