@@ -1138,10 +1138,11 @@ test("the report's JS: function values, case mapping, and plain array reads", as
   expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255));");
 });
 
-// ADR 0071: an iterator stepped through is a `$iter`, which knows where it is.
+// ADR 0071: an iterator stepped through is a `$iter`, which knows where it is;
+// a `Peekable` a struct holds, `$peekable` of it (ADR 0543).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
-  expect(js).toContain("return { chars: $iter(Array.from(src)), line: 1 };");
+  expect(js).toContain("return { chars: $peekable($iter(Array.from(src))), line: 1 };");
   expect(js).toContain("const c = $peek(lexer.chars);");
   expect(js).toContain('if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {');
   expect(js).toContain("const it = $iter(v);");
