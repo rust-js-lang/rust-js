@@ -2859,7 +2859,7 @@ export const mutations: Mutation[] = [
     name: "raw-pointer-unsized-as-handle",
     breaks: "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
     file: "src/lower/mir.rs",
-    find: "                            let place = match self.is_zero_sized(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
+    find: "                            let place = match self.has_one_value(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
     replace: "                            let place = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },

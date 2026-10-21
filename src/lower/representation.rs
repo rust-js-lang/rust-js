@@ -925,6 +925,41 @@ fn innermost(mut value: ty::Value<'_>) -> Option<ty::Value<'_>> {
     Some(value)
 }
 
+/// The JS value of a type of no size, which has one value: `undefined` of
+/// `()` or a unit struct, `[]` of `[T; 0]`, as `const_js` writes a constant
+/// of it (ADR 0562). `None` of a type with a size, or one `const_js` can't
+/// write.
+pub(super) fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Expr> {
+    fn tree<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
+        let part = |t: Ty<'tcx>| Some(ty::Const::new_value(tcx, tree(tcx, t)?, t));
+        let parts: Vec<ty::Const<'tcx>> = match ty.kind() {
+            ty::Array(item, len) => {
+                let len = len.try_to_target_usize(tcx)?;
+                (0..len).map(|_| part(*item)).collect::<Option<_>>()?
+            }
+            ty::Tuple(items) => items.iter().map(part).collect::<Option<_>>()?,
+            ty::Adt(adt, args) if adt.is_struct() => (adt.non_enum_variant().fields.iter())
+                .map(|field| part(field.ty(tcx, args).skip_normalization()))
+                .collect::<Option<_>>()?,
+            _ => return None,
+        };
+        Some(ty::ValTree::from_branches(tcx, parts))
+    }
+    let layout = tcx
+        .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(ty))
+        .ok()?;
+    if !layout.is_zst() {
+        return None;
+    }
+    const_js(
+        tcx,
+        ty::Value {
+            ty,
+            valtree: tree(tcx, ty)?,
+        },
+    )
+}
+
 pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Option<Expr> {
     let ty = value.ty;
     if ty.is_bool() {

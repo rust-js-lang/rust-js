@@ -109,7 +109,9 @@ function main() {
           $fromBytes(bytes.slice(4, 8), 4, true, false),
         ];
       },
-    }).join(", ")}] 0x${$unionField(wide, "small", [], {
+    })
+      .slice()
+      .join(", ")}] 0x${$unionField(wide, "small", [], {
       whole: (value) => {
         const bytes = $toBytes(value, 8, true);
         return bytes[0];
@@ -121,6 +123,41 @@ function main() {
     }).toString(16)}`,
   );
   $unionSet(wide, "parts", [1, 2]);
+  console.log(
+    `0x${$unionField(wide, "whole", [], {
+      parts: (value) => {
+        const bytes = [...$toBytes(value[0], 4, true), ...$toBytes(value[1], 4, true)];
+        return $fromBytes(bytes, 8, true, false);
+      },
+    }).toString(16)}`,
+  );
+
+  // A field of a field written while the union holds another, as rustc's
+  // union-overwrite.rs does: the union's bytes change.
+  const over = { word: 57054 };
+  $unionField(over, "pair", [], {
+    word: (value) => {
+      const bytes = $toBytes(value, 2, true);
+      return [bytes[0], bytes[1]];
+    },
+  })[0] = 190;
+  console.log(
+    `0x${$unionField(over, "word", [], {
+      pair: (value) => {
+        const bytes = [value[0], value[1]];
+        return $fromBytes(bytes, 2, true, false);
+      },
+    }).toString(16)}`,
+  );
+  $unionField(wide, "parts", [], {
+    whole: (value) => {
+      const bytes = $toBytes(value, 8, true);
+      return [
+        $fromBytes(bytes.slice(0, 4), 4, true, false),
+        $fromBytes(bytes.slice(4, 8), 4, true, false),
+      ];
+    },
+  })[1] = 170;
   console.log(
     `0x${$unionField(wide, "whole", [], {
       parts: (value) => {

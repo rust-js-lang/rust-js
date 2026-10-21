@@ -74,6 +74,11 @@ released any more: `rust-js build` is the one way to build an app.
 - **`Display::fmt(&x, self.0)` on a held `Formatter`** (ADR 0461 amended):
   a `fmt` trait's method called as a function on a `Formatter` a struct
   holds writes to it, as anyhow's `Quoted` does.
+- **Fixed: wrong answers the memory model made** (ADR 0562 amended): a
+  write into a union's field while it held another now changes the
+  union's bytes; a value of no size reads through a dangling pointer; an
+  empty slice of `NonNull::dangling()` is at that address; a `&'static
+  mut` made of a `&'a mut` by `transmute` writes through to it.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

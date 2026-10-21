@@ -46,22 +46,38 @@ function widened(items) {
   return items;
 }
 
+/** A `&mut` given a longer lifetime, as yoke erases one: itself. */
+function longer(text) {
+  return text;
+}
+
 function main() {
   const bytes = [1, 2, 171, 205];
   const id = Uuid.from_bytes_ref(bytes);
-  const value = Uuid.as_hyphenated(id);
-  console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value)}`);
+  const value$1 = Uuid.as_hyphenated(id);
+  console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value$1)}`);
   console.log(`[${Uuid.as_bytes(id).join(", ")}]`);
   const inner = Uuid.as_hyphenated(id)[0][0];
   console.log(`${inner[3]}`);
   const owned = [[9, 8, 7, 6]];
-  const value$1 = $eq(owned, [[9, 8, 7, 6]]);
-  console.log(`${uuidDebug_fmt(owned)} ${value$1}`);
+  const value$2 = $eq(owned, [[9, 8, 7, 6]]);
+  console.log(`${uuidDebug_fmt(owned)} ${value$2}`);
   const named = { name: "ada" };
   const text = named.name;
   console.log(`${named.name} ${$byteLen(text)}`);
   const items = [1];
   widened(items).push(2);
   console.log(`[${items.join(", ")}]`);
+  let text$1 = "a";
+  const value = longer({
+    get value() {
+      return text$1;
+    },
+    set value(value) {
+      text$1 = value;
+    },
+  });
+  value.value += "b";
+  console.log(`${text$1}`);
 }
 //# sourceMappingURL=case.js.map

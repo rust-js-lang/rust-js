@@ -54,7 +54,7 @@ function main() {
   const queue = tagged(me, RUNNING);
   const [head, state] = untagged(queue);
   console.log(
-    `${$ptrEq(queue, me)} ${$ptrEq(head, me)} ${state === RUNNING} ${($addr(queue, 8) & STATE_MASK) >>> 0}`,
+    `${$ptrEq(queue, me, 8)} ${$ptrEq(head, me, 8)} ${state === RUNNING} ${($addr(queue, 8) & STATE_MASK) >>> 0}`,
   );
   head.value.signaled = true;
   head.value.count = (head.value.count + 1) >>> 0;
@@ -70,7 +70,7 @@ function main() {
   const repr = ptr_to_repr(heap);
   const topBit = $addr(repr, 1) >>> 31;
   const original = repr_to_ptr(repr);
-  console.log(`${topBit} ${$ptrEq(original, heap)} ${$ptrEq(repr, heap)}`);
+  console.log(`${topBit} ${$ptrEq(original, heap, 1)} ${$ptrEq(repr, heap, 1)}`);
   console.log(`${$ptrRetyped(original, 2, false).value}`);
   const value = $ptrRetyped(original, 2, false).value;
 }

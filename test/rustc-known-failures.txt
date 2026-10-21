@@ -28,7 +28,6 @@ consts/const-block.rs	error: rust-js does not support addressable memory yet: st
 consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
-consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
@@ -54,7 +53,6 @@ mir/mir_raw_fat_ptr.rs	error: rust-js does not support `size_of` of a value with
 packed/dyn-trait.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
 packed/issue-118537-field-offset.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
-packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a pointer's address
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "rust_track_caller_ffi_test_tracked")] fn rust_track_caller_ffi_test_tracked(..) { unreachable
@@ -69,9 +67,7 @@ structs-enums/enum-alignment.rs	node: ended {"panic":"rust-js does not support t
 structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
 structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
 structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
-structs-enums/tag-align-dyn-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag<u64>` as `usize`, which aren't numbers alone
 structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&A` as `usize`, which aren't numbers alone
-structs-enums/tag-align-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag` as `usize`, which aren't numbers alone
 traits/dyn-drop-principal.rs	error: rust-js does not support calling `std::alloc::Layout::for_value` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
@@ -79,12 +75,8 @@ traits/principal-less-objects.rs	error: rust-js does not support `size_of_val` o
 try-trait/try-operator-various-contexts.rs	error: rust-js does not support calling `std::fs::File::open` yet
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*const T`, which aren't numbers alone
-union/union-const-eval-field.rs	node: ended {"panic":"rust-js does not support reading a union's `field3` while it holds `field1`, which reads its bytes as another type's"}
 union/union-drop-assign.rs	error: rust-js does not support a `&mut` to a union's field yet
 union/union-generic-rpass.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
 union/union-nonzero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `*const u8` as `U2<&u8, ()>`, which aren't numbers alone
-union/union-overwrite.rs	node: ended {"panic":"rust-js does not support reading a union's `a` while it holds `b`, which reads its bytes as another type's"}
-union/union-transmute.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
-unsafe/new-unsafe-pointers.rs	error: rust-js does not support addressable memory yet: a pointer made of an address
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone
 zero-sized/write-volatile-zst.rs	error: rust-js does not support addressable memory yet: a pointer made of an address

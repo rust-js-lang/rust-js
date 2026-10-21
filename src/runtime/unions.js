@@ -6,8 +6,14 @@
 function $unionField(union, key, alike = [], decoders = {}) {
   for (const field of [key, ...alike]) if (Object.hasOwn(union, field)) return union[field];
   const held = Object.keys(union)[0];
-  // Plain data's, as the field asked reads its bytes (ADR 0562).
-  if (decoders[held] !== undefined) return decoders[held](union[held]);
+  // Plain data's, as the field asked reads its bytes (ADR 0562). One JS
+  // holds as an object, which fills the union, is then the field held, so
+  // a write into it is the union's.
+  if (decoders[held] !== undefined) {
+    const decoded = decoders[held](union[held]);
+    if (typeof decoded === "object" && decoded !== null) $unionSet(union, key, decoded);
+    return decoded;
+  }
   throw new Error(
     `rust-js does not support reading a union's \`${key}\` while it holds \`${held}\`, which reads its bytes as another type's`,
   );

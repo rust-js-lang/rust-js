@@ -795,8 +795,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A raw pointer: the same place, or the same address (ADR 0562).
-        if self.is_handle_pointer(ty) {
-            return Ok(Expr::call(Expr::helper("$ptrEq"), vec![a, b]));
+        if self.is_handle_pointer(ty)
+            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)
+        {
+            return self.pointers_equal(a, b, pointee, span);
         }
         // A path's components, `a/b` and `a//b` alike (ADR 0401).
         if self.recognition().is_path(ty) {

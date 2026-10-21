@@ -405,3 +405,40 @@ rustc's suite reblessed.
 - Mutations, each stage's: an offset dropped, a base shared, an address
   not exposed, a tagged pointer read, `==` by identity alone, a byte
   read big-endian, a width ignored, a prefix cast refused.
+
+## Amendment: what CI found after the five stages (2026-10-21)
+
+rustc's suite, run whole for the first time since stage 1, found two
+programs that had been refused and were now wrong, and three that had
+passed and now panicked:
+
+- **A value of no size reads and writes through any pointer that isn't
+  null**, as Rust's does: a pointer with no place to one gives its JS
+  value, `undefined` or `[]`, and a write changes nothing.
+  `pointers::at_address` is the one place a pointer at an address is
+  given its size and that value; `representation::zero_sized_js` writes
+  the value as `const_js` writes a constant of the type, and
+  `has_one_value` is the one answer to "has no size", which a second copy
+  of it, `is_zero_sized`, had asked too.
+- **An empty array is an allocation of no bytes**, dangling as a value of
+  no size is: at its item's size, which is a primitive's alignment, and
+  an empty slice made of a pointer with no place is at that pointer's
+  address. Two pointers into two allocations are equal where their
+  addresses are, so `from_raw_parts(NonNull::dangling(), 0).as_ptr()` is
+  `NonNull::dangling()`. `$ptrEq` takes the pointee's size, as `$ptrCmp`
+  does, and `pointers::pointers_equal` is the one place it's written.
+  Of an empty array of a struct whose size isn't its alignment, the
+  address is a multiple of the alignment, not the alignment itself: a
+  program comparing one with `NonNull::dangling()` of that struct sees
+  them differ, which native Rust doesn't promise either (case B).
+- **A union's field JS holds as an object is decoded only where it fills
+  the union**, its scalars covering every byte (`plain::fills`): the union
+  then holds it, so `u.a.0 = x` while it held `b` changes `b`'s bytes, as
+  rustc's `union-overwrite.rs` asks. A smaller one, or one with padding,
+  stays rust-js's error where it's read, as a write into a copy would be
+  lost.
+- **A `&'static mut T` result made of a `&'a mut T` argument** by
+  `transmute`, as yoke erases a lifetime, is the argument's place:
+  `mut_refs::borrow_outlives_call` counts a `'static` reference to the
+  borrow's own pointee type, so the argument is given as its live cell,
+  not a box copied back before the write.

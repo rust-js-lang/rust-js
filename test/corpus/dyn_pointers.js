@@ -70,7 +70,7 @@ function main() {
 
   // Thin again: the pointer to the value.
   const thin = $ptrTo(z.value);
-  console.log(`${thin.value.side} ${$ptrEq(thin, $ptrTo(square))}`);
+  console.log(`${thin.value.side} ${$ptrEq(thin, $ptrTo(square), 4)}`);
 
   // A boxed `dyn` taken apart and put back.
   const raw = { value: { w: 4, h: 4 }, impl: rectShape() };

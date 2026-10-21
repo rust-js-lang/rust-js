@@ -4302,7 +4302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_handle_pointer(ty)
                     && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)
                 {
-                    let same = Expr::call(Expr::helper("$ptrEq"), vec![l.clone(), r.clone()]);
+                    let same = self.pointers_equal(l.clone(), r.clone(), pointee, span)?;
                     return Ok(Value::Expr(match op {
                         BinOp::Eq => same,
                         BinOp::Ne => Expr::unary(js::UnaryOp::Not, same),
@@ -4390,7 +4390,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if self.is_handle_pointer(from) {
                             // A pointer to a value of no size has no place;
                             // the value is `undefined`.
-                            let place = match self.is_zero_sized(self.pointee(from)) {
+                            let place = match self.has_one_value(self.pointee(from)) {
                                 true => Expr::undefined(),
                                 false => self.pointee_place(value),
                             };

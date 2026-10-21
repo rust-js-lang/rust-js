@@ -41,6 +41,11 @@ fn widened(items: &mut Vec<u32>) -> &mut Vec<u32> {
     unsafe { std::mem::transmute::<&mut Vec<u32>, &mut Vec<u32>>(items) }
 }
 
+/// A `&mut` given a longer lifetime, as yoke erases one: itself.
+fn longer<'a>(text: &'a mut String) -> &'static mut String {
+    unsafe { std::mem::transmute::<&'a mut String, &'static mut String>(text) }
+}
+
 fn main() {
     let bytes = [1, 2, 0xab, 0xcd];
     let id = Uuid::from_bytes_ref(&bytes);
@@ -56,4 +61,7 @@ fn main() {
     let mut items = vec![1];
     widened(&mut items).push(2);
     println!("{items:?}");
+    let mut text = String::from("a");
+    longer(&mut text).push('b');
+    println!("{text}");
 }

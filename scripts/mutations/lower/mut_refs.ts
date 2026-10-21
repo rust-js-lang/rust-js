@@ -163,4 +163,12 @@ export const mutations: Mutation[] = [
     replace: "                            ty::Ref(_, pointee, Mutability::Mut) => Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee),\n",
     tests: ["test/corpus.test.ts", "-t", "^function_given_for_a_mut_param.rs$"],
   },
+  {
+    name: "static-result-not-the-borrow",
+    breaks: "a `&'static mut` result made of a `&'a mut` argument by `transmute` is taken for another place, so the argument's box is copied back before a write through the result, which is lost",
+    file: "src/lower/mut_refs.rs",
+    find: "        static_to_it\n            || others\n",
+    replace: "        others\n",
+    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
+  },
 ];

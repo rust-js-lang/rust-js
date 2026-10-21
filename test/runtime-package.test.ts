@@ -222,6 +222,35 @@ pub fn named() -> &'static str {
     let n = Number { int: 1 };
     unsafe { n.name }
 }
+
+#[derive(Clone, Copy)]
+pub struct Small(pub u8);
+
+pub union Mixed {
+    whole: u32,
+    small: Small,
+}
+
+pub fn part_written() -> u32 {
+    let mut m = Mixed { whole: 7 };
+    unsafe { m.small.0 = 1 };
+    unsafe { m.whole }
+}
+
+// Four bytes, one of them padding, which a value of it doesn't hold.
+#[derive(Clone, Copy)]
+pub struct Padded(pub u8, pub u16);
+
+pub union Spaced {
+    whole: u32,
+    padded: Padded,
+}
+
+pub fn padding_written() -> u32 {
+    let mut s = Spaced { whole: 7 };
+    unsafe { s.padded.0 = 1 };
+    unsafe { s.whole }
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -231,6 +260,10 @@ pub fn named() -> &'static str {
   expect(call("same")).toBe("7\n");
   expect(call("rewritten")).toBe("2.802596928649634e-45\n");
   expect(call("named")).toBe("rust-js does not support reading a union's `name` while it holds `int`, which reads its bytes as another type's\n");
+  // A struct field smaller than the union, which can't be held in its place
+  // without losing bytes: written into, rust-js's error, not a lost write.
+  expect(call("part_written")).toBe("rust-js does not support reading a union's `small` while it holds `whole`, which reads its bytes as another type's\n");
+  expect(call("padding_written")).toBe("rust-js does not support reading a union's `padded` while it holds `whole`, which reads its bytes as another type's\n");
 });
 
 // A pointer's address is a number of rust-js's own, shown as Rust shows one,

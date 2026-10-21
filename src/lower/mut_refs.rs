@@ -327,9 +327,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .enumerate()
             .filter(|&(j, _)| j != i)
             .map(|(_, &ty)| ty);
-        others
-            .chain([sig.output()])
-            .any(|ty| regions(ty).iter().any(|region| lent.contains(region)))
+        // And a `'static` reference to what the borrow refers to, which only
+        // `unsafe` code makes of it, a `transmute` that erases its lifetime
+        // as yoke's does (ADR 0562): the same place, given back.
+        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
+        let lent_to = input.builtin_deref(true).map(erased);
+        let static_to_it = sig.output().walk().any(|part| {
+            matches!(part.as_type().map(|t| *t.kind()), Some(ty::Ref(region, pointee, _))
+                if region.is_static() && Some(erased(pointee)) == lent_to)
+        });
+        static_to_it
+            || others
+                .chain([sig.output()])
+                .any(|ty| regions(ty).iter().any(|region| lent.contains(region)))
     }
 
     /// What the call of `def_id`, given `generic_args`, gives, `value`, as
