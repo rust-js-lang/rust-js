@@ -3721,6 +3721,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     | "std::collections::binary_heap::Drain"
                     | "std::collections::hash_map::Drain"
                     | "std::collections::hash_set::Drain"
+                    // A map's or a set's `into_iter()`, the array of its
+                    // entries or items (ADR 0059), which owns them.
+                    | "std::collections::hash_map::IntoIter"
+                    | "std::collections::btree_map::IntoIter"
+                    | "std::collections::hash_set::IntoIter"
+                    | "std::collections::btree_set::IntoIter"
             );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
@@ -3912,8 +3918,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if !(self.array_source(ty) == Some(true) || self.owns_one_item(ty)) {
             return None;
         }
-        // A map's `drain()`'s, its entries, `(K, V)`.
-        if std_path(self.tcx, adt.did()) == "std::collections::hash_map::Drain" {
+        // A map's `drain()`'s and `into_iter()`'s, its entries, `(K, V)`.
+        if matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::collections::hash_map::Drain"
+                | "std::collections::hash_map::IntoIter"
+                | "std::collections::btree_map::IntoIter"
+        ) {
             let mut types = args.types();
             return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
         }

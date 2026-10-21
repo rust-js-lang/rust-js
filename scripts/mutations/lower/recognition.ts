@@ -1822,8 +1822,8 @@ export const mutations: Mutation[] = [
     name: "map-drain-items-keys",
     breaks: "a map's `drain()` is taken to own its keys alone, and drops none of its values",
     file: "src/lower/recognition.rs",
-    find: "        if std_path(self.tcx, adt.did()) == \"std::collections::hash_map::Drain\" {\n",
-    replace: "        if false {\n",
+    find: "            \"std::collections::hash_map::Drain\"\n                | \"std::collections::hash_map::IntoIter\"\n",
+    replace: "            \"std::collections::hash_map::IntoIter\"\n",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
   {
@@ -2654,5 +2654,21 @@ export const mutations: Mutation[] = [
     find: "            \"std::iter::Repeat\" | \"std::iter::RepeatN\" | \"std::iter::Successors\" => sources.next(),\n",
     replace: "            \"std::iter::Repeat\" | \"std::iter::RepeatN\" => sources.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
+  },
+  {
+    name: "map-into-iter-not-owning",
+    breaks: "a map's or a set's `into_iter()` of values with a destructor is refused, as a std type holding one",
+    file: "src/lower/recognition.rs",
+    find: "                    | \"std::collections::btree_map::IntoIter\"\n                    | \"std::collections::hash_set::IntoIter\"\n                    | \"std::collections::btree_set::IntoIter\"\n            );",
+    replace: "            );",
+    tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
+  },
+  {
+    name: "map-into-iter-items-its-keys",
+    breaks: "a map's `into_iter()` owns its keys alone, so what a loop leaves of its values isn't dropped",
+    file: "src/lower/recognition.rs",
+    find: "                | \"std::collections::hash_map::IntoIter\"\n                | \"std::collections::btree_map::IntoIter\"\n        ) {",
+    replace: "        ) {",
+    tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
 ];

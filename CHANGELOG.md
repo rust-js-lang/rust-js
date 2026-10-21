@@ -100,6 +100,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **`fill_with` of items with a destructor** (ADR 0507): each new one made,
   then the one it replaces dropped, as `*item = f()` does.
 - **`swap_with_slice` of items with a destructor**: swapped, none dropped.
+- **A map's or a set's owned iteration of values with a destructor**
+  (ADR 0059): `for (k, v) in map`, `set.into_iter().find(..)`, each entry
+  the loop's, and what it doesn't reach dropped where it stops.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
