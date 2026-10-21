@@ -3457,6 +3457,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.writes_to(given.as_slice(), output)
     }
 
+    /// A call through a `fn` pointer, `callee`, that writes to a
+    /// `Formatter` it's given, `cb(x, f)` of a `cb: fn(&u32, &mut
+    /// Formatter) -> fmt::Result`: which argument it is (ADR 0538).
+    pub(super) fn pointer_formatter(&self, callee: Ty<'tcx>) -> Option<usize> {
+        let ty::FnPtr(..) = callee.kind() else { return None };
+        let sig = self.tcx.instantiate_bound_regions_with_erased(callee.fn_sig(self.tcx));
+        self.writes_to(sig.inputs(), sig.output())
+    }
+
     /// Which of `inputs` is the `Formatter` a writer writes to, of one
     /// that returns `output`, a `fmt::Result`.
     fn writes_to(&self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Option<usize> {

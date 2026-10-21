@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
   },
+  {
+    name: "writer-fn-pointer-refused",
+    breaks: "a writer called through a `fn` pointer given its `Formatter`, `cb(x, f)`, is refused",
+    file: "src/lower/mir/writer.rs",
+    find: "                    if whole && self.recognition().pointer_formatter(callee) == Some(at) {\n                        continue;\n                    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer.rs$"],
+  },
+  {
+    name: "writer-fn-pointer-not-written",
+    breaks: "a writer called through a `fn` pointer isn't lowered as a writer's call, what it writes lost",
+    file: "src/lower/mir/writer.rs",
+    find: "            && let Some(at) = self.recognition().pointer_formatter(callee)\n",
+    replace: "            && let Some(at) = self.recognition().pointer_formatter(callee).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer.rs$"],
+  },
 ];

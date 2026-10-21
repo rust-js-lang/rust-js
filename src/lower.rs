@@ -425,11 +425,33 @@ impl Default for TypeWalks<'_> {
 /// is `shapeArea_area`, not a dictionary's method, read off it. Not a
 /// runtime helper, whose arrow names what it's given by its type, `(s) =>
 /// $byteLen(s)`, where it's written in place.
+/// A call of a dictionary made here, `({ fmt: (value, options) => .. })
+/// .fmt(a, b)`: its function's, `((value, options) => ..)(a, b)`, an arrow,
+/// which no `this` reaches, of a dictionary nothing else in has an effect
+/// (ADR 0538).
+fn in_place_method(call: Expr) -> Expr {
+    if let js::ExprKind::Call(callee, list) = &call.kind
+        && let js::ExprKind::Member(object, name) = &callee.kind
+        && let js::ExprKind::Object(props) = &object.kind
+        && !object.has_effects()
+        && let Some(f) = props.iter().find_map(|p| match p {
+            js::Prop::Field(field, f) if field == name && matches!(f.kind, js::ExprKind::Arrow(..)) => Some(f),
+            _ => None,
+        })
+    {
+        return Expr::call(f.clone(), list.clone());
+    }
+    call
+}
+
 fn called_by_name(params: &[String], call: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(callee, list) = &call.kind else {
         return None;
     };
-    let by_name = matches!(callee.kind, js::ExprKind::Var(_))
+    // Or a function made here, which takes as many: itself (ADR 0538).
+    let arrow = matches!(&callee.kind, js::ExprKind::Arrow(taken, _)
+        if taken.len() == params.len() && taken.iter().all(|p| matches!(p, js::Pattern::Name(_))));
+    let by_name = (matches!(callee.kind, js::ExprKind::Var(_)) || arrow)
         && callee.helper_name().is_none()
         && list.len() == params.len()
         && (list.iter().zip(params)).all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
@@ -637,6 +659,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
                     return Ok(None);
                 };
+                let call = in_place_method(call);
                 if let Some(callee) = called_by_name(&params, &call) {
                     return Ok(Some(callee));
                 }

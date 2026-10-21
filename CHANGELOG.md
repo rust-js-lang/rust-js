@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A writer called through a `fn` pointer** given its `Formatter`,
+  `cb(x, f)`; std's trait method as such a value is its function (ADR 0538).
 - **A `Cell`'s `take()`, `replace()` and `get()` of an `Option` of what
   could look like `None`**, `Cell<Option<I>>`'s (ADR 0537).
 - **A blanket impl over `?Sized` types**, `impl<T: Iterator + ?Sized> Ext

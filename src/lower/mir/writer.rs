@@ -150,6 +150,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
+        // A writer called through a `fn` pointer given the writer's
+        // `Formatter`, `cb(x, f)`: what it writes, `f += cb(x)`, as a writer
+        // callable's (ADR 0538).
+        if let Some((aliases, name)) = state.writer.clone()
+            && let callee = func.ty(decls, self.tcx)
+            && let Some(at) = self.recognition().pointer_formatter(callee)
+            && (args.get(at).and_then(|a| a.node.place()))
+                .is_some_and(|p| p.projection.is_empty() && aliases.contains(&p.local))
+        {
+            let given: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
+            let arg_tys = [callee, Ty::new_tup(self.tcx, &given)];
+            let mut operands = vec![func];
+            operands.extend(args.iter().map(|a| &a.node));
+            let mut values = self.take_operands(state, &operands, out)?;
+            let callee = values.remove(0);
+            let written = self.mir_closure_call(vec![callee, Value::List(values)], &arg_tys, Some(at), span)?;
+            let written = self.value_expr(written, span)?;
+            self.flush(state, out)?;
+            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            return Ok(Some(Value::Expr(Expr::undefined())));
+        }
         // A write to the writer's `Formatter` (ADR 0054): `f += s`.
         if let Some((aliases, name)) = &state.writer
             && let Some(at) = args
@@ -466,10 +487,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         return Some((span, this()));
                     };
-                    let Some((def_id, generic_args)) = fn_def(func.ty(&body.local_decls, self.tcx)) else {
+                    let whole = args[at].node.place().is_some_and(|p| p.projection.is_empty());
+                    // A writer called through a `fn` pointer, `cb(x, f)` (ADR 0538).
+                    let callee = func.ty(&body.local_decls, self.tcx);
+                    if whole && self.recognition().pointer_formatter(callee) == Some(at) {
+                        continue;
+                    }
+                    let Some((def_id, generic_args)) = fn_def(callee) else {
                         return Some((span, this()));
                     };
-                    let whole = args[at].node.place().is_some_and(|p| p.projection.is_empty());
                     // A builder's step, or a builder its `Formatter` makes.
                     let of_builder = args[at].node.place().is_some_and(|p| builders.contains_key(&p.local));
                     if of_builder || builders.contains_key(&destination.local) {
