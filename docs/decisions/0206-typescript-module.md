@@ -49,8 +49,8 @@ await ts.close();
   `erasableSyntaxOnly` says: there's no `enum`, parameter property or
   `import =` in the model, and a namespace holding values is refused but a
   `declare`d one's.
-- **TypeScript is 7.0.2**, its latest release, pinned, as its API is
-  `unstable`: a session is its native process, the async API's, which
+- **TypeScript is 7.1.0-beta**, pinned, the first whose API isn't under
+  `unstable/` (amended: it was 7.0.2's, `unstable`): a session is its native process, the async API's, which
   works under Node and Bun alike, where the sync API needs Node's.
 
 ## Why

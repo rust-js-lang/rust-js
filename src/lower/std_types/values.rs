@@ -57,8 +57,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // drops each it passes over; through a `&mut`, `find_map`'s, what it
         // doesn't reach stays in the iterator. A lazy adapter, `zip` or
         // `filter_map`, moves what it's given into what it makes, which its
-        // type says is closed to drop it, or is refused (ADRs 0465, 0518). A slice's op that lends its
-        // items, or views of them, drops none (ADR 0507).
+        // type says is closed to drop it, or is refused (ADRs 0465, 0518).
+        // A slice's op that lends its items, or views of them, drops none
+        // (ADR 0507).
         let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
             || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
