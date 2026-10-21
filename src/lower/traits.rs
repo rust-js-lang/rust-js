@@ -482,14 +482,16 @@ pub(super) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
         let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
         if !full {
             return format!(
-                "{}{module}{}",
+                "{}{module}{}{}",
                 lower_first(&js_word(&type_word(tcx, tr.self_ty()))),
-                trait_word(tcx, tr)
+                trait_word(tcx, tr),
+                specializing_words(tcx, id)
             );
         }
         let mut name = lower_first(&js_word(&full_type_word(tcx, tr.self_ty())));
         name.push_str(module);
         name.push_str(tcx.item_name(tr.def_id).as_str());
+        name.push_str(&specializing_words(tcx, id));
         for arg in tr.args.iter().skip(1) {
             // A const argument by its value, `Scaled10` of `Scaled<10>` (ADR 0135).
             let word = match (arg.as_type(), arg.as_const()) {
@@ -545,6 +547,34 @@ pub(super) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
         Some(at) if at > 0 => format!("{full}{}", at + 1),
         _ => full,
     }
+}
+
+/// Of a std impl that specializes another of its trait for the same type,
+/// `impl<I: FusedIterator> FuseImpl<I> for Fuse<I>` the blanket `impl<I:
+/// Iterator>`'s (ADR 0561): the traits its bounds name that the other's
+/// don't, `FusedIterator`, which tell the two apart; nothing of another.
+fn specializing_words(tcx: TyCtxt<'_>, id: DefId) -> String {
+    let trait_id = tcx.impl_trait_id(id);
+    if !super::recognition::std_private(tcx, trait_id) {
+        return String::new();
+    }
+    let Some(other) = tcx
+        .all_impls(trait_id)
+        .find(|&other| other != id && tcx.specializes((id, other)))
+    else {
+        return String::new();
+    };
+    let bounds = |imp: DefId| -> Vec<DefId> {
+        (tcx.clauses_of(imp).instantiate_identity(tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .map(|bound| bound.def_id())
+            .collect()
+    };
+    let others = bounds(other);
+    (bounds(id).into_iter())
+        .filter(|bound| !others.contains(bound))
+        .map(|bound| tcx.item_name(bound).to_string())
+        .collect()
 }
 
 /// `type_word`, with the type's arguments other than their defaults:
@@ -1671,7 +1701,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `IntoIterator` of a type known here, given where what it
         // makes is held as it is (ADR 0552): `into_iter` of it as concrete
         // code has it, an iterator's, a range's too, itself, an array's
-        // `$iter`.
+        // `$iter`; and the `Iterator` of what it makes, which steps that as
+        // it is, `IntoIterIterator`, as the trait declares its `IntoIter`.
         if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
             && !matches!(ty.kind(), ty::Ref(..))
             && !super::recognition::known_by_bounds(ty)
@@ -1681,8 +1712,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["items".into()],
                 vec![StmtKind::Return(Some(Expr::var("items"))).at(js::Span::NONE)],
             );
+            let mut steps = Vec::new();
+            for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
+                if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {
+                    let of = self.tcx.erase_and_anonymize_regions(bound.self_ty());
+                    let of = (self.tcx)
+                        .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
+                        .unwrap_or(of);
+                    let dictionary = self.iterator_dictionary(of, span)?;
+                    steps.push(Prop::Field(
+                        name,
+                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+                    ));
+                }
+            }
             if self.recognition().iterates_as_itself(ty) {
-                return Ok(Expr::object(vec![Prop::Field("into_iter".into(), itself)]));
+                let mut props = vec![Prop::Field("into_iter".into(), itself)];
+                props.extend(steps);
+                return Ok(Expr::object(props));
             }
             let into_iter = super::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
             let known = self
@@ -1708,7 +1755,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = self.std_iterator(items, output);
             body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
             let f = Expr::arrow(vec!["items".into()], body);
-            return Ok(Expr::object(vec![Prop::Field("into_iter".into(), f)]));
+            let mut props = vec![Prop::Field("into_iter".into(), f)];
+            props.extend(steps);
+            return Ok(Expr::object(props));
         }
         // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
         // standard stream, written to it (ADR 0392).
@@ -2194,7 +2243,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `id` asks of its type parameters, `TSize` and `KMap`, by their
     /// index: the crate's, or a library's as its manifest says (ADR 0145).
     pub(super) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
-        match id.is_local() {
+        // A std body compiled with this crate asks as the crate's own do
+        // (ADR 0561).
+        match id.is_local() || super::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id) {
             true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
             false => self.krate.foreign.type_facts(id),
         }
@@ -2377,6 +2428,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.extend(self.evidence_args(id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
+        }
+        // A std-private trait's method whose impl rustc leaves to the
+        // caller's type, `FuseImpl::next(self)` of a `Fuse<I>`: the impl its
+        // type parameter's being a `FusedIterator` picks, by the caller's
+        // fact of it, `IFused`, and where rustc knows the type whole, that
+        // one alone (ADRs 0473, 0543, 0561).
+        if self.resolve_self_instance(id, generic_args)?.is_none()
+            && let Some(spec) = super::recognition::fused_specialization(
+                self.tcx,
+                self.impl_typing_env().unwrap_or(self.typing_env),
+                id,
+                generic_args,
+            )
+        {
+            let fact = self.type_fact_value(spec.of, TypeFact::Fused, span)?;
+            let (selected, impl_args) = spec.selected;
+            // The method's own arguments after its impl's, as the call gives
+            // them after its trait's.
+            let own = &generic_args[self.tcx.generics_of(id).parent_count..];
+            let args = self.tcx.mk_args_from_iter(impl_args.iter().chain(own.iter().copied()));
+            let mut called = Vec::new();
+            for method in [spec.fused, selected] {
+                let mut values = values.clone();
+                values.extend(self.evidence_args(method, args, span)?);
+                called.push(Expr::call(self.fn_ref(method), values));
+            }
+            let selected_call = called.pop().expect("the selected impl's");
+            let fused = called.pop().expect("the fused impl's");
+            let called = Expr::cond(fact, fused, selected_call);
+            return Ok(Some(self.fmt_result_value(selected, args, called)));
         }
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which

@@ -259,10 +259,11 @@ compiled impl's call.
   powerfmt, raw pointers all. A compiled std moves the adapter and trait
   tail, not memory, which needs a decision of its own.
 - **Next**: each adapter after `Peekable`, a line of `COMPILED_STD` each,
-  retiring its helper, `$fuse`'s and the held adapters' (ADRs 0542 to
-  0549), and `Iterator`'s provided methods the recognizers don't rewrite.
-  And tidy of a std body's JS as of the app's: `next_back`'s dead `if
-  (option != null)` after its early return, folded.
+  retiring its helper, `$fuse`'s ([0563](0563-fuse-is-stds.md)) and the
+  held adapters' (ADRs 0542 to 0549), and `Iterator`'s provided methods
+  the recognizers don't rewrite. And tidy of a std body's JS as of the
+  app's: `next_back`'s dead `if (option != null)` after its early return,
+  folded.
 
 ## What holds it
 

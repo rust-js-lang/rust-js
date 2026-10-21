@@ -10,7 +10,7 @@ import {
   $nextBack,
   $nextIf,
   $peek,
-  $peekableHint,
+  $sizeHint,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -30,7 +30,7 @@ function more() {
     loudDrop_drop,
   );
   try {
-    console.log(`len ${$exactLen($peekableHint(it))}`);
+    console.log(`len ${$exactLen($sizeHint(it))}`);
   } catch (error) {
     for (const item of it.iter) {
       loudDrop_drop(item);
@@ -56,7 +56,7 @@ function more() {
     throw error;
   }
   try {
-    console.log(`len ${$exactLen($peekableHint(it))}`);
+    console.log(`len ${$exactLen($sizeHint(it))}`);
   } catch (error) {
     for (const item of it.iter) {
       loudDrop_drop(item);

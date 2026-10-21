@@ -503,10 +503,11 @@ export function $iterator(iterator, next, boxed = false, nextBack, len) {
 // `it`, an explicit adapter (ADR 0542), stepped by a use site that knows its
 // source's back and length, `back` and `len`, functions of the value the
 // `$iterator` it steps steps, which that's given: what it steps from its
-// back as Rust's does.
+// back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
+// `$stdIterator`'s, given its own.
 export function $knowing(it, back, len) {
   let source = it;
-  while (source.of === undefined && source.iter !== undefined) source = source.iter;
+  while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
   source.knowing?.(back, len);
   return it;
 }
@@ -530,40 +531,6 @@ export function $add(set, item, drop) {
   set.add(item);
   if (!added) drop?.(item);
   return added;
-}
-
-// `it.fuse()`, Rust's `Fuse`: `iter` stepped till it ends, then never
-// again. Of one that isn't a `FusedIterator`, not `fused`, `iter` is closed
-// as it ends, which drops it as std's does, and `undefined` then, as its
-// `Debug` shows it; a `FusedIterator`'s, which stays ended, is kept, and
-// stepped again, as std's is (ADR 0473). Its back and its length are what
-// it steps', as Rust's `Fuse`'s are (ADR 0528), asked as they're stepped, as
-// a use site may give what it steps them (ADR 0549).
-export function $fuse(iter, fused = false) {
-  const stepped = (step) => () => {
-    if (it.iter === undefined) {
-      return { done: true, value: undefined };
-    }
-    const at = step();
-    if (at.done && !fused) {
-      it.iter.return?.();
-      it.iter = undefined;
-    }
-    return at;
-  };
-  const it = Iterator.from({
-    next: stepped(() => it.iter.next()),
-    return() {
-      it.iter?.return?.();
-      it.iter = undefined;
-      return { done: true, value: undefined };
-    },
-  });
-  it.iter = iter;
-  it.fused = fused;
-  it.back = stepped(() => it.iter.back());
-  it.len = () => (it.iter === undefined ? 0 : it.iter.len());
-  return it;
 }
 
 // What a closure carries its drop under, JS's own `Symbol.dispose`, or the
@@ -7862,15 +7829,26 @@ export function $nextIf(peekable, f) {
 }
 
 // A std struct whose `Iterator` impl is compiled into `@rust-js/std`, a
-// `Peekable`'s `{ iter, peeked }` (ADR 0561), as the JS iterator it is:
-// itself, with `Iterator.prototype`'s helpers, its `next` the compiled one,
-// `next`, which gives `Some` of an item boxed (ADR 0051), or `None` at its
-// end, as `$iterator` steps the crate's own.
-export function $stdIterator(struct, next) {
+// `Peekable`'s `{ iter, peeked }` or a `Fuse`'s `{ iter }` (ADR 0561), as
+// the JS iterator it is: itself, with `Iterator.prototype`'s helpers, its
+// `next` the compiled one, `steps.next`, which gives `Some` of an item boxed
+// (ADR 0051), or `None` at its end, as `$iterator` steps the crate's own;
+// its size hint `steps.hint`, the compiled `size_hint` or a rewrite of one
+// whose body reaches memory, `$peekableHint`. It keeps `steps` as `$steps`,
+// a name no field has, for its clone to step as it does. Its back and its
+// length a use site gives, of its compiled `next_back` and `len` with that
+// use's dictionaries, `$knowing`'s.
+export function $stdIterator(struct, steps) {
   const it = Object.assign(Object.create(Iterator.prototype), struct);
-  it.next = () => {
-    const item = next(it);
-    return item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) };
+  const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
+  it.$steps = steps;
+  it.next = () => step(steps.next(it));
+  if (steps.hint !== undefined) {
+    it.hint = () => steps.hint(it);
+  }
+  it.knowing = (back, len) => {
+    if (back !== undefined) it.back = () => step(back(it));
+    if (len !== undefined) it.len = () => len(it);
   };
   return it;
 }
@@ -8192,10 +8170,6 @@ export function $sizeHint(it) {
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it.of?.next === "function") return $sizeHint(it.of);
-  // A `Fuse`'s, what it steps, or none once it's ended (ADR 0473).
-  if (it.fused !== undefined) {
-    return it.iter === undefined ? [0, 0] : $sizeHint(it.iter);
-  }
   const left = Array.isArray(it.items) ? it.end - it.at : undefined;
   return left === undefined ? [0, undefined] : [left, left];
 }

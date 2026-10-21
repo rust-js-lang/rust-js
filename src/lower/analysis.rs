@@ -85,15 +85,32 @@ pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         if !tcx.is_mir_available(def_id) {
             continue;
         }
-        for data in tcx.optimized_mir(def_id).basic_blocks.iter() {
-            for statement in &data.statements {
-                if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
-                    && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1
+        // Made of what it captures, or, capturing nothing, named as a
+        // constant.
+        struct Closures(Vec<DefId>);
+        impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for Closures {
+            fn visit_rvalue(&mut self, rvalue: &rustc_middle::mir::Rvalue<'tcx>, _: rustc_middle::mir::Location) {
+                if let rustc_middle::mir::Rvalue::Aggregate(kind, _) = rvalue
                     && let rustc_middle::mir::AggregateKind::Closure(closure, _) = **kind
-                    && !ids.contains(&closure)
                 {
-                    ids.push(closure);
+                    self.0.push(closure);
                 }
+            }
+            fn visit_const_operand(
+                &mut self,
+                constant: &rustc_middle::mir::ConstOperand<'tcx>,
+                _: rustc_middle::mir::Location,
+            ) {
+                if let rustc_middle::ty::Closure(closure, _) = *constant.ty().kind() {
+                    self.0.push(closure);
+                }
+            }
+        }
+        let mut closures = Closures(Vec::new());
+        rustc_middle::mir::visit::Visitor::visit_body(&mut closures, tcx.optimized_mir(def_id));
+        for closure in closures.0 {
+            if !ids.contains(&closure) {
+                ids.push(closure);
             }
         }
     }

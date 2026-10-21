@@ -107,9 +107,15 @@ impl<'tcx> Mir<'tcx> {
                     }
                 }
             }
-            // A discriminant read for a switch that went, which the block's
-            // terminator no longer tests: dropped with it.
+            // An `assume` of what an inlined `?` knows of its residual, which
+            // runs nothing, goes; and a discriminant read for a switch that
+            // went, which the block's terminator no longer tests and nothing
+            // else reads: dropped with it.
             for data in body.basic_blocks.as_mut() {
+                data.statements.retain(|statement| {
+                    !matches!(&statement.kind, StatementKind::Intrinsic(intrinsic)
+                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)))
+                });
                 let tested = match &data.terminator().kind {
                     TerminatorKind::SwitchInt { discr, .. } => discr.place().and_then(|place| place.as_local()),
                     _ => None,
@@ -3073,8 +3079,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) || given_box(self, i) => {
                     object
                 }
+                // A function given for an `F: FnOnce(&mut T)` of a `T` that's
+                // an object here: one taking generic code's box of it, which
+                // it gives the object, `(x) => f(x.value)` (ADR 0454).
                 value => {
-                    exprs.push(self.value_expr(value, span)?);
+                    let f = self.value_expr(value, span)?;
+                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args));
+                    exprs.push(match unboxed {
+                        Some(unboxed) => {
+                            let params: Vec<String> =
+                                (0..unboxed.len()).map(|at| self.fresh(&format!("x{at}"))).collect();
+                            let given = (params.iter().zip(&unboxed))
+                                .map(|(param, &unboxed)| match unboxed {
+                                    true => Expr::held(Expr::var(param)),
+                                    false => Expr::var(param),
+                                })
+                                .collect();
+                            let body = vec![StmtKind::Return(Some(Expr::call(f, given))).at(js::Span::NONE)];
+                            Expr::arrow(params.into_iter().map(Into::into).collect(), body)
+                        }
+                        None => f,
+                    });
                     continue;
                 }
             };
@@ -3764,6 +3789,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Value::Ref(Expr::held(self.fn_ref(def_id))),
                 })
             }
+            // A closure that captures nothing, which optimized MIR names as a
+            // constant: made here, as one made of its captures is.
+            Operand::Constant(c)
+                if let ty::Closure(def_id, _) = *c.ty().kind()
+                    && matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _)) =>
+            {
+                Ok(Value::Expr(self.mir_closure(state, def_id, Vec::new(), c.span, out)?))
+            }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
             _ => Err(self.unsupported(Span::default(), "this operand, from its MIR")),
@@ -3948,15 +3981,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(ty::Value { ty, valtree })
             }
             Const::Val(value, _) => {
-                // A variant without fields, of an enum whose value isn't a
-                // tree, `None` of an `Option<Box<T>>`: its index, as a tree of
-                // an enum starts.
-                if ty.is_enum()
+                // A struct's, a tuple's or an enum's, as rustc stores it, a
+                // `(0, Some(0))` in memory or a `None` of an `Option<Box<T>>`:
+                // a tree of its fields, each as it's stored, after its
+                // variant's index where it's an enum's.
+                if matches!(ty.kind(), ty::Adt(..) | ty::Tuple(_))
                     && let Some(made) = self.tcx.try_destructure_mir_constant_for_user_output(value, ty)
-                    && made.fields.is_empty()
-                    && let Some(variant) = made.variant
                 {
-                    let index = ty::ValTree::from_scalar_int(self.tcx, variant.as_u32().into());
+                    let mut parts = Vec::new();
+                    if let Some(variant) = made.variant {
+                        let index = ty::ValTree::from_scalar_int(self.tcx, variant.as_u32().into());
+                        parts.push(ty::Const::new_value(self.tcx, index, self.tcx.types.u32));
+                    }
+                    for &(field, field_ty) in made.fields.iter() {
+                        let field = self.mir_const_value(Const::Val(field, field_ty), field_ty, span)?;
+                        parts.push(ty::Const::new_value(self.tcx, field.valtree, field_ty));
+                    }
+                    return Some(ty::Value {
+                        ty,
+                        valtree: ty::ValTree::from_branches(self.tcx, parts),
+                    });
+                }
+                // `None` of an `Option` of a reference to a type parameter,
+                // whose layout rustc can't say: a null pointer, as its niche
+                // is.
+                if let ty::Adt(adt, args) = ty.kind()
+                    && self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                    && args.type_at(0).is_ref()
+                    && value.try_to_scalar_int().is_some_and(|scalar| scalar.is_null())
+                {
+                    let index = ty::ValTree::from_scalar_int(self.tcx, 0u32.into());
                     let index = ty::Const::new_value(self.tcx, index, self.tcx.types.u32);
                     return Some(ty::Value {
                         ty,
@@ -4178,6 +4232,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::BinaryOp(op, operands) => {
                 let (l, r) = &**operands;
                 let (ty, r_ty) = (l.ty(decls, tcx), r.ty(decls, tcx));
+                // An enum's discriminant compared with a variant's, an inlined
+                // `is_some()`'s in a std body (ADR 0561): the variant's test.
+                if let BinOp::Eq | BinOp::Ne = op
+                    && let Operand::Constant(c) = r
+                    && let Some(variant) = c.const_.try_eval_scalar_int(tcx, self.typing_env)
+                    && let Operand::Copy(place) | Operand::Move(place) = l
+                    && (state.pending.iter())
+                        .any(|(local, value)| *local == place.local && matches!(value, Value::Discriminant(..)))
+                {
+                    let discriminant = self.take_operands(state, &[l], out)?.remove(0);
+                    let Value::Discriminant(_, enum_ty) = &discriminant else {
+                        unreachable!("a discriminant")
+                    };
+                    let enum_ty = *enum_ty;
+                    let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span)?;
+                    return Ok(Value::Expr(match op {
+                        BinOp::Eq => test,
+                        _ => test.negated_test(),
+                    }));
+                }
                 // A range pattern's test, `2 <= k`: the value first, `k >= 2`;
                 // of a bound the type has anyway, `0 <= k` of a `u8`, none.
                 let flipped = match op {
@@ -4546,12 +4620,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
                 let value = self.adt_value(ty, *variant_index, exprs, &nulled, span)?;
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
-                // in std's own `peekable` or `clone`, is the JS iterator it
-                // is where it's made, its `next` the compiled impl's (ADR
-                // 0561).
+                // in std's own `peekable`, is the JS iterator it is where
+                // it's made, stepped by the compiled impl's `next` and sized
+                // by its `size_hint`, given this body's dictionaries; in its
+                // `Clone`, which has none of `I: Iterator`'s, as the one it
+                // clones is, `self.$steps` (ADR 0561).
                 if super::recognition::is_compiled_std_iterator(self.tcx, ty) {
-                    let (next, _) = self.user_next(ty, std_item(self.tcx, StdItem::Iterator), "next", span)?;
-                    return Ok(Value::Expr(Expr::call_helper("$stdIterator", vec![value, next])));
+                    let cloning = self.tcx.trait_impl_of_assoc(self.item).is_some_and(|imp| {
+                        self.tcx.is_lang_item(self.tcx.impl_trait_id(imp), LangItem::Clone)
+                            && self.tcx.type_of(imp).instantiate_identity().skip_normalization() == ty
+                    });
+                    let steps = match cloning {
+                        true => Expr::member(Expr::var(&state.locals.names[Local::from_u32(1)]), "$steps"),
+                        false => self.std_iterator_steps(ty, span)?,
+                    };
+                    return Ok(Value::Expr(Expr::call_helper("$stdIterator", vec![value, steps])));
                 }
                 Ok(Value::Expr(value))
             }

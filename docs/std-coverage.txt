@@ -857,7 +857,7 @@
 + char::to_digit	memory
 + char::to_lowercase	memory
 + char::to_uppercase	memory
-# Iterator 43 of 60; bodies: 56 safe, 4 spec, 0 opaque, 0 memory, 0 none
+# Iterator 44 of 60; bodies: 56 safe, 4 spec, 0 opaque, 0 memory, 0 none
 + Iterator::all	safe
 + Iterator::any	safe
 + Iterator::by_ref	safe
@@ -878,7 +878,7 @@
 + Iterator::flatten	safe
 + Iterator::fold	safe
 + Iterator::for_each	safe
-- Iterator::fuse	safe
++ Iterator::fuse	safe
 - Iterator::ge	safe
 - Iterator::gt	safe
 + Iterator::inspect	safe
@@ -968,18 +968,18 @@
 + Peekable::size_hint	memory
 - Peekable::try_fold	spec
 - Peekable::try_rfold	spec
-# Fuse 7 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
+# Fuse 10 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
 + Fuse::count	safe
 + Fuse::find	spec
 + Fuse::fold	safe
 + Fuse::last	safe
-- Fuse::len	safe
++ Fuse::len	safe
 + Fuse::next	spec
-- Fuse::next_back	spec
++ Fuse::next_back	spec
 + Fuse::nth	spec
 - Fuse::nth_back	spec
 - Fuse::rfind	spec
-- Fuse::rfold	safe
++ Fuse::rfold	safe
 + Fuse::size_hint	safe
 - Fuse::try_fold	spec
 - Fuse::try_rfold	spec

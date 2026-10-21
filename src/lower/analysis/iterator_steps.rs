@@ -19,7 +19,7 @@ type Param = (DefId, u32);
 
 /// Each struct or enum a body read from its MIR alone makes, by its type:
 /// what it holds of the body's parameters, its impls may step.
-fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
+pub(super) fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
     if !body.thir.exprs.is_empty() {
         return Vec::new();
     }
@@ -44,7 +44,7 @@ fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tc
 /// arguments: of its THIR, each function value; of a body read from its
 /// MIR alone, a std one's (ADR 0561), each constant of a
 /// function's type.
-fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+pub(super) fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
     if !body.thir.exprs.is_empty() {
         return (body.thir.exprs.iter())
             .filter_map(|expr| match (&expr.kind, fn_def(expr.ty)) {
@@ -95,7 +95,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
         // A caller's parameter given to a library's function, a compiled std
         // body's among them (ADR 0561), which its manifest says it steps by
-        // a trait: stepped by it here.
+        // a trait of its bounds, or a supertrait of one, `Iterator` of an
+        // `I: DoubleEndedIterator`: stepped by it here.
         let steps_through =
             |stepped: &mut HashSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
                 for (index, arg) in args.iter().enumerate() {
@@ -110,11 +111,16 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     let theirs = generics.param_at(index, tcx);
                     let theirs = ty::Ty::new_param(tcx, theirs.index, theirs.name);
                     for (clause, _) in tcx.clauses_of(callee).instantiate_identity(tcx) {
-                        if let Some(bound) = clause.skip_normalization().as_trait_clause()
-                            && bound.self_ty().skip_binder() == theirs
-                            && foreign.steps(callee, index as u32, bound.def_id())
-                        {
-                            stepped.insert((caller, param.index, bound.def_id()));
+                        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                            continue;
+                        };
+                        if bound.self_ty().skip_binder() != theirs {
+                            continue;
+                        }
+                        for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {
+                            if foreign.steps(callee, index as u32, by) {
+                                stepped.insert((caller, param.index, by));
+                            }
                         }
                     }
                 }
@@ -144,6 +150,20 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         }
         for (callee, args) in body_fn_defs(body) {
+            // A std-private trait's method whose impl the caller's type picks,
+            // `FuseImpl::next`'s of a `Fuse<I>` (ADR 0561): stepped as either
+            // impl's method steps it.
+            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args) {
+                let (selected, impl_args) = spec.selected;
+                for method in [selected, spec.fused] {
+                    if fns.contains_key(&method) {
+                        pass_on(&mut passed, method, impl_args);
+                    } else if foreign.item(method).is_some() {
+                        steps_through(&mut stepped, method, impl_args);
+                    }
+                }
+                continue;
+            }
             // What it steps by: `Iterator`, of its own methods and
             // `IntoIterator`'s, with the extensions one asks of its `Self`,
             // `rev()`'s `DoubleEndedIterator`; or an extension, of

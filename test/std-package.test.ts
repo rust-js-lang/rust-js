@@ -68,5 +68,6 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   expect(js).toContain("$next(p)");
   expect(js).not.toContain("peekableIterator_next");
   const std = readFileSync(join(root, "std", "iter.js"), "utf8");
-  expect(std).toContain("return $stdIterator({ iter: self }, (iterator) =>");
+  expect(std).toContain("return $stdIterator(\n    { iter: self },\n    {\n      next: (iterator) =>");
+  expect(std).toContain("hint: $peekableHint,");
 });

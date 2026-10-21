@@ -31,7 +31,7 @@ use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, intravisit};
-use rustc_middle::mir::{BinOp, UnOp};
+use rustc_middle::mir::{BinOp, TerminatorKind, UnOp};
 use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -3725,12 +3725,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    /// What a `Fuse` steps, its `I`, of a `Fuse<I>` (ADR 0473).
-    pub(crate) fn fuse_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(adt, args) = ty.kind() else { return None };
-        (std_path(self.tcx, adt.did()) == "std::iter::Fuse").then(|| args.type_at(0))
-    }
-
     /// Whether `ty`, a type rustc knows whole, is a `FusedIterator`, whose
     /// `Fuse` keeps it as it ends, as std's does (ADR 0473).
     pub(crate) fn is_fused_iterator(&self, ty: Ty<'tcx>) -> bool {
@@ -3796,7 +3790,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::iter::TakeWhile"
             | "std::iter::StepBy"
             | "std::iter::Inspect"
-            | "std::iter::Fuse"
             // A copy or a clone of each it steps (ADR 0547).
             | "std::iter::Copied"
             | "std::iter::Cloned"
@@ -4002,7 +3995,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "size_hint" => IterMethod::SizeHint,
             "rev" => IterMethod::Rev,
             "by_ref" => IterMethod::ByRef,
-            "fuse" => IterMethod::Fuse,
             "map" => IterMethod::Map,
             "filter" => IterMethod::Filter,
             "skip_while" => IterMethod::SkipWhile,
@@ -5282,11 +5274,20 @@ const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("DoubleEndedIterator"), "rfold"),
     ("Peekable", Some("Clone"), "clone"),
     ("Peekable", Some("Debug"), "fmt"),
+    ("Fuse", Some("Iterator"), "next"),
+    ("Fuse", Some("Iterator"), "size_hint"),
+    ("Fuse", Some("DoubleEndedIterator"), "next_back"),
+    ("Fuse", Some("DoubleEndedIterator"), "rfold"),
+    ("Fuse", Some("ExactSizeIterator"), "len"),
+    ("Fuse", Some("FuseImpl"), "next"),
+    ("Fuse", Some("FuseImpl"), "next_back"),
+    ("Fuse", Some("Clone"), "clone"),
+    ("Fuse", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
 /// its name: a function over `Self`, given its dictionary (ADR 0185).
-const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable")];
+const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable"), ("Iterator", "fuse")];
 
 thread_local! {
     /// `compiled_std`'s answer, found once for the session's rustc.
@@ -5333,9 +5334,22 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         let Some(adt) = registry::by_path(tcx, "core", &["iter", type_name]) else {
             continue;
         };
+        // A trait std keeps private is beside the type, `FuseImpl` in
+        // `Fuse`'s module.
+        let private_trait = |name: &str| {
+            (tcx.module_children(tcx.parent(adt)).iter())
+                .find(|child| child.ident.as_str() == name)
+                .and_then(|child| child.res.opt_def_id())
+        };
+        // Or one `core::iter` exports without a diagnostic item,
+        // `ExactSizeIterator`.
+        let exported = |name: &str| registry::by_path(tcx, "core", &["iter", name]);
         let impls: Vec<DefId> = match trait_name {
             None => tcx.inherent_impls(adt).to_vec(),
-            Some(trait_name) => match trait_named(trait_name) {
+            Some(trait_name) => match trait_named(trait_name)
+                .or_else(|| exported(trait_name))
+                .or_else(|| private_trait(trait_name))
+            {
                 Some(trait_def) => tcx
                     .all_impls(trait_def)
                     .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
@@ -5361,7 +5375,102 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 .map(|item| item.def_id),
         );
     }
+    // And each function std keeps private that a compiled body calls,
+    // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:
+    // no program can name it, so no recognizer can rewrite it.
+    let mut at = 0;
+    while at < found.len() {
+        let def_id = found[at];
+        at += 1;
+        if !tcx.is_mir_available(def_id) {
+            continue;
+        }
+        let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
+        for data in tcx.optimized_mir(def_id).basic_blocks.iter() {
+            let Some(terminator) = &data.terminator else { continue };
+            let (TerminatorKind::Call { func, .. } | TerminatorKind::TailCall { func, .. }) = &terminator.kind else {
+                continue;
+            };
+            let Some((callee, args)) = func.const_fn_def() else {
+                continue;
+            };
+            if let Ok(Some(instance)) = super::items::resolve_instance_in(tcx, typing_env, callee, args)
+                && let ty::InstanceKind::Item(called) = instance.def
+                && matches!(tcx.def_kind(called), DefKind::Fn | DefKind::AssocFn)
+                && !tcx.visibility(called).is_public()
+                && tcx.trait_of_assoc(called).is_none()
+                && tcx.trait_impl_of_assoc(called).is_none()
+                && tcx.is_mir_available(called)
+                && !found.contains(&called)
+            {
+                found.push(called);
+            }
+        }
+    }
     found
+}
+
+/// A trait only std can name: private to its crate, or unstable, which a
+/// program on stable Rust can't implement or name (ADR 0110).
+pub(crate) fn std_private(tcx: TyCtxt<'_>, trait_def: DefId) -> bool {
+    !tcx.visibility(trait_def).is_public() || tcx.lookup_stability(trait_def).is_some_and(|s| s.is_unstable())
+}
+
+/// A call of a std-private trait's method whose impl rustc leaves to the
+/// caller's type, `FuseImpl::next(self)` of a `Fuse<I>`: the method of the
+/// impl it selects for the type, and of the impl that specializes that one
+/// on the type parameter being a `FusedIterator`, which the caller's fact
+/// of it, `IFused`, picks between (ADRs 0473, 0543). Another
+/// specialization, on a trait that isn't a fact, `TrustedLen`'s, is std's
+/// optimization of the one selected, which changes nothing a program sees.
+pub(crate) struct FusedSpecialization<'tcx> {
+    /// The method of the impl selected, and the impls' arguments.
+    pub(crate) selected: (DefId, ty::GenericArgsRef<'tcx>),
+    /// The method of the impl that specializes it where `of` is fused.
+    pub(crate) fused: DefId,
+    /// The type whose being a `FusedIterator` picks `fused`'s impl.
+    pub(crate) of: Ty<'tcx>,
+}
+
+/// `callee`, a trait's method, called with `args` in `typing_env`, where
+/// rustc resolves it to no one impl: a `FusedSpecialization`, or none.
+pub(crate) fn fused_specialization<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<FusedSpecialization<'tcx>> {
+    let trait_id = tcx.trait_of_assoc(callee)?;
+    if !std_private(tcx, trait_id) {
+        return None;
+    }
+    let tr = ty::TraitRef::from_assoc(tcx, trait_id, args);
+    let tr = tcx.erase_and_anonymize_regions(tr);
+    let Ok(ImplSource::UserDefined(selected)) = tcx.codegen_select_candidate(typing_env.as_query_input(tr)) else {
+        return None;
+    };
+    let fused_iterator = tcx.require_lang_item(LangItem::FusedIterator, rustc_span::DUMMY_SP);
+    let (impl_id, impl_args) = (selected.impl_def_id, selected.args);
+    let specializing = tcx.all_impls(trait_id).find(|&other| {
+        other != impl_id
+            && tcx.specializes((other, impl_id))
+            && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()
+            && tcx
+                .impl_trait_ref(other)
+                .instantiate(tcx, impl_args)
+                .skip_normalization()
+                == tr
+    })?;
+    let of = (tcx.clauses_of(specializing).instantiate(tcx, impl_args).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .find(|bound| bound.def_id() == fused_iterator)
+        .map(|bound| bound.self_ty().skip_binder())?;
+    let method = |imp: DefId| tcx.impl_item_implementor_ids(imp).get(&callee).copied();
+    Some(FusedSpecialization {
+        selected: (method(impl_id)?, impl_args),
+        fused: method(specializing)?,
+        of,
+    })
 }
 
 /// The module of `@rust-js/std` a std body is written into: std's own
@@ -6040,12 +6149,6 @@ fn unstable_sort(name: &str) -> Option<SliceOp> {
     })
 }
 
-/// Whether `def_id` is std's `Iterator::fuse`, whose `Fuse` keeps a
-/// `FusedIterator` as it ends (ADR 0543).
-pub(crate) fn is_iterator_fuse(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    trait_method(tcx, std_item(tcx, StdItem::Iterator), "fuse") == def_id
-}
-
 /// The items of a slice `def_id`, std's, sorts by std's unstable algorithm,
 /// of its `args`, whose order its layout picks, which a caller of a generic
 /// one gives, `TSort` (ADR 0471).
@@ -6217,8 +6320,8 @@ pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
 }
 
 /// Of std's adapter of type `ty` that steps from its back where its source
-/// does, `Map`, `Filter`, `FilterMap`, `Copied`, `Fuse` or `Rev`, its
-/// source (ADRs 0455, 0480, 0526, 0528, 0530).
+/// does, `Map`, `Filter`, `FilterMap`, `Copied` or `Rev`, its source (ADRs
+/// 0455, 0480, 0526, 0530).
 pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
@@ -6228,7 +6331,6 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
                     | "std::iter::Filter"
                     | "std::iter::FilterMap"
                     | "std::iter::Copied"
-                    | "std::iter::Fuse"
                     | "std::iter::Rev"
             ) =>
         {
@@ -6239,14 +6341,14 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
 }
 
 /// Of std's adapter of type `ty` that knows its length where its source
-/// does, `Map`, `Copied`, `Fuse`, `Enumerate` or `Rev`, its source (ADRs
-/// 0456, 0528, 0530).
+/// does, `Map`, `Copied`, `Enumerate` or `Rev`, its source (ADRs 0456,
+/// 0528, 0530).
 pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map" | "std::iter::Copied" | "std::iter::Fuse" | "std::iter::Enumerate" | "std::iter::Rev"
+                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"
             ) =>
         {
             Some(args.type_at(0))
@@ -6285,18 +6387,11 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// What std's adapter of type `ty` a struct may hold (ADR 0542) steps
-/// from its back and counts as its source does, `I` of `Enumerate<I>` or
-/// `Fuse<I>`: the one answer, of what a use site makes knowing them.
+/// from its back and counts as its source does, `I` of `Enumerate<I>`: the
+/// one answer, of what a use site makes knowing them.
 pub(crate) fn held_steps_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
-        ty::Adt(adt, args)
-            if matches!(
-                std_path(tcx, adt.did()).as_str(),
-                "std::iter::Enumerate" | "std::iter::Fuse"
-            ) =>
-        {
-            Some(args.type_at(0))
-        }
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Enumerate" => Some(args.type_at(0)),
         _ => None,
     }
 }
@@ -6603,7 +6698,6 @@ pub(crate) enum IterMethod {
     SizeHint,
     Rev,
     ByRef,
-    Fuse,
     Map,
     Filter,
     SkipWhile,
@@ -6667,7 +6761,6 @@ impl IterMethod {
                 | IterMethod::Take
                 | IterMethod::Skip
                 | IterMethod::Enumerate
-                | IterMethod::Fuse
                 | IterMethod::Copied
                 | IterMethod::Cloned
         )

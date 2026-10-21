@@ -1877,4 +1877,20 @@ export const mutations: Mutation[] = [
     replace: "        let typing_env = self.given.self_env.unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
     tests: ["test/corpus.test.ts", "-t", "^default_crate_index.rs$"],
   },
+  {
+    name: "fused-impl-not-picked",
+    breaks: "a std-private trait's call whose impl `I` being a `FusedIterator` picks takes the impl rustc selects for `I: Iterator` alone, so a `FusedIterator`'s `Fuse` drops it as it ends",
+    file: "src/lower/traits.rs",
+    find: "            let called = Expr::cond(fact, fused, selected_call);\n",
+    replace: "            let called = Expr::cond(fact, selected_call.clone(), selected_call);\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "std-into-iterator-steps-missing",
+    breaks: "std's `IntoIterator` dictionary of a type known here carries no `Iterator` of what it makes, so generic code holding that as it is can't step it",
+    file: "src/lower/traits.rs",
+    find: "                if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+  },
 ];

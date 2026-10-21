@@ -418,15 +418,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {
                 Ok(Expr::call_helper("$clone", vec![place]))
             }
-            // A `Fuse`, `$fuse(..)`: one of a clone of what it steps, or of
-            // none once it's ended (ADR 0473).
-            ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {
-                let iter = Expr::member(place.clone(), "iter");
-                let clone = self.clone_fn("value", inner, span)?;
-                let copy = Expr::call_helper("$iteratorWith", vec![iter.clone(), clone]);
-                let fused = Expr::member(place, "fused");
-                Ok(Expr::call_helper("$fuse", vec![Expr::bin(Op::And, iter, copy), fused]))
-            }
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left, each item a
             // clone of one where the iterator owns them; of its `rev()` too,
@@ -439,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Another's `rev()`: of a type parameter's given as it is, the
             // `$iterator` of it its `next_back` steps, made again of a clone
-            // of its value, as a `Fuse`'s is; of one that knows its back,
+            // of its value; of one that knows its back,
             // `$rev(it)`, one of a clone of what it steps.
             ty::Adt(..) if let Some(source) = super::recognition::reversed_source(self.tcx, ty) => {
                 if self.iterator_given_as_it_is(source) {

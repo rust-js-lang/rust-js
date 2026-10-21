@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "clause-self-nested",
     breaks: "a bound's own type, `D: Total`'s `D`, counts as a value inside what generic code takes, so a `&mut` given for `D` is refused",
     file: "src/lower/mut_refs.rs",
-    find: "                todo.extend(args.types().skip(1));\n                given.push(args.type_at(0));\n",
-    replace: "                todo.extend(args.types());\n",
+    find: "                todo.extend(walked(bound.def_id(), args));\n                given.push(args.type_at(0));\n",
+    replace: "                todo.extend(walked(bound.def_id(), args));\n                todo.extend(args.types().take(1));\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
@@ -154,5 +154,13 @@ export const mutations: Mutation[] = [
     find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));\n",
     replace: "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));\n",
     tests: ["test/corpus.test.ts", "-t", "^callee_field_own_terms.rs$"],
+  },
+  {
+    name: "function-param-mut-refused",
+    breaks: "a `&mut T` in a function's parameters through `F: Fn(&mut T)`, of a `T` that's an object here, is refused as a nested `&mut`, though the function given takes it out of the box",
+    file: "src/lower/mut_refs.rs",
+    find: "                            ty::Ref(_, pointee, Mutability::Mut) => pointee,\n",
+    replace: "                            ty::Ref(_, pointee, Mutability::Mut) => Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee),\n",
+    tests: ["test/corpus.test.ts", "-t", "^function_given_for_a_mut_param.rs$"],
   },
 ];

@@ -47,7 +47,6 @@ helpers! {
     Iterator,
     Insert,
     Add,
-    Fuse,
     Dropping,
     Cloning,
     Memchr,
@@ -728,7 +727,6 @@ impl Helper {
             Helper::Insert => include_str!("runtime/insert.js"),
             // A set's `insert` for its value: whether it wasn't there yet.
             Helper::Add => include_str!("runtime/add.js"),
-            Helper::Fuse => include_str!("runtime/fuse.js"),
             Helper::Dropping => include_str!("runtime/dropping.js"),
             Helper::Cloning => include_str!("runtime/cloning.js"),
             Helper::Memchr => include_str!("runtime/memchr.js"),
