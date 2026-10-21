@@ -236,7 +236,7 @@ and answer. Each is checked to stay that way.
 | `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
 | `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
-| `std_coverage.rs` | How much of std's data structures rust-js knows: each stable method of each in `recognition/registry.rs`, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (the `std-bodies` draft) |
+| `std_coverage.rs` | How much of std rust-js knows: each stable method of what `recognition/registry.rs` measures, its data structures, the iterator traits' provided methods and the adapters' impls, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (the `std-bodies` draft) |
 
 **Lowering of Rust's constructs.**
 
@@ -300,7 +300,7 @@ outside its owner, and how much each module knows of the rest.
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
-| Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
+| What's measured of std, each by its name and where std defines it: its data structures, the iterator traits and the adapters (ADR 0314, the `std-bodies` draft) | `recognition/registry.rs` | `measured` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
 | What a runtime helper is: one the package exports, the helper that declares a name, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 

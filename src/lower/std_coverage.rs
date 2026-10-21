@@ -1,9 +1,10 @@
-//! How much of std's data structures rust-js lowers (ADR 0314): each stable
-//! inherent method of each, and whether recognition knows it, for the
-//! ratchet in `test/std-coverage.test.ts`, which no method may leave. And,
-//! beside each, what its body in std is made of (the `std-bodies` draft):
-//! whether rust-js could lower it from the MIR the toolchain ships, or it
-//! reaches what JS hasn't, addressable memory.
+//! How much of std rust-js lowers (ADR 0314): each stable inherent method
+//! of its data structures, each provided method of the iterator traits and
+//! each method of the adapters' impls, and whether recognition knows it,
+//! for the ratchet in `test/std-coverage.test.ts`, which no method may
+//! leave. And, beside each, what its body in std is made of (the
+//! `std-bodies` draft): whether rust-js could lower it from the MIR the
+//! toolchain ships, or it reaches what JS hasn't, addressable memory.
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
@@ -55,13 +56,25 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
     let foreign = super::library::Foreign::new(tcx, dependencies);
     let mut bodies = Bodies::default();
     let mut out = String::new();
-    for (name, impls) in registry::data_structures(tcx) {
+    for (name, measured) in registry::measured(tcx) {
         let mut methods: Vec<(String, bool, Body)> = Vec::new();
-        for imp in impls {
-            for item in tcx.associated_items(imp).in_definition_order() {
+        let (owners, provided) = match measured {
+            registry::Measured::Impls(impls) => (impls, false),
+            registry::Measured::Trait(def) => (vec![def], true),
+        };
+        for owner in owners {
+            for item in tcx.associated_items(owner).in_definition_order() {
                 let def_id = item.def_id;
+                // A trait's method is measured where it's provided, a body. An
+                // impl's method is as stable, and as hidden, as the trait's it
+                // implements, or as its impl, which has the attribute.
+                let trait_item = item.trait_item_def_id();
+                let shown = trait_item.unwrap_or(def_id);
+                let stability = tcx.lookup_stability(shown).or_else(|| tcx.lookup_stability(owner));
                 if !matches!(item.kind, ty::AssocKind::Fn { .. })
-                    || tcx.lookup_stability(def_id).is_none_or(|s| s.is_unstable())
+                    || (provided && !item.defaultness(tcx).has_value())
+                    || stability.is_none_or(|s| s.is_unstable())
+                    || tcx.is_doc_hidden(shown)
                     || tcx.is_doc_hidden(def_id)
                 {
                     continue;
@@ -83,9 +96,21 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
                         _ => args[param.index as usize],
                     })
                 };
-                let known = [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
-                    .into_iter()
-                    .any(|pattern| recognition.classify(def_id, given(pattern)).is_some());
+                // An impl's method is called as its trait's, on the impl's type:
+                // `Iterator::next` of a `Peekable<I>`, which is what `classify` is asked.
+                let of_trait = matches!(tcx.def_kind(owner), rustc_hir::def::DefKind::Impl { of_trait: true });
+                let as_called = match (trait_item, of_trait.then(|| tcx.impl_opt_trait_ref(owner)).flatten()) {
+                    (Some(trait_item), Some(trait_ref)) => {
+                        Some((trait_item, trait_ref.instantiate_identity().skip_normalization().args))
+                    }
+                    _ => None,
+                };
+                let known = match as_called {
+                    Some((trait_item, trait_args)) => recognition.classify(trait_item, trait_args).is_some(),
+                    None => [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
+                        .into_iter()
+                        .any(|pattern| recognition.classify(def_id, given(pattern)).is_some()),
+                };
                 let body = bodies.of(tcx, def_id);
                 let method = format!("{name}::{}", tcx.item_name(def_id));
                 match methods.iter_mut().find(|(m, _, _)| *m == method) {
@@ -98,6 +123,9 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
                     None => methods.push((method, known, body)),
                 }
             }
+        }
+        if methods.is_empty() {
+            continue;
         }
         methods.sort();
         let known = methods.iter().filter(|(_, k, _)| *k).count();

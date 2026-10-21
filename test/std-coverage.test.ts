@@ -47,4 +47,9 @@ test("each std method's body is measured as one of the five kinds", () => {
   const kinds = lines.map((l) => l.split("\t")[1]);
   expect(kinds.filter((k) => k === "safe").length).toBeGreaterThan(100);
   expect(kinds.filter((k) => k === "memory").length).toBeGreaterThan(100);
+  // The stratum the draft is about: Iterator's provided methods are safe,
+  // the many, which a compiled std would take over.
+  const iterator = readFileSync(baseline, "utf8").split("\n# ").find((section) => section.startsWith("Iterator "));
+  expect(iterator).toBeDefined();
+  expect(iterator!.split("\n").filter((l) => /^\+ .*\tsafe$/.test(l) || /^- .*\tsafe$/.test(l)).length).toBeGreaterThan(40);
 });

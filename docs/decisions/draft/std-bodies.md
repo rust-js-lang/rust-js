@@ -42,15 +42,18 @@ std-private trait's method on a type parameter, one only std can name,
 private or unstable; `opaque`, reaching a body with no MIR shipped;
 `memory`, reaching a raw pointer made or read through, a transmute, an
 intrinsic or `std::ptr`, as `pointers::mir_addresses_memory` reads it;
-`none`, no MIR of its own. Of 827 methods at 1.99.0: 231 safe, 21 spec,
-5 opaque, 543 memory, 27 none.
+`none`, no MIR of its own. Of the data structures' 827 methods at
+1.99.0: 231 safe, 21 spec, 5 opaque, 543 memory, 27 none. Of the
+`Iterator` trait's 60 provided methods: 56 safe, 4 spec. Of the 22
+adapters' 190 methods, their impls of the iterator traits and their own:
+136 safe, 40 spec, 14 memory, none opaque or without MIR.
 
 The split is by stratum, not by chance:
 
 | Stratum | Bodies | Examples |
 |---|---|---|
-| Values over the trait vocabulary | safe | `Option` 39 of 46, `Result` 34 of 36, `Pin` 16 of 16, `BTreeMap` 11, a slice's `contains`, `Vec::len`; and, outside the registry, `Peekable::next` and `next_back`, `Fuse::next`, `Iterator::try_fold`, `fold`, `count`, `position`, `max_by`, `Ord::max`, `Ordering::then_with` |
-| Over a trait only std names | spec | `str::contains`, `starts_with`, `find` and `strip_prefix` through `Pattern`, unstable; a slice's `contains` through `SliceContains`, its `fill`, `concat` and `join`; `LinkedList::contains` |
+| Values over the trait vocabulary | safe | `Option` 39 of 46, `Result` 34 of 36, `Pin` 16 of 16, `BTreeMap` 11, a slice's `contains`, `Vec::len`; `Iterator`'s `try_fold`, `fold`, `count`, `position`, `max_by` and 51 more; `Peekable::next` and `next_back`, `Rev`'s 15 of 15, `Flatten`'s 11 of 11, `Map`'s 9 of 10 |
+| Over a trait only std names | spec | `str::contains`, `starts_with`, `find` and `strip_prefix` through `Pattern`, unstable; a slice's `contains` through `SliceContains`, its `fill`, `concat` and `join`; `LinkedList::contains`; `Fuse::next` through `FuseImpl`, `Zip`'s 5 through `ZipImpl`, `StepBy`'s 9 through `StepByImpl`, `Iterator::sum` through `Sum` |
 | The containers and text | memory | `Vec::push` through `push_mut`'s raw pointer, `dedup_by`'s `copy_nonoverlapping`, a slice's `sort_by` (driftsort), `iter` (`Iter::new`), `str::split`, `trim` and `lines` (a `Pattern`'s searcher over bytes), `String::push_str`, every `Rc` and `Arc` |
 | Non-generic, not inlined | none | `str::to_lowercase`, `Instant`'s and `SystemTime`'s, `String`'s 9 |
 
@@ -202,7 +205,10 @@ a std call
    provided methods and `core::iter::adapters`' impls, beside the
    registry's data structures, with `spec` counted apart, so the count of
    safe bodies a compiled std takes over is measured, not quoted from a
-   probe, and not overstated by `SpecFold`'s and `ZipImpl`'s.
+   probe, and not overstated by `SpecFold`'s and `ZipImpl`'s. Done: the
+   registry's `measured` lists the iterator traits and the adapters, and
+   an impl's method is known as a call is classified, the trait's method
+   on the impl's type.
 2. **One external body end to end**: `Peekable::next`, lowered from std's
    optimized MIR with no THIR, into a std module an app imports, run
    against native Rust by corpus cases where `I` is a slice's iterator
