@@ -135,10 +135,10 @@ function main() {
   for (const b of $mutItems(list)) {
     b.value.impl.twice(b.value);
   }
-  const value = boxed.impl.get(boxed.value);
+  const get = boxed.impl.get(boxed.value);
   const receiver$1 = $index(list, 0);
-  const value$1 = receiver$1.impl.get(receiver$1.value);
+  const value = receiver$1.impl.get(receiver$1.value);
   const receiver$2 = $index(list, 1);
-  console.log(`${value} ${value$1} ${receiver$2.impl.get(receiver$2.value)}`);
+  console.log(`${get} ${value} ${receiver$2.impl.get(receiver$2.value)}`);
 }
 //# sourceMappingURL=case.js.map

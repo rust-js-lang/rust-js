@@ -24,9 +24,9 @@ const Count = {
 function main() {
   console.log(`[${Count.doubled([0]).join(", ")}]`);
   const it = [1];
-  const value = countIterator_next(it);
+  const next = countIterator_next(it);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} [${$iterator(it, countIterator_next).toArray().join(", ")}]`,
+    `${next == null ? "None" : `Some(${next})`} [${$iterator(it, countIterator_next).toArray().join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

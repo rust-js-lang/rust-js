@@ -30,20 +30,20 @@ function main() {
 
   const items = [3, 1, 2];
   const slice = items;
-  const value$1 = slice?.length;
-  const value$2 = slice != null ? slice[0] : undefined;
+  const length = slice?.length;
+  const value$1 = slice != null ? slice[0] : undefined;
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${length == null ? "None" : `Some(${length})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
 
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);
   const shared = "rc";
-  const value$3 = shared?.toUpperCase();
-  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
+  const value$2 = shared?.toUpperCase();
+  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
   const named = ["custom"];
-  const value$4 = named != null ? nameDeref_deref(named) : undefined;
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
+  const value$3 = named != null ? nameDeref_deref(named) : undefined;
+  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
 
   const ok = { TAG: "Ok", _0: "fine" };
   const err = { TAG: "Err", _0: 4 };

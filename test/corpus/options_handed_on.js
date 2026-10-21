@@ -101,10 +101,10 @@ function main() {
   );
   console.log(`${pointDebug_fmt({ x: 4, y: 5.5 }, { alternate: true, width: 5 })}`);
   console.log(`${metersDisplay_fmt([0.5])}`);
-  const value = [7, "a"];
-  const value$1 = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
-  const value$2 = debug([2, "b"], pairDebug());
-  console.log(`[${pairDebug_fmt(value, { width: 4 })}] ${value$1} ${value$2}`);
+  const pair = [7, "a"];
+  const value = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
+  const value$1 = debug([2, "b"], pairDebug());
+  console.log(`[${pairDebug_fmt(pair, { width: 4 })}] ${value} ${value$1}`);
   const b = { value: [-2.5], impl: metersDisplay() };
   console.log(
     `[${b.impl.fmt(b.value, {

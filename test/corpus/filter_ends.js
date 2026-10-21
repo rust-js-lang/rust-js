@@ -75,21 +75,21 @@ function nested(it) {
 }
 
 function main() {
-  const value = last_half($iterator({ start: 1, end: 9 }, $rangeNext, false, $rangeNextBack));
+  const lastHalf = last_half($iterator({ start: 1, end: 9 }, $rangeNext, false, $rangeNextBack));
   console.log(
-    `${value == null ? "None" : `Some(${value})`} [${nested(
+    `${lastHalf == null ? "None" : `Some(${lastHalf})`} [${nested(
       $iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack),
     )
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value$1 = last_even($iterator({ start: 1, end: 8 }, $rangeNext, false, $rangeNextBack));
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value = last_even($iterator({ start: 1, end: 8 }, $rangeNext, false, $rangeNextBack));
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`[${evens_back($iter([1, 2, 3, 4, 5, 6])).join(", ")}]`);
   console.log(`${sum_back($iterator({ start: 1, end: 10 }, $rangeNext, false, $rangeNextBack))}`);
-  const value$2 = both_ends($iter([1, 2, 3, 4, 5]));
+  const value$1 = both_ends($iter([1, 2, 3, 4, 5]));
   console.log(
-    `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2] == null ? "None" : `Some(${value$2[2]})`})`,
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`})`,
   );
   const found = $iterator({ start: 1, end: 10 }, $rangeNextBack)
     .filter((x) => x % 4 === 0)

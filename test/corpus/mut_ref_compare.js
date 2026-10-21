@@ -116,10 +116,10 @@ function main() {
       tmp = value;
     },
   };
-  const value = refs.some((each) => each.value === item$1.value);
+  const contains = refs.some((each) => each.value === item$1.value);
   const arg = $maxBy(refs, (a, b) => $cmp(a.value, b.value));
   console.log(
-    `[${refs.map((item) => String(item.value)).join(", ")}] ${value} ${arg == null ? "None" : `Some(${arg.value})`}`,
+    `[${refs.map((item) => String(item.value)).join(", ")}] ${contains} ${arg == null ? "None" : `Some(${arg.value})`}`,
   );
   let z = 2;
   const item$2 = {

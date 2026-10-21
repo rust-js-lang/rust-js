@@ -932,7 +932,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         tidy::destructured_params(&mut params, &mut out);
-        tidy::named(&params, &mut out, &flags);
+        tidy::named(&params, &mut out, &flags, &self.temporaries_names(mir_body, &state));
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }

@@ -160,8 +160,8 @@ const Parser = {
     }
     let left = result._0;
     while (true) {
-      const value = Parser.peek(parser);
-      if (value == null || value.TAG !== "Op" || (value._0 !== "+" && value._0 !== "-")) {
+      const token = Parser.peek(parser);
+      if (token == null || token.TAG !== "Op" || (token._0 !== "+" && token._0 !== "-")) {
         break;
       }
       Parser.next(parser);
@@ -170,7 +170,7 @@ const Parser = {
         return result$1;
       }
       const right = result$1._0;
-      left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
+      left = { TAG: "Bin", _0: left, _1: token._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
   },
@@ -183,8 +183,8 @@ const Parser = {
     }
     let left = result._0;
     while (true) {
-      const value = Parser.peek(parser);
-      if (value == null || value.TAG !== "Op" || (value._0 !== "*" && value._0 !== "/")) {
+      const token = Parser.peek(parser);
+      if (token == null || token.TAG !== "Op" || (token._0 !== "*" && token._0 !== "/")) {
         break;
       }
       Parser.next(parser);
@@ -193,7 +193,7 @@ const Parser = {
         return result$1;
       }
       const right = result$1._0;
-      left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
+      left = { TAG: "Bin", _0: left, _1: token._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
   },
@@ -205,8 +205,8 @@ const Parser = {
       return result;
     }
     const base = result._0;
-    const value = Parser.peek(parser);
-    if (value != null && value.TAG === "Op" && value._0 === "^") {
+    const peek = Parser.peek(parser);
+    if (peek != null && peek.TAG === "Op" && peek._0 === "^") {
       Parser.next(parser);
       const result$1 = Parser.power(parser);
       if (result$1.TAG === "Err") {
@@ -296,10 +296,10 @@ const Calculator = {
   },
 
   eval(calculator, expr) {
-    let tmp;
+    let powf;
     bb92: {
       if (expr.TAG === "Num") {
-        tmp = expr._0;
+        powf = expr._0;
       } else if (expr.TAG === "Var") {
         const option = calculator.vars.get(expr._0);
         const result =
@@ -309,7 +309,7 @@ const Calculator = {
         if (result.TAG === "Err") {
           return result;
         }
-        tmp = result._0;
+        powf = result._0;
       } else if (expr.TAG !== "Neg") {
         if (expr.TAG === "Bin") {
           const result = Calculator.eval(calculator, expr._0);
@@ -323,18 +323,18 @@ const Calculator = {
           }
           const { _0: b } = result$1;
           if (expr._1 === "+") {
-            tmp = a + b;
+            powf = a + b;
           } else if (expr._1 === "-") {
-            tmp = a - b;
+            powf = a - b;
           } else if (expr._1 === "*") {
-            tmp = a * b;
+            powf = a * b;
           } else if (expr._1 === "/") {
             if (b === 0) {
               return { TAG: "Err", _0: "DivideByZero" };
             }
-            tmp = a / b;
+            powf = a / b;
           } else {
-            tmp = $powf(a, b);
+            powf = $powf(a, b);
           }
           break bb92;
         }
@@ -357,16 +357,16 @@ const Calculator = {
           return result$2;
         }
         const values = result$2._0;
-        tmp = f(values);
+        powf = f(values);
       } else {
         const result = Calculator.eval(calculator, expr._0);
         if (result.TAG === "Err") {
           return result;
         }
-        tmp = -result._0;
+        powf = -result._0;
       }
     }
-    return { TAG: "Ok", _0: tmp };
+    return { TAG: "Ok", _0: powf };
   },
 
   run(calculator, line) {
@@ -424,15 +424,15 @@ function main() {
     "1 2",
   ];
   for (const line of lines) {
-    const value = Calculator.run(calc, line);
-    if (value.TAG === "Ok") {
-      if (value._0 != null) {
-        console.log(`${line} => ${$displayF64(value._0)}`);
+    const run = Calculator.run(calc, line);
+    if (run.TAG === "Ok") {
+      if (run._0 != null) {
+        console.log(`${line} => ${$displayF64(run._0)}`);
       } else {
         console.log(`${line}`);
       }
     } else {
-      console.log(`${line} !! ${calcErrorDisplay_fmt(value._0)}`);
+      console.log(`${line} !! ${calcErrorDisplay_fmt(run._0)}`);
     }
   }
   const names = Array.from(calc.vars.keys());

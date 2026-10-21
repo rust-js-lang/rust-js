@@ -19,11 +19,11 @@ function main() {
   }
   const lens = new Map();
   $orInsertWith(lens, "abc", () => 3);
-  const value = $mutGet(lens, "abc");
-  value.value = Math.imul(value.value, 2) >>> 0;
+  const orInsertWith = $mutGet(lens, "abc");
+  orInsertWith.value = Math.imul(orInsertWith.value, 2) >>> 0;
   $orInsertWith(lens, "abc", () => 7);
-  const value$1 = $mutGet(lens, "abc");
-  value$1.value = (value$1.value + 1) >>> 0;
+  const value = $mutGet(lens, "abc");
+  value.value = (value.value + 1) >>> 0;
   const c = Array.from(counts);
   c.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const g = Array.from(groups);

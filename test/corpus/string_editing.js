@@ -48,11 +48,11 @@ function main() {
     .join("");
   console.log(`${$debugStr(s)}`);
   s = "";
-  const value = !s;
+  const isEmpty = !s;
   const popped$2 = $strPop(s);
   s = popped$2[0];
   console.log(
-    `${$debugStr(s)} ${value} ${popped$2[1] == null ? "None" : `Some(${$debugStr(popped$2[1], "'")})`}`,
+    `${$debugStr(s)} ${isEmpty} ${popped$2[1] == null ? "None" : `Some(${$debugStr(popped$2[1], "'")})`}`,
   );
   let t = " a b c ";
   const s$1 = { value: t };

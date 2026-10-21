@@ -89,8 +89,8 @@ function main() {
   console.log(`[${back.join(", ")}]`);
   const it = pad([0, 5], 1, { next: countdownIterator_next }, false, countdownDrop_drop);
   try {
-    const tmp = padIterator_next(it, countdownDrop_drop);
-    const tmp$1 = padDoubleEndedIterator_next_back(
+    const next = padIterator_next(it, countdownDrop_drop);
+    const nextBack = padDoubleEndedIterator_next_back(
       it,
       { next_back: countdownDoubleEndedIterator_next_back },
       { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
@@ -105,7 +105,7 @@ function main() {
       countdownDrop_drop,
     );
     console.log(
-      `${tmp == null ? "None" : `Some(${tmp})`} ${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
   } finally {
     if (it.iter.iter != null) {

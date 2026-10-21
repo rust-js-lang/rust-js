@@ -30,9 +30,9 @@ function partialDefault_default() {
 
 function swap_y(p) {
   let p$x$live = true;
-  let tmp;
+  let noisy;
   try {
-    tmp = keep(p.y);
+    noisy = keep(p.y);
     p$x$live = false;
   } catch (error) {
     if (p$x$live) {
@@ -40,7 +40,7 @@ function swap_y(p) {
     }
     throw error;
   }
-  return { ...p, y: tmp };
+  return { ...p, y: noisy };
 }
 
 function keep(n) {
@@ -94,10 +94,10 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  const value = { x: [7], y: [8], n: 3 };
-  const fromTemp = { x: value.x, y: [6], n: value.n };
+  const partial = { x: [7], y: [8], n: 3 };
+  const fromTemp = { x: partial.x, y: [6], n: partial.n };
   try {
-    noisyDrop_drop(value.y);
+    noisyDrop_drop(partial.y);
   } catch (error) {
     noisyDrop_drop(fromTemp.x);
     noisyDrop_drop(fromTemp.y);
@@ -115,19 +115,19 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  const value$1 = [22];
+  const noisy = [22];
   let tmp;
   try {
     tmp = partialDefault_default();
   } catch (error) {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(noisy);
     noisyDrop_drop(fromTemp.x);
     noisyDrop_drop(fromTemp.y);
     noisyDrop_drop(swapped.x);
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  const defaults = { x: value$1, y: tmp.y, n: tmp.n };
+  const defaults = { x: noisy, y: tmp.y, n: tmp.n };
   try {
     noisyDrop_drop(tmp.x);
   } catch (error) {

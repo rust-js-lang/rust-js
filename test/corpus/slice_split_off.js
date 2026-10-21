@@ -54,11 +54,11 @@ function main() {
   );
   const split$4 = $sliceSplitOffEnd(s, false);
   s = split$4[0];
-  const value = split$4[1];
+  const splitOffFirst = split$4[1];
   const split$5 = $sliceSplitOffEnd(s, true);
   s = split$5[0];
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.join(", ")}]`,
+    `${splitOffFirst == null ? "None" : `Some(${splitOffFirst})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.join(", ")}]`,
   );
   const split$6 = $sliceSplitOffEnd(s, false);
   s = split$6[0];
@@ -115,11 +115,11 @@ function main() {
   let none = [];
   const split$11 = $sliceSplitOffEndMut(none, false, true);
   none = split$11[0];
-  const value$1 = split$11[1];
+  const splitOffFirstMut = split$11[1];
   const split$12 = $sliceSplitOffMut(none, 1, true);
   none = split$12[0];
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].join(", ")}])`}`,
+    `${splitOffFirstMut == null ? "None" : `Some(${splitOffFirstMut.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].join(", ")}])`}`,
   );
 }
 //# sourceMappingURL=case.js.map

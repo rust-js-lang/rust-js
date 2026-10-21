@@ -145,15 +145,15 @@ function dCheckedDouble_checked_double(d) {
 }
 
 function twice(base, TCheckedDouble, dropT) {
-  let tmp;
+  let checkedDouble;
   try {
-    tmp = TCheckedDouble.checked_double(base);
+    checkedDouble = TCheckedDouble.checked_double(base);
   } catch (error) {
     dropT?.(base);
     throw error;
   }
-  if (tmp != null) {
-    const value = $someValue(tmp);
+  if (checkedDouble != null) {
+    const value = $someValue(checkedDouble);
     try {
       dropT?.(base);
     } catch (error) {
@@ -162,15 +162,15 @@ function twice(base, TCheckedDouble, dropT) {
       throw error;
     }
     base = value;
-    let tmp$1;
+    let tmp;
     try {
-      tmp$1 = TCheckedDouble.checked_double(base);
+      tmp = TCheckedDouble.checked_double(base);
     } catch (error) {
       dropT?.(base);
       throw error;
     }
-    if (tmp$1 != null) {
-      const value = $someValue(tmp$1);
+    if (tmp != null) {
+      const value = $someValue(tmp);
       try {
         dropT?.(base);
       } catch (error) {

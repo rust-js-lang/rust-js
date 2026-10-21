@@ -75,22 +75,22 @@ function length(text, DStableDeref) {
 function main() {
   const cell = { value: [1, 2, 3] };
   console.log(`${total($borrow(cell, true), refStableDeref(), $unborrow)}`);
-  const value = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, true);
   try {
-    value.value.push(4);
+    borrowMut.value.push(4);
   } finally {
-    $unborrow(value);
+    $unborrow(borrowMut);
   }
   console.log(`${total($borrowMut(cell, true), refMutStableDeref(), $unborrow)}`);
   console.log(`${total([5, 6], rcStableDeref())}`);
   console.log(`${length("ada", stringStableDeref())} ${length("lovelace", rcStableDeref())}`);
-  const value$1 = $tryBorrow(cell, true);
-  const value$2 = value$1.TAG === "Ok";
+  const tryBorrowMut = $tryBorrow(cell, true);
+  const value = tryBorrowMut.TAG === "Ok";
   try {
-    console.log(`${value$2}`);
+    console.log(`${value}`);
   } finally {
-    if (value$1.TAG === "Ok") {
-      $unborrow(value$1._0);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   }
 }

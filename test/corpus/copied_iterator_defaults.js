@@ -41,9 +41,9 @@ function tSkipping(TIterator, dropT, dropTItem) {
   }
   return $traitImpl($tSkipping, [TIterator, dropT, dropTItem], () => ({
     skip_one: (self) => {
-      const value = TIterator.next(self);
-      if (value != null) {
-        dropTItem?.($someValue(value));
+      const next = TIterator.next(self);
+      if (next != null) {
+        dropTItem?.($someValue(next));
       }
     },
     skip_two: (self) => {
@@ -53,9 +53,9 @@ function tSkipping(TIterator, dropT, dropTItem) {
     second: (self) => {
       let result;
       try {
-        const tmp = TIterator.next(self);
-        if (tmp != null) {
-          dropTItem?.($someValue(tmp));
+        const next = TIterator.next(self);
+        if (next != null) {
+          dropTItem?.($someValue(next));
         }
         result = TIterator.next(self);
       } finally {
@@ -119,9 +119,9 @@ function holderPeeled(IIterator, dropI, dropIItem) {
   }
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
     drop_first: (self) => {
-      const value = holderIterator_next(self, IIterator, dropI, dropIItem);
-      if (value != null) {
-        dropIItem?.($someValue(value));
+      const next = holderIterator_next(self, IIterator, dropI, dropIItem);
+      if (next != null) {
+        dropIItem?.($someValue(next));
       }
     },
     drop_two: (self) => {

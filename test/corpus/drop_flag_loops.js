@@ -20,19 +20,19 @@ function main() {
   let x$live = false;
   let x;
   for (let i = 0; i < 4; i++) {
-    const value = [i];
+    const noisy = [i];
     try {
       if (x$live) {
         noisyDrop_drop(x);
       }
     } catch (error) {
       x$live = true;
-      x = value;
+      x = noisy;
       noisyDrop_drop(x);
       throw error;
     }
     x$live = true;
-    x = value;
+    x = noisy;
     if (i % 2 === 1) {
       x$live = false;
       consume(x);

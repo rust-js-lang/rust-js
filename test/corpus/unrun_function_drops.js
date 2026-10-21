@@ -427,9 +427,9 @@ function main() {
   counts.set("x", 1);
   let a$24$live = true;
   const a$24 = [22];
-  let tmp;
+  let entry;
   try {
-    tmp = $entry(counts, "x");
+    entry = $entry(counts, "x");
     a$24$live = false;
   } catch (error) {
     if (a$24$live) {
@@ -437,7 +437,6 @@ function main() {
     }
     throw error;
   }
-  const entry = tmp;
   $orInsertWith(
     entry._0[0],
     entry._0[1],
@@ -455,11 +454,11 @@ function main() {
       loudDrop_drop(a$24);
     },
   );
-  const value$39 = $mutGet(entry._0[0], entry._0[1]);
-  value$39.value = (value$39.value + 1) >>> 0;
+  const orInsertWith = $mutGet(entry._0[0], entry._0[1]);
+  orInsertWith.value = (orInsertWith.value + 1) >>> 0;
   let slot = 3;
   const a$25 = [23];
-  const value$40 = () => {
+  const value$39 = () => {
     let result;
     try {
       result = Loud.get(a$25);
@@ -469,7 +468,7 @@ function main() {
     return result;
   };
   if (slot == null) {
-    slot = value$40();
+    slot = value$39();
   } else {
     loudDrop_drop(a$25);
   }

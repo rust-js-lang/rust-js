@@ -19,20 +19,20 @@ function main() {
   );
   const levels = ["High", "Below", "Low"];
   levels.sort((a, b) => $cmpIn(["Below", "Low", "High"], a, b));
-  const value = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
+  const max = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const arg = $cmpIn(["Below", "Low", "High"], "Low", "High");
   console.log(
-    `[${levels.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${
+    `[${levels.join(", ")}] ${max == null ? "None" : `Some(${max})`} ${
       ["Less", "Equal", "Greater"][arg + 1]
     }`,
   );
-  const value$1 = $cmpIn(["Below", "Low", "High"], "High", "Below");
+  const partialCmp = $cmpIn(["Below", "Low", "High"], "High", "Below");
   console.log(
-    `${value$1 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$1 + 1]})`} ${
+    `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`} ${
       $cmpIn(["First", "Second", "Third"], "Third", "First") > 0
     }`,
   );
-  const value$2 = $minBy(["Second", "First"], (a, b) => $cmpIn(["First", "Second", "Third"], a, b));
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value = $minBy(["Second", "First"], (a, b) => $cmpIn(["First", "Second", "Third"], a, b));
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

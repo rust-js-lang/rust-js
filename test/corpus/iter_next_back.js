@@ -35,17 +35,17 @@ function hint(it) {
 function main() {
   const v = [1, 2, 3, 4, 5];
   const it = $iter(v);
-  const value = $next(it);
-  const value$1 = $nextBack(it);
-  const value$2 = $nextBack(it);
+  const next = $next(it);
+  const nextBack = $nextBack(it);
+  const value = $nextBack(it);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const value$3 = it.end - it.at;
-  const value$4 = $sizeHint(it);
-  const value$5 = hint(it);
+  const len = it.end - it.at;
+  const sizeHint = $sizeHint(it);
+  const value$1 = hint(it);
   console.log(
-    `${value$3} (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) [${it.items.slice(it.at, it.end).join(", ")}]`,
+    `${len} (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
   const rest = it.items.slice(it.at, it.end);
   console.log(`[${rest.join(", ")}]`);
@@ -56,10 +56,10 @@ function main() {
   for (const x of $lent(it)) {
     $print(`${x} `);
   }
-  const value$6 = $next(it);
-  const value$7 = $nextBack(it);
+  const value$2 = $next(it);
+  const value$3 = $nextBack(it);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 
   const both = $iter($range(1, 5));
@@ -110,10 +110,10 @@ function main() {
     const peeked = iterator_peekable($iter(maybe), { next: $nextSome });
     peekableDoubleEndedIterator_next_back(peeked, { next_back: $nextBackSome });
     peekableDoubleEndedIterator_next_back(peeked, { next_back: $nextBackSome });
-    const value$11 = $peekSome(peeked);
-    const value$12 = $rangeInclusiveNextBack({ start: 0, end: 3 });
+    const peek = $peekSome(peeked);
+    const value$11 = $rangeInclusiveNextBack({ start: 0, end: 3 });
     console.log(
-      `${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
+      `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
     );
 
     const peeking = iterator_peekable($iter(v), { next: $next });

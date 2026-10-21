@@ -102,8 +102,8 @@ function main() {
     const arg$8 = order(picked$1);
     console.log(`${n}: ${arg$8}`);
     const numbers = base.map((p) => (Math.imul(p[1], 31) >>> 0) % 17);
-    const value$1 = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);
-    value$1[1].value = (value$1[1].value + 100) >>> 0;
+    const selectNthUnstable = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);
+    selectNthUnstable[1].value = (selectNthUnstable[1].value + 100) >>> 0;
     const ends = numbers.slice();
     const last = (ends.length - 1) >>> 0;
     $selectNthUnstable(ends, last, (a, b) => a < b, "network", true);

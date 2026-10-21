@@ -180,35 +180,35 @@ function main() {
   const x$1 = { value: nums };
   const value$1 = first(x$1, numsTakeU32());
   $assign(nums, x$1.value);
-  const value$2 = numsTakeU32_take(nums);
+  const take = numsTakeU32_take(nums);
   const x$2 = { value: stack };
-  const value$3 = first(x$2, stackTakeT());
+  const value$2 = first(x$2, stackTakeT());
   $assign(stack, x$2.value);
-  const value$4 = stackTakeT_take(stack);
+  const value$3 = stackTakeT_take(stack);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${take == null ? "None" : `Some(${take})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   // `None`s in a `Stack`: generic code tells a taken `None` from none left.
-  const value$5 = { list: [undefined, undefined, 1] };
-  const x$3 = { value: value$5 };
-  const value$6 = count(x$3, stackTakeT());
-  $assign(value$5, x$3.value);
-  const value$7 = { list: [7, 8] };
-  const x$4 = { value: value$7 };
-  const value$8 = count(x$4, numsTakeU32());
-  $assign(value$7, x$4.value);
-  console.log(`${value$6} ${value$8}`);
+  const value$4 = { list: [undefined, undefined, 1] };
+  const x$3 = { value: value$4 };
+  const value$5 = count(x$3, stackTakeT());
+  $assign(value$4, x$3.value);
+  const value$6 = { list: [7, 8] };
+  const x$4 = { value: value$6 };
+  const value$7 = count(x$4, numsTakeU32());
+  $assign(value$6, x$4.value);
+  console.log(`${value$5} ${value$7}`);
 
   const d = { value: m, impl: metersConvertString() };
   console.log(`${d.impl.convert(d.value)}`);
 
   const x = unwrapped(m, metersWrapF64());
-  const value$9 = metersBoth().both(m);
-  const value$10 = number(m, metersBoth());
-  const value$11 = metersWrapF64().wrapped(m);
-  const value$12 = labels(m, metersPairU32String());
+  const value$8 = metersBoth().both(m);
+  const value$9 = number(m, metersBoth());
+  const wrapped = metersWrapF64().wrapped(m);
+  const value$10 = labels(m, metersPairU32String());
   console.log(
-    `(${value$9[0]}, ${$debugStr(value$9[1])}) ${value$10} [${value$11.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(x)} (${value$12[0]}, ${$debugStr(value$12[1])})`,
+    `(${value$8[0]}, ${$debugStr(value$8[1])}) ${value$9} [${wrapped.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(x)} (${value$10[0]}, ${$debugStr(value$10[1])})`,
   );
   const g = { value: m, impl: metersGreeter() };
   console.log(`${g.impl.Greet().greet(g.value)}`);

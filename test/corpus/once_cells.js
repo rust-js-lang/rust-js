@@ -53,13 +53,13 @@ function main() {
     config.name += "b";
   }
   console.log(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}`);
-  const value$3 = $cellReplace(taken)?.name;
-  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${!taken.value}`);
+  const name = $cellReplace(taken)?.name;
+  console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${!taken.value}`);
 
   const count = {};
   $unwrapOk($onceSet(count, 5));
-  const value$4 = $unwrap(count.value == null ? undefined : count);
-  value$4.value = (value$4.value + 1) | 0;
+  const value$3 = $unwrap(count.value == null ? undefined : count);
+  value$3.value = (value$3.value + 1) | 0;
   console.log(`${count.value == null ? "None" : `Some(${count.value})`}`);
 
   // `()` and `None` look like `None` in JS: what's set is still there.
@@ -68,21 +68,21 @@ function main() {
     `${unit.value == null ? "None" : "Some(())"} ${$onceSet(unit).TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit.value == null ? "None" : "Some(())"}`,
   );
   const nothing = {};
-  const value$5 = $getOrInit(nothing, () => undefined);
+  const getOrInit = $getOrInit(nothing, () => undefined);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${nothing.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`}`,
+    `${getOrInit == null ? "None" : `Some(${getOrInit})`} ${nothing.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`}`,
   );
-  const value$6 = $onceSet(nothing, 1);
+  const value$4 = $onceSet(nothing, 1);
   console.log(
-    `${value$6.TAG === "Ok" ? "Ok(())" : `Err(${value$6._0 == null ? "None" : `Some(${value$6._0})`})`}`,
+    `${value$4.TAG === "Ok" ? "Ok(())" : `Err(${value$4._0 == null ? "None" : `Some(${value$4._0})`})`}`,
   );
 
   const lock = {};
   console.log(`${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`);
   $getOrInitLock(lock, () => [1, 2]);
-  const value$7 = $onceSet(lock, [3]);
+  const set = $onceSet(lock, [3]);
   console.log(
-    `${value$7.TAG === "Ok" ? "Ok(())" : `Err([${value$7._0.join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`,
+    `${set.TAG === "Ok" ? "Ok(())" : `Err([${set._0.join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.join(", ")}])`}`,
   );
   console.log(`${greeting()} ${greeting()}`);
   const shown = {};

@@ -22,10 +22,10 @@ function main() {
 
   // Negation, of signed and unsigned.
   for (const x of [5, 0, -2147483648]) {
-    const value = $checked(-x, -2147483648, 2147483647);
-    const value$1 = $checked(Math.abs(x), -2147483648, 2147483647);
+    const checkedNeg = $checked(-x, -2147483648, 2147483647);
+    const value = $checked(Math.abs(x), -2147483648, 2147483647);
     console.log(
-      `${value == null ? "None" : `Some(${value})`} ${-x | 0} (${-x | 0}, ${x === -2147483648}) ${value$1 == null ? "None" : `Some(${value$1})`}`,
+      `${checkedNeg == null ? "None" : `Some(${checkedNeg})`} ${-x | 0} (${-x | 0}, ${x === -2147483648}) ${value == null ? "None" : `Some(${value})`}`,
     );
   }
   for (const x of [0, 1, 200]) {
@@ -48,36 +48,36 @@ function main() {
   );
 
   // Overflowing arithmetic: what wrapping gives, and whether it wrapped.
-  const value = $overflowing(4, 250 + 10, 0, 255);
-  const value$2 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
-  const value$3 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
+  const overflowingAdd = $overflowing(4, 250 + 10, 0, 255);
+  const overflowingSub = $overflowing(4294967295, 5 - 6, 0, 4294967295);
+  const value = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `(${value[0]}, ${value[1]}) (${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`,
+    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) (${overflowingSub[0]}, ${overflowingSub[1]}) (${value[0]}, ${value[1]})`,
   );
-  const value$4 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
-  const value$5 = $overflowing(127, -128 - 1, -128, 127);
-  const value$6 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
+  const value$2 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
+  const value$3 = $overflowing(127, -128 - 1, -128, 127);
+  const value$4 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
   console.log(
-    `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`,
+    `(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]})`,
   );
   const exact = 18446744073709551615n + 1n;
   const exact$1 = -9223372036854775808n * -1n;
-  const value$7 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
-  const value$8 = $overflowing(
+  const value$5 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
+  const value$6 = $overflowing(
     BigInt.asIntN(64, exact$1),
     exact$1,
     -9223372036854775808n,
     9223372036854775807n,
   );
-  console.log(`(${value$7[0]}, ${value$7[1]}) (${value$8[0]}, ${value$8[1]})`);
+  console.log(`(${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`);
 
   // Division and remainder, where `MIN / -1` overflows.
-  const value$9 = $checkedRem(7, 2, -2147483648);
-  const value$10 = $checkedRem(7, 0, -2147483648);
-  const value$11 = $checkedRem(-2147483648, -1, -2147483648);
-  const value$12 = $checkedRem(-8, 2, -2147483648);
+  const checkedRem = $checkedRem(7, 2, -2147483648);
+  const value$7 = $checkedRem(7, 0, -2147483648);
+  const value$8 = $checkedRem(-2147483648, -1, -2147483648);
+  const value$9 = $checkedRem(-8, 2, -2147483648);
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
+    `${checkedRem == null ? "None" : `Some(${checkedRem})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
   );
   console.log(
     `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
@@ -88,14 +88,14 @@ function main() {
 
   // Shifts: checked by the width, wrapping by the amount's low bits.
   const by = 33;
-  const value$13 = (1 << 4) | 0;
-  const value$14 = by < 32 ? (1 << by) | 0 : undefined;
+  const value$10 = (1 << 4) | 0;
+  const value$11 = by < 32 ? (1 << by) | 0 : undefined;
   console.log(
-    `${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
   );
-  const value$15 = -16 >> 2;
+  const value$12 = -16 >> 2;
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15})`} None ${BigInt.asUintN(64, 1n << 1n)}`,
+    `${value$12 == null ? "None" : `Some(${value$12})`} None ${BigInt.asUintN(64, 1n << 1n)}`,
   );
 
   // Powers.

@@ -17,19 +17,19 @@ const Temporary = {
 function make() {}
 
 function main() {
-  const value = make();
-  let tmp;
+  const temporary = make();
+  let ready;
   try {
-    tmp = Temporary.ready(value);
+    ready = Temporary.ready(temporary);
   } catch (error) {
-    temporaryDrop_drop({ value });
+    temporaryDrop_drop({ value: temporary });
     throw error;
   }
-  if (tmp) {
-    temporaryDrop_drop({ value });
+  if (ready) {
+    temporaryDrop_drop({ value: temporary });
     console.log("ready");
   } else {
-    temporaryDrop_drop({ value });
+    temporaryDrop_drop({ value: temporary });
   }
 }
 //# sourceMappingURL=case.js.map

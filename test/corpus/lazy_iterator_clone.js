@@ -65,7 +65,7 @@ function main() {
   console.log(`[${a.toArray().join(", ")}] [${evens.toArray().join(", ")}]`);
 
   const seen = 0;
-  const value$1 = $iter([1, 2, 3, 4, 5]);
+  const copied = $iter([1, 2, 3, 4, 5]);
   let seen$1 = seen;
   const make$1 = (seen) =>
     $cloning(
@@ -80,9 +80,9 @@ function main() {
       it.filter((item) => f(item)),
       () => makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)),
     );
-  const odd = makeFilter$1(value$1, make$1(seen$1));
-  const value$2 = both(odd, { next: $next }, { clone: (value) => $clone(value) });
-  console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}])`);
+  const odd = makeFilter$1(copied, make$1(seen$1));
+  const value$1 = both(odd, { next: $next }, { clone: (value) => $clone(value) });
+  console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
 
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
   // copies' (ADR 0480).

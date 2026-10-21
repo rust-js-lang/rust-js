@@ -21,6 +21,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A temporary is named as rust-analyzer suggests** (ADR 0569): after the
+  call the source makes, `const floor = Math.floor(x)`, `const next =
+  $next(entries)`, or the program's type it holds, `const point = find(..)`,
+  where it was `value`, `value$1`; `value` where both names are taken. The
+  readability gate's renames fall from 951.2 to 829.9 in ten thousand lines.
 - **`Fuse` is std's own** (ADR 0566): `fuse()` of any iterator, its
   `next`, `size_hint`, `next_back`, `rfold`, `len`, its clone and its
   `Debug` are std's bodies in `@rust-js/std`, over `{ iter }`, and which of

@@ -36,13 +36,13 @@ function main() {
   sizes.set("./src/main.rs", (current + 1) >>> 0);
   const current$1 = $orInsert(sizes, "src/main.rs", 0);
   sizes.set("src/main.rs", (current$1 + 1) >>> 0);
-  const value$2 = sizes.get("src/main.rs");
-  const value$3 = sizes.get("./src/main.rs");
+  const get = sizes.get("src/main.rs");
+  const value$2 = sizes.get("./src/main.rs");
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const value$4 = $remove(sizes, "src//main.rs");
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$3 = $remove(sizes, "src//main.rs");
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
 
   const seen = new $PathSet();
   for (const p of ["a/b", "a//b", "a/b/", "./a/b", "/a/b"]) {

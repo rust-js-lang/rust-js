@@ -20,9 +20,24 @@ function loudDrop_drop(loud) {
 
 function main() {
   const [tx, rx] = $channel();
+  let send;
+  try {
+    send = $send(tx, ["a"]);
+  } catch (error) {
+    $dropReceiver(rx, loudDrop_drop);
+    $dropSender(tx);
+    throw error;
+  }
+  try {
+    $unwrapOk(send, undefined, (e) => "SendError { .. }");
+  } catch (error) {
+    $dropReceiver(rx, loudDrop_drop);
+    $dropSender(tx);
+    throw error;
+  }
   let tmp;
   try {
-    tmp = $send(tx, ["a"]);
+    tmp = $send(tx, ["b"]);
   } catch (error) {
     $dropReceiver(rx, loudDrop_drop);
     $dropSender(tx);
@@ -37,7 +52,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = $send(tx, ["b"]);
+    tmp$1 = $send(tx, ["c"]);
   } catch (error) {
     $dropReceiver(rx, loudDrop_drop);
     $dropSender(tx);
@@ -50,24 +65,9 @@ function main() {
     $dropSender(tx);
     throw error;
   }
-  let tmp$2;
+  let recv;
   try {
-    tmp$2 = $send(tx, ["c"]);
-  } catch (error) {
-    $dropReceiver(rx, loudDrop_drop);
-    $dropSender(tx);
-    throw error;
-  }
-  try {
-    $unwrapOk(tmp$2, undefined, (e) => "SendError { .. }");
-  } catch (error) {
-    $dropReceiver(rx, loudDrop_drop);
-    $dropSender(tx);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = $recv(rx);
+    recv = $recv(rx);
   } catch (error) {
     $dropReceiver(rx, loudDrop_drop);
     $dropSender(tx);
@@ -75,7 +75,7 @@ function main() {
   }
   let first;
   try {
-    first = $unwrapOk(tmp$3, undefined, (e) => "RecvError");
+    first = $unwrapOk(recv, undefined, (e) => "RecvError");
   } catch (error) {
     $dropReceiver(rx, loudDrop_drop);
     $dropSender(tx);
@@ -108,14 +108,14 @@ function main() {
     $dropSender(tx);
     throw error;
   }
-  let tmp$4;
+  let tmp$2;
   try {
-    tmp$4 = $send(tx, ["d"]);
+    tmp$2 = $send(tx, ["d"]);
   } catch (error) {
     $dropSender(tx);
     throw error;
   }
-  if (tmp$4.TAG === "Ok") {
+  if (tmp$2.TAG === "Ok") {
     try {
       console.log("sent");
     } catch (error) {
@@ -124,23 +124,23 @@ function main() {
     }
   } else {
     try {
-      console.log(`back ${tmp$4._0[0][0]}`);
+      console.log(`back ${tmp$2._0[0][0]}`);
     } catch (error) {
-      loudDrop_drop(tmp$4._0[0]);
+      loudDrop_drop(tmp$2._0[0]);
       $dropSender(tx);
       throw error;
     }
     try {
-      loudDrop_drop(tmp$4._0[0]);
+      loudDrop_drop(tmp$2._0[0]);
     } catch (error) {
       $dropSender(tx);
       throw error;
     }
   }
   try {
-    const tmp = $channel();
-    const outerTx = tmp[0];
-    const outerRx = tmp[1];
+    const channel = $channel();
+    const outerTx = channel[0];
+    const outerRx = channel[1];
     try {
       let tmp;
       try {

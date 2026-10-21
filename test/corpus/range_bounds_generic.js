@@ -5,23 +5,23 @@ export function entry() {
 }
 
 function start(r, RRangeBoundsUsize) {
-  const value = RRangeBoundsUsize.start_bound(r);
-  if (value.TAG === "Included") {
-    return value._0;
+  const startBound = RRangeBoundsUsize.start_bound(r);
+  if (startBound.TAG === "Included") {
+    return startBound._0;
   }
-  if (value.TAG === "Excluded") {
-    return (value._0 + 1) >>> 0;
+  if (startBound.TAG === "Excluded") {
+    return (startBound._0 + 1) >>> 0;
   }
   return 0;
 }
 
 function end(r, len, RRangeBoundsUsize) {
-  const value = RRangeBoundsUsize.end_bound(r);
-  if (value.TAG === "Included") {
-    return (value._0 + 1) >>> 0;
+  const endBound = RRangeBoundsUsize.end_bound(r);
+  if (endBound.TAG === "Included") {
+    return (endBound._0 + 1) >>> 0;
   }
-  if (value.TAG === "Excluded") {
-    return value._0;
+  if (endBound.TAG === "Excluded") {
+    return endBound._0;
   }
   return len;
 }

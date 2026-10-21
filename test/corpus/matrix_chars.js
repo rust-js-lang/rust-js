@@ -59,51 +59,51 @@ const CHARS = [
 
 function main() {
   for (const c of CHARS) {
-    const value = /^\p{Alphabetic}$/u.test(c);
-    const value$1 = /^\p{N}$/u.test(c);
-    const value$2 = /^[\p{Alphabetic}\p{N}]$/u.test(c);
-    const value$3 = /^\p{White_Space}$/u.test(c);
-    const value$4 = /^\p{Uppercase}$/u.test(c);
-    const value$5 = /^\p{Lowercase}$/u.test(c);
-    const value$6 = /^\p{Cc}$/u.test(c);
-    const value$7 = c.charCodeAt(0) < 128;
-    const value$8 = /^[0-9]$/.test(c);
-    const value$9 = /^[0-9A-Fa-f]$/.test(c);
-    const value$10 = /^[A-Za-z]$/.test(c);
-    const value$11 = /^[A-Za-z0-9]$/.test(c);
-    const value$12 = /^[A-Z]$/.test(c);
-    const value$13 = /^[a-z]$/.test(c);
-    const value$14 = /^[!-\/:-@[-`{-~]$/.test(c);
-    const value$15 = /^[!-~]$/.test(c);
-    const value$16 = /^[ \t\n\f\r]$/.test(c);
-    const value$17 = /^[\0-\x1f\x7f]$/.test(c);
+    const isAlphabetic = /^\p{Alphabetic}$/u.test(c);
+    const isNumeric = /^\p{N}$/u.test(c);
+    const isAlphanumeric = /^[\p{Alphabetic}\p{N}]$/u.test(c);
+    const isWhitespace = /^\p{White_Space}$/u.test(c);
+    const isUppercase = /^\p{Uppercase}$/u.test(c);
+    const isLowercase = /^\p{Lowercase}$/u.test(c);
+    const isControl = /^\p{Cc}$/u.test(c);
+    const isAscii = c.charCodeAt(0) < 128;
+    const isAsciiDigit = /^[0-9]$/.test(c);
+    const isAsciiHexdigit = /^[0-9A-Fa-f]$/.test(c);
+    const isAsciiAlphabetic = /^[A-Za-z]$/.test(c);
+    const isAsciiAlphanumeric = /^[A-Za-z0-9]$/.test(c);
+    const isAsciiUppercase = /^[A-Z]$/.test(c);
+    const isAsciiLowercase = /^[a-z]$/.test(c);
+    const isAsciiPunctuation = /^[!-\/:-@[-`{-~]$/.test(c);
+    const isAsciiGraphic = /^[!-~]$/.test(c);
+    const isAsciiWhitespace = /^[ \t\n\f\r]$/.test(c);
+    const isAsciiControl = /^[\0-\x1f\x7f]$/.test(c);
     const arg = $toDigit(c, 8) !== undefined;
     console.log(
-      `${$debugStr(c, "'")}: is ${value} ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} ascii ${value$7} ${value$8} ${value$9} ${value$10} ${value$11} ${value$12} ${value$13} ${value$14} ${value$15} ${value$16} ${value$17} ${arg}`,
+      `${$debugStr(c, "'")}: is ${isAlphabetic} ${isNumeric} ${isAlphanumeric} ${isWhitespace} ${isUppercase} ${isLowercase} ${isControl} ascii ${isAscii} ${isAsciiDigit} ${isAsciiHexdigit} ${isAsciiAlphabetic} ${isAsciiAlphanumeric} ${isAsciiUppercase} ${isAsciiLowercase} ${isAsciiPunctuation} ${isAsciiGraphic} ${isAsciiWhitespace} ${isAsciiControl} ${arg}`,
     );
-    const value$18 = c.toUpperCase();
-    const value$19 = c.toLowerCase();
-    const value$20 = c.replace(/[a-z]/, (letter) => letter.toUpperCase());
-    const value$21 = c.replace(/[A-Z]/, (letter) => letter.toLowerCase());
-    const value$22 = $toDigit(c, 10);
-    const value$23 = $toDigit(c, 16);
-    const value$24 = $toDigit(c, 36);
-    const value$25 = c.codePointAt(0);
-    const value$26 = c.codePointAt(0) & 255;
-    const value$27 = String.fromCharCode(c.codePointAt(0) & 255);
-    const value$28 = $fromU32((c.codePointAt(0) + 1) >>> 0);
+    const collect = c.toUpperCase();
+    const value = c.toLowerCase();
+    const asciiUppercase = c.replace(/[a-z]/, (letter) => letter.toUpperCase());
+    const asciiLowercase = c.replace(/[A-Z]/, (letter) => letter.toLowerCase());
+    const digit = $toDigit(c, 10);
+    const value$1 = $toDigit(c, 16);
+    const value$2 = $toDigit(c, 36);
+    const value$3 = c.codePointAt(0);
+    const value$4 = c.codePointAt(0) & 255;
+    const value$5 = String.fromCharCode(c.codePointAt(0) & 255);
+    const value$6 = $fromU32((c.codePointAt(0) + 1) >>> 0);
     console.log(
-      `${$debugStr(c, "'")}: case ${$debugStr(value$18)} ${$debugStr(value$19)} ${$debugStr(value$20, "'")} ${$debugStr(value$21, "'")} digit ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23 == null ? "None" : `Some(${value$23})`} ${value$24 == null ? "None" : `Some(${value$24})`} len ${$byteLen(c)} ${c.length} as ${value$25} ${value$26} ${$debugStr(value$27, "'")} ${value$28 == null ? "None" : `Some(${$debugStr(value$28, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${$byteLen(c)}`,
+      `${$debugStr(c, "'")}: case ${$debugStr(collect)} ${$debugStr(value)} ${$debugStr(asciiUppercase, "'")} ${$debugStr(asciiLowercase, "'")} digit ${digit == null ? "None" : `Some(${digit})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} len ${$byteLen(c)} ${c.length} as ${value$3} ${value$4} ${$debugStr(value$5, "'")} ${value$6 == null ? "None" : `Some(${$debugStr(value$6, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${$byteLen(c)}`,
     );
     for (const d of CHARS) {
-      const value = $cmp(c, d);
-      const value$1 = $cmp(c, d) < 0;
-      const value$2 = $cmp(c, d) > 0 ? c : d;
+      const cmp = $cmp(c, d);
+      const value = $cmp(c, d) < 0;
+      const max = $cmp(c, d) > 0 ? c : d;
       const arg = $asciiCase(c) === $asciiCase(d);
       console.log(
         `${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${
-          ["Less", "Equal", "Greater"][value + 1]
-        } ${value$1} ${value$2} ${c === d} ${arg}`,
+          ["Less", "Equal", "Greater"][cmp + 1]
+        } ${value} ${max} ${c === d} ${arg}`,
       );
     }
   }

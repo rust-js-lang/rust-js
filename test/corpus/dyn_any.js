@@ -62,27 +62,27 @@ function main() {
   if (n != null) {
     n.value = (n.value + 1) & 255;
   }
-  const value = number.impl.type_id() === "u8" ? number.value : undefined;
-  const value$1 = number.impl.type_id() === "i8" ? number.value : undefined;
+  const downcastRef = number.impl.type_id() === "u8" ? number.value : undefined;
+  const value = number.impl.type_id() === "i8" ? number.value : undefined;
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${downcastRef == null ? "None" : `Some(${downcastRef})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const value$2 =
+  const downcast =
     number.impl.type_id() === "u8" ? { TAG: "Ok", _0: number.value } : { TAG: "Err", _0: number };
-  if (value$2.TAG === "Ok") {
-    const n = value$2._0;
+  if (downcast.TAG === "Ok") {
+    const n = downcast._0;
     console.log(`u8 ${n}`);
   } else {
     console.log("not u8");
   }
   const text = boxed("t", { type_id: () => "alloc::string::String" });
-  const value$3 =
+  const value$1 =
     text.impl.type_id() === "i32" ? { TAG: "Ok", _0: text.value } : { TAG: "Err", _0: text };
-  if (value$3.TAG === "Ok") {
-    const n = value$3._0;
+  if (value$1.TAG === "Ok") {
+    const n = value$1._0;
     console.log(`i32 ${n}`);
   } else {
-    const back = value$3._0;
+    const back = value$1._0;
     const value = back.impl.type_id() === "alloc::string::String" ? back.value : undefined;
     console.log(`back ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
@@ -92,8 +92,8 @@ function main() {
   const seen = new Map();
   seen.set("lib::Point", "point");
   seen.set("i64", "i64");
-  const value$4 = seen.get("i64");
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${seen.size}`);
+  const get = seen.get("i64");
+  console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`} ${seen.size}`);
   console.log(
     `${"lib::Point".endsWith("::Point")} alloc::vec::Vec<core::option::Option<&str>> f64`,
   );

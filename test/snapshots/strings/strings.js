@@ -85,18 +85,18 @@ export function separator(windows) {
 
 /** `split_once` and `rsplit_once`: an option of the two sides. */
 export function folder_and_file(path) {
-  const value = $splitOnce(path, "/");
+  const splitOnce = $splitOnce(path, "/");
   let first;
-  if (value) {
-    const top = value[0];
+  if (splitOnce) {
+    const top = splitOnce[0];
     first = top;
   } else {
     first = "";
   }
-  const value$1 = $rsplitOnce(path, "/");
+  const rsplitOnce = $rsplitOnce(path, "/");
   let file;
-  if (value$1) {
-    const name = value$1[1];
+  if (rsplitOnce) {
+    const name = rsplitOnce[1];
     file = name;
   } else {
     file = path;

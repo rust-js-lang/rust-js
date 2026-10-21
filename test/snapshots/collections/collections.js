@@ -163,13 +163,13 @@ export function toggled(n) {
 export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
-    const value = $borrowMut(c, true);
-    value.value = (value.value + 2) | 0;
-    $unborrow(value);
+    const borrowMut = $borrowMut(c, true);
+    borrowMut.value = (borrowMut.value + 2) | 0;
+    $unborrow(borrowMut);
   }
-  const value = $borrow(c, true);
-  const result = (value.value + 1) | 0;
-  $unborrow(value);
+  const borrow = $borrow(c, true);
+  const result = (borrow.value + 1) | 0;
+  $unborrow(borrow);
   return result;
 }
 
@@ -178,12 +178,12 @@ export function shared(times) {
   const log = { value: [] };
   const writer = log;
   for (let i = 0; i < times; i++) {
-    const value = $borrowMut(writer, true);
-    const value$1 = Math.imul(i, i);
+    const borrowMut = $borrowMut(writer, true);
+    const value = Math.imul(i, i);
     try {
-      value.value.push(value$1);
+      borrowMut.value.push(value);
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
   }
   const v = $borrow(log, true);
@@ -240,8 +240,8 @@ export function indexed(i) {
 /** An element's fields are written in place, and a copy of one is its own. */
 export function element_fields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
-  const value = $index(cells, i);
-  value.hits = (value.hits + 1) >>> 0;
+  const cell2 = $index(cells, i);
+  cell2.hits = (cell2.hits + 1) >>> 0;
   const before = { ...$index(cells, i) };
   const r = $index(cells, i);
   r.hits = 10;
@@ -351,14 +351,14 @@ export function sorted_maps(text) {
     ["Gold", 3],
     ["Bronze", 1],
   ]);
-  const value = $sortedEntries(counts, $cmp);
+  const collect = $sortedEntries(counts, $cmp);
   const arg = $sortedKeys(set, $cmp).toReversed();
-  const value$1 = `{${Array.from($sortedKeys(set, $cmp)).join(", ")}} [${arg.join(", ")}]`;
+  const value = `{${Array.from($sortedKeys(set, $cmp)).join(", ")}} [${arg.join(", ")}]`;
   const arg$1 = $unwrap(tiers.get("Bronze"), "no entry found for key");
   return [
-    value,
+    collect,
     order,
-    value$1,
+    value,
     `{${Array.from($sortedEntries(tiers, (a, b) => $cmpIn(["Gold", "Bronze", "Silver"], a, b)))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}} ${arg$1}`,

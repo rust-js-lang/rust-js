@@ -22,24 +22,24 @@ function main() {
   released.set(v(1, 0, "b"), "same numbers, another label");
   released.set(v(1, 0, "a"), "first, again");
   const size = released.size;
-  const value = released.get(v(1, 0, "a"));
-  const value$1 = released.get(v(2, 0, "a"));
+  const get = released.get(v(1, 0, "a"));
+  const value = released.get(v(2, 0, "a"));
   console.log(
-    `${size} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
+    `${size} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
   );
 
   const seen = new $KeySet(
     $iter(["Stable", { TAG: "Beta", _0: 2 }, { TAG: "Beta", _0: 2 }, { TAG: "Beta", _0: 3 }]),
   );
-  const value$2 = seen.has({ TAG: "Beta", _0: 3 });
+  const contains = seen.has({ TAG: "Beta", _0: 3 });
   const arg = seen.has({ TAG: "Beta", _0: 4 });
-  console.log(`${seen.size} ${value$2} ${arg}`);
+  console.log(`${seen.size} ${contains} ${arg}`);
 
   const tally = counts([{ TAG: "Beta", _0: 1 }, "Stable", { TAG: "Beta", _0: 1 }]);
-  const value$3 = tally.get({ TAG: "Beta", _0: 1 });
-  const value$4 = tally.get("Stable");
+  const value$1 = tally.get({ TAG: "Beta", _0: 1 });
+  const value$2 = tally.get("Stable");
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const bytes = new $KeySet($iter([[1], [1], [2]]));
   const letters = new $KeySet($iter([["a"]]));

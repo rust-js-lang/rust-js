@@ -205,12 +205,12 @@ export function report() {
     const value$3 = shifted(n, [1, n]);
     out += `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
-    const value$4 = name_of(named);
-    const value$5 = name_of(undefined);
-    out += `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
-    const value$6 = other_name(undefined, named);
-    const value$7 = other_name(n, named);
-    out += `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`}\n`;
+    const nameOf = name_of(named);
+    const value$4 = name_of(undefined);
+    out += `${nameOf == null ? "None" : `Some(${$debugStr(nameOf)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}\n`;
+    const otherName = other_name(undefined, named);
+    const value$5 = other_name(n, named);
+    out += `${otherName == null ? "None" : `Some(${$debugStr(otherName)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
     out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
     out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
   }

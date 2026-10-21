@@ -89,12 +89,12 @@ export function dijkstra(edges, n, src) {
   dist[$at(dist, src)] = 0;
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
   while (true) {
-    const value = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
-    if (!value) {
+    const pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
+    if (!pop) {
       break;
     }
-    const d = value[0][0];
-    const u = value[0][1];
+    const d = pop[0][0];
+    const u = pop[0][1];
     const option = $index(dist, u);
     if (option != null && d > option) {
       continue;
@@ -167,8 +167,8 @@ export function heaps() {
         .join(""),
     )}\n`;
   }
-  const value = h[0]?.name;
-  out += `peek ${value == null ? "None" : `Some(${$debugStr(value, "'")})`} len ${h.length}\n`;
+  const name = h[0]?.name;
+  out += `peek ${name == null ? "None" : `Some(${$debugStr(name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i = 0; i < 4; i++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
@@ -187,9 +187,9 @@ export function heaps() {
   const arg = $heapSorted(from, $cmp);
   out += `${sorted} [${from.join(", ")}] [${collected.join(", ")}] [${arg.join(", ")}]\n`;
   const empty = [];
-  const value$1 = $heapPop(empty, $cmp);
-  const value$2 = empty[0];
-  out += `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${empty.length === 0}\n`;
+  const pop = $heapPop(empty, $cmp);
+  const peek = empty[0];
+  out += `${pop == null ? "None" : `Some(${pop})`} ${peek == null ? "None" : `Some(${peek})`} ${empty.length === 0}\n`;
   return out;
 }
 
@@ -234,9 +234,9 @@ export function report() {
   for (const w of ["a", "b", "c"]) {
     Stack.push(s, w, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
   }
-  const value = Stack.pop(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
-  const value$1 = Stack.peek(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
-  out += `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${Stack.len(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) })}\n`;
+  const pop = Stack.pop(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
+  const peek = Stack.peek(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
+  out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) })}\n`;
   const g = { w: 3, cells: $range(0, 9) };
   out += `${gridIndex_usize__usize__index(g, [1, 2])} ${gridIndex_usize__usize__index(g, [2, 0])}\n`;
   const l = { label: "pi", value: 3.25 };
@@ -245,10 +245,10 @@ export function report() {
     { fmt: String },
   )}\n`;
   const p = { steps: [(x) => (x + 1) | 0, (x) => Math.imul(x, 10), (x) => (x - 3) | 0] };
-  const value$2 = Pipeline.run(p, 4);
-  const value$3 = first_even_square([3, 5, 6, 8]);
-  const value$4 = first_even_square([1]);
-  out += `${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}\n`;
+  const run = Pipeline.run(p, 4);
+  const firstEvenSquare = first_even_square([3, 5, 6, 8]);
+  const value = first_even_square([1]);
+  out += `${run} ${firstEvenSquare == null ? "None" : `Some(${firstEvenSquare})`} ${value == null ? "None" : `Some(${value})`}\n`;
   out += `[${dijkstra(
     [
       [0, 1, 4],
@@ -277,9 +277,9 @@ export function report() {
   const arg = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
-  const value$5 = deques();
-  const value$6 = reverses(1, 2);
-  out += `${value$5}\n(${value$6[0]}, ${value$6[1]}, ${value$6[2]}, ${$debugStr(value$6[3])}, [${value$6[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
+  const value$1 = deques();
+  const value$2 = reverses(1, 2);
+  out += `${value$1}\n(${value$2[0]}, ${value$2[1]}, ${value$2[2]}, ${$debugStr(value$2[3])}, [${value$2[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
   return out;
 }
 //# sourceMappingURL=queues.js.map

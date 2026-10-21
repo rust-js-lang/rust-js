@@ -78,12 +78,12 @@ function submit(previous, data) {
 }
 
 export function SubmitStatus() {
-  const value = useFormStatus();
+  const formStatus = useFormStatus();
   let status;
-  if (value.pending === true) {
-    const text = value.data.get("name");
+  if (formStatus.pending === true) {
+    const text = formStatus.data.get("name");
     const name = typeof text === "string" ? text : "";
-    status = `sending ${name} by ${value.method}`;
+    status = `sending ${name} by ${formStatus.method}`;
   } else {
     status = "ready";
   }

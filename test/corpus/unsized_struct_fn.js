@@ -9,23 +9,23 @@ export function entry() {
 function main() {
   const total = { value: 0 };
   const add = { value: (x) => Math.imul(x, 2) };
-  let tmp;
+  let borrowMut;
   for (const x of [1, 2, 3]) {
     const value = $borrowMut(add, true);
     try {
-      const tmp$1 = value.value(x);
-      tmp = $borrowMut(total, true);
-      tmp.value = (tmp.value + tmp$1) | 0;
-      $unborrow(tmp);
+      const tmp = value.value(x);
+      borrowMut = $borrowMut(total, true);
+      borrowMut.value = (borrowMut.value + tmp) | 0;
+      $unborrow(borrowMut);
     } finally {
       $unborrow(value);
     }
   }
-  const value = $borrow(total, true);
+  const borrow = $borrow(total, true);
   try {
-    console.log(`${value.value}`);
+    console.log(`${borrow.value}`);
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
 }
 //# sourceMappingURL=case.js.map

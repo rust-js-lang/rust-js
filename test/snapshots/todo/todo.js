@@ -32,11 +32,11 @@ function text(tag, s) {
 /** When `event` fires on `target`, apply `change` to the state and draw it again. */
 function on(target, event, state, view, change) {
   target.addEventListener(event, () => {
-    const value = $borrowMut(state, true);
+    const borrowMut = $borrowMut(state, true);
     try {
-      change(value.value);
+      change(borrowMut.value);
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
     render(state, view);
   });
@@ -153,11 +153,11 @@ export function main() {
     const title = input.value;
     const title$1 = $trim(title);
     if (e.key === "Enter" && title$1) {
-      const value = $borrowMut(adding, true);
+      const borrowMut = $borrowMut(adding, true);
       try {
-        add(value.value, title$1);
+        add(borrowMut.value, title$1);
       } finally {
-        $unborrow(value);
+        $unborrow(borrowMut);
       }
       input.value = "";
       render(adding, view);

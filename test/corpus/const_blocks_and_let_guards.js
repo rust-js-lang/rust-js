@@ -15,26 +15,26 @@ function generic_size() {
 }
 
 function classify(input) {
-  const value$1 = $splitOnce(input, "=");
-  if (value$1) {
-    const value$2 = $parseInt(value$1[1], -2147483648, 2147483647);
-    if (value$2.TAG === "Ok") {
-      const key = value$1[0];
-      const value = value$1[1];
-      return `${key} is the number ${value$2._0}`;
+  const splitOnce = $splitOnce(input, "=");
+  if (splitOnce) {
+    const parse = $parseInt(splitOnce[1], -2147483648, 2147483647);
+    if (parse.TAG === "Ok") {
+      const key = splitOnce[0];
+      const value = splitOnce[1];
+      return `${key} is the number ${parse._0}`;
     }
-    const rest = $stripPrefix(value$1[1], '"');
+    const rest = $stripPrefix(splitOnce[1], '"');
     if (rest != null) {
       const inner = $stripSuffix(rest, '"');
       if (inner != null) {
         if (inner) {
-          const key = value$1[0];
-          const value$2 = value$1[1];
+          const key = splitOnce[0];
+          const value = splitOnce[1];
           return `${key} is the string ${inner}`;
         }
       }
     }
-    const key = value$1[0];
+    const key = splitOnce[0];
     return `${key} is something else`;
   }
   return "not a setting";
@@ -57,10 +57,10 @@ function main() {
   for (const input of ["a=1", 'b="hi"', 'e=""', "c=x", "d"]) {
     console.log(`${classify(input)}`);
   }
-  const value = first_even([3, undefined, 8, 10]);
-  const value$1 = first_even([1]);
+  const firstEven = first_even([3, undefined, 8, 10]);
+  const value = first_even([1]);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${firstEven == null ? "None" : `Some(${firstEven})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -52,11 +52,11 @@ function debugByteDebug_fmt(debugByte) {
 function main() {
   for (const b of [97, 32, 10, 39, 127, 254, 92]) {
     const escaped = $escapeByte(b).slice();
-    const value = [b];
-    const value$1 = $iter($escapeByte(b));
+    const debugByte = [b];
+    const escapeAscii = $iter($escapeByte(b));
     const length = $escapeByte(b).length;
     console.log(
-      `${debugByteDebug_fmt(value)} ${$restBytes(value$1)} ${length} [${escaped.join(", ")}]`,
+      `${debugByteDebug_fmt(debugByte)} ${$restBytes(escapeAscii)} ${length} [${escaped.join(", ")}]`,
     );
   }
   const rest = $iter($escapeByte(9));

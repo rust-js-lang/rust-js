@@ -44,13 +44,13 @@ function counted() {
 }
 
 function main() {
-  const value = moved(5);
-  const value$1 = moved(-2);
-  console.log(`${pointDebug_fmt(value)} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(value$1)}`);
+  const point = moved(5);
+  const value = moved(-2);
+  console.log(`${pointDebug_fmt(point)} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(value)}`);
   const arg = NAMES.join(",");
   console.log(`${LIMIT} ${GREETING} ${arg}`);
-  const value$2 = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`[${PRIMES.join(", ")}] ${value$2} [${EMPTY.join(", ")}]`);
+  const sum = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`[${PRIMES.join(", ")}] ${sum} [${EMPTY.join(", ")}]`);
   console.log(
     `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
   );

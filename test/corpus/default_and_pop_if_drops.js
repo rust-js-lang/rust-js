@@ -49,11 +49,11 @@ function mapped() {
 
 function defaults() {
   const o = undefined;
-  const value = o ?? loudDefault_default();
+  const loud = o ?? loudDefault_default();
   try {
-    console.log(`option ${value[0]}`);
+    console.log(`option ${loud[0]}`);
   } finally {
-    loudDrop_drop(value);
+    loudDrop_drop(loud);
   }
   const r = { TAG: "Err", _0: [5] };
   let kept;

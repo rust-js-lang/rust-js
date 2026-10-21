@@ -127,18 +127,18 @@ function parse_pair(a, b, both, BNamed, dropB) {
           dropB?.(_0);
           throw error;
         }
-        let tmp$2;
+        let okOrElse;
         try {
-          tmp$2 = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
+          okOrElse = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
         } catch (error) {
           dropB?.(_0);
           throw error;
         }
-        if (tmp$2.TAG !== "Err") {
-          pair = [_0, $some(tmp$2._0)];
+        if (okOrElse.TAG !== "Err") {
+          pair = [_0, $some(okOrElse._0)];
           break bb38;
         }
-        result = tmp$2;
+        result = okOrElse;
         dropB?.(_0);
       } else {
         result = result$1;
@@ -157,9 +157,9 @@ function parse_pair(a, b, both, BNamed, dropB) {
 }
 
 function main() {
-  let tmp$0$live = false;
-  let tmp$0$0$live = false;
-  let tmp$0$1$live = false;
+  let parseFlag$0$live = false;
+  let parsePair$0$0$live = false;
+  let parsePair$0$1$live = false;
   const option = make(2);
   let kept$1;
   try {
@@ -180,9 +180,9 @@ function main() {
     }
     throw error;
   }
-  let tmp;
+  let d;
   try {
-    tmp = make(3);
+    d = make(3);
   } catch (error) {
     if (kept != null) {
       dDrop_drop(kept);
@@ -193,12 +193,12 @@ function main() {
   let dropped;
   try {
     try {
-      if (tmp != null && even(tmp)) {
-        kept$2 = tmp;
+      if (d != null && even(d)) {
+        kept$2 = d;
       }
     } finally {
-      if (tmp != null && kept$2 === undefined) {
-        dDrop_drop(tmp);
+      if (d != null && kept$2 === undefined) {
+        dDrop_drop(d);
       }
     }
     dropped = kept$2;
@@ -219,9 +219,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = make(0);
+    tmp = make(0);
   } catch (error) {
     if (dropped != null) {
       dDrop_drop(dropped);
@@ -232,18 +232,18 @@ function main() {
     throw error;
   }
   let kept$3;
-  let tmp$2;
+  let filter;
   try {
     try {
-      if (tmp$1 != null && even(tmp$1)) {
-        kept$3 = tmp$1;
+      if (tmp != null && even(tmp)) {
+        kept$3 = tmp;
       }
     } finally {
-      if (tmp$1 != null && kept$3 === undefined) {
-        dDrop_drop(tmp$1);
+      if (tmp != null && kept$3 === undefined) {
+        dDrop_drop(tmp);
       }
     }
-    tmp$2 = kept$3;
+    filter = kept$3;
   } catch (error) {
     if (dropped != null) {
       dDrop_drop(dropped);
@@ -254,10 +254,10 @@ function main() {
     throw error;
   }
   try {
-    console.log(`none ${!tmp$2}`);
+    console.log(`none ${!filter}`);
   } catch (error) {
-    if (tmp$2 != null) {
-      dDrop_drop(tmp$2);
+    if (filter != null) {
+      dDrop_drop(filter);
     }
     if (dropped != null) {
       dDrop_drop(dropped);
@@ -268,8 +268,8 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$2 != null) {
-      dDrop_drop(tmp$2);
+    if (filter != null) {
+      dDrop_drop(filter);
     }
   } catch (error) {
     if (dropped != null) {
@@ -280,11 +280,11 @@ function main() {
     }
     throw error;
   }
-  let tmp$3;
-  let tmp$4;
+  let tmp$1;
+  let tmp$2;
   try {
-    tmp$3 = make(5);
-    tmp$4 = (d) => d[0] > 4;
+    tmp$1 = make(5);
+    tmp$2 = (d) => d[0] > 4;
   } catch (error) {
     if (dropped != null) {
       dDrop_drop(dropped);
@@ -298,12 +298,12 @@ function main() {
   let closure;
   try {
     try {
-      if (tmp$3 != null && tmp$4(tmp$3)) {
-        kept$4 = tmp$3;
+      if (tmp$1 != null && tmp$2(tmp$1)) {
+        kept$4 = tmp$1;
       }
     } finally {
-      if (tmp$3 != null && kept$4 === undefined) {
-        dDrop_drop(tmp$3);
+      if (tmp$1 != null && kept$4 === undefined) {
+        dDrop_drop(tmp$1);
       }
     }
     closure = kept$4;
@@ -331,74 +331,74 @@ function main() {
     }
     throw error;
   }
+  let tmp$3;
+  let tmp$4;
+  try {
+    tmp$3 = make(6);
+    tmp$4 = (d) => d[0] > 9;
+  } catch (error) {
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
   let tmp$5;
+  try {
+    tmp$5 = keep(tmp$3, tmp$4, dDrop_drop);
+  } catch (error) {
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  try {
+    console.log(`generic ${!tmp$5}`);
+  } catch (error) {
+    if (tmp$5 != null) {
+      dDrop_drop(tmp$5);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$5 != null) {
+      dDrop_drop(tmp$5);
+    }
+  } catch (error) {
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
   let tmp$6;
   try {
-    tmp$5 = make(6);
-    tmp$6 = (d) => d[0] > 9;
-  } catch (error) {
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  let tmp$7;
-  try {
-    tmp$7 = keep(tmp$5, tmp$6, dDrop_drop);
-  } catch (error) {
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  try {
-    console.log(`generic ${!tmp$7}`);
-  } catch (error) {
-    if (tmp$7 != null) {
-      dDrop_drop(tmp$7);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$7 != null) {
-      dDrop_drop(tmp$7);
-    }
-  } catch (error) {
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = $some(make(7));
+    tmp$6 = $some(make(7));
   } catch (error) {
     if (closure != null) {
       dDrop_drop(closure);
@@ -412,9 +412,9 @@ function main() {
     throw error;
   }
   const value$1 = Boolean;
-  let tmp$9;
+  let tmp$7;
   try {
-    tmp$9 = keep(tmp$8, value$1, (option) => {
+    tmp$7 = keep(tmp$6, value$1, (option) => {
       if (option != null) {
         dDrop_drop(option);
       }
@@ -432,11 +432,11 @@ function main() {
     throw error;
   }
   try {
-    console.log(`generic ${tmp$9 != null}`);
+    console.log(`generic ${tmp$7 != null}`);
   } catch (error) {
-    if (tmp$9 != null) {
-      if ($someValue(tmp$9) != null) {
-        dDrop_drop($someValue(tmp$9));
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
       }
     }
     if (closure != null) {
@@ -451,9 +451,9 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$9 != null) {
-      if ($someValue(tmp$9) != null) {
-        dDrop_drop($someValue(tmp$9));
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
       }
     }
   } catch (error) {
@@ -469,9 +469,9 @@ function main() {
     throw error;
   }
 
-  let tmp$10;
+  let tmp$8;
   try {
-    tmp$10 = make(8);
+    tmp$8 = make(8);
   } catch (error) {
     if (closure != null) {
       dDrop_drop(closure);
@@ -489,9 +489,9 @@ function main() {
   let one;
   try {
     fallback = "Nothing";
-    if (tmp$10 != null) {
+    if (tmp$8 != null) {
       try {
-        mapped = { TAG: "One", _0: tmp$10 };
+        mapped = { TAG: "One", _0: tmp$8 };
       } finally {
         if (fallback.TAG === "One") {
           dDrop_drop(fallback._0);
@@ -532,11 +532,11 @@ function main() {
       throw error;
     }
   }
-  let tmp$11;
-  let tmp$12;
+  let tmp$9;
+  let tmp$10;
   try {
-    tmp$11 = make(0);
-    tmp$12 = [9];
+    tmp$9 = make(0);
+    tmp$10 = [9];
   } catch (error) {
     if (one.TAG === "One") {
       dDrop_drop(one._0);
@@ -556,10 +556,10 @@ function main() {
   let mapped$1;
   let nothing;
   try {
-    fallback$1 = { TAG: "One", _0: tmp$12 };
-    if (tmp$11 != null) {
+    fallback$1 = { TAG: "One", _0: tmp$10 };
+    if (tmp$9 != null) {
       try {
-        mapped$1 = { TAG: "One", _0: tmp$11 };
+        mapped$1 = { TAG: "One", _0: tmp$9 };
       } finally {
         if (fallback$1.TAG === "One") {
           dDrop_drop(fallback$1._0);
@@ -605,13 +605,13 @@ function main() {
     }
     throw error;
   }
+  let tmp$11;
+  let tmp$12;
   let tmp$13;
-  let tmp$14;
-  let tmp$15;
   try {
-    tmp$13 = make(10);
-    tmp$14 = [11];
-    tmp$15 = (d) => {
+    tmp$11 = make(10);
+    tmp$12 = [11];
+    tmp$13 = (d) => {
       const result = [(d[0] + 100) >>> 0];
       dDrop_drop(d);
       return result;
@@ -637,14 +637,14 @@ function main() {
   let mapped$2;
   let read;
   try {
-    if (tmp$13 != null) {
+    if (tmp$11 != null) {
       try {
-        mapped$2 = tmp$15(tmp$13);
+        mapped$2 = tmp$13(tmp$11);
       } finally {
-        dDrop_drop(tmp$14);
+        dDrop_drop(tmp$12);
       }
     } else {
-      mapped$2 = tmp$14;
+      mapped$2 = tmp$12;
     }
     read = mapped$2;
   } catch (error) {
@@ -686,33 +686,98 @@ function main() {
     }
     throw error;
   }
+  let tmp$14;
+  let tmp$15;
+  try {
+    tmp$14 = make(12);
+    tmp$15 = [13];
+  } catch (error) {
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
   let tmp$16;
+  try {
+    tmp$16 = found(tmp$14, tmp$15, dDrop_drop);
+  } catch (error) {
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  try {
+    console.log(`found ${tmp$16[0]}`);
+  } catch (error) {
+    dDrop_drop(tmp$16);
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  try {
+    dDrop_drop(tmp$16);
+  } catch (error) {
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
   let tmp$17;
   try {
-    tmp$16 = make(12);
-    tmp$17 = [13];
-  } catch (error) {
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  let tmp$18;
-  try {
-    tmp$18 = found(tmp$16, tmp$17, dDrop_drop);
+    tmp$17 = found(undefined, [14], dDrop_drop);
   } catch (error) {
     dDrop_drop(read);
     if (nothing.TAG === "One") {
@@ -733,9 +798,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`found ${tmp$18[0]}`);
+    console.log(`found ${tmp$17[0]}`);
   } catch (error) {
-    dDrop_drop(tmp$18);
+    dDrop_drop(tmp$17);
     dDrop_drop(read);
     if (nothing.TAG === "One") {
       dDrop_drop(nothing._0);
@@ -755,72 +820,7 @@ function main() {
     throw error;
   }
   try {
-    dDrop_drop(tmp$18);
-  } catch (error) {
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  let tmp$19;
-  try {
-    tmp$19 = found(undefined, [14], dDrop_drop);
-  } catch (error) {
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  try {
-    console.log(`found ${tmp$19[0]}`);
-  } catch (error) {
-    dDrop_drop(tmp$19);
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  try {
-    dDrop_drop(tmp$19);
+    dDrop_drop(tmp$17);
   } catch (error) {
     dDrop_drop(read);
     if (nothing.TAG === "One") {
@@ -841,11 +841,11 @@ function main() {
     throw error;
   }
 
-  let tmp$20;
-  let tmp$21;
+  let tmp$18;
+  let tmp$19;
   try {
-    tmp$20 = make(15);
-    tmp$21 = () => "none";
+    tmp$18 = make(15);
+    tmp$19 = () => "none";
   } catch (error) {
     dDrop_drop(read);
     if (nothing.TAG === "One") {
@@ -867,7 +867,7 @@ function main() {
   }
   let ok;
   try {
-    ok = tmp$20 != null ? { TAG: "Ok", _0: tmp$20 } : { TAG: "Err", _0: tmp$21() };
+    ok = tmp$18 != null ? { TAG: "Ok", _0: tmp$18 } : { TAG: "Err", _0: tmp$19() };
   } catch (error) {
     dDrop_drop(read);
     if (nothing.TAG === "One") {
@@ -912,11 +912,11 @@ function main() {
     }
     throw error;
   }
-  let tmp$22;
-  let tmp$23;
+  let tmp$20;
+  let tmp$21;
   try {
-    tmp$22 = make(0);
-    tmp$23 = () => "none";
+    tmp$20 = make(0);
+    tmp$21 = () => "none";
   } catch (error) {
     if (ok.TAG === "Ok") {
       dDrop_drop(ok._0);
@@ -941,7 +941,7 @@ function main() {
   }
   let err;
   try {
-    err = tmp$22 != null ? { TAG: "Ok", _0: tmp$22 } : { TAG: "Err", _0: tmp$23() };
+    err = tmp$20 != null ? { TAG: "Ok", _0: tmp$20 } : { TAG: "Err", _0: tmp$21() };
   } catch (error) {
     if (ok.TAG === "Ok") {
       dDrop_drop(ok._0);
@@ -992,9 +992,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$24;
+  let tmp$22;
   try {
-    tmp$24 = parse("16", dNamed());
+    tmp$22 = parse("16", dNamed());
   } catch (error) {
     if (err.TAG === "Ok") {
       dDrop_drop(err._0);
@@ -1020,13 +1020,13 @@ function main() {
     }
     throw error;
   }
-  let tmp$0$live$1 = true;
-  if (tmp$24.TAG === "Ok") {
-    tmp$0$live$1 = false;
+  let tmp$0$live = true;
+  if (tmp$22.TAG === "Ok") {
+    tmp$0$live = false;
     try {
-      console.log(`parsed ${tmp$24._0[0]}`);
+      console.log(`parsed ${tmp$22._0[0]}`);
     } catch (error) {
-      dDrop_drop(tmp$24._0);
+      dDrop_drop(tmp$22._0);
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
       }
@@ -1052,7 +1052,7 @@ function main() {
       throw error;
     }
     try {
-      dDrop_drop(tmp$24._0);
+      dDrop_drop(tmp$22._0);
     } catch (error) {
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1080,10 +1080,10 @@ function main() {
     }
   } else {
     try {
-      console.log(`${tmp$24._0}`);
+      console.log(`${tmp$22._0}`);
     } catch (error) {
-      if (tmp$24.TAG === "Ok") {
-        dDrop_drop(tmp$24._0);
+      if (tmp$22.TAG === "Ok") {
+        dDrop_drop(tmp$22._0);
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1111,9 +1111,159 @@ function main() {
     }
   }
   try {
-    if (tmp$24.TAG === "Ok") {
+    if (tmp$22.TAG === "Ok") {
+      if (tmp$0$live) {
+        dDrop_drop(tmp$22._0);
+      }
+    }
+  } catch (error) {
+    if (err.TAG === "Ok") {
+      dDrop_drop(err._0);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0);
+    }
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  tmp$0$live = false;
+  let tmp$23;
+  try {
+    tmp$23 = parse("x", dNamed());
+  } catch (error) {
+    if (err.TAG === "Ok") {
+      dDrop_drop(err._0);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0);
+    }
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  let tmp$0$live$1 = true;
+  if (tmp$23.TAG === "Ok") {
+    tmp$0$live$1 = false;
+    try {
+      console.log(`parsed ${tmp$23._0[0]}`);
+    } catch (error) {
+      dDrop_drop(tmp$23._0);
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    try {
+      dDrop_drop(tmp$23._0);
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+  } else {
+    try {
+      console.log(`${tmp$23._0}`);
+    } catch (error) {
+      if (tmp$23.TAG === "Ok") {
+        dDrop_drop(tmp$23._0);
+      }
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+  }
+  try {
+    if (tmp$23.TAG === "Ok") {
       if (tmp$0$live$1) {
-        dDrop_drop(tmp$24._0);
+        dDrop_drop(tmp$23._0);
       }
     }
   } catch (error) {
@@ -1142,156 +1292,6 @@ function main() {
     throw error;
   }
   tmp$0$live$1 = false;
-  let tmp$25;
-  try {
-    tmp$25 = parse("x", dNamed());
-  } catch (error) {
-    if (err.TAG === "Ok") {
-      dDrop_drop(err._0);
-    }
-    if (ok.TAG === "Ok") {
-      dDrop_drop(ok._0);
-    }
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  let tmp$0$live$2 = true;
-  if (tmp$25.TAG === "Ok") {
-    tmp$0$live$2 = false;
-    try {
-      console.log(`parsed ${tmp$25._0[0]}`);
-    } catch (error) {
-      dDrop_drop(tmp$25._0);
-      if (err.TAG === "Ok") {
-        dDrop_drop(err._0);
-      }
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0);
-      }
-      dDrop_drop(read);
-      if (nothing.TAG === "One") {
-        dDrop_drop(nothing._0);
-      }
-      if (one.TAG === "One") {
-        dDrop_drop(one._0);
-      }
-      if (closure != null) {
-        dDrop_drop(closure);
-      }
-      if (dropped != null) {
-        dDrop_drop(dropped);
-      }
-      if (kept != null) {
-        dDrop_drop(kept);
-      }
-      throw error;
-    }
-    try {
-      dDrop_drop(tmp$25._0);
-    } catch (error) {
-      if (err.TAG === "Ok") {
-        dDrop_drop(err._0);
-      }
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0);
-      }
-      dDrop_drop(read);
-      if (nothing.TAG === "One") {
-        dDrop_drop(nothing._0);
-      }
-      if (one.TAG === "One") {
-        dDrop_drop(one._0);
-      }
-      if (closure != null) {
-        dDrop_drop(closure);
-      }
-      if (dropped != null) {
-        dDrop_drop(dropped);
-      }
-      if (kept != null) {
-        dDrop_drop(kept);
-      }
-      throw error;
-    }
-  } else {
-    try {
-      console.log(`${tmp$25._0}`);
-    } catch (error) {
-      if (tmp$25.TAG === "Ok") {
-        dDrop_drop(tmp$25._0);
-      }
-      if (err.TAG === "Ok") {
-        dDrop_drop(err._0);
-      }
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0);
-      }
-      dDrop_drop(read);
-      if (nothing.TAG === "One") {
-        dDrop_drop(nothing._0);
-      }
-      if (one.TAG === "One") {
-        dDrop_drop(one._0);
-      }
-      if (closure != null) {
-        dDrop_drop(closure);
-      }
-      if (dropped != null) {
-        dDrop_drop(dropped);
-      }
-      if (kept != null) {
-        dDrop_drop(kept);
-      }
-      throw error;
-    }
-  }
-  try {
-    if (tmp$25.TAG === "Ok") {
-      if (tmp$0$live$2) {
-        dDrop_drop(tmp$25._0);
-      }
-    }
-  } catch (error) {
-    if (err.TAG === "Ok") {
-      dDrop_drop(err._0);
-    }
-    if (ok.TAG === "Ok") {
-      dDrop_drop(ok._0);
-    }
-    dDrop_drop(read);
-    if (nothing.TAG === "One") {
-      dDrop_drop(nothing._0);
-    }
-    if (one.TAG === "One") {
-      dDrop_drop(one._0);
-    }
-    if (closure != null) {
-      dDrop_drop(closure);
-    }
-    if (dropped != null) {
-      dDrop_drop(dropped);
-    }
-    if (kept != null) {
-      dDrop_drop(kept);
-    }
-    throw error;
-  }
-  tmp$0$live$2 = false;
   let iter;
   try {
     iter = $iter(["0x17", "18", "0xy", "z"]);
@@ -1320,9 +1320,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$26;
+  let parseFlag;
   let iter$1;
-  let tmp$27;
+  let parsePair;
   while (true) {
     let tmp;
     try {
@@ -1420,7 +1420,7 @@ function main() {
         const b = tmp[1];
         const both = tmp[2];
         try {
-          tmp$27 = parse_pair(a, b, both, dNamed(), dDrop_drop);
+          parsePair = parse_pair(a, b, both, dNamed(), dDrop_drop);
         } catch (error) {
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -1446,13 +1446,13 @@ function main() {
           }
           throw error;
         }
-        tmp$0$1$live = true;
-        tmp$0$0$live = true;
-        if (tmp$27.TAG === "Ok") {
-          tmp$0$0$live = false;
-          const d = tmp$27._0[0];
-          tmp$0$1$live = false;
-          const e = tmp$27._0[1];
+        parsePair$0$1$live = true;
+        parsePair$0$0$live = true;
+        if (parsePair.TAG === "Ok") {
+          parsePair$0$0$live = false;
+          const d = parsePair._0[0];
+          parsePair$0$1$live = false;
+          const e = parsePair._0[1];
           const value = (e) => {
             const result = e[0];
             dDrop_drop(e);
@@ -1544,12 +1544,12 @@ function main() {
           }
         } else {
           try {
-            console.log(`${tmp$27._0}`);
+            console.log(`${parsePair._0}`);
           } catch (error) {
-            if (tmp$27.TAG === "Ok") {
-              dDrop_drop(tmp$27._0[0]);
-              if (tmp$27._0[1] != null) {
-                dDrop_drop(tmp$27._0[1]);
+            if (parsePair.TAG === "Ok") {
+              dDrop_drop(parsePair._0[0]);
+              if (parsePair._0[1] != null) {
+                dDrop_drop(parsePair._0[1]);
               }
             }
             if (err.TAG === "Ok") {
@@ -1578,13 +1578,13 @@ function main() {
           }
         }
         try {
-          if (tmp$27.TAG === "Ok") {
-            if (tmp$0$0$live) {
-              dDrop_drop(tmp$27._0[0]);
+          if (parsePair.TAG === "Ok") {
+            if (parsePair$0$0$live) {
+              dDrop_drop(parsePair._0[0]);
             }
-            if (tmp$0$1$live) {
-              if (tmp$27._0[1] != null) {
-                dDrop_drop(tmp$27._0[1]);
+            if (parsePair$0$1$live) {
+              if (parsePair._0[1] != null) {
+                dDrop_drop(parsePair._0[1]);
               }
             }
           }
@@ -1613,8 +1613,8 @@ function main() {
           }
           throw error;
         }
-        tmp$0$1$live = false;
-        tmp$0$0$live = false;
+        parsePair$0$1$live = false;
+        parsePair$0$0$live = false;
       }
       try {
         try {
@@ -1667,7 +1667,7 @@ function main() {
     }
     const flag = tmp;
     try {
-      tmp$26 = parse_flag(flag, dNamed());
+      parseFlag = parse_flag(flag, dNamed());
     } catch (error) {
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1693,13 +1693,13 @@ function main() {
       }
       throw error;
     }
-    tmp$0$live = true;
-    if (tmp$26.TAG === "Ok") {
-      tmp$0$live = false;
+    parseFlag$0$live = true;
+    if (parseFlag.TAG === "Ok") {
+      parseFlag$0$live = false;
       try {
-        console.log(`flag ${tmp$26._0[0]}`);
+        console.log(`flag ${parseFlag._0[0]}`);
       } catch (error) {
-        dDrop_drop(tmp$26._0);
+        dDrop_drop(parseFlag._0);
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
         }
@@ -1725,7 +1725,7 @@ function main() {
         throw error;
       }
       try {
-        dDrop_drop(tmp$26._0);
+        dDrop_drop(parseFlag._0);
       } catch (error) {
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
@@ -1753,10 +1753,10 @@ function main() {
       }
     } else {
       try {
-        console.log(`${tmp$26._0}`);
+        console.log(`${parseFlag._0}`);
       } catch (error) {
-        if (tmp$26.TAG === "Ok") {
-          dDrop_drop(tmp$26._0);
+        if (parseFlag.TAG === "Ok") {
+          dDrop_drop(parseFlag._0);
         }
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
@@ -1784,9 +1784,9 @@ function main() {
       }
     }
     try {
-      if (tmp$26.TAG === "Ok") {
-        if (tmp$0$live) {
-          dDrop_drop(tmp$26._0);
+      if (parseFlag.TAG === "Ok") {
+        if (parseFlag$0$live) {
+          dDrop_drop(parseFlag._0);
         }
       }
     } catch (error) {
@@ -1814,7 +1814,7 @@ function main() {
       }
       throw error;
     }
-    tmp$0$live = false;
+    parseFlag$0$live = false;
   }
 }
 //# sourceMappingURL=case.js.map

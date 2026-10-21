@@ -36,7 +36,7 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
   }
   let tmp;
   let it;
-  let tmp$1;
+  let next;
   while (true) {
     try {
       tmp = $nextSome(iter);
@@ -69,7 +69,7 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
       throw error;
     }
     try {
-      tmp$1 = $nextSome(it);
+      next = $nextSome(it);
     } catch (error) {
       dropIItemIntoIter?.(it);
       dropIIntoIter?.(iter);
@@ -78,8 +78,8 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
       }
       throw error;
     }
-    if (tmp$1 != null) {
-      const first = $someValue(tmp$1);
+    if (next != null) {
+      const first = $someValue(next);
       try {
         out.push(first);
       } catch (error) {
@@ -92,8 +92,8 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
       }
     } else {
       try {
-        if (tmp$1 != null) {
-          dropIItemItem?.($someValue(tmp$1));
+        if (next != null) {
+          dropIItemItem?.($someValue(next));
         }
       } catch (error) {
         dropIItemIntoIter?.(it);
@@ -171,12 +171,12 @@ function groupsFirstOfNext_first_of_next(
   dropIItemItem,
   dropIItemIntoIter,
 ) {
-  const value = IIterator.next(groups[0]);
-  let value$0$live = true;
+  const next = IIterator.next(groups[0]);
+  let next$0$live = true;
   let result;
-  if (value != null) {
-    value$0$live = false;
-    const inner = $someValue(value);
+  if (next != null) {
+    next$0$live = false;
+    const inner = $someValue(next);
     const value$1 = $intoIter(inner);
     try {
       const tmp = $nextSome(value$1);
@@ -192,9 +192,9 @@ function groupsFirstOfNext_first_of_next(
   } else {
     result = 0;
   }
-  if (value != null) {
-    if (value$0$live) {
-      dropIItem?.($someValue(value));
+  if (next != null) {
+    if (next$0$live) {
+      dropIItem?.($someValue(next));
     }
   }
   return result;

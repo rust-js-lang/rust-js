@@ -69,65 +69,65 @@ const STRINGS = [
 function main() {
   for (const a of STRINGS) {
     const length = Array.from(a).length;
-    const value = Array.from(a)[1];
-    const value$1 = Array.from(a).toReversed().join("");
-    const value$2 = a.toUpperCase();
-    const value$3 = a.toLowerCase();
-    const value$4 = $asciiCase(a, true);
+    const nth = Array.from(a)[1];
+    const collect = Array.from(a).toReversed().join("");
+    const uppercase = a.toUpperCase();
+    const lowercase = a.toLowerCase();
+    const asciiUppercase = $asciiCase(a, true);
     const arg = $asciiCase(a);
     console.log(
-      `${$debugStr(a)}: len ${$byteLen(a)} ${!a} ${length} chars ${value == null ? "None" : `Some(${$debugStr(value, "'")})`} rev ${$debugStr(value$1)} case ${$debugStr(value$2)} ${$debugStr(value$3)} ${$debugStr(value$4)} ${$debugStr(arg)}`,
+      `${$debugStr(a)}: len ${$byteLen(a)} ${!a} ${length} chars ${nth == null ? "None" : `Some(${$debugStr(nth, "'")})`} rev ${$debugStr(collect)} case ${$debugStr(uppercase)} ${$debugStr(lowercase)} ${$debugStr(asciiUppercase)} ${$debugStr(arg)}`,
     );
-    const value$5 = $trim(a);
-    const value$6 = $trimStart(a);
-    const value$7 = $trimEnd(a);
-    const value$8 = $trimMatches(a, " ");
-    const value$9 = $trimMatches(a, "a", true, false);
-    const value$10 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
+    const trim = $trim(a);
+    const trimStart = $trimStart(a);
+    const trimEnd = $trimEnd(a);
+    const trimMatches = $trimMatches(a, " ");
+    const trimStartMatches = $trimMatches(a, "a", true, false);
+    const value = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
     const arg$1 = $lines(a);
     console.log(
-      `${$debugStr(a)}: trim ${$debugStr(value$5)} ${$debugStr(value$6)} ${$debugStr(value$7)} ${$debugStr(value$8)} ${$debugStr(value$9)} words [${value$10.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
+      `${$debugStr(a)}: trim ${$debugStr(trim)} ${$debugStr(trimStart)} ${$debugStr(trimEnd)} ${$debugStr(trimMatches)} ${$debugStr(trimStartMatches)} words [${value.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
     );
-    const value$11 = a.split(",");
-    const value$12 = Iterator.from($splitN(a, 2, " ")).toArray();
-    const value$13 = Iterator.from($rsplit(a, " ")).toArray();
-    const value$14 = $splitOnce(a, ",");
-    const value$15 = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
-    const value$16 = $charIndices(a);
-    const value$17 = $charBoundary(a, 1) !== undefined;
-    const value$18 = $strGet(a, 0, 1);
+    const value$1 = a.split(",");
+    const value$2 = Iterator.from($splitN(a, 2, " ")).toArray();
+    const value$3 = Iterator.from($rsplit(a, " ")).toArray();
+    const splitOnce = $splitOnce(a, ",");
+    const sum = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
+    const value$4 = $charIndices(a);
+    const isCharBoundary = $charBoundary(a, 1) !== undefined;
+    const get = $strGet(a, 0, 1);
     const arg$2 = $charIndices(a).toReversed()[0];
     console.log(
-      `${$debugStr(a)}: split [${value$11.map((item) => $debugStr(item)).join(", ")}] [${value$12.map((item) => $debugStr(item)).join(", ")}] [${value$13.map((item) => $debugStr(item)).join(", ")}] ${value$14 == null ? "None" : `Some((${$debugStr(value$14[0])}, ${$debugStr(value$14[1])}))`} bytes ${value$15} [${value$16.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${value$17} ${value$18 == null ? "None" : `Some(${$debugStr(value$18)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
+      `${$debugStr(a)}: split [${value$1.map((item) => $debugStr(item)).join(", ")}] [${value$2.map((item) => $debugStr(item)).join(", ")}] [${value$3.map((item) => $debugStr(item)).join(", ")}] ${splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`} bytes ${sum} [${value$4.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${isCharBoundary} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
     );
-    const value$19 = $find(a, "a");
-    const value$20 = $rfind(a, "a");
-    const value$21 = $find(a, "b");
-    const value$22 = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
-    const value$23 = a.replaceAll("a", "xy");
-    const value$24 = a.repeat(2);
-    const value$25 = $parseInt(a, -2147483648, 2147483647);
-    const value$26 = $parseF64(a);
-    const value$27 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
+    const find = $find(a, "a");
+    const rfind = $rfind(a, "a");
+    const value$5 = $find(a, "b");
+    const count = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
+    const replace = a.replaceAll("a", "xy");
+    const repeat = a.repeat(2);
+    const parse = $parseInt(a, -2147483648, 2147483647);
+    const value$6 = $parseF64(a);
+    const value$7 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
     const arg$3 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
-      `${$debugStr(a)}: find ${value$19 == null ? "None" : `Some(${value$19})`} ${value$20 == null ? "None" : `Some(${value$20})`} ${value$21 == null ? "None" : `Some(${value$21})`} ${value$22} replace ${$debugStr(value$23)} ${$debugStr(value$24)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${value$25.TAG === "Ok" ? `Ok(${value$25._0})` : `Err(${$debugParseError(value$25._0, "ParseIntError")})`} ${value$26.TAG === "Ok" ? `Ok(${$debugF64(value$26._0)})` : `Err(${$debugParseError(value$26._0, "ParseFloatError")})`} lossy ${$debugStr(value$27._0)} all ${arg$3}`,
+      `${$debugStr(a)}: find ${find == null ? "None" : `Some(${find})`} ${rfind == null ? "None" : `Some(${rfind})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${count} replace ${$debugStr(replace)} ${$debugStr(repeat)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${value$6.TAG === "Ok" ? `Ok(${$debugF64(value$6._0)})` : `Err(${$debugParseError(value$6._0, "ParseFloatError")})`} lossy ${$debugStr(value$7._0)} all ${arg$3}`,
     );
     for (const b of STRINGS) {
-      const value = a.startsWith(b);
-      const value$1 = a.endsWith(b);
-      const value$2 = a.includes(b);
-      const value$3 = $cmp(a, b);
-      const value$4 = $cmp(a, b) < 0;
-      const value$5 = $cmp(a, b) > 0 ? a : b;
-      const value$6 = $asciiCase(a) === $asciiCase(b);
-      const value$7 = $find(a, b);
-      const value$8 = $stripPrefix(a, b);
-      const value$9 = $stripSuffix(a, b);
+      const startsWith = a.startsWith(b);
+      const endsWith = a.endsWith(b);
+      const contains = a.includes(b);
+      const cmp = $cmp(a, b);
+      const value = $cmp(a, b) < 0;
+      const max = $cmp(a, b) > 0 ? a : b;
+      const eqIgnoreAsciiCase = $asciiCase(a) === $asciiCase(b);
+      const value$1 = $find(a, b);
+      const stripPrefix = $stripPrefix(a, b);
+      const stripSuffix = $stripSuffix(a, b);
       console.log(
-        `${$debugStr(a)} ${$debugStr(b)}: ${value} ${value$1} ${value$2} ${
-          ["Less", "Equal", "Greater"][value$3 + 1]
-        } ${value$4} ${value$5} ${a === b} ${value$6} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${$byteLen(a + b)}`,
+        `${$debugStr(a)} ${$debugStr(b)}: ${startsWith} ${endsWith} ${contains} ${
+          ["Less", "Equal", "Greater"][cmp + 1]
+        } ${value} ${max} ${a === b} ${eqIgnoreAsciiCase} ${value$1 == null ? "None" : `Some(${value$1})`} ${stripPrefix == null ? "None" : `Some(${$debugStr(stripPrefix)})`} ${stripSuffix == null ? "None" : `Some(${$debugStr(stripSuffix)})`} ${$byteLen(a + b)}`,
       );
     }
   }

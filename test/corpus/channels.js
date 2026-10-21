@@ -31,15 +31,15 @@ function produce(tx) {
       break;
     }
     const id = tmp;
-    let tmp$1;
+    let send;
     try {
-      tmp$1 = $send(tx, { id, name: `job ${id}` });
+      send = $send(tx, { id, name: `job ${id}` });
     } catch (error) {
       $dropSender(tx);
       throw error;
     }
     try {
-      $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
+      $unwrapOk(send, undefined, (e) => "SendError { .. }");
     } catch (error) {
       $dropSender(tx);
       throw error;
@@ -51,11 +51,11 @@ function produce(tx) {
 function drain(rx) {
   const names = [];
   while (true) {
-    const value = $recv(rx);
-    if (value.TAG !== "Ok") {
+    const recv = $recv(rx);
+    if (recv.TAG !== "Ok") {
       break;
     }
-    names.push(`${value._0.id} ${value._0.name}`);
+    names.push(`${recv._0.id} ${recv._0.name}`);
   }
   return names;
 }
@@ -77,32 +77,32 @@ function main() {
     $dropReceiver(rx);
     throw error;
   }
-  let tmp;
+  let send;
   try {
-    tmp = $send(tx2, { id: 9, name: "late" });
+    send = $send(tx2, { id: 9, name: "late" });
   } catch (error) {
     $dropSender(tx2);
     $dropReceiver(rx);
     throw error;
   }
   try {
-    $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
+    $unwrapOk(send, undefined, (e) => "SendError { .. }");
   } catch (error) {
     $dropSender(tx2);
     $dropReceiver(rx);
     throw error;
   }
-  let tmp$1;
+  let tryRecv;
   try {
-    tmp$1 = $tryRecv(rx);
+    tryRecv = $tryRecv(rx);
   } catch (error) {
     $dropSender(tx2);
     $dropReceiver(rx);
     throw error;
   }
-  if (tmp$1.TAG === "Ok") {
+  if (tryRecv.TAG === "Ok") {
     try {
-      console.log(`first ${tmp$1._0.id}`);
+      console.log(`first ${tryRecv._0.id}`);
     } catch (error) {
       $dropSender(tx2);
       $dropReceiver(rx);
@@ -143,8 +143,8 @@ function main() {
         } finally {
           $dropSender(tx$1);
         }
-        const tmp = $recv(rx);
-        const value = tmp.TAG === "Err";
+        const recv = $recv(rx);
+        const value = recv.TAG === "Err";
         console.log(`${value}`);
       } finally {
         $dropReceiver(rx);

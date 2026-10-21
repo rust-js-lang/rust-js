@@ -44,10 +44,10 @@ function main() {
   console.log(
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${oddDebug_fmt(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${oddDebug_fmt(value$1._0)})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${oddDebug_fmt(value$2._0)})`}`,
   );
-  const value$3 = first_doubled([4, 5]);
-  const value$4 = first_doubled([]);
+  const firstDoubled = first_doubled([4, 5]);
+  const value$3 = first_doubled([]);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${firstDoubled == null ? "None" : `Some(${firstDoubled})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

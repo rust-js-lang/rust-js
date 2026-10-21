@@ -197,21 +197,21 @@ function main() {
             const value$1 = (l) => l[0];
             try {
               console.log(`middle ${p != null ? value$1(p) : "none"}`);
-              const tmp = middle("Empty");
+              const loud = middle("Empty");
               try {
-                console.log(`middle none ${!tmp}`);
+                console.log(`middle none ${!loud}`);
               } finally {
-                if (tmp != null) {
-                  loudDrop_drop(tmp);
+                if (loud != null) {
+                  loudDrop_drop(loud);
                 }
               }
 
-              const tmp$1 = name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] });
+              const tmp = name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] });
+              console.log(`name ${tmp}`);
+              const tmp$1 = name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] });
               console.log(`name ${tmp$1}`);
-              const tmp$2 = name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] });
+              const tmp$2 = name("Empty");
               console.log(`name ${tmp$2}`);
-              const tmp$3 = name("Empty");
-              console.log(`name ${tmp$3}`);
               console.log("end");
             } finally {
               if (p != null) {

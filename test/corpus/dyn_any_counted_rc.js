@@ -20,27 +20,27 @@ function main() {
     });
     throw error;
   }
-  const value =
+  const downcast =
     shared.impl.type_id() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
-  const value$1 = value.TAG === "Ok";
+  const value = downcast.TAG === "Ok";
   try {
-    console.log(`${value$1}`);
+    console.log(`${value}`);
   } catch (error) {
-    if (value.TAG === "Ok") {
-      $rcDrop(value._0);
+    if (downcast.TAG === "Ok") {
+      $rcDrop(downcast._0);
     }
-    if (value.TAG === "Err") {
-      $rcDrop(value._0, (value) => {
+    if (downcast.TAG === "Err") {
+      $rcDrop(downcast._0, (value) => {
         value.impl.$drop?.(value.value);
       });
     }
     throw error;
   }
-  if (value.TAG === "Ok") {
-    $rcDrop(value._0);
+  if (downcast.TAG === "Ok") {
+    $rcDrop(downcast._0);
   }
-  if (value.TAG === "Err") {
-    $rcDrop(value._0, (value) => {
+  if (downcast.TAG === "Err") {
+    $rcDrop(downcast._0, (value) => {
       value.impl.$drop?.(value.value);
     });
   }

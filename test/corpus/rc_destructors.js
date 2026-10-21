@@ -75,9 +75,9 @@ function main() {
 
   const h = { value: { name: ["h"], items: [["i1"], ["i2"]] }, strong: 1, weak: 0 };
   let tmp;
-  let tmp$1;
+  let holder;
   try {
-    tmp$1 = $rcClone(h);
+    holder = $rcClone(h);
   } catch (error) {
     $rcDrop(h, (value) => {
       noisyDrop_drop(value.name);
@@ -88,14 +88,14 @@ function main() {
     throw error;
   }
   let item$live = true;
-  let tmp$2;
+  let tmp$1;
   try {
-    tmp$2 = $rcClone(h);
+    tmp$1 = $rcClone(h);
     item$live = false;
-    tmp = [tmp$1, tmp$2];
+    tmp = [holder, tmp$1];
   } catch (error) {
     if (item$live) {
-      $rcDrop(tmp$1, (value) => {
+      $rcDrop(holder, (value) => {
         noisyDrop_drop(value.name);
         for (const item of value.items) {
           noisyDrop_drop(item);
@@ -133,9 +133,9 @@ function main() {
   console.log("after h");
 
   const cell = { value: { value: [["x"]] }, strong: 1, weak: 0 };
-  let tmp$3;
+  let borrowMut;
   try {
-    tmp$3 = $borrowMut(cell.value, true);
+    borrowMut = $borrowMut(cell.value, true);
   } catch (error) {
     $rcDrop(cell, (value) => {
       for (const item of value.value) {
@@ -145,9 +145,9 @@ function main() {
     throw error;
   }
   try {
-    tmp$3.value.push(["y"]);
+    borrowMut.value.push(["y"]);
   } catch (error) {
-    $unborrow(tmp$3);
+    $unborrow(borrowMut);
     $rcDrop(cell, (value) => {
       for (const item of value.value) {
         noisyDrop_drop(item);
@@ -156,7 +156,7 @@ function main() {
     throw error;
   }
   try {
-    $unborrow(tmp$3);
+    $unborrow(borrowMut);
   } catch (error) {
     $rcDrop(cell, (value) => {
       for (const item of value.value) {
@@ -182,22 +182,22 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-    const tmp = $borrow(other.value, true);
+    const borrow = $borrow(other.value, true);
     try {
-      console.log(`${tmp.value.length}`);
+      console.log(`${borrow.value.length}`);
     } finally {
-      $unborrow(tmp);
+      $unborrow(borrow);
     }
-    const tmp$1 = $borrowMut(other.value, true);
+    const tmp = $borrowMut(other.value, true);
     let last;
     try {
-      last = tmp$1.value.pop();
+      last = tmp.value.pop();
     } catch (error) {
-      $unborrow(tmp$1);
+      $unborrow(tmp);
       throw error;
     }
     try {
-      $unborrow(tmp$1);
+      $unborrow(tmp);
       console.log(`popped ${!!last}`);
     } finally {
       if (last != null) {

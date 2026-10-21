@@ -56,9 +56,9 @@ function main() {
   const value = namesSource().first_cloned(names, { deref: (x) => x }, { clone: (value) => value });
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   const dynNames = { value: { names: [] }, impl: namesSource() };
-  const value$1 = dynNames.impl.next(dynNames);
+  const next = dynNames.impl.next(dynNames);
   console.log(
-    `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${dynNames.impl.label(dynNames.value)}`,
+    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${dynNames.impl.label(dynNames.value)}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -198,9 +198,9 @@ export function tree() {
   const s = option != null ? Value.as_str(option) : undefined;
   const name = s?.toUpperCase();
   const value = price(v);
-  const value$1 = Value.depth(v);
+  const depth = Value.depth(v);
   const option$1 = Value.get(v, "missing");
-  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${value$1} ${option$1 == null || Value.is_null(option$1)}\n`;
+  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${option$1 == null || Value.is_null(option$1)}\n`;
   const cloneValue = (value) =>
     value.TAG === "List"
       ? { ...value, _0: value._0.map((item) => cloneValue(item)) }

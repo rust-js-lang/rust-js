@@ -86,11 +86,11 @@ function main() {
     { value: { seen: [] }, impl: loggerListener() },
   ];
   for (const listener of listeners) {
-    const receiver = $borrowMut(listener, true);
+    const value = $borrowMut(listener, true);
     try {
-      receiver.impl.notify(receiver, "start");
+      value.impl.notify(value, "start");
     } finally {
-      $unborrow(receiver);
+      $unborrow(value);
     }
   }
   const receiver = $borrowMut($index(listeners, 0), true);
@@ -99,17 +99,17 @@ function main() {
   } finally {
     $unborrow(receiver);
   }
-  const value = $borrow(logger, true);
+  const borrow = $borrow(logger, true);
   try {
-    const tmp = loggerListener_count(value.value);
-    const tmp$1 = $borrow($index(listeners, 1), true);
+    const count = loggerListener_count(borrow.value);
+    const tmp = $borrow($index(listeners, 1), true);
     try {
-      console.log(`${tmp} ${tmp$1.impl.count(tmp$1.value)}`);
+      console.log(`${count} ${tmp.impl.count(tmp.value)}`);
     } finally {
-      $unborrow(tmp$1);
+      $unborrow(tmp);
     }
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
 
   const root = {
@@ -134,9 +134,9 @@ function main() {
     });
     throw error;
   }
-  let tmp$1;
+  let borrowMut;
   try {
-    tmp$1 = $borrowMut(leaf.value.parent, true);
+    borrowMut = $borrowMut(leaf.value.parent, true);
   } catch (error) {
     $weakDrop(tmp);
     $rcDrop(leaf, (value) => {
@@ -148,10 +148,10 @@ function main() {
     throw error;
   }
   try {
-    $weakDrop(tmp$1.value);
+    $weakDrop(borrowMut.value);
   } catch (error) {
-    tmp$1.value = tmp;
-    $unborrow(tmp$1);
+    borrowMut.value = tmp;
+    $unborrow(borrowMut);
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
     });
@@ -160,9 +160,9 @@ function main() {
     });
     throw error;
   }
-  tmp$1.value = tmp;
+  borrowMut.value = tmp;
   try {
-    $unborrow(tmp$1);
+    $unborrow(borrowMut);
   } catch (error) {
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
@@ -172,23 +172,23 @@ function main() {
     });
     throw error;
   }
+  let tmp$1;
+  try {
+    tmp$1 = $borrow(leaf.value.parent, true);
+  } catch (error) {
+    $rcDrop(leaf, (value) => {
+      $weakDrop(value.parent.value);
+    });
+    $rcDrop(root, (value) => {
+      $weakDrop(value.parent.value);
+    });
+    throw error;
+  }
+  let upgrade;
   let tmp$2;
   try {
-    tmp$2 = $borrow(leaf.value.parent, true);
-  } catch (error) {
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    throw error;
-  }
-  let tmp$3;
-  let tmp$4;
-  try {
-    tmp$3 = $upgrade(tmp$2.value);
-    tmp$4 = (p) => {
+    upgrade = $upgrade(tmp$1.value);
+    tmp$2 = (p) => {
       const result = p.value.name;
       $rcDrop(p, (value) => {
         $weakDrop(value.parent.value);
@@ -196,7 +196,7 @@ function main() {
       return result;
     };
   } catch (error) {
-    $unborrow(tmp$2);
+    $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
     });
@@ -205,11 +205,11 @@ function main() {
     });
     throw error;
   }
-  let tmp$5;
+  let map;
   try {
-    tmp$5 = tmp$3 ? tmp$4(tmp$3) : undefined;
+    map = upgrade ? tmp$2(upgrade) : undefined;
   } catch (error) {
-    $unborrow(tmp$2);
+    $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
     });
@@ -219,9 +219,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${leaf.value.name} of ${tmp$5 ?? ""}`);
+    console.log(`${leaf.value.name} of ${map ?? ""}`);
   } catch (error) {
-    $unborrow(tmp$2);
+    $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
     });
@@ -231,7 +231,7 @@ function main() {
     throw error;
   }
   try {
-    $unborrow(tmp$2);
+    $unborrow(tmp$1);
   } catch (error) {
     $rcDrop(leaf, (value) => {
       $weakDrop(value.parent.value);
@@ -243,10 +243,10 @@ function main() {
   }
 
   const counter = { value: { value: { sum: 0 } }, strong: 1, weak: 0 };
-  let tmp$6;
+  let tmp$3;
   try {
-    tmp$6 = $rcClone(counter);
-    $dynCell(tmp$6.value, counterSink());
+    tmp$3 = $rcClone(counter);
+    $dynCell(tmp$3.value, counterSink());
   } catch (error) {
     $rcDrop(counter);
     $rcDrop(leaf, (value) => {
@@ -259,7 +259,7 @@ function main() {
   }
   const rc = { value: { value: { name: "loud" } }, strong: 1, weak: 0 };
   $dynCell(rc.value, loudSink());
-  const sinks = [tmp$6, rc];
+  const sinks = [tmp$3, rc];
   let iter;
   try {
     iter = sinks.entries();
@@ -278,7 +278,7 @@ function main() {
     });
     throw error;
   }
-  let tmp$7;
+  let tmp$4;
   while (true) {
     let tmp;
     try {
@@ -304,7 +304,7 @@ function main() {
     const i = tmp[0];
     const sink = tmp[1];
     try {
-      tmp$7 = $borrowMut(sink.value, true);
+      tmp$4 = $borrowMut(sink.value, true);
     } catch (error) {
       for (const item of sinks) {
         $rcDrop(item, (value) => {
@@ -321,9 +321,9 @@ function main() {
       throw error;
     }
     try {
-      tmp$7.impl.take(tmp$7, (i + 1) >>> 0);
+      tmp$4.impl.take(tmp$4, (i + 1) >>> 0);
     } catch (error) {
-      $unborrow(tmp$7);
+      $unborrow(tmp$4);
       for (const item of sinks) {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.value);
@@ -339,7 +339,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$7);
+      $unborrow(tmp$4);
     } catch (error) {
       for (const item of sinks) {
         $rcDrop(item, (value) => {
@@ -362,9 +362,9 @@ function main() {
         try {
           const tmp = $borrow($index(sinks, 0).value, true);
           try {
-            const tmp$1 = tmp.impl.total(tmp.value);
-            const tmp$2 = $index(sinks, 0).strong;
-            console.log(`${tmp$1} ${tmp$2} ${counter.strong}`);
+            const total = tmp.impl.total(tmp.value);
+            const tmp$1 = $index(sinks, 0).strong;
+            console.log(`${total} ${tmp$1} ${counter.strong}`);
           } finally {
             $unborrow(tmp);
           }

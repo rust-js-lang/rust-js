@@ -131,8 +131,8 @@ function main() {
   ownDerefMut_deref_mut(own).value.x = 5;
   const value$2 = ownDerefMut_deref_mut(own).value;
   value$2.y = (value$2.y + 2) | 0;
-  const x$1 = ownDeref_deref(own).x;
-  console.log(`${ptDebug_fmt(point)} ${x$1}`);
+  const value$3 = ownDeref_deref(own).x;
+  console.log(`${ptDebug_fmt(point)} ${value$3}`);
 
   const a = { x: 1, y: 1 };
   const b = { ...a };
@@ -156,18 +156,18 @@ function main() {
   const elsewhere = $ptr(twin, "value", 0);
   const seven = { value: 7 };
   const alsoSeven = { value: 7 };
-  const value$3 = c == null || m == null ? c == m : $ptrEq(c, m, 4);
-  const value$4 = c == null || elsewhere == null ? c == elsewhere : $ptrEq(c, elsewhere, 4);
+  const value$4 = c == null || m == null ? c == m : $ptrEq(c, m, 4);
+  const value$5 = c == null || elsewhere == null ? c == elsewhere : $ptrEq(c, elsewhere, 4);
   const left = $ptr(seven, "value", 0);
   const right = $ptr(alsoSeven, "value", 0);
   console.log(
-    `${value$3} ${value$4} ${left == null || right == null ? left == right : $ptrEq(left, right, 4)}`,
+    `${value$4} ${value$5} ${left == null || right == null ? left == right : $ptrEq(left, right, 4)}`,
   );
   const nothing = {};
   const atNothing = $ptr(nothing, "value", 0);
-  const value$5 = atNothing === null ? undefined : $some(atNothing.value);
+  const value$6 = atNothing === null ? undefined : $some(atNothing.value);
   console.log(
-    `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
+    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`}`,
   );
 
   const items = [10, 20, 30];

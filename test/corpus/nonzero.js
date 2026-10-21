@@ -39,24 +39,24 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${yearDebug_fmt(value)})`} ${value$1 == null ? "None" : `Some(${yearDebug_fmt(value$1)})`}`,
   );
-  const value$2 = non_zero(0);
-  const value$3 = non_zero(3);
+  const nonZero = non_zero(0);
+  const value$2 = non_zero(3);
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${nonZero == null ? "None" : `Some(${nonZero})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const big = $unwrap(18446744073709551615n);
   console.log(`${big} ${$bigLeadingZeros(big)} 1`);
   const c = a | 8;
   console.log(`${c} ${a < c} ${a === $unwrap(7)}`);
-  const value$4 = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
+  const parse = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type"))}`,
+    `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type"))}`,
   );
   const result = $nonZeroOk($tryFromInt(3, 0, 255), "number would be zero for non-zero type");
-  const value$5 = result.TAG === "Ok" ? result._0 : undefined;
-  const value$6 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
+  const value$3 = result.TAG === "Ok" ? result._0 : undefined;
+  const value$4 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugParseError(value$6._0, "TryFromIntError")})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "TryFromIntError")})`}`,
   );
   // SAFETY: not zero.
   const d = -5;

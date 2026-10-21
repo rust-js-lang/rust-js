@@ -7,29 +7,29 @@ export function entry() {
 }
 
 function total(cell) {
-  const value = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   let result;
   try {
-    result = value.value.reduce((a, b) => (a + b) | 0, 0);
+    result = borrow.value.reduce((a, b) => (a + b) | 0, 0);
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
   return result;
 }
 
 function main() {
   const cell = { value: [1, 2] };
-  const value = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, true);
   try {
-    value.value.push(total(cell));
+    borrowMut.value.push(total(cell));
   } finally {
-    $unborrow(value);
+    $unborrow(borrowMut);
   }
-  const value$1 = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   try {
-    console.log(`[${value$1.value.join(", ")}]`);
+    console.log(`[${borrow.value.join(", ")}]`);
   } finally {
-    $unborrow(value$1);
+    $unborrow(borrow);
   }
 }
 //# sourceMappingURL=case.js.map

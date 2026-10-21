@@ -67,7 +67,7 @@ function main() {
   console.log(`${Unit.touch(self)}`);
 
   let count;
-  const value = call_and_ref(
+  const callAndRef = call_and_ref(
     {
       get value() {
         return count;
@@ -78,7 +78,7 @@ function main() {
     },
     () => 5,
   );
-  value.value = (value.value + 1) >>> 0;
+  callAndRef.value = (callAndRef.value + 1) >>> 0;
   console.log(`${count == null ? "None" : `Some(${count})`}`);
 
   let words;
@@ -115,9 +115,9 @@ function main() {
 
   let unit;
   const x = { value: unit };
-  const value$1 = replace_in(x);
+  const replaceIn = replace_in(x);
   unit = x.value;
-  console.log(`${value$1} ${unit == null ? "None" : "Some(())"}`);
+  console.log(`${replaceIn} ${unit == null ? "None" : "Some(())"}`);
   call_and_ref(
     {
       get value() {
@@ -130,22 +130,22 @@ function main() {
     () => {},
   ).value = undefined;
   const x$1 = { value: unit };
-  const value$2 = replace_in(x$1);
+  const value = replace_in(x$1);
   unit = x$1.value;
-  console.log(`${value$2} ${unit == null ? "None" : "Some(())"}`);
+  console.log(`${value} ${unit == null ? "None" : "Some(())"}`);
 
   let maybe = $some(undefined);
   const x$2 = { value: maybe };
-  const value$3 = replace_in(x$2, 3);
+  const value$1 = replace_in(x$2, 3);
   maybe = x$2.value;
   console.log(
-    `${value$3} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
+    `${value$1} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
   );
   const x$3 = { value: maybe };
-  const value$4 = replace_in(x$3);
+  const value$2 = replace_in(x$3);
   maybe = x$3.value;
   console.log(
-    `${value$4} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
+    `${value$2} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

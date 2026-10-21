@@ -21,8 +21,8 @@ function main() {
       const inner = nested?.value;
       const value$1 = (rc) => rc.strong;
       try {
-        const tmp = inner ? value$1(inner) : undefined;
-        console.log(`${tmp == null ? "None" : `Some(${tmp})`} ${$unwrap(nested).strong}`);
+        const map = inner ? value$1(inner) : undefined;
+        console.log(`${map == null ? "None" : `Some(${map})`} ${$unwrap(nested).strong}`);
         const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
         try {
           const value = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;

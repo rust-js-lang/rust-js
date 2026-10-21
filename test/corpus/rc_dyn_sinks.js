@@ -86,7 +86,7 @@ function main() {
     $rcDrop(counter);
     throw error;
   }
-  let tmp$1;
+  let borrowMut;
   while (true) {
     let tmp;
     try {
@@ -105,7 +105,7 @@ function main() {
     }
     const sink = tmp;
     try {
-      tmp$1 = $borrowMut(sink.value, true);
+      borrowMut = $borrowMut(sink.value, true);
     } catch (error) {
       for (const item of sinks) {
         $rcDrop(item, (value) => {
@@ -116,9 +116,9 @@ function main() {
       throw error;
     }
     try {
-      tmp$1.impl.take(tmp$1, 2);
+      borrowMut.impl.take(borrowMut, 2);
     } catch (error) {
-      $unborrow(tmp$1);
+      $unborrow(borrowMut);
       for (const item of sinks) {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.value);
@@ -128,7 +128,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$1);
+      $unborrow(borrowMut);
     } catch (error) {
       for (const item of sinks) {
         $rcDrop(item, (value) => {
@@ -141,12 +141,12 @@ function main() {
   }
   try {
     try {
-      const tmp = $borrow($index(sinks, 0).value, true);
+      const borrow = $borrow($index(sinks, 0).value, true);
       try {
-        const tmp$1 = tmp.impl.total(tmp.value);
-        console.log(`${tmp$1} ${$index(sinks, 0).strong}`);
+        const total = borrow.impl.total(borrow.value);
+        console.log(`${total} ${$index(sinks, 0).strong}`);
       } finally {
-        $unborrow(tmp);
+        $unborrow(borrow);
       }
     } finally {
       for (const item of sinks) {

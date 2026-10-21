@@ -28,8 +28,8 @@ function collected() {
   const v = [[1], [2], [3], [4], [5]];
   const value = (l) => l[0] % 2 === 1;
   try {
-    const tmp = Iterator.from($extractIf(v, 0, undefined, value));
-    const odd = tmp.toArray();
+    const extractIf = Iterator.from($extractIf(v, 0, undefined, value));
+    const odd = extractIf.toArray();
     try {
       const tmp = ids(odd);
       const tmp$1 = v;
@@ -57,10 +57,10 @@ function stopped_early() {
       loudDrop_drop(l);
       return result;
     };
-    const tmp = first != null ? value(first) : 0;
-    const tmp$1 = w;
-    const tmp$2 = ids(tmp$1);
-    console.log(`first ${tmp} left [${tmp$2.join(", ")}]`);
+    const mapOr = first != null ? value(first) : 0;
+    const tmp = w;
+    const tmp$1 = ids(tmp);
+    console.log(`first ${mapOr} left [${tmp$1.join(", ")}]`);
   } finally {
     for (const item of w) {
       loudDrop_drop(item);

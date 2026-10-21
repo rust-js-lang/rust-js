@@ -34,12 +34,12 @@ function three(a, b, n) {
 }
 
 function main() {
-  const value = make("a");
+  const noisy = make("a");
   let tmp;
   try {
     tmp = make("b");
   } catch (error) {
-    noisyDrop_drop(value);
+    noisyDrop_drop(noisy);
     throw error;
   }
   let tmp$1;
@@ -47,16 +47,16 @@ function main() {
     tmp$1 = third(false);
   } catch (error) {
     noisyDrop_drop(tmp);
-    noisyDrop_drop(value);
+    noisyDrop_drop(noisy);
     throw error;
   }
-  console.log(`${three(value, tmp, tmp$1)}`);
-  const value$1 = make("c");
+  console.log(`${three(noisy, tmp, tmp$1)}`);
+  const value = make("c");
   let tmp$2;
   try {
     tmp$2 = make("d");
   } catch (error) {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(value);
     throw error;
   }
   let tmp$3;
@@ -64,9 +64,9 @@ function main() {
     tmp$3 = third(true);
   } catch (error) {
     noisyDrop_drop(tmp$2);
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(value);
     throw error;
   }
-  console.log(`${three(value$1, tmp$2, tmp$3)}`);
+  console.log(`${three(value, tmp$2, tmp$3)}`);
 }
 //# sourceMappingURL=case.js.map

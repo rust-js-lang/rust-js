@@ -14,14 +14,14 @@ function main() {
   const v = [[1], [2], [3]];
   const r = $rev($closing($iter(v), $dropEach(loudDrop_drop)));
   try {
-    const tmp = $next(r);
-    const tmp$1 = (l) => {
+    const next = $next(r);
+    const tmp = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+    const tmp$1 = next ? tmp(next) : undefined;
+    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
   } finally {
     r.return();
   }
@@ -44,9 +44,9 @@ function main() {
     console.log("end");
     const value = [[10], [11], [12], [13]];
     const held = $iter(value);
-    let tmp;
+    let loud;
     try {
-      tmp = $next(held);
+      loud = $next(held);
     } catch (error) {
       for (const item of held) {
         loudDrop_drop(item);
@@ -54,8 +54,8 @@ function main() {
       throw error;
     }
     try {
-      if (tmp != null) {
-        loudDrop_drop(tmp);
+      if (loud != null) {
+        loudDrop_drop(loud);
       }
     } catch (error) {
       for (const item of held) {

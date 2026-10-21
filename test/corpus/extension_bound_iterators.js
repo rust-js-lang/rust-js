@@ -65,80 +65,80 @@ function second_last(iter, IIterator, IDoubleEndedIterator, IClone) {
 
 function main() {
   const range = { inner: { start: 0, end: 4 } };
+  const pop = Ends.pop(range, { next_back: $rangeNextBack }, { len: $rangeLen });
+  const shift = Ends.shift(range, { next: $rangeNext });
   const value = Ends.pop(range, { next_back: $rangeNextBack }, { len: $rangeLen });
-  const value$1 = Ends.shift(range, { next: $rangeNext });
-  const value$2 = Ends.pop(range, { next_back: $rangeNextBack }, { len: $rangeLen });
   console.log(
-    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`,
+    `${pop == null ? "None" : `Some((${pop[0]}, ${pop[1]}))`} ${shift == null ? "None" : `Some(${shift})`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
   );
   const words = { inner: $iter(["x", "y", "z"]) };
-  const value$3 = Ends.shift(words, { next: $next });
-  const value$4 = Ends.pop(words, { next_back: $nextBack }, { len: (iterator) => iterator.len() });
-  const value$5 = Ends.pop(words, { next_back: $nextBack }, { len: (iterator) => iterator.len() });
-  const value$6 = Ends.shift(words, { next: $next });
+  const value$1 = Ends.shift(words, { next: $next });
+  const value$2 = Ends.pop(words, { next_back: $nextBack }, { len: (iterator) => iterator.len() });
+  const value$3 = Ends.pop(words, { next_back: $nextBack }, { len: (iterator) => iterator.len() });
+  const value$4 = Ends.shift(words, { next: $next });
   console.log(
-    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some((${$debugStr(value$4[0])}, ${value$4[1]}))`} ${value$5 == null ? "None" : `Some((${$debugStr(value$5[0])}, ${value$5[1]}))`} ${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`}`,
+    `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${$debugStr(value$3[0])}, ${value$3[1]}))`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
   );
   const own = { inner: [3] };
-  const value$7 = Ends.shift(own, { next: countdownIterator_next });
-  const value$8 = Ends.pop(
+  const value$5 = Ends.shift(own, { next: countdownIterator_next });
+  const value$6 = Ends.pop(
     own,
     { next_back: countdownDoubleEndedIterator_next_back },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
   );
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some((${value$8[0]}, ${value$8[1]}))`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`,
   );
 
-  const value$9 = outer(
+  const value$7 = outer(
     $iter([1, 2, 3]),
     { next: $next },
     { next_back: $nextBack },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
   console.log(
-    `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`}, ${value$9[2]})`,
+    `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`}, ${value$7[2]})`,
   );
-  const value$10 = outer(
+  const value$8 = outer(
     { start: 5, end: 8 },
     { next: $rangeNext },
     { next_back: $rangeNextBack },
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
   console.log(
-    `(${value$10[0] == null ? "None" : `Some(${value$10[0]})`}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`}, ${value$10[2]})`,
+    `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`}, ${value$8[2]})`,
   );
-  const value$11 = outer(
+  const value$9 = outer(
     [2],
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_next_back },
     { clone: (value) => [value[0]] },
   );
   console.log(
-    `(${value$11[0] == null ? "None" : `Some(${value$11[0]})`}, ${value$11[1] == null ? "None" : `Some(${value$11[1]})`}, ${value$11[2]})`,
+    `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`}, ${value$9[2]})`,
   );
 
-  const value$12 = second_last(
+  const secondLast = second_last(
     { start: 5, end: 9 },
     { next: $rangeNext },
     { next_back: $rangeNextBack },
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
-  const value$13 = second_last(
+  const value$10 = second_last(
     $iter(["p", "q"]),
     { next: $next },
     { next_back: $nextBack },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
   console.log(
-    `${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${$debugStr(value$13, "'")})`}`,
+    `${secondLast == null ? "None" : `Some(${secondLast})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10, "'")})`}`,
   );
-  const value$14 = second_last(
+  const value$11 = second_last(
     [1],
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_next_back },
     { clone: (value) => [value[0]] },
   );
-  console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
+  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
 }
 //# sourceMappingURL=case.js.map

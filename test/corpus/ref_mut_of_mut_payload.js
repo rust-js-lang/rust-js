@@ -83,9 +83,9 @@ function main() {
     },
   };
   const o$2 = { value: tmp };
-  const value = unit_twice(o$2);
+  const unitTwice = unit_twice(o$2);
   tmp = o$2.value;
-  console.log(`${value}`);
+  console.log(`${unitTwice}`);
   let calls = 0;
   const count = () => {
     calls = (calls + 1) >>> 0;
@@ -93,13 +93,13 @@ function main() {
   };
   let tmp$1 = count;
   const o$3 = { value: tmp$1 };
-  const value$1 = call_twice(o$3);
+  const callTwice = call_twice(o$3);
   tmp$1 = o$3.value;
-  console.log(`${value$1}`);
+  console.log(`${callTwice}`);
   let tmp$2;
   const o$4 = { value: tmp$2 };
-  const value$2 = call_twice(o$4);
+  const value = call_twice(o$4);
   tmp$2 = o$4.value;
-  console.log(`${value$2}`);
+  console.log(`${value}`);
 }
 //# sourceMappingURL=case.js.map

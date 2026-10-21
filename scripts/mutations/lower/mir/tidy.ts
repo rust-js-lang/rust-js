@@ -769,9 +769,9 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-temporaries-unnamed",
-    "breaks": "a temporary MIR holds is named `_4`, not `value`",
+    "breaks": "a temporary MIR holds is named `_4`, not after the call that made it",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    bindings::readable_temporaries(params, body);\n",
+    "find": "    bindings::readable_temporaries(params, body, suggested);\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",

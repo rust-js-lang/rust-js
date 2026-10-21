@@ -70,27 +70,27 @@ function main() {
       .join(", ")}]`,
   );
   const shared = { value: [1, 2], impl: { type_id: () => "alloc::vec::Vec<i32>" } };
-  const value$2 =
+  const downcast =
     shared.impl.type_id() === "alloc::vec::Vec<i32>"
       ? { TAG: "Ok", _0: shared.value }
       : { TAG: "Err", _0: shared };
-  if (value$2.TAG === "Ok") {
-    const list = value$2._0;
+  if (downcast.TAG === "Ok") {
+    const list = downcast._0;
     console.log(`[${list.join(", ")}]`);
   } else {
     console.log("not a list");
   }
   const sent = { value: 3, impl: { type_id: () => "core::option::Option<u16>" } };
-  const value$3 =
+  const downcastRef =
     sent.impl.type_id() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
   console.log(
-    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`} ${sent.impl.type_id() === "u16"}`,
+    `${downcastRef == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(downcastRef))})`} ${sent.impl.type_id() === "u16"}`,
   );
   const none = { impl: { type_id: () => "core::option::Option<u16>" } };
-  const value$4 =
+  const value$2 =
     none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined;
   console.log(
-    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
+    `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
   const f = {
     value: first,

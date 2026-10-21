@@ -103,37 +103,37 @@ function total(text) {
 }
 
 function main() {
-  const value = roleFromStr_from_str("Admin");
-  const value$1 = roleFromStr_from_str(" member ");
-  const value$2 = roleFromStr_from_str("guest");
+  const parse = roleFromStr_from_str("Admin");
+  const value = roleFromStr_from_str(" member ");
+  const value$1 = roleFromStr_from_str("guest");
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`,
+    `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugStr(parse._0)})`} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`,
   );
   const result = roleFromStr_from_str("ADMIN");
-  const value$3 = result.TAG === "Ok" ? { TAG: "Ok", _0: result._0 === "Admin" } : result;
-  console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${$debugStr(value$3._0)})`}`);
+  const value$2 = result.TAG === "Ok" ? { TAG: "Ok", _0: result._0 === "Admin" } : result;
+  console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`);
   const roles = $collectResults(["admin", "member"].values().map((s) => roleFromStr_from_str(s)));
   console.log(
     `${roles.TAG === "Ok" ? `Ok([${roles._0.join(", ")}])` : `Err(${$debugStr(roles._0)})`}`,
   );
 
-  const value$4 = pointFromStr_from_str("3, 4");
+  const value$3 = pointFromStr_from_str("3, 4");
   console.log(
-    `${value$4.TAG === "Ok" ? `Ok(${pointDebug_fmt(value$4._0)})` : `Err(${pointErrorDebug_fmt(value$4._0)})`}`,
+    `${value$3.TAG === "Ok" ? `Ok(${pointDebug_fmt(value$3._0)})` : `Err(${pointErrorDebug_fmt(value$3._0)})`}`,
   );
-  const value$5 = pointFromStr_from_str("3");
-  if (value$5.TAG === "Ok") {
-    console.log(`${pointDebug_fmt(value$5._0)}`);
+  const value$4 = pointFromStr_from_str("3");
+  if (value$4.TAG === "Ok") {
+    console.log(`${pointDebug_fmt(value$4._0)}`);
   } else {
-    console.log(`${pointErrorDisplay_fmt(value$5._0)}`);
+    console.log(`${pointErrorDisplay_fmt(value$4._0)}`);
   }
-  const value$6 = pointFromStr_from_str("3,x");
-  if (value$6.TAG === "Err") {
-    console.log(`${pointErrorDisplay_fmt(value$6._0)} ${pointErrorDebug_fmt(value$6._0)}`);
+  const value$5 = pointFromStr_from_str("3,x");
+  if (value$5.TAG === "Err") {
+    console.log(`${pointErrorDisplay_fmt(value$5._0)} ${pointErrorDebug_fmt(value$5._0)}`);
   }
   const result$1 = total("1,2; 3,4");
-  const value$7 = result$1.TAG === "Ok" ? result$1._0 : undefined;
-  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
+  const value$6 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const result$2 = total("1,2;oops");
   console.log(
     `${result$2.TAG === "Ok" ? String(result$2._0) : pointErrorDisplay_fmt(result$2._0)}`,

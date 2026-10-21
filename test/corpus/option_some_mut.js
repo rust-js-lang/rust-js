@@ -55,28 +55,28 @@ function main() {
   );
   let year;
   const old = { value: year };
-  const value = set_if_consistent(old, 2024n, { eq: (a, b) => a === b });
+  const setIfConsistent = set_if_consistent(old, 2024n, { eq: (a, b) => a === b });
   year = old.value;
-  console.log(`${value.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
+  console.log(`${setIfConsistent.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$1 = { value: year };
-  const value$1 = set_if_consistent(old$1, 2024n, { eq: (a, b) => a === b });
+  const value = set_if_consistent(old$1, 2024n, { eq: (a, b) => a === b });
   year = old$1.value;
-  console.log(`${value$1.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
+  console.log(`${value.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$2 = { value: year };
-  const value$2 = set_if_consistent(old$2, 1999n, { eq: (a, b) => a === b });
+  const value$1 = set_if_consistent(old$2, 1999n, { eq: (a, b) => a === b });
   year = old$2.value;
-  console.log(`${value$2.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
+  console.log(`${value$1.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   console.log(`${year == null ? "None" : `Some(${year})`}`);
   let name;
   const old$3 = { value: name };
-  const value$3 = set_if_consistent(old$3, "Ada", { eq: (a, b) => a === b });
+  const value$2 = set_if_consistent(old$3, "Ada", { eq: (a, b) => a === b });
   name = old$3.value;
-  console.log(`${value$3.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
+  console.log(`${value$2.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$4 = { value: name };
-  const value$4 = set_if_consistent(old$4, "Bo", { eq: (a, b) => a === b });
+  const value$3 = set_if_consistent(old$4, "Bo", { eq: (a, b) => a === b });
   name = old$4.value;
   console.log(
-    `${value$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${name == null ? "None" : `Some(${$debugStr(name)})`}`,
+    `${value$3.TAG === "Ok" ? "Ok(())" : "Err(())"} ${name == null ? "None" : `Some(${$debugStr(name)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -37,11 +37,11 @@ function wordsSource_next_item(words) {
 function drain(s, SSource) {
   const out = [];
   while (true) {
-    const value = SSource.next_item(s);
-    if (value == null) {
+    const nextItem = SSource.next_item(s);
+    if (nextItem == null) {
       break;
     }
-    const x = $someValue(value);
+    const x = $someValue(nextItem);
     out.push(x);
   }
   return out;
@@ -91,32 +91,32 @@ function all(i) {
 }
 
 function main() {
-  const value = { n: 3 };
-  const s = { value };
-  const value$1 = drain(s, countSource());
-  $assign(value, s.value);
-  console.log(`[${value$1.join(", ")}]`);
-  const value$2 = { list: ["a", "b"] };
-  const s$1 = { value: value$2 };
-  const value$3 = drain(s$1, wordsSource());
-  $assign(value$2, s$1.value);
-  console.log(`[${value$3.map((item) => $debugStr(item)).join(", ")}]`);
-  const value$4 = { n: 4 };
-  const s$2 = { value: value$4 };
-  const value$5 = total(s$2, countSource());
-  $assign(value$4, s$2.value);
-  const value$6 = { list: ["x"] };
-  const s$3 = { value: value$6 };
-  const value$7 = shown(s$3, wordsSource(), { fmt: (value) => $debugStr(value) });
-  $assign(value$6, s$3.value);
-  console.log(`${value$5} ${value$7}`);
+  const count = { n: 3 };
+  const s = { value: count };
+  const value = drain(s, countSource());
+  $assign(count, s.value);
+  console.log(`[${value.join(", ")}]`);
+  const words = { list: ["a", "b"] };
+  const s$1 = { value: words };
+  const value$1 = drain(s$1, wordsSource());
+  $assign(words, s$1.value);
+  console.log(`[${value$1.map((item) => $debugStr(item)).join(", ")}]`);
+  const value$2 = { n: 4 };
+  const s$2 = { value: value$2 };
+  const value$3 = total(s$2, countSource());
+  $assign(value$2, s$2.value);
+  const value$4 = { list: ["x"] };
+  const s$3 = { value: value$4 };
+  const value$5 = shown(s$3, wordsSource(), { fmt: (value) => $debugStr(value) });
+  $assign(value$4, s$3.value);
+  console.log(`${value$3} ${value$5}`);
   console.log(`${tag({ n: 7 }, countLabeled())} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
   console.log(`[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0)).join(", ")}]`);
   const source = { value: { n: 2 }, impl: countSource() };
-  const value$8 = source.impl.next_item(source);
-  const value$9 = source.impl.next_item(source);
+  const nextItem = source.impl.next_item(source);
+  const value$6 = source.impl.next_item(source);
   console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
+    `${nextItem == null ? "None" : `Some(${nextItem})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -59,12 +59,12 @@ function main() {
 
   // Binary search by a comparison: where it is, or where it would go.
   const sorted = [10, 20, 30, 40];
-  const value = $binarySearchBy(sorted, (p) => $cmp(p, 30));
-  const value$1 = $binarySearchBy(sorted, (p) => $cmp(p, 25));
-  const value$2 = $binarySearchBy(sorted, (p) => $cmp(p, 5));
-  const value$3 = $binarySearchBy(sorted, (p) => $cmp(p, 99));
+  const binarySearchBy = $binarySearchBy(sorted, (p) => $cmp(p, 30));
+  const value = $binarySearchBy(sorted, (p) => $cmp(p, 25));
+  const value$1 = $binarySearchBy(sorted, (p) => $cmp(p, 5));
+  const value$2 = $binarySearchBy(sorted, (p) => $cmp(p, 99));
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`} ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
+    `${binarySearchBy.TAG === "Ok" ? `Ok(${binarySearchBy._0})` : `Err(${binarySearchBy._0})`} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`}`,
   );
   const people = [
     ["ann", 31],
@@ -75,11 +75,11 @@ function main() {
   const byKey = $binarySearchBy(people, (item) => $cmp(item[1], 57));
   const result = [9, 7, 5];
   const reversed = $binarySearchBy(result, (p) => {
-    const value = $cmp(p, 7);
-    if (value === -1) {
+    const cmp = $cmp(p, 7);
+    if (cmp === -1) {
       return 1;
     }
-    if (value === 1) {
+    if (cmp === 1) {
       return -1;
     }
     return 0;
@@ -114,13 +114,13 @@ function main() {
   ]);
   const queue = [1, 2];
   const list = [7, 8];
-  const value$4 = $unwrap(index.get("y"), "no entry found for key");
+  const value$3 = $unwrap(index.get("y"), "no entry found for key");
   console.log(
     `{${Array.from($sortedKeys(tags, $cmp))
       .map((item) => $debugStr(item))
       .join(", ")}} ${seen.size} {${Array.from($sortedEntries(ages, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
-      .join(", ")}} ${value$4} [${queue.join(", ")}] [${list.join(", ")}]`,
+      .join(", ")}} ${value$3} [${queue.join(", ")}] [${list.join(", ")}]`,
   );
 
   // What a `Cell` or a `RefCell` holds, replaced or taken.
@@ -129,32 +129,32 @@ function main() {
   const taken = $cellReplace(count, 0);
   console.log(`${old} ${taken} ${count.value}`);
   const label = { value: "x" };
-  const value$5 = $cellReplace(label);
+  const take = $cellReplace(label);
   console.log(
-    `${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
+    `${take == null ? "None" : `Some(${$debugStr(take, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
   );
   const log = { value: [1] };
   const before = $cellReplace($borrowMut(log), [2, 3]);
-  const value$6 = $borrowMut(log, true);
+  const borrowMut = $borrowMut(log, true);
   try {
-    value$6.value.push(4);
+    borrowMut.value.push(4);
   } finally {
-    $unborrow(value$6);
+    $unborrow(borrowMut);
   }
   const after = $cellReplace($borrowMut(log), []);
-  const value$7 = $borrow(log, true);
+  const borrow = $borrow(log, true);
   try {
-    console.log(`[${before.join(", ")}] [${after.join(", ")}] [${value$7.value.join(", ")}]`);
+    console.log(`[${before.join(", ")}] [${after.join(", ")}] [${borrow.value.join(", ")}]`);
   } finally {
-    $unborrow(value$7);
+    $unborrow(borrow);
   }
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);
-  const value$8 = $borrow(name, true);
+  const value$4 = $borrow(name, true);
   try {
-    console.log(`${previous} ${value$8.value}`);
+    console.log(`${previous} ${value$4.value}`);
   } finally {
-    $unborrow(value$8);
+    $unborrow(value$4);
   }
 }
 //# sourceMappingURL=case.js.map

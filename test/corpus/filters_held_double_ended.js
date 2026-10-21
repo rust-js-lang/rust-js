@@ -73,14 +73,14 @@ function main() {
     true,
   ).toArray();
   const both = evens_or_tens(true);
-  const value = twoIterator_next(both, { next: $next }, { next: $next });
+  const next = twoIterator_next(both, { next: $next }, { next: $next });
   const arg = twoDoubleEndedIterator_next_back(
     both,
     { next_back: $nextBack },
     { next_back: $nextBack },
   );
   console.log(
-    `[${evens.join(", ")}] [${tens.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${arg == null ? "None" : `Some(${arg})`}`,
+    `[${evens.join(", ")}] [${tens.join(", ")}] ${next == null ? "None" : `Some(${next})`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

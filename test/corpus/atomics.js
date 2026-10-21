@@ -74,8 +74,12 @@ function main() {
   if (exchanged$2) {
     NEXT_ID = 1;
   }
-  const value$3 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
-  console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${NEXT_ID}`);
+  const compareExchangeWeak = exchanged$2
+    ? { TAG: "Ok", _0: previous$12 }
+    : { TAG: "Err", _0: previous$12 };
+  console.log(
+    `${compareExchangeWeak.TAG === "Ok" ? `Ok(${compareExchangeWeak._0})` : `Err(${compareExchangeWeak._0})`} ${NEXT_ID}`,
+  );
   console.log(`${hit()} ${hit()} ${HITS.value}`);
 
   const seen = [];

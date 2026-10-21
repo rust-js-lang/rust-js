@@ -195,17 +195,17 @@ function lend() {
   if (first) {
     first[0] = 20;
   }
-  let tmp$1;
+  let lastMut;
   try {
-    tmp$1 = d.at(-1);
+    lastMut = d.at(-1);
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);
     }
     throw error;
   }
-  if (tmp$1) {
-    const last = tmp$1;
+  if (lastMut) {
+    const last = lastMut;
     let old;
     try {
       old = $take(last, [21]);
@@ -233,17 +233,17 @@ function lend() {
       throw error;
     }
   }
-  let tmp$2;
+  let splitAtMut;
   try {
-    tmp$2 = $splitAtMut(d, 1);
+    splitAtMut = $splitAtMut(d, 1);
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);
     }
     throw error;
   }
-  const a = tmp$2[0];
-  const b = tmp$2[1];
+  const a = splitAtMut[0];
+  const b = splitAtMut[1];
   const length = a.length;
   if (0 >= length) {
     for (const item of d) {
@@ -251,12 +251,12 @@ function lend() {
     }
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
   }
-  const length$1 = b.length;
-  if (0 >= length$1) {
+  const value = b.length;
+  if (0 >= value) {
     for (const item of d) {
       loudDrop_drop(item);
     }
-    throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
+    throw new Error(`index out of bounds: the len is ${value} but the index is 0`);
   }
   try {
     $exchange(a[0], b[0]);
@@ -266,18 +266,18 @@ function lend() {
     }
     throw error;
   }
-  let tmp$3;
+  let splitFirstMut;
   try {
-    tmp$3 = $splitEndMut(d, false);
+    splitFirstMut = $splitEndMut(d, false);
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);
     }
     throw error;
   }
-  if (tmp$3) {
-    const head = tmp$3[0];
-    const rest = tmp$3[1];
+  if (splitFirstMut) {
+    const head = splitFirstMut[0];
+    const rest = splitFirstMut[1];
     head[0] = (head[0] + (rest.length & 255)) & 255;
   }
   let iter;

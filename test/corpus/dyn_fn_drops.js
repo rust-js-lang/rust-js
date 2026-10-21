@@ -63,19 +63,19 @@ function main() {
     try {
       const tmp = named;
       const tmp$1 = adder("a1", 1);
-      const tmp$2 = $insert(tmp, "a", tmp$1);
-      if (tmp$2 != null) {
-        $dispose(tmp$2);
+      const insert = $insert(tmp, "a", tmp$1);
+      if (insert != null) {
+        $dispose(insert);
       }
-      const tmp$3 = named;
-      const tmp$4 = adder("a2", 2);
-      const tmp$5 = $insert(tmp$3, "a", tmp$4);
-      if (tmp$5 != null) {
-        $dispose(tmp$5);
+      const tmp$2 = named;
+      const tmp$3 = adder("a2", 2);
+      const tmp$4 = $insert(tmp$2, "a", tmp$3);
+      if (tmp$4 != null) {
+        $dispose(tmp$4);
       }
       console.log("replaced");
-      const tmp$6 = $removeAt(handlers, 0);
-      $dispose(tmp$6);
+      const remove = $removeAt(handlers, 0);
+      $dispose(remove);
       console.log("end");
     } finally {
       for (const item of named.values()) {

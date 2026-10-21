@@ -179,10 +179,10 @@ function main() {
       ),
     )}`,
   );
-  const value = $sizeHint(words.peekable);
-  const value$1 = withPositionIterator_next(words);
+  const sizeHint = $sizeHint(words.peekable);
+  const value = withPositionIterator_next(words);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`}`,
   );
   const arg = $sizeHint(words.peekable);
   console.log(
@@ -291,10 +291,10 @@ function main() {
     `${lexerDebug_fmt(lexer)} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
   const one = with_position({ start: 1, end: 2 }, { next: $rangeNext }, true);
-  const value$2 = withPositionIterator_next(one);
-  const value$3 = withPositionIterator_next(one);
+  const next = withPositionIterator_next(one);
+  const value$1 = withPositionIterator_next(one);
   console.log(
-    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${$debugStr(value$3[0])}, ${value$3[1]}))`} ${withPositionDebug_fmt(one, undefined, peekableDebug(fuseDebug({ fmt: (value, options) => `${value.start}..${value.end}` }), { fmt: (value, options) => String(value) }))}`,
+    `${next == null ? "None" : `Some((${$debugStr(next[0])}, ${next[1]}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} ${withPositionDebug_fmt(one, undefined, peekableDebug(fuseDebug({ fmt: (value, options) => `${value.start}..${value.end}` }), { fmt: (value, options) => String(value) }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

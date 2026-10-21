@@ -82,12 +82,55 @@ function countdownIterator_next(countdown) {
 }
 
 function main() {
-  const value = $maxBy(
-    loud(),
-    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-    false,
-    loudDrop_drop,
-  );
+  const max = $maxBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
+  try {
+    console.log(`${max == null ? "None" : `Some(${loudDebug_fmt(max)})`}`);
+  } finally {
+    if (max != null) {
+      loudDrop_drop(max);
+    }
+  }
+  const min = $minBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
+  try {
+    console.log(`${min == null ? "None" : `Some(${loudDebug_fmt(min)})`}`);
+  } finally {
+    if (min != null) {
+      loudDrop_drop(min);
+    }
+  }
+  const maxBy = $maxBy(loud(), by_name, false, loudDrop_drop);
+  try {
+    console.log(`${maxBy == null ? "None" : `Some(${loudDebug_fmt(maxBy)})`}`);
+  } finally {
+    if (maxBy != null) {
+      loudDrop_drop(maxBy);
+    }
+  }
+  const minBy = $minBy(loud(), by_name, false, loudDrop_drop);
+  try {
+    console.log(`${minBy == null ? "None" : `Some(${loudDebug_fmt(minBy)})`}`);
+  } finally {
+    if (minBy != null) {
+      loudDrop_drop(minBy);
+    }
+  }
+  const maxByKey = $maxByKey(loud(), (l) => l[0], $cmp, false, loudDrop_drop);
+  try {
+    console.log(`${maxByKey == null ? "None" : `Some(${loudDebug_fmt(maxByKey)})`}`);
+  } finally {
+    if (maxByKey != null) {
+      loudDrop_drop(maxByKey);
+    }
+  }
+  const minByKey = $minByKey(loud(), rank, $cmp, false, loudDrop_drop);
+  try {
+    console.log(`${minByKey == null ? "None" : `Some(${loudDebug_fmt(minByKey)})`}`);
+  } finally {
+    if (minByKey != null) {
+      loudDrop_drop(minByKey);
+    }
+  }
+  const value = $maxBy([], (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${value == null ? "None" : `Some(${loudDebug_fmt(value)})`}`);
   } finally {
@@ -95,11 +138,11 @@ function main() {
       loudDrop_drop(value);
     }
   }
-  const value$1 = $minBy(
+  const value$1 = greatest(
     loud(),
-    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-    false,
+    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
     loudDrop_drop,
+    $dropEach(loudDrop_drop),
   );
   try {
     console.log(`${value$1 == null ? "None" : `Some(${loudDebug_fmt(value$1)})`}`);
@@ -108,80 +151,27 @@ function main() {
       loudDrop_drop(value$1);
     }
   }
-  const value$2 = $maxBy(loud(), by_name, false, loudDrop_drop);
-  try {
-    console.log(`${value$2 == null ? "None" : `Some(${loudDebug_fmt(value$2)})`}`);
-  } finally {
-    if (value$2 != null) {
-      loudDrop_drop(value$2);
-    }
-  }
-  const value$3 = $minBy(loud(), by_name, false, loudDrop_drop);
-  try {
-    console.log(`${value$3 == null ? "None" : `Some(${loudDebug_fmt(value$3)})`}`);
-  } finally {
-    if (value$3 != null) {
-      loudDrop_drop(value$3);
-    }
-  }
-  const value$4 = $maxByKey(loud(), (l) => l[0], $cmp, false, loudDrop_drop);
-  try {
-    console.log(`${value$4 == null ? "None" : `Some(${loudDebug_fmt(value$4)})`}`);
-  } finally {
-    if (value$4 != null) {
-      loudDrop_drop(value$4);
-    }
-  }
-  const value$5 = $minByKey(loud(), rank, $cmp, false, loudDrop_drop);
-  try {
-    console.log(`${value$5 == null ? "None" : `Some(${loudDebug_fmt(value$5)})`}`);
-  } finally {
-    if (value$5 != null) {
-      loudDrop_drop(value$5);
-    }
-  }
-  const value$6 = $maxBy([], (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
-  try {
-    console.log(`${value$6 == null ? "None" : `Some(${loudDebug_fmt(value$6)})`}`);
-  } finally {
-    if (value$6 != null) {
-      loudDrop_drop(value$6);
-    }
-  }
-  const value$7 = greatest(
-    loud(),
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    loudDrop_drop,
-    $dropEach(loudDrop_drop),
-  );
-  try {
-    console.log(`${value$7 == null ? "None" : `Some(${loudDebug_fmt(value$7)})`}`);
-  } finally {
-    if (value$7 != null) {
-      loudDrop_drop(value$7);
-    }
-  }
-  const value$8 = greatest([3, undefined, 1], {
+  const value$2 = greatest([3, undefined, 1], {
     cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
   });
   console.log(
-    `${value$8 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$8))})`}`,
+    `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$9 = greatest([undefined], {
+  const value$3 = greatest([undefined], {
     cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
   });
   console.log(
-    `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`}`,
+    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
-  const value$10 = final_one(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
+  const finalOne = final_one(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
   try {
-    console.log(`${value$10 == null ? "None" : `Some(${loudDebug_fmt(value$10)})`}`);
+    console.log(`${finalOne == null ? "None" : `Some(${loudDebug_fmt(finalOne)})`}`);
   } finally {
-    if (value$10 != null) {
-      loudDrop_drop(value$10);
+    if (finalOne != null) {
+      loudDrop_drop(finalOne);
     }
   }
-  const value$11 = final_one(
+  const value$4 = final_one(
     $iterator({ left: 3, _tag: [0, "tag"] }, countdownIterator_next),
     loudDrop_drop,
     (it) => {
@@ -189,10 +179,10 @@ function main() {
     },
   );
   try {
-    console.log(`${value$11 == null ? "None" : `Some(${loudDebug_fmt(value$11)})`}`);
+    console.log(`${value$4 == null ? "None" : `Some(${loudDebug_fmt(value$4)})`}`);
   } finally {
-    if (value$11 != null) {
-      loudDrop_drop(value$11);
+    if (value$4 != null) {
+      loudDrop_drop(value$4);
     }
   }
   console.log(

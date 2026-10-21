@@ -53,12 +53,12 @@ function enumeratedPull(PPull) {
 
 function enumeratedPull_pull(enumerated, PPull) {
   const self = { value: enumerated.inner };
-  const value = PPull.pull(self);
+  const pull = PPull.pull(self);
   enumerated.inner = self.value;
-  if (value == null) {
+  if (pull == null) {
     return;
   }
-  const out = $someValue(value);
+  const out = $someValue(pull);
   enumerated.count = (enumerated.count + 1) >>> 0;
   return [(enumerated.count - 1) >>> 0, out];
 }
@@ -66,11 +66,11 @@ function enumeratedPull_pull(enumerated, PPull) {
 function drain(p, PPull) {
   const out = [];
   while (true) {
-    const value = PPull.pull(p);
-    if (value == null) {
+    const pull = PPull.pull(p);
+    if (pull == null) {
       break;
     }
-    const x = $someValue(value);
+    const x = $someValue(pull);
     out.push(x);
   }
   return out;
@@ -78,39 +78,39 @@ function drain(p, PPull) {
 
 function main() {
   const range = { start: 0, end: 5 };
-  const value = iPull_pull(range, { next: $rangeNext });
+  const pull = iPull_pull(range, { next: $rangeNext });
   const self = { value: range };
-  const value$1 = iPull({ next: $rangeNext }).pull_two(self);
+  const pullTwo = iPull({ next: $rangeNext }).pull_two(self);
   $assign(range, self.value);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `${pull == null ? "None" : `Some(${pull})`} (${pullTwo[0] == null ? "None" : `Some(${pullTwo[0]})`}, ${pullTwo[1] == null ? "None" : `Some(${pullTwo[1]})`})`,
   );
   console.log(`${range.start}..${range.end}`);
   const p = { value: range };
-  const value$2 = drain(p, iPull({ next: $rangeNext }));
+  const value = drain(p, iPull({ next: $rangeNext }));
   $assign(range, p.value);
-  console.log(`[${value$2.join(", ")}]`);
+  console.log(`[${value.join(", ")}]`);
   const down = [3];
   const self$1 = { value: down };
-  const value$3 = iPull({ next: countdownIterator_next }).pull_two(self$1);
+  const value$1 = iPull({ next: countdownIterator_next }).pull_two(self$1);
   $assign(down, self$1.value);
   console.log(
-    `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) ${down[0]}`,
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${down[0]}`,
   );
   const v = ["a", "b", "c"];
   const e = { inner: $iter(v), count: 0 };
-  const value$4 = enumeratedPull_pull(e, iPull({ next: $next }));
-  console.log(`${value$4 == null ? "None" : `Some((${value$4[0]}, ${$debugStr(value$4[1])}))`}`);
+  const value$2 = enumeratedPull_pull(e, iPull({ next: $next }));
+  console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`);
   const p$1 = { value: e };
-  const value$5 = drain(p$1, enumeratedPull(iPull({ next: $next })));
+  const value$3 = drain(p$1, enumeratedPull(iPull({ next: $next })));
   $assign(e, p$1.value);
-  console.log(`[${value$5.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
+  console.log(`[${value$3.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
   const r = { inner: { start: 10, end: 13 }, count: 0 };
   const p$2 = { value: r };
-  const value$6 = drain(p$2, enumeratedPull(iPull({ next: $rangeNext })));
+  const value$4 = drain(p$2, enumeratedPull(iPull({ next: $rangeNext })));
   $assign(r, p$2.value);
   console.log(
-    `[${value$6.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${r.inner.start}..${r.inner.end}`,
+    `[${value$4.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${r.inner.start}..${r.inner.end}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -38,10 +38,10 @@ function main() {
   walls.set({ x: 1, y: 2 }, "stone");
   walls.set({ x: 1, y: 2 }, "brick");
   const size = walls.size;
-  const value = walls.get({ x: 1, y: 2 });
-  const value$1 = walls.get({ x: 2, y: 1 });
+  const get = walls.get({ x: 1, y: 2 });
+  const value = walls.get({ x: 2, y: 1 });
   console.log(
-    `${size} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
+    `${size} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
   );
   console.log(
     `${$unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key")} ${walls.has({ x: 1, y: 2 })}`,
@@ -64,13 +64,13 @@ function main() {
     const current = $orInsert(counts, shape, 0);
     counts.set(shape, (current + 1) >>> 0);
   }
-  const size$1 = counts.size;
+  const value$1 = counts.size;
   const value$2 = counts.get({ TAG: "Circle", _0: 2 });
   const value$3 = counts.get("Dot");
   const value$4 = counts.get({ TAG: "Rect", w: 1, h: 3 });
   const value$5 = counts.get({ TAG: "Rect", w: 3, h: 1 });
   console.log(
-    `${size$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
 
   // An `Option` key, `None` among them.

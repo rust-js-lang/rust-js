@@ -102,18 +102,18 @@ function main() {
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
   );
-  const value$2 = $isSubset(b, new Set([4]), true);
-  const value$3 = a.has(2) ? 2 : undefined;
-  const value$4 = a.has(9) ? 9 : undefined;
+  const isSuperset = $isSubset(b, new Set([4]), true);
+  const get = a.has(2) ? 2 : undefined;
+  const value$2 = a.has(9) ? 9 : undefined;
   console.log(
-    `${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${isSuperset} ${get == null ? "None" : `Some(${get})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const taken = new Set(a);
-  const value$5 = taken.delete(1) ? 1 : undefined;
-  const value$6 = $setReplace(taken, 2);
-  const value$7 = $setReplace(taken, 7);
+  const take = taken.delete(1) ? 1 : undefined;
+  const replace = $setReplace(taken, 2);
+  const value$3 = $setReplace(taken, 7);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
   console.log(
@@ -126,10 +126,10 @@ function main() {
     [3, "c"],
     [9, "i"],
   ]);
-  const value$8 = $treeEnd(tree, $cmp, false, false, false);
-  const value$9 = $treeEnd(tree, $cmp, true, false, false);
+  const firstKeyValue = $treeEnd(tree, $cmp, false, false, false);
+  const value$4 = $treeEnd(tree, $cmp, true, false, false);
   console.log(
-    `${value$8 == null ? "None" : `Some((${value$8[0]}, ${$debugStr(value$8[1])}))`} ${value$9 == null ? "None" : `Some((${value$9[0]}, ${$debugStr(value$9[1])}))`}`,
+    `${firstKeyValue == null ? "None" : `Some((${firstKeyValue[0]}, ${$debugStr(firstKeyValue[1])}))`} ${value$4 == null ? "None" : `Some((${value$4[0]}, ${$debugStr(value$4[1])}))`}`,
   );
   console.log(
     `[${$treeRange(
@@ -160,10 +160,10 @@ function main() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$10 = $treeEnd(tree, $cmp, false, false, true);
-  const value$11 = $treeEnd(tree, $cmp, true, false, true);
+  const popFirst = $treeEnd(tree, $cmp, false, false, true);
+  const value$5 = $treeEnd(tree, $cmp, true, false, true);
   console.log(
-    `${value$10 == null ? "None" : `Some((${value$10[0]}, ${$debugStr(value$10[1])}))`} ${value$11 == null ? "None" : `Some((${value$11[0]}, ${$debugStr(value$11[1])}))`}`,
+    `${popFirst == null ? "None" : `Some((${popFirst[0]}, ${$debugStr(popFirst[1])}))`} ${value$5 == null ? "None" : `Some((${value$5[0]}, ${$debugStr(value$5[1])}))`}`,
   );
   const more = new Map([
     [4, "d"],
@@ -194,10 +194,10 @@ function main() {
   );
 
   const set = new Set([4, 2, 8, 6]);
-  const value$12 = $treeEnd(set, $cmp, false, true, false);
-  const value$13 = $treeEnd(set, $cmp, true, true, false);
+  const first = $treeEnd(set, $cmp, false, true, false);
+  const last = $treeEnd(set, $cmp, true, true, false);
   console.log(
-    `${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} [${$treeRange(
+    `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} [${$treeRange(
       set,
       $cmp,
       true,
@@ -208,10 +208,10 @@ function main() {
       .slice()
       .join(", ")}]`,
   );
-  const value$14 = $treeEnd(set, $cmp, false, true, true);
-  const value$15 = $treeEnd(set, $cmp, true, true, true);
+  const value$6 = $treeEnd(set, $cmp, false, true, true);
+  const value$7 = $treeEnd(set, $cmp, true, true, true);
   console.log(
-    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} {${Array.from($sortedKeys(set, $cmp)).join(", ")}}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} {${Array.from($sortedKeys(set, $cmp)).join(", ")}}`,
   );
   const other = new Set([1, 4, 9]);
   console.log(

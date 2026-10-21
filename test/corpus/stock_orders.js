@@ -138,9 +138,9 @@ const Inventory = {
     }
     const lines = [];
     for (const [sku, quantity] of order) {
-      const value = Inventory.reserve(inventory, sku, quantity);
-      if (value.TAG === "Ok") {
-        lines.push(value._0);
+      const reserve = Inventory.reserve(inventory, sku, quantity);
+      if (reserve.TAG === "Ok") {
+        lines.push(reserve._0);
       } else {
         // Put back what this order took before failing.
         for (const line of lines) {
@@ -150,7 +150,7 @@ const Inventory = {
           }
         }
         inventory.log.push(`rolled back ${lines.length} lines`);
-        return { TAG: "Err", _0: value._0 };
+        return { TAG: "Err", _0: reserve._0 };
       }
     }
     return { TAG: "Ok", _0: lines };
@@ -195,10 +195,10 @@ function parse_order(text) {
       .map((s) => $trim(s))
       .filter(Boolean)
       .map((part) => {
-        const value = $splitOnce(part, "x");
+        const splitOnce = $splitOnce(part, "x");
         const result =
-          value != null
-            ? { TAG: "Ok", _0: value }
+          splitOnce != null
+            ? { TAG: "Ok", _0: splitOnce }
             : { TAG: "Err", _0: `${$debugStr(part)} has no x` };
         if (result.TAG === "Err") {
           return result;
@@ -254,27 +254,27 @@ function main() {
     if (text == null) {
       break;
     }
-    const value = parse_order(text);
-    if (value.TAG === "Ok") {
-      const parsed = value._0;
+    const parseOrder = parse_order(text);
+    if (parseOrder.TAG === "Ok") {
+      const parsed = parseOrder._0;
       const order = parsed.map(([sku, n]) => [sku, n]);
-      const value$1 = Inventory.place(inventory, order);
-      if (value$1.TAG === "Ok") {
-        const total = value$1._0
+      const place = Inventory.place(inventory, order);
+      if (place.TAG === "Ok") {
+        const total = place._0
           .map((arg0) => linePriced().total_cents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
-        const skus = value$1._0.map((line) => line.sku);
+        const skus = place._0.map((line) => line.sku);
         console.log(
           `placed [${skus.map((item) => $debugStr(item)).join(", ")}] for ${money(total)}`,
         );
       } else {
         console.log(
-          `refused: ${stockErrorDisplay_fmt(value$1._0)} (${stockErrorDebug_fmt(value$1._0)})`,
+          `refused: ${stockErrorDisplay_fmt(place._0)} (${stockErrorDebug_fmt(place._0)})`,
         );
       }
     } else {
-      console.log(`bad order: ${value._0}`);
+      console.log(`bad order: ${parseOrder._0}`);
     }
   }
   console.log(
@@ -304,10 +304,10 @@ function main() {
   const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
   prices.sort((a, b) => a - b);
   $dedup(prices);
-  const value$1 = $binarySearch(prices, 1899);
+  const binarySearch = $binarySearch(prices, 1899);
   const value = $binarySearch(prices, 2000);
   console.log(
-    `prices: [${prices.join(", ")}], 1899 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
+    `prices: [${prices.join(", ")}], 1899 at ${binarySearch.TAG === "Ok" ? `Ok(${binarySearch._0})` : `Err(${binarySearch._0})`}, 2000 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
   );
 
   const restock = new Map([

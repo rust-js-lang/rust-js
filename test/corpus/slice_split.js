@@ -14,10 +14,10 @@ function halves(bytes) {
 
 // Each item in turn, as chrono's queue of format items is read.
 function total(items) {
-  const value = items.length === 0 ? undefined : [items[0], items.slice(1)];
-  if (value) {
-    const first = value[0];
-    const rest = value[1];
+  const splitFirst = items.length === 0 ? undefined : [items[0], items.slice(1)];
+  if (splitFirst) {
+    const first = splitFirst[0];
+    const rest = splitFirst[1];
     return (first + total(rest)) >>> 0;
   }
   return 0;
@@ -34,44 +34,44 @@ function main() {
   );
   const value = halves([1, 0, 0, 2]);
   console.log(`(${value[0]}, ${value[1]})`);
-  const value$1 = $sliceSplitAt(v, 2, true);
+  const splitAtChecked = $sliceSplitAt(v, 2, true);
   console.log(
-    `${value$1 == null ? "None" : `Some(([${value$1[0].join(", ")}], [${value$1[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].join(", ")}], [${value[1].join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
+    `${splitAtChecked == null ? "None" : `Some(([${splitAtChecked[0].join(", ")}], [${splitAtChecked[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].join(", ")}], [${value[1].join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
   );
   const words = ["a", "b", "c"];
   const [first, rest] = $sliceSplitAt(words, 1);
   console.log(`${first.join("+")} ${rest.join("+")}`);
 
-  const value$2 = $sliceGet(v, 1, 3);
-  const value$3 = $sliceGet(v, 3);
+  const get = $sliceGet(v, 1, 3);
+  const value$1 = $sliceGet(v, 3);
   console.log(
-    `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 0, 2))}`,
+    `${get == null ? "None" : `Some([${get.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 0, 2))}`,
   );
-  const value$4 = $sliceGet(v, 0);
-  const value$5 = $sliceGet(v, 4, 9);
+  const value$2 = $sliceGet(v, 0);
+  const value$3 = $sliceGet(v, 4, 9);
   console.log(
-    `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${value$5 == null ? "None" : `Some([${value$5.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 2, 5))}`,
+    `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 2, 5))}`,
   );
   const start = 3;
   const end = 1;
-  const value$6 = $sliceGet(v, start, end);
+  const value$4 = $sliceGet(v, start, end);
   console.log(
-    `${value$6 == null ? "None" : `Some([${value$6.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 5))}`,
+    `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 5))}`,
   );
-  const value$7 = v.length === 0 ? undefined : [v[0], v.slice(1)];
-  const value$8 = v.length === 0 ? undefined : [v[v.length - 1], v.slice(0, -1)];
+  const splitFirst = v.length === 0 ? undefined : [v[0], v.slice(1)];
+  const splitLast = v.length === 0 ? undefined : [v[v.length - 1], v.slice(0, -1)];
   const items = $slice(v, 0, 0);
   console.log(
-    `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].join(", ")}]))`} ${value$8 == null ? "None" : `Some((${value$8[0]}, [${value$8[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
+    `${splitFirst == null ? "None" : `Some((${splitFirst[0]}, [${splitFirst[1].join(", ")}]))`} ${splitLast == null ? "None" : `Some((${splitLast[0]}, [${splitLast[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
   );
-  const value$9 = total(v);
+  const value$5 = total(v);
   const option = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
-  const value$10 = option ? [$byteLen(option[0]), option[1].length] : undefined;
-  console.log(`${value$9} ${value$10 == null ? "None" : `Some((${value$10[0]}, ${value$10[1]}))`}`);
+  const value$6 = option ? [$byteLen(option[0]), option[1].length] : undefined;
+  console.log(`${value$5} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`);
   const one = [9];
-  const value$11 = one.length === 0 ? undefined : [one[0], one.slice(1)];
+  const value$7 = one.length === 0 ? undefined : [one[0], one.slice(1)];
   console.log(
-    `${value$11 == null ? "None" : `Some((${value$11[0]}, [${value$11[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
+    `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
   );
   const tail = $sliceGet(words, 1);
   if (tail) {

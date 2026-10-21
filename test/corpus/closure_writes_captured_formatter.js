@@ -39,9 +39,9 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
     throw new Error("FormatWith: was already formatted once");
   }
   const [iter, format] = t;
-  const value = IIterator.next(iter);
-  if (value != null) {
-    const fst = $someValue(value);
+  const next = IIterator.next(iter);
+  if (next != null) {
+    const fst = $someValue(next);
     format(fst, (disp) => {
       f += disp.impl.fmt(disp.value, options);
     });

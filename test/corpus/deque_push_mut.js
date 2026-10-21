@@ -8,12 +8,12 @@ export function entry() {
 
 function main() {
   const queue = [2, 3];
-  const value$3 = $pushFrontMut(queue, 1, true);
-  value$3.value = Math.imul(value$3.value, 10);
-  const value$4 = $pushMut(queue, 4, true);
-  value$4.value = (value$4.value + 1) | 0;
-  const value$5 = $dequeInsert(queue, 2, 7, true);
-  value$5.value = (value$5.value - 1) | 0;
+  const pushFrontMut = $pushFrontMut(queue, 1, true);
+  pushFrontMut.value = Math.imul(pushFrontMut.value, 10);
+  const pushBackMut = $pushMut(queue, 4, true);
+  pushBackMut.value = (pushBackMut.value + 1) | 0;
+  const insertMut = $dequeInsert(queue, 2, 7, true);
+  insertMut.value = (insertMut.value - 1) | 0;
   $dequeInsert(queue, 0, 0);
   console.log(`[${queue.join(", ")}]`);
   const names = [];
@@ -25,10 +25,10 @@ function main() {
   value$2.value += ".";
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
   const list = [];
-  const value$6 = $pushMut(list, 5, true);
-  value$6.value = (value$6.value + 1) | 0;
-  const value$7 = $pushFrontMut(list, 4, true);
-  value$7.value = Math.imul(value$7.value, 2);
+  const value$3 = $pushMut(list, 5, true);
+  value$3.value = (value$3.value + 1) | 0;
+  const value$4 = $pushFrontMut(list, 4, true);
+  value$4.value = Math.imul(value$4.value, 2);
   console.log(`[${list.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -92,17 +92,17 @@ function main() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value = $splitAtChecked("héllo", 1);
-  const value$1 = $splitAtChecked("héllo", 2);
-  const value$2 = $splitAtChecked("héllo", 9);
+  const splitAtChecked = $splitAtChecked("héllo", 1);
+  const value = $splitAtChecked("héllo", 2);
+  const value$1 = $splitAtChecked("héllo", 9);
   console.log(
-    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
+    `${splitAtChecked == null ? "None" : `Some((${$debugStr(splitAtChecked[0])}, ${$debugStr(splitAtChecked[1])}))`} ${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`}`,
   );
   console.log(`[${Iterator.from($encodeUtf16("hé𝄞")).toArray().join(", ")}]`);
-  const value$3 = $fromUtf16([104, 55348, 56606]);
-  const value$4 = $fromUtf16([55348, 104]);
+  const value$2 = $fromUtf16([104, 55348, 56606]);
+  const value$3 = $fromUtf16([55348, 104]);
   console.log(
-    `${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
+    `${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
   );
   console.log("invalid utf-16: lone surrogate found");
   console.log(`${$fromUtf16Lossy([104, 55348, 105])}`);

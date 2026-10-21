@@ -58,44 +58,44 @@ function main() {
   try {
     try {
       const tmp = $downgrade(root);
-      let tmp$1;
+      let borrowMut;
       try {
-        tmp$1 = $borrowMut(leaf.value.parent, true);
+        borrowMut = $borrowMut(leaf.value.parent, true);
       } catch (error) {
         $weakDrop(tmp);
         throw error;
       }
       try {
         try {
-          $weakDrop(tmp$1.value);
+          $weakDrop(borrowMut.value);
         } finally {
-          tmp$1.value = tmp;
+          borrowMut.value = tmp;
         }
       } finally {
-        $unborrow(tmp$1);
+        $unborrow(borrowMut);
       }
-      const tmp$2 = $borrow(leaf.value.parent, true);
+      const borrow = $borrow(leaf.value.parent, true);
       let parent;
       try {
-        const tmp = $upgrade(tmp$2.value);
-        const tmp$1 = (p) => {
+        const upgrade = $upgrade(borrow.value);
+        const tmp = (p) => {
           const result = p.value.name;
           $rcDrop(p, (value) => {
             $weakDrop(value.parent.value);
           });
           return result;
         };
-        const tmp$3 = tmp ? tmp$1(tmp) : undefined;
-        parent = tmp$3 ?? "";
+        const map = upgrade ? tmp(upgrade) : undefined;
+        parent = map ?? "";
       } finally {
-        $unborrow(tmp$2);
+        $unborrow(borrow);
       }
-      const tmp$3 = $borrow(logger, true);
+      const tmp$1 = $borrow(logger, true);
       try {
-        const tmp = loggerListener_count(tmp$3.value);
-        console.log(`${tmp} ${leaf.value.name} ${parent}`);
+        const count = loggerListener_count(tmp$1.value);
+        console.log(`${count} ${leaf.value.name} ${parent}`);
       } finally {
-        $unborrow(tmp$3);
+        $unborrow(tmp$1);
       }
     } finally {
       $rcDrop(leaf, (value) => {

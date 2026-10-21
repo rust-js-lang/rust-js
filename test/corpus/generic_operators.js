@@ -158,9 +158,9 @@ function main() {
       total([v, v, { x: 0.5, y: 0 }], { x: 0, y: 0 }, v2Add(), { copy: (value) => ({ ...value }) }),
     )}`,
   );
-  const value$2 = affine(v, v, v, v2Mul(), v2Add());
-  const value$3 = flip(v, v2Neg());
-  console.log(`${v2Debug_fmt(value$2)} ${v2Debug_fmt(value$3)}`);
+  const v2 = affine(v, v, v, v2Mul(), v2Add());
+  const value$2 = flip(v, v2Neg());
+  console.log(`${v2Debug_fmt(v2)} ${v2Debug_fmt(value$2)}`);
   console.log(
     `${$displayF64(scaled([2], 1.5, metersMulF64())[0])} ${v2Debug_fmt(times(3, v, f64MulV2()))}`,
   );

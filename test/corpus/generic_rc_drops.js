@@ -41,59 +41,59 @@ function tee(iter, dropI, dropIItem) {
 }
 
 function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
-  let tmp$0$live = false;
+  let popFront$0$live = false;
   const buffer = $borrowMut(tee.rcbuffer.value, true);
   const value = buffer.value.owner === tee.id;
   let result;
   if (value) {
-    let tmp;
+    let popFront;
     try {
-      tmp = $shift(buffer.value.backlog);
+      popFront = $shift(buffer.value.backlog);
     } catch (error) {
       $unborrow(buffer);
       throw error;
     }
-    tmp$0$live = true;
-    if (tmp != null) {
-      tmp$0$live = false;
-      const elt = $someValue(tmp);
+    popFront$0$live = true;
+    if (popFront != null) {
+      popFront$0$live = false;
+      const elt = $someValue(popFront);
       result = $some(elt);
       $unborrow(buffer);
       return result;
     }
     try {
-      if (tmp != null) {
-        if (tmp$0$live) {
-          dropIItem?.($someValue(tmp));
+      if (popFront != null) {
+        if (popFront$0$live) {
+          dropIItem?.($someValue(popFront));
         }
       }
     } catch (error) {
       $unborrow(buffer);
       throw error;
     }
-    tmp$0$live = false;
+    popFront$0$live = false;
   }
-  let tmp;
+  let next;
   try {
-    tmp = IIterator.next(buffer.value.iter);
+    next = IIterator.next(buffer.value.iter);
   } catch (error) {
     $unborrow(buffer);
     throw error;
   }
-  if (tmp == null) {
+  if (next == null) {
     result = undefined;
   } else {
-    const elt = $someValue(tmp);
-    let tmp$1;
+    const elt = $someValue(next);
+    let tmp;
     try {
-      tmp$1 = IItemClone.clone(elt);
+      tmp = IItemClone.clone(elt);
     } catch (error) {
       dropIItem?.(elt);
       $unborrow(buffer);
       throw error;
     }
     try {
-      buffer.value.backlog.push(tmp$1);
+      buffer.value.backlog.push(tmp);
     } catch (error) {
       dropIItem?.(elt);
       $unborrow(buffer);
@@ -110,33 +110,33 @@ function main() {
   const [a, b] = tee($iter([1, 2, 3]));
   try {
     try {
+      const next = teeIterator_next(a, { next: $next }, { clone: (value) => value });
       const tmp = teeIterator_next(a, { next: $next }, { clone: (value) => value });
-      const tmp$1 = teeIterator_next(a, { next: $next }, { clone: (value) => value });
       const value = teeIterator_next(b, { next: $next }, { clone: (value) => value });
       console.log(
-        `${tmp == null ? "None" : `Some(${tmp})`} ${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${value == null ? "None" : `Some(${value})`}`,
+        `${next == null ? "None" : `Some(${next})`} ${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
       );
       const value$1 = [[1], [2]];
-      const tmp$2 = $iter(value$1);
-      const tmp$3 = tee(tmp$2, $dropEach(loudDrop_drop), loudDrop_drop);
-      const c = tmp$3[0];
-      const d = tmp$3[1];
+      const tmp$1 = $iter(value$1);
+      const tmp$2 = tee(tmp$1, $dropEach(loudDrop_drop), loudDrop_drop);
+      const c = tmp$2[0];
+      const d = tmp$2[1];
       try {
         try {
-          const tmp = teeIterator_next(
+          const loud = teeIterator_next(
             c,
             { next: $next },
             { clone: (value) => value },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           );
-          const tmp$1 = (l) => {
+          const tmp = (l) => {
             const result = l[0];
             loudDrop_drop(l);
             return result;
           };
-          const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-          console.log(`${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+          const tmp$1 = loud ? tmp(loud) : undefined;
+          console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
             for (const item of value.value.backlog) {
@@ -173,10 +173,10 @@ function main() {
         });
       }
       const value$2 = [undefined, 1];
-      const tmp$4 = $iter(value$2);
-      const tmp$5 = tee(tmp$4);
-      const e = tmp$5[0];
-      const f = tmp$5[1];
+      const tmp$3 = $iter(value$2);
+      const tmp$4 = tee(tmp$3);
+      const e = tmp$4[0];
+      const f = tmp$4[1];
       try {
         try {
           const tmp = teeIterator_next(e, { next: $nextSome }, { clone: (value) => value });

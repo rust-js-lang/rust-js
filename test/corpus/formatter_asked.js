@@ -14,8 +14,8 @@ export function wDisplay() {
 }
 
 function wDisplay_fmt(w, options) {
-  const value = options?.width;
-  return `${value == null ? "None" : `Some(${value})`} ${options?.align == null}`;
+  const width = options?.width;
+  return `${width == null ? "None" : `Some(${width})`} ${options?.align == null}`;
 }
 
 function main() {

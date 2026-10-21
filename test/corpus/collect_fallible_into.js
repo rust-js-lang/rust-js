@@ -77,15 +77,15 @@ function main() {
   console.log(
     `${value.TAG === "Ok" ? `Ok(${bagDebug_fmt(value._0)})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${bagDebug_fmt(value$1._0)})` : `Err(${$debugStr(value$1._0)})`} ${some == null ? "None" : `Some(${bagDebug_fmt(some)})`} ${none == null ? "None" : `Some(${bagDebug_fmt(none)})`}`,
   );
-  const value$2 = parse_kv("a=1;b=2;");
+  const parseKv = parse_kv("a=1;b=2;");
   const result = parse_kv("a=1;b=2");
   console.log(
     `${
-      value$2.TAG === "Ok"
-        ? `Ok({${Array.from($sortedEntries(value$2._0, $cmp))
+      parseKv.TAG === "Ok"
+        ? `Ok({${Array.from($sortedEntries(parseKv._0, $cmp))
             .map(([key, value]) => `${$debugStr(key)}: ${value}`)
             .join(", ")}})`
-        : `Err(${$debugStr(value$2._0)})`
+        : `Err(${$debugStr(parseKv._0)})`
     } ${((result) =>
       result.TAG === "Ok"
         ? `Ok(${result._0 == null ? "None" : `Some(${result._0})`})`
@@ -93,14 +93,14 @@ function main() {
       result.TAG === "Ok" ? { TAG: "Ok", _0: result._0.get("b") } : result,
     )}`,
   );
-  const value$3 = parse_kv("a=1;b");
+  const value$2 = parse_kv("a=1;b");
   console.log(
     `${
-      value$3.TAG === "Ok"
-        ? `Ok({${Array.from($sortedEntries(value$3._0, $cmp))
+      value$2.TAG === "Ok"
+        ? `Ok({${Array.from($sortedEntries(value$2._0, $cmp))
             .map(([key, value]) => `${$debugStr(key)}: ${value}`)
             .join(", ")}})`
-        : `Err(${$debugStr(value$3._0)})`
+        : `Err(${$debugStr(value$2._0)})`
     }`,
   );
   const words = $collectResults(

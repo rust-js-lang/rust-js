@@ -137,9 +137,9 @@ function first(k) {
     }
     return result;
   }
-  const value = ["arm"];
-  result = $byteLen(value[0]);
-  loudDrop_drop(value);
+  const loud = ["arm"];
+  result = $byteLen(loud[0]);
+  loudDrop_drop(loud);
   return result;
 }
 

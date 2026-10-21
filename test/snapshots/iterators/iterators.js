@@ -113,11 +113,11 @@ export function by_length_then_name(words) {
 }
 
 export function compare(a, b) {
-  const value = $cmp(a, b);
-  if (value === -1) {
+  const cmp = $cmp(a, b);
+  if (cmp === -1) {
     return -1;
   }
-  if (value === 0) {
+  if (cmp === 0) {
     return 0;
   }
   return 1;

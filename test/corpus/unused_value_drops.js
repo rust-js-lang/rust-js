@@ -35,9 +35,9 @@ function genIterator_next(gen) {
 
 function first_or(it, fallback, dropIItem) {
   let fallback$live = true;
-  let tmp;
+  let next;
   try {
-    tmp = $nextSome(it);
+    next = $nextSome(it);
     fallback$live = false;
   } catch (error) {
     if (fallback$live) {
@@ -45,8 +45,8 @@ function first_or(it, fallback, dropIItem) {
     }
     throw error;
   }
-  const result = $someValue(tmp ?? $some(fallback));
-  if (tmp != null) {
+  const result = $someValue(next ?? $some(fallback));
+  if (next != null) {
     dropIItem?.(fallback);
   }
   return result;
@@ -108,18 +108,18 @@ function main() {
           loudDrop_drop(d._0);
         }
         console.log(`d ${value$1 == null ? "None" : `Some(${value$1})`}`);
-        const value$2 = [8];
-        const value$3 = [9];
-        const value$4 = (l) => l;
+        const loud = [8];
+        const value$2 = [9];
+        const value$3 = (l) => l;
         let mapped;
-        if (value$2 != null) {
+        if (loud != null) {
           try {
-            mapped = value$4(value$2);
+            mapped = value$3(loud);
           } finally {
-            loudDrop_drop(value$3);
+            loudDrop_drop(value$2);
           }
         } else {
-          mapped = value$3;
+          mapped = value$2;
         }
         const e = mapped;
         try {

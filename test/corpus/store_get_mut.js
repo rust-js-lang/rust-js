@@ -146,8 +146,8 @@ function main() {
   if (v != null) {
     v.value = (v.value + 5) >>> 0;
   }
-  const value$1 = LiteMap.first_mut(map, vecStoreMutKV());
-  value$1.value = (value$1.value + 1) >>> 0;
+  const firstMut = LiteMap.first_mut(map, vecStoreMutKV());
+  firstMut.value = (firstMut.value + 1) >>> 0;
   const old = LiteMap.insert_at(map, 0, 99, vecStoreMutKV());
   const missing = LiteMap.get_mut(map, 7, vecStoreMutKV()) == null;
   console.log(`${LiteMap.replace_first(map, 7, vecStoreMutKV())}`);

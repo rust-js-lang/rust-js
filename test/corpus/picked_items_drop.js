@@ -90,9 +90,9 @@ function main() {
             const value = [["j"], ["kk"], ["l"]];
             const tmp = $iter(value);
             const tmp$1 = (n) => $byteLen(n[0]) === 1;
-            const tmp$2 = $partition(tmp.toArray(), tmp$1);
-            const kept = tmp$2[0];
-            const rest = tmp$2[1];
+            const partition = $partition(tmp.toArray(), tmp$1);
+            const kept = partition[0];
+            const rest = partition[1];
             try {
               try {
                 console.log(`${kept.length} ${rest.length}`);

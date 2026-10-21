@@ -106,12 +106,12 @@ function pair(n) {
 export function mapped(n) {
   const h = half(n);
   const h$1 = half(n);
-  const value = h != null ? double(h) : undefined;
+  const map = h != null ? double(h) : undefined;
   const h$2 = half(n);
   const x = h$2 != null ? (h$2 + 1) | 0 : undefined;
   return [
     h$1 != null ? (h$1 + 1) | 0 : undefined,
-    value,
+    map,
     h != null ? h > 2 : undefined,
     x != null ? Math.imul(x, 3) : undefined,
   ];
@@ -128,9 +128,9 @@ export function mapped_more(n) {
   const counted = h != null ? map(h) : undefined;
   const option = pair(n);
   const value = option ? Math.imul(option[0], option[1]) : undefined;
-  const value$1 = calls;
+  const get = calls;
   const option$1 = half(n);
-  return [value, counted, value$1, option$1 != null ? 7 : undefined];
+  return [value, counted, get, option$1 != null ? 7 : undefined];
 }
 
 /**

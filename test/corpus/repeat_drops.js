@@ -140,9 +140,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$3;
+  let take;
   try {
-    tmp$3 = tmp$2.take(2);
+    take = tmp$2.take(2);
   } catch (error) {
     if (first != null) {
       loudDrop_drop(first);
@@ -152,11 +152,11 @@ function main() {
     }
     throw error;
   }
-  const iter = tmp$3;
-  let tmp$4;
+  const iter = take;
+  let loud;
   while (true) {
     try {
-      tmp$4 = $next(iter);
+      loud = $next(iter);
     } catch (error) {
       iter.return();
       if (first != null) {
@@ -170,7 +170,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp$4) {
+    if (!loud) {
       try {
         iter.return();
       } catch (error) {
@@ -187,7 +187,7 @@ function main() {
       }
       break;
     }
-    const item = tmp$4;
+    const item = loud;
     try {
       console.log(`got ${item[0]}`);
     } catch (error) {

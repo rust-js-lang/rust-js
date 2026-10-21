@@ -47,16 +47,16 @@ function main() {
     `${p == null ? "None" : `Some((${p[0]}, ${p[1]}))`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
   const v = $iter([7, 8, 9]);
-  const value = pair_of(v);
-  const value$1 = $next(v);
+  const pairOf = pair_of(v);
+  const value = $next(v);
   console.log(
-    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${pairOf == null ? "None" : `Some((${pairOf[0]}, ${pairOf[1]}))`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const q = { start: 10, end: 15 };
-  const value$2 = pair_of($iterator(q, $rangeNext));
-  const value$3 = $rangeNext(q);
+  const value$1 = pair_of($iterator(q, $rangeNext));
+  const value$2 = $rangeNext(q);
   console.log(
-    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

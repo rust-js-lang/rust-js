@@ -77,26 +77,26 @@ function main() {
   const [, b$1] = $splitAtMut(v, 5);
   const value = (b$1[$at(b$1, 0)] + 1) | 0;
   b$1[0] = value;
-  const value$3 = $splitAtMut(v, 6, true);
-  if (value$3) {
-    const a = value$3[0];
-    const b = value$3[1];
-    const length = b.length;
-    a[$at(a, 0)] = length | 0;
+  const splitAtMutChecked = $splitAtMut(v, 6, true);
+  if (splitAtMutChecked) {
+    const a = splitAtMutChecked[0];
+    const b = splitAtMutChecked[1];
+    const value = b.length;
+    a[$at(a, 0)] = value | 0;
   }
   console.log(`[${v.join(", ")}]`);
-  const value$4 = $splitEndMut(v, false, true);
+  const splitFirstMut = $splitEndMut(v, false, true);
 
-  if (value$4) {
-    const first = value$4[0];
-    const rest = value$4[1];
+  if (splitFirstMut) {
+    const first = splitFirstMut[0];
+    const rest = splitFirstMut[1];
     first.value = 10;
     rest[$at(rest, 0)] = 11;
   }
-  const value$5 = $splitEndMut(v, true, true);
-  if (value$5) {
-    const last = value$5[0];
-    const rest = value$5[1];
+  const splitLastMut = $splitEndMut(v, true, true);
+  if (splitLastMut) {
+    const last = splitLastMut[0];
+    const rest = splitLastMut[1];
     last.value = rest.length | 0;
     rest[$at(rest, 0)] = 20;
   }
@@ -154,8 +154,8 @@ function main() {
   }
   console.log(`${!$viewGet(words, 5, 9)} [${words.join(", ")}]`);
   $view(words, 0, 2).fill(6);
-  const value$6 = $mutAt(words, 2);
-  value$6.value = (value$6.value + 1) | 0;
+  const getUncheckedMut = $mutAt(words, 2);
+  getUncheckedMut.value = (getUncheckedMut.value + 1) | 0;
   console.log(`[${words.join(", ")}]`);
   const head = words.length >= 2 ? $view(words, 0, 2) : undefined;
 
@@ -167,16 +167,16 @@ function main() {
     end[0] = 0;
   }
   console.log(`[${words.join(", ")}]`);
-  const value$7 = $splitChunkMut(words, 2, false);
-  if (value$7) {
-    const head = value$7[0];
-    const rest = value$7[1];
+  const splitFirstChunkMut = $splitChunkMut(words, 2, false);
+  if (splitFirstChunkMut) {
+    const head = splitFirstChunkMut[0];
+    const rest = splitFirstChunkMut[1];
     head[0] = rest.length | 0;
   }
-  const value$8 = $splitChunkMut(words, 2, true);
-  if (value$8) {
-    const rest = value$8[0];
-    const end = value$8[1];
+  const splitLastChunkMut = $splitChunkMut(words, 2, true);
+  if (splitLastChunkMut) {
+    const rest = splitLastChunkMut[0];
+    const end = splitLastChunkMut[1];
     end[1] = rest.length | 0;
   }
   console.log(`[${words.join(", ")}]`);
@@ -202,12 +202,12 @@ function main() {
 
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
   const [head$2, tail$1] = $splitAtMut(points, 1);
-  const x = $index(tail$1, 1).x;
-  const length$1 = head$2.length;
-  if (0 >= length$1) {
-    throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
+  const value$3 = $index(tail$1, 1).x;
+  const value$4 = head$2.length;
+  if (0 >= value$4) {
+    throw new Error(`index out of bounds: the len is ${value$4} but the index is 0`);
   }
-  head$2[0].x = x;
+  head$2[0].x = value$3;
   tail$1[$at(tail$1, 0)] = { x: 0 };
   const result$1 = $view(points, 1);
   $swap(result$1, 0, 1);

@@ -71,21 +71,21 @@ function main() {
   ).toArray();
   console.log(`[${back.join(", ")}]`);
   const it = pad([0, 5], 1, { next: countdownIterator_next }, false);
-  const value = padIterator_next(it);
-  const value$1 = padDoubleEndedIterator_next_back(
+  const next = padIterator_next(it);
+  const nextBack = padDoubleEndedIterator_next_back(
     it,
     { next_back: countdownDoubleEndedIterator_next_back },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
     false,
   );
-  const value$2 = padDoubleEndedIterator_next_back(
+  const value = padDoubleEndedIterator_next_back(
     it,
     { next_back: countdownDoubleEndedIterator_next_back },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
     false,
   );
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const ranged = $iterator(
     pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),

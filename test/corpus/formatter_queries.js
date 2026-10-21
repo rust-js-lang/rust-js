@@ -40,9 +40,9 @@ function probeDisplay_fmt(probe, options) {
   } else {
     align = "none";
   }
-  const value$1 = options?.width;
-  const value$2 = options?.precision;
-  return `w=${value$1 == null ? "None" : `Some(${value$1})`} p=${value$2 == null ? "None" : `Some(${value$2})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
+  const width = options?.width;
+  const precision = options?.precision;
+  return `w=${width == null ? "None" : `Some(${width})`} p=${precision == null ? "None" : `Some(${precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
 }
 
 export function moneyDisplay() {

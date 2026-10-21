@@ -42,13 +42,13 @@ function first_even(rows) {
 
 function main() {
   console.log(`${grade(-1)} ${grade(95)} ${grade(50)}`);
-  const value = first_even([
+  const firstEven = first_even([
     [1, 3],
     [5, 8, 10],
   ]);
-  const value$1 = first_even([[1]]);
+  const value = first_even([[1]]);
   console.log(
-    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
+    `${firstEven == null ? "None" : `Some((${firstEven[0]}, ${firstEven[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
   );
 
   // As a statement, leaving it without a value, and one inside another.

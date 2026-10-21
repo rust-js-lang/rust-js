@@ -46,9 +46,9 @@ function main() {
   const arg = ["a", "b"].join("-");
   console.log(`[${list.join(", ")}] ${arg}`);
   const nested = [[1, 2], [3]];
-  const value = $joinWith(nested, 0, false);
-  const value$1 = $joinWith(nested, [7, 8], true);
-  console.log(`[${value.join(", ")}] [${value$1.join(", ")}] [${nested.flat().join(", ")}]`);
+  const join = $joinWith(nested, 0, false);
+  const value = $joinWith(nested, [7, 8], true);
+  console.log(`[${join.join(", ")}] [${value.join(", ")}] [${nested.flat().join(", ")}]`);
   const words = [["a"], ["b"]];
   const joined = $joinWith(words, "-", false);
   joined[$at(joined, 0)] = joined[0] + "!";

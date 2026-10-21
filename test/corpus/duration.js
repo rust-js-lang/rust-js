@@ -40,10 +40,10 @@ function main() {
   console.log(
     `${$debugDuration($durationAdd(a, b))} ${$debugDuration($durationSub(a, b))} ${((value) => (value == null ? "None" : `Some(${$debugDuration(value)})`))(a < b$1 ? undefined : a - b$1)}`,
   );
-  const value = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
-  const value$1 = $durationChecked(a + b);
+  const checkedAdd = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
+  const value = $durationChecked(a + b);
   console.log(
-    `${value == null ? "None" : `Some(${$debugDuration(value)})`} ${value$1 == null ? "None" : `Some(${$debugDuration(value$1)})`}`,
+    `${checkedAdd == null ? "None" : `Some(${$debugDuration(checkedAdd)})`} ${value == null ? "None" : `Some(${$debugDuration(value)})`}`,
   );
   console.log(
     `${a > b} ${a === $durationNew(1n, 500000000)} ${$bigMax(a, b) === a} ${

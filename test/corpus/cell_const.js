@@ -18,21 +18,21 @@ function bump() {
 function main() {
   console.log(`${bump()} ${bump()} 5`);
   const limit = {};
-  const value = $borrowMut(limit, true);
-  value.value = 3;
-  $unborrow(value);
-  const value$1 = $borrow(limit, true);
+  const borrowMut = $borrowMut(limit, true);
+  borrowMut.value = 3;
+  $unborrow(borrowMut);
+  const borrow = $borrow(limit, true);
   try {
     const tmp = $borrow({}, true);
     try {
       console.log(
-        `${value$1.value == null ? "None" : `Some(${value$1.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
+        `${borrow.value == null ? "None" : `Some(${borrow.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
       );
     } finally {
       $unborrow(tmp);
     }
   } finally {
-    $unborrow(value$1);
+    $unborrow(borrow);
   }
 }
 //# sourceMappingURL=case.js.map

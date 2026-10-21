@@ -34,7 +34,7 @@ function formatClone_clone(format, IClone) {
 function main() {
   const words = { inner: ["a"] };
   const copy = formatClone_clone(words, { clone: (value) => value });
-  const value = $cellReplace({
+  const take = $cellReplace({
     get value() {
       return words.inner;
     },
@@ -43,7 +43,7 @@ function main() {
     },
   });
   console.log(
-    `${value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`} ${((
+    `${take == null ? "None" : `Some([${take.map((item) => $debugStr(item)).join(", ")}])`} ${((
       value,
     ) => (value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`))(
       $cellReplace({
@@ -58,7 +58,7 @@ function main() {
   );
   const nested = { inner: $some(undefined) };
   const copy$1 = formatClone_clone(nested, { clone: (value) => value });
-  const value$1 = $cellReplace({
+  const value = $cellReplace({
     get value() {
       return nested.inner;
     },
@@ -66,7 +66,7 @@ function main() {
       nested.inner = value;
     },
   });
-  const value$2 = $cellReplace({
+  const value$1 = $cellReplace({
     get value() {
       return copy$1.inner;
     },
@@ -75,20 +75,20 @@ function main() {
     },
   });
   console.log(
-    `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
+    `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
   );
   const cell = { value: 1 };
   console.log(
     `${cell.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(cell.value))})`}`,
   );
-  const value$3 = $cellReplace(cell, $some(undefined));
+  const replace = $cellReplace(cell, $some(undefined));
   console.log(
-    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`} ${cell.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(cell.value))})`}`,
+    `${replace == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(replace))})`} ${cell.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(cell.value))})`}`,
   );
-  const value$4 = $cellReplace(cell);
-  const value$5 = $cellReplace(cell);
+  const value$2 = $cellReplace(cell);
+  const value$3 = $cellReplace(cell);
   console.log(
-    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`} ${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
+    `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`} ${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

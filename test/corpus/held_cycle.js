@@ -245,14 +245,14 @@ function main() {
       { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     )}`,
   );
+  const next = circularIterator_next(round, {
+    clone: (value) => $iter(value.items.slice(value.at, value.end)),
+  });
   const value = circularIterator_next(round, {
     clone: (value) => $iter(value.items.slice(value.at, value.end)),
   });
-  const value$1 = circularIterator_next(round, {
-    clone: (value) => $iter(value.items.slice(value.at, value.end)),
-  });
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
     `${circularDebug_fmt(

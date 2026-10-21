@@ -151,11 +151,11 @@ function main() {
     throw error;
   }
   let slot = ["old"];
-  const value = ["new"];
+  const noisy = ["new"];
   try {
     noisyDrop_drop(slot);
   } catch (error) {
-    slot = value;
+    slot = noisy;
     noisyDrop_drop(slot);
     noisyDrop_drop(kept);
     if (maybe$live) {
@@ -163,7 +163,7 @@ function main() {
     }
     throw error;
   }
-  slot = value;
+  slot = noisy;
   try {
     console.log(`slot is ${slot[0]}`);
   } catch (error) {
@@ -184,9 +184,9 @@ function main() {
     }
     throw error;
   }
-  const value$1 = ["statement"];
+  const value = ["statement"];
   try {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(value);
   } catch (error) {
     noisyDrop_drop(slot);
     if (maybe$live) {
@@ -194,9 +194,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = ["ignored"];
+  const value$1 = ["ignored"];
   try {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value$1);
   } catch (error) {
     noisyDrop_drop(slot);
     if (maybe$live) {

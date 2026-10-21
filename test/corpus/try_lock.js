@@ -21,24 +21,24 @@ function main() {
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   g.value = (g.value + 1) | 0;
-  let tmp;
+  let tryLock;
   try {
-    tmp = $tryLock(m, true);
+    tryLock = $tryLock(m, true);
   } catch (error) {
     $unborrow(g);
     throw error;
   }
-  if (tmp.TAG === "Err") {
-    if (tmp._0 === "WouldBlock") {
+  if (tryLock.TAG === "Err") {
+    if (tryLock._0 === "WouldBlock") {
       try {
         console.log("busy");
       } catch (error) {
-        if (tmp.TAG === "Ok") {
-          $unborrow(tmp._0);
+        if (tryLock.TAG === "Ok") {
+          $unborrow(tryLock._0);
         }
-        if (tmp.TAG === "Err") {
-          if (tmp._0.TAG === "Poisoned") {
-            $unborrow(tmp._0._0.data);
+        if (tryLock.TAG === "Err") {
+          if (tryLock._0.TAG === "Poisoned") {
+            $unborrow(tryLock._0._0.data);
           }
         }
         $unborrow(g);
@@ -48,12 +48,12 @@ function main() {
       try {
         console.log("poisoned");
       } catch (error) {
-        if (tmp.TAG === "Ok") {
-          $unborrow(tmp._0);
+        if (tryLock.TAG === "Ok") {
+          $unborrow(tryLock._0);
         }
-        if (tmp.TAG === "Err") {
-          if (tmp._0.TAG === "Poisoned") {
-            $unborrow(tmp._0._0.data);
+        if (tryLock.TAG === "Err") {
+          if (tryLock._0.TAG === "Poisoned") {
+            $unborrow(tryLock._0._0.data);
           }
         }
         $unborrow(g);
@@ -64,6 +64,32 @@ function main() {
     try {
       console.log("free");
     } catch (error) {
+      if (tryLock.TAG === "Ok") {
+        $unborrow(tryLock._0);
+      }
+      if (tryLock.TAG === "Err") {
+        if (tryLock._0.TAG === "Poisoned") {
+          $unborrow(tryLock._0._0.data);
+        }
+      }
+      $unborrow(g);
+      throw error;
+    }
+  }
+  try {
+    if (tryLock.TAG === "Ok") {
+      $unborrow(tryLock._0);
+    }
+    if (tryLock.TAG === "Err") {
+      if (tryLock._0.TAG === "Poisoned") {
+        $unborrow(tryLock._0._0.data);
+      }
+    }
+    const tmp = $tryLock(m, true);
+    const value = tmp.TAG === "Err";
+    try {
+      console.log(`${value}`);
+    } catch (error) {
       if (tmp.TAG === "Ok") {
         $unborrow(tmp._0);
       }
@@ -72,40 +98,14 @@ function main() {
           $unborrow(tmp._0._0.data);
         }
       }
-      $unborrow(g);
       throw error;
     }
-  }
-  try {
     if (tmp.TAG === "Ok") {
       $unborrow(tmp._0);
     }
     if (tmp.TAG === "Err") {
       if (tmp._0.TAG === "Poisoned") {
         $unborrow(tmp._0._0.data);
-      }
-    }
-    const tmp$1 = $tryLock(m, true);
-    const value = tmp$1.TAG === "Err";
-    try {
-      console.log(`${value}`);
-    } catch (error) {
-      if (tmp$1.TAG === "Ok") {
-        $unborrow(tmp$1._0);
-      }
-      if (tmp$1.TAG === "Err") {
-        if (tmp$1._0.TAG === "Poisoned") {
-          $unborrow(tmp$1._0._0.data);
-        }
-      }
-      throw error;
-    }
-    if (tmp$1.TAG === "Ok") {
-      $unborrow(tmp$1._0);
-    }
-    if (tmp$1.TAG === "Err") {
-      if (tmp$1._0.TAG === "Poisoned") {
-        $unborrow(tmp$1._0._0.data);
       }
     }
   } finally {
@@ -139,34 +139,34 @@ function main() {
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   try {
-    const tmp = $tryLock(l);
-    const r2 = $unwrapOk(tmp, undefined, (e) =>
+    const tryRead = $tryLock(l);
+    const r2 = $unwrapOk(tryRead, undefined, (e) =>
       e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
     );
     try {
-      const tmp = $tryLock(l, true);
+      const tryWrite = $tryLock(l, true);
       const value = r1.value;
       const value$1 = r2.value;
-      const value$2 = tmp.TAG === "Err";
+      const value$2 = tryWrite.TAG === "Err";
       try {
         console.log(`${value} ${value$1} ${value$2}`);
       } catch (error) {
-        if (tmp.TAG === "Ok") {
-          $unborrow(tmp._0);
+        if (tryWrite.TAG === "Ok") {
+          $unborrow(tryWrite._0);
         }
-        if (tmp.TAG === "Err") {
-          if (tmp._0.TAG === "Poisoned") {
-            $unborrow(tmp._0._0.data);
+        if (tryWrite.TAG === "Err") {
+          if (tryWrite._0.TAG === "Poisoned") {
+            $unborrow(tryWrite._0._0.data);
           }
         }
         throw error;
       }
-      if (tmp.TAG === "Ok") {
-        $unborrow(tmp._0);
+      if (tryWrite.TAG === "Ok") {
+        $unborrow(tryWrite._0);
       }
-      if (tmp.TAG === "Err") {
-        if (tmp._0.TAG === "Poisoned") {
-          $unborrow(tmp._0._0.data);
+      if (tryWrite.TAG === "Err") {
+        if (tryWrite._0.TAG === "Poisoned") {
+          $unborrow(tryWrite._0._0.data);
         }
       }
     } finally {

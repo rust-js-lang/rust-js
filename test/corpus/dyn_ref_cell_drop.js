@@ -33,50 +33,50 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const named = { value: ["first"], impl: noisyNamed() };
+  let borrowMut;
+  try {
+    borrowMut = $borrowMut(named, true);
+  } catch (error) {
+    named.impl.$drop?.(named.value);
+    throw error;
+  }
+  try {
+    borrowMut.impl.rename(borrowMut, "renamed");
+  } catch (error) {
+    $unborrow(borrowMut);
+    named.impl.$drop?.(named.value);
+    throw error;
+  }
+  try {
+    $unborrow(borrowMut);
+  } catch (error) {
+    named.impl.$drop?.(named.value);
+    throw error;
+  }
+  let borrow;
+  try {
+    borrow = $borrow(named, true);
+  } catch (error) {
+    named.impl.$drop?.(named.value);
+    throw error;
+  }
   let tmp;
   try {
-    tmp = $borrowMut(named, true);
+    tmp = borrow.impl.name(borrow.value);
   } catch (error) {
+    $unborrow(borrow);
     named.impl.$drop?.(named.value);
     throw error;
   }
   try {
-    tmp.impl.rename(tmp, "renamed");
+    console.log(`${tmp}`);
   } catch (error) {
-    $unborrow(tmp);
+    $unborrow(borrow);
     named.impl.$drop?.(named.value);
     throw error;
   }
   try {
-    $unborrow(tmp);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $borrow(named, true);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = tmp$1.impl.name(tmp$1.value);
-  } catch (error) {
-    $unborrow(tmp$1);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$2}`);
-  } catch (error) {
-    $unborrow(tmp$1);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    $unborrow(tmp$1);
+    $unborrow(borrow);
   } catch (error) {
     named.impl.$drop?.(named.value);
     throw error;

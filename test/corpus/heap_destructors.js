@@ -40,10 +40,10 @@ function main() {
     try {
       $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
       const length = h.length;
-      const length$1 = other.length;
-      console.log(`len ${length} ${length$1}`);
-      const tmp = $iter(h.splice(0));
-      const drained = tmp.toArray();
+      const value = other.length;
+      console.log(`len ${length} ${value}`);
+      const drain = $iter(h.splice(0));
+      const drained = drain.toArray();
       try {
         console.log(`drained ${drained.length}`);
       } finally {
@@ -51,9 +51,9 @@ function main() {
           oDrop_drop(item);
         }
       }
-      const value = [[4], [2], [6]];
-      const tmp$1 = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
-      const sorted = $heapSorted(tmp$1, (a, b) => $cmp(a[0], b[0]));
+      const value$1 = [[4], [2], [6]];
+      const tmp = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
+      const sorted = $heapSorted(tmp, (a, b) => $cmp(a[0], b[0]));
       try {
         const tmp = sorted.map((o) => o[0]);
         console.log(`[${tmp.join(", ")}]`);
@@ -80,8 +80,8 @@ function main() {
           for (const item of tmp) {
             oDrop_drop(item);
           }
-          const length = k.length;
-          console.log(`end ${length}`);
+          const value = k.length;
+          console.log(`end ${value}`);
         } finally {
           for (const item of k) {
             oDrop_drop(item);

@@ -96,15 +96,15 @@ function main() {
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
-  const value = items.length >= 2 ? items.slice(0, 2) : undefined;
-  const value$1 = items.length >= 3 ? items.slice(-3) : undefined;
+  const firstChunk = items.length >= 2 ? items.slice(0, 2) : undefined;
+  const lastChunk = items.length >= 3 ? items.slice(-3) : undefined;
   console.log(
-    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
+    `${firstChunk == null ? "None" : `Some([${firstChunk.join(", ")}])`} ${lastChunk == null ? "None" : `Some([${lastChunk.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
   );
   console.log(`${$sliceStartsWith(items, [1, 2])} ${$sliceStartsWith(items, [6], true)}`);
-  const value$2 = $sliceStrip(items, [1], false);
+  const stripPrefix = $sliceStrip(items, [1], false);
   console.log(
-    `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceStrip(items, [9], true))}`,
+    `${stripPrefix == null ? "None" : `Some([${stripPrefix.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceStrip(items, [9], true))}`,
   );
   console.log(`[${$repeatItems([1, 2], 3).join(", ")}]`);
   console.log(

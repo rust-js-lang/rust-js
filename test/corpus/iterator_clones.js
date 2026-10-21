@@ -41,11 +41,11 @@ function main() {
   $next(it);
   const copy = $iter(it.items.slice(it.at, it.end));
   $next(it);
-  const value = $next(copy);
-  const value$1 = $next(it);
-  const value$2 = $next(copy);
+  const next = $next(copy);
+  const value = $next(it);
+  const value$1 = $next(copy);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const a = $iter([7, 8, 9]);
   $next(a);

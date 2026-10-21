@@ -81,11 +81,11 @@ function main() {
     }
     throw error;
   }
+  let next;
   let tmp;
-  let tmp$1;
   try {
-    tmp = $next(p);
-    tmp$1 = (d) => {
+    next = $next(p);
+    tmp = (d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
@@ -101,9 +101,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$2;
+  let map;
   try {
-    tmp$2 = tmp ? tmp$1(tmp) : undefined;
+    map = next ? tmp(next) : undefined;
   } catch (error) {
     for (const item of p.iter) {
       dDrop_drop(item);
@@ -116,7 +116,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$2 ?? 0}`);
+    console.log(`${map ?? 0}`);
   } catch (error) {
     for (const item of p.iter) {
       dDrop_drop(item);

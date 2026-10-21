@@ -42,8 +42,8 @@ function main() {
   ]);
   const first$1 = $endEntry(counts, $cmp, false);
   if (first$1) {
-    const value = $entryGet(first$1, true);
-    value.value = (value.value + 10) | 0;
+    const getMut = $entryGet(first$1, true);
+    getMut.value = (getMut.value + 10) | 0;
     const old = $entryInsert(first$1, 100);
     const arg = $entryGet(first$1);
     console.log(`${old} ${arg}`);

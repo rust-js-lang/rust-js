@@ -11,9 +11,9 @@ function loudDrop_drop(loud) {
 function main() {
   const d = [[1], [2]].slice();
   try {
-    const tmp = d.shift();
-    if (tmp != null) {
-      loudDrop_drop(tmp);
+    const popFront = d.shift();
+    if (popFront != null) {
+      loudDrop_drop(popFront);
     }
     const length = d.length;
     console.log(`${length}`);

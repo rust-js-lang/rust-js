@@ -152,29 +152,29 @@ function summed(s, SSource) {
 function main() {
   const shelf = { books: ["Dune", "Emma"] };
   const counts = [[3, 1, 4]];
-  const value = shelfContainer().last(shelf);
-  const value$1 = countsContainer().last(counts);
+  const last = shelfContainer().last(shelf);
+  const value = countsContainer().last(counts);
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${last == null ? "None" : `Some(${$debugStr(last)})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
     `${count(shelf, shelfContainer())} ${count(counts, countsContainer())} ${count([3], countdownContainer())}`,
   );
-  const value$2 = countdownContainer().last([2]);
+  const value$1 = countdownContainer().last([2]);
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${show(shelf, shelfContainer())} ${show([1], countdownContainer())}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${show(shelf, shelfContainer())} ${show([1], countdownContainer())}`,
   );
-  const value$3 = first(shelf, shelfContainer());
-  const value$4 = first(counts, countsContainer());
-  const value$5 = first([5], countdownContainer());
+  const value$2 = first(shelf, shelfContainer());
+  const value$3 = first(counts, countsContainer());
+  const value$4 = first([5], countdownContainer());
   console.log(
-    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$6 = second(shelf, shelfContainer());
-  const value$7 = second(counts, countsContainer());
-  const value$8 = second([5], countdownContainer());
+  const value$5 = second(shelf, shelfContainer());
+  const value$6 = second(counts, countsContainer());
+  const value$7 = second([5], countdownContainer());
   console.log(
-    `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+    `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
   console.log(
     `[${shelfContainer_items(shelf)

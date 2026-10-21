@@ -10,13 +10,13 @@ const LOG = { value: [] };
 
 function asksDrop_drop(asks) {
   ((log) => {
-    const value = $tryBorrow(log, true);
-    const value$1 = value.TAG === "Ok";
+    const tryBorrowMut = $tryBorrow(log, true);
+    const value = tryBorrowMut.TAG === "Ok";
     try {
-      console.log(`free as it unwinds: ${value$1}`);
+      console.log(`free as it unwinds: ${value}`);
     } finally {
-      if (value.TAG === "Ok") {
-        $unborrow(value._0);
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
       }
     }
   })(LOG);

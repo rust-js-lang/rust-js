@@ -8,11 +8,11 @@ export function entry() {
 
 function main() {
   const parts = $iter($splitBy("1.5e-3", (c) => ["e", "E"].includes(c), 2));
+  const next = $next(parts);
   const value = $next(parts);
   const value$1 = $next(parts);
-  const value$2 = $next(parts);
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
+    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   const pieces = $splitBy("a1b2c3d", (c) => /^[0-9]$/.test(c), 3);
   console.log(`[${pieces.map((item) => $debugStr(item)).join(", ")}]`);

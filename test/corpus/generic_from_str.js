@@ -35,12 +35,12 @@ function parse_all(parts, TFromStr) {
 }
 
 function explain(s, TFromStr, TDebug, TErrDebug) {
-  const value = TFromStr.from_str(s);
-  if (value.TAG === "Ok") {
-    const v = value._0;
+  const parse = TFromStr.from_str(s);
+  if (parse.TAG === "Ok") {
+    const v = parse._0;
     return TDebug.fmt(v);
   }
-  const e = value._0;
+  const e = parse._0;
   return `error ${TErrDebug.fmt(e)}`;
 }
 
@@ -76,23 +76,23 @@ function main() {
   const value = read("42", { from_str: (s) => $parseInt(s, -2147483648, 2147483647) });
   const value$1 = read("x", { from_str: (s) => $parseF64(s) });
   const value$2 = read("true", { from_str: (s) => $parseBool(s) });
-  const value$3 = read("kg", unitFromStr());
-  const value$4 = read("18446744073709551615", {
+  const unit = read("kg", unitFromStr());
+  const value$3 = read("18446744073709551615", {
     from_str: (s) => $parseBig(s, 0n, 18446744073709551615n),
   });
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${$debugF64(value$1)})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${$debugF64(value$1)})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${unit == null ? "None" : `Some(${unit})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   console.log(
     `${read_or("  7 ", 0, { from_str: (s) => $parseInt(s, 0, 255) })} ${read_or("nope", "Lb", unitFromStr())}`,
   );
-  const value$5 = parse_all(["1", "2"], { from_str: (s) => $parseInt(s, 0, 65535) });
+  const parseAll = parse_all(["1", "2"], { from_str: (s) => $parseInt(s, 0, 65535) });
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok([${value$5._0.join(", ")}])` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`} ${parse_all(["1", "300"], { from_str: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
+    `${parseAll.TAG === "Ok" ? `Ok([${parseAll._0.join(", ")}])` : `Err(${$debugParseError(parseAll._0, "ParseIntError")})`} ${parse_all(["1", "300"], { from_str: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
   );
-  const value$6 = parse_all(["lb", "st"], unitFromStr());
+  const value$4 = parse_all(["lb", "st"], unitFromStr());
   console.log(
-    `${value$6.TAG === "Ok" ? `Ok([${value$6._0.join(", ")}])` : `Err(${$debugStr(value$6._0)})`}`,
+    `${value$4.TAG === "Ok" ? `Ok([${value$4._0.join(", ")}])` : `Err(${$debugStr(value$4._0)})`}`,
   );
   console.log(
     `${explain("ab", { from_str: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr(), unitDebug(), { fmt: (value) => $debugStr(value) })} | ${explain(

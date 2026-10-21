@@ -20,8 +20,8 @@ function main() {
     const value = $entry(counts, word);
     if (value.TAG === "Occupied") {
       const seen = value._0;
-      const value$1 = $entryGet(seen, true);
-      value$1.value = (value$1.value + 1) | 0;
+      const getMut = $entryGet(seen, true);
+      getMut.value = (getMut.value + 1) | 0;
     } else {
       console.log(`first ${value._0[1]}`);
       $vacantInsert(value._0, 1, true);
@@ -52,9 +52,9 @@ function main() {
   );
 
   const empty = new Map();
-  const value$1 = $entry(empty, "z");
-  if (value$1.TAG === "Vacant") {
-    const key = value$1._0[1];
+  const entry = $entry(empty, "z");
+  if (entry.TAG === "Vacant") {
+    const key = entry._0[1];
     console.log(`${key} ${empty.size}`);
   }
 }

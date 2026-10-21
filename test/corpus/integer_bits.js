@@ -45,15 +45,15 @@ function main() {
   console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
 
   // Bytes, in each order, and back.
-  const value = $toBytes(16909060, 4, false);
-  const value$1 = $toBytes(16909060, 4, true);
+  const beBytes = $toBytes(16909060, 4, false);
+  const leBytes = $toBytes(16909060, 4, true);
   console.log(
-    `[${value.join(", ")}] [${value$1.join(", ")}] [${$toBytes(258, 2, true).join(", ")}]`,
+    `[${beBytes.join(", ")}] [${leBytes.join(", ")}] [${$toBytes(258, 2, true).join(", ")}]`,
   );
-  const value$2 = $toBytes(-2, 4, false);
-  const value$3 = $toBytes(-1, 1, true);
+  const value = $toBytes(-2, 4, false);
+  const value$1 = $toBytes(-1, 1, true);
   console.log(
-    `[${value$2.join(", ")}] [${value$3.join(", ")}] [${$toBytes(258n, 8, false).join(", ")}]`,
+    `[${value.join(", ")}] [${value$1.join(", ")}] [${$toBytes(258n, 8, false).join(", ")}]`,
   );
   console.log(`[${$toBytes(-3n, 8, true).join(", ")}]`);
   console.log(

@@ -145,9 +145,9 @@ export function capitalize(s) {
 export function report() {
   let out = "";
   for (const src of ['let x_1 = 42 + y;\n// note\nprint("hi there") 7', 'a "open', "  "]) {
-    const value = Lexer.new(src);
-    const value$1 = Lexer.tokens(value);
-    out += `${value$1.TAG === "Ok" ? `Ok([${value$1._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value$1._0)})`}\n`;
+    const lexer = Lexer.new(src);
+    const value = Lexer.tokens(lexer);
+    out += `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value._0)})`}\n`;
   }
   const value = pairs([1, 2, 3, 4, 5]);
   out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].join(", ")}])`)(pairs([]))}\n`;

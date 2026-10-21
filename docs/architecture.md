@@ -244,7 +244,7 @@ and answer. Each is checked to stay that way.
 |---|---|
 | `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
 | `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
-| `mir/hints.rs` | What tidy is told of a body that its THIR says (`written`): where each `if`'s condition, `&&`, `if` of a `continue`, loop and table `match` is written; and the names of `bool`s and of integers (`typed_names`). A question: it emits nothing |
+| `mir/hints.rs` | What tidy is told of a body that its THIR says (`written`): where each `if`'s condition, `&&`, `if` of a `continue`, loop and table `match` is written; the names of `bool`s and of integers (`typed_names`); and what each temporary is suggested to be named, rust-analyzer's suggestion of the call that made it or the type it holds (`temporaries_names`, ADR 0569). A question: it emits nothing |
 | `mir/writer.rs` | A writer's `Formatter` from MIR, and its body's end (`writer_epilogue`): which locals are it, its `Debug` builders, what's refused of it, and a call that writes to it, whose JS `display.rs` writes |
 | `mir/calls.rs` | A call of what isn't std's: a closure's, a binding's, the crate's own function's, and an operator's that assigns through a `&mut` |
 | `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
