@@ -7,9 +7,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { API } from "typescript/unstable/async";
-import { NodeFlags, SyntaxKind, TokenFlags } from "typescript/unstable/ast";
-import * as f from "typescript/unstable/ast/factory";
+import { API } from "typescript/async";
+import { NodeFlags, SyntaxKind, TokenFlags } from "typescript/ast";
+import * as f from "typescript/ast/factory";
 
 /**
  * @typedef {{ declarations: Declaration[], header?: string }} Module
@@ -85,8 +85,8 @@ export async function open(files = []) {
   };
   let project;
   try {
-    const snapshot = await api.updateSnapshot({ openProjects: [config] });
-    project = snapshot.getProject(config);
+    const snapshot = await api.createSnapshot({ openProjects: [config] });
+    project = snapshot.getConfiguredProject(config);
   } catch (error) {
     await close();
     throw error;
@@ -103,8 +103,8 @@ export async function open(files = []) {
       const parts = [];
       let previous;
       for (const declaration of module.declarations) {
-        const text = await documented(declaration, await project.emitter.printNode(statement(declaration)), (node) =>
-          project.emitter.printNode(node),
+        const text = await documented(declaration, await api.printer.printNode(statement(declaration)), (node) =>
+          api.printer.printNode(node),
         );
         // Imports together, then a blank line before each declaration.
         const together = previous === "import" && declaration.kind === "import";
@@ -508,6 +508,7 @@ function statement(declaration) {
         modifiers(declaration),
         SyntaxKind.NamespaceKeyword,
         id(declaration.name),
+        undefined,
         f.createModuleBlock(declaration.declarations.map(statement)),
       );
     default:

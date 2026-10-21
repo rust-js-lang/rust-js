@@ -39,7 +39,7 @@ await ts.close();
   parameter is its name and what it extends, where it's said,
   `{ name: "C", constraint: ReactNode }`. (Amended: it was its name
   alone.)
-- **`read` is TypeScript's parser**, `typescript/unstable/async`'s
+- **`read` is TypeScript's parser**, `typescript/async`'s
   program of the files a session opens: each file's syntax tree, as the
   model.
 - **`print` is TypeScript's factory and printer**: the model as
