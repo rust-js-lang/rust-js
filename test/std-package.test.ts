@@ -70,3 +70,17 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   const std = readFileSync(join(root, "std", "iter.js"), "utf8");
   expect(std).toContain("return $stdIterator({ iter: self }, (iterator) =>");
 });
+
+// ADR 0564: a std body's JS is tidied as the app's is, though its optimized
+// MIR leaves what the app's MIR doesn't: `next_back`'s test of `option` after
+// its early return of it, which can't hold, is gone, as is a `bool`
+// temporary tested once, and a tail written into two branches.
+test("a std body's JS has no test its early return decided, no once-read bool, no tail written twice", () => {
+  const std = readFileSync(join(root, "std", "iter.js"), "utf8");
+  const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_next_back("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
+  expect(nextBack.match(/if \(option != null\)/g)).toHaveLength(1);
+  expect(nextBack).toContain("return option;\n    }\n    const x = v.value;\n    v.value = undefined;\n    return x;\n");
+  expect(std).not.toMatch(/tmp\$?\d* = !tmp/);
+  // No statement line written twice in a row at the two ends of an `if`/`else`.
+  expect(std).not.toMatch(/\n(\s*)(return [^\n]*;)\n\1}\n\1else \{[^]*?\n\1\s{2}\2\n/);
+});

@@ -25,9 +25,7 @@ function shuffle(v, extra, TClone) {
     v,
     extra.map((item) => TClone.clone(item)),
   );
-  const first = $mutAt(v, 0);
-  if (first != null) {
-  }
+  $mutAt(v, 0);
   const item = $mutAt(v, 1);
   return v.length;
 }

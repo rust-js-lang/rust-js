@@ -75,15 +75,11 @@ const Mapped = {
 };
 
 function middle(shape) {
-  let m$live = false;
   let shape$1$live = true;
   let shape$1$live$1 = true;
   let result;
-  let m;
   if (shape.TAG === "Pair") {
     shape$1$live$1 = false;
-    m$live = true;
-    m = shape._1;
   } else {
     if (shape.TAG !== "Triple") {
       try {
@@ -102,9 +98,9 @@ function middle(shape) {
       return result;
     }
     shape$1$live = false;
-    m$live = true;
-    m = shape._1;
   }
+  let m$live = true;
+  const m = shape._1;
   try {
     console.log(`got ${m[0]}`);
   } catch (error) {
@@ -149,14 +145,6 @@ function name(shape) {
   } else {
     if (shape.TAG !== "Triple") {
       result = "empty";
-      if (shape.TAG === "Pair") {
-        loudDrop_drop(shape._0);
-        loudDrop_drop(shape._1);
-      } else if (shape.TAG === "Triple") {
-        loudDrop_drop(shape._0);
-        loudDrop_drop(shape._1);
-        loudDrop_drop(shape._2);
-      }
       return result;
     }
     first = shape._2;

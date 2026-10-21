@@ -23,7 +23,6 @@ function _u32__u32_Collect_from_iter_no_buf(iter) {
     if (value$1 != null) {
       return [value, value$1];
     }
-    return;
   }
 }
 

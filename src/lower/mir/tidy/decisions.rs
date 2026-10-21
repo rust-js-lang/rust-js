@@ -366,7 +366,8 @@ fn same_body(a: &[&Stmt], b: &[&Stmt]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| std::ptr::eq(*x, *y) || same_stmt(x, y))
 }
 
-fn same_stmt(a: &Stmt, b: &Stmt) -> bool {
+/// Whether `a` and `b` do the same: written alike, each part.
+pub(super) fn same_stmt(a: &Stmt, b: &Stmt) -> bool {
     match (&a.kind, &b.kind) {
         (StmtKind::Assign(t, v), StmtKind::Assign(u, w)) => t.written_alike(u) && v.written_alike(w),
         (StmtKind::Expr(x), StmtKind::Expr(y)) | (StmtKind::Throw(x), StmtKind::Throw(y)) => x.written_alike(y),

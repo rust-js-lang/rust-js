@@ -77,8 +77,6 @@ function main() {
             if (option != null && 8 == null) {
               loudDrop_drop(option);
             }
-            if (option == null && 8 != null) {
-            }
             const f = value;
             const value$1 = (p) => [p[0][0], p[1]];
             try {

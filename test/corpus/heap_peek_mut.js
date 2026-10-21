@@ -55,8 +55,6 @@ function main() {
     } finally {
       $peekMutDrop(top);
     }
-  } else if (top) {
-    $peekMutDrop(top);
   }
   console.log(`[${heap.join(", ")}]`);
   const top$1 = $unwrap($peekMut(heap, $cmp));
@@ -82,8 +80,6 @@ function main() {
     } finally {
       $peekMutDrop(top$3);
     }
-  } else if (top$3) {
-    $peekMutDrop(top$3);
   }
   console.log("write");
   const top$4 = $peekMut(loud, loudOrd_cmp);
@@ -93,8 +89,6 @@ function main() {
     } finally {
       $peekMutDrop(top$4);
     }
-  } else if (top$4) {
-    $peekMutDrop(top$4);
   }
   const value = $peekMut([], $cmp);
   try {

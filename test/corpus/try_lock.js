@@ -121,9 +121,6 @@ function main() {
       }
     } finally {
       if (value.TAG !== "Ok") {
-        if (value.TAG === "Ok") {
-          $unborrow(value._0);
-        }
         if (value.TAG === "Err") {
           if (value._0.TAG === "Poisoned") {
             $unborrow(value._0._0.data);
@@ -131,16 +128,9 @@ function main() {
         }
       }
     }
-  } else if (value.TAG === "Ok") {
-    $unborrow(value._0);
-  } else {
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
-    }
-    if (value.TAG === "Err") {
-      if (value._0.TAG === "Poisoned") {
-        $unborrow(value._0._0.data);
-      }
+  } else if (value.TAG === "Err") {
+    if (value._0.TAG === "Poisoned") {
+      $unborrow(value._0._0.data);
     }
   }
 
