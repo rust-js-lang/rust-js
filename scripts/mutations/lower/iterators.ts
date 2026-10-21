@@ -367,8 +367,8 @@ export const mutations: Mutation[] = [
     "name": "collected-runtime-arrayed",
     "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
     "file": "src/lower/iterators.rs",
-    "find": "                {\n                    return None;\n                }\n                // One that closes what it holds",
-    "replace": "                {}\n                // One that closes what it holds",
+    "find": "                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
+    "replace": "                {}\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -859,14 +859,6 @@ export const mutations: Mutation[] = [
     find: "        let ty = self.impl_type(ty.peel_refs());\n",
     replace: "        let ty = ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
-  },
-  {
-    name: "collected-closing-listed",
-    breaks: "an iterator closed to drop what it holds, collected after a `take`, is listed whole, `Array.from`, and never closed",
-    file: "src/lower/iterators.rs",
-    find: "                if list.mentions_var(\"$closing\") {\n                    return None;\n                }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
     name: "repeat-n-is-repeat",

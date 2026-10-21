@@ -1574,13 +1574,10 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
             }
             _ if is_iterator_from(e) => {
                 let list = iterated(e.clone());
+                // Not one a runtime helper makes: `$closing(..)`'s, listed,
+                // would be stepped to its end and never closed (ADR 0510).
                 if matches!(&list.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Var(f) if f.starts_with('$')))
                 {
-                    return None;
-                }
-                // One that closes what it holds, `$closing(..)`'s, listed, is
-                // stepped to its end and never closed (ADR 0510).
-                if list.mentions_var("$closing") {
                     return None;
                 }
                 let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
