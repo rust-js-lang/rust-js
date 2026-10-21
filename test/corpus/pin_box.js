@@ -49,16 +49,8 @@ function main() {
   const text = "pinned";
   console.log(`${text} ${$byteLen(text)}`);
   let number = 7;
-  const pin = {
-    get value() {
-      return number;
-    },
-    set value(value) {
-      number = value;
-    },
-  };
-  pin.value = (pin.value + 1) | 0;
-  pin.value = Math.imul(pin.value, 2);
+  number = (number + 1) | 0;
+  number = Math.imul(number, 2);
   console.log(`${number}`);
   const pair = { count: 1, name: "pair" };
   const name = pair.name;
@@ -66,7 +58,7 @@ function main() {
   pair.count = (pair.count + 9) >>> 0;
   console.log(`${pair.count} ${pair.name}`);
   let seven = 7;
-  const shown = {
+  const value = {
     get value() {
       return seven;
     },
@@ -74,7 +66,7 @@ function main() {
       seven = value;
     },
   };
-  console.log(`${shown.value} ${shown.value}`);
+  console.log(`${value.value} ${value.value}`);
   const a = [1, 2];
   const b = [1, 3];
   const copy = a.slice();

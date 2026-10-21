@@ -1134,8 +1134,8 @@ export const mutations: Mutation[] = [
     name: "non-zero-fields-read",
     breaks: "a `NonZero` matched against a constant is read by its fields, which its number hasn't",
     file: "src/lower/recognition.rs",
-    find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did())\n",
-    replace: "            || matches!(ty.kind(), ty::Adt(adt, _) if false\n",
+    find: "            || is_non_zero(adt.did())\n",
+    replace: "",
     tests: ["test/corpus.test.ts","-t","nonzero"],
   },
   {
@@ -2670,5 +2670,21 @@ export const mutations: Mutation[] = [
     find: "                | \"std::collections::hash_map::IntoIter\"\n                | \"std::collections::btree_map::IntoIter\"\n        ) {",
     replace: "        ) {",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
+  },
+  {
+    name: "pin-macro-refused",
+    breaks: "`pin!`'s `Pin::new_unchecked` is a call rust-js refuses",
+    file: "src/lower/recognition.rs",
+    find: "        if is_pin_macro_fn(tcx, def_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/snapshots.test.ts", "-t", "async"],
+  },
+  {
+    name: "pin-macro-helper-a-struct",
+    breaks: "what `pin!` pins is a struct of std's, `{ value }`, not the value",
+    file: "src/lower/recognition.rs",
+    find: "            || self.tcx.is_diagnostic_item(rustc_span::sym::PinMacroHelper, adt.did())\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts", "-t", "async"],
   },
 ];

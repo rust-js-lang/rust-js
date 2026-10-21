@@ -220,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Pin` is its pointer (ADR 0329), and a `&mut` to a pinned
         // reference the pin, which only what it points at is changed through.
         if let Some(pointer) = self.recognition().pinned(ty) {
-            return !pointer.is_ref() && self.is_boxable(pointer);
+            return !self.mut_is_the_pin(ty) && self.is_boxable(pointer);
         }
         // A `&mut` to a value JS can't change in place is a cell, which can't
         // be changed in place either: a `&mut` to it, a cell of the cell. A
@@ -281,6 +281,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameter, which may be one (ADR 0099).
     pub(super) fn is_cell_pointee(&self, ty: Ty<'tcx>) -> bool {
         self.is_boxable(ty) || self.is_generic_boxed(ty, self.typing_env.param_env)
+    }
+
+    /// A type that's the value it holds, which it always does: a
+    /// `ManuallyDrop`, what `pin!` pins. Not a `MaybeUninit`, which may hold
+    /// none yet, a cell to be written (ADR 0332).
+    fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        self.transparent(ty)
+            .filter(|_| self.recognition().uninit_of(ty).is_none())
     }
 
     /// Whether what a `&mut` to a `ty` is, isn't a cell, is changed in place
@@ -412,6 +420,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How a struct or tuple type looks in JS.
     pub(super) fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
+        if let Some(held) = self.always_holds(ty) {
+            return self.shape(held);
+        }
         // A path is its text, a string (ADR 0173), whatever its fields; and a
         // struct of std's that's a number, a `Duration`'s nanoseconds (ADRs
         // 0177, 0188, 0447), has none in JS.

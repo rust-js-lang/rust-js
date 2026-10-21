@@ -2,6 +2,8 @@
 //! and the webapi crate's promises: `fetch`, binary data and WebAssembly.
 
 use std::cell::RefCell;
+use std::future::ready;
+use std::pin::pin;
 use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
@@ -65,6 +67,14 @@ pub async fn held() -> u32 {
     let first = later(5, 1);
     let second = double(2);
     first.await + second.await
+}
+
+/// A future already done, `future::ready`, is a resolved promise; one
+/// `pin!`ned, awaited as it is or through `as_mut()`, the promise it pins.
+pub async fn pinned(x: u32) -> u32 {
+    let mut done = pin!(ready(x));
+    let block = pin!(async move { double(x).await });
+    done.as_mut().await + block.await
 }
 
 /// A spawned task runs up to its first `.await` right away (a JS promise is

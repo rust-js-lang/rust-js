@@ -21,6 +21,7 @@ for (const [name, source, message, crate] of [
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
   // Its address is a number of rust-js's own (ADR 0562).
   ["a pointer to text", "pub fn f(s: &str) -> *const str { s as *const str }", "does not support addressable memory yet: values of type `*const str`"],
+  ["a ManuallyDrop of what's refused", "pub fn f(x: std::mem::ManuallyDrop<*const str>) -> std::mem::ManuallyDrop<*const str> { x }", "does not support addressable memory yet: values of type `*const str`"],
   // A struct's pointer as a field's that rustc doesn't lay at its offset 0 (ADR 0562).
   ["a struct's pointer as a later field's", "#[repr(C)] pub struct R { name: String, n: u32 }\npub fn f(p: *const R) -> u32 { unsafe { *(p as *const u32) } }", "does not support addressable memory yet: a pointer read as another type's"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],

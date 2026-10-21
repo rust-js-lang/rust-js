@@ -171,9 +171,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_lang_adt(ty, item)
     }
 
+    /// A pinned reference, a `&mut` to which is the pin (ADR 0329).
+    pub(super) fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().mut_is_the_pin(ty)
+    }
+
     /// A type that.s the value it holds in JS: a `MaybeUninit`, a
     /// `ManuallyDrop`, a `MaybeDangling`.
-    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.recognition().transparent(ty)
     }
 

@@ -38,6 +38,7 @@ pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod clock;
 pub(super) mod cow;
+pub(super) mod future;
 pub(super) mod hash;
 pub(super) mod heap;
 pub(super) mod io_error;

@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                && !matches!(\n                    self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(),\n                    ty::Str | ty::Dynamic(..)\n                ) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
+  {
+    name: "transparent-held-unchecked",
+    breaks: "a `ManuallyDrop` of a type rust-js refuses is taken for a unit struct, its held type unchecked",
+    file: "src/lower/support.rs",
+    find: "            ty::Adt(..) if let Some(held) = self.transparent(ty) => return self.unsupported_in(held, seen),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a ManuallyDrop of what's refused"],
+  },
 ];

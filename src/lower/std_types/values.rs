@@ -448,6 +448,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.backtrace_call(known, call, &mut values) {
             return Ok(js);
         }
+        if let Some(js) = self.future_call(known, &mut values) {
+            return Ok(js);
+        }
         if let Some(js) = self.alloc_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -609,6 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Memchr(_) => unreachable!("lowered by memchr_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
             Std::Backtrace(_) => unreachable!("lowered by backtrace_call"),
+            Std::Future(_) => unreachable!("lowered by future_call"),
             Std::IoError(_) => unreachable!("lowered by io_error_call"),
             Std::Hash(_) => unreachable!("lowered by hash_call"),
             Std::Alloc(_) => unreachable!("lowered by alloc_call"),

@@ -197,6 +197,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return None;
             }
+            // A `ManuallyDrop`, or what `pin!` pins, what it holds.
+            ty::Adt(..) if let Some(held) = self.transparent(ty) => return self.unsupported_in(held, seen),
             ty::Adt(_, args) if self.is_std_wrapper(ty) => {
                 return args.types().next().and_then(|t| self.unsupported_in(t, seen));
             }

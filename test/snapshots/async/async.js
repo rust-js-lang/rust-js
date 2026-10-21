@@ -55,6 +55,16 @@ export async function held() {
 }
 
 /**
+ * A future already done, `future::ready`, is a resolved promise; one
+ * `pin!`ned, awaited as it is or through `as_mut()`, the promise it pins.
+ */
+export async function pinned(x) {
+  const done = Promise.resolve(x);
+  const block = (async () => await double(x))();
+  return ((await done) + (await block)) >>> 0;
+}
+
+/**
  * A spawned task runs up to its first `.await` right away (a JS promise is
  * already running), and the rest later.
  */

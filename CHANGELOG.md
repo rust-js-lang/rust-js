@@ -21,6 +21,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`pin!` and `future::ready`** (ADR 0571): `pin!(fut).await` is `await
+  fut`, the variable named as the `Pin`'s binding, and `ready(v)` is
+  `Promise.resolve(v)`. A `&mut ManuallyDrop<u32>` written through is a
+  `&mut` to the number, where it was refused.
 - **A temporary is named as rust-analyzer suggests** (ADR 0569): after the
   call the source makes, `const floor = Math.floor(x)`, `const next =
   $next(entries)`, or the program's type it holds, `const point = find(..)`,

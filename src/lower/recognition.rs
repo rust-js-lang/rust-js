@@ -173,6 +173,8 @@ pub(super) enum Std {
     Location(super::std_types::location::LocationOp),
     /// A `Backtrace`'s (ADR 0568).
     Backtrace(super::std_types::backtrace::BacktraceOp),
+    /// `std::future`'s: a future is a JS promise (ADR 0029).
+    Future(super::std_types::future::FutureOp),
     /// A `fmt` trait's method called as a function on a `Formatter` held
     /// where it isn't its writer's, `Display::fmt(&x, self.0)` (ADR 0461).
     FmtTo(WriteCall),
@@ -748,6 +750,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // A backtrace, disabled unless forced (ADR 0568).
         if let Some(op) = super::std_types::backtrace::backtrace_op(&std_path(tcx, def_id)) {
             return Some(Some(Std::Backtrace(op)));
+        }
+        // A future already done, a promise (ADR 0029).
+        if let Some(op) = super::std_types::future::future_op(&std_path(tcx, def_id)) {
+            return Some(Some(Std::Future(op)));
+        }
+        // `pin!`'s `Pin::new_unchecked(&mut { value })`, the pointer, as
+        // `Pin::new_unchecked` is (ADR 0329).
+        if is_pin_macro_fn(tcx, def_id) {
+            return Some(Some(Std::Same));
         }
         if let Some(op) = self.io_error_op(def_id, args) {
             return Some(Some(Std::IoError(op)));
@@ -4357,14 +4368,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A type that.s the value it holds in JS, whose field is it: a
     /// `MaybeUninit` (ADR 0332), and what std makes one of, `ManuallyDrop`
-    /// and `MaybeDangling`.
-    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> bool {
-        self.uninit_of(ty).is_some()
+    /// and `MaybeDangling`. The type of that field, what it is in JS.
+    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(adt, args) = *ty.kind() else {
+            return None;
+        };
+        let wraps = self.uninit_of(ty).is_some()
             || self.is_lang_adt(ty, LangItem::ManuallyDrop)
             || self.is_lang_adt(ty, LangItem::MaybeDangling)
+            // What `pin!` pins, held where its `&mut` is taken (ADR 0329).
+            || self.tcx.is_diagnostic_item(rustc_span::sym::PinMacroHelper, adt.did())
             // A `NonZero`, its number (ADR 0177), in std's `NonZeroU8Inner`.
-            || matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did())
-                || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::"))
+            || is_non_zero(adt.did())
+            || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
+        // A `MaybeUninit` is a union of it and `()`.
+        let mut held = adt.all_fields().map(|field| self.field_ty(field, args));
+        wraps.then(|| held.find(|t| !t.is_unit())).flatten()
+    }
+
+    /// A pinned reference, a `&mut` to which is the pin, which only what it
+    /// points at is changed through (ADR 0329).
+    pub(super) fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
+        self.pinned(ty).is_some_and(|pointer| pointer.is_ref())
     }
 
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
@@ -5707,6 +5732,11 @@ pub(crate) fn is_transmute(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A `char`'s `to_uppercase()` or `to_lowercase()`: the `char`s of its
 /// mapping, an array (ADR 0070).
+/// `pin!`'s `Pin::new_unchecked` of the variable it pins.
+pub(crate) fn is_pin_macro_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    std_path(tcx, def_id) == "std::pin::pin_new_unchecked_in_helper"
+}
+
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
         && matches!(std_path(tcx, adt.did()).as_str(), "std::char::ToUppercase" | "std::char::ToLowercase"))

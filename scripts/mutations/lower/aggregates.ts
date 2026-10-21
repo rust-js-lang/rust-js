@@ -78,4 +78,12 @@ export const mutations: Mutation[] = [
     replace: "                _ => Expr::undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
+  {
+    name: "pin-macro-helper-built",
+    breaks: "what `pin!` pins, built, is a struct of std's rust-js refuses, not the value",
+    file: "src/lower/aggregates.rs",
+    find: "        if self.transparent(ty).is_some()\n            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())\n",
+    replace: "        if false\n            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())\n",
+    tests: ["test/snapshots.test.ts", "-t", "async"],
+  },
 ];

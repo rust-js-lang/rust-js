@@ -1464,6 +1464,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Each local `pin!` pins, and the local its `Pin` is.
+    fn pinned_by(&self, body: &mir::Body<'tcx>) -> Vec<(Local, Local)> {
+        // The local a `&mut` is to, through its reborrows, `&mut *r`.
+        let borrowed = |arg: &Operand<'tcx>, block: &mir::BasicBlockData<'tcx>| {
+            let mut local = arg.place()?.as_local()?;
+            for statement in block.statements.iter().rev() {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let (to, Rvalue::Ref(_, _, borrowed)) = &**assign
+                    && to.as_local() == Some(local)
+                {
+                    match borrowed.as_local() {
+                        Some(to) => return Some(to),
+                        None if borrowed.projection.as_slice() == [PlaceElem::Deref] => local = borrowed.local,
+                        None => return None,
+                    }
+                }
+            }
+            None
+        };
+        (body.basic_blocks.iter())
+            .filter_map(|block| match &block.terminator().kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if fn_def(func.ty(&body.local_decls, self.tcx))
+                    .is_some_and(|(id, _)| super::recognition::is_pin_macro_fn(self.tcx, id)) =>
+                {
+                    Some((borrowed(&args.first()?.node, block)?, destination.as_local()?))
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Each local's name, the user's where it has one, and how it's used.
     fn mir_locals(
         &mut self,
@@ -1509,6 +1545,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 locals.user[place.local] = true;
             }
         }
+        // What `pin!` pins, held in a variable of std's: named after the
+        // binding its `Pin` is, `block` of `let block = pin!(..)`.
+        for (pinned, pin) in self.pinned_by(body) {
+            if user[pinned].is_none() {
+                user[pinned] = user[pin].clone();
+            }
+        }
         for (block, data) in body.basic_blocks.iter_enumerated() {
             if data.is_cleanup {
                 continue;
@@ -1527,7 +1570,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // match guard's `&(k as Warn).level`: the value it is.
                         let frozen = matches!(rvalue, Rvalue::Ref(_, BorrowKind::Shared | BorrowKind::Fake(_), borrowed)
                             if borrowed.ty(body, self.tcx).ty.is_freeze(self.tcx, self.typing_env));
-                        count_rvalue(&mut locals, rvalue, frozen);
+                        // A `&mut` to a pin is the pin, which only what it
+                        // points at is written through (ADR 0329).
+                        let itself = matches!(rvalue, Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed)
+                            if self.mut_is_the_pin(borrowed.ty(&body.local_decls, self.tcx).ty));
+                        count_rvalue(&mut locals, rvalue, frozen, itself);
                         // The whole through its box or `MaybeUninit` borrowed mutably,
                         // `Box::new_uninit()`'s written by `write`: as the local.
                         if let Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) = rvalue
@@ -3521,7 +3568,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let ty::Closure(..) = ty.ty.kind() {
             return Err(self.unsupported(span, "a closure's field read outside it, from its MIR"));
         }
-        if self.transparent(ty.ty) {
+        if self.transparent(ty.ty).is_some() {
             return Ok(base);
         }
         match (ty.ty.kind(), ty.variant_index) {
@@ -3617,7 +3664,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && ty.ty.is_ref()
                             && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))
                 }
-                PlaceElem::Field(..) => self.transparent(ty.ty),
+                PlaceElem::Field(..) => self.transparent(ty.ty).is_some(),
                 _ => false,
             };
             if !through {
@@ -5332,8 +5379,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
+        let ty = operands[0].ty(&state.body.local_decls, self.tcx);
         let awaited = self.take_operands(state, &operands, out)?.remove(0);
-        Ok(Value::Expr(Expr::await_(self.value_expr(awaited, span)?)))
+        // A pinned `&mut` to a future, `pin!(f).await`, is the promise it
+        // points at (ADR 0329): the place it's to, or its cell's `value`.
+        let pointer = self.recognition().pinned(ty).unwrap_or(ty);
+        let awaited = self.value_expr(awaited, span)?;
+        Ok(Value::Expr(Expr::await_(self.through_refs(awaited, pointer).0)))
     }
 
     /// Any other function as a value, `.map(str::len)`: the arrow that calls
@@ -6269,9 +6321,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.or_insert_values(state, op, values, (generic_args, output), span, out);
         }
         // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of
-        // it, the same place the `&mut String` is.
-        if known == Std::Same
-            && self.is_cell(output)
+        // it, the same place the `&mut String` is; a pin's `as_mut()`, its.
+        if matches!(known, Std::Same | Std::Pin(super::std_types::pin::PinOp::Mut))
+            && self.is_cell(self.recognition().pinned(output).unwrap_or(output))
             && let [Value::Ref(place)] = values.as_slice()
         {
             return Ok(Value::Ref(place.clone()));
@@ -6969,7 +7021,7 @@ fn count_place(locals: &mut Locals, place: &Place<'_>, written: bool) {
     }
 }
 
-fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: bool) {
+fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: bool, itself: bool) {
     match rvalue {
         Rvalue::Use(o, _) | Rvalue::Repeat(o, _) | Rvalue::Cast(_, o, _) | Rvalue::UnaryOp(_, o) => {
             count_operand(locals, o)
@@ -6988,7 +7040,7 @@ fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: bool) {
             }
             // The whole borrowed mutably may be written through the borrow: a
             // `let`, which a closure that captured it writes.
-            if matches!(kind, BorrowKind::Mut { .. }) && place.projection.is_empty() {
+            if matches!(kind, BorrowKind::Mut { .. }) && place.projection.is_empty() && !itself {
                 locals.writes[place.local] += 1;
             }
             if !place.projection.is_empty() && !place.is_indirect() && !frozen {

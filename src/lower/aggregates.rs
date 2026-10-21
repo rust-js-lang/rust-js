@@ -66,6 +66,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Expr::call_helper("$ioThrow", fields),
             });
         }
+        // A `ManuallyDrop`, or what `pin!` pins, is the value it holds.
+        if self.transparent(ty).is_some()
+            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())
+        {
+            return Ok(value);
+        }
         if let Some(inner) = self.option_of(ty) {
             return Ok(match fields.into_iter().next() {
                 Some(value) if self.boxed_payload(inner) => self.some(value),
