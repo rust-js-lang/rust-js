@@ -101,6 +101,41 @@ pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -
     }
 }
 
+/// Whether an assignment addresses memory (the `std-bodies` draft): a raw
+/// pointer made of a place, a transmute, a pointer cast, or a place read or
+/// written through a raw pointer. The one reading of MIR for what JS
+/// hasn't, which the measure of std's bodies asks, and a leaf's refusal
+/// would.
+pub(in crate::lower) fn mir_addresses_memory<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    (place, rvalue): &(mir::Place<'tcx>, Rvalue<'tcx>),
+) -> bool {
+    let through_pointer = |place: &mir::Place<'tcx>| {
+        place.iter_projections().any(|(base, elem)| {
+            elem == PlaceElem::Deref && raw_pointee(tcx, base.ty(&body.local_decls, tcx).ty).is_some()
+        })
+    };
+    let operand = |operand: &mir::Operand<'tcx>| operand.place().is_some_and(|place| through_pointer(&place));
+    through_pointer(place)
+        || match rvalue {
+            Rvalue::RawPtr(kind, _) => *kind != mir::RawPtrKind::FakeForPtrMetadata,
+            Rvalue::Cast(
+                mir::CastKind::Transmute
+                | mir::CastKind::PtrToPtr
+                | mir::CastKind::FnPtrToPtr
+                | mir::CastKind::PointerExposeProvenance
+                | mir::CastKind::PointerWithExposedProvenance,
+                ..,
+            ) => true,
+            Rvalue::Use(of, _) | Rvalue::Cast(_, of, _) | Rvalue::UnaryOp(_, of) | Rvalue::Repeat(of, _) => operand(of),
+            Rvalue::Ref(_, _, of) | Rvalue::CopyForDeref(of) | Rvalue::Discriminant(of) => through_pointer(of),
+            Rvalue::BinaryOp(_, operands) => operand(&operands.0) || operand(&operands.1),
+            Rvalue::Aggregate(_, operands) => operands.iter().any(operand),
+            _ => false,
+        }
+}
+
 /// std's functions of a raw pointer, by path, and its methods, by name.
 const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::null", PointerOp::Null),

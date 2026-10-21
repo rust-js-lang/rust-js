@@ -8,26 +8,29 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use rustc_middle::mir::{
-    self, CastKind, Operand, ProjectionElem, RuntimeChecks, Rvalue, StatementKind, TerminatorKind,
-};
+use rustc_middle::mir::{self, Operand, RuntimeChecks, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use super::recognition::{self, Recognition, registry};
 
 /// What a std method's body is made of, through every std body it calls
-/// whose MIR the toolchain ships.
+/// whose MIR the toolchain ships; in order, each worse than the last, so
+/// a body is the worst it reaches.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Body {
     /// MIR all the way down to the vocabulary rust-js lowers: a trait's
     /// method on a type parameter, a closure's call, `?`, a drop, a panic.
     Safe,
+    /// Reaches a std-private trait's method on a type parameter, one only
+    /// std can name, `SpecFold`, `ZipImpl`, `TrustedRandomAccess`: a
+    /// dictionary rust-js would have to build for each type given.
+    Spec,
+    /// Reaches a std body the toolchain ships no MIR of, before any memory.
+    Opaque,
     /// Reaches addressable memory: a raw pointer made or read through, a
     /// transmute, an intrinsic, or one of `std::ptr`'s.
     Memory,
-    /// Reaches a std body the toolchain ships no MIR of, before any memory.
-    Opaque,
     /// The method itself has no MIR: not generic, not inlined.
     None,
 }
@@ -36,8 +39,9 @@ impl Body {
     fn name(self) -> &'static str {
         match self {
             Body::Safe => "safe",
-            Body::Memory => "memory",
+            Body::Spec => "spec",
             Body::Opaque => "opaque",
+            Body::Memory => "memory",
             Body::None => "none",
         }
     }
@@ -45,7 +49,8 @@ impl Body {
 
 /// Each type's stable methods, `+ Vec::push` where rust-js knows it and
 /// `- Vec::shrink_to` where it doesn't, each with what its body is made
-/// of, under `# Vec 35 of 160; bodies: 20 safe, 10 memory, 3 opaque, 2 none`.
+/// of, under `# Vec 35 of 160; bodies: 20 safe, 1 spec, 3 opaque, 10
+/// memory, 2 none`.
 pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependencies) -> String {
     let foreign = super::library::Foreign::new(tcx, dependencies);
     let mut bodies = Bodies::default();
@@ -99,11 +104,12 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
         let count = |kind: Body| methods.iter().filter(|(_, _, b)| *b == kind).count();
         let _ = writeln!(
             out,
-            "# {name} {known} of {}; bodies: {} safe, {} memory, {} opaque, {} none",
+            "# {name} {known} of {}; bodies: {} safe, {} spec, {} opaque, {} memory, {} none",
             methods.len(),
             count(Body::Safe),
-            count(Body::Memory),
+            count(Body::Spec),
             count(Body::Opaque),
+            count(Body::Memory),
             count(Body::None)
         );
         for (method, known, body) in methods {
@@ -139,7 +145,7 @@ impl Bodies {
             let data = &body.basic_blocks[block];
             for statement in &data.statements {
                 if let StatementKind::Assign(assign) = &statement.kind
-                    && (addresses_memory(tcx, body, &assign.0) || rvalue_addresses_memory(tcx, body, &assign.1))
+                    && super::pointers::mir_addresses_memory(tcx, body, assign)
                 {
                     worst = Body::Memory;
                 }
@@ -159,16 +165,15 @@ impl Bodies {
                     // A shim, a drop, a `dyn`'s or a closure's call: the vocabulary.
                     _ => Body::Safe,
                 },
-                // A trait's method of a type parameter: the vocabulary.
-                _ => Body::Safe,
+                // A trait's method of a type parameter: the vocabulary, of a
+                // trait a program can name; std's own, a specialization's.
+                _ => match tcx.trait_of_assoc(callee) {
+                    Some(trait_def) if std_private(tcx, trait_def) => Body::Spec,
+                    _ => Body::Safe,
+                },
             };
             worst = worst.max(called);
         }
-        // The worse of what it reaches: memory over opaque, which may hide memory.
-        let worst = match worst {
-            Body::None => Body::Opaque,
-            other => other,
-        };
         self.known.insert(def_id, worst);
         worst
     }
@@ -240,38 +245,8 @@ fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
     seen
 }
 
-/// Whether a place reads through a raw pointer.
-fn addresses_memory<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: &mir::Place<'tcx>) -> bool {
-    place.iter_projections().any(|(base, elem)| {
-        elem == ProjectionElem::Deref && super::pointers::raw_pointee(tcx, base.ty(&body.local_decls, tcx).ty).is_some()
-    })
-}
-
-/// Whether a value is addressable memory's: a raw pointer made of a
-/// place, a transmute, a pointer cast, or a read through one.
-fn rvalue_addresses_memory<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, rvalue: &Rvalue<'tcx>) -> bool {
-    match rvalue {
-        Rvalue::RawPtr(kind, _) => *kind != mir::RawPtrKind::FakeForPtrMetadata,
-        Rvalue::Cast(
-            CastKind::Transmute
-            | CastKind::PtrToPtr
-            | CastKind::FnPtrToPtr
-            | CastKind::PointerExposeProvenance
-            | CastKind::PointerWithExposedProvenance,
-            ..,
-        ) => true,
-        Rvalue::Use(operand, _) | Rvalue::Cast(_, operand, _) | Rvalue::UnaryOp(_, operand) => {
-            operand.place().is_some_and(|place| addresses_memory(tcx, body, &place))
-        }
-        Rvalue::Ref(_, _, place) | Rvalue::CopyForDeref(place) | Rvalue::Discriminant(place) => {
-            addresses_memory(tcx, body, place)
-        }
-        Rvalue::BinaryOp(_, operands) => [&operands.0, &operands.1]
-            .into_iter()
-            .any(|o| o.place().is_some_and(|p| addresses_memory(tcx, body, &p))),
-        Rvalue::Aggregate(_, operands) => operands
-            .iter()
-            .any(|o| o.place().is_some_and(|p| addresses_memory(tcx, body, &p))),
-        _ => false,
-    }
+/// A trait only std can name: private to its crate, or unstable, which a
+/// program on stable Rust can't implement or name (ADR 0110).
+fn std_private(tcx: TyCtxt<'_>, trait_def: DefId) -> bool {
+    !tcx.visibility(trait_def).is_public() || tcx.lookup_stability(trait_def).is_some_and(|s| s.is_unstable())
 }
