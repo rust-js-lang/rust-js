@@ -25,6 +25,6 @@ function head() {
 function main() {
   console.log(`${NULLED.x === null} ${INTERNED.field.value} ${INTERNED.tag} ${NOWHERE === null}`);
   console.log(`${$addr(HEAD, 1) === 4294967295} ${HEAD === null} ${$addr(DANGLING, 8)}`);
-  console.log(`${$ptrEq(head(), HEAD)} ${head() === null} ${null === null}`);
+  console.log(`${$ptrEq(head(), HEAD, 1)} ${head() === null} ${null === null}`);
 }
 //# sourceMappingURL=case.js.map

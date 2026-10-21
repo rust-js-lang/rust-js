@@ -46,28 +46,28 @@ function main() {
   const stride = ($addr($ptr(two, 1), 5) - $addr($ptr(two, 0), 5)) >>> 0;
   const through = $ptr(two, 1);
   console.log(
-    `${stride} 5 ${two[1].a} ${$ptrEq(through, $ptr(two, 1))} ${$addr(through, 5) === $addr($ptr(two, 1), 5)}`,
+    `${stride} 5 ${two[1].a} ${$ptrEq(through, $ptr(two, 1), 5)} ${$addr(through, 5) === $addr($ptr(two, 1), 5)}`,
   );
 
   // Round trips: an address made a pointer again is the pointer.
   const again = $ptrFrom(base, 4);
   const exposed = $ptrFrom($addr(p, 4), 4);
   console.log(
-    `${$ptrEq(again, p)} ${$ptrEq(exposed, p)} ${$ptrAdd(again, 2).value} ${$addr(p, 4) === base}`,
+    `${$ptrEq(again, p, 4)} ${$ptrEq(exposed, p, 4)} ${$ptrAdd(again, 2).value} ${$addr(p, 4) === base}`,
   );
   const n = $addr(p, 4);
-  console.log(`${n === base} ${$ptrEq($ptrFrom(n, 4), p)}`);
+  console.log(`${n === base} ${$ptrEq($ptrFrom(n, 4), p, 4)}`);
 
   // An address with no place: equal to another of it, never null, not read.
   const one = $ptrFrom(1, 1);
   const other = $ptrFrom(1, 1);
   const none = null;
-  console.log(`${$ptrEq(one, other)} ${$addr(one, 1)} ${one === null} ${none === null}`);
+  console.log(`${$ptrEq(one, other, 1)} ${$addr(one, 1)} ${one === null} ${none === null}`);
   console.log(`${$addr($ptrFrom(4, 4), 4)} ${$addr($ptrFrom(8, 8), 8)}`);
 
   // Moved along, by items or by bytes, and back; aligned, or a byte off.
   console.log(
-    `${$ptrEq($ptrAt(p, $addr(p, 4) + 4, 4), second)} ${$ptrEq($ptrAt(second, ((a) => (a - 4) >>> 0)($addr(second, 4)), 4), p)} ${$ptrEq($ptrAt(p, (base + 8) >>> 0, 4), $ptrAdd(p, 2))} ${$addr(p, 4) % 4 === 0} ${$addr($ptrAt(p, $addr(p, 4) + 1, 4), 4) % 4 === 0}`,
+    `${$ptrEq($ptrAt(p, $addr(p, 4) + 4, 4), second, 4)} ${$ptrEq($ptrAt(second, ((a) => (a - 4) >>> 0)($addr(second, 4)), 4), p, 4)} ${$ptrEq($ptrAt(p, (base + 8) >>> 0, 4), $ptrAdd(p, 2), 4)} ${$addr(p, 4) % 4 === 0} ${$addr($ptrAt(p, $addr(p, 4) + 1, 4), 4) % 4 === 0}`,
   );
   const atRecord = $ptrTo(record);
   console.log(
@@ -78,7 +78,7 @@ function main() {
   const pointers = [$ptrAdd(p, 2), p, second];
   pointers.sort((a, b) => $ptrCmp(a, b, 4));
   console.log(
-    `${$ptrEq(pointers[0], p)} ${$ptrEq(pointers[2], $ptrAdd(p, 2))} ${$ptrCmp(p, second, 4) < 0}`,
+    `${$ptrEq(pointers[0], p, 4)} ${$ptrEq(pointers[2], $ptrAdd(p, 2), 4)} ${$ptrCmp(p, second, 4) < 0}`,
   );
   const shown = $ptrShown(p, 4);
   console.log(`${shown === $ptrShown(p, 4)} ${shown.startsWith("0x")} ${$ptrShown(none, 1)}`);
@@ -100,6 +100,8 @@ function main() {
   // alignment; a function's is the function's.
   const referred = $addr(record, 12);
   const f = named;
-  console.log(`${referred === at} ${$addr($ptrFrom(1, 0), 0)} ${$ptrEq(f, f)} ${$addr(f, 1) % 2}`);
+  console.log(
+    `${referred === at} ${$addr($ptrFrom(1, 0), 0)} ${$ptrEq(f, f, 1)} ${$addr(f, 1) % 2}`,
+  );
 }
 //# sourceMappingURL=case.js.map

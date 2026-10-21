@@ -707,17 +707,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a pointer to a `{pointee}`, aligned past 4096");
             return Err(refuse(self.tcx, span, Refused::Memory(&what)));
         }
-        if !self.is_zero_sized(pointee) {
+        if !self.has_one_value(pointee) {
             return Ok(None);
         }
         let align = Expr::int(i128::from(align));
-        Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![align, Expr::int(0)])))
+        let given = self.sized_at_address(vec![align], Expr::int(0), pointee);
+        Ok(Some(Expr::call(Expr::helper("$ptrFrom"), given)))
     }
 
-    /// Whether a `ty` has no size, a unit struct's or `()`'s, whose value
-    /// is `undefined` and whose pointer has no place (ADR 0562).
-    pub(super) fn is_zero_sized(&self, ty: Ty<'tcx>) -> bool {
-        self.layout(ty).is_some_and(|layout| layout.size.bytes() == 0)
+    /// `a == b` of two raw pointers to a `pointee` (ADR 0562): the same
+    /// place, or the same address, `$ptrEq`, given the pointee's size, which
+    /// an empty array's address is of. The one place it's written.
+    pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        let size = self.pointee_size(pointee, span)?;
+        Ok(Expr::call(Expr::helper("$ptrEq"), vec![a, b, size]))
+    }
+
+    /// What a pointer at an address, `$ptrFrom`'s or `$ptrAt`'s, is given
+    /// after `before` of its `pointee` (ADR 0562): its size, and of a value
+    /// of no size, which any pointer reads and writes, the JS value of one
+    /// where it isn't `undefined`, `[]` of a `[T; 0]`. The one place their
+    /// arguments are made.
+    pub(super) fn at_address(&mut self, before: Expr, pointee: Ty<'tcx>, span: Span) -> R<Vec<Expr>> {
+        self.at_address_of(vec![before], pointee, span)
+    }
+
+    fn at_address_of(&mut self, before: Vec<Expr>, pointee: Ty<'tcx>, span: Span) -> R<Vec<Expr>> {
+        let size = self.pointee_size(pointee, span)?;
+        Ok(self.sized_at_address(before, size, pointee))
+    }
+
+    /// `at_address`'s, of a `pointee` whose `size` is known.
+    fn sized_at_address(&self, mut before: Vec<Expr>, size: Expr, pointee: Ty<'tcx>) -> Vec<Expr> {
+        before.push(size);
+        if self.has_one_value(pointee)
+            && let Some(zero) = super::representation::zero_sized_js(self.tcx, pointee)
+            && !matches!(zero.kind, js::ExprKind::Undefined)
+        {
+            before.push(zero);
+        }
+        before
     }
 
     /// What a pointer to a `pointee` points to: of a slice or a pair `dyn`,
@@ -912,15 +941,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$addr", vec![arg(), size])
             }
             PointerOp::WithAddr => {
-                let size = self.pointee_size(pointee.expect("a pointer"), span)?;
-                helper("$ptrAt", vec![arg(), arg(), size])
+                let given = vec![arg(), arg()];
+                helper("$ptrAt", self.at_address_of(given, pointee.expect("a pointer"), span)?)
             }
             PointerOp::MapAddr => {
                 let pointee = pointee.expect("a pointer");
                 let size = self.pointee_size(pointee, span)?;
                 let pointer = self.spilled_pointer(arg(), out);
-                let (f, addr) = (arg(), helper("$addr", vec![pointer.clone(), size.clone()]));
-                helper("$ptrAt", vec![pointer, Expr::call(f, vec![addr]), size])
+                let (f, addr) = (arg(), helper("$addr", vec![pointer.clone(), size]));
+                helper(
+                    "$ptrAt",
+                    self.at_address_of(vec![pointer, Expr::call(f, vec![addr])], pointee, span)?,
+                )
             }
             PointerOp::ByteAdd { sub } | PointerOp::WrappingAdd { sub } => {
                 let pointee = pointee.expect("a pointer");
@@ -932,7 +964,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => arg(),
                 };
                 let moved = Expr::bin(if sub { Op::Sub } else { Op::Add }, addr, by);
-                helper("$ptrAt", vec![pointer, moved, size])
+                helper("$ptrAt", self.at_address_of(vec![pointer, moved], pointee, span)?)
             }
             PointerOp::IsAligned => {
                 let pointee = pointee.expect("a pointer");
@@ -943,14 +975,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             PointerOp::FromAddr => {
                 let pointee = generic_args.types().next().expect("the pointee");
-                let size = self.pointee_size(pointee, span)?;
-                helper("$ptrFrom", vec![arg(), size])
+                helper("$ptrFrom", self.at_address(arg(), pointee, span)?)
             }
             PointerOp::Dangling => {
                 let pointee = generic_args.types().next().expect("the pointee");
-                let size = self.pointee_size(pointee, span)?;
                 let align = self.type_fact_value(pointee, TypeFact::Align, span)?;
-                helper("$ptrFrom", vec![align, size])
+                helper("$ptrFrom", self.at_address(align, pointee, span)?)
             }
         }))
     }
@@ -1037,9 +1067,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(0) => Ok(Some(Expr::null())),
                 _ => {
                     let (pointee, _) = raw_pointee(self.tcx, to).expect("a pointer");
-                    let size = self.pointee_size(pointee, span)?;
                     let addr = self.cast(value, from, self.tcx.types.usize, span)?;
-                    Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![addr, size])))
+                    Ok(Some(Expr::call(
+                        Expr::helper("$ptrFrom"),
+                        self.at_address(addr, pointee, span)?,
+                    )))
                 }
             },
             // `p as usize`: its address; as another integer, `usize`'s.

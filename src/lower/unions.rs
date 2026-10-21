@@ -50,6 +50,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let key = field_key(self.tcx, &fields[field]);
         let mut alike = Vec::new();
         let mut decoders = Vec::new();
+        // A field JS holds as an object, which a write goes into, `u.a.0 =
+        // x`: decoded only where it fills the union, which then holds it,
+        // so the write is the union's and no byte is lost (ADR 0562); else
+        // read as rust-js's error where it runs.
+        let scalar = super::representation::Num::of(read_ty).is_some() || read_ty.is_bool() || read_ty.is_char();
+        let union_size = self.layout(ty).map(|layout| layout.size.bytes());
+        let writable_whole = scalar || union_size.is_some_and(|size| self.fills(read_ty, size));
         for (other, def) in fields.iter_enumerated() {
             if other == field {
                 continue;
@@ -58,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let other_key = field_key(self.tcx, def);
             if other_ty == read_ty {
                 alike.push(Expr::str(other_key));
-            } else if let Some(decoder) = self.plain_decoder(other_ty, read_ty, span)? {
+            } else if writable_whole && let Some(decoder) = self.plain_decoder(other_ty, read_ty, span)? {
                 decoders.push(Prop::Field(other_key, decoder));
             }
         }

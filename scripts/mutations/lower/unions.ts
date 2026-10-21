@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
   },
+  {
+    name: "union-partial-object-decoded",
+    breaks: "a union's struct field smaller than the union is decoded, and a write into it lost or the union's other bytes dropped",
+    file: "src/lower/unions.rs",
+    find: "        let writable_whole = scalar || union_size.is_some_and(|size| self.fills(read_ty, size));\n",
+    replace: "        let writable_whole = true || scalar || union_size.is_some_and(|size| self.fills(read_ty, size));\n",
+    tests: ["test/runtime-package.test.ts", "-t", "union"],
+  },
 ];

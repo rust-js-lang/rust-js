@@ -16,6 +16,16 @@ union Wide {
     small: u8,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct Pair(u8, u8);
+
+#[repr(C)]
+union Overwritten {
+    pair: Pair,
+    word: u16,
+}
+
 fn main() {
     let mut bits = Bits { int: 0x3f80_0000 };
     let as_float = unsafe { bits.float };
@@ -33,5 +43,13 @@ fn main() {
     };
     println!("{:?} {:#x}", unsafe { wide.parts }, unsafe { wide.small });
     wide.parts = [1, 2];
+    println!("{:#x}", unsafe { wide.whole });
+
+    // A field of a field written while the union holds another, as rustc's
+    // union-overwrite.rs does: the union's bytes change.
+    let mut over = Overwritten { word: 0xDEDE };
+    unsafe { over.pair.0 = 0xBE };
+    println!("{:#x}", unsafe { over.word });
+    unsafe { wide.parts[1] = 0xAA };
     println!("{:#x}", unsafe { wide.whole });
 }

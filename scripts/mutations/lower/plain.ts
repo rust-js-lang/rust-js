@@ -255,4 +255,12 @@ export const mutations: Mutation[] = [
     replace: "            && text.is_str()\n            && false\n        {\n            return Ok(Expr::call(Expr::helper(\"$utf8Decode\"), vec![value]));",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
   },
+  {
+    name: "fills-ignores-padding",
+    breaks: "a struct with padding counts as filling its size, so a union holding it in another's place loses the padding's bytes",
+    file: "src/lower/plain.rs",
+    find: "            && self.plain(ty).and_then(|plain| scalars(self, &plain)) == Some(size)\n",
+    replace: "            && self.plain(ty).is_some()\n",
+    tests: ["test/runtime-package.test.ts", "-t", "union"],
+  },
 ];

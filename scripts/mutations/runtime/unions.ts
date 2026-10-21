@@ -22,8 +22,16 @@ export const mutations: Mutation[] = [
     name: "union-decoder-ignored",
     breaks: "a union's field of another plain type is refused where its decoder would read it",
     file: "src/runtime/unions.js",
-    find: "  if (decoders[held] !== undefined) return decoders[held](union[held]);",
-    replace: "  if (false) return decoders[held](union[held]);",
+    find: "  if (decoders[held] !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
+  },
+  {
+    name: "union-decoded-object-not-held",
+    breaks: "a union's field decoded as an object stays a copy, so a write into it is lost",
+    file: "src/runtime/unions.js",
+    find: "    if (typeof decoded === \"object\" && decoded !== null) $unionSet(union, key, decoded);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
   },
 ];

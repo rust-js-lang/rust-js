@@ -353,8 +353,8 @@ export const mutations: Mutation[] = [
     name: "pointer-eq-refused",
     breaks: "`p == q` of raw pointers is refused",
     file: "src/lower/std_impls.rs",
-    find: "        if self.is_handle_pointer(ty) {\n            return Ok(Expr::call(Expr::helper(\"$ptrEq\"), vec![a, b]));\n",
-    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$ptrEq\"), vec![a, b]));\n",
+    find: "        if self.is_handle_pointer(ty)\n            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)\n        {\n            return self.pointers_equal(a, b, pointee, span);\n",
+    replace: "        if false\n            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)\n        {\n            return self.pointers_equal(a, b, pointee, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {

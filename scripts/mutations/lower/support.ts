@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
-    name: "io-error-unsupported",
-    breaks: "an `io::Error`, which a writer of the crate's `io::Result<usize>` names, is refused as a type",
-    file: "src/lower/support.rs",
-    find: "                    || self.recognition().is_io_error(ty) =>\n",
-    replace: "                    || false =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
-  },
-  {
     name: "auto-trait-dyn-unsupported",
     breaks: "a value of a `dyn` of no trait but auto traits, `dyn Send`, is refused",
     file: "src/lower/support.rs",

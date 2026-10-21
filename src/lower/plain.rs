@@ -284,6 +284,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(Plain::Parts(ty, parts))
     }
 
+    /// Whether a `ty` is plain data whose scalars fill its `size` bytes,
+    /// with no padding between them: a value of it holds every byte, so a
+    /// union's field of it can be held in place of another of that size,
+    /// and lose none (ADR 0562).
+    pub(super) fn fills(&self, ty: Ty<'tcx>, size: u64) -> bool {
+        fn scalars<'tcx>(cx: &FnCx<'_, 'tcx>, plain: &Plain<'tcx>) -> Option<u64> {
+            match plain {
+                Plain::Scalar(ty) => Some(cx.layout(*ty)?.size.bytes()),
+                Plain::Parts(_, parts) => parts.iter().map(|(_, part)| scalars(cx, part)).sum(),
+            }
+        }
+        self.layout(ty).is_some_and(|layout| layout.size.bytes() == size)
+            && self.plain(ty).and_then(|plain| scalars(self, &plain)) == Some(size)
+    }
+
     /// A `ty` of all zero bytes, where that's one: a number's `0`, `false`,
     /// `'\0'`, and a tuple, an array or a struct of them.
     pub(in crate::lower) fn zero(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -431,8 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A pointer of an address's bits, a reference what's there (ADR
             // 0562).
             None if let Some(pointee) = self.address_of(ty) => {
-                let size = self.pointee_size(pointee, span)?;
-                let pointer = Expr::call(Expr::helper("$ptrFrom"), vec![bits, size]);
+                let pointer = Expr::call(Expr::helper("$ptrFrom"), self.at_address(bits, pointee, span)?);
                 match ty.kind() {
                     ty::Ref(..) => Expr::held(pointer),
                     _ => pointer,

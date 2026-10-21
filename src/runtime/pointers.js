@@ -179,6 +179,16 @@ function $addresses(allocation, bytes) {
   return range;
 }
 
+// An empty array at `addr`, a slice of no items made of a pointer with no
+// place, `from_raw_parts(NonNull::dangling(), 0)`: its pointer is at the
+// address it was made of, as Rust's is (ADR 0562). Any other empty array
+// is an allocation of no bytes, dangling as a value of no size is: at its
+// item's size, a primitive's alignment, which Rust's `[]` is at.
+function $emptyAt(addr, empty = []) {
+  $ranges.set(empty, { base: addr, end: addr, of: empty, stride: undefined });
+  return empty;
+}
+
 // A handle's byte offset in its allocation, given the range's stride of an
 // array's items.
 function $offsetIn(pointer, range) {
@@ -186,7 +196,8 @@ function $offsetIn(pointer, range) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
-  if (Array.isArray(pointer.of) && typeof pointer.at === "number") return pointer.at * range.stride;
+  // An array's first item is at its start, whatever its stride.
+  if (Array.isArray(pointer.of) && typeof pointer.at === "number") return pointer.at === 0 ? 0 : pointer.at * range.stride;
   if (pointer.offset !== undefined) return pointer.offset;
   throw new Error("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
 }
@@ -203,6 +214,7 @@ function $addr(pointer, size) {
   const view = pointer.bytes !== undefined && pointer.plain === undefined;
   const items = Array.isArray(allocation) && ((pointer.of !== undefined && typeof pointer.at === "number") || view);
   const stride = view ? pointer.stride : size;
+  if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);
   const range = $addresses(allocation, items ? allocation.length * stride : 0);
   if (items && range.stride === undefined) range.stride = stride;
   const addr = range.base + $offsetIn(pointer, range);
@@ -211,15 +223,20 @@ function $addr(pointer, size) {
 }
 
 // A pointer with no place: an address, and the provenance of the pointer
-// it was made from, if any, which `$ptrAt` may bring it back to.
-function $ptrNone(addr, provenance) {
+// it was made from, if any, which `$ptrAt` may bring it back to. Of a value
+// of no size, `size` 0, which Rust reads and writes through any pointer
+// that isn't null: reads give `zero`, the JS value of one, `undefined` or
+// `[]`, and writes change nothing.
+function $ptrNone(addr, provenance, size, zero) {
   return {
     addr,
     provenance,
     get value() {
+      if (size === 0) return zero;
       throw new Error(`rust-js does not support reading through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
     set value(value) {
+      if (size === 0) return;
       throw new Error(`rust-js does not support writing through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
   };
@@ -251,40 +268,46 @@ function $addressesAt(addr) {
 // `n as *const T`, `with_exposed_provenance(n)` (ADR 0562): the place at
 // `n` in an exposed allocation, `size` its items', else a pointer with no
 // place, as Rust's strict provenance has it; `0`'s is `null`.
-function $ptrFrom(addr, size) {
+function $ptrFrom(addr, size, zero) {
   addr >>>= 0;
   if (addr === 0) return null;
   const range = $addressesAt(addr);
-  return (range && $placeAt(addr, range, size)) ?? $ptrNone(addr, range?.of === undefined ? null : $ptrTo(range.of));
+  const provenance = range?.of === undefined ? null : $ptrTo(range.of);
+  return (range && $placeAt(addr, range, size)) ?? $ptrNone(addr, provenance, size, zero);
 }
 
 // `p.with_addr(n)`, `map_addr`, `wrapping_add` and `wrapping_byte_add`
 // (ADR 0562): a pointer with `p`'s provenance at `n`, a 32-bit address as
 // wasm32's `usize` wraps: the place there, where its allocation has one,
 // else a pointer with no place that remembers it.
-function $ptrAt(pointer, addr, size) {
+function $ptrAt(pointer, addr, size, zero) {
   addr >>>= 0;
-  if (pointer === null) return $ptrFrom(addr, size);
+  if (pointer === null) return $ptrFrom(addr, size, zero);
   const provenance = pointer.addr === undefined ? pointer : pointer.provenance;
-  if (provenance === null) return addr === 0 ? null : $ptrNone(addr, null);
+  if (provenance === null) return addr === 0 ? null : $ptrNone(addr, null, size, zero);
   if (pointer.addr === undefined && addr === $addr(pointer, size)) return pointer;
   const range = $ranges.get($allocationOf(provenance));
   if (range !== undefined && range.base <= addr && addr < range.end) {
     const place = $placeAt(addr, range, size);
     if (place !== undefined) return place;
   }
-  return addr === 0 ? null : $ptrNone(addr, provenance);
+  return addr === 0 ? null : $ptrNone(addr, provenance, size, zero);
 }
 
 // `p == q` (ADR 0562): the same place, or the same address; `null`'s is 0.
-function $ptrEq(p, q) {
+function $ptrEq(p, q, size) {
   if (p === q) return true;
   if (p === null || q === null) return false;
   if (p.addr !== undefined && q.addr !== undefined) return p.addr === q.addr;
   if (p.addr === undefined && q.addr === undefined) {
     const [a, b] = [$placed(p), $placed(q)];
     if (a === b) return true;
-    if ($allocationOf(a) !== $allocationOf(b)) return false;
+    // Of two allocations, by address where each has one, or is empty: two
+    // empty arrays dangling at one address are equal, as Rust's are.
+    if ($allocationOf(a) !== $allocationOf(b)) {
+      const known = (x) => $ranges.has($allocationOf(x)) || (Array.isArray(x.of) && x.of.length === 0);
+      return known(a) && known(b) && $addr(a, size) === $addr(b, size);
+    }
     // Two of one kind, by where they are; a byte view and a handle, by the
     // offset both are at, where the array's stride is known.
     if ((a.bytes !== undefined) === (b.bytes !== undefined)) return a.at === b.at && a.offset === b.offset;
@@ -358,6 +381,7 @@ function $ptrSliceMut(pointer, count) {
 // it: none, of no array but one place, is an array of it.
 function $ptrItems(pointer, count) {
   if (Array.isArray(pointer.of)) return [pointer.of, pointer.at];
+  if (count === 0 && pointer.addr !== undefined) return [$emptyAt(pointer.addr), 0];
   if (count <= 1) return [count === 0 ? [] : [pointer.value], 0];
   throw new Error("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
 }
