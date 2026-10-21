@@ -1216,11 +1216,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "auto-trait-tail-owned",
-    breaks: "an `Rc<Fat<dyn Send>>`, which may be counted, whose last field is a `dyn` of no trait, is made, and its last field never dropped",
+    breaks: "a `*const Fat<dyn Send>`, whose last field is a `dyn` of no trait, is made where no pointer to one can hold it",
     file: "src/lower/traits.rs",
     find: "                if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))\n",
     replace: "                if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))\n",
-    tests: ["test/diagnostics.test.ts", "-t", "an Rc of a struct of a dyn Send last field"],
+    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a struct of a dyn last field"],
   },
   {
     name: "boxed-dyn-tail-not-given",

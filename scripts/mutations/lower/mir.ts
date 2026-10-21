@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            self.check_unsize(*to, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "an Rc of a struct of a dyn last field"],
+    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a struct of a dyn last field"],
   },
   {
     name: "mir-boxed-option-unrefused",
