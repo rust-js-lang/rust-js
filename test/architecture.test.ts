@@ -870,6 +870,17 @@ test("only refusal.rs words a refusal", () => {
   expect(wording).toEqual([]);
 });
 
+// The readability baseline counts the snapshots' JS, so its bless runs after
+// theirs are written: `bun test` runs its files in name order, not the
+// order given, so the one way is a second `bun test` (ADR 0565).
+test("the readability baseline is blessed after the snapshots", () => {
+  const bless: string = JSON.parse(read("package.json")).scripts.bless;
+  const [snapshots, readability] = bless.split(" && ");
+  expect(snapshots).toMatch(/^BLESS=1 bun test (test\/\w+\.test\.ts ?)+$/);
+  expect(snapshots).not.toContain("readability");
+  expect(readability).toBe("BLESS=1 bun test test/readability.test.ts");
+});
+
 // Bun's version is written once, `package.json`'s `packageManager`: each
 // workflow's setup reads it there, `@types/bun` is the same, and the suite
 // runs on it. It was written in eleven places, ten workflow steps and the

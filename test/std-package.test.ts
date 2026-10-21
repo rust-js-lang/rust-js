@@ -83,5 +83,7 @@ test("a std body's JS has no test its early return decided, no once-read bool, n
   expect(nextBack).toContain("return option;\n    }\n    const x = v.value;\n    v.value = undefined;\n    return x;\n");
   expect(std).not.toMatch(/tmp\$?\d* = !tmp/);
   // No statement line written twice in a row at the two ends of an `if`/`else`.
-  expect(std).not.toMatch(/\n(\s*)(return [^\n]*;)\n\1}\n\1else \{[^]*?\n\1\s{2}\2\n/);
+  // The `return` is indented one level past the `}` and the `else {` that
+  // the formatter writes on one line.
+  expect(std).not.toMatch(/\n(\s*)\s{2}(return [^\n]*;)\n\1} else \{[^]*?\n\1\s{2}\2\n/);
 });

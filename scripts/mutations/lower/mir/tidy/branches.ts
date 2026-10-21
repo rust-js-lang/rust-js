@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-empty-then-kept",
     breaks: "`if (c) {} else { s }` stays, not `if (!c) { s }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => {\n                StmtKind::If(test.negated_test(), otherwise, None)\n            }\n",
-    replace: "",
+    find: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test.negated_test(), otherwise, None)),\n",
+    replace: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test, Vec::new(), Some(otherwise))),\n",
     tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
   {
@@ -500,5 +500,14 @@ export const mutations: Mutation[] = [
     find: "                    || tail.last().is_some_and(ends)\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a let-else from MIR inside a branch|written returns MIR jumps out"],
+  },
+  {
+    name: "emptied-if-kept-as-test",
+    breaks: "`if (c) {}` of a test that does nothing stays as the test, `c;`, not nothing",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        (true, _) if !test.has_effects() => None,\n",
+    replace: "        (true, _) if false && !test.has_effects() => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
   },
 ];

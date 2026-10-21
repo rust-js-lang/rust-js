@@ -291,13 +291,14 @@ pub(super) fn branch_values(
     // An `if` the program wrote, where its condition is.
     let written_if =
         |s: js::Span| !s.is_none() && conditions.iter().any(|(c, g)| c == g && c.lo <= s.lo && s.hi <= c.hi);
-    for stmt in stmts.iter_mut() {
+    stmts.retain_mut(|stmt| {
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
+        // A branch with nothing left, as `emptied_branch` writes it.
+        let Some(kind) = emptied_branch(kind) else {
+            return false;
+        };
         stmt.kind = match kind {
-            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => {
-                StmtKind::If(test.negated_test(), otherwise, None)
-            }
             // `if (a) { break l; } else if (b) { break l; }`, an or-pattern's
             // tests: `if (a || b) { break l; }`.
             StmtKind::If(a, then, Some(mut otherwise))
@@ -324,7 +325,6 @@ pub(super) fn branch_values(
                 };
                 StmtKind::If(or_all(a, b), then, None)
             }
-            StmtKind::If(test, then, Some(otherwise)) if otherwise.is_empty() => StmtKind::If(test, then, None),
             // A chain of more arms, its last two folded first, `if (a) { x = p; }
             // else { x = b ? q : r; }`: the chain, as it's written; of a
             // temporary, where its first arm does more than give it, so the
@@ -408,7 +408,8 @@ pub(super) fn branch_values(
             kind => kind,
         };
         stmt.span = span;
-    }
+        true
+    });
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
     // `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`:
     // the chains alone, which say it.
@@ -1408,33 +1409,34 @@ pub(super) fn shared_tails(stmts: &mut Vec<Stmt>) {
             }
             None => {}
         }
-        // A branch with nothing left: `if (c) {} else { b }` is `if (!c) { b }`,
-        // and `if (c) {}` of a test that does nothing is nothing.
-        let StmtKind::If(test, then, otherwise) = &mut stmts[i].kind else {
-            unreachable!("matched")
-        };
-        match (then.is_empty(), otherwise.take()) {
-            (true, Some(otherwise)) if !otherwise.is_empty() => {
-                let test = std::mem::replace(test, Expr::undefined()).negated_test();
-                stmts[i].kind = StmtKind::If(test, otherwise, None);
-            }
-            (true, _) if !test.has_effects() => {
+        // A branch with nothing left, as `emptied_branch` writes it.
+        let kind = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None));
+        match emptied_branch(kind) {
+            Some(kind) => stmts[i].kind = kind,
+            None => {
                 stmts.remove(i);
                 continue;
             }
-            (true, _) => {
-                let test = std::mem::replace(test, Expr::undefined());
-                stmts[i].kind = StmtKind::Expr(test);
-            }
-            (false, Some(otherwise)) if !otherwise.is_empty() => {
-                let StmtKind::If(_, _, slot) = &mut stmts[i].kind else {
-                    unreachable!("matched")
-                };
-                *slot = Some(otherwise);
-            }
-            (false, _) => {}
         }
         i += 1;
+    }
+}
+
+/// An `if` a branch of which is emptied, as a person writes it: `if (c) {}
+/// else { b }` is `if (!c) { b }`, `if (c) { a } else {}` is `if (c) { a }`,
+/// and `if (c) {}` of a test that does nothing is nothing, `None`, of one
+/// that does, the test alone, `c;`. The one owner of an emptied branch,
+/// which each pass that empties one asks.
+pub(super) fn emptied_branch(kind: StmtKind) -> Option<StmtKind> {
+    let StmtKind::If(test, then, otherwise) = kind else {
+        return Some(kind);
+    };
+    match (then.is_empty(), otherwise) {
+        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test.negated_test(), otherwise, None)),
+        (true, _) if !test.has_effects() => None,
+        (true, _) => Some(StmtKind::Expr(test)),
+        (false, Some(otherwise)) if otherwise.is_empty() => Some(StmtKind::If(test, then, None)),
+        (false, otherwise) => Some(StmtKind::If(test, then, otherwise)),
     }
 }
 
