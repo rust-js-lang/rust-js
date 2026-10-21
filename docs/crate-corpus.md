@@ -33,15 +33,15 @@ newest release its requirement allows.
 | uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
 | regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
-| rust_decimal 1.38 | compiles | no probe yet |
-| chrono 0.4 (`alloc`) | compiles | no probe yet |
+| rust_decimal 1.38 | runs | measured 2026-10-21 |
+| chrono 0.4 (`alloc`) | runs | measured 2026-10-21 |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
 | base64 0.22 | runs | an `io::Error` a value, its writer's errors thrown (ADR 0462) |
 | hex 0.4 | runs | measured 2026-10-21 |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-15 of 22 compile, and each of the 13 with a probe runs as natively.
+15 of 22 compile, and each of the 15 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and
