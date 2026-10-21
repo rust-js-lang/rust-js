@@ -17,9 +17,9 @@ function main() {
   const a = 42;
   console.log(`${a}`);
   const value = { value: 43 };
-  const b = $ptr(value, "value");
+  const b = $ptr(value, "value", 0);
   const value$1 = { value: 44 };
-  const c = $ptr(value$1, "value");
+  const c = $ptr(value$1, "value", 0);
   c.value = (c.value + 1) | 0;
   console.log(`${b.value} ${c.value}`);
 }

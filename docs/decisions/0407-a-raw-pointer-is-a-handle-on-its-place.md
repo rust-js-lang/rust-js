@@ -1,7 +1,7 @@
 # 0407. A raw pointer is a handle on its place
 
 Status: Accepted. Amends [0390](0390-addressable-memory-is-refused-as-such.md)
-and [0285](0285-ptr-eq.md).
+and [0285](0285-ptr-eq.md); and by [0562](0562-a-pointer-is-a-place-and-an-address.md): a pointer's address is a number of rust-js's own, exact within its allocation; an integer is a pointer with no place.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for a pointer used as
 a reference is, read, written, compared, stepped along an array; D for

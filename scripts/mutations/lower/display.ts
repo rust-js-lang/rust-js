@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        if self.recognition().is_type_id(ty) {\n            return Ok",
     replace: "        if false {\n            return Ok",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
   },
   {
     name: "uninit-debug-full-name",
@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "pointer-debug-refused",
     breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
     file: "src/lower/display.rs",
-    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n            return Ok(self.pointer_shown(value));\n",
-    replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return Ok(self.pointer_shown(value));\n",
+    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
+    replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n",
     replace: "        if self.is_handle_pointer(ty) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
   },
   {
     name: "type-id-debug-refused",
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "            return Ok(Expr::call(Expr::helper(\"$typeIdShown\"), vec![value]));\n",
     replace: "            return Err(self.unsupported(span, \"`{:?}` of a `TypeId`, its hash\"));\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is rust-js's error"],
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
   },
   {
     name: "system-time-error-message",

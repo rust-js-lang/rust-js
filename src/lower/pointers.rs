@@ -13,9 +13,11 @@ use std::collections::{HashMap, HashSet};
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
 
 use super::calls::Call;
 use super::recognition::Std;
+use super::recognition::TypeFact;
 use super::refusal::{Refused, refuse};
 use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -36,9 +38,16 @@ pub(in crate::lower) enum PointerOp {
     Write,
     Replace,
     Swap,
-    /// `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array.
+    /// `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array,
+    /// which Rust keeps within the allocation.
     Add,
     Sub,
+    /// `p.wrapping_add(n)`, `wrapping_offset`, `wrapping_sub`: the address
+    /// `n` items along, which may leave the allocation and come back
+    /// (ADR 0562).
+    WrappingAdd {
+        sub: bool,
+    },
     /// `p.offset_from(q)`: how many items `p` is past `q` along one array.
     OffsetFrom,
     /// `p.as_ref()`, `p.as_mut()`: `None` of `null`.
@@ -86,6 +95,27 @@ pub(in crate::lower) enum PointerOp {
     /// `$ptrTo(object)` of an object; a `&mut` of what isn't one is a
     /// handle on its place already (ADR 0099).
     FromRef,
+    /// `p.addr()`, `p.expose_provenance()`: its address, `$addr(p, size)`
+    /// (ADR 0562).
+    Addr,
+    /// `p.with_addr(n)`: the place at `n` with `p`'s provenance, `$ptrAt`.
+    WithAddr,
+    /// `p.map_addr(f)`: `with_addr` of `f` of its address.
+    MapAddr,
+    /// `p.byte_add(n)`, `wrapping_byte_add`, `byte_offset`, and their
+    /// `sub`s: `n` bytes along, by address.
+    ByteAdd {
+        sub: bool,
+    },
+    /// `p.is_aligned()`: its address a multiple of the pointee's alignment.
+    IsAligned,
+    /// `ptr::with_exposed_provenance(n)`, `without_provenance(n)`: the place
+    /// at `n` in an exposed allocation, or a pointer with no place,
+    /// `$ptrFrom(n, size)`.
+    FromAddr,
+    /// `ptr::dangling()`, `NonNull::dangling()`: a pointer with no place at
+    /// the pointee's alignment.
+    Dangling,
 }
 
 /// The type a pointer points to, and whether it's `*mut`: a raw pointer's,
@@ -173,6 +203,14 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::copy_nonoverlapping", PointerOp::Copy { dst_first: false }),
     ("std::slice::from_raw_parts", PointerOp::Slice { mutable: false }),
     ("std::slice::from_raw_parts_mut", PointerOp::Slice { mutable: true }),
+    // An address, and a pointer made of one (ADR 0562).
+    ("std::ptr::with_exposed_provenance", PointerOp::FromAddr),
+    ("std::ptr::with_exposed_provenance_mut", PointerOp::FromAddr),
+    ("std::ptr::without_provenance", PointerOp::FromAddr),
+    ("std::ptr::without_provenance_mut", PointerOp::FromAddr),
+    ("std::ptr::dangling", PointerOp::Dangling),
+    ("std::ptr::dangling_mut", PointerOp::Dangling),
+    ("std::ptr::NonNull::<T>::dangling", PointerOp::Dangling),
 ];
 
 const POINTER_METHODS: &[(&str, PointerOp)] = &[
@@ -185,10 +223,10 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("swap", PointerOp::Swap),
     ("add", PointerOp::Add),
     ("offset", PointerOp::Add),
-    ("wrapping_add", PointerOp::Add),
-    ("wrapping_offset", PointerOp::Add),
+    ("wrapping_add", PointerOp::WrappingAdd { sub: false }),
+    ("wrapping_offset", PointerOp::WrappingAdd { sub: false }),
     ("sub", PointerOp::Sub),
-    ("wrapping_sub", PointerOp::Sub),
+    ("wrapping_sub", PointerOp::WrappingAdd { sub: true }),
     ("offset_from", PointerOp::OffsetFrom),
     ("offset_from_unsigned", PointerOp::OffsetFrom),
     ("as_ref", PointerOp::AsRef),
@@ -201,6 +239,17 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("copy_from", PointerOp::Copy { dst_first: true }),
     ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
     ("drop_in_place", PointerOp::DropInPlace),
+    ("addr", PointerOp::Addr),
+    ("expose_provenance", PointerOp::Addr),
+    ("with_addr", PointerOp::WithAddr),
+    ("map_addr", PointerOp::MapAddr),
+    ("byte_add", PointerOp::ByteAdd { sub: false }),
+    ("wrapping_byte_add", PointerOp::ByteAdd { sub: false }),
+    ("byte_offset", PointerOp::ByteAdd { sub: false }),
+    ("wrapping_byte_offset", PointerOp::ByteAdd { sub: false }),
+    ("byte_sub", PointerOp::ByteAdd { sub: true }),
+    ("wrapping_byte_sub", PointerOp::ByteAdd { sub: true }),
+    ("is_aligned", PointerOp::IsAligned),
 ];
 
 /// A `NonNull`'s functions, by name, which a raw pointer's are of the same
@@ -226,7 +275,30 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("copy_from", PointerOp::Copy { dst_first: true }),
     ("copy_from_nonoverlapping", PointerOp::Copy { dst_first: true }),
     ("drop_in_place", PointerOp::DropInPlace),
+    ("addr", PointerOp::Addr),
+    ("expose_provenance", PointerOp::Addr),
+    ("with_addr", PointerOp::WithAddr),
+    ("map_addr", PointerOp::MapAddr),
+    ("byte_add", PointerOp::ByteAdd { sub: false }),
+    ("byte_sub", PointerOp::ByteAdd { sub: true }),
+    ("is_aligned", PointerOp::IsAligned),
 ];
+
+/// The facts a raw pointer's method `def_id` asks of its pointee, an
+/// address's: its size, an item's stride, and of `is_aligned` its alignment
+/// (ADR 0562). `None` of a method that asks no address.
+pub(in crate::lower) fn address_facts(tcx: ty::TyCtxt<'_>, def_id: DefId) -> Option<&'static [TypeFact]> {
+    let path = tcx.def_path_str(def_id);
+    match pointer_op(&path)? {
+        PointerOp::Addr
+        | PointerOp::WithAddr
+        | PointerOp::MapAddr
+        | PointerOp::ByteAdd { .. }
+        | PointerOp::WrappingAdd { .. } => Some(&[TypeFact::Size]),
+        PointerOp::IsAligned => Some(&[TypeFact::Size, TypeFact::Align]),
+        _ => None,
+    }
+}
 
 /// Which of std's functions of a raw pointer `path` is, a function's or a
 /// raw pointer's method's, or a `NonNull`'s, if JS has it.
@@ -548,20 +620,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
         match named || pointee.is_slice() || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
-            true => self.pointer_to(place, pointee, span),
+            true => self.pointer_to(place, pointee, None, span),
             false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
         }
     }
 
     /// A raw pointer to `place`, the place's JS: `$ptrTo(object)` of an
-    /// object, `$ptr(object, "key")` of a field, `$ptr(items, i)` of an
-    /// item, a cell of a constant. Any other place, one JS has no name for,
-    /// is refused.
-    pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
-        let handle = |object: Expr, key: Expr| Expr::call(Expr::helper("$ptr"), vec![object, key]);
+    /// object, `$ptr(object, "key", offset)` of a field, its byte `offset`
+    /// in its struct where the struct's layout is known here (ADR 0562),
+    /// `$ptr(items, i)` of an item, a cell of a constant. Any other place,
+    /// one JS has no name for, is refused.
+    pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, offset: Option<u64>, span: Span) -> R<Expr> {
+        let handle = |object: Expr, key: Expr, offset: Option<u64>| {
+            let mut args = vec![object, key];
+            args.extend(offset.map(|offset| Expr::int(i128::from(offset))));
+            Expr::call(Expr::helper("$ptr"), args)
+        };
         // A slice's is the slice, an array or a view of part of one.
         if pointee.is_slice() {
             return Ok(place);
+        }
+        if let Some(dangling) = self.dangling_pointer(pointee, span)? {
+            return Ok(dangling);
+        }
+        // An array's item's is the array's handle on it, an object's too,
+        // whose address is the item's in the array (ADR 0562); `$ptrTo` of
+        // the object is equal to it, where the object is the item.
+        match place.kind {
+            js::ExprKind::Index(object, index) => return Ok(handle(*object, *index, None)),
+            js::ExprKind::Call(ref callee, ref args) if callee.helper_name() == Some("$index") && args.len() == 2 => {
+                let (items, index) = (args[0].clone(), args[1].clone());
+                return Ok(handle(items, index, None));
+            }
+            _ => {}
         }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
@@ -569,19 +660,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_object(pointee) && !self.is_cell_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
         }
+        // A type parameter's value, an object or not as its caller gives
+        // it: `$ptrTo`, which refuses a value JS holds as itself where it
+        // runs (ADR 0562).
+        if self.is_unknown(pointee) && !matches!(place.kind, js::ExprKind::Member(..)) {
+            return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
+        }
         match place.kind {
-            js::ExprKind::Member(object, key) => Ok(handle(*object, Expr::str(key))),
-            js::ExprKind::Index(object, index) => Ok(handle(*object, *index)),
-            js::ExprKind::Call(callee, mut args) if callee.helper_name() == Some("$index") && args.len() == 2 => {
-                let index = args.pop().expect("an index");
-                let items = args.pop().expect("the items");
-                Ok(handle(items, index))
-            }
+            // A cell's one field is at its start.
+            js::ExprKind::Member(object, key) if key == js::HELD => Ok(handle(*object, Expr::str(key), Some(0))),
+            js::ExprKind::Member(object, key) => Ok(handle(*object, Expr::str(key), offset)),
             // A constant's, `&3`'s, which nothing writes, and which Rust may
             // or may not make one place each time: a cell of its own.
             _ if place.is_constant() => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
             _ => Err(refuse(self.tcx, span, Refused::Memory("a raw pointer to this place"))),
         }
+    }
+
+    /// A pointer to a `pointee` of no size, which has no place: an address,
+    /// the type's alignment, as Rust's dangling pointer is (ADR 0562). And
+    /// a type aligned past 4096, whose base an address can't promise, is
+    /// refused. `None` of another.
+    pub(super) fn dangling_pointer(&self, pointee: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some(layout) = self.layout(pointee) else {
+            return Ok(None);
+        };
+        let align = layout.align.abi.bytes();
+        if align > 4096 {
+            let what = format!("a pointer to a `{pointee}`, aligned past 4096");
+            return Err(refuse(self.tcx, span, Refused::Memory(&what)));
+        }
+        if layout.size.bytes() != 0 {
+            return Ok(None);
+        }
+        let align = Expr::int(i128::from(align));
+        Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![align, Expr::int(0)])))
     }
 
     /// What a pointer to a `pointee` points to: of a slice, the slice it is,
@@ -599,7 +712,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn pointee_place(&self, pointer: Expr) -> Expr {
         if let js::ExprKind::Call(callee, args) = &pointer.kind {
             match (callee.helper_name(), args.as_slice()) {
-                (Some("$ptr"), [object, key]) => {
+                (Some("$ptr"), [object, key] | [object, key, _]) => {
                     return match &key.kind {
                         js::ExprKind::Str(name) => Expr::member(object.clone(), name.as_str()),
                         _ => Expr::index(object.clone(), key.clone()),
@@ -764,7 +877,70 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => arg(),
                 }
             }
+            // An address, and a pointer at one (ADR 0562): each given the
+            // pointee's size, an item's stride; a function's, its type
+            // argument's.
+            PointerOp::Addr => {
+                let size = self.pointee_size(pointee.expect("a pointer"), span)?;
+                helper("$addr", vec![arg(), size])
+            }
+            PointerOp::WithAddr => {
+                let size = self.pointee_size(pointee.expect("a pointer"), span)?;
+                helper("$ptrAt", vec![arg(), arg(), size])
+            }
+            PointerOp::MapAddr => {
+                let pointee = pointee.expect("a pointer");
+                let size = self.pointee_size(pointee, span)?;
+                let pointer = self.spilled_pointer(arg(), out);
+                let (f, addr) = (arg(), helper("$addr", vec![pointer.clone(), size.clone()]));
+                helper("$ptrAt", vec![pointer, Expr::call(f, vec![addr]), size])
+            }
+            PointerOp::ByteAdd { sub } | PointerOp::WrappingAdd { sub } => {
+                let pointee = pointee.expect("a pointer");
+                let size = self.pointee_size(pointee, span)?;
+                let pointer = self.spilled_pointer(arg(), out);
+                let addr = helper("$addr", vec![pointer.clone(), size.clone()]);
+                let by = match op {
+                    PointerOp::WrappingAdd { .. } => Expr::bin(Op::Mul, arg(), size.clone()),
+                    _ => arg(),
+                };
+                let moved = Expr::bin(if sub { Op::Sub } else { Op::Add }, addr, by);
+                helper("$ptrAt", vec![pointer, moved, size])
+            }
+            PointerOp::IsAligned => {
+                let pointee = pointee.expect("a pointer");
+                let size = self.pointee_size(pointee, span)?;
+                let align = self.type_fact_value(pointee, TypeFact::Align, span)?;
+                let addr = helper("$addr", vec![arg(), size]);
+                Expr::bin(Op::Eq, Expr::bin(Op::Rem, addr, align), Expr::int(0))
+            }
+            PointerOp::FromAddr => {
+                let pointee = generic_args.types().next().expect("the pointee");
+                let size = self.pointee_size(pointee, span)?;
+                helper("$ptrFrom", vec![arg(), size])
+            }
+            PointerOp::Dangling => {
+                let pointee = generic_args.types().next().expect("the pointee");
+                let size = self.pointee_size(pointee, span)?;
+                let align = self.type_fact_value(pointee, TypeFact::Align, span)?;
+                helper("$ptrFrom", vec![align, size])
+            }
         }))
+    }
+
+    /// The size of a `pointee`, which an address is asked with (ADR 0562):
+    /// rustc's for wasm32, or a type parameter's as its caller gives it
+    /// (ADR 0145). One answer, `size_of`'s.
+    pub(super) fn pointee_size(&mut self, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.type_fact_value(pointee, TypeFact::Size, span)
+    }
+
+    /// `pointer`, read more than once: itself, or spilled.
+    fn spilled_pointer(&mut self, pointer: Expr, out: &mut Vec<Stmt>) -> Expr {
+        match pointer.reads_same() {
+            true => pointer,
+            false => self.spill("pointer", pointer, out),
+        }
     }
 
     /// A cast of or to a raw pointer, `kind`'s, of `value`: another pointer
@@ -773,7 +949,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// pointer made a number or one made of a number, isn't JS's: refused.
     /// `None` of a cast of no pointer.
     pub(super) fn pointer_cast(
-        &self,
+        &mut self,
         kind: mir::CastKind,
         value: Expr,
         (from, to): (Ty<'tcx>, Ty<'tcx>),
@@ -805,12 +981,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Ok(Some(self.recast(value, *a, *b, span)?))
             }
+            // A reference to a value of no size as a pointer, `&() as *const
+            // ()`: the dangling address (ADR 0562).
+            mir::CastKind::PtrToPtr
+                if let Some((pointee, _)) = raw_pointee(self.tcx, to)
+                    && let Some(dangling) = self.dangling_pointer(pointee, span)? =>
+            {
+                Ok(Some(dangling))
+            }
+            // A function as a pointer, `f as *const u8`: the function, an
+            // allocation of its own, whose address is its (ADR 0562).
+            mir::CastKind::FnPtrToPtr if self.is_handle_pointer(to) => Ok(Some(value)),
+            // `n as *const T`: `null` of 0, else the place at `n`, or a
+            // pointer with no place (ADR 0562); of any integer, through
+            // `usize`, a number, which a 64-bit one's BigInt isn't.
             mir::CastKind::PointerWithExposedProvenance if self.is_handle_pointer(to) => match value.as_int() {
                 Some(0) => Ok(Some(Expr::null())),
-                _ => Err(refuse(self.tcx, span, Refused::Memory("a pointer made of an address"))),
+                _ => {
+                    let (pointee, _) = raw_pointee(self.tcx, to).expect("a pointer");
+                    let size = self.pointee_size(pointee, span)?;
+                    let addr = self.cast(value, from, self.tcx.types.usize, span)?;
+                    Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![addr, size])))
+                }
             },
+            // `p as usize`: its address; as another integer, `usize`'s.
             mir::CastKind::PointerExposeProvenance if self.is_handle_pointer(from) => {
-                Err(refuse(self.tcx, span, Refused::Memory("a pointer's address")))
+                let (pointee, _) = raw_pointee(self.tcx, from).expect("a pointer");
+                let size = self.pointee_size(pointee, span)?;
+                let addr = Expr::call(Expr::helper("$addr"), vec![value, size]);
+                Ok(Some(self.cast(addr, self.tcx.types.usize, to, span)?))
             }
             _ => Ok(None),
         }
@@ -913,8 +1112,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which every program shows the same; another's, which JS hasn't,
     /// rust-js's error where it's shown, as only an assertion that fails
     /// may show one.
-    pub(super) fn pointer_shown(&self, pointer: Expr) -> Expr {
-        Expr::call(Expr::helper("$ptrShown"), vec![pointer])
+    /// `{:p}` and `{:?}` of a pointer of type `ty`, a function's too: its
+    /// address, `$ptrShown(p, size)` (ADR 0562).
+    pub(super) fn pointer_shown(&mut self, pointer: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let size = match raw_pointee(self.tcx, ty) {
+            Some((pointee, _)) => self.pointee_size(pointee, span)?,
+            None => Expr::int(0),
+        };
+        Ok(Expr::call(Expr::helper("$ptrShown"), vec![pointer, size]))
     }
 
     /// A pointer to an item of a slice, `&s[0] as *const T`, or into what a

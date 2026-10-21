@@ -239,4 +239,12 @@ export const mutations: Mutation[] = [
     replace: "            if !adt.repr().transparent() && adt.non_enum_variant().fields.len() > 9 {\n",
     tests: ["test/limitations.test.ts", "-t", "transmute. of an enum"],
   },
+  {
+    name: "reference-transmute-refused",
+    breaks: "a reference to an object `transmute`d to `usize` is refused, where it's the object's address",
+    file: "src/lower/plain.rs",
+    find: "            || matches!(ty.kind(), ty::Ref(_, pointee, _)",
+    replace: "            || false && matches!(ty.kind(), ty::Ref(_, pointee, _)",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
+  },
 ];

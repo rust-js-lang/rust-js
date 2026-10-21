@@ -21,6 +21,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A pointer has an address** (ADR 0562): `p as usize`, `addr()`,
+  `with_addr`, `map_addr`, `wrapping_add` past an allocation and back,
+  `n as *const T`, `dangling()`, pointers compared and ordered by address,
+  `{:p}`, a pointer `transmute`d to and from its address, and a tag in a
+  pointer's low bits, as once_cell's and semver's; stage 1 of the model,
+  the rest to come as its ADR says.
 - **How the generated JS reads is a gate** (ADR 0565): the shapes a person
   wouldn't write, `port measure`'s seven, are counted over the corpus's
   and the snapshots' JS in `docs/readability.txt`, and no shape's share may

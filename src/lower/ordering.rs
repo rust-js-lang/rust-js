@@ -92,6 +92,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_primitive_ord(ty) || self.is_text_ord(ty) {
             return Ok(Expr::call(Expr::helper("$cmp"), vec![a, b]));
         }
+        // A raw pointer, by its address (ADR 0562).
+        if let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)
+            && self.is_handle_pointer(ty)
+        {
+            let size = self.pointee_size(pointee, span)?;
+            return Ok(Expr::call(Expr::helper("$ptrCmp"), vec![a, b, size]));
+        }
         let (ord, partial_ord) = (self.ord_trait(), self.partial_ord_trait());
         if self.is_unknown(ty) {
             let total = ty::TraitRef::new(self.tcx, ord, [ty]);

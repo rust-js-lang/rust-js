@@ -1,7 +1,7 @@
 # 0408. Plain data is its bytes
 
 Status: Accepted. Amends [0390](0390-addressable-memory-is-refused-as-such.md)
-and [0332](0332-maybe-uninit.md).
+and [0332](0332-maybe-uninit.md); and by [0562](0562-a-pointer-is-a-place-and-an-address.md): a thin pointer, and a reference to an object, is a 4-byte scalar, its address's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for a `transmute` of
 plain data, which reads the same bytes rustc's would, and a `zeroed` one;

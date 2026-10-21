@@ -92,9 +92,46 @@ pub(super) fn type_fact_params<'tcx>(
                 }
                 continue;
             }
+            // A pointer to a type parameter's value cast to an integer, or
+            // an integer cast to one, or two compared: the pointee's size,
+            // an item's stride (ADR 0562).
+            let pointee_param = |ty: ty::Ty<'tcx>| {
+                let pointee = match ty.kind() {
+                    ty::Ref(_, pointee, _) => *pointee,
+                    _ => crate::lower::pointers::raw_pointee(tcx, ty)?.0,
+                };
+                match pointee.kind() {
+                    ty::Param(param) => Some(param.index),
+                    _ => None,
+                }
+            };
+            match expr.kind {
+                ExprKind::Cast { source } => {
+                    let from = body.thir[source].ty;
+                    if let Some(index) = pointee_param(expr.ty).or_else(|| pointee_param(from))
+                        && (expr.ty.is_integral() || from.is_integral())
+                    {
+                        asked.insert((caller, index, TypeFact::Size));
+                    }
+                }
+                ExprKind::Binary { lhs, .. } if expr.ty.is_bool() => {
+                    if let Some(index) = pointee_param(body.thir[lhs].ty) {
+                        asked.insert((caller, index, TypeFact::Size));
+                    }
+                }
+                _ => {}
+            }
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // A pointer or a reference to a type parameter's value
+            // `transmute`d, to its address: the pointee's size (ADR 0562).
+            if crate::lower::recognition::is_transmute(tcx, callee)
+                && let Some(index) = args.types().next().and_then(pointee_param)
+            {
+                asked.insert((caller, index, TypeFact::Size));
+                continue;
+            }
             // `fuse()` of a type parameter's iterator, whose `Fuse` keeps it
             // as it ends where it's a `FusedIterator`: its caller's, `IFused`
             // (ADR 0543).

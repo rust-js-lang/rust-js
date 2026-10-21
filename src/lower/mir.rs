@@ -3759,7 +3759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(match self.is_handle_pointer(c.ty()) {
                     true => Value::Expr(Expr::call(
                         Expr::helper("$ptr"),
-                        vec![self.fn_ref(def_id), Expr::str(js::HELD)],
+                        vec![self.fn_ref(def_id), Expr::str(js::HELD), Expr::int(0)],
                     )),
                     false => Value::Ref(Expr::held(self.fn_ref(def_id))),
                 })
@@ -3891,7 +3891,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(match pointer {
                     Some((pointee, _)) if self.is_handle_pointer(ty) => {
                         match self.is_object(pointee) && !self.is_cell_pointee(pointee) {
-                            true => self.pointer_to(referred, pointee, c.span)?,
+                            true => self.pointer_to(referred, pointee, Some(0), c.span)?,
                             false => Expr::object(vec![Prop::Field(js::HELD.into(), referred)]),
                         }
                     }
@@ -4217,6 +4217,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
                 let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
+                // Raw pointers compare by place or address (ADR 0562).
+                if self.is_handle_pointer(ty)
+                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)
+                {
+                    let same = Expr::call(Expr::helper("$ptrEq"), vec![l.clone(), r.clone()]);
+                    return Ok(Value::Expr(match op {
+                        BinOp::Eq => same,
+                        BinOp::Ne => Expr::unary(js::UnaryOp::Not, same),
+                        BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
+                            let size = self.pointee_size(pointee, span)?;
+                            let order = Expr::call(Expr::helper("$ptrCmp"), vec![l, r, size]);
+                            let js_op = match op {
+                                BinOp::Lt => Op::Lt,
+                                BinOp::Le => Op::Le,
+                                BinOp::Gt => Op::Gt,
+                                _ => Op::Ge,
+                            };
+                            Expr::bin(js_op, order, Expr::int(0))
+                        }
+                        _ => return Err(self.unsupported(span, "this operation on raw pointers, from its MIR")),
+                    }));
+                }
                 match op {
                     // A constant's, whose MIR checks as rustc's evaluation does:
                     // rustc evaluates it, so it never overflows; the operation,
@@ -4398,7 +4420,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && state.pointed.locals.contains(&local)
                 {
                     let target = self.mir_place(state, Place::from(local), span, out)?;
-                    return Ok(Value::Expr(self.pointer_to(target, place.ty(decls, tcx).ty, span)?));
+                    return Ok(Value::Expr(self.pointer_to(
+                        target,
+                        place.ty(decls, tcx).ty,
+                        Some(0),
+                        span,
+                    )?));
                 }
                 self.check_slice_item_pointer((state.body, &state.pointed.copies), *place, span)?;
                 let pointee = place.ty(decls, tcx).ty;
@@ -4431,10 +4458,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                 }
-                self.pointer_to(target, pointee, span)?
+                // Its byte offset in its struct, where the struct's layout is
+                // known here (ADR 0562).
+                let offset = self.field_offset(*place, decls);
+                self.pointer_to(target, pointee, offset, span)?
             }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
+    }
+
+    /// The byte offset of `place`'s last field in its struct, rustc's
+    /// layout for wasm32 (ADR 0562): where its address is in the JS object
+    /// the field is on. `None` of a place that isn't a field's, or of a
+    /// struct a caller lays out.
+    fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Option<u64> {
+        let (base, PlaceElem::Field(field, _)) = place.as_ref().last_projection()? else {
+            return None;
+        };
+        let parent = Place::ty_from(base.local, base.projection, decls, self.tcx).ty;
+        let layout = self.layout(parent)?;
+        Some(layout.fields.offset(field.index()).bytes())
     }
 
     fn mir_aggregate(

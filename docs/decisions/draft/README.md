@@ -28,9 +28,6 @@ Estimated difficulty, hardest first; this is not implementation order:
    panic identity, typed payload ownership, and an unresolved abort gate.
 5. [A library rust-js can't compile whole is compiled item by item](per-item-library-refusal.md):
    amends ADR 0415; what keeps aho-corasick, so regex, from compiling.
-6. [Bytes read through a pointer, and a pointer's offset](bytes-through-a-pointer.md):
-   amends ADR 0407's refusal for byte arrays; its base-address gate is
-   the user's call.
 
 
 Suggested order: iterators, panic support once its abort gate is

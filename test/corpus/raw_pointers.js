@@ -4,6 +4,7 @@ import {
   $eq,
   $ptr,
   $ptrAdd,
+  $ptrEq,
   $ptrReplace,
   $ptrShown,
   $ptrSwap,
@@ -80,13 +81,15 @@ function guarded(n) {
 
 function main() {
   const x = { value: 123 };
-  const c = $ptr(x, "value");
-  const m = $ptr(x, "value");
+  const c = $ptr(x, "value", 0);
+  const m = $ptr(x, "value", 0);
   const copied = x.value;
-  console.log(`${c === $ptr(x, "value")} ${c === m} ${$ptr(x, "value") === c}`);
+  console.log(
+    `${$ptrEq(c, $ptr(x, "value", 0))} ${$ptrEq(c, m)} ${$ptrEq($ptr(x, "value", 0), c)}`,
+  );
   m.value = 5;
   console.log(`${x.value} ${c.value}`);
-  bump($ptr(x, "value"));
+  bump($ptr(x, "value", 0));
   console.log(`${x.value}`);
 
   const pt = { x: 1, y: 2 };
@@ -108,7 +111,7 @@ function main() {
   console.log(`${old} ${c.value}`);
   m.value = 41;
   const y = { value: 7 };
-  $ptrSwap(m, $ptr(y, "value"));
+  $ptrSwap(m, $ptr(y, "value", 0));
   console.log(`${x.value} ${y.value}`);
   const z = m === null ? undefined : m;
   if (z != null) {
@@ -138,45 +141,49 @@ function main() {
   console.log(`${unread(4)} ${guarded(6)} ${unread_field([1, 2])}`);
   const literal = { value: 3 };
   const sameLiteral = literal;
-  console.log(`${literal.value} ${literal === sameLiteral}`);
+  console.log(`${literal.value} ${$ptrEq(literal, sameLiteral)}`);
   const once = { value: 5 };
-  const atOnce = $ptr(once, "value");
+  const atOnce = $ptr(once, "value", 0);
   console.log(`${atOnce.value}`);
   const again = c;
-  console.log(`${again === c}`);
+  console.log(`${$ptrEq(again, c)}`);
 
   const tag = { id: 1 };
   const other = { ...tag };
   console.log(`${$ptrTo(tag) === $ptrTo(other)} ${tag.id === other.id}`);
   // What holds a pointer compares it by its place, not what it points to.
   const twin = { value: 5 };
-  const elsewhere = $ptr(twin, "value");
+  const elsewhere = $ptr(twin, "value", 0);
   const seven = { value: 7 };
   const alsoSeven = { value: 7 };
-  const left = $ptr(seven, "value");
-  const right = $ptr(alsoSeven, "value");
+  const value$3 = c == null || m == null ? c == m : $ptrEq(c, m);
+  const value$4 = c == null || elsewhere == null ? c == elsewhere : $ptrEq(c, elsewhere);
+  const left = $ptr(seven, "value", 0);
+  const right = $ptr(alsoSeven, "value", 0);
   console.log(
-    `${c == null || m == null ? c == m : c === m} ${c == null || elsewhere == null ? c == elsewhere : c === elsewhere} ${left == null || right == null ? left == right : left === right}`,
+    `${value$3} ${value$4} ${left == null || right == null ? left == right : $ptrEq(left, right)}`,
   );
   const nothing = {};
-  const atNothing = $ptr(nothing, "value");
-  const value$3 = atNothing === null ? undefined : $some(atNothing.value);
+  const atNothing = $ptr(nothing, "value", 0);
+  const value$5 = atNothing === null ? undefined : $some(atNothing.value);
   console.log(
-    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
+    `${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
   );
 
   const items = [10, 20, 30];
   const start = $ptr(items, 0);
   const firstItem = $ptr(items, 0);
-  console.log(`${$ptrAdd(start, 2).value} ${$ptrAdd(firstItem, 1).value} ${start === firstItem}`);
+  console.log(
+    `${$ptrAdd(start, 2).value} ${$ptrAdd(firstItem, 1).value} ${$ptrEq(start, firstItem)}`,
+  );
   const last = $ptrAdd(start, 2);
   const via = $ptr(items, 0);
-  console.log(`${$ptrAdd(last, -1).value} ${via === start} ${via.value}`);
+  console.log(`${$ptrAdd(last, -1).value} ${$ptrEq(via, start)} ${via.value}`);
   const boxed = $ptrTo({ x: 7, y: 8 });
   let number = 9;
   boxed.value.x = (boxed.value.x + 1) | 0;
   number = (number + 1) | 0;
   console.log(`${ptDebug_fmt(boxed.value)} ${number}`);
-  console.log(`${$ptrShown(null)}`);
+  console.log(`${$ptrShown(null, 1)}`);
 }
 //# sourceMappingURL=case.js.map
