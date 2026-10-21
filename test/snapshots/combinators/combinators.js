@@ -135,7 +135,7 @@ export function vecs(n) {
   $insertAt(v, 1, 50);
   const removed = $removeAt(v, 0);
   $swap(v, 0, 1);
-  $extend(v, Array.from([7, 8]));
+  $extend(v, [7, 8]);
   $truncate(v, 6);
   const w = $windows(v, 2).map((w) => w.slice());
   const c = $chunks(v, 4).map((c) => c.slice());

@@ -125,7 +125,7 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
       }
       return [path, code];
     });
-  $extend(sources, Array.from($iter(modules)));
+  $extend(sources, modules);
   let runnable;
   if (test) {
     runnable = tests;

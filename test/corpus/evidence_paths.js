@@ -165,7 +165,7 @@ export function bagAdd() {
 }
 
 function bagAdd_add(bag, other) {
-  $extend(bag[0], Array.from(other[0]));
+  $extend(bag[0], other[0]);
   return bag;
 }
 

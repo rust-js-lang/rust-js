@@ -11,12 +11,12 @@ function loudDrop_drop(loud) {
 }
 
 function fill(v, value, n) {
-  $extend(v, Array.from($repeating(value, undefined, loudDrop_drop).take(n)));
+  $extend(v, $repeating(value, undefined, loudDrop_drop).take(n));
   console.log(`filled ${v.length}`);
 }
 
 function fill_generic(v, value, n, TClone, dropT) {
-  $extend(v, Array.from($repeating(value, (value) => TClone.clone(value), dropT).take(n)));
+  $extend(v, $repeating(value, (value) => TClone.clone(value), dropT).take(n));
 }
 
 function main() {
@@ -269,7 +269,7 @@ function main() {
     }
     const value = [["g"]];
     try {
-      $extend(v, Array.from(value));
+      $extend(v, value);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -317,7 +317,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(v, Array.from(tmp$1));
+      $extend(v, tmp$1);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -342,7 +342,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(tmp$2, Array.from(tmp$3));
+      $extend(tmp$2, tmp$3);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

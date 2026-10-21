@@ -831,4 +831,22 @@ export const mutations: Mutation[] = [
     replace: "                    true => some,\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
+  {
+    name: "extend-copies-first",
+    breaks: "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
+    file: "src/lower/combinators.rs",
+    find: "                helper(\"$extend\", vec![subject, items])\n            }\n            // Each item a clone, as `to_vec()` makes them.",
+    replace: "                helper(\"$extend\", vec![subject, Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items])])\n            }\n            // Each item a clone, as `to_vec()` makes them.",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "extend-of-array-iterator-kept",
+    breaks: "`extend` of an array's iterator made here keeps `$iter(xs)`, not the array",
+    file: "src/lower/combinators.rs",
+    find: "                    Some(array) => array.clone(),\n",
+    replace: "                    Some(_) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+    snapshots: true,
+  },
 ];

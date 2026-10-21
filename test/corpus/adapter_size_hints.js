@@ -30,7 +30,7 @@ function hint(it) {
 function collected(it) {
   const [low] = $sizeHint(it);
   const all = [];
-  $extend(all, Array.from(it));
+  $extend(all, it);
   return all;
 }
 

@@ -31,7 +31,7 @@ function main() {
   const v = [1];
   $extend(v, some == null ? [] : [some]);
   $extend(v, none == null ? [] : [none]);
-  $extend(v, Array.from($lazyRange(3, 5)));
+  $extend(v, $lazyRange(3, 5));
   const chained = [
     ...$lazyRange(0, 2),
     ...$lazyRange(5, 7),

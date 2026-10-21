@@ -41,7 +41,7 @@ function main() {
     [1, 2, 3],
     {
       extend: (collection, items) => {
-        $extend(collection.value, Array.from(items));
+        $extend(collection.value, items);
       },
     },
     {
@@ -56,7 +56,7 @@ function main() {
     [5, 4, 5],
     {
       extend: (collection, items) => {
-        $extend(collection.value, Array.from(items));
+        $extend(collection.value, items);
       },
     },
     {
@@ -70,7 +70,7 @@ function main() {
   const c = { value };
   fill(c, 2, {
     extend: (collection, items) => {
-      $extend(collection.value, Array.from(items));
+      $extend(collection.value, items);
     },
   });
   $assign(value, c.value);
@@ -78,7 +78,7 @@ function main() {
   const c$1 = { value: v };
   fill(c$1, 3, {
     extend: (collection, items) => {
-      $extend(collection.value, Array.from(items));
+      $extend(collection.value, items);
     },
   });
   $assign(v, c$1.value);
@@ -97,5 +97,10 @@ function main() {
     console.log(`{${Array.from($sortedKeys(b._0, $cmp)).join(", ")}}`);
   }
   console.log(`[${v.join(", ")}] ${s}`);
+  // A `Vec` extended by another's items, copied as they're stepped.
+  const sources = [1];
+  const more = [2, 3];
+  $extend(sources, more);
+  console.log(`[${sources.join(", ")}] [${more.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

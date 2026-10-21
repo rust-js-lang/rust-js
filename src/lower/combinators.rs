@@ -985,13 +985,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(subject, "some"), vec![f])
                 }
             }
+            // Each pushed as it's stepped, as Rust's `extend` does: an
+            // array's iterator made here, `$iter(xs)`, the array itself.
             Comb::Extend => {
                 let items = self.iterable_items(next(), tys[1], span, out)?;
-                let spread = match super::iterators::made_array(&items) {
-                    true => items,
-                    false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+                let items = match super::iterators::fresh_iter_source(&items) {
+                    Some(array) => array.clone(),
+                    None => items,
                 };
-                helper("$extend", vec![subject, spread])
+                helper("$extend", vec![subject, items])
             }
             // Each item a clone, as `to_vec()` makes them.
             Comb::ExtendFromSlice => {

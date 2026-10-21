@@ -232,7 +232,7 @@ function main() {
     [[[10]], [[11], [12]]],
     {
       extend: (collection, items) => {
-        $extend(collection.value, Array.from(items));
+        $extend(collection.value, items);
       },
     },
     $dropEach(loudDrop_drop),

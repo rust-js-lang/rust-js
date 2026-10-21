@@ -116,7 +116,7 @@ async function load_packages(start, stat) {
   const packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
   const packages$1 = await packages;
-  $extend(modules, Array.from(Object.entries(packages$1.modules)));
+  $extend(modules, Object.entries(packages$1.modules));
   stat("download runtime and packages", ms(performance.now() - start));
   return [modules, Object.entries(packages$1.styles)];
 }

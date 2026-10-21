@@ -43,4 +43,9 @@ fn main() {
     if let Either::Left(l) = &a { println!("{l:?}"); }
     if let Either::Right(r) = &b { println!("{r:?}"); }
     println!("{v:?} {s}");
+    // A `Vec` extended by another's items, copied as they're stepped.
+    let mut sources = vec![1u32];
+    let more = vec![2u32, 3];
+    sources.extend(more.iter().copied());
+    println!("{sources:?} {more:?}");
 }
