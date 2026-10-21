@@ -84,6 +84,26 @@ function main() {
   const value$2 = both(odd, { next: $next }, { clone: (value) => $clone(value) });
   console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}])`);
 
+  // A `copied()` of a map over a slice, cloned apart: its clone is what it
+  // copies' (ADR 0480).
+  const makeMap$2 = (it, f) =>
+    $cloning(
+      it.map((item) => f(item)),
+      () => makeMap$2($iter(it.items.slice(it.at, it.end)), f),
+    );
+  const makeFilter$2 = (it, f) =>
+    $cloning(
+      it.filter((item) => f(item)),
+      () => makeFilter$2($clone(it), f),
+    );
+  const doubled = makeFilter$2(
+    makeMap$2($iter([1, 2, 3, 4]), (x) => x),
+    (x) => x % 2 === 0,
+  );
+  const half = $clone(doubled);
+  $next(half);
+  console.log(`[${half.toArray().join(", ")}] [${doubled.toArray().join(", ")}]`);
+
   const tripled = scaled(
     { start: 1, end: 4 },
     3,
@@ -94,12 +114,12 @@ function main() {
   $next(rest);
   console.log(`[${rest.toArray().join(", ")}] [${tripled.toArray().join(", ")}]`);
 
-  const makeMap$2 = (it, f) =>
+  const makeMap$3 = (it, f) =>
     $cloning(
       $iterator(it, $rangeNext).map((item) => f(item)),
-      () => makeMap$2({ start: it.start, end: it.end }, f),
+      () => makeMap$3({ start: it.start, end: it.end }, f),
     );
-  const holder = { it: makeMap$2({ start: 0, end: 3 }, (x) => (x + 100) | 0) };
+  const holder = { it: makeMap$3({ start: 0, end: 3 }, (x) => (x + 100) | 0) };
   const again = { ...holder, it: $clone(holder.it) };
   $next(again.it);
   console.log(`[${again.it.toArray().join(", ")}] [${holder.it.toArray().join(", ")}]`);
