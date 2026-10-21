@@ -21,9 +21,47 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const sorted = new Map();
+  let insert;
+  try {
+    insert = $insert(sorted, 3, ["c"]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
+    }
+    throw error;
+  }
+  try {
+    if (insert != null) {
+      noisyDrop_drop(insert);
+    }
+  } catch (error) {
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
+    }
+    throw error;
+  }
+  let noisy;
+  try {
+    noisy = $insert(sorted, 1, ["a"]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
+    }
+    throw error;
+  }
+  try {
+    if (noisy != null) {
+      noisyDrop_drop(noisy);
+    }
+  } catch (error) {
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
+    }
+    throw error;
+  }
   let tmp;
   try {
-    tmp = $insert(sorted, 3, ["c"]);
+    tmp = $insert(sorted, 2, ["b"]);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       noisyDrop_drop(value);
@@ -33,44 +71,6 @@ function main() {
   try {
     if (tmp != null) {
       noisyDrop_drop(tmp);
-    }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $insert(sorted, 1, ["a"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$1 != null) {
-      noisyDrop_drop(tmp$1);
-    }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = $insert(sorted, 2, ["b"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$2 != null) {
-      noisyDrop_drop(tmp$2);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
@@ -92,9 +92,9 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  let tmp$3;
+  let map;
   try {
-    tmp$3 = old ? value(old) : undefined;
+    map = old ? value(old) : undefined;
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       noisyDrop_drop(value);
@@ -102,7 +102,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`replaced ${tmp$3 ?? "none"}`);
+    console.log(`replaced ${map ?? "none"}`);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       noisyDrop_drop(value);
@@ -140,17 +140,17 @@ function main() {
     }
     throw error;
   }
-  let tmp$4;
+  let get;
   try {
-    tmp$4 = sorted.get(3);
+    get = sorted.get(3);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       noisyDrop_drop(value);
     }
     throw error;
   }
-  if (tmp$4) {
-    const n = tmp$4;
+  if (get) {
+    const n = get;
     try {
       console.log(`has ${n[0]}`);
     } catch (error) {
@@ -171,10 +171,9 @@ function main() {
     if (tmp != null) {
       noisyDrop_drop(tmp);
     }
-    const tmp$1 = $entry(byName, "y");
-    const tmp$2 = () => ["y"];
-    const entry = tmp$1;
-    $orInsertWith(entry._0[0], entry._0[1], tmp$2);
+    const entry = $entry(byName, "y");
+    const tmp$1 = () => ["y"];
+    $orInsertWith(entry._0[0], entry._0[1], tmp$1);
     const size = byName.size;
     console.log(`${size} ${byName.has("y")}`);
     const x = $remove(byName, "x");
@@ -198,9 +197,9 @@ function main() {
             $rcDrop(tmp$5);
           }
           console.log(`${shared.strong}`);
-          const tmp$6 = $remove(handles, "a");
-          if (tmp$6 != null) {
-            $rcDrop(tmp$6);
+          const remove = $remove(handles, "a");
+          if (remove != null) {
+            $rcDrop(remove);
           }
           console.log(`${shared.strong}`);
         } finally {

@@ -28,8 +28,8 @@ function doubled(items) {
   const first = $ptr(whole, 0);
   const len = whole.length;
   for (let i = 0; i < len; i++) {
-    const value = $ptrAdd(first, i);
-    value.value = Math.imul(value.value, 2);
+    const add = $ptrAdd(first, i);
+    add.value = Math.imul(add.value, 2);
   }
 }
 

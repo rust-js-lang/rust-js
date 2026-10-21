@@ -149,9 +149,9 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
       break;
     }
     for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
-      const value = styles.find(([name]) => name === specifier);
-      if (value && !css.includes(value[1])) {
-        css.push(value[1]);
+      const find = styles.find(([name]) => name === specifier);
+      if (find && !css.includes(find[1])) {
+        css.push(find[1]);
       }
     }
     const known = styles.map(([name]) => name);

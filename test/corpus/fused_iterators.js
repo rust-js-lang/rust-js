@@ -68,21 +68,21 @@ function main() {
   const f = iterator_fuse([0], { next: flipIterator_next }, false);
   console.log(`${fuseDebug_fmt(f, undefined, flipDebug())}`);
   const copy = fuseClone_clone(f, { clone: (value) => [value[0]] });
+  const next = $next(f);
   const value = $next(f);
   const value$1 = $next(f);
-  const value$2 = $next(f);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
   );
   console.log(`[${copy.take(4).toArray().join(", ")}]`);
   const v = iterator_fuse($iter([1, 2, 3]), { next: $next }, true);
-  const value$3 = $sizeHint(v);
-  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$2 = $sizeHint(v);
+  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   const w = fuseClone_clone(v, { clone: (value) => $iter(value.items.slice(value.at, value.end)) });
   $next(v);
-  const value$4 = $sizeHint(v);
+  const sizeHint = $sizeHint(v);
   console.log(
-    `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) [${w.toArray().join(", ")}] ${fuseDebug_fmt(v, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${w.toArray().join(", ")}] ${fuseDebug_fmt(v, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
   );
   console.log(
     `[${$lent(v).toArray().join(", ")}] ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(v))}`,
@@ -94,10 +94,10 @@ function main() {
   );
   console.log(`${pairDebug_fmt(flips, flipDebug())}`);
   const again = { ...flips, i: fuseClone_clone(flips.i, { clone: (value) => [value[0]] }) };
-  const value$5 = pairIterator_next(flips);
-  const value$6 = pairIterator_next(flips);
+  const value$3 = pairIterator_next(flips);
+  const value$4 = pairIterator_next(flips);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${pairDebug_fmt(flips, flipDebug())}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${pairDebug_fmt(flips, flipDebug())}`,
   );
   console.log(`${pairDebug_fmt(again, flipDebug())}`);
   console.log(`[${$iterator(again, pairIterator_next, true).take(3).toArray().join(", ")}]`);
@@ -209,11 +209,11 @@ function main() {
     }
     throw error;
   }
+  let fuse;
   let tmp;
-  let tmp$1;
   try {
-    tmp = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop);
-    tmp$1 = (n) => Math.imul(n, 10) >>> 0;
+    fuse = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop);
+    tmp = (n) => Math.imul(n, 10) >>> 0;
   } catch (error) {
     if (steady$live) {
       if (steady.iter != null) {
@@ -227,9 +227,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$2;
+  let map;
   try {
-    tmp$2 = tmp.map((item) => tmp$1(item));
+    map = fuse.map((item) => tmp(item));
   } catch (error) {
     if (steady$live) {
       if (steady.iter != null) {
@@ -245,7 +245,7 @@ function main() {
   }
   let total;
   try {
-    total = tmp$2.reduce((a, b) => (a + b) >>> 0, 0);
+    total = map.reduce((a, b) => (a + b) >>> 0, 0);
   } catch (error) {
     if (steady$live) {
       if (steady.iter != null) {

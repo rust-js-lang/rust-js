@@ -31,10 +31,10 @@ function main() {
   counts.set({ TAG: "Borrowed", _0: "a" }, 1);
   const value = $insert(counts, { TAG: "Owned", _0: "a" }, 2);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = counts.get("a");
-  const value$2 = counts.get({ TAG: "Borrowed", _0: "a" });
+  const get = counts.get("a");
+  const value$1 = counts.get({ TAG: "Borrowed", _0: "a" });
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const key = { TAG: "Owned", _0: "b" };
   const current = $orInsert(counts, key, 0);
@@ -46,8 +46,8 @@ function main() {
   const held = Array.from(counts).map(([k, v]) => `${k._0}=${v} ${kind(k)}`);
   held.sort($cmp);
   console.log(`[${held.map((item) => $debugStr(item)).join(", ")}]`);
-  const value$3 = $remove(counts, "a");
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} ${counts.size}`);
+  const remove = $remove(counts, "a");
+  console.log(`${remove == null ? "None" : `Some(${remove})`} ${counts.size}`);
 
   const seen = new $CowSet();
   console.log(
@@ -80,7 +80,7 @@ function main() {
   const rows = new $CowMap();
   rows.set({ TAG: "Borrowed", _0: [1, 2] }, "first");
   rows.set({ TAG: "Owned", _0: [1, 2] }, "second");
-  const value$4 = rows.get([1, 2]);
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${rows.size}`);
+  const value$2 = rows.get([1, 2]);
+  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${rows.size}`);
 }
 //# sourceMappingURL=case.js.map

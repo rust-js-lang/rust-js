@@ -101,9 +101,9 @@ function main() {
 
   const bag = { items: [1, 10] };
   const c$4 = { value: bag };
-  const value$1 = double_then_total(c$4, refBagIntoIterator(), refMutBagIntoIterator());
+  const doubleThenTotal = double_then_total(c$4, refBagIntoIterator(), refMutBagIntoIterator());
   $assign(bag, c$4.value);
-  console.log(`${value$1} [${bag.items.join(", ")}]`);
+  console.log(`${doubleThenTotal} [${bag.items.join(", ")}]`);
 
   const m = new Map([
     ["ab", 1],
@@ -120,7 +120,7 @@ function main() {
       .join(", ")}}`,
   );
 
-  const value$2 = sum_past_three($iter([1, 2, 3, 4, 5]));
-  console.log(`(${value$2[0]}, ${value$2[1]})`);
+  const value$1 = sum_past_three($iter([1, 2, 3, 4, 5]));
+  console.log(`(${value$1[0]}, ${value$1[1]})`);
 }
 //# sourceMappingURL=case.js.map

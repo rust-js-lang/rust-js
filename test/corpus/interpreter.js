@@ -283,11 +283,11 @@ const Parser = {
     }
     let left = result$1._0;
     while (true) {
-      const value = Parser.peek(parser);
-      if (value == null || value.TAG !== "Op") {
+      const peek = Parser.peek(parser);
+      if (peek == null || peek.TAG !== "Op") {
         break;
       }
-      const p = Parser.precedence(value._0);
+      const p = Parser.precedence(peek._0);
       if (p <= min) {
         break;
       }
@@ -297,7 +297,7 @@ const Parser = {
         return result;
       }
       const right = result._0;
-      left = { TAG: "Binary", _0: value._0, _1: left, _2: right };
+      left = { TAG: "Binary", _0: peek._0, _1: left, _2: right };
     }
     return { TAG: "Ok", _0: left };
   },
@@ -366,11 +366,11 @@ const Parser = {
         }
         const params = [];
         while (true) {
-          const value = Parser.peek(parser);
-          if (value == null || value.TAG !== "Ident") {
+          const token = Parser.peek(parser);
+          if (token == null || token.TAG !== "Ident") {
             break;
           }
-          params.push(value._0);
+          params.push(token._0);
           Parser.next(parser);
           if (Parser.peek(parser) === "Comma") {
             Parser.next(parser);
@@ -426,16 +426,16 @@ const Env = {
 
   get(env, name) {
     const scope = $borrow(env[0], true);
-    let tmp;
+    let get;
     try {
-      tmp = scope.value.vars.get(name);
+      get = scope.value.vars.get(name);
     } catch (error) {
       $unborrow(scope);
       throw error;
     }
     let result;
-    if (tmp) {
-      const v = tmp;
+    if (get) {
+      const v = get;
       result = v;
     } else {
       try {
@@ -450,11 +450,11 @@ const Env = {
   },
 
   set(env, name, value) {
-    const value$1 = $borrowMut(env[0], true);
+    const borrowMut = $borrowMut(env[0], true);
     try {
-      value$1.value.vars.set(name, value);
+      borrowMut.value.vars.set(name, value);
     } finally {
-      $unborrow(value$1);
+      $unborrow(borrowMut);
     }
   },
 };
@@ -481,12 +481,12 @@ function upper(args) {
 
 const Interp = {
   eval(interp, e, env) {
-    let tmp;
+    let value;
     bb195: {
       if (e.TAG === "Num") {
-        tmp = { TAG: "Num", _0: e._0 };
+        value = { TAG: "Num", _0: e._0 };
       } else if (e.TAG === "Str") {
-        tmp = { TAG: "Str", _0: e._0 };
+        value = { TAG: "Str", _0: e._0 };
       } else if (e.TAG === "Var") {
         const option = Env.get(env, e._0);
         const result =
@@ -494,7 +494,7 @@ const Interp = {
         if (result.TAG === "Err") {
           return result;
         }
-        tmp = result._0;
+        value = result._0;
       } else {
         if (e.TAG === "Binary") {
           const result = Interp.eval(interp, e._1, env);
@@ -512,13 +512,13 @@ const Interp = {
               if (r.TAG === "Num") {
                 const a = l._0;
                 const b = r._0;
-                tmp = { TAG: "Num", _0: a + b };
+                value = { TAG: "Num", _0: a + b };
                 break bb195;
               }
             } else if (l.TAG === "Str") {
               const a = l._0;
               const b = r;
-              tmp = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
+              value = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
               break bb195;
             }
           } else if (e._0 === "-") {
@@ -526,7 +526,7 @@ const Interp = {
               if (r.TAG === "Num") {
                 const a = l._0;
                 const b = r._0;
-                tmp = { TAG: "Num", _0: a - b };
+                value = { TAG: "Num", _0: a - b };
                 break bb195;
               }
             }
@@ -535,7 +535,7 @@ const Interp = {
               if (r.TAG === "Num") {
                 const a = l._0;
                 const b = r._0;
-                tmp = { TAG: "Num", _0: a * b };
+                value = { TAG: "Num", _0: a * b };
                 break bb195;
               }
             }
@@ -548,7 +548,7 @@ const Interp = {
                 }
                 const a = l._0;
                 const b = r._0;
-                tmp = { TAG: "Num", _0: a / b };
+                value = { TAG: "Num", _0: a / b };
                 break bb195;
               }
             }
@@ -557,7 +557,7 @@ const Interp = {
               if (r.TAG === "Num") {
                 const a = l._0;
                 const b = r._0;
-                tmp = { TAG: "Bool", _0: a < b };
+                value = { TAG: "Bool", _0: a < b };
                 break bb195;
               }
             }
@@ -589,7 +589,7 @@ const Interp = {
               if (result.TAG === "Err") {
                 return result;
               }
-              tmp = result._0;
+              value = result._0;
               break bb195;
             }
             return { TAG: "Err", _0: `${valueDisplay_fmt(f)} is not a function` };
@@ -607,14 +607,14 @@ const Interp = {
           if (result$1.TAG === "Err") {
             return result$1;
           }
-          tmp = result$1._0;
+          value = result$1._0;
           break bb195;
           break bb195;
         }
-        tmp = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };
+        value = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };
       }
     }
-    return { TAG: "Ok", _0: tmp };
+    return { TAG: "Ok", _0: value };
   },
 };
 
@@ -688,11 +688,11 @@ function main() {
     lexErrorDebug_fmt,
   );
   console.log(`[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}]`);
-  const value = {
+  const parser = {
     tokens: $unwrapOk(Lexer.tokens(Lexer.new('f(1, "s") + 2')), undefined, lexErrorDebug_fmt),
     at: 0,
   };
-  const e = $unwrapOk(Parser.expr(value));
+  const e = $unwrapOk(Parser.expr(parser));
   console.log(`${exprDebug_fmt(e)}`);
 }
 //# sourceMappingURL=case.js.map

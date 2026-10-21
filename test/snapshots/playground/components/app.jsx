@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { compileInWorker } from "../../compiler-client.js";
 import { output_state, source_state } from "../codemirror.js";
 import { load, load_example, mb, ms } from "../compiler.js";
-import { prepare } from "../programs.js";
+import { prepare as prepare$1 } from "../programs.js";
 import { Project, js_name } from "../projects.js";
 import { build_tree } from "../tree.js";
 import { Editor } from "./editor.jsx";
@@ -97,7 +97,7 @@ export function App() {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
     const tests = compiled.tests;
-    const value = prepare(
+    const prepare = prepare$1(
       compiled.files,
       loaded.modules,
       loaded.styles,
@@ -107,18 +107,18 @@ export function App() {
       test,
       n,
     );
-    if (value === "Nothing") {
+    if (prepare === "Nothing") {
       setProgram(undefined);
-    } else if (value.TAG === "Blocked") {
+    } else if (prepare.TAG === "Blocked") {
       setProgram(undefined);
-      const names = value._0.map((s) => `"${s}"`);
+      const names = prepare._0.map((s) => `"${s}"`);
       const names$1 = names.join(", ");
       setStatus((s) => {
         const text = `${s.text} Not run: it imports ${names$1}, which the playground can't load. Bundle it with bun build.`;
         return say(text, "Bad");
       });
     } else {
-      setProgram({ run: n, page: value._0 });
+      setProgram({ run: n, page: prepare._0 });
     }
   };
 
@@ -214,10 +214,10 @@ export function App() {
         setStatus(say(text, "Bad"));
       } else if (!Project.has(project, path)) {
         setProject(Project.adding(project, path, live()));
-        const value = $rsplitOnce(path, "/");
+        const rsplitOnce = $rsplitOnce(path, "/");
         let file;
-        if (value) {
-          const file$1 = value[1];
+        if (rsplitOnce) {
+          const file$1 = rsplitOnce[1];
           file = file$1;
         } else {
           file = path;
@@ -247,8 +247,8 @@ export function App() {
       return output_state("", true);
     }
     if (output.TAG === "Files") {
-      const value = output.files.find(([path]) => path === output.shown);
-      const text = value ? value[1] : "";
+      const find = output.files.find(([path]) => path === output.shown);
+      const text = find ? find[1] : "";
       return output_state(text, true);
     }
     return output_state(output._0, false);

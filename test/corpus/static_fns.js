@@ -47,8 +47,8 @@ function main() {
   if (MAYBE) {
     console.log(`${MAYBE(1)}`);
   }
-  const value = GREETER.impl.hi(GREETER.value);
-  const value$1 = ADD(1);
-  console.log(`${value} ${SHOWN.impl.fmt(SHOWN.value)} ${value$1}`);
+  const hi = GREETER.impl.hi(GREETER.value);
+  const value = ADD(1);
+  console.log(`${hi} ${SHOWN.impl.fmt(SHOWN.value)} ${value}`);
 }
 //# sourceMappingURL=case.js.map

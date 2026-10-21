@@ -46,22 +46,22 @@ function all(items) {
 }
 
 function main() {
-  const value = make("a");
+  const noisy = make("a");
   try {
-    console.log(`${Noisy.name(value)}`);
+    console.log(`${Noisy.name(noisy)}`);
   } finally {
-    noisyDrop_drop(value);
+    noisyDrop_drop(noisy);
   }
-  const value$1 = make("b");
-  const first = value$1[0];
-  noisyDrop_drop(value$1);
-  const value$2 = make("c");
+  const value = make("b");
+  const first = value[0];
+  noisyDrop_drop(value);
+  const value$1 = make("c");
   let empty;
   try {
-    const tmp = Noisy.name(value$2);
+    const tmp = Noisy.name(value$1);
     empty = !tmp;
   } finally {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value$1);
   }
   console.log(`${first} ${empty}`);
   const kept = make("d");
@@ -77,21 +77,21 @@ function main() {
   } finally {
     noisyDrop_drop(kept);
   }
-  const value$3 = make("f");
+  const value$2 = make("f");
   let tmp;
   try {
     tmp = make("g");
   } catch (error) {
-    noisyDrop_drop(value$3);
+    noisyDrop_drop(value$2);
     throw error;
   }
-  const last = two(value$3, tmp);
-  const value$4 = make("h");
+  const last = two(value$2, tmp);
+  const value$3 = make("h");
   let tmp$1;
   try {
-    tmp$1 = [value$4, make("i")];
+    tmp$1 = [value$3, make("i")];
   } catch (error) {
-    noisyDrop_drop(value$4);
+    noisyDrop_drop(value$3);
     throw error;
   }
   console.log(`${last} ${all(tmp$1)}`);

@@ -74,9 +74,9 @@ function main() {
         const taken = taken$1;
         const value$1 = (n) => n[0];
         try {
-          const tmp = taken ? value$1(taken) : undefined;
-          const tmp$1 = slot.pending;
-          console.log(`taken ${tmp == null ? "None" : `Some(${tmp})`} left ${!tmp$1}`);
+          const map = taken ? value$1(taken) : undefined;
+          const noisy = slot.pending;
+          console.log(`taken ${map == null ? "None" : `Some(${map})`} left ${!noisy}`);
           const value = [4];
           try {
             if (slot.pending != null) {
@@ -85,18 +85,18 @@ function main() {
           } finally {
             slot.pending = value;
           }
-          const tmp$2 = made(5);
+          const tmp = made(5);
           if (slot.pending != null) {
             noisyDrop_drop(slot.pending);
           }
-          slot.pending = tmp$2;
+          slot.pending = tmp;
           const held = slot.pending;
           console.log(`held ${held[0]}`);
-          const tmp$3 = made(6);
+          const tmp$1 = made(6);
           if (slot.pending == null) {
-            slot.pending = tmp$3;
+            slot.pending = tmp$1;
           } else {
-            noisyDrop_drop(tmp$3);
+            noisyDrop_drop(tmp$1);
           }
           const same = slot.pending;
           console.log(`same ${same[0]}`);
@@ -107,11 +107,11 @@ function main() {
           } finally {
             slot.pending = undefined;
           }
-          const tmp$4 = made(7);
+          const tmp$2 = made(7);
           if (slot.pending == null) {
-            slot.pending = tmp$4;
+            slot.pending = tmp$2;
           } else {
-            noisyDrop_drop(tmp$4);
+            noisyDrop_drop(tmp$2);
           }
           const fresh = slot.pending;
           console.log(`fresh ${fresh[0]}`);

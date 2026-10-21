@@ -62,10 +62,10 @@ function main() {
   const grid = { cells: Array.from({ length: 4 }, () => ({ ...item })), width: 2 };
   gridIndexMut_usize__usize__index_mut(grid, [1, 0]).x = 7;
   Point.shift(gridIndexMut_usize__usize__index_mut(grid, [0, 1]), 3);
-  const value = gridIndex_usize__usize__index(grid, [1, 0]);
-  const value$1 = gridIndex_usize__usize__index(grid, [0, 1]);
+  const point = gridIndex_usize__usize__index(grid, [1, 0]);
+  const value = gridIndex_usize__usize__index(grid, [0, 1]);
   console.log(
-    `${pointDebug_fmt(value)} ${pointDebug_fmt(value$1)} [${grid.cells.map((item) => pointDebug_fmt(item)).join(", ")}]`,
+    `${pointDebug_fmt(point)} ${pointDebug_fmt(value)} [${grid.cells.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

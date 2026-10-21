@@ -14,16 +14,16 @@ function main() {
   const cell = { value: 1 };
   const other = { value: 2 };
   swap(cell, other);
-  const value = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   try {
     const tmp = $borrow(other, true);
     try {
-      console.log(`${value.value} ${tmp.value}`);
+      console.log(`${borrow.value} ${tmp.value}`);
     } finally {
       $unborrow(tmp);
     }
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
   swap(cell, cell);
 }

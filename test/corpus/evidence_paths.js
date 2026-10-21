@@ -177,9 +177,9 @@ function main() {
   console.log(
     `${shout(12, { to_string: String })} ${shout("abc", { to_string: (value) => value })} ${shout([21.5], { to_string: celsiusDisplay_fmt })}`,
   );
-  const value = optionGetterT({ clone: (value) => value }).twice(4);
-  const value$1 = optionGetterT({ clone: (value) => value }).twice("hi");
-  console.log(`(${value[0]}, ${value[1]}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])})`);
+  const twice = optionGetterT({ clone: (value) => value }).twice(4);
+  const value = optionGetterT({ clone: (value) => value }).twice("hi");
+  console.log(`(${twice[0]}, ${twice[1]}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`);
   console.log(`${iDigits().digit_sum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
@@ -196,7 +196,7 @@ function main() {
     [[2, 3]],
   );
   $assign(bag, self$1.value);
-  const value$2 = pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] });
-  console.log(`${bagDebug_fmt(before$1)} ${bagDebug_fmt(value$2)}`);
+  const value$1 = pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] });
+  console.log(`${bagDebug_fmt(before$1)} ${bagDebug_fmt(value$1)}`);
 }
 //# sourceMappingURL=case.js.map

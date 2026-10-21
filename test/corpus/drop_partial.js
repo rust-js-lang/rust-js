@@ -99,10 +99,10 @@ function main() {
     }
   }
   opt$0$live = false;
-  const value = ["sa"];
-  const value$1 = ["sb"];
+  const noisy = ["sa"];
+  const value = ["sb"];
   let shape$a$live = true;
-  const shape = { TAG: "Two", a: value, b: value$1 };
+  const shape = { TAG: "Two", a: noisy, b: value };
   if (shape.TAG === "Two") {
     shape$a$live = false;
     try {

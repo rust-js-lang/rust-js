@@ -124,14 +124,14 @@ function main() {
   const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
   const value = positionsIterator_size_hint(even);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const value$1 = positionsIterator_next(even);
-  const value$2 = positionsDoubleEndedIterator_next_back(
+  const next = positionsIterator_next(even);
+  const value$1 = positionsDoubleEndedIterator_next_back(
     even,
     { next_back: $nextBack },
     { len: (iterator) => iterator.len() },
   );
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(
     `${positionsDebug_fmt(even, undefined, {
@@ -225,36 +225,36 @@ function main() {
   }
   console.log("");
   const rest = $iter([1, 2, 3]);
-  const value$3 = last_doubled($iter(rest));
-  const value$4 = $next(rest);
+  const lastDoubled = last_doubled($iter(rest));
+  const value$2 = $next(rest);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${lastDoubled == null ? "None" : `Some(${lastDoubled})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const numbered = {
     iter: $enumerate($iterator({ start: 5, end: 8 }, $rangeNext, false, $rangeNextBack, $rangeLen)),
   };
-  const value$5 = $nextBack(numbered.iter);
-  const value$6 = $next(numbered.iter);
+  const nextBack = $nextBack(numbered.iter);
+  const value$3 = $next(numbered.iter);
   console.log(
-    `${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`,
+    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`,
   );
   const wrap = { inner: $iter([4, 5]) };
-  const value$7 = Wrap.last_tripled(wrap, { next: $next }, { next_back: $nextBack });
-  const value$8 = $next(wrap.inner);
+  const lastTripled = Wrap.last_tripled(wrap, { next: $next }, { next_back: $nextBack });
+  const value$4 = $next(wrap.inner);
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+    `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   // A range given as it is, stepped from its back by its dictionaries.
   const big = positions({ start: 1, end: 20 }, (x) => x > 16, { next: $rangeNext });
-  const value$9 = positionsIterator_next(big);
-  const value$10 = positionsDoubleEndedIterator_next_back(
+  const value$5 = positionsIterator_next(big);
+  const value$6 = positionsDoubleEndedIterator_next_back(
     big,
     { next_back: $rangeNextBack },
     { len: $rangeLen },
   );
-  const value$11 = positionsIterator_next(big);
+  const value$7 = positionsIterator_next(big);
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

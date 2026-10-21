@@ -46,15 +46,15 @@ function adversary(n, select) {
       }
       if (tmp) {
         if (x === candidate) {
-          let tmp;
+          let get;
           try {
-            tmp = solid;
+            get = solid;
             $index(v.value, x);
           } catch (error) {
             $unborrow(v);
             throw error;
           }
-          v.value[x] = tmp;
+          v.value[x] = get;
         } else {
           let tmp;
           try {

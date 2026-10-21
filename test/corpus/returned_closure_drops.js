@@ -55,14 +55,14 @@ function smallest(items, cmp, TClone, dropF) {
     const item = $someValue(tmp);
     const value$1 = (b) => cmp(item, b) === -1;
     const value = $someValue(best);
-    let tmp$1;
+    let isNoneOr;
     try {
-      tmp$1 = best == null || value$1(value);
+      isNoneOr = best == null || value$1(value);
     } catch (error) {
       dropF?.(cmp);
       throw error;
     }
-    if (tmp$1) {
+    if (isNoneOr) {
       best = $some(item);
     }
   }

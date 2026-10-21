@@ -174,20 +174,20 @@ function main() {
     `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1]}, [${value$9[2].join(", ")}])`,
   );
 
-  const value$10 = handed_on(
+  const handedOn = handed_on(
     [2],
     { next: countdownIterator_next },
     { clone: (value) => [value[0]] },
     { next_back: countdownDoubleEndedIterator_next_back },
   );
-  const value$11 = handed_on(
+  const value$10 = handed_on(
     { start: 5, end: 7 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
     { next_back: $rangeNextBack },
   );
   console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
+    `${handedOn == null ? "None" : `Some(${handedOn})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
   console.log(
     `[${backwards([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] }, { next_back: countdownDoubleEndedIterator_next_back }).join(", ")}] [${backwards(

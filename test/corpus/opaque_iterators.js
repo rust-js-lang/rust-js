@@ -20,38 +20,38 @@ function first(it) {
 
 function main() {
   const v = [1, 2, 3];
-  const value = $next(tens(v));
-  const value$1 = $lent(tens(v)).drop(1).take(1).toArray()[0];
-  const value$2 = $lent(tens(v)).drop(5).take(1).toArray()[0];
+  const next = $next(tens(v));
+  const nth = $lent(tens(v)).drop(1).take(1).toArray()[0];
+  const value = $lent(tens(v)).drop(5).take(1).toArray()[0];
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(`${$lent(tens(v)).some((x) => x > 25)} ${$lent(tens(v)).every((x) => x > 5)}`);
-  const value$3 = $lent(tens(v)).find((x) => x > 15);
-  const value$4 = $position($lent(tens(v)), (x) => x === 20);
+  const find = $lent(tens(v)).find((x) => x > 15);
+  const value$1 = $position($lent(tens(v)), (x) => x === 20);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${find == null ? "None" : `Some(${find})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$5 = $max(tens(v).toArray());
+  const max = $max(tens(v).toArray());
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${tens(v).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))(tens(v).toArray().at(-1))}`,
+    `${max == null ? "None" : `Some(${max})`} ${tens(v).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))(tens(v).toArray().at(-1))}`,
   );
   const kept = tens(v);
-  const value$6 = $next(kept);
-  const value$7 = $next(kept);
+  const value$2 = $next(kept);
+  const value$3 = $next(kept);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   const lent = tens(v);
-  const value$8 = first(lent);
-  const value$9 = first(lent);
+  const value$4 = first(lent);
+  const value$5 = first(lent);
   console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
-  const value$10 = $next(evens(7));
-  const value$11 = $lent(evens(7)).find((x) => x > 2);
+  const value$6 = $next(evens(7));
+  const value$7 = $lent(evens(7)).find((x) => x > 2);
   console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

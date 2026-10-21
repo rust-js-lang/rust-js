@@ -23,11 +23,11 @@ function subscriptionDrop_drop(subscription) {
   const bus = $upgrade(subscription.bus);
   if (bus) {
     try {
-      const tmp = $borrowMut(bus.value, true);
+      const borrowMut = $borrowMut(bus.value, true);
       try {
-        tmp.value.handlers.delete(subscription.id);
+        borrowMut.value.handlers.delete(subscription.id);
       } finally {
-        $unborrow(tmp);
+        $unborrow(borrowMut);
       }
       console.log(`unsubscribed ${subscription.id}`);
     } finally {
@@ -102,9 +102,9 @@ const Component = {
     });
     const c = { value: 0 };
     const value = () => {
-      const value = $borrowMut(c, true);
-      value.value = (value.value + 1) | 0;
-      $unborrow(value);
+      const borrowMut = $borrowMut(c, true);
+      borrowMut.value = (borrowMut.value + 1) | 0;
+      $unborrow(borrowMut);
     };
     let second;
     try {
@@ -190,11 +190,11 @@ function main() {
         }
       });
       publish(bus, "empty");
-      const tmp = $borrow(bus.value, true);
+      const borrow = $borrow(bus.value, true);
       try {
-        console.log(`left ${tmp.value.handlers.size}`);
+        console.log(`left ${borrow.value.handlers.size}`);
       } finally {
-        $unborrow(tmp);
+        $unborrow(borrow);
       }
     } finally {
       for (const item of comps) {

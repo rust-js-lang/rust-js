@@ -53,10 +53,10 @@ function transform(s, withWord, boundary, options) {
       }
       const i = value[0];
       const c = value[1];
-      const value$1 = $peek(charIndices);
-      if (value$1) {
-        const nextI = value$1[0];
-        const next = value$1[1];
+      const peek = $peek(charIndices);
+      if (peek) {
+        const nextI = peek[0];
+        const next = peek[1];
         let nextMode;
         if (/^\p{Lowercase}$/u.test(c)) {
           nextMode = "Lowercase";

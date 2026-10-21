@@ -104,11 +104,11 @@ export function table(input) {
   let out = "";
   const rows = [];
   for (const [i, line] of $lines(input).entries().drop(1)) {
-    const value = parse_row(line);
-    if (value.TAG === "Ok") {
-      rows.push(value._0);
+    const parseRow = parse_row(line);
+    if (parseRow.TAG === "Ok") {
+      rows.push(parseRow._0);
     } else {
-      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(value._0)}\n`;
+      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(parseRow._0)}\n`;
     }
   }
   rows.sort((a, b) => $cmp(b.score, a.score) || $cmp(a.name, b.name));

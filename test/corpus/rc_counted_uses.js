@@ -280,9 +280,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  let tmp$6;
+  let map;
   try {
-    tmp$6 = tmp$5.map((x) => ({ value: x, strong: 1, weak: 0 }));
+    map = tmp$5.map((x) => ({ value: x, strong: 1, weak: 0 }));
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -296,7 +296,7 @@ function main() {
   }
   let lists;
   try {
-    lists = tmp$6.toArray();
+    lists = map.toArray();
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -442,161 +442,161 @@ function main() {
     }
     throw error;
   }
+  let borrowMut;
+  try {
+    borrowMut = $borrowMut(other$1.value, true);
+  } catch (error) {
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    borrowMut.value.push(2);
+  } catch (error) {
+    $unborrow(borrowMut);
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(borrowMut);
+  } catch (error) {
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let borrow;
+  try {
+    borrow = $borrow(shared.value, true);
+  } catch (error) {
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    console.log(`[${borrow.value.join(", ")}] ${count(shared)}`);
+  } catch (error) {
+    $unborrow(borrow);
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(borrow);
+  } catch (error) {
+    $rcDrop(other$1);
+    $rcDrop(shared);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let tmp$6;
+  try {
+    tmp$6 = $unwrapOrClone(shared, (value) => ({ value: $borrow(value).value.slice() }));
+  } catch (error) {
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const owned = tmp$6.value;
   let tmp$7;
   try {
-    tmp$7 = $borrowMut(other$1.value, true);
-  } catch (error) {
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  try {
-    tmp$7.value.push(2);
-  } catch (error) {
-    $unborrow(tmp$7);
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$7);
-  } catch (error) {
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = $borrow(shared.value, true);
-  } catch (error) {
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$8.value.join(", ")}] ${count(shared)}`);
-  } catch (error) {
-    $unborrow(tmp$8);
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$8);
-  } catch (error) {
-    $rcDrop(other$1);
-    $rcDrop(shared);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  let tmp$9;
-  try {
-    tmp$9 = $unwrapOrClone(shared, (value) => ({ value: $borrow(value).value.slice() }));
-  } catch (error) {
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
-  const owned = tmp$9.value;
-  let tmp$10;
-  try {
-    tmp$10 = $borrow(other$1.value, true);
+    tmp$7 = $borrow(other$1.value, true);
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -617,9 +617,9 @@ function main() {
   }
   const arg$1 = count(other$1);
   try {
-    console.log(`[${owned.join(", ")}] [${tmp$10.value.join(", ")}] ${arg$1}`);
+    console.log(`[${owned.join(", ")}] [${tmp$7.value.join(", ")}] ${arg$1}`);
   } catch (error) {
-    $unborrow(tmp$10);
+    $unborrow(tmp$7);
     $rcDrop(other$1);
     for (const item of lists) {
       $rcDrop(item);
@@ -638,7 +638,7 @@ function main() {
     throw error;
   }
   try {
-    $unborrow(tmp$10);
+    $unborrow(tmp$7);
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -680,9 +680,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$11;
+  let upgrade;
   try {
-    tmp$11 = $upgrade(owner.value.me);
+    upgrade = $upgrade(owner.value.me);
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -706,7 +706,7 @@ function main() {
   }
   let me;
   try {
-    me = $unwrap(tmp$11);
+    me = $unwrap(upgrade);
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -780,10 +780,10 @@ function main() {
     }
     throw error;
   }
-  const strong$1 = owner.strong;
-  let tmp$12;
+  const value$3 = owner.strong;
+  let tmp$8;
   try {
-    tmp$12 = $upgrade(owner.value.me);
+    tmp$8 = $upgrade(owner.value.me);
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -805,9 +805,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$13;
+  let tmp$9;
   try {
-    tmp$13 = $unwrap(tmp$12);
+    tmp$9 = $unwrap(tmp$8);
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -830,9 +830,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${strong$1} ${owner === tmp$13}`);
+    console.log(`${value$3} ${owner === tmp$9}`);
   } catch (error) {
-    $rcDrop(tmp$13, (value) => {
+    $rcDrop(tmp$9, (value) => {
       $weakDrop(value.me);
     });
     $rcDrop(owner, (value) => {
@@ -856,7 +856,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(tmp$13, (value) => {
+    $rcDrop(tmp$9, (value) => {
       $weakDrop(value.me);
     });
   } catch (error) {
@@ -881,12 +881,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$3 = { value: 5, strong: 1, weak: 0 };
-  const arg$2 = $cmp(value$3.value, defaulted.value) > 0;
+  const value$4 = { value: 5, strong: 1, weak: 0 };
+  const arg$2 = $cmp(value$4.value, defaulted.value) > 0;
   try {
     console.log(`${defaulted.value} ${arg$2}`);
   } catch (error) {
-    $rcDrop(value$3);
+    $rcDrop(value$4);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -909,7 +909,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(value$3);
+    $rcDrop(value$4);
   } catch (error) {
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
@@ -1057,9 +1057,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$14;
+  let tmp$10;
   try {
-    tmp$14 = $tryUnwrap(two);
+    tmp$10 = $tryUnwrap(two);
   } catch (error) {
     $rcDrop(also);
     $rcDrop(defaulted);
@@ -1084,10 +1084,10 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$14.TAG === "Ok" ? `Ok(${tmp$14._0})` : `Err(${tmp$14._0.value})`}`);
+    console.log(`${tmp$10.TAG === "Ok" ? `Ok(${tmp$10._0})` : `Err(${tmp$10._0.value})`}`);
   } catch (error) {
-    if (tmp$14.TAG === "Err") {
-      $rcDrop(tmp$14._0);
+    if (tmp$10.TAG === "Err") {
+      $rcDrop(tmp$10._0);
     }
     $rcDrop(also);
     $rcDrop(defaulted);
@@ -1112,8 +1112,8 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$14.TAG === "Err") {
-      $rcDrop(tmp$14._0);
+    if (tmp$10.TAG === "Err") {
+      $rcDrop(tmp$10._0);
     }
   } catch (error) {
     $rcDrop(also);

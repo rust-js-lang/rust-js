@@ -66,17 +66,17 @@ function main() {
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const value = after_first($iter(v));
+  const afterFirst = after_first($iter(v));
   console.log(
-    `(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
+    `(${afterFirst[0] == null ? "None" : `Some(${afterFirst[0]})`}, [${afterFirst[1].join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
   );
-  const value$1 = firsts($iter([undefined, 2]));
+  const value = firsts($iter([undefined, 2]));
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1[0]))})`}, ${value$1[1] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1[1]))})`})`,
+    `(${value[0] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value[0]))})`}, ${value[1] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value[1]))})`})`,
   );
-  const value$2 = firsts($iter([]));
+  const value$1 = firsts($iter([]));
   console.log(
-    `(${value$2[0] == null ? "None" : "Some(())"}, ${value$2[1] == null ? "None" : "Some(())"})`,
+    `(${value$1[0] == null ? "None" : "Some(())"}, ${value$1[1] == null ? "None" : "Some(())"})`,
   );
 }
 //# sourceMappingURL=case.js.map

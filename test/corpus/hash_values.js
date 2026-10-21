@@ -569,8 +569,8 @@ function main() {
   hasher.write_u8(1);
   const first = hasher.finish();
   hasher.write_u8(2);
-  const value$3 = hasher.finish();
+  const finish = hasher.finish();
   const arg = before.finish();
-  console.log(`${first} ${value$3} ${arg}`);
+  console.log(`${first} ${finish} ${arg}`);
 }
 //# sourceMappingURL=case.js.map

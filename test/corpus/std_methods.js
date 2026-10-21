@@ -142,11 +142,11 @@ function main() {
   const stack = {};
   Stack.push(stack, 1);
   Stack.push(stack, 2);
+  const pop = Stack.pop(stack);
   const value = Stack.pop(stack);
   const value$1 = Stack.pop(stack);
-  const value$2 = Stack.pop(stack);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${pop == null ? "None" : `Some(${pop})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   let items = [1, 2];
   let text = "hi";
@@ -160,19 +160,17 @@ function main() {
     `[${itemsTaken.join(", ")}] [${items.join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
   );
 
-  const value$3 = Math.min(3, 7);
-  const value$4 = $bigMax(-2n, 5n);
+  const min = Math.min(3, 7);
+  const max = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const value$5 = $cmp("a", "b") > 0 ? "a" : "b";
+  const value$2 = $cmp("a", "b") > 0 ? "a" : "b";
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
-  const value$6 = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
-  const value$7 =
+  const version = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
+  const value$3 =
     ($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1;
-  console.log(
-    `${value$3} ${value$4} ${value$5} ${versionDebug_fmt(value$6)} ${versionDebug_fmt(value$7)}`,
-  );
+  console.log(`${min} ${max} ${value$2} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$3)}`);
   console.log(
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
   );
@@ -188,16 +186,16 @@ function main() {
     .map((x) => Math.imul(x, 2));
   console.log(`[${doubled.join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
-  const value$8 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
+  const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
-    `${value$8.TAG === "Ok" ? `Ok(${$debugStr(value$8._0)})` : `Err(${value$8._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+    `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = { value: [1] };
-  const value$9 = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, true);
   try {
-    value$9.value.push(2);
+    borrowMut.value.push(2);
   } finally {
-    $unborrow(value$9);
+    $unborrow(borrowMut);
   }
   console.log(`[${cell.value.join(", ")}] 5`);
   const front = [1];
@@ -219,10 +217,10 @@ function main() {
   );
   const table = new Map();
   table.set("k", 7);
-  const value$10 = ["a", "b"];
-  const value$11 = [new Map()];
+  const value$5 = ["a", "b"];
+  const value$6 = [new Map()];
   console.log(
-    `${lettersDebug_fmt([value$10])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$11)}`,
+    `${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}`,
   );
 }
 //# sourceMappingURL=case.js.map

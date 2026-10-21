@@ -160,11 +160,11 @@ function directory_of(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
-    const value = $rsplitOnce(path, "/");
+    const rsplitOnce = $rsplitOnce(path, "/");
     let name;
-    if (value) {
-      const folders = value[0];
-      const name$1 = value[1];
+    if (rsplitOnce) {
+      const folders = rsplitOnce[0];
+      const name$1 = rsplitOnce[1];
       for (const part of folders.split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
@@ -207,19 +207,19 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
-      const value = $borrowMut(stdoutLines, true);
+      const borrowMut = $borrowMut(stdoutLines, true);
       try {
-        value.value.push(line);
+        borrowMut.value.push(line);
       } finally {
-        $unborrow(value);
+        $unborrow(borrowMut);
       }
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
-      const value = $borrowMut(stderrLines, true);
+      const borrowMut = $borrowMut(stderrLines, true);
       try {
-        value.value.push(line);
+        borrowMut.value.push(line);
       } finally {
-        $unborrow(value);
+        $unborrow(borrowMut);
       }
     }), // stderr
     new PreopenDirectory("/in", directory_of(sources)),
@@ -312,18 +312,18 @@ export async function compile(loaded, sources, rootFile, test) {
     }
   }
   const memory = instance.exports.memory.buffer;
-  const value = $borrow(stderr, true);
+  const borrow = $borrow(stderr, true);
+  let join;
   let tmp;
   let tmp$1;
-  let tmp$2;
   let memory$1;
   try {
-    tmp = value.value.join("\n");
-    tmp$1 = t1 - t0;
-    tmp$2 = t2 - t1;
+    join = borrow.value.join("\n");
+    tmp = t1 - t0;
+    tmp$1 = t2 - t1;
     memory$1 = memory.byteLength;
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
   return {
     exit,
@@ -332,9 +332,9 @@ export async function compile(loaded, sources, rootFile, test) {
     root,
     main,
     tests,
-    stderr: tmp,
-    instantiate: tmp$1,
-    run: tmp$2,
+    stderr: join,
+    instantiate: tmp,
+    run: tmp$1,
     memory: memory$1,
   };
 }

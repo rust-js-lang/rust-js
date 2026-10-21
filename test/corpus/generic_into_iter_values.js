@@ -25,9 +25,9 @@ function main() {
   $next(it);
   console.log(`${it.end - it.at}`);
   const c = $iter(it.items.slice(it.at, it.end));
-  const value = $sizeHint(it);
+  const sizeHint = $sizeHint(it);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) [${c.toArray().join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${c.toArray().join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
   const pair = both(
     ["a", "b"],
@@ -37,8 +37,8 @@ function main() {
   );
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);
   const total = mk([4, 5]).reduce((a, b) => (a + b) >>> 0, 0);
-  const value$1 = [6, 7];
-  for (const x of mk(value$1)) {
+  const value = [6, 7];
+  for (const x of mk(value)) {
     console.log(`${x} ${total}`);
   }
   show([8, 9]);

@@ -30,9 +30,9 @@ function keep(n, fail) {
 
 function swap_y(p, fail) {
   let p$x$live = true;
-  let tmp;
+  let noisy;
   try {
-    tmp = keep(p.y, fail);
+    noisy = keep(p.y, fail);
     p$x$live = false;
   } catch (error) {
     if (p$x$live) {
@@ -40,7 +40,7 @@ function swap_y(p, fail) {
     }
     throw error;
   }
-  return { ...p, y: tmp };
+  return { ...p, y: noisy };
 }
 
 function main() {

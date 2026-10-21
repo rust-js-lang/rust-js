@@ -141,19 +141,19 @@ function main() {
   }
   const objects = [{ impl: unitTracked() }, { value: [false], impl: flagTracked() }];
   for (const object of objects) {
-    const value = object.impl.from_default(object.value, {
+    const fromDefault = object.impl.from_default(object.value, {
       file: "test/corpus/track_caller_traits.rs",
       line: 128,
       column: 37,
     });
-    const value$1 = object.impl.inherited(object.value, {
+    const inherited = object.impl.inherited(object.value, {
       file: "test/corpus/track_caller_traits.rs",
       line: 128,
       column: 60,
     });
-    const value$2 = object.impl.only_impl(object.value);
+    const value = object.impl.only_impl(object.value);
     console.log(
-      `${value.file}:${value.line}:${value.column} ${value$1.file}:${value$1.line}:${value$1.column} ${value$2.file}:${value$2.line}:${value$2.column}`,
+      `${fromDefault.file}:${fromDefault.line}:${fromDefault.column} ${inherited.file}:${inherited.line}:${inherited.column} ${value.file}:${value.line}:${value.column}`,
     );
     console.log(`${object.impl.unread(object.value)}`);
   }

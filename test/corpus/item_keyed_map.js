@@ -34,8 +34,8 @@ function tCounting(TIterator, dropT, dropTItem) {
       }
       const value = (item) => {
         $orInsert(counts, item, 0, undefined, dropTItem);
-        const value = $mutGet(counts, item);
-        value.value = (value.value + 1) >>> 0;
+        const orInsert = $mutGet(counts, item);
+        orInsert.value = (orInsert.value + 1) >>> 0;
       };
       let iter;
       let result;
@@ -102,10 +102,10 @@ function main() {
     { eq: (a, b) => a === b },
     Map,
   );
-  const value = words.get("x");
-  const value$1 = words.get("z");
+  const get = words.get("x");
+  const value = words.get("z");
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const points = tCounting({ next: $next }).counts(
     $iter([
@@ -117,21 +117,21 @@ function main() {
     { eq: $eq },
     $KeyMap,
   );
-  const value$2 = points.get([0, 1]);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${points.size}`);
+  const value$1 = points.get([0, 1]);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${points.size}`);
   const louds = tCounting({ next: $next }, $dropEach(loudDrop_drop), loudDrop_drop).counts(
     $iter([[1], [1]]),
     loudHash(),
     { eq: $eq },
     $KeyMap,
   );
-  const value$3 = [1];
+  const loud = [1];
   try {
     try {
-      const value = louds.get(value$3);
+      const value = louds.get(loud);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      loudDrop_drop(value$3);
+      loudDrop_drop(loud);
     }
   } finally {
     for (const item of louds.keys()) {

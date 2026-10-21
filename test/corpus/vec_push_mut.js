@@ -18,10 +18,10 @@ function main() {
   first.value = Math.imul(first.value, 3);
   console.log(`[${counts.join(", ")}]`);
   const entries = [{ hits: 0 }];
-  const value$1 = $pushMut(entries, { hits: 4 });
-  value$1.hits = (value$1.hits + 1) >>> 0;
-  const value$2 = $insertMut(entries, 1, { hits: 9 });
-  value$2.hits = (value$2.hits - 2) >>> 0;
+  const pushMut = $pushMut(entries, { hits: 4 });
+  pushMut.hits = (pushMut.hits + 1) >>> 0;
+  const insertMut = $insertMut(entries, 1, { hits: 9 });
+  insertMut.hits = (insertMut.hits - 2) >>> 0;
   console.log(`[${entries.map((item) => entryDebug_fmt(item)).join(", ")}]`);
   const names = [];
   const value = $pushMut(names, "a", true);

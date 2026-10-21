@@ -26,23 +26,23 @@ function main() {
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some((${value$4[0]}, ${$debugStr(value$4[1], "'")}))`} ${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`}`,
   );
   const option = [1, "a"];
-  const value$6 = option != null ? [option[0], option[1]] : [undefined, undefined];
-  const value$7 = undefined != null ? [undefined[0], undefined[1]] : [undefined, undefined];
+  const unzip = option != null ? [option[0], option[1]] : [undefined, undefined];
+  const value$6 = undefined != null ? [undefined[0], undefined[1]] : [undefined, undefined];
   console.log(
-    `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${$debugStr(value$6[1])})`}) (${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1] == null ? "None" : `Some(${$debugStr(value$7[1])})`})`,
+    `(${unzip[0] == null ? "None" : `Some(${unzip[0]})`}, ${unzip[1] == null ? "None" : `Some(${$debugStr(unzip[1])})`}) (${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${$debugStr(value$6[1])})`})`,
   );
   const ok = { TAG: "Ok", _0: 4 };
   const err = { TAG: "Err", _0: "bad" };
-  const value$8 = ok == null ? { TAG: "Ok" } : ok.TAG === "Ok" ? { TAG: "Ok", _0: ok._0 } : ok;
-  const value$9 = err == null ? { TAG: "Ok" } : err.TAG === "Ok" ? { TAG: "Ok", _0: err._0 } : err;
-  const value$10 =
+  const transpose = ok == null ? { TAG: "Ok" } : ok.TAG === "Ok" ? { TAG: "Ok", _0: ok._0 } : ok;
+  const value$7 = err == null ? { TAG: "Ok" } : err.TAG === "Ok" ? { TAG: "Ok", _0: err._0 } : err;
+  const value$8 =
     undefined == null
       ? { TAG: "Ok" }
       : undefined.TAG === "Ok"
         ? { TAG: "Ok", _0: undefined._0 }
         : undefined;
   console.log(
-    `${value$8.TAG === "Ok" ? `Ok(${value$8._0 == null ? "None" : `Some(${value$8._0})`})` : `Err(${$debugStr(value$8._0)})`} ${value$9.TAG === "Ok" ? `Ok(${value$9._0 == null ? "None" : `Some(${value$9._0})`})` : `Err(${$debugStr(value$9._0)})`} ${value$10.TAG === "Ok" ? `Ok(${value$10._0 == null ? "None" : `Some(${value$10._0})`})` : `Err(${$debugStr(value$10._0)})`}`,
+    `${transpose.TAG === "Ok" ? `Ok(${transpose._0 == null ? "None" : `Some(${transpose._0})`})` : `Err(${$debugStr(transpose._0)})`} ${value$7.TAG === "Ok" ? `Ok(${value$7._0 == null ? "None" : `Some(${value$7._0})`})` : `Err(${$debugStr(value$7._0)})`} ${value$8.TAG === "Ok" ? `Ok(${value$8._0 == null ? "None" : `Some(${value$8._0})`})` : `Err(${$debugStr(value$8._0)})`}`,
   );
   const seen = [];
   if (some != null) {
@@ -65,12 +65,12 @@ function main() {
     `[${(some != null ? [some] : []).join(", ")}] [${(none != null ? [none] : []).join(", ")}]`,
   );
   const name = "ann";
-  const value$11 = name != null ? $byteLen(name) : undefined;
-  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
+  const value$9 = name != null ? $byteLen(name) : undefined;
+  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
 
   let count;
   count ??= 5;
-  const value$12 = {
+  const getOrInsert = {
     get value() {
       return count;
     },
@@ -78,9 +78,9 @@ function main() {
       count = value;
     },
   };
-  value$12.value = (value$12.value + 1) | 0;
+  getOrInsert.value = (getOrInsert.value + 1) | 0;
   count ??= 9;
-  const value$13 = {
+  const value$10 = {
     get value() {
       return count;
     },
@@ -88,11 +88,11 @@ function main() {
       count = value;
     },
   };
-  value$13.value = (value$13.value + 1) | 0;
+  value$10.value = (value$10.value + 1) | 0;
   console.log(`${count == null ? "None" : `Some(${count})`}`);
   let total;
   total ??= 10;
-  const value$14 = {
+  const getOrInsertWith = {
     get value() {
       return total;
     },
@@ -100,7 +100,7 @@ function main() {
       total = value;
     },
   };
-  value$14.value = Math.imul(value$14.value, 2);
+  getOrInsertWith.value = Math.imul(getOrInsertWith.value, 2);
   let point;
   point ??= { x: 0 };
   point.x = (point.x + 3) | 0;
@@ -157,15 +157,15 @@ function main() {
 
   const good = { TAG: "Ok", _0: 1 };
   const bad = { TAG: "Err", _0: "no" };
-  const value$15 = good.TAG === "Err" ? good : { TAG: "Ok", _0: "y" };
-  const value$16 = bad.TAG === "Err" ? bad : { TAG: "Ok", _0: "y" };
+  const and = good.TAG === "Err" ? good : { TAG: "Ok", _0: "y" };
+  const value$11 = bad.TAG === "Err" ? bad : { TAG: "Ok", _0: "y" };
   console.log(
-    `${value$15.TAG === "Ok" ? `Ok(${$debugStr(value$15._0)})` : `Err(${$debugStr(value$15._0)})`} ${value$16.TAG === "Ok" ? `Ok(${$debugStr(value$16._0)})` : `Err(${$debugStr(value$16._0)})`}`,
+    `${and.TAG === "Ok" ? `Ok(${$debugStr(and._0)})` : `Err(${$debugStr(and._0)})`} ${value$11.TAG === "Ok" ? `Ok(${$debugStr(value$11._0)})` : `Err(${$debugStr(value$11._0)})`}`,
   );
-  const value$17 = good.TAG === "Ok" ? good : { TAG: "Ok", _0: 7 };
-  const value$18 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
+  const or = good.TAG === "Ok" ? good : { TAG: "Ok", _0: 7 };
+  const value$12 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
   console.log(
-    `${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${value$17._0})`} ${value$18.TAG === "Ok" ? `Ok(${value$18._0})` : `Err(${value$18._0})`}`,
+    `${or.TAG === "Ok" ? `Ok(${or._0})` : `Err(${or._0})`} ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${value$12._0})`}`,
   );
   const fallback = (e) => {
     if (e === "no") {
@@ -173,14 +173,14 @@ function main() {
     }
     return { TAG: "Err", _0: 1 };
   };
-  const value$19 = bad.TAG === "Ok" ? bad : fallback(bad._0);
-  console.log(`${value$19.TAG === "Ok" ? `Ok(${value$19._0})` : `Err(${value$19._0})`}`);
+  const value$13 = bad.TAG === "Ok" ? bad : fallback(bad._0);
+  console.log(`${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`);
   const nested = { TAG: "Ok", _0: { TAG: "Err", _0: "inner" } };
   const result = { TAG: "Ok", _0: { TAG: "Ok", _0: 3 } };
-  const value$20 = nested.TAG === "Ok" ? nested._0 : nested;
-  const value$21 = result.TAG === "Ok" ? result._0 : result;
+  const flatten = nested.TAG === "Ok" ? nested._0 : nested;
+  const value$14 = result.TAG === "Ok" ? result._0 : result;
   console.log(
-    `${value$20.TAG === "Ok" ? `Ok(${value$20._0})` : `Err(${$debugStr(value$20._0)})`} ${value$21.TAG === "Ok" ? `Ok(${value$21._0})` : `Err(${$debugStr(value$21._0)})`}`,
+    `${flatten.TAG === "Ok" ? `Ok(${flatten._0})` : `Err(${$debugStr(flatten._0)})`} ${value$14.TAG === "Ok" ? `Ok(${value$14._0})` : `Err(${$debugStr(value$14._0)})`}`,
   );
   const log = [];
   if (good.TAG === "Ok") {
@@ -216,16 +216,16 @@ function main() {
   );
   const listed = { TAG: "Ok", _0: 5 };
   const result$1 = { TAG: "Ok" };
-  const value$22 =
+  const value$15 =
     listed.TAG === "Ok" ? (listed._0 == null ? undefined : { TAG: "Ok", _0: listed._0 }) : listed;
-  const value$23 =
+  const value$16 =
     result$1.TAG === "Ok"
       ? result$1._0 == null
         ? undefined
         : { TAG: "Ok", _0: result$1._0 }
       : result$1;
   console.log(
-    `${value$22 == null ? "None" : `Some(${value$22.TAG === "Ok" ? `Ok(${value$22._0})` : `Err(${$debugStr(value$22._0)})`})`} ${value$23 == null ? "None" : `Some(${value$23.TAG === "Ok" ? `Ok(${value$23._0})` : `Err(${$debugStr(value$23._0)})`})`}`,
+    `${value$15 == null ? "None" : `Some(${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugStr(value$15._0)})`})`} ${value$16 == null ? "None" : `Some(${value$16.TAG === "Ok" ? `Ok(${value$16._0})` : `Err(${$debugStr(value$16._0)})`})`}`,
   );
   const pointRef = { TAG: "Ok", _0: { x: 1 } };
   const owned = $unwrapOk(pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef);

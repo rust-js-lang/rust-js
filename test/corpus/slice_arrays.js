@@ -20,10 +20,10 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
   const items = $slice(v, 0, 3);
-  const value = items.length === 3 ? items : undefined;
-  const value$1 = v.length === 3 ? v : undefined;
+  const array = items.length === 3 ? items : undefined;
+  const value = v.length === 3 ? v : undefined;
   console.log(
-    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`,
+    `${array == null ? "None" : `Some([${array.join(", ")}])`} ${value == null ? "None" : `Some([${value.join(", ")}])`}`,
   );
   for (const [a, b] of $windows(v, 2)) {
     $print(`${Math.imul(a, b)} `);
@@ -54,9 +54,9 @@ function main() {
   chunks$2[$at(chunks$2, 1)] = [9, 9, 9];
   $swap(chunks$2, 0, 1);
   const kept = $index(chunks$2, 0).slice();
-  const length$1 = chunks$2.length;
-  if (0 >= length$1) {
-    throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
+  const value$1 = chunks$2.length;
+  if (0 >= value$1) {
+    throw new Error(`index out of bounds: the len is ${value$1} but the index is 0`);
   }
   chunks$2[0][0] = 8;
   $print(`[${kept.join(", ")}] `);

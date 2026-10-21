@@ -90,10 +90,10 @@ function main() {
             ]);
             const km = $extendMap(new $KeyMap(), tmp, false, loudDrop_drop, keyDrop_drop);
             const size = s.size;
-            const size$1 = hs.size;
-            const size$2 = km.size;
+            const value = hs.size;
+            const value$1 = km.size;
             try {
-              console.log(`${size} ${size$1} ${size$2}`);
+              console.log(`${size} ${value} ${value$1}`);
             } finally {
               for (const [key, value] of km) {
                 keyDrop_drop(key);

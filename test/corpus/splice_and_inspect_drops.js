@@ -13,9 +13,28 @@ function loudDrop_drop(loud) {
 function main() {
   const v = [[1], [2], [3]];
   const value = [[4]];
+  let splice;
+  try {
+    splice = $iter($splice(v, 0, 2, value));
+  } catch (error) {
+    for (const item of v) {
+      loudDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    for (const item of splice) {
+      loudDrop_drop(item);
+    }
+  } catch (error) {
+    for (const item of v) {
+      loudDrop_drop(item);
+    }
+    throw error;
+  }
   let tmp;
   try {
-    tmp = $iter($splice(v, 0, 2, value));
+    tmp = v.map((l) => l[0]);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -23,26 +42,7 @@ function main() {
     throw error;
   }
   try {
-    for (const item of tmp) {
-      loudDrop_drop(item);
-    }
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = v.map((l) => l[0]);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$1.join(", ")}]`);
+    console.log(`[${tmp.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -50,9 +50,9 @@ function main() {
     throw error;
   }
   const value$1 = [[5], [6]];
-  let tmp$2;
+  let tmp$1;
   try {
-    tmp$2 = $iter($splice(v, 1, v.length, value$1));
+    tmp$1 = $iter($splice(v, 1, v.length, value$1));
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -61,7 +61,7 @@ function main() {
   }
   let removed;
   try {
-    removed = tmp$2.toArray();
+    removed = tmp$1.toArray();
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -79,14 +79,14 @@ function main() {
     }
     const it = $iter($splice(v, 0, 1, []));
     try {
-      const tmp = $next(it);
-      const tmp$1 = (l) => {
+      const next = $next(it);
+      const tmp = (l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       };
-      const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-      console.log(`${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+      const tmp$1 = next ? tmp(next) : undefined;
+      console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     } finally {
       for (const item of it) {
         loudDrop_drop(item);
@@ -94,37 +94,37 @@ function main() {
     }
     const tmp = v.map((l) => l[0]);
     console.log(`[${tmp.join(", ")}]`);
-    const value = [7];
-    const value$1 = (l) => {
+    const loud = [7];
+    const value = (l) => {
       console.log(`saw ${l[0]}`);
     };
-    if (value != null) {
-      value$1(value);
+    if (loud != null) {
+      value(loud);
     }
-    const o = value;
-    const value$2 = (l) => {
+    const o = loud;
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$1 = o ? value$2(o) : undefined;
+    const tmp$1 = o ? value$1(o) : undefined;
     console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     const r = { TAG: "Ok", _0: [8] };
-    const value$3 = (l) => {
+    const value$2 = (l) => {
       console.log(`ok ${l[0]}`);
     };
     if (r.TAG === "Ok") {
-      value$3(r._0);
+      value$2(r._0);
     }
-    const value$4 = (e) => {
+    const value$3 = (e) => {
       console.log(`err ${e}`);
     };
     if (r.TAG === "Err") {
-      value$4(r._0);
+      value$3(r._0);
     }
-    const value$5 = r.TAG === "Ok";
+    const value$4 = r.TAG === "Ok";
     try {
-      console.log(`${value$5}`);
+      console.log(`${value$4}`);
     } finally {
       if (r.TAG === "Ok") {
         loudDrop_drop(r._0);

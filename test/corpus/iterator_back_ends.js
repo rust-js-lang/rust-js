@@ -41,17 +41,17 @@ function main() {
   const it = $iter(v);
   const back = $nextBack(it);
   const front = $next(it);
-  const value = it.end - it.at;
+  const len = it.end - it.at;
   const arg = it.items.slice(it.at, it.end);
   console.log(
-    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${value} [${arg.join(", ")}]`,
+    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${len} [${arg.join(", ")}]`,
   );
 
   const range = { start: 0, end: 5 };
-  const value$1 = $rangeNextBack(range);
-  const value$2 = $rangeNext(range);
+  const nextBack = $rangeNextBack(range);
+  const value = $rangeNext(range);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 
   const p = iterator_peekable($iter(v), { next: $next });

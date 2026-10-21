@@ -41,25 +41,25 @@ function main() {
   } finally {
     $unborrow(receiver);
   }
-  const receiver$1 = $borrowMut(counter, true);
+  const value = $borrowMut(counter, true);
   try {
-    receiver$1.impl.bump(receiver$1);
+    value.impl.bump(value);
   } finally {
-    $unborrow(receiver$1);
+    $unborrow(value);
   }
-  const receiver$2 = $borrow(named, true);
+  const value$1 = $borrow(named, true);
   try {
-    const tmp = receiver$2.impl.name(receiver$2.value);
+    const tmp = value$1.impl.name(value$1.value);
     console.log(`${tmp}`);
   } finally {
-    $unborrow(receiver$2);
+    $unborrow(value$1);
   }
-  const receiver$3 = $borrow(counter, true);
+  const value$2 = $borrow(counter, true);
   try {
-    const tmp = receiver$3.impl.Named().name(receiver$3.value);
+    const tmp = value$2.impl.Named().name(value$2.value);
     console.log(`${tmp}`);
   } finally {
-    $unborrow(receiver$3);
+    $unborrow(value$2);
   }
 }
 //# sourceMappingURL=case.js.map

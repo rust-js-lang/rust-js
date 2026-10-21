@@ -92,21 +92,21 @@ function main() {
       { len: (iterator) => iterator.len() },
     );
     console.log(`[${tmp$1.join(", ")}]`);
-    const tmp$2 = last_square(5);
+    const lastSquare = last_square(5);
     const value$3 = last_square(1);
     console.log(
-      `${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+      `${lastSquare == null ? "None" : `Some(${lastSquare})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
     );
     const value$4 = [1, 2, 3];
     const inner = $iter(value$4);
-    const tmp$3 = Counted.doubled_len(
+    const doubledLen = Counted.doubled_len(
       { inner },
       { next: $next },
       { len: (iterator) => iterator.len() },
       { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     );
     console.log(
-      `${tmp$3} ${Counted.doubled_len(
+      `${doubledLen} ${Counted.doubled_len(
         { inner: { start: 2, end: 7 } },
         { next: $rangeNext },
         { len: $rangeLen },

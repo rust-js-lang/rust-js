@@ -141,10 +141,10 @@ function main() {
       true,
     ),
   );
+  const next = $next(firsts);
   const value = $next(firsts);
-  const value$1 = $next(firsts);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(`{${Array.from($sortedKeys(keys, $cmp)).join(", ")}}`);
 }

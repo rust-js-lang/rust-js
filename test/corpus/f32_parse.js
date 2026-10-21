@@ -7,11 +7,11 @@ export function entry() {
 }
 
 function show(s) {
-  const value = $parseF32(s);
-  if (value.TAG === "Ok") {
-    console.log(`${$debugStr(s)} -> ${$displayF32(value._0)} ${$debugF32(value._0)}`);
+  const parse = $parseF32(s);
+  if (parse.TAG === "Ok") {
+    console.log(`${$debugStr(s)} -> ${$displayF32(parse._0)} ${$debugF32(parse._0)}`);
   } else {
-    console.log(`${$debugStr(s)} -> error: ${value._0}`);
+    console.log(`${$debugStr(s)} -> error: ${parse._0}`);
   }
 }
 

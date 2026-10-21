@@ -62,18 +62,18 @@ export function spawned() {
   const log = { value: [] };
   const taskLog = log;
   (async () => {
-    const value = $borrowMut(taskLog, true);
+    const borrowMut = $borrowMut(taskLog, true);
     try {
-      value.value.push(1);
+      borrowMut.value.push(1);
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
     await setTimeout(0, 0);
-    const value$1 = $borrowMut(taskLog, true);
+    const value = $borrowMut(taskLog, true);
     try {
-      value$1.value.push(3);
+      value.value.push(3);
     } finally {
-      $unborrow(value$1);
+      $unborrow(value);
     }
   })();
   const value = $borrowMut(log, true);
@@ -93,18 +93,18 @@ export function started() {
   const log = { value: [] };
   const taskLog = log;
   const loading = async () => {
-    const value = $borrowMut(taskLog, true);
+    const borrowMut = $borrowMut(taskLog, true);
     try {
-      value.value.push(1);
+      borrowMut.value.push(1);
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
     await setTimeout(0, 0);
-    const value$1 = $borrowMut(taskLog, true);
+    const value = $borrowMut(taskLog, true);
     try {
-      value$1.value.push(3);
+      value.value.push(3);
     } finally {
-      $unborrow(value$1);
+      $unborrow(value);
     }
   };
   loading();
@@ -143,18 +143,18 @@ export function listen_until_aborted() {
   target.addEventListener(
     "ping",
     () => {
-      const value = $borrowMut(counted, true);
-      value.value = (value.value + 1) >>> 0;
-      $unborrow(value);
+      const borrowMut = $borrowMut(counted, true);
+      borrowMut.value = (borrowMut.value + 1) >>> 0;
+      $unborrow(borrowMut);
     },
     options,
   );
   target.dispatchEvent(new Event("ping"));
   controller.abort();
   target.dispatchEvent(new Event("ping"));
-  const value = $borrow(count, true);
-  $unborrow(value);
-  return value.value;
+  const borrow = $borrow(count, true);
+  $unborrow(borrow);
+  return borrow.value;
 }
 
 /** Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer. */

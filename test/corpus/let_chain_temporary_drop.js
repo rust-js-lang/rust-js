@@ -16,22 +16,22 @@ export const D = {
 };
 
 export function f(b) {
-  const value = [1];
+  const d = [1];
   let tmp;
   try {
-    tmp = D.n(value) === 1;
+    tmp = D.n(d) === 1;
   } catch (error) {
-    dDrop_drop(value);
+    dDrop_drop(d);
     throw error;
   }
   if (tmp) {
-    dDrop_drop(value);
+    dDrop_drop(d);
     if (b) {
       console.log("then");
       return 1;
     }
   } else {
-    dDrop_drop(value);
+    dDrop_drop(d);
   }
   console.log("else");
   return 0;

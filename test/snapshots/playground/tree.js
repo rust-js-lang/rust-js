@@ -8,19 +8,19 @@ export function build_tree(paths) {
   const tree = [];
   for (const path of paths) {
     let folder = tree;
-    const value = $rsplitOnce(path, "/");
+    const rsplitOnce = $rsplitOnce(path, "/");
     let name;
-    if (value) {
-      const folders = value[0];
-      const name$1 = value[1];
+    if (rsplitOnce) {
+      const folders = rsplitOnce[0];
+      const name$1 = rsplitOnce[1];
       for (const part of folders.split("/")) {
         if (!folder.some(([n]) => n === part)) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
-        const value = folder.find(([n]) => n === part);
-        if (value) {
-          if (value[1].TAG === "Folder") {
-            const children = value[1]._0;
+        const find = folder.find(([n]) => n === part);
+        if (find) {
+          if (find[1].TAG === "Folder") {
+            const children = find[1]._0;
             folder = children;
             continue;
           }

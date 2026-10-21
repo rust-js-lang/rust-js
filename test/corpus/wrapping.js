@@ -24,11 +24,11 @@ function main() {
   );
   console.log("-56 4294967295 44");
   console.log("2147483648 -2147483648 -4");
-  const value = $checked(250 + 10, 0, 255);
-  const value$1 = $checked(5 - 6, 0, 4294967295);
-  const value$2 = $checked(2147483647 * 2, -2147483648, 2147483647);
+  const checkedAdd = $checked(250 + 10, 0, 255);
+  const checkedSub = $checked(5 - 6, 0, 4294967295);
+  const value = $checked(2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
     `${Math.min(250 + 10, 255)} ${Math.max(0 - 1, 0)} ${Math.min(Math.max(-2147483648 - 1, -2147483648), 2147483647)}`,

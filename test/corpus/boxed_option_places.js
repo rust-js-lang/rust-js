@@ -21,18 +21,18 @@ const Product = {
 
 function main() {
   const p = { a: $iter([1, 2]) };
+  const current = Product.current(p, { next: $next }, { clone: (value) => value });
   const value = Product.current(p, { next: $next }, { clone: (value) => value });
-  const value$1 = Product.current(p, { next: $next }, { clone: (value) => value });
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${current == null ? "None" : `Some(${current})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   Product.advance(p, { clone: (value) => value });
-  const value$2 = Product.current(p, { next: $next }, { clone: (value) => value });
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$1 = Product.current(p, { next: $next }, { clone: (value) => value });
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   Product.advance(p, { clone: (value) => value });
-  const value$3 = Product.current(p, { next: $next }, { clone: (value) => value });
+  const value$2 = Product.current(p, { next: $next }, { clone: (value) => value });
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${p.a_cur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.a_cur))})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${p.a_cur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.a_cur))})`}`,
   );
   let o = $some(undefined);
   o = 4;

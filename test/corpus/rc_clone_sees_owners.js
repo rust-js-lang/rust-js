@@ -104,13 +104,13 @@ function main() {
           console.log(`made ${lone.value[0]}`);
           const shared = { value: [5], strong: 1, weak: 0 };
           const value$1 = (kept) => {
-            const value = $rcClone(shared);
+            const lone = $rcClone(shared);
             try {
               if (kept.value != null) {
                 $rcDrop(kept.value, loneDrop_drop);
               }
             } finally {
-              kept.value = value;
+              kept.value = lone;
             }
           };
           try {

@@ -161,10 +161,10 @@ function main() {
   console.log(`${first_big([9, 2, 3])} ${first_big([1, 2])}`);
   console.log(`${once([9, 9])} ${once([1, 0])} ${once([])}`);
   console.log(`${shadowed([1, 0])} ${shadowed([3, 0])} ${shadowed([])}`);
-  const value = first_large([9, 1, 2]);
-  const value$1 = first_large([1]);
+  const firstLarge = first_large([9, 1, 2]);
+  const value = first_large([1]);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${firstLarge == null ? "None" : `Some(${firstLarge})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(`${stopped([0, 1, 2])} ${stopped([9, 1])} ${stopped([])}`);
   console.log(

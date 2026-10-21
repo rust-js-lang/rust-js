@@ -131,44 +131,44 @@ function fused_of(i, IIntoIterator, IIntoIterFused) {
 }
 
 function main() {
-  const value = { f: iterator_fuse([3], { next: steadyIterator_next }, true) };
+  const held = { f: iterator_fuse([3], { next: steadyIterator_next }, true) };
   console.log(
-    `${Held.drained_back(value, { next_back: steadyDoubleEndedIterator_next_back }, steadyDebug(), true)}`,
+    `${Held.drained_back(held, { next_back: steadyDoubleEndedIterator_next_back }, steadyDebug(), true)}`,
   );
+  const fusedOf = fused_of(
+    [3],
+    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
+    true,
+  );
+  console.log(
+    `${Held.drained_back(fusedOf, { next_back: steadyDoubleEndedIterator_next_back }, steadyDebug(), true)}`,
+  );
+  const value = fused_of(
+    [3],
+    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
+    true,
+  );
+  console.log(`${Held.drained_front(value, steadyDebug())}`);
   const value$1 = fused_of(
-    [3],
-    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
-    true,
-  );
-  console.log(
-    `${Held.drained_back(value$1, { next_back: steadyDoubleEndedIterator_next_back }, steadyDebug(), true)}`,
-  );
-  const value$2 = fused_of(
-    [3],
-    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
-    true,
-  );
-  console.log(`${Held.drained_front(value$2, steadyDebug())}`);
-  const value$3 = fused_of(
     [0],
     { into_iter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },
     false,
   );
   console.log(
-    `${Held.drained_back(value$3, { next_back: flipDoubleEndedIterator_next_back }, flipDebug(), false)}`,
+    `${Held.drained_back(value$1, { next_back: flipDoubleEndedIterator_next_back }, flipDebug(), false)}`,
   );
-  const value$4 = drained([4], { next: steadyIterator_next }, steadyDebug(), true);
-  console.log(`(${value$4[0]}, ${$debugStr(value$4[1])})`);
-  const value$5 = drained([0], { next: flipIterator_next }, flipDebug(), false);
-  console.log(`(${value$5[0]}, ${$debugStr(value$5[1])})`);
-  const value$6 = drained(
+  const value$2 = drained([4], { next: steadyIterator_next }, steadyDebug(), true);
+  console.log(`(${value$2[0]}, ${$debugStr(value$2[1])})`);
+  const value$3 = drained([0], { next: flipIterator_next }, flipDebug(), false);
+  console.log(`(${value$3[0]}, ${$debugStr(value$3[1])})`);
+  const value$4 = drained(
     { start: 1, end: 3 },
     { next: $rangeNext },
     { fmt: (value) => `${value.start}..${value.end}` },
     true,
   );
-  console.log(`(${value$6[0]}, ${$debugStr(value$6[1])})`);
-  const value$7 = ends(
+  console.log(`(${value$4[0]}, ${$debugStr(value$4[1])})`);
+  const value$5 = ends(
     [4],
     { next: steadyIterator_next },
     { next_back: steadyDoubleEndedIterator_next_back },
@@ -177,9 +177,9 @@ function main() {
     true,
   );
   console.log(
-    `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1]}, [${value$7[2].join(", ")}], ${value$7[3]})`,
+    `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1]}, [${value$5[2].join(", ")}], ${value$5[3]})`,
   );
-  const value$8 = ends(
+  const value$6 = ends(
     { start: 1, end: 4 },
     { next: $rangeNext },
     { next_back: $rangeNextBack },
@@ -188,26 +188,26 @@ function main() {
     true,
   );
   console.log(
-    `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1]}, [${value$8[2].join(", ")}], ${value$8[3]})`,
+    `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1]}, [${value$6[2].join(", ")}], ${value$6[3]})`,
   );
   const f = iterator_fuse([0], { next: flipIterator_next }, false);
-  const value$9 = $next(f);
-  const value$10 = $next(f);
-  const value$11 = $next(f);
+  const next = $next(f);
+  const value$7 = $next(f);
+  const value$8 = $next(f);
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
   );
   const s = iterator_fuse($iter([1, 2]), { next: $next }, true);
-  const value$12 = $sizeHint(s);
-  const value$13 = $next(s);
-  const value$14 = $next(s);
+  const sizeHint = $sizeHint(s);
+  const value$9 = $next(s);
+  const value$10 = $next(s);
   console.log(
-    `(${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`}) ${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`} ${fuseDebug_fmt(s, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${fuseDebug_fmt(s, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
   );
-  const value$15 = $next(s);
-  const value$16 = $sizeHint(s);
+  const value$11 = $next(s);
+  const value$12 = $sizeHint(s);
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15})`} (${value$16[0]}, ${value$16[1] == null ? "None" : `Some(${value$16[1]})`}) ${fuseExactSizeIterator_len(s, { len: (iterator) => iterator.len() })}`,
+    `${value$11 == null ? "None" : `Some(${value$11})`} (${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`}) ${fuseExactSizeIterator_len(s, { len: (iterator) => iterator.len() })}`,
   );
 }
 //# sourceMappingURL=case.js.map

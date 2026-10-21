@@ -68,8 +68,8 @@ function reset(g, to, GGet) {
 }
 
 function bump(g, GGet) {
-  const value = GGet.get(g);
-  value.value = (value.value + 1) >>> 0;
+  const get = GGet.get(g);
+  get.value = (get.value + 1) >>> 0;
 }
 
 function main() {

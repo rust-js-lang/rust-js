@@ -27,9 +27,9 @@ const Item = {
 
 function main() {
   const owned = Item.to_owned({ TAG: "Literal", _0: "abc" });
-  const value = Item.text(owned);
+  const text = Item.text(owned);
   const arg = $byteLen(Item.text(owned));
-  console.log(`${itemDebug_fmt(owned)} ${value} ${arg}`);
+  console.log(`${itemDebug_fmt(owned)} ${text} ${arg}`);
   console.log(`${$eq(owned, { TAG: "OwnedLiteral", _0: "abc" })}`);
   const fromString = "héllo";
   const into = "into";

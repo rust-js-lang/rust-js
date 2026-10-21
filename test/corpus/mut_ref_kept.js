@@ -62,8 +62,8 @@ function main() {
   );
 
   const c = { n: 1 };
-  const value$1 = Counter.get_mut(c);
-  value$1.value = (value$1.value + 41) | 0;
+  const getMut = Counter.get_mut(c);
+  getMut.value = (getMut.value + 41) | 0;
   const n = Counter.get_mut(c);
   n.value = Math.imul(n.value, 2);
   console.log(`${c.n}`);

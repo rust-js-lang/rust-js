@@ -24,14 +24,14 @@ const Restart = {
 };
 
 function restartIterator_next(restart, IIterator, IClone) {
-  const value = IIterator.next(restart.iter);
+  const next = IIterator.next(restart.iter);
   const { iter: captured, orig: captured$1 } = restart;
   const fallback = () => {
     const orig = $take(captured$1, IClone.clone(captured));
     $assign(captured, orig);
     return IIterator.next(captured);
   };
-  return value ?? fallback();
+  return next ?? fallback();
 }
 
 function main() {

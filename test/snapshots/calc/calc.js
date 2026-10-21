@@ -72,8 +72,8 @@ export function to_rpn(tokens) {
         out.push(t);
       } else if (t.TAG === "Op") {
         while (true) {
-          const value = stack.at(-1);
-          if (value == null || value.TAG !== "Op" || !(prec(value._0) >= prec(t._0))) {
+          const last = stack.at(-1);
+          if (last == null || last.TAG !== "Op" || !(prec(last._0) >= prec(t._0))) {
             break;
           }
           out.push($unwrap(stack.pop()));
@@ -203,14 +203,14 @@ export function report() {
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
     .join(", ")}]\n`;
   out += `${caesar("Hello, World!", 3)} ${caesar(caesar("abcxyz", 13), 13)}\n`;
-  const value = first_dup("abcdbe");
-  const value$1 = first_dup("xyz");
-  out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1], "'")}))`}\n`;
+  const firstDup = first_dup("abcdbe");
+  const value = first_dup("xyz");
+  out += `${firstDup == null ? "None" : `Some((${firstDup[0]}, ${$debugStr(firstDup[1], "'")}))`} ${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`}\n`;
   const s = "hello world";
   const length = s.split("o").length;
-  const value$2 = $splitBy(s, (c) => c === "l");
-  const value$3 = Array.from(s).toReversed().join("");
-  out += `${length} [${value$2.map((item) => $debugStr(item)).join(", ")}] ${value$3} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
+  const collect = $splitBy(s, (c) => c === "l");
+  const value$1 = Array.from(s).toReversed().join("");
+  out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$1} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
   return out;
 }
 //# sourceMappingURL=calc.js.map

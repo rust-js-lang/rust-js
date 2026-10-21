@@ -139,11 +139,11 @@ function main() {
   const r$1 = $lockRead(text, true);
   const value$10 = $byteLen(r$1.value);
   try {
-    const tmp = $borrow(cell, true);
+    const borrow = $borrow(cell, true);
     try {
-      console.log(`${r$1.value} ${value$10} ${$displayF64(tmp.value)}`);
+      console.log(`${r$1.value} ${value$10} ${$displayF64(borrow.value)}`);
     } finally {
-      $unborrow(tmp);
+      $unborrow(borrow);
     }
   } finally {
     $unborrow(r$1);

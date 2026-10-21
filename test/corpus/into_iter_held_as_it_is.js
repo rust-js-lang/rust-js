@@ -12,14 +12,14 @@ function twice(items, TIntoIterator, TIntoIterClone) {
 }
 
 function twiceIterator_next(twice, IIterator, IClone) {
-  const value = IIterator.next(twice.iter);
+  const next = IIterator.next(twice.iter);
   const captured = twice.iter;
   const fallback = () => {
     const value = IClone.clone(twice.orig);
     $assign(captured, value);
     return IIterator.next(captured);
   };
-  return value ?? fallback();
+  return next ?? fallback();
 }
 
 function twices(all, HItemIntoIterator, HItemIntoIterClone) {

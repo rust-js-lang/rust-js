@@ -71,14 +71,14 @@ function bufferIterator_next(buffer, TCollect) {
 function main() {
   const words = Buffer.new(["a"], _A__A_Collect());
   console.log(`${Buffer.held(words, _A__A_Collect())}`);
-  const value = bufferIterator_next(words, _A__A_Collect());
+  const next = bufferIterator_next(words, _A__A_Collect());
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${Buffer.held(words, _A__A_Collect())}`,
+    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${Buffer.held(words, _A__A_Collect())}`,
   );
+  const value = bufferIterator_next(words, _A__A_Collect());
   const value$1 = bufferIterator_next(words, _A__A_Collect());
-  const value$2 = bufferIterator_next(words, _A__A_Collect());
   console.log(
-    `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
+    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   const numbers = $iterator(
     Buffer.new([4, 5, 6], _A__A_Collect()),

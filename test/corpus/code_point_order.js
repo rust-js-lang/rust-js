@@ -24,9 +24,9 @@ function main() {
   const words = ["b", bang, crab, "�", "a", "x", "🦀🦀"];
   const value = $cmp(crab, bang) < 0;
   const value$1 = $cmp(crab, bang) > 0;
-  const value$2 = $cmp(crab, bang);
+  const cmp = $cmp(crab, bang);
   console.log(
-    `${value} ${value$1} ${["Less", "Equal", "Greater"][value$2 + 1]} ${((value) =>
+    `${value} ${value$1} ${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>
       value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
       $cmp(crab, bang),
     )}`,
@@ -40,15 +40,15 @@ function main() {
   const key = (w) => w;
   byKey.sort((a, b) => $cmp(key(a), key(b)));
   console.log(`[${byKey.map((item) => $debugStr(item)).join(", ")}]`);
-  const value$3 = $maxBy(words, $cmp);
-  const value$4 = $minBy(words, $cmp);
+  const max = $maxBy(words, $cmp);
+  const value$2 = $minBy(words, $cmp);
   console.log(
-    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
+    `${max == null ? "None" : `Some(${$debugStr(max)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
   );
-  const value$5 = $binarySearchBy(sorted, (each) => $cmp(each, crab));
-  const value$6 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
+  const binarySearch = $binarySearchBy(sorted, (each) => $cmp(each, crab));
+  const value$3 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${value$6._0})`}`,
+    `${binarySearch.TAG === "Ok" ? `Ok(${binarySearch._0})` : `Err(${binarySearch._0})`} ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
   );
 
   const set = new Set(words);
@@ -78,11 +78,11 @@ function main() {
 
   // Chars, and their ranges and patterns.
   const c = "🦀";
-  const value$7 = $cmp(c, "！") > 0;
-  const value$8 = $cmp(c, "�");
+  const value$4 = $cmp(c, "！") > 0;
+  const value$5 = $cmp(c, "�");
   console.log(
-    `${value$7} ${
-      ["Less", "Equal", "Greater"][value$8 + 1]
+    `${value$4} ${
+      ["Less", "Equal", "Greater"][value$5 + 1]
     } ${$cmp("", c) <= 0 && $cmp(c, "￿") <= 0}`,
   );
   console.log(`${"a" <= c && $cmp(c, "￿") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);

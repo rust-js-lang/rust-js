@@ -343,7 +343,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
   // A closure of an `async` block, an async arrow.
-  expect(js).toContain("const loading = async () => {\n    const value = $borrowMut(taskLog, true);");
+  expect(js).toContain("const loading = async () => {\n    const borrowMut = $borrowMut(taskLog, true);");
   // A future in a variable is the promise; `.await` on it is `await`.
   expect(js).toContain("const first = setTimeout(5, 1);");
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");
@@ -463,7 +463,7 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  w.sort((a, b) => $cmp(key(a), key(b)));");
   // `then_with` is `||`: `Equal` is 0.
   expect(js).toContain("  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));");
-  expect(js).toContain("  if (value === -1) {");
+  expect(js).toContain("  if (cmp === -1) {");
 });
 
 // ADR 0035: JS that throws, as a `Result`; and `?`.
@@ -611,7 +611,7 @@ test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(decoded).toEqual({ TAG: "Ok", _0: "a b&ü" });
 
   const js = await Bun.file(join(target, "throws.js")).text();
-  expect(js).toContain("  const value = $try(() => JSON.parse(json));");
+  expect(js).toContain("  const parseNumbers = $try(() => JSON.parse(json));");
   expect(js).toContain('  const result = $try(() => JSON.parse(json));\n  if (result.TAG === "Err") {\n    return result;\n  }');
   expect(js).toContain('await $settle(Promise.reject("no"))');
   // A web API that throws where the page may not keep data, an `Err`
@@ -709,7 +709,7 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
   // Through a reference, with no copy: the reference is the value.
   expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  }\n  return (sum(t._0) + sum(t._1)) | 0;");
   // `Result` is ReScript's `result`.
-  expect(js).toContain("  return value.TAG === \"Ok\" ? value._0 : fallback;");
+  expect(js).toContain("  return checkedDiv.TAG === \"Ok\" ? checkedDiv._0 : fallback;");
 });
 
 // ADR 0031: a `const` is the value rustc computed, under its own name.
@@ -1066,7 +1066,7 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
 test("the calculator's JS is what a person would write", async () => {
   const js = await Bun.file(join(target, "calc.js")).text();
   expect(js).toContain("for (const [i, c] of Array.from(s).entries()) {");
-  expect(js).toContain("const value = first_dup(\"abcdbe\");");
+  expect(js).toContain("const firstDup = first_dup(\"abcdbe\");");
   expect(js).toContain("`Some((${value[0]}, ${$debugStr(value[1], \"'\")}))`");
   expect(js).toContain('$splitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
   // `?` from a `&str` error to a `String` one: the same string, returned as it is.
@@ -1081,7 +1081,7 @@ test("numbers are Math's, operators call their impl, and vec![x; n] fills", asyn
   const js = await Bun.file(join(target, "numbers.js")).text();
   expect(js).toContain("return Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);");
   expect(js).toContain("vec2Add_add(");
-  expect(js).toContain("  const value = Math.floor(x);\n  const value$1 = Math.ceil(x);\n  const value$2 = $round(x);");
+  expect(js).toContain("  const floor = Math.floor(x);\n  const ceil = Math.ceil(x);\n  const round = $round(x);");
   expect(js).toContain("$checked(b - 10, 0, 4294967295)");
   expect(js).toContain("${Math.max(b - 100, 0)}");
   // Each row made again; a struct cloned, since one is changed later.

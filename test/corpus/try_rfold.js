@@ -25,10 +25,10 @@ function summed_back(it) {
 }
 
 function main() {
-  const value = summed_back($iter([1, 2, 3]));
-  const value$1 = summed_back($iter([1, -2, 3]));
+  const summedBack = summed_back($iter([1, 2, 3]));
+  const value = summed_back($iter([1, -2, 3]));
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`,
+    `${summedBack.TAG === "Ok" ? `Ok(${summedBack._0})` : `Err(${$debugStr(summedBack._0)})`} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`}`,
   );
   const it = $iter([5, 6, 7, 8]);
   const stopped = $tryFoldSome($rev(it), 0, (acc, x) => {

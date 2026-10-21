@@ -203,7 +203,7 @@ function main() {
       true,
     )}`,
   );
-  const value$2 = $strSplitAtMut(
+  const splitAtMutChecked = $strSplitAtMut(
     {
       get value() {
         return pair;
@@ -215,8 +215,8 @@ function main() {
     4,
     true,
   );
-  if (value$2) {
-    const rest = value$2[1];
+  if (splitAtMutChecked) {
+    const rest = splitAtMutChecked[1];
     rest.value = $asciiCase(rest.value, false);
   }
   console.log(`${pair}`);
@@ -246,9 +246,9 @@ function main() {
 
   // A `&mut str` of bytes, written through to them.
   const bytes = [104, 101, 108, 108, 111];
-  const value$3 = $fromUtf8Mut(bytes);
-  if (value$3.TAG === "Ok") {
-    const text = value$3._0;
+  const value$2 = $fromUtf8Mut(bytes);
+  if (value$2.TAG === "Ok") {
+    const text = value$2._0;
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }

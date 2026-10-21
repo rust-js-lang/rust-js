@@ -94,19 +94,19 @@ function main() {
     `(${value$4[0]}, ${value$4[1]}, ${value$4[2] == null ? "None" : `Some(${value$4[2]})`}, ${value$4[3] == null ? "None" : `Some(${value$4[3]})`})`,
   );
   const p = iterator_peekable($iter(v.slice()), { next: $next });
+  const nextIfEq = $nextIf(p, (item) => item === 1);
   const value$5 = $nextIf(p, (item) => item === 1);
-  const value$6 = $nextIf(p, (item) => item === 1);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `${nextIfEq == null ? "None" : `Some(${nextIfEq})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   console.log(
     `${peekableDebug_fmt(p, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` }, { fmt: (value) => String(value) })}`,
   );
   const r = iterator_peekable({ start: 5, end: 8 }, { next: $rangeNext });
-  const value$7 = $next(r);
-  const value$8 = peekableDoubleEndedIterator_next_back(r, { next_back: $rangeNextBack });
+  const next = $next(r);
+  const value$6 = peekableDoubleEndedIterator_next_back(r, { next_back: $rangeNextBack });
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, { fmt: (value) => String(value) })}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, { fmt: (value) => String(value) })}`,
   );
   console.log(`${r.reduce((n) => n + 1, 0)}`);
 }

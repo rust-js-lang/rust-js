@@ -37,22 +37,22 @@ function main() {
         const value$1 = o.value;
         try {
           console.log(`${!value$1}`);
-          const tmp = $onceSet(o, [4]);
-          if (tmp.TAG === "Err") {
-            loudDrop_drop(tmp._0);
+          const set = $onceSet(o, [4]);
+          if (set.TAG === "Err") {
+            loudDrop_drop(set._0);
           }
           const again = $onceSet(o, [5]);
-          const value = again.TAG === "Err" ? again._0 : undefined;
-          const value$2 = (l) => {
+          const loud = again.TAG === "Err" ? again._0 : undefined;
+          const value = (l) => {
             const result = l[0];
             loudDrop_drop(l);
             return result;
           };
-          const tmp$1 = value ? value$2(value) : undefined;
-          console.log(`again ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+          const tmp = loud ? value(loud) : undefined;
+          console.log(`again ${tmp == null ? "None" : `Some(${tmp})`}`);
           const l = o.value;
-          const value$3 = l ? l[0] : undefined;
-          console.log(`got ${value$3 == null ? "None" : `Some(${value$3})`}`);
+          const value$2 = l ? l[0] : undefined;
+          console.log(`got ${value$2 == null ? "None" : `Some(${value$2})`}`);
           const lazy = {};
           try {
             console.log(`init ${$getOrInit(lazy, () => [6])[0]}`);
@@ -62,14 +62,14 @@ function main() {
               if (tmp.TAG === "Err") {
                 loudDrop_drop(tmp._0);
               }
-              const tmp$1 = $cellReplace(t);
-              const tmp$2 = (l) => {
+              const take = $cellReplace(t);
+              const tmp$1 = (l) => {
                 const result = l[0];
                 loudDrop_drop(l);
                 return result;
               };
-              const tmp$3 = tmp$1 ? tmp$2(tmp$1) : undefined;
-              console.log(`took ${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
+              const tmp$2 = take ? tmp$1(take) : undefined;
+              console.log(`took ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
               console.log("end");
             } finally {
               if (t.value != null) {

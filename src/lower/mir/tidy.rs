@@ -19,7 +19,7 @@ mod loops;
 mod unwinds;
 mod values;
 
-pub(super) use self::bindings::{HELD_ARG, temporary, unsuffixed_params, user_name};
+pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{bindings::*, branches::*, destructuring::*, jumps::*, loops::*, values::*};
@@ -28,8 +28,13 @@ use self::{bindings::*, branches::*, destructuring::*, jumps::*, loops::*, value
 /// named, its drop flags too, and then, its temporaries named alike, each
 /// run of statements a value's drop ends one `try { .. } finally { .. }`
 /// (ADR 0437), what a `try` declared before it, `let x;`, where it's made.
-pub(super) fn named(params: &[js::Pattern], body: &mut Vec<Stmt>, flags: &HashSet<String>) {
-    bindings::readable_temporaries(params, body);
+pub(super) fn named(
+    params: &[js::Pattern],
+    body: &mut Vec<Stmt>,
+    flags: &HashSet<String>,
+    suggested: &HashMap<String, Vec<String>>,
+) {
+    bindings::readable_temporaries(params, body, suggested);
     flags::named_flags(body, flags);
     js::statement_lists(body, &mut unwinds::scoped_drops);
     bindings::declarations(body);

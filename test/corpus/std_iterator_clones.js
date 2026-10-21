@@ -42,9 +42,9 @@ function main() {
   const indices = $iter($charIndices(text));
   $next(indices);
   const copy = $iter(indices.items.slice(indices.at, indices.end));
-  const value = $nextBack(indices);
+  const nextBack = $nextBack(indices);
   console.log(
-    `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} [${copy
+    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} [${copy
       .toArray()
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
@@ -56,10 +56,10 @@ function main() {
   const b = $iter(result.TAG === "Ok" ? [result._0] : []);
   const a2 = $iter(a.items.slice(a.at, a.end));
   const b2 = $iter(b.items.slice(b.at, b.end));
-  const value$1 = $next(a);
-  const value$2 = $next(b);
+  const next = $next(a);
+  const value = $next(b);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${a2.reduce((n) => n + 1, 0)} ${b2.reduce((n) => n + 1, 0)}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${a2.reduce((n) => n + 1, 0)} ${b2.reduce((n) => n + 1, 0)}`,
   );
 
   const deque = $range(1, 5);
@@ -70,35 +70,37 @@ function main() {
   const steps = $iter(list);
   $nextBack(steps);
   const fromHere = $iter(steps.items.slice(steps.at, steps.end));
-  const value$3 = walk.end - walk.at;
-  const value$4 = $rest(rest).toReversed();
-  const value$5 = $next(steps);
+  const len = walk.end - walk.at;
+  const collect = $rest(rest).toReversed();
+  const value$1 = $next(steps);
   console.log(
-    `${value$3} [${value$4.join(", ")}] ${value$5 == null ? "None" : `Some(${value$5})`} [${fromHere.toArray().join(", ")}]`,
+    `${len} [${collect.join(", ")}] ${value$1 == null ? "None" : `Some(${value$1})`} [${fromHere.toArray().join(", ")}]`,
   );
 
   const back = $iter([10, 20, 30, 40].toReversed());
   $next(back);
-  const value$6 = $nextBack(back);
+  const value$2 = $nextBack(back);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} [${back.items.slice(back.at, back.end).join(", ")}] ${back.end - back.at}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} [${back.items.slice(back.at, back.end).join(", ")}] ${back.end - back.at}`,
   );
-  const value$7 = reversed_twice(
+  const reversedTwice = reversed_twice(
     $iter([1, 2, 3]),
     { next: $next },
     { next_back: $nextBack },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
   console.log(
-    `([${value$7[0].join(", ")}], [${value$7[1].join(", ")}]) ${back_len($iter([4, 5, 6]))}`,
+    `([${reversedTwice[0].join(", ")}], [${reversedTwice[1].join(", ")}]) ${back_len(
+      $iter([4, 5, 6]),
+    )}`,
   );
 
   const rows = $iter([[1], [2]].toReversed());
   const copied = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));
   $unwrap($next(copied)).push(9);
-  const value$8 = $next(rows);
+  const value$3 = $next(rows);
   console.log(
-    `${value$8 == null ? "None" : `Some([${value$8.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(copied))}`,
+    `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(copied))}`,
   );
 }
 //# sourceMappingURL=case.js.map

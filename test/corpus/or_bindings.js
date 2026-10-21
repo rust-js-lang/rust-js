@@ -83,11 +83,11 @@ function main() {
     console.log(`${$displayF64(size(s))}`);
   }
   console.log(`${pick([0, 7])} ${pick([8, 0])} ${pick([2, 3])}`);
-  const value = first_some([1, 2]);
-  const value$1 = first_some([undefined, 2]);
-  const value$2 = first_some([undefined, undefined]);
+  const firstSome = first_some([1, 2]);
+  const value = first_some([undefined, 2]);
+  const value$1 = first_some([undefined, undefined]);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${firstSome == null ? "None" : `Some(${firstSome})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   for (const t of [
     { TAG: "Num", _0: 4n },
@@ -132,9 +132,9 @@ function main() {
     }
     console.log("none");
   }
-  const value$3 = $index(shapes, 4);
-  if (value$3.TAG === "Rect" || value$3.TAG === "Line") {
-    const w = value$3.w;
+  const shape = $index(shapes, 4);
+  if (shape.TAG === "Rect" || shape.TAG === "Line") {
+    const w = shape.w;
     console.log(`width ${$displayF64(w)}`);
   }
   const r = { TAG: "Err", _0: 9 };

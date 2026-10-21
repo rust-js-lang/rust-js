@@ -4,7 +4,10 @@ Status: Accepted. MIR is the one lowering of bodies; THIR's is retired.
 Amended: a type is an iterator where rustc says its `Item`, a type or
 another trait's associated type, smallvec's `A::Item`, not one of std's
 iterator traits' still: `implements_iterator`, which `for _ in &mut it`
-asks (`test/corpus/iterator_of_projection.rs`).
+asks (`test/corpus/iterator_of_projection.rs`). Amended by
+[0569](0569-a-temporary-is-named-as-rust-analyzer-suggests.md): a
+temporary tidy keeps is named as rust-analyzer suggests, after its call or
+its type, before `value`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -204,8 +204,8 @@ export const mutations: Mutation[] = [
     "name": "held-prop-named-value",
     "breaks": "what MIR holds for a prop is named `value`, not after the prop, `const href = made(\"h\")`",
     "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                        (Some(prop), _) => prop.clone(),\n",
-    "replace": "                        (Some(_), _) => \"value\".to_string(),\n",
+    "find": "                        (Some(prop), _) => vec![prop.clone()],\n",
+    "replace": "                        (Some(_), _) => Vec::new(),\n",
     "tests": [
       "test/jsx.test.ts"
     ]
@@ -224,8 +224,8 @@ export const mutations: Mutation[] = [
     "name": "held-arg-named-value",
     "breaks": "an argument MIR holds, `format!`'s, is named `value`, not `arg`",
     "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "(None, _) if is_held_arg(name) => \"arg\".to_string(),",
-    "replace": "(None, _) if is_held_arg(name) => \"value\".to_string(),",
+    "find": "                        true => \"arg\",\n",
+    "replace": "                        true => \"value\",\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -350,6 +350,24 @@ export const mutations: Mutation[] = [
     find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
     replace: "                        true => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "temporary-names-unsuggested",
+    breaks: "a temporary is never named as rust-analyzer suggests, after the call that made it or the type it holds, but `value`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),\n",
+    replace: "                        (None, _) => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "temporary-name-taken-suffixed",
+    breaks: "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            .find(|name| !taken.contains(name))\n",
+    replace: "            .next()\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
     snapshots: true,
   },
 ];

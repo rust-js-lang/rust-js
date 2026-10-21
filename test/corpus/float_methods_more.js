@@ -31,10 +31,10 @@ function main() {
   );
   const x$1 = Math.abs(3);
   const x$2 = Math.abs(-3);
-  const value = $signNegative(-0) ? -x$1 : x$1;
+  const copysign = $signNegative(-0) ? -x$1 : x$1;
   const x$3 = Math.abs(3);
   console.log(
-    `${$debugF64(value)} ${$debugF64($signNegative(1) ? -x$2 : x$2)} ${$debugF64($signNegative(-Infinity) ? -x$3 : x$3)}`,
+    `${$debugF64(copysign)} ${$debugF64($signNegative(1) ? -x$2 : x$2)} ${$debugF64($signNegative(-Infinity) ? -x$3 : x$3)}`,
   );
   console.log(
     `${$debugF64($absSub(5, 2))} ${$debugF64($absSub(2, 5))} ${$debugF64($absSub(NaN, 1))}`,
@@ -45,19 +45,19 @@ function main() {
   console.log(
     `${$toFixed(Math.fround(Math.asinh(y)), 6)} ${$toFixed(Math.fround(Math.atanh(y)), 6)} ${$toFixed(Math.fround(Math.log(10) / Math.log(3)), 6)} ${$toFixed(sy, 6)} ${$toFixed(cy, 6)}`,
   );
-  const value$1 = Math.fround($floatEuclid(-7.5, 2, true));
+  const remEuclid = Math.fround($floatEuclid(-7.5, 2, true));
   const x$4 = Math.abs(3);
   console.log(
-    `${$debugF32(value$1)} ${$debugF32(Math.fround($floatEuclid(-7.5, 2, false)))} ${$debugF32($signNegative(-0) ? -x$4 : x$4)}`,
+    `${$debugF32(remEuclid)} ${$debugF32(Math.fround($floatEuclid(-7.5, 2, false)))} ${$debugF32($signNegative(-0) ? -x$4 : x$4)}`,
   );
   // `midpoint`: halfway, an `f64`'s without going past its largest, a
   // tiny one kept whole; an `f32`'s, `f64`s' sum halved.
-  const value$2 = $floatMidpoint(1, 3);
-  const value$3 = $floatMidpoint(1.7976931348623157e308, 1.7976931348623157e308);
-  const value$4 = $floatMidpoint(5e-324, 1.7976931348623157e308);
-  const value$5 = $floatMidpoint(1.7976931348623157e308, -5e-324);
+  const midpoint = $floatMidpoint(1, 3);
+  const value = $floatMidpoint(1.7976931348623157e308, 1.7976931348623157e308);
+  const value$1 = $floatMidpoint(5e-324, 1.7976931348623157e308);
+  const value$2 = $floatMidpoint(1.7976931348623157e308, -5e-324);
   console.log(
-    `${$displayF64(value$2)} ${$lowerExp(value$3)} ${$lowerExp(value$4)} ${$lowerExp(value$5)} ${$displayF32(Math.fround((-1.5 + 2.5) / 2))} ${Math.fround((1 + Math.fround(1.0000001)) / 2) === 1}`,
+    `${$displayF64(midpoint)} ${$lowerExp(value)} ${$lowerExp(value$1)} ${$lowerExp(value$2)} ${$displayF32(Math.fround((-1.5 + 2.5) / 2))} ${Math.fround((1 + Math.fround(1.0000001)) / 2) === 1}`,
   );
 }
 //# sourceMappingURL=case.js.map

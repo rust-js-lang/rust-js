@@ -90,12 +90,12 @@ function main() {
       $peekMutDrop(top$4);
     }
   }
-  const value = $peekMut([], $cmp);
+  const peekMut = $peekMut([], $cmp);
   try {
-    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!value}`);
+    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!peekMut}`);
   } finally {
-    if (value != null) {
-      $peekMutDrop(value);
+    if (peekMut != null) {
+      $peekMutDrop(peekMut);
     }
   }
 }

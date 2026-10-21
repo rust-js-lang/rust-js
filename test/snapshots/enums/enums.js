@@ -88,8 +88,8 @@ export function checked_div(a, b) {
 }
 
 export function div_or(a, b, fallback) {
-  const value = checked_div(a, b);
-  return value.TAG === "Ok" ? value._0 : fallback;
+  const checkedDiv = checked_div(a, b);
+  return checkedDiv.TAG === "Ok" ? checkedDiv._0 : fallback;
 }
 
 export function discriminants(i) {

@@ -59,15 +59,15 @@ function main() {
     const out = { value: b };
     const tmp = render(out, 7, bufWrite(16));
     $assign(b, out.value);
-    const tmp$1 = bufWrite_write(b, [33, 33], 16);
-    const n = tmp$1.TAG === "Ok" ? tmp$1._0 : undefined;
-    const tmp$2 = bufWrite(16).write_fmt({ value: b }, "1");
-    const tmp$3 = bufWrite(16).write_all({ value: b }, [63]);
-    const tmp$4 = b.bytes.slice();
-    const tmp$5 = $fromUtf8(tmp$4, true);
-    const tmp$6 = n;
-    const tmp$7 = $unwrapOk(tmp$5, undefined, (e) => $debugUtf8Error(e, true));
-    console.log(`${tmp$7} ${tmp$6 == null ? "None" : `Some(${tmp$6})`}`);
+    const write = bufWrite_write(b, [33, 33], 16);
+    const n = write.TAG === "Ok" ? write._0 : undefined;
+    const tmp$1 = bufWrite(16).write_fmt({ value: b }, "1");
+    const writeAll = bufWrite(16).write_all({ value: b }, [63]);
+    const tmp$2 = b.bytes.slice();
+    const tmp$3 = $fromUtf8(tmp$2, true);
+    const tmp$4 = n;
+    const tmp$5 = $unwrapOk(tmp$3, undefined, (e) => $debugUtf8Error(e, true));
+    console.log(`${tmp$5} ${tmp$4 == null ? "None" : `Some(${tmp$4})`}`);
   } finally {
     bufDrop_drop(b, 16);
   }

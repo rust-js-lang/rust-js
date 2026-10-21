@@ -25,9 +25,9 @@ function countIterator_next(count) {
 
 function productIterator_next(product, IIterator, JClone, JIterator, IItemClone) {
   const { a, b, b_orig: bOrig } = product;
-  const value = JIterator.next(b);
+  const next = JIterator.next(b);
   let eltB;
-  if (value == null) {
+  if (next == null) {
     const value = JClone.clone(bOrig);
     $assign(b, value);
     const value$2 = JIterator.next(b);
@@ -39,7 +39,7 @@ function productIterator_next(product, IIterator, JClone, JIterator, IItemClone)
     product.a_cur = value$1;
     eltB = x;
   } else {
-    const x = $someValue(value);
+    const x = $someValue(next);
     eltB = x;
   }
   const a$1 =

@@ -63,7 +63,7 @@ function main() {
   )) {
     name.value += "!";
   }
-  const value = $nextBack(
+  const nextBack = $nextBack(
     $iter(
       $mutEntries(
         names,
@@ -71,9 +71,9 @@ function main() {
       ),
     ),
   );
-  if (value) {
-    const k = value[0];
-    const v = value[1];
+  if (nextBack) {
+    const k = nextBack[0];
+    const v = nextBack[1];
     v.value = $insertStr(v.value, 0, ">");
     console.log(`${k}`);
   }
@@ -90,9 +90,9 @@ function main() {
       ),
     ),
   );
-  const value$1 = $next(last);
-  if (value$1) {
-    const v = value$1[1];
+  const next = $next(last);
+  if (next) {
+    const v = next[1];
     const value = v.value.toUpperCase();
     v.value = value;
   }

@@ -36,9 +36,9 @@ function makeIterator_next(make, dropT) {
 
 const Skipper = {
   skip(skipper, IIterator, dropIItem) {
-    const value = IIterator.next(skipper.inner);
-    if (value != null) {
-      dropIItem?.($someValue(value));
+    const next = IIterator.next(skipper.inner);
+    if (next != null) {
+      dropIItem?.($someValue(next));
     }
   },
 };
@@ -56,28 +56,28 @@ function skipperSkip(IIterator, dropI, dropIItem) {
 }
 
 function skipperSkip_skip(skipper, IIterator, dropI, dropIItem) {
-  const value = IIterator.next(skipper.inner);
-  if (value != null) {
-    dropIItem?.($someValue(value));
+  const next = IIterator.next(skipper.inner);
+  if (next != null) {
+    dropIItem?.($someValue(next));
   }
 }
 
 function second(iter, dropIItem) {
-  const value = $nextSome(iter);
-  if (value != null) {
-    dropIItem?.($someValue(value));
+  const next = $nextSome(iter);
+  if (next != null) {
+    dropIItem?.($someValue(next));
   }
   return $nextSome(iter);
 }
 
 function third(iter, dropIItem) {
+  const next = $nextSome(iter);
+  if (next != null) {
+    dropIItem?.($someValue(next));
+  }
   const value = $nextSome(iter);
   if (value != null) {
     dropIItem?.($someValue(value));
-  }
-  const value$1 = $nextSome(iter);
-  if (value$1 != null) {
-    dropIItem?.($someValue(value$1));
   }
   return $nextSome(iter);
 }

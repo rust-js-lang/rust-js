@@ -125,7 +125,7 @@ pub(super) fn is_held_arg(name: &str) -> bool {
 
 /// Whether `name` is a temporary MIR made, `_5`, or one given apart from
 /// one, `_5$1`, not one the program names.
-pub(super) fn is_temporary(name: &str) -> bool {
+pub(in crate::lower::mir) fn is_temporary(name: &str) -> bool {
     name.strip_prefix('_')
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
@@ -544,12 +544,19 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
     found
 }
 
-/// `_4`, a temporary MIR holds still, read more than once: named after the
-/// field it reads, `routes` of `tree.routes`, a trait object's whose method
-/// is called, `receiver`, else `value`, or `tmp` of a `let` its branches
-/// set, a name no other in the function has, its parameters' and closures'
-/// too.
-pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
+/// `_4`, a temporary MIR holds still, read more than once: named after
+/// what it holds, the field it reads, `routes` of `tree.routes` or
+/// `length` of `slice?.length`, else what rust-analyzer suggests of it,
+/// `trailingZeros` or `point` (`suggested`, ADR 0569); a trait object's
+/// whose method is called, `receiver`; else `value`, an argument held
+/// `arg`, or `tmp` of a `let` its branches set. The first of those names no
+/// other in the function has, its parameters' and closures' too, else
+/// `value`, `arg` or `tmp`, given apart where it must be.
+pub(super) fn readable_temporaries(
+    params: &[js::Pattern],
+    body: &mut Vec<Stmt>,
+    suggested: &HashMap<String, Vec<String>>,
+) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::names_in(body, &mut taken);
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
@@ -590,20 +597,31 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
-                    let base = match (given.get(name), &value.kind) {
-                        (Some(prop), _) => prop.clone(),
-                        (None, _) if is_held_arg(name) => "arg".to_string(),
-                        (None, ExprKind::Member(_, field)) => field.clone(),
-                        (None, _) => "value".to_string(),
+                    let any = match is_held_arg(name) {
+                        true => "arg",
+                        false => "value",
                     };
-                    renames.push((name.clone(), base));
+                    let names = match (given.get(name), &value.kind) {
+                        (Some(prop), _) => vec![prop.clone()],
+                        (None, _) if is_held_arg(name) => Vec::new(),
+                        (None, ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field)) => vec![field.clone()],
+                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),
+                    };
+                    renames.push((name.clone(), names, any));
                 }
-                StmtKind::Let(name, _) if is_temporary(name) => renames.push((name.clone(), "tmp".to_string())),
+                StmtKind::Let(name, _) if is_temporary(name) => {
+                    renames.push((name.clone(), suggested.get(name).cloned().unwrap_or_default(), "tmp"));
+                }
                 _ => {}
             }
         }
     });
-    for (from, base) in renames {
+    for (from, names, any) in renames {
+        // The first name of what it holds no other has, else what any is
+        // named, `value`, `arg` or `tmp`, given apart where it must be.
+        let base = (names.into_iter())
+            .find(|name| !taken.contains(name))
+            .unwrap_or_else(|| any.to_string());
         let to = crate::names::fresh_in(&mut taken, &base);
         js::statement_lists(body, &mut |list| {
             for stmt in list.iter_mut() {

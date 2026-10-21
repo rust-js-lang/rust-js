@@ -68,21 +68,21 @@ export function vectors() {
     { x: 0, y: 0 },
   );
   vec2AddAssign_add_assign(c, { ...b });
-  const value = Vec2.len(a);
-  const value$1 = Vec2.len(vec2Sub_sub({ ...a }, { ...b }));
-  return `${vec2Debug_fmt(c)} ${$displayF64(value)} ${$debugF64(value$1)} ${$displayF64(0)}`;
+  const len = Vec2.len(a);
+  const value = Vec2.len(vec2Sub_sub({ ...a }, { ...b }));
+  return `${vec2Debug_fmt(c)} ${$displayF64(len)} ${$debugF64(value)} ${$displayF64(0)}`;
 }
 
 export function integers(a, b) {
-  const value = Math.abs(a) | 0;
-  const value$1 = $pow(a, 2);
-  const value$2 = $remEuclid(a, 7, -2147483648);
-  const value$3 = $divEuclid(a, 7, -2147483648);
-  const value$4 = $checked(b - 10, 0, 4294967295);
-  const value$5 = $checked(a + 2147483647, -2147483648, 2147483647);
-  const value$6 = $checked(a * a, -2147483648, 2147483647);
-  const value$7 = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
-  return `${value} ${value$1} ${value$2} ${value$3} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, (1 << 30) | 0)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
+  const abs = Math.abs(a) | 0;
+  const pow = $pow(a, 2);
+  const remEuclid = $remEuclid(a, 7, -2147483648);
+  const divEuclid = $divEuclid(a, 7, -2147483648);
+  const checkedSub = $checked(b - 10, 0, 4294967295);
+  const checkedAdd = $checked(a + 2147483647, -2147483648, 2147483647);
+  const checkedMul = $checked(a * a, -2147483648, 2147483647);
+  const checkedDiv = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
+  return `${abs} ${pow} ${remEuclid} ${divEuclid} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, (1 << 30) | 0)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
 }
 
 export function narrow(a, b) {
@@ -90,16 +90,16 @@ export function narrow(a, b) {
 }
 
 export function floats(x) {
-  const value = Math.floor(x);
-  const value$1 = Math.ceil(x);
-  const value$2 = $round(x);
-  const value$3 = Math.trunc(x);
-  const value$4 = Math.abs(x);
-  const value$5 = $powi(x, 3);
-  const value$6 = $powi(x, -2);
-  const value$7 = Number.isNaN(x);
-  const value$8 = Number.isFinite(x);
-  return `${$displayF64(value)} ${$displayF64(value$1)} ${$displayF64(value$2)} ${$displayF64(value$3)} ${$displayF64(value$4)} ${$displayF64($f64Max(x, 1.5))} ${$toFixed(x ** 0.5, 3)} ${$displayF64(value$5)} ${$displayF64(value$6)} ${value$7} ${value$8} ${$displayF64(Math.hypot(x, 4))}`;
+  const floor = Math.floor(x);
+  const ceil = Math.ceil(x);
+  const round = $round(x);
+  const trunc = Math.trunc(x);
+  const abs = Math.abs(x);
+  const powi = $powi(x, 3);
+  const value = $powi(x, -2);
+  const isNan = Number.isNaN(x);
+  const isFinite = Number.isFinite(x);
+  return `${$displayF64(floor)} ${$displayF64(ceil)} ${$displayF64(round)} ${$displayF64(trunc)} ${$displayF64(abs)} ${$displayF64($f64Max(x, 1.5))} ${$toFixed(x ** 0.5, 3)} ${$displayF64(powi)} ${$displayF64(value)} ${isNan} ${isFinite} ${$displayF64(Math.hypot(x, 4))}`;
 }
 
 export function gcd(a, b) {
@@ -134,8 +134,8 @@ export function grids(n) {
   // Each is its own copy: changing one leaves the others.
   const cell = { hits: 0 };
   const cells = Array.from({ length: 3 }, () => ({ ...cell }));
-  const value = $index(cells, 1);
-  value.hits = (value.hits + 5) >>> 0;
+  const cell2 = $index(cells, 1);
+  cell2.hits = (cell2.hits + 5) >>> 0;
   const flags = new Array(n).fill(1);
   return [t, flags, `[${cells.map((item) => cell2Debug_fmt(item)).join(", ")}]`];
 }

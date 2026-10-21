@@ -46,16 +46,16 @@ function relay(items, dropIIntoIter) {
 
 /** Its first item dropped, and the iterator given back. */
 function skip_one(it, IIterator, dropI, dropIItem) {
-  let tmp;
+  let next;
   try {
-    tmp = IIterator.next(it);
+    next = IIterator.next(it);
   } catch (error) {
     dropI?.(it);
     throw error;
   }
   try {
-    if (tmp != null) {
-      dropIItem?.($someValue(tmp));
+    if (next != null) {
+      dropIItem?.($someValue(next));
     }
   } catch (error) {
     dropI?.(it);
@@ -66,15 +66,15 @@ function skip_one(it, IIterator, dropI, dropIItem) {
 
 function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
   const it = $intoIter(items);
-  let tmp;
+  let next;
   try {
-    tmp = $next(it);
+    next = $next(it);
   } catch (error) {
     dropIIntoIter?.(it);
     throw error;
   }
-  if (tmp) {
-    const item = tmp;
+  if (next) {
+    const item = next;
     try {
       bag[0].push(item);
     } catch (error) {
@@ -83,8 +83,8 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     }
   } else {
     try {
-      if (tmp) {
-        loudDrop_drop(tmp);
+      if (next) {
+        loudDrop_drop(next);
       }
     } catch (error) {
       dropIIntoIter?.(it);
@@ -93,10 +93,10 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
   }
   let it$live = false;
   const iter = it;
-  let tmp$1;
+  let loud;
   while (true) {
     try {
-      tmp$1 = $next(iter);
+      loud = $next(iter);
     } catch (error) {
       dropIIntoIter?.(iter);
       if (it$live) {
@@ -104,7 +104,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       }
       throw error;
     }
-    if (!tmp$1) {
+    if (!loud) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
@@ -116,7 +116,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       it$live = false;
       return;
     }
-    const item = tmp$1;
+    const item = loud;
     if (item[0] === "stop") {
       try {
         loudDrop_drop(item);
@@ -200,8 +200,8 @@ function main() {
         console.log(`bag ${length}`);
         const value = [["l"], ["stop"], ["m"]];
         bagExtendLoud_extend(bag, value, $dropEach(loudDrop_drop), $dropEach(loudDrop_drop));
-        const length$1 = bag[0].length;
-        console.log(`bag ${length$1}`);
+        const value$2 = bag[0].length;
+        console.log(`bag ${value$2}`);
       } finally {
         for (const item of bag[0]) {
           loudDrop_drop(item);

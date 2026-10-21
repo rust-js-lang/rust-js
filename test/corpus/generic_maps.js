@@ -93,9 +93,9 @@ function main() {
     { eq: (a, b) => a === b },
     Map,
   );
-  const value = g.get("a");
+  const get = g.get("a");
   console.log(
-    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(g.get("b"))}`,
+    `${get == null ? "None" : `Some([${get.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))(g.get("b"))}`,
   );
   const pg = group(
     $iter([
@@ -106,8 +106,8 @@ function main() {
     { eq: $eq },
     $KeyMap,
   );
-  const value$1 = pg.get([1, 2]);
-  console.log(`${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`);
+  const value = pg.get([1, 2]);
+  console.log(`${value == null ? "None" : `Some([${value.join(", ")}])`}`);
   const d = distinct(
     [
       [1, 1],
@@ -136,8 +136,8 @@ function main() {
     { eq: (a, b) => a === b },
     Map,
   );
-  const value$2 = c.get("x");
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$1 = c.get("x");
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const cp = tCounting({ next: $next }).counts_by(
     $iter([
       [0, 1],
@@ -155,8 +155,8 @@ function main() {
     { eq: (a, b) => a === b },
     Map,
   );
-  const value$3 = cp.get(0);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = cp.get(0);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const cs = tCounting({ next: $next }).counts(
     $iter([
       [0, 1],
@@ -166,8 +166,8 @@ function main() {
     { eq: $eq },
     $KeyMap,
   );
-  const value$4 = cs.get([0, 1]);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$3 = cs.get([0, 1]);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const by = tCounting({ next: $next }).tally_by(
     $iter(["ab", "cd", "a"]),
     (s) => $byteLen(s),
@@ -185,10 +185,10 @@ function main() {
     { eq: (a, b) => a === b },
     Map,
   );
-  const value$5 = by.get(2);
-  const value$6 = by.get(1);
+  const value$4 = by.get(2);
+  const value$5 = by.get(1);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

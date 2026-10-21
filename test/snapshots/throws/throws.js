@@ -4,16 +4,16 @@ import { $iter, $next, $settle, $try } from "@rust-js/runtime";
 
 /** The numbers' sum, or what `JSON.parse` threw. */
 export function sum_json(json) {
-  const value = $try(() => JSON.parse(json));
-  if (value.TAG === "Ok") {
-    const numbers = value._0;
+  const parseNumbers = $try(() => JSON.parse(json));
+  if (parseNumbers.TAG === "Ok") {
+    const numbers = parseNumbers._0;
     let sum = 0;
     for (const n of numbers) {
       sum = (sum + n) >>> 0;
     }
     return { TAG: "Ok", _0: sum };
   }
-  const e = value._0;
+  const e = parseNumbers._0;
   return { TAG: "Err", _0: String(e) };
 }
 
@@ -53,11 +53,11 @@ export function uri(text) {
   const encoded = encodeURIComponent(text);
   const result = $try(() => decodeURIComponent(encoded));
   const decoded = result.TAG === "Err" ? { TAG: "Err", _0: String(result._0) } : result;
-  const value = $try(() => decodeURIComponent("%E0%A4%A"));
-  if (value.TAG === "Ok") {
+  const decodeUriComponent = $try(() => decodeURIComponent("%E0%A4%A"));
+  if (decodeUriComponent.TAG === "Ok") {
     return [encoded, decoded];
   }
-  const e = value._0;
+  const e = decodeUriComponent._0;
   return [encoded + " " + String(e), decoded];
 }
 

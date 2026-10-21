@@ -26,19 +26,19 @@ function half(n) {
 }
 
 function halves(n) {
-  const value$1 = ["halved"];
+  const noisy = ["halved"];
   let value;
   try {
     value = half(n);
   } catch (error) {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(noisy);
     throw error;
   }
   if (value != null) {
-    return pair(value$1, value);
+    return pair(noisy, value);
   }
   const result = undefined;
-  noisyDrop_drop(value$1);
+  noisyDrop_drop(noisy);
   return result;
 }
 
@@ -48,22 +48,22 @@ function checked(n) {
 }
 
 function divided(n, by) {
-  const value = ["checked"];
+  const noisy = ["checked"];
   let tmp;
   try {
     tmp = checked(n);
   } catch (error) {
-    noisyDrop_drop(value);
+    noisyDrop_drop(noisy);
     throw error;
   }
-  const checked$1 = pair(value, tmp);
+  const checked$1 = pair(noisy, tmp);
   const halved = pair(["by two"], (n / 2) >>> 0);
-  const value$1 = ["by a variable"];
+  const value = ["by a variable"];
   if (by === 0) {
-    noisyDrop_drop(value$1);
+    noisyDrop_drop(value);
     throw new Error("attempt to divide by zero");
   }
-  return (((pair(value$1, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
+  return (((pair(value, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
 }
 
 function signed(a, b) {

@@ -49,7 +49,7 @@ test("no item is mapped to itself", () => {
   run([compiler, join(dir, "calc.rs"), "-o", join(dir, "calc.js")]);
   const enums = readFileSync(join(dir, "enums.js"), "utf8");
   const calc = readFileSync(join(dir, "calc.js"), "utf8");
-  expect(enums).toContain("`[${levels.join(\", \")}] ${value == null");
+  expect(enums).toContain("`[${levels.join(\", \")}] ${max == null");
   expect(calc).toContain("const names = Array.from(calc.vars.keys());");
   expect(enums + calc).not.toContain(".map((item) => item)");
   writeFileSync(join(dir, "edits.rs"), readFileSync(join(root, "test/corpus/vec_edits.rs"), "utf8").replace("fn main()", "pub fn main()"));
@@ -5484,7 +5484,7 @@ pub fn inner(n: u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const current = state || blank;\n");
-  expect(js).toContain('  const text = value ? value[1] : "";\n');
+  expect(js).toContain('  const text = find ? find[1] : "";\n');
   expect(js).toMatch(/  const i = \$find\(path, "x"\);\n  const n = i != null \? \(i \+ 1\) >>> 0 : 0;\n/);
   expect(js).toContain('  return $rsplitOnce(path, "/")?.[1] ?? path;\n');
   // Of a variable, as `map_or` of it.
@@ -10094,9 +10094,10 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
 });
 
 // A temporary MIR holds of what a pattern takes apart, read more than once,
-// is `value`, not `_4`, a name no other in the function has, as
-// react.dev's CodeBlock reads its regular expressions' matches.
-test("a held temporary is named `value`", async () => {
+// is named after the call that made it, `find`, as rust-analyzer suggests
+// (ADR 0569), not `_4`, a name no other in the function has, as react.dev's
+// CodeBlock reads its regular expressions' matches.
+test("a held temporary is named after the call that made it", async () => {
   const dir = fixture("temporary-name");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.find")] #[allow(unused_variables)] fn find(text: &str) -> Option<(String, String)> { unreachable!() }
 pub fn lines(meta: &str) -> String {
@@ -10108,7 +10109,7 @@ pub fn lines(meta: &str) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  const value = globalThis.find(meta);\n  if (!value) {");
+  expect(js).toContain("  const find = globalThis.find(meta);\n  if (!find) {");
   const lib = await import(join(dir, "mir.js"));
   (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
   expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);

@@ -38,9 +38,9 @@ function main() {
     });
     throw error;
   }
-  let tmp;
+  let area;
   try {
-    tmp = b.impl.area(b.value);
+    area = b.impl.area(b.value);
   } catch (error) {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);
@@ -51,7 +51,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp} ${a.strong}`);
+    console.log(`${area} ${a.strong}`);
   } catch (error) {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);
@@ -72,16 +72,16 @@ function main() {
     });
   }
   const value = made(1);
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = made(2);
+    tmp = made(2);
   } catch (error) {
     $rcDrop(value, (value) => {
       value.impl.$drop?.(value.value);
     });
     throw error;
   }
-  const shapes = [value, tmp$1];
+  const shapes = [value, tmp];
   let first;
   try {
     first = $rcClone($index(shapes, 0));

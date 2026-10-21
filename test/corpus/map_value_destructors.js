@@ -48,14 +48,14 @@ function main() {
       .map((v) => v[0]);
     console.log(`[${tmp$1.join(", ")}]`);
     const tmp$2 = $entry(tree, 4);
-    const tmp$3 = [41];
+    const noisy = [41];
     const entry = tmp$2;
-    const got = $orInsert(entry._0[0], entry._0[1], tmp$3, noisyDrop_drop);
+    const got = $orInsert(entry._0[0], entry._0[1], noisy, noisyDrop_drop);
     console.log(`got ${got[0]}`);
-    const tmp$4 = $entry(tree, 8);
-    const tmp$5 = [80];
-    const entry$1 = tmp$4;
-    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], tmp$5, noisyDrop_drop);
+    const tmp$3 = $entry(tree, 8);
+    const tmp$4 = [80];
+    const entry$1 = tmp$3;
+    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], tmp$4, noisyDrop_drop);
     console.log(`new ${new$[0]}`);
     for (const [, value] of $sortedEntries(tree, $cmp)) {
       noisyDrop_drop(value);
@@ -66,22 +66,22 @@ function main() {
 
     const hash = new Map();
     try {
-      const tmp = $insert(hash, "a", [1]);
-      if (tmp != null) {
-        noisyDrop_drop(tmp);
+      const insert = $insert(hash, "a", [1]);
+      if (insert != null) {
+        noisyDrop_drop(insert);
       }
-      const tmp$1 = $entry(hash, "a");
-      const tmp$2 = [2];
-      const entry = tmp$1;
-      $orInsert(entry._0[0], entry._0[1], tmp$2, noisyDrop_drop);
+      const tmp = $entry(hash, "a");
+      const tmp$1 = [2];
+      const entry = tmp;
+      $orInsert(entry._0[0], entry._0[1], tmp$1, noisyDrop_drop);
       $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
       const value = (_, v) => v[0] > 5;
       $retainMap(hash, value, hash, false, noisyDrop_drop);
-      const size = hash.size;
-      console.log(`hash ${size}`);
-      const tmp$3 = $insert(hash, "b", [4]);
-      if (tmp$3 != null) {
-        noisyDrop_drop(tmp$3);
+      const value$1 = hash.size;
+      console.log(`hash ${value$1}`);
+      const tmp$2 = $insert(hash, "b", [4]);
+      if (tmp$2 != null) {
+        noisyDrop_drop(tmp$2);
       }
       for (const item of hash.values()) {
         noisyDrop_drop(item);
@@ -96,23 +96,23 @@ function main() {
         if (tmp != null) {
           noisyDrop_drop(tmp);
         }
-        const tmp$1 = $iter($drainAll(drained));
-        const taken = tmp$1.toArray();
+        const drain = $iter($drainAll(drained));
+        const taken = drain.toArray();
         const length = taken.length;
-        const size = drained.size;
+        const value = drained.size;
         try {
-          console.log(`taken ${length} left ${size}`);
+          console.log(`taken ${length} left ${value}`);
         } finally {
           for (const item of taken) {
             noisyDrop_drop(item[1]);
           }
         }
-        const tmp$2 = $insert(drained, 2, [6]);
-        if (tmp$2 != null) {
-          noisyDrop_drop(tmp$2);
+        const tmp$1 = $insert(drained, 2, [6]);
+        if (tmp$1 != null) {
+          noisyDrop_drop(tmp$1);
         }
-        const tmp$3 = $iter($drainAll(drained));
-        for (const item of tmp$3) {
+        const tmp$2 = $iter($drainAll(drained));
+        for (const item of tmp$2) {
           noisyDrop_drop(item[1]);
         }
         console.log("end");

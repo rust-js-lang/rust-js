@@ -63,26 +63,26 @@ function sum_below(it, limit, dropI) {
 }
 
 function main() {
-  const value = checked_total([1, 2, 3]);
-  const value$1 = checked_total([4294967295, 1]);
+  const checkedTotal = checked_total([1, 2, 3]);
+  const value = checked_total([4294967295, 1]);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${checkedTotal == null ? "None" : `Some(${checkedTotal})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const value$2 = parsed_total(["4", "5"]);
+  const parsedTotal = parsed_total(["4", "5"]);
   console.log(
-    `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugParseError(value$2._0, "ParseIntError")})`} ${
+    `${parsedTotal.TAG === "Ok" ? `Ok(${parsedTotal._0})` : `Err(${$debugParseError(parsedTotal._0, "ParseIntError")})`} ${
       parsed_total(["4", "x", "5"]).TAG === "Err"
     }`,
   );
   const it = $iter([1, 2, 3, 4, 5]);
-  const value$3 = total_up_to(it, 4);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} [${it.toArray().join(", ")}]`);
+  const totalUpTo = total_up_to(it, 4);
+  console.log(`${totalUpTo == null ? "None" : `Some(${totalUpTo})`} [${it.toArray().join(", ")}]`);
   const product = $tryFoldSome($iterator({ start: 1n, end: 5n }, $rangeInclusiveNext), 1n, (p, n) =>
     $bigChecked(p * n, 0n, 18446744073709551615n),
   );
   console.log(`${product == null ? "None" : `Some(${product})`}`);
   const louds = [[1], [2], [10], [3]];
-  const value$4 = sum_below($iter(louds), 5, $dropEach(loudDrop_drop));
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$1 = sum_below($iter(louds), 5, $dropEach(loudDrop_drop));
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
 }
 //# sourceMappingURL=case.js.map

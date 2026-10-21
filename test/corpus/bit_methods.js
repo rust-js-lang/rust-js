@@ -28,17 +28,17 @@ function main() {
     `${$reverseBits(1, 8, false)} ${$reverseBits(-128, 8, true)} ${$reverseBits(6n, 128, false)}`,
   );
   console.log(`${$swapBytes(4660, 16, false)} ${$swapBytes(1, 32, false)} ${7n} -5`);
-  const value = $checkedEuclid(7, -2, -2147483648, false);
-  const value$1 = $checkedEuclid(-7, 2, -2147483648, true);
-  const value$2 = $checkedEuclid(-128, -1, -128, false);
+  const checkedDivEuclid = $checkedEuclid(7, -2, -2147483648, false);
+  const checkedRemEuclid = $checkedEuclid(-7, 2, -2147483648, true);
+  const value = $checkedEuclid(-128, -1, -128, false);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${checkedDivEuclid == null ? "None" : `Some(${checkedDivEuclid})`} ${checkedRemEuclid == null ? "None" : `Some(${checkedRemEuclid})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const value$3 = $checkedEuclid(5n, 0n, undefined, false);
-  const value$4 = $checkedEuclid(-7n, 2n, -9223372036854775808n, false);
-  const value$5 = $checkedEuclid(9n, 4n, undefined, true);
+  const value$1 = $checkedEuclid(5n, 0n, undefined, false);
+  const value$2 = $checkedEuclid(-7n, 2n, -9223372036854775808n, false);
+  const value$3 = $checkedEuclid(9n, 4n, undefined, true);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 
   console.log(`${$displayF64(1 / 4)} ${$displayF32(Math.fround(1 / 3))} ${$displayF64(1 / 0)}`);

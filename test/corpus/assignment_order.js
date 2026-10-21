@@ -69,20 +69,20 @@ function main() {
   const value$9 = value("field =", 5);
   $index(ps, index("field =", 0)).x = value$9;
   const value$10 = value("field +=", 6);
-  const value$11 = $index(ps, index("field +=", 0));
-  value$11.x = (value$11.x + value$10) | 0;
+  const p = $index(ps, index("field +=", 0));
+  p.x = (p.x + value$10) | 0;
   const totals = [[0]];
   totalAddAssignI32_add_assign($index(totals, index("AddAssign", 0)), value("AddAssign", 7));
   set(a);
   const rows = [[0, 0]];
-  const value$12 = value("rows", 9);
+  const value$11 = value("rows", 9);
   const items = $index(rows, index("rows row", 0));
   const index$3 = index("rows column", 1);
-  items[$at(items, index$3)] = value$12;
-  const x$1 = $index(ps, 0).x;
+  items[$at(items, index$3)] = value$11;
+  const value$12 = $index(ps, 0).x;
   const arg = $index(totals, 0);
   console.log(
-    `[${v.join(", ")}] [${a.join(", ")}] ${x$1} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
+    `[${v.join(", ")}] [${a.join(", ")}] ${value$12} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
   // The value is read before the place changes it. Found in review.
   let x = 1;

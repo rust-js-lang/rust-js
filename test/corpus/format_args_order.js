@@ -20,18 +20,18 @@ const Counter = {
 function main() {
   const v = [1, 2, 3];
   const length = v.length;
-  const value = v.pop();
-  console.log(`${length} ${value == null ? "None" : `Some(${value})`} ${v.length}`);
+  const pop = v.pop();
+  console.log(`${length} ${pop == null ? "None" : `Some(${pop})`} ${v.length}`);
   const c = { n: 0 };
-  const value$1 = Counter.get(c);
-  const value$2 = Counter.bump(c);
+  const get = Counter.get(c);
+  const bump = Counter.bump(c);
   console.log(
-    `${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${Counter.get(c)} ${((value) => (value == null ? "None" : `Some(${value})`))(Counter.bump(c))}`,
+    `${get} ${bump == null ? "None" : `Some(${bump})`} ${Counter.get(c)} ${((value) => (value == null ? "None" : `Some(${value})`))(Counter.bump(c))}`,
   );
   const words = ["a"];
-  const value$3 = words.join(",");
-  const value$4 = words.pop();
-  const line = `${value$3}|${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}|${words.length}`;
+  const join = words.join(",");
+  const value = words.pop();
+  const line = `${join}|${value == null ? "None" : `Some(${$debugStr(value)})`}|${words.length}`;
   console.log(`${line}`);
 }
 //# sourceMappingURL=case.js.map

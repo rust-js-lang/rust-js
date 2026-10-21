@@ -14,11 +14,11 @@ function main() {
     );
   }
   const big = BigInt.asUintN(64, 1n << 40n);
-  const value = $nextPowerOfTwo(BigInt.asUintN(64, big + 1n), 64) ?? 0n;
-  const value$1 = $nextPowerOfTwo(18446744073709551615n, 64);
-  const value$2 = $nextPowerOfTwo(5, 8);
+  const nextPowerOfTwo = $nextPowerOfTwo(BigInt.asUintN(64, big + 1n), 64) ?? 0n;
+  const checkedNextPowerOfTwo = $nextPowerOfTwo(18446744073709551615n, 64);
+  const value = $nextPowerOfTwo(5, 8);
   console.log(
-    `${value} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${nextPowerOfTwo} ${checkedNextPowerOfTwo == null ? "None" : `Some(${checkedNextPowerOfTwo})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

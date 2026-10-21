@@ -55,9 +55,9 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
   }
   return $traitImpl($holderSkipping, [IIterator, IDefault, dropI, dropIItem], () => ({
     skip_one: (self) => {
-      const value = holderIterator_next(self, IIterator, IDefault, dropI, dropIItem);
-      if (value != null) {
-        dropIItem?.($someValue(value));
+      const next = holderIterator_next(self, IIterator, IDefault, dropI, dropIItem);
+      if (next != null) {
+        dropIItem?.($someValue(next));
       }
     },
     eat: (self) => {
@@ -105,9 +105,9 @@ function holderSkip(IIterator, dropI, dropIItem) {
 }
 
 function holderSkip_skip(holder, IIterator, dropI, dropIItem) {
-  const value = IIterator.next(holder[0]);
-  if (value != null) {
-    dropIItem?.($someValue(value));
+  const next = IIterator.next(holder[0]);
+  if (next != null) {
+    dropIItem?.($someValue(next));
   }
 }
 

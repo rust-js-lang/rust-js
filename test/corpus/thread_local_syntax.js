@@ -23,21 +23,21 @@ function main() {
     bump();
   }
   ((n) => {
-    const value = $borrowMut(n, true);
+    const borrowMut = $borrowMut(n, true);
     try {
-      value.value.push("a");
+      borrowMut.value.push("a");
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
   })(NAMES);
   console.log(
     `${COUNT.value} [${((n) => {
-      const value = $borrow(n, true);
+      const borrow = $borrow(n, true);
       let result;
       try {
-        result = value.value.slice();
+        result = borrow.value.slice();
       } finally {
-        $unborrow(value);
+        $unborrow(borrow);
       }
       return result;
     })(NAMES)

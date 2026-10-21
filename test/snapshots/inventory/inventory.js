@@ -144,9 +144,9 @@ export function report() {
   ];
   let out = "";
   for (const e of events) {
-    const value = Store.apply(store, e);
-    if (value.TAG === "Err") {
-      out += `error: ${value._0}\n`;
+    const apply = Store.apply(store, e);
+    if (apply.TAG === "Err") {
+      out += `error: ${apply._0}\n`;
     }
   }
   const rules = [
@@ -171,23 +171,23 @@ export function report() {
   const counter = { value: 0 };
   const c = counter;
   const bump = (n) => {
-    const value = $borrowMut(c, true);
-    value.value = (value.value + n) | 0;
-    $unborrow(value);
+    const borrowMut = $borrowMut(c, true);
+    borrowMut.value = (borrowMut.value + n) | 0;
+    $unborrow(borrowMut);
   };
   for (const n of [-3, 0, 4, 7, 12]) {
     bump(n);
     out += `${classify(n)} `;
   }
-  const value = $borrow(counter, true);
+  const borrow = $borrow(counter, true);
   let tmp;
   try {
     tmp = $borrow(counter, true);
     $unborrow(tmp);
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
-  out += `total=${value.value} again=${tmp.value}\n`;
+  out += `total=${borrow.value} again=${tmp.value}\n`;
   const stack = [1, 2, 3];
   const popped = [];
   while (true) {

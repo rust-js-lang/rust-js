@@ -233,9 +233,9 @@ function main() {
           }
           throw error;
         }
-        let tmp$5;
+        let take;
         try {
-          tmp$5 = $closing(tmp$4, $dropEach(nDrop_drop)).take(5);
+          take = $closing(tmp$4, $dropEach(nDrop_drop)).take(5);
         } catch (error) {
           for (const item of firsts) {
             nDrop_drop(item);
@@ -244,7 +244,7 @@ function main() {
         }
         let all;
         try {
-          all = tmp$5.toArray();
+          all = take.toArray();
         } catch (error) {
           for (const item of firsts) {
             nDrop_drop(item);
@@ -274,9 +274,9 @@ function main() {
           }
           throw error;
         }
-        let tmp$6;
+        let tmp$5;
         try {
-          tmp$6 = $iter(s);
+          tmp$5 = $iter(s);
         } catch (error) {
           for (const item of all) {
             nDrop_drop(item);
@@ -286,9 +286,9 @@ function main() {
           }
           throw error;
         }
-        let tmp$7;
+        let skip;
         try {
-          tmp$7 = $skipDropping($closing(tmp$6, $dropEach(nDrop_drop)), 2, nDrop_drop);
+          skip = $skipDropping($closing(tmp$5, $dropEach(nDrop_drop)), 2, nDrop_drop);
         } catch (error) {
           for (const item of all) {
             nDrop_drop(item);
@@ -298,7 +298,7 @@ function main() {
           }
           throw error;
         }
-        const iter = tmp$7;
+        const iter = skip;
         while (true) {
           try {
             tmp$2 = $next(iter);
@@ -808,9 +808,32 @@ function main() {
             }
             throw error;
           }
+          let collect;
+          try {
+            collect = $range(80, 84).map((value) => [value]);
+          } catch (error) {
+            for (const item of kept) {
+              nDrop_drop(item);
+            }
+            for (const item of all) {
+              nDrop_drop(item);
+            }
+            if (one$live) {
+              if (one != null) {
+                nDrop_drop(one);
+              }
+            }
+            if (t$live) {
+              t.return();
+            }
+            for (const item of firsts) {
+              nDrop_drop(item);
+            }
+            throw error;
+          }
           let tmp$6;
           try {
-            tmp$6 = $range(80, 84).map((value) => [value]);
+            tmp$6 = $iter(collect);
           } catch (error) {
             for (const item of kept) {
               nDrop_drop(item);
@@ -831,9 +854,9 @@ function main() {
             }
             throw error;
           }
-          let tmp$7;
+          let splitFirst;
           try {
-            tmp$7 = $iter(tmp$6);
+            splitFirst = split_first(tmp$6, 1, $dropEach(nDrop_drop), nDrop_drop);
           } catch (error) {
             for (const item of kept) {
               nDrop_drop(item);
@@ -854,31 +877,8 @@ function main() {
             }
             throw error;
           }
-          let tmp$8;
-          try {
-            tmp$8 = split_first(tmp$7, 1, $dropEach(nDrop_drop), nDrop_drop);
-          } catch (error) {
-            for (const item of kept) {
-              nDrop_drop(item);
-            }
-            for (const item of all) {
-              nDrop_drop(item);
-            }
-            if (one$live) {
-              if (one != null) {
-                nDrop_drop(one);
-              }
-            }
-            if (t$live) {
-              t.return();
-            }
-            for (const item of firsts) {
-              nDrop_drop(item);
-            }
-            throw error;
-          }
-          const first = tmp$8[0];
-          const rest = tmp$8[1];
+          const first = splitFirst[0];
+          const rest = splitFirst[1];
           try {
             console.log(`first ${first.length} rest ${rest}`);
           } catch (error) {
@@ -904,9 +904,9 @@ function main() {
             }
             throw error;
           }
-          let tmp$9;
+          let tmp$7;
           try {
-            tmp$9 = $range(90, 94).map((value) => [value]);
+            tmp$7 = $range(90, 94).map((value) => [value]);
           } catch (error) {
             for (const item of first) {
               nDrop_drop(item);
@@ -931,7 +931,7 @@ function main() {
             throw error;
           }
           try {
-            owned = $iter(tmp$9);
+            owned = $iter(tmp$7);
           } catch (error) {
             for (const item of first) {
               nDrop_drop(item);

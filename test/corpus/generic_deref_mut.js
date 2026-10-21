@@ -115,19 +115,19 @@ function main() {
   r = p$3.value;
   console.log(`${n}`);
   const cell = { value: 3 };
-  const value$2 = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, true);
   try {
-    const p = { value: value$2 };
+    const p = { value: borrowMut };
     bump(p, { Deref: () => ({ deref: (x) => x.value }), deref_mut: (cell) => cell.value });
-    $assign(value$2, p.value);
+    $assign(borrowMut, p.value);
   } finally {
-    $unborrow(value$2);
+    $unborrow(borrowMut);
   }
-  const value$3 = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   try {
-    console.log(`${value$3.value}`);
+    console.log(`${borrow.value}`);
   } finally {
-    $unborrow(value$3);
+    $unborrow(borrow);
   }
 
   let s = "hi";

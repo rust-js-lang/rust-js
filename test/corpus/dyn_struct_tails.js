@@ -71,9 +71,9 @@ function main() {
   const d = { f1: 0, ptr: { f1: 1, ptr: 7 } };
   $dynCell(d.ptr, isizeToBar());
   console.log(`${deep(d)}`);
-  const value = $dynCell(f1, bar1ToBar());
-  const f1$1 = value.f1;
-  const ptr = { value: value.ptr, impl: value.impl };
+  const fat = $dynCell(f1, bar1ToBar());
+  const f1$1 = fat.f1;
+  const ptr = { value: fat.ptr, impl: fat.impl };
   console.log(`${f1$1} ${ptr.impl.to_val(ptr.value)}`);
 }
 //# sourceMappingURL=case.js.map

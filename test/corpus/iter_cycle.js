@@ -19,10 +19,10 @@ function main() {
   const held = $cycle(a);
   $next(held);
   $next(held);
+  const next = $next(held);
   const value = $next(held);
-  const value$1 = $next(held);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 
   const names = ["x", "y"];
@@ -38,9 +38,9 @@ function main() {
   console.log(`[${copies.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const none = [];
-  const value$2 = $next($cycle(none));
+  const value$1 = $next($cycle(none));
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${$cycle(none)
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${$cycle(none)
       .take(1)
       .reduce((n) => n + 1, 0)}`,
   );

@@ -40,10 +40,10 @@ function main() {
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugParseError(value._0, "ParseIntError")})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugParseError(value$1._0, "ParseIntError")})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugParseError(value$2._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseBig("Zz", -9223372036854775808n, 9223372036854775807n, 36))}`,
   );
   for (const s of ["", "+", "-1", "1g", "100000000", "-80000000", "+7f"]) {
-    const value = $parseInt(s, 0, 4294967295, 16);
+    const mapErr = $parseInt(s, 0, 4294967295, 16);
     const arg = $parseInt(s, -2147483648, 2147483647, 16);
     console.log(
-      `${$debugStr(s)}: ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`}`,
+      `${$debugStr(s)}: ${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${$debugStr(mapErr._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`}`,
     );
   }
 
@@ -66,11 +66,11 @@ function main() {
   console.log(`${$ilog(1n, 10)} ${$ilog(18446744073709551615n, 2)} ${$ilog(12345n, 10)}`);
   // `checked_`, writeable's digit count: `None` of what isn't positive.
   const digits = (n) => (($ilog(n, 10, true) ?? 0) + 1) >>> 0;
-  const value$3 = $ilog(0, 10, true);
-  const value$4 = $ilog(-4, 2, true);
-  const value$5 = $ilog(1024n, 2, true);
+  const checkedIlog10 = $ilog(0, 10, true);
+  const checkedIlog2 = $ilog(-4, 2, true);
+  const value$3 = $ilog(1024n, 2, true);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${digits(205)}`,
+    `${checkedIlog10 == null ? "None" : `Some(${checkedIlog10})`} ${checkedIlog2 == null ? "None" : `Some(${checkedIlog2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${digits(205)}`,
   );
   console.log(
     `${$isqrt(17)} ${$isqrt(0)} ${$isqrt(99)} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)))}`,

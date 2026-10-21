@@ -49,12 +49,12 @@ function main() {
     "dir/.hidden.txt",
   ];
   for (const p of cases) {
-    const value = $pathParent(p);
-    const value$1 = $pathFileName(p);
-    const value$2 = $pathFileStem(p);
-    const value$3 = $pathExtension(p);
+    const parent = $pathParent(p);
+    const fileName = $pathFileName(p);
+    const fileStem = $pathFileStem(p);
+    const extension = $pathExtension(p);
     console.log(
-      `${$debugStr(p)}: parent ${value == null ? "None" : `Some(${$debugStr(value)})`} name ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} stem ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ext ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} abs ${p.startsWith("/")} rel ${!p.startsWith("/")} root ${p.startsWith("/")}`,
+      `${$debugStr(p)}: parent ${parent == null ? "None" : `Some(${$debugStr(parent)})`} name ${fileName == null ? "None" : `Some(${$debugStr(fileName)})`} stem ${fileStem == null ? "None" : `Some(${$debugStr(fileStem)})`} ext ${extension == null ? "None" : `Some(${$debugStr(extension)})`} abs ${p.startsWith("/")} rel ${!p.startsWith("/")} root ${p.startsWith("/")}`,
     );
     console.log(
       `  with_extension ${$debugStr($pathWithExtension(p, "md"))} with_file_name ${$debugStr($pathSetFileName(p, "x.y"))}`,
@@ -76,9 +76,9 @@ function main() {
 
   for (const p of ["/usr/lib/../x/./y.txt", "a//b/", "./c", "", "/"]) {
     const parts = $pathParts(p).map((part) => $unwrap(part));
-    const value = $pathAncestors(p);
+    const collect = $pathAncestors(p);
     console.log(
-      `iter [${parts.map((item) => $debugStr(item)).join(", ")}] [${value.map((item) => $debugStr(item)).join(", ")}] ${$pathParts(p).length}`,
+      `iter [${parts.map((item) => $debugStr(item)).join(", ")}] [${collect.map((item) => $debugStr(item)).join(", ")}] ${$pathParts(p).length}`,
     );
   }
   const p = "/usr/lib/rust/";
@@ -94,9 +94,9 @@ function main() {
   console.log(
     `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : "Err(StripPrefixError(()))"}`,
   );
-  const value$2 = $pathStripPrefix("x/y", "z");
-  if (value$2.TAG === "Ok") {
-    console.log(`rest ${$debugStr(value$2._0)}`);
+  const stripPrefix = $pathStripPrefix("x/y", "z");
+  if (stripPrefix.TAG === "Ok") {
+    console.log(`rest ${$debugStr(stripPrefix._0)}`);
   } else {
     console.log("error prefix not found StripPrefixError(())");
   }
@@ -120,10 +120,10 @@ function main() {
   console.log(`${popped[1]} ${$debugStr(buf)}`);
   const popped$1 = $pathPop(buf);
   buf = popped$1[0];
-  const value$3 = popped$1[1];
+  const pop = popped$1[1];
   const popped$2 = $pathPop(buf);
   buf = popped$2[0];
-  console.log(`${value$3} ${popped$2[1]} ${$debugStr(buf)}`);
+  console.log(`${pop} ${popped$2[1]} ${$debugStr(buf)}`);
   const popped$3 = $pathPop(buf);
   buf = popped$3[0];
   console.log(`${popped$3[1]} ${$debugStr(buf)}`);
@@ -132,10 +132,10 @@ function main() {
   let empty = "";
   const set$2 = $pathSetExtension(empty, "x");
   empty = set$2[0];
-  const value$4 = set$2[1];
+  const setExtension = set$2[1];
   const popped$4 = $pathPop(empty);
   empty = popped$4[0];
-  console.log(`${value$4} ${popped$4[1]}`);
+  console.log(`${setExtension} ${popped$4[1]}`);
   empty = $pathSetFileName(empty, "named");
   console.log(`${$debugStr(empty)}`);
 }

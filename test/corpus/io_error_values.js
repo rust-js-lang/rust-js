@@ -42,13 +42,13 @@ function check(n) {
 function main() {
   for (const s of ["5", "x", "50", "0"]) {
     const result = parse(s);
-    const value = result.TAG === "Ok" ? check(result._0) : result;
-    if (value.TAG === "Ok") {
-      console.log(`ok ${value._0}`);
+    const andThen = result.TAG === "Ok" ? check(result._0) : result;
+    if (andThen.TAG === "Ok") {
+      console.log(`ok ${andThen._0}`);
     } else {
-      const arg = !!$ioErrorDyn().source(value._0);
+      const arg = !!$ioErrorDyn().source(andThen._0);
       console.log(
-        `${$ioErrorDisplay(value._0)} | ${value._0.kind} | ${$ioErrorDebug(value._0)} | ${$ioKindText(value._0.kind)} | ${arg}`,
+        `${$ioErrorDisplay(andThen._0)} | ${andThen._0.kind} | ${$ioErrorDebug(andThen._0)} | ${$ioKindText(andThen._0.kind)} | ${arg}`,
       );
     }
   }

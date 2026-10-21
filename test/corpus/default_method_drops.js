@@ -21,17 +21,17 @@ function personGreet() {
     $personGreet = {
       id: personGreet_id,
       greet: (self) => {
-        const value = [1];
-        if (value) {
+        const noisy = [1];
+        if (noisy) {
           try {
             console.log("hello");
           } finally {
-            if (value != null) {
-              noisyDrop_drop(value);
+            if (noisy != null) {
+              noisyDrop_drop(noisy);
             }
           }
-        } else if (value != null) {
-          noisyDrop_drop(value);
+        } else if (noisy != null) {
+          noisyDrop_drop(noisy);
         }
       },
       parts: (self) => {

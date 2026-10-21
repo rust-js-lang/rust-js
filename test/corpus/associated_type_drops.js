@@ -70,14 +70,14 @@ function describe(zone, ZZone) {
         try {
           const tmp = ZZone.show(replaced);
           console.log(`was ${tmp}`);
-          const tmp$1 = ZZone.offset(zone, "new");
+          const offset = ZZone.offset(zone, "new");
           try {
             ZZone.$dropOffset?.(replaced);
           } finally {
-            replaced = tmp$1;
+            replaced = offset;
           }
-          const tmp$2 = ZZone.show(replaced);
-          console.log(`replaced ${tmp$2}`);
+          const tmp$1 = ZZone.show(replaced);
+          console.log(`replaced ${tmp$1}`);
           console.log("end");
         } finally {
           ZZone.$dropOffset?.(replaced);

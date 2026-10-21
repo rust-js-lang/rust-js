@@ -138,7 +138,7 @@ function main() {
   console.log(`${failed === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(out)}`);
 
   let s = "";
-  const value = {
+  const stringSink = {
     s: {
       get value() {
         return s;
@@ -148,9 +148,9 @@ function main() {
       },
     },
   };
-  const sink = { value };
+  const sink = { value: stringSink };
   const written = $writeOf(encode("x y", sink, stringSinkSink()));
-  $assign(value, sink.value);
+  $assign(stringSink, sink.value);
   console.log(`${written === undefined ? "Ok(())" : "Err(Error)"} ${s}`);
 
   let checked = "";

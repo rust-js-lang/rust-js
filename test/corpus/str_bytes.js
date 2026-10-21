@@ -45,24 +45,24 @@ function main() {
   console.log(`${sum}`);
   console.log(`[${Array.from(new TextEncoder().encode("abc")).toReversed().join(", ")}]`);
   const value = Array.from(new TextEncoder().encode(word))[0];
-  const value$1 = Array.from(new TextEncoder().encode(word)).at(-1);
-  const value$2 = Array.from(new TextEncoder().encode(word))[2];
+  const last = Array.from(new TextEncoder().encode(word)).at(-1);
+  const value$1 = Array.from(new TextEncoder().encode(word))[2];
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${last == null ? "None" : `Some(${last})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$3 = $position(Array.from(new TextEncoder().encode(word)), (b) => b === 32);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = $position(Array.from(new TextEncoder().encode(word)), (b) => b === 32);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   for (const [i, b] of Array.from(new TextEncoder().encode("hi!")).entries()) {
     console.log(`${i}: ${b}`);
   }
   console.log(
     `${fnv1a("").toString(16).padStart(8, "0")} ${fnv1a("hello").toString(16).padStart(8, "0")}`,
   );
-  const value$4 = leading_number("42 apples");
-  const value$5 = leading_number("7");
-  const value$6 = leading_number("none");
+  const leadingNumber = leading_number("42 apples");
+  const value$3 = leading_number("7");
+  const value$4 = leading_number("none");
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
+    `${leadingNumber == null ? "None" : `Some(${leadingNumber})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   // `len()` is what's left, and doesn't take it.
   const rest = $iter(Array.from(new TextEncoder().encode("abc")));

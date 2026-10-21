@@ -118,15 +118,15 @@ function describe(e, EError) {
 
 function main() {
   for (const s of ["42", " 7 ", "-3", "x", "99999999999999999999", ""]) {
-    const value = parse_positive(s);
-    if (value.TAG === "Ok") {
-      const n = value._0;
+    const parsePositive = parse_positive(s);
+    if (parsePositive.TAG === "Ok") {
+      const n = parsePositive._0;
       console.log(`ok ${n}`);
     } else {
-      const e = value._0;
-      const value$1 = !e.impl.source(e.value);
+      const e = parsePositive._0;
+      const value = !e.impl.source(e.value);
       console.log(
-        `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value$1}`,
+        `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value}`,
       );
     }
   }
@@ -142,10 +142,10 @@ function main() {
   }
   const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
   console.log(`${describe(err, $parseErrorDyn("ParseIntError"))}`);
-  const receiver$1 = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
+  const value = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
   const receiver = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
-  const value = !receiver.impl.source(receiver.value);
-  console.log(`${receiver$1.impl.Display().fmt(receiver$1.value)} ${value}`);
+  const value$1 = !receiver.impl.source(receiver.value);
+  console.log(`${value.impl.Display().fmt(value.value)} ${value$1}`);
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("TryFromIntError"))}`,
   );

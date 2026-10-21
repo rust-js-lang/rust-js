@@ -32,15 +32,15 @@ function main() {
   const a = ["a"];
   const value = make(1);
   console.log(`${loudDebug_fmt(a)} (${value[0]}, ${value[1]})`);
-  const value$1 = named("b");
-  const value$2 = make(2);
-  const value$3 = make(3)[0];
-  console.log(`${loudDebug_fmt(value$1)} (${value$2[0]}, ${value$2[1]}) ${value$3}`);
-  const value$4 = named("c")[0];
-  const value$5 = make(4);
-  console.log(`(${value$5[0]}, ${value$5[1]}) ${value$4}`);
-  const value$6 = named("d")[0];
-  console.log(`${make(5)[0]} ${value$6}`);
+  const loud = named("b");
+  const value$1 = make(2);
+  const value$2 = make(3)[0];
+  console.log(`${loudDebug_fmt(loud)} (${value$1[0]}, ${value$1[1]}) ${value$2}`);
+  const value$3 = named("c")[0];
+  const value$4 = make(4);
+  console.log(`(${value$4[0]}, ${value$4[1]}) ${value$3}`);
+  const value$5 = named("d")[0];
+  console.log(`${make(5)[0]} ${value$5}`);
   console.log(`${make(6)[1]}`);
 }
 //# sourceMappingURL=case.js.map

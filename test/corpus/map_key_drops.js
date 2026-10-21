@@ -37,22 +37,21 @@ function main() {
     $insert(m, [1], 10, keyDrop_drop);
     const tmp = $insert(m, [1], 11, keyDrop_drop);
     console.log(`insert ${tmp == null ? "None" : `Some(${tmp})`}`);
-    const tmp$1 = $entry(m, [1], keyDrop_drop);
-    const entry = tmp$1;
+    const entry = $entry(m, [1], keyDrop_drop);
     $orInsert(entry._0[0], entry._0[1], 0);
-    const tmp$2 = $mutGet(entry._0[0], entry._0[1]);
+    const orInsert = $mutGet(entry._0[0], entry._0[1]);
+    orInsert.value = (orInsert.value + 1) | 0;
+    const tmp$1 = $entry(m, [2], keyDrop_drop);
+    const entry$1 = tmp$1;
+    $orInsert(entry$1._0[0], entry$1._0[1], 0);
+    const tmp$2 = $mutGet(entry$1._0[0], entry$1._0[1]);
     tmp$2.value = (tmp$2.value + 1) | 0;
     const tmp$3 = $entry(m, [2], keyDrop_drop);
-    const entry$1 = tmp$3;
-    $orInsert(entry$1._0[0], entry$1._0[1], 0);
-    const tmp$4 = $mutGet(entry$1._0[0], entry$1._0[1]);
-    tmp$4.value = (tmp$4.value + 1) | 0;
-    const tmp$5 = $entry(m, [2], keyDrop_drop);
-    const tmp$6 = () => 5;
-    const entry$2 = tmp$5;
-    $orInsertWith(entry$2._0[0], entry$2._0[1], tmp$6);
-    const tmp$7 = $mutGet(entry$2._0[0], entry$2._0[1]);
-    tmp$7.value = (tmp$7.value + 1) | 0;
+    const tmp$4 = () => 5;
+    const entry$2 = tmp$3;
+    $orInsertWith(entry$2._0[0], entry$2._0[1], tmp$4);
+    const orInsertWith = $mutGet(entry$2._0[0], entry$2._0[1]);
+    orInsertWith.value = (orInsertWith.value + 1) | 0;
     const value = [2];
     try {
       const value$1 = $remove(m, value, keyDrop_drop);
@@ -69,14 +68,14 @@ function main() {
     }
     const value$2 = [1];
     try {
-      const tmp = $removeEntry(m, value$2);
-      const tmp$1 = ([k, v]) => {
+      const removeEntry = $removeEntry(m, value$2);
+      const tmp = ([k, v]) => {
         const result = [k[0], v];
         keyDrop_drop(k);
         return result;
       };
-      const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-      console.log(`removed ${tmp$2 == null ? "None" : `Some((${tmp$2[0]}, ${tmp$2[1]}))`}`);
+      const tmp$1 = removeEntry ? tmp(removeEntry) : undefined;
+      console.log(`removed ${tmp$1 == null ? "None" : `Some((${tmp$1[0]}, ${tmp$1[1]}))`}`);
     } finally {
       keyDrop_drop(value$2);
     }
@@ -112,24 +111,24 @@ function main() {
       keyDrop_drop(value);
     }
     $add(s, [4], keyDrop_drop);
-    const tmp$2 = $setReplace(s, [4]);
-    const tmp$3 = (k) => {
+    const replace = $setReplace(s, [4]);
+    const tmp$2 = (k) => {
       const result = k[0];
       keyDrop_drop(k);
       return result;
     };
-    const tmp$4 = tmp$2 ? tmp$3(tmp$2) : undefined;
-    console.log(`replace ${tmp$4 == null ? "None" : `Some(${tmp$4})`}`);
+    const tmp$3 = replace ? tmp$2(replace) : undefined;
+    console.log(`replace ${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
     const value$1 = [4];
     try {
-      const tmp = s.delete(value$1) ? value$1 : undefined;
-      const tmp$1 = (k) => {
+      const take = s.delete(value$1) ? value$1 : undefined;
+      const tmp = (k) => {
         const result = k[0];
         keyDrop_drop(k);
         return result;
       };
-      const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-      console.log(`take ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+      const tmp$1 = take ? tmp(take) : undefined;
+      console.log(`take ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     } finally {
       keyDrop_drop(value$1);
     }

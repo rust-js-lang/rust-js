@@ -38,17 +38,17 @@ function main() {
   const value$6 = at(1);
   const value$1 = Math.imul(grid[value$5][$at(grid[value$5], value$6)], value$4);
   grid[value$5][value$6] = value$1;
-  const value$7 = $index(ps, at(1));
-  value$7.x = (value$7.x + 5) | 0;
-  const value$8 = at(2) | 0;
-  const value$9 = at(0);
-  if (value$9 >= 2) {
-    throw new Error(`index out of bounds: the len is 2 but the index is ${value$9}`);
+  const p = $index(ps, at(1));
+  p.x = (p.x + 5) | 0;
+  const value$7 = at(2) | 0;
+  const value$8 = at(0);
+  if (value$8 >= 2) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$8}`);
   }
-  arr[value$9].x = (arr[value$9].x - value$8) | 0;
+  arr[value$8].x = (arr[value$8].x - value$7) | 0;
   const index = at(2);
   $index(v, index);
-  const value$10 = {
+  const value$9 = {
     get value() {
       return v[index];
     },
@@ -56,9 +56,9 @@ function main() {
       v[index] = value;
     },
   };
-  value$10.value = (value$10.value + 1) | 0;
-  const value$11 = at(7) | 0;
-  v[$at(v, 1)] = (v[1] + value$11) | 0;
+  value$9.value = (value$9.value + 1) | 0;
+  const value$10 = at(7) | 0;
+  v[$at(v, 1)] = (v[1] + value$10) | 0;
   console.log(
     `[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.join(", ")}]`,
   );

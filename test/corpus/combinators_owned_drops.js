@@ -116,11 +116,11 @@ function main() {
     noisyDrop_drop(e);
     return result;
   };
-  const value$2 = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
+  const noisy = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
   try {
-    console.log(`${value$2[0]}`);
+    console.log(`${noisy[0]}`);
   } finally {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(noisy);
   }
   const result$4 = ok(10);
   let value;
@@ -135,8 +135,8 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  const value$3 = value ? map$3(value) : undefined;
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = value ? map$3(value) : undefined;
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const result$5 = ok(11);
   let holds$4;
   if (result$5.TAG === "Ok") {
@@ -177,7 +177,7 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  const value$4 = value$1 ? map$4(value$1) : undefined;
+  const value$3 = value$1 ? map$4(value$1) : undefined;
   const result$8 = ok(14);
   let error;
   if (result$8.TAG === "Err") {
@@ -191,9 +191,9 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  const value$5 = error ? map$5(error) : undefined;
+  const value$4 = error ? map$5(error) : undefined;
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   const result$9 = ok(15);
   const fallback$2 = [100];

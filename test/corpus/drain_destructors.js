@@ -16,9 +16,9 @@ function ids(v) {
 
 function main() {
   const v = $range(1, 9).map((value) => [value]);
-  let tmp;
+  let drain;
   try {
-    tmp = $iter($drain(v, 6));
+    drain = $iter($drain(v, 6));
   } catch (error) {
     for (const item of v) {
       nDrop_drop(item);
@@ -26,9 +26,26 @@ function main() {
     throw error;
   }
   try {
-    for (const item of tmp) {
+    for (const item of drain) {
       nDrop_drop(item);
     }
+  } catch (error) {
+    for (const item of v) {
+      nDrop_drop(item);
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = ids(v);
+  } catch (error) {
+    for (const item of v) {
+      nDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    console.log(`after statement [${tmp.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       nDrop_drop(item);
@@ -37,24 +54,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = ids(v);
-  } catch (error) {
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`after statement [${tmp$1.join(", ")}]`);
-  } catch (error) {
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = $iter($drain(v, 0, 2));
+    tmp$1 = $iter($drain(v, 0, 2));
   } catch (error) {
     for (const item of v) {
       nDrop_drop(item);
@@ -63,18 +63,41 @@ function main() {
   }
   let taken;
   try {
-    taken = tmp$2.toArray();
+    taken = tmp$1.toArray();
   } catch (error) {
     for (const item of v) {
       nDrop_drop(item);
     }
     throw error;
   }
+  let tmp$2;
   let tmp$3;
+  try {
+    tmp$2 = ids(taken);
+    tmp$3 = v;
+  } catch (error) {
+    for (const item of taken) {
+      nDrop_drop(item);
+    }
+    for (const item of v) {
+      nDrop_drop(item);
+    }
+    throw error;
+  }
   let tmp$4;
   try {
-    tmp$3 = ids(taken);
-    tmp$4 = v;
+    tmp$4 = ids(tmp$3);
+  } catch (error) {
+    for (const item of taken) {
+      nDrop_drop(item);
+    }
+    for (const item of v) {
+      nDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    console.log(`taken [${tmp$2.join(", ")}] left [${tmp$4.join(", ")}]`);
   } catch (error) {
     for (const item of taken) {
       nDrop_drop(item);
@@ -86,7 +109,7 @@ function main() {
   }
   let tmp$5;
   try {
-    tmp$5 = ids(tmp$4);
+    tmp$5 = $iter($drain(v, 1));
   } catch (error) {
     for (const item of taken) {
       nDrop_drop(item);
@@ -96,34 +119,11 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`taken [${tmp$3.join(", ")}] left [${tmp$5.join(", ")}]`);
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
+  const iter = tmp$5;
   let tmp$6;
-  try {
-    tmp$6 = $iter($drain(v, 1));
-  } catch (error) {
-    for (const item of taken) {
-      nDrop_drop(item);
-    }
-    for (const item of v) {
-      nDrop_drop(item);
-    }
-    throw error;
-  }
-  const iter = tmp$6;
-  let tmp$7;
   while (true) {
     try {
-      tmp$7 = $next(iter);
+      tmp$6 = $next(iter);
     } catch (error) {
       for (const item of iter) {
         nDrop_drop(item);
@@ -136,8 +136,8 @@ function main() {
       }
       throw error;
     }
-    if (tmp$7) {
-      const n = tmp$7;
+    if (tmp$6) {
+      const n = tmp$6;
       try {
         console.log(`got ${n[0]}`);
       } catch (error) {

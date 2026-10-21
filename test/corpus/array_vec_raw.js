@@ -173,12 +173,12 @@ function main() {
   const words = Stack.new(4);
   Stack.push(words, "b", 4, 12);
   Stack.insert(words, 0, "a", 4);
-  const value = Stack.as_mut_slice(words, 4);
-  const length = value.length;
+  const mutSlice = Stack.as_mut_slice(words, 4);
+  const length = mutSlice.length;
   if (1 >= length) {
     throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
   }
-  value[1] += "!";
+  mutSlice[1] += "!";
   console.log(
     `[${Stack.as_slice(words, 4)
       .map((item) => $debugStr(item))
@@ -187,8 +187,8 @@ function main() {
   const copied = new Array(6).fill(0);
   const source = [1, 2, 3];
   $ptrCopy($ptr(source, 0), $ptrAdd($ptr(copied, 0), 2), 3);
-  const value$1 = $ptr(copied, 0);
-  $ptrCopy($ptrAdd($ptr(source, 0), 1), value$1, 2);
+  const mutPtr = $ptr(copied, 0);
+  $ptrCopy($ptrAdd($ptr(source, 0), 1), mutPtr, 2);
   console.log(`[${copied.join(", ")}]`);
   // An array's pointer as its first item's.
   const row = [4, 5, 6];

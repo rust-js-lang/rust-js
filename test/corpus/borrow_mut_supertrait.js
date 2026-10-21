@@ -54,9 +54,9 @@ export function _usize__K_PoolIndex(K) {
 
 function total(p, PPoolIndex) {
   const self = { value: p };
-  const value = PPoolIndex.first(self);
+  const first = PPoolIndex.first(self);
   p = self.value;
-  return (value + PPoolIndex.len(p)) >>> 0;
+  return (first + PPoolIndex.len(p)) >>> 0;
 }
 
 function main() {

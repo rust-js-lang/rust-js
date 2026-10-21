@@ -20,12 +20,12 @@ function pick(n) {
   if (n === 1) {
     return { TAG: "One", _0: make(10) };
   }
-  const value = make(20);
+  const loud = make(20);
   let tmp;
   try {
-    tmp = [value, make(21)];
+    tmp = [loud, make(21)];
   } catch (error) {
-    loudDrop_drop(value);
+    loudDrop_drop(loud);
     throw error;
   }
   const a = tmp[0];
@@ -75,13 +75,13 @@ function all_moved([a, b]) {
 }
 
 function main() {
-  let tmp$0$live = false;
-  const value = make(3);
+  let two$0$live = false;
+  const loud = make(3);
   let tmp;
   try {
-    tmp = [value, make(4)];
+    tmp = [loud, make(4)];
   } catch (error) {
-    loudDrop_drop(value);
+    loudDrop_drop(loud);
     throw error;
   }
   const x = tmp[0];
@@ -104,17 +104,17 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
-  let tmp$2;
+  let pair;
   try {
-    tmp$2 = { left: tmp$1, right: make(31) };
+    pair = { left: tmp$1, right: make(31) };
   } catch (error) {
     loudDrop_drop(tmp$1);
     loudDrop_drop(x);
     throw error;
   }
-  const right = tmp$2.right;
+  const right = pair.right;
   try {
-    loudDrop_drop(tmp$2.left);
+    loudDrop_drop(pair.left);
   } catch (error) {
     loudDrop_drop(right);
     loudDrop_drop(x);
@@ -128,31 +128,31 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
-  let tmp$3;
+  let two;
   for (let n = 0; n < 3; n++) {
     try {
-      tmp$3 = pick(n);
+      two = pick(n);
     } catch (error) {
       loudDrop_drop(right);
       loudDrop_drop(x);
       throw error;
     }
-    tmp$0$live = true;
-    if (tmp$3.TAG === "Both") {
-      tmp$0$live = false;
+    two$0$live = true;
+    if (two.TAG === "Both") {
+      two$0$live = false;
       try {
-        console.log(`both ${tmp$3._0[0]}`);
+        console.log(`both ${two._0[0]}`);
       } catch (error) {
-        loudDrop_drop(tmp$3._0);
-        if (tmp$3.TAG === "Both") {
-          loudDrop_drop(tmp$3._1);
+        loudDrop_drop(two._0);
+        if (two.TAG === "Both") {
+          loudDrop_drop(two._1);
         } else {
-          if (tmp$3.TAG === "Both") {
-            loudDrop_drop(tmp$3._0);
-            loudDrop_drop(tmp$3._1);
+          if (two.TAG === "Both") {
+            loudDrop_drop(two._0);
+            loudDrop_drop(two._1);
           }
-          if (tmp$3.TAG === "One") {
-            loudDrop_drop(tmp$3._0);
+          if (two.TAG === "One") {
+            loudDrop_drop(two._0);
           }
         }
         loudDrop_drop(right);
@@ -160,37 +160,37 @@ function main() {
         throw error;
       }
       try {
-        loudDrop_drop(tmp$3._0);
+        loudDrop_drop(two._0);
       } catch (error) {
-        if (tmp$3.TAG === "Both") {
-          loudDrop_drop(tmp$3._1);
+        if (two.TAG === "Both") {
+          loudDrop_drop(two._1);
         } else {
-          if (tmp$3.TAG === "Both") {
-            loudDrop_drop(tmp$3._0);
-            loudDrop_drop(tmp$3._1);
+          if (two.TAG === "Both") {
+            loudDrop_drop(two._0);
+            loudDrop_drop(two._1);
           }
-          if (tmp$3.TAG === "One") {
-            loudDrop_drop(tmp$3._0);
+          if (two.TAG === "One") {
+            loudDrop_drop(two._0);
           }
         }
         loudDrop_drop(right);
         loudDrop_drop(x);
         throw error;
       }
-    } else if (tmp$3.TAG === "One") {
+    } else if (two.TAG === "One") {
       try {
         console.log("one");
       } catch (error) {
-        if (tmp$3.TAG === "Both") {
-          loudDrop_drop(tmp$3._0);
-          loudDrop_drop(tmp$3._1);
+        if (two.TAG === "Both") {
+          loudDrop_drop(two._0);
+          loudDrop_drop(two._1);
         } else {
-          if (tmp$3.TAG === "Both") {
-            loudDrop_drop(tmp$3._0);
-            loudDrop_drop(tmp$3._1);
+          if (two.TAG === "Both") {
+            loudDrop_drop(two._0);
+            loudDrop_drop(two._1);
           }
-          if (tmp$3.TAG === "One") {
-            loudDrop_drop(tmp$3._0);
+          if (two.TAG === "One") {
+            loudDrop_drop(two._0);
           }
         }
         loudDrop_drop(right);
@@ -201,16 +201,16 @@ function main() {
       try {
         console.log("zero");
       } catch (error) {
-        if (tmp$3.TAG === "Both") {
-          loudDrop_drop(tmp$3._0);
-          loudDrop_drop(tmp$3._1);
+        if (two.TAG === "Both") {
+          loudDrop_drop(two._0);
+          loudDrop_drop(two._1);
         } else {
-          if (tmp$3.TAG === "Both") {
-            loudDrop_drop(tmp$3._0);
-            loudDrop_drop(tmp$3._1);
+          if (two.TAG === "Both") {
+            loudDrop_drop(two._0);
+            loudDrop_drop(two._1);
           }
-          if (tmp$3.TAG === "One") {
-            loudDrop_drop(tmp$3._0);
+          if (two.TAG === "One") {
+            loudDrop_drop(two._0);
           }
         }
         loudDrop_drop(right);
@@ -219,18 +219,18 @@ function main() {
       }
     }
     try {
-      if (tmp$3.TAG === "Both") {
-        if (tmp$0$live) {
-          loudDrop_drop(tmp$3._0);
+      if (two.TAG === "Both") {
+        if (two$0$live) {
+          loudDrop_drop(two._0);
         }
-        loudDrop_drop(tmp$3._1);
+        loudDrop_drop(two._1);
       } else {
-        if (tmp$3.TAG === "Both") {
-          loudDrop_drop(tmp$3._0);
-          loudDrop_drop(tmp$3._1);
+        if (two.TAG === "Both") {
+          loudDrop_drop(two._0);
+          loudDrop_drop(two._1);
         }
-        if (tmp$3.TAG === "One") {
-          loudDrop_drop(tmp$3._0);
+        if (two.TAG === "One") {
+          loudDrop_drop(two._0);
         }
       }
     } catch (error) {
@@ -238,7 +238,7 @@ function main() {
       loudDrop_drop(x);
       throw error;
     }
-    tmp$0$live = false;
+    two$0$live = false;
     try {
       console.log(`after match ${n}`);
     } catch (error) {
@@ -248,36 +248,36 @@ function main() {
     }
   }
 
-  let tmp$4;
+  let tmp$2;
   try {
-    tmp$4 = make(5);
+    tmp$2 = make(5);
   } catch (error) {
     loudDrop_drop(right);
     loudDrop_drop(x);
     throw error;
   }
-  let tmp$5;
+  let tmp$3;
   try {
-    tmp$5 = [tmp$4, make(6)];
+    tmp$3 = [tmp$2, make(6)];
   } catch (error) {
-    loudDrop_drop(tmp$4);
+    loudDrop_drop(tmp$2);
     loudDrop_drop(right);
     loudDrop_drop(x);
     throw error;
   }
-  const p = tmp$5[0];
+  const p = tmp$3[0];
   try {
     console.log("arm");
   } catch (error) {
     loudDrop_drop(p);
-    loudDrop_drop(tmp$5[1]);
+    loudDrop_drop(tmp$3[1]);
     loudDrop_drop(right);
     loudDrop_drop(x);
     throw error;
   }
   const y = p;
   try {
-    loudDrop_drop(tmp$5[1]);
+    loudDrop_drop(tmp$3[1]);
   } catch (error) {
     loudDrop_drop(y);
     loudDrop_drop(right);
@@ -292,35 +292,35 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
-  let tmp$6;
+  let tmp$4;
 
   try {
-    tmp$6 = make(7);
+    tmp$4 = make(7);
   } catch (error) {
     loudDrop_drop(y);
     loudDrop_drop(right);
     loudDrop_drop(x);
     throw error;
   }
-  let tmp$7;
+  let tmp$5;
   try {
-    tmp$7 = [tmp$6, make(8)];
+    tmp$5 = [tmp$4, make(8)];
   } catch (error) {
-    if (tmp$6 != null) {
-      loudDrop_drop(tmp$6);
+    if (tmp$4 != null) {
+      loudDrop_drop(tmp$4);
     }
     loudDrop_drop(y);
     loudDrop_drop(right);
     loudDrop_drop(x);
     throw error;
   }
-  if (tmp$7[0]) {
-    const z = tmp$7[0];
+  if (tmp$5[0]) {
+    const z = tmp$5[0];
     try {
       console.log(`if ${z[0]}`);
     } catch (error) {
       loudDrop_drop(z);
-      loudDrop_drop(tmp$7[1]);
+      loudDrop_drop(tmp$5[1]);
       loudDrop_drop(y);
       loudDrop_drop(right);
       loudDrop_drop(x);
@@ -329,14 +329,14 @@ function main() {
     try {
       loudDrop_drop(z);
     } catch (error) {
-      loudDrop_drop(tmp$7[1]);
+      loudDrop_drop(tmp$5[1]);
       loudDrop_drop(y);
       loudDrop_drop(right);
       loudDrop_drop(x);
       throw error;
     }
     try {
-      loudDrop_drop(tmp$7[1]);
+      loudDrop_drop(tmp$5[1]);
     } catch (error) {
       loudDrop_drop(y);
       loudDrop_drop(right);
@@ -345,10 +345,10 @@ function main() {
     }
   } else {
     try {
-      if (tmp$7[0]) {
-        loudDrop_drop(tmp$7[0]);
+      if (tmp$5[0]) {
+        loudDrop_drop(tmp$5[0]);
       }
-      loudDrop_drop(tmp$7[1]);
+      loudDrop_drop(tmp$5[1]);
     } catch (error) {
       loudDrop_drop(y);
       loudDrop_drop(right);

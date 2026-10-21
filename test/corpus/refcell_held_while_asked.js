@@ -23,23 +23,23 @@ const SHARED = { value: [1] };
 
 function asks_shared() {
   return ((s) => {
-    const value = $tryBorrow(s, true);
-    const result = value.TAG === "Err";
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
+    const tryBorrowMut = $tryBorrow(s, true);
+    const result = tryBorrowMut.TAG === "Err";
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
     return result;
   })(SHARED);
 }
 
 function probeDrop_drop(probe) {
-  const value = $tryBorrow(probe[0], true);
-  const value$1 = value.TAG === "Err";
+  const tryBorrowMut = $tryBorrow(probe[0], true);
+  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`drop sees it borrowed: ${value$1}`);
+    console.log(`drop sees it borrowed: ${value}`);
   } finally {
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   }
 }
@@ -52,13 +52,13 @@ export function peekClone() {
 }
 
 function peekClone_clone(peek) {
-  const value = $tryBorrow(peek[0], true);
-  const value$1 = value.TAG === "Err";
+  const tryBorrowMut = $tryBorrow(peek[0], true);
+  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`clone sees it borrowed: ${value$1}`);
+    console.log(`clone sees it borrowed: ${value}`);
   } finally {
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   }
   return [peek[0]];
@@ -72,10 +72,10 @@ const Node = {
     if (me) {
       value$0$live = false;
       try {
-        const tmp = $tryBorrow(me.value, true);
-        result = tmp.TAG === "Err";
-        if (tmp.TAG === "Ok") {
-          $unborrow(tmp._0);
+        const tryBorrowMut = $tryBorrow(me.value, true);
+        result = tryBorrowMut.TAG === "Err";
+        if (tryBorrowMut.TAG === "Ok") {
+          $unborrow(tryBorrowMut._0);
         }
       } finally {
         $rcDrop(me, (value) => {
@@ -164,56 +164,56 @@ function main() {
     $unborrow(value);
   }
   const value$1 = $borrow(cell, true);
-  const value$2 = [cell, 0];
-  const n = (value$1.value.length + value$2[1]) >>> 0;
+  const probe = [cell, 0];
+  const n = (value$1.value.length + probe[1]) >>> 0;
   try {
-    probeDrop_drop(value$2);
+    probeDrop_drop(probe);
   } finally {
     $unborrow(value$1);
   }
   console.log(`${n}`);
   const peeks = [[cell]];
-  const value$3 = $borrow(cell, true);
+  const value$2 = $borrow(cell, true);
   let m;
   try {
     const tmp = peeks.map((item) => peekClone_clone(item));
-    m = (value$3.value.length + tmp.length) >>> 0;
+    m = (value$2.value.length + tmp.length) >>> 0;
   } finally {
-    $unborrow(value$3);
+    $unborrow(value$2);
   }
   console.log(`${m}`);
   const options = [[cell]];
-  const value$4 = $borrow(cell, true);
+  const value$3 = $borrow(cell, true);
   let k;
   try {
     const tmp = options.map((item) => (item == null ? item : peekClone_clone(item)));
-    k = (value$4.value.length + tmp.length) >>> 0;
+    k = (value$3.value.length + tmp.length) >>> 0;
   } finally {
-    $unborrow(value$4);
+    $unborrow(value$3);
   }
   console.log(`${k}`);
-  const value$5 = $borrow(cell, true);
+  const value$4 = $borrow(cell, true);
   let asked;
   try {
-    asked = value$5.value.map(() => {
-      const value = $tryBorrow(cell, true);
-      const result = value.TAG === "Err";
-      if (value.TAG === "Ok") {
-        $unborrow(value._0);
+    asked = value$4.value.map(() => {
+      const tryBorrowMut = $tryBorrow(cell, true);
+      const result = tryBorrowMut.TAG === "Err";
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
       }
       return result;
     });
   } finally {
-    $unborrow(value$5);
+    $unborrow(value$4);
   }
   console.log(`[${asked.join(", ")}]`);
   const seen = ((s) => {
-    const value = $borrow(s, true);
+    const borrow = $borrow(s, true);
     let result;
     try {
-      result = value.value.map(asks_shared);
+      result = borrow.value.map(asks_shared);
     } finally {
-      $unborrow(value);
+      $unborrow(borrow);
     }
     return result;
   })(SHARED);

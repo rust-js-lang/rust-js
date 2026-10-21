@@ -29,10 +29,10 @@ function main() {
   if (first != null) {
     first.value = (first.value - 1) | 0;
   }
-  const value = it.reduce((n) => n + 1, 0);
+  const count = it.reduce((n) => n + 1, 0);
   const arg = Iterator.from($mutItems($view(d, 3, 4))).reduce((n) => n + 1, 0);
   console.log(
-    `[${words.map((item) => $debugStr(item)).join(", ")}] [${points.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${value} ${arg}`,
+    `[${words.map((item) => $debugStr(item)).join(", ")}] [${points.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${count} ${arg}`,
   );
   console.log(`[${d.join(", ")}]`);
 }

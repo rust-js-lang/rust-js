@@ -44,17 +44,17 @@ function filled(word, N) {
 
 function main() {
   const h = { cell: { value: [] } };
-  const value = $borrowMut(h.cell, true);
+  const borrowMut = $borrowMut(h.cell, true);
   try {
-    value.value.push(1);
+    borrowMut.value.push(1);
   } finally {
-    $unborrow(value);
+    $unborrow(borrowMut);
   }
-  const value$1 = $borrow(h.cell, true);
+  const borrow = $borrow(h.cell, true);
   try {
-    console.log(`[${value$1.value.join(", ")}] ${filled("a", 3)}`);
+    console.log(`[${borrow.value.join(", ")}] ${filled("a", 3)}`);
   } finally {
-    $unborrow(value$1);
+    $unborrow(borrow);
   }
 }
 //# sourceMappingURL=case.js.map
