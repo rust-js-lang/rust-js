@@ -19,6 +19,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `&mut Self` given on where an `IntoIterator` goes**, through a
+  dictionary too: itertools' `collect_tuple` (ADR 0551).
 - **A `Fuse` a struct holds, stepped from its back** where it's known to
   have one, wherever it was made (ADR 0549); and an impl's `as_mut()` of
   an array it knows (ADR 0550).

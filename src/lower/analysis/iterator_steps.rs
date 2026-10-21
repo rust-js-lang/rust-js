@@ -3,7 +3,7 @@
 //! `ExactSizeIterator`'s (ADR 0487), each function steps by each: it's given
 //! a dictionary only then, as a parameter nothing steps by it needs none.
 
-use crate::lower::iterators::given_as_it_is;
+use crate::lower::iterators::{given_as_it_is, given_by_its_trait};
 use crate::lower::recognition::{
     StdItem, is_extension_entry, is_iterator_extension, is_std_crate, is_std_def, std_item, trait_method,
 };
@@ -38,8 +38,11 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
         let pass_on = |passed: &mut Vec<_>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
             for (index, arg) in args.iter().enumerate() {
+                // Or a reference to one, `&mut Self` given as an `I:
+                // IntoIterator`, made a JS iterator of it (ADR 0551).
                 if let Some(ty) = arg.as_type()
-                    && let ty::Param(param) = ty.kind()
+                    && let ty::Param(param) = ty.peel_refs().kind()
+                    && !given_by_its_trait(tcx, callee, index as u32)
                 {
                     passed.push(((caller, param.index), (callee, index as u32)));
                 }
@@ -120,6 +123,13 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             // made of the impl's evidence.
             let resolved = match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
                 Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance,
+                // A trait's method of a type parameter, its dictionary's: what
+                // it's given as the trait declares it, a parameter given as a
+                // JS iterator made of one given on (ADR 0551).
+                Ok(None) if tcx.trait_of_assoc(callee).is_some() => {
+                    pass_on(&mut passed, callee, args);
+                    continue;
+                }
                 _ => continue,
             };
             pass_on(&mut passed, resolved.def_id(), resolved.args);
@@ -240,9 +250,10 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             .filter(|p| p.self_ty().skip_binder() == param.to_ty(tcx))
             .map(|p| p.def_id())
             .collect();
+        // An `IntoIterator`'s too, given the JS iterator of what it's given.
         let iterates = bounds
             .iter()
-            .any(|&tr| tr == iterator || is_iterator_extension(tcx, tr));
+            .any(|&tr| tr == iterator || is_iterator_extension(tcx, tr) || is_std_def(tcx, tr, StdItem::IntoIterator));
         if !iterates || given_as_it_is(tcx, id, param) {
             return Vec::new();
         }

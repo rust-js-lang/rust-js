@@ -619,6 +619,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0548 A library's manifest says which type parameters it steps](decisions/0548-a-librarys-manifest-says-which-parameters-it-steps.md)
 - [0549 A held `Fuse` is stepped from its back as its use site knows it](decisions/0549-a-held-fuse-steps-what-a-use-site-gives.md)
 - [0550 A known type's `as_mut()` is the value its `&mut` is](decisions/0550-a-known-as-mut-is-the-value.md)
+- [0551 A parameter given as it is, given on where a JS iterator goes, is made one](decisions/0551-self-given-on-where-a-js-iterator-goes.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

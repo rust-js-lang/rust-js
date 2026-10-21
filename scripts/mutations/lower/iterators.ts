@@ -31,8 +31,8 @@ export const mutations: Mutation[] = [
     name: "range-any-param-items",
     breaks: "a range given where any `T: Clone` goes is its items, not the range",
     file: "src/lower/iterators.rs",
-    find: "        if self.range_kind(ty.peel_refs()).is_none() {\n            return false;\n        }",
-    replace: "        if self.range_kind(ty.peel_refs()).is_some() {\n            return true;\n        }",
+    find: "        if self.range_kind(ty.peel_refs()).is_none() && !self.iterator_given_as_it_is(ty.peel_refs()) {\n            return false;\n        }",
+    replace: "        if self.range_kind(ty.peel_refs()).is_some() {\n            return true;\n        }\n        if !self.iterator_given_as_it_is(ty.peel_refs()) {\n            return false;\n        }",
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {
@@ -1006,5 +1006,21 @@ export const mutations: Mutation[] = [
     find: "        if !self.held_adapter(ty) {\n            return None;\n        }\n        let source",
     replace: "        if true {\n            return None;\n        }\n        let source",
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+  },
+  {
+    name: "trait-self-made-js-iterator",
+    breaks: "a trait's `Self`, given to its method through a dictionary, is made a JS iterator",
+    file: "src/lower/iterators.rs",
+    find: "(given_as_it_is(self.tcx, callee, *param) || given_by_its_trait(self.tcx, callee, param.index))",
+    replace: "given_as_it_is(self.tcx, callee, *param)",
+    tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
+  },
+  {
+    name: "given-param-not-made-js-iterator",
+    breaks: "a parameter given as it is goes as it is where a JS iterator goes",
+    file: "src/lower/iterators.rs",
+    find: " && !self.iterator_given_as_it_is(ty.peel_refs())",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
   },
 ];

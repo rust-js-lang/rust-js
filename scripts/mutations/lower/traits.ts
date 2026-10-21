@@ -1319,11 +1319,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-iterator-unconverted",
-    breaks: "a range given a std trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, isn't a JS iterator",
+    breaks: "a range given a trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, or a `&mut Self` given as it is, isn't a JS iterator",
     file: "src/lower/traits.rs",
-    find: "            if !self.is_rust_trait(trait_id) {\n",
-    replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+    find: "            self.given_iterators(id, &mut values, &given, span)?;\n            let location",
+    replace: "            let location",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_extend|self_given_on_as_into_iter).rs$"],
   },
   {
     name: "dyn-cell-given-generic",

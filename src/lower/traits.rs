@@ -2416,17 +2416,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of the impl's terms, in a copied default (ADR 0495).
             let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;
             let mut values = values;
-            // A range or an iterator of the crate's where a std method's own
-            // generic `IntoIterator` goes, a JS iterator, as a function's (ADR
-            // 0445).
-            if !self.is_rust_trait(trait_id) {
-                let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
-                    .skip_normalization()
-                    .skip_binder()
-                    .inputs()
-                    .to_vec();
-                self.given_iterators(id, &mut values, &given, span)?;
-            }
+            // A range or an iterator of the crate's, or one given as it is,
+            // where a method's own generic `IntoIterator` goes, a JS iterator,
+            // as a function's (ADRs 0445, 0551).
+            let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .to_vec();
+            self.given_iterators(id, &mut values, &given, span)?;
             let location = self.caller_location(span);
             values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);
             return Ok(Some(Expr::call(

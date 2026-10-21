@@ -57,6 +57,14 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
     (callee.helper_name() == Some("$iterator")).then(|| args.first().cloned())?
 }
 
+/// Whether `callee`'s type parameter `index` is its trait's, `Self` or a
+/// parameter of the trait a method of it is called through: given as the
+/// trait's impl takes it, never made a JS iterator for it, which only a
+/// method's own parameters are (ADR 0551).
+pub(in crate::lower) fn given_by_its_trait(tcx: ty::TyCtxt<'_>, callee: DefId, index: u32) -> bool {
+    tcx.trait_of_assoc(callee).is_some() && (index as usize) < tcx.generics_of(callee).parent_count
+}
+
 /// Whether `id`'s type parameter `param`, bound by `Iterator`, is given as it
 /// is (ADR 0411): one an impl's type holds, `I` of `Doubled<I>`, or the
 /// function's signature has in anything but itself, `Wrap<I>` or a result,
@@ -268,9 +276,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// range, an object (ADR 0129), where `input` is an `Iterator` or an
     /// `IntoIterator`. A range is itself anywhere else.
     pub(super) fn given_as_iterator(&self, callee: DefId, input: ty::Ty<'tcx>, ty: ty::Ty<'tcx>) -> bool {
-        // As it is, with its dictionary (ADR 0411).
+        // As it is, with its dictionary (ADR 0411), or as its trait's impl
+        // takes it.
         if let ty::Param(param) = input.kind()
-            && given_as_it_is(self.tcx, callee, *param)
+            && (given_as_it_is(self.tcx, callee, *param) || given_by_its_trait(self.tcx, callee, param.index))
         {
             return false;
         }
@@ -278,7 +287,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return true;
         }
-        if self.range_kind(ty.peel_refs()).is_none() {
+        // A range, or a parameter of this function's given as it is, made a
+        // JS iterator by its dictionary (ADR 0551), where the callee bounds
+        // it so.
+        if self.range_kind(ty.peel_refs()).is_none() && !self.iterator_given_as_it_is(ty.peel_refs()) {
             return false;
         }
         // Bound so where the callee says, as `declared_bounds` reads it.
