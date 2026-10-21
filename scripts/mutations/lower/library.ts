@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts","-t","may fail is one its consumer"],
   },
   {
-    name: "library-no-drops-unlisted",
-    breaks: "a library's generic peekable is given a destructor by its consumer",
-    file: "src/lower/library.rs",
-    find: "            no_drops: no_drops\n                .get(&id)\n                .map(|params| params.iter().copied().collect())\n                .unwrap_or_default(),",
-    replace: "            no_drops: Vec::new(),",
-    tests: ["test/crates.test.ts","-t","its peekable is given no destructor"],
-  },
-  {
     name: "library-drops-unlisted",
     breaks: "a library's manifest says none of its functions takes a drop, so a consumer gives `Sink.put` none, and its value isn't dropped",
     file: "src/lower/library.rs",

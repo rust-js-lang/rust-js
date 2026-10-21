@@ -148,7 +148,10 @@ a std call
   shape: `peek()`, `peek_mut()`, `next_if()` and `next_if_eq()`, whose
   bodies reach memory or read as `next`'s, are `$peek(p)`, `$peekCell(p)`
   and `$nextIf(p, f)` over the struct, stepping it by its own `next`;
-  `size_hint()` and `len()` are `$peekableHint`'s.
+  `size_hint()` and `len()` are `$peekableHint`'s. Consumed by value,
+  `p.sum()`'s, it's dropped after its method as the crate's own iterator
+  is (`dropped_after`): by its fields' drops, given where it holds only
+  type parameters' values, which a library's consumer sees too.
 - **Sources stay recognized, stepped by dictionary.** `slice::Iter::next`
   and `Range::next` reach memory, or are primitives: a compiled
   `Peekable<I>::next` steps `I` through the dictionary its caller gives,
@@ -279,5 +282,9 @@ compiled impl's call.
   MIR for memory, `mir_addresses_memory`; and the dispatchers didn't grow.
 - Mutations `dead-switch-kept`, `dead-discriminant-kept`,
   `std-struct-not-a-js-iterator`, `compiled-iterator-stepped-by-library`,
-  `compiled-iterator-a-user-iterator`, `std-provided-self-given-by-trait`
-  and `std-held-parameter-not-stepped`.
+  `compiled-iterator-a-user-iterator`, `compiled-iterator-not-dropped-after`,
+  `compiled-iterator-of-destructors-not-dropped-after`,
+  `std-provided-self-given-by-trait` and `std-held-parameter-not-stepped`;
+  `$peek`'s, `$nextIf`'s and `$peekableHint`'s own. What `$peekable` and
+  the refusal of a generic `peekable` given a destructor held, their
+  mutations held too, and go with them.

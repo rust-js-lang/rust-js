@@ -44,11 +44,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "params-drop-as-own",
-    breaks: "what a generic iterator drops of its type parameters is taken as its own, and a generic peekable is refused",
+    breaks: "what a generic iterator drops of its type parameters is taken as its own, so a generic iterator consumed, a `Peekable` of one, isn't dropped after by the drops it's given",
     file: "src/lower/drops/types.rs",
     find: "            ty::Param(_) if walk.params_none => Drops::Nothing,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic peekable takes none"],
+    tests: ["test/corpus.test.ts", "-t", "^(extreme_drops|peekable_given_back_drops).rs$"],
   },
   {
     name: "weak-drops-nothing",

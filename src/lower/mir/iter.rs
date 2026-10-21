@@ -150,12 +150,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `cycle()`'s, made of one given its drop, `$closing` as
         // `closing_drop` makes it (ADR 0491).
         let closed = (self.recognition().closed_on_drop(receiver)).is_some_and(|held| self.given_drop(held).is_some());
+        // A compiled std iterator's struct, `Peekable`'s, is dropped as a
+        // struct is, by its fields' drops, given where it holds only type
+        // parameters' values (ADR 0561).
+        let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, receiver);
         let dropped = match params_only {
-            true => self.given_drop(receiver).is_some() || holds_function || closed,
+            true => {
+                self.given_drop(receiver).is_some()
+                    || (compiled && self.holds_given_drops(receiver))
+                    || holds_function
+                    || closed
+            }
             // And a `copied()` of one closed to drop what it holds, which is
             // it, consumed to its end, which closes nothing (ADR 0547).
             false => {
                 self.is_user_iterator(receiver)
+                    || compiled
                     || holds_function
                     || (self.is_its_source(receiver) && self.recognition().closed_on_drop(receiver).is_some())
             }

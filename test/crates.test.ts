@@ -257,10 +257,9 @@ test("a library's generic function drops a consumer's iterator where Rust does",
 }, 300_000);
 
 // A library's generic fold drops the iterator its consumer gives once it's
-// done (ADR 0464); its peekable, which gives it back, takes no destructor of it
-// (ADR 0190): its manifest says so, and a consumer's call that gives one is
-// refused there.
-test("a library's generic fold drops what its consumer gives, and its peekable is given no destructor", () => {
+// done (ADR 0464); its peekable, which gives it back, is std's own, dropped
+// with what it holds when the consumer consumes it (ADR 0561).
+test("a library's generic fold drops what its consumer gives, and its peekable drops what it holds", () => {
   const dir = fixture("library-no-drops");
   const lib = join(dir, "dep");
   mkdirSync(lib, { recursive: true });
@@ -277,9 +276,10 @@ test("a library's generic fold drops what its consumer gives, and its peekable i
   const counter = "pub struct Counter(pub u32);\nimpl Iterator for Counter {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> {\n        None\n    }\n}\nimpl Drop for Counter {\n    fn drop(&mut self) {\n        println!(\"dropped\");\n    }\n}\n";
   expect(app(`${counter}pub fn main() {\n    println!("{}", dep::total(Counter(0)));\n}\n`).exitCode).toBe(0);
   expect(printed(join(dir, "app.js"))).toBe("dropped\n0\n");
-  const refused = app(`${counter}pub fn main() {\n    println!("{}", dep::peeked(Counter(0)).sum::<u32>());\n}\n`);
-  expect(refused.exitCode).not.toBe(0);
-  expect(refused.stderr.toString()).toContain("giving `dep::peeked`'s `I` a type with a destructor, where it takes none");
+  // A `Peekable` the library gives back, std's own (ADR 0561), drops what
+  // it holds when the consumer consumes it, as Rust's `sum` does.
+  expect(app(`${counter}pub fn main() {\n    println!("{}", dep::peeked(Counter(0)).sum::<u32>());\n}\n`).exitCode).toBe(0);
+  expect(printed(join(dir, "app.js"))).toBe("dropped\n0\n");
 }, 300_000);
 
 // A library's writer that fails, as chrono's formatting does (ADR 0187): its

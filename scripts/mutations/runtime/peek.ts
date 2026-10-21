@@ -3,19 +3,27 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "peek-past-end",
-    breaks: "`peek()` sees what `next_back()` took",
+    name: "peek-takes-the-item",
+    breaks: "`peek()` takes the item, which `next()` then never gives",
     file: "src/runtime/peek.js",
-    find: "  return it.at < it.end ? it.items[it.at] : undefined;",
-    replace: "  return it.items[it.at];",
-    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+    find: "  if (peekable.peeked === undefined) peekable.peeked = $some($next(peekable));\n  return $someValue(peekable.peeked);\n",
+    replace: "  return $next(peekable);\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_lazy.rs$"],
   },
   {
-    name: "peek-lazy-steps-again",
-    breaks: "`peek()` of a lazy peekable steps its source each time, past what it peeked",
+    name: "peek-some-takes-the-item",
+    breaks: "`peek()` of `Option`s takes the item, which `next()` then never gives",
     file: "src/runtime/peek.js",
-    find: "    const step = it.peek();\n    return step.done ? undefined : step.value;\n",
-    replace: "    const step = it.next();\n    return step.done ? undefined : step.value;\n",
+    find: "  if (peekable.peeked === undefined) peekable.peeked = $some($nextSome(peekable));\n  return $someValue(peekable.peeked);\n",
+    replace: "  return $nextSome(peekable);\n",
     tests: ["test/corpus.test.ts", "-t", "^peekable_lazy.rs$"],
+  },
+  {
+    name: "peekable-hint-without-peeked",
+    breaks: "a `Peekable`'s size hint and `len()` leave out what it peeked at",
+    file: "src/runtime/peek.js",
+    find: "  const more = peekable.peeked === undefined ? 0 : 1;\n",
+    replace: "  const more = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(peekable_len|held_peekable).rs$"],
   },
 ];

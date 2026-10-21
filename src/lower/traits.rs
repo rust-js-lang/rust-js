@@ -2362,9 +2362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Iterator::peekable`'s, called on a type parameter: the library's
         // function over `Self`, given its dictionary and drops (ADR 0185,
         // ADR 0561).
-        if self.krate.foreign.item(id).is_some()
-            && self.tcx.defaultness(id).has_value()
-            && self.resolve_self_instance(id, generic_args)?.is_none()
+        if super::recognition::is_compiled_std(self.tcx, id) && self.resolve_self_instance(id, generic_args)?.is_none()
         {
             let mut values = values;
             let given = self

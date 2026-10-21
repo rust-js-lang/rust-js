@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "initializer-a-function",
     breaks: "a static's initializer is made a function, not the static's value",
     file: "src/lower/pipeline.rs",
-    find: "                    .or_else(|| initializer.then(|| def_id.expect_local())) =>",
-    replace: "                    .or_else(|| (initializer && false).then(|| def_id.expect_local())) =>",
+    find: ".or_else(|| initializer.then_some(local))",
+    replace: ".or_else(|| (initializer && false).then_some(local))",
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
   {
