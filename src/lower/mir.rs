@@ -319,6 +319,10 @@ struct State<'m, 'tcx> {
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
     writer: Option<(Vec<Local>, String)>,
+    /// Of a closure that writes to its maker's `Formatter`, which it
+    /// captured: the string it writes to is its maker's, which it neither
+    /// makes nor gives back (ADR 0539).
+    writes_captured: bool,
     /// In a function that gives a value's `Result`, what `?` of a write's
     /// result throws on (ADR 0462): its error's type, and how it's made the
     /// function's error, which its end catches and gives as its `Err`.
@@ -566,6 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             jsx_props: self.mir_jsx_props(mir_body),
             options: Default::default(),
             writer: None,
+            writes_captured: false,
             thrown_writes: None,
             builders: Default::default(),
             built: Default::default(),
@@ -597,15 +602,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .then(|| self.formatter_param(mir_body.source.def_id()))
         .flatten()
         .map(|i| Local::from_usize(i + 1 + usize::from(captures.is_some())));
-        if let Some(param) = formatter {
-            if let Some((span, what)) = self.writer_refusal(mir_body, param) {
-                return Err(self.unsupported(span, &what));
-            }
-            let aliases = writer::formatter_aliases(mir_body, param);
-            let name = match state.locals.names[param].as_str() {
-                "" => self.fresh("f"),
-                name => name.to_string(),
-            };
+        let named = formatter.map(|param| (param, state.locals.names[param].clone()));
+        let named = named.as_ref().map(|(param, name)| (*param, name.as_str()));
+        if let Some((aliases, name)) = self.body_writer(&mut state, mir_body, named, captures.as_deref())? {
             state.builders = self.writer_builders(mir_body, &aliases);
             // Given where a writer goes, the crate's generic `fmt::Write`
             // code: a `&mut` to the string, boxed and taken back as a
@@ -772,7 +771,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.flags[path] = Some(flag);
             }
         }
-        if let Some((_, name)) = &state.writer {
+        if let Some(name) = state.made_writing() {
             out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
         }
         // Locals assigned more than once are `let`s, declared first.
@@ -800,7 +799,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.gather_rest(mir_body, &mut params);
         let start = BasicBlock::from_usize(0);
-        let given = options.as_deref().map(Expr::var);
+        let given = self.writer_options(&state, options.as_deref());
         let lowered = self.with_given(given, |cx| cx.mir_tree(&mut state, start))?;
         out.extend(state.settled_lets().chain(lowered));
         if let Some(options) = options {
@@ -1771,6 +1770,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TerminatorKind::Return => {
                 let ret = mir::RETURN_PLACE;
                 let value = match (&state.writer, state.locals.names[ret].is_empty()) {
+                    // A closure's that writes its maker's string, nothing.
+                    (Some(_), _) if state.writes_captured => None,
                     // A writer's, the string it wrote.
                     (Some((_, name)), _) => Some(Expr::var(name)),
                     (None, true) => None,

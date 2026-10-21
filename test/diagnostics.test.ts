@@ -46,8 +46,8 @@ for (const [name, source, message, crate] of [
   ["static holding a reference to another's object", "pub struct P { pub x: u32 }\nstatic A: P = P { x: 1 };\nstatic B: &P = &A;\npub fn f() -> u32 { B.x }", "does not support statics of type `&'static P`"],
   // `B::from_iter(items)` is `items.collect()` of an array or an iterator (ADR 0160); an `Option`'s isn't yet.
   ["from_iter of an Option", "pub fn f(o: Option<u32>) -> Vec<u32> { Vec::from_iter(o) }", "calling `std::iter::FromIterator::from_iter`"],
-  // `try_fold` into an `Option` whose `Some` is boxed, of a `()` (ADR 0458).
-  ["try_fold into a boxed Option", "pub fn f(v: &[u32]) -> Option<()> { v.iter().try_fold((), |(), &x| (x > 0).then_some(())) }", "`try_fold` into a"],
+  // `try_fold` into a `fmt::Result`, whose `Err` is thrown (ADR 0539).
+  ["try_fold into a fmt::Result", "pub struct S(pub Vec<u32>);\nimpl std::fmt::Display for S { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { self.0.iter().try_fold((), |(), x| write!(f, \"{x}\")) } }", "`try_fold` into a `fmt::Result`"],
   // A std trait's dictionary has what it's given, a `dyn Error`'s `source` (ADR 0141), and none of what else std provides.
   ["a provided method of a dyn io::Write", "pub fn f(w: &mut dyn std::io::Write) -> usize { w.write_vectored(&[]).unwrap() }", "`write_vectored` of a"],
   // A placeholder's options are given to what shows the value (ADR 0058), but a

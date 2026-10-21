@@ -34,6 +34,8 @@ function checked_total(items) {
    given items with a destructor drops them where Rust does.
 3. **Into an `Option` whose `Some` is boxed**, of a `()` or an `Option`,
    it's refused yet; a `ControlFlow` is too.
+   (Amended: an `Option` of what could look like `None` compiles,
+   [ADR 0539](0539-a-closure-writes-its-makers-formatter.md).)
 
 ## Why
 

@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
     snapshots: true,
   },
+  {
+    name: "fmt-failures-escaping-parts",
+    breaks: "`{}` of what holds a `dyn for<'a> FnMut(&'a dyn Display)` asks of a type only its binder has, and crashes",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                            .filter(|part| !part.has_escaping_bound_vars())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+  },
 ];

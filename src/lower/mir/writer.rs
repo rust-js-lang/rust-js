@@ -292,17 +292,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// `param`, a writer's `Formatter`, and the locals that are it: each a
 /// reborrow or a copy of one, `_5 = &mut (*_2)`.
-pub(super) fn formatter_aliases(body: &mir::Body<'_>, param: Local) -> Vec<Local> {
-    let mut aliases = vec![param];
+pub(super) fn formatter_aliases(body: &mir::Body<'_>, given: &[Local], captured: Option<FieldIdx>) -> Vec<Local> {
+    let mut aliases = given.to_vec();
+    // A closure's capture of it, its environment's `field`, through as many
+    // references as it's behind: `deref_copy (*_1).0` (ADR 0539).
+    let of_capture = |from: &Place<'_>| {
+        from.local == Local::from_usize(1)
+            && captured.is_some_and(|field| {
+                let mut fields = from.projection.iter().filter(|e| *e != PlaceElem::Deref);
+                matches!((fields.next(), fields.next()), (Some(PlaceElem::Field(f, _)), None) if f == field)
+            })
+    };
     loop {
         let found = (body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
             StatementKind::Assign(assign)
                 if assign.0.projection.is_empty()
                     && !aliases.contains(&assign.0.local)
-                    && let Rvalue::Ref(_, _, from) | Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) =
-                        &assign.1
-                    && aliases.contains(&from.local)
-                    && from.projection.iter().all(|e| e == PlaceElem::Deref) =>
+                    && let Rvalue::Ref(_, _, from)
+                    | Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
+                    | Rvalue::CopyForDeref(from) = &assign.1
+                    && ((aliases.contains(&from.local) && from.projection.iter().all(|e| e == PlaceElem::Deref))
+                        || of_capture(from)) =>
             {
                 Some(assign.0.local)
             }
@@ -315,7 +325,84 @@ pub(super) fn formatter_aliases(body: &mir::Body<'_>, param: Local) -> Vec<Local
     }
 }
 
+impl<'tcx> State<'_, 'tcx> {
+    /// The string a writer makes, `let f = ""`, which it gives back: not a
+    /// closure's that writes its maker's (ADR 0539).
+    pub(super) fn made_writing(&self) -> Option<&String> {
+        self.writer
+            .as_ref()
+            .filter(|_| !self.writes_captured)
+            .map(|(_, name)| name)
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The writer `body` is (ADR 0054), if it's one: of one given a
+    /// `Formatter`, its parameter `formatter` and its name, the locals that are it, and
+    /// the string it writes to; of a closure that captured its maker's,
+    /// given `captures`, its maker's string (ADR 0539). Refused, what's
+    /// refused of it.
+    pub(super) fn body_writer(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        body: &mir::Body<'tcx>,
+        formatter: Option<(Local, &str)>,
+        captures: Option<&[(Expr, bool)]>,
+    ) -> R<Option<(Vec<Local>, String)>> {
+        let (aliases, name) = match (formatter, captures) {
+            (Some((param, named)), _) => {
+                let name = match named {
+                    "" => self.fresh("f"),
+                    name => name.to_string(),
+                };
+                (formatter_aliases(body, &[param], None), name)
+            }
+            (None, Some(captures)) => match self.captured_formatter(body, captures)? {
+                Some((field, name)) => {
+                    state.writes_captured = true;
+                    (formatter_aliases(body, &[], Some(field)), name)
+                }
+                None => return Ok(None),
+            },
+            (None, None) => return Ok(None),
+        };
+        if let Some((span, what)) = self.writer_refusal(body, &aliases) {
+            return Err(self.unsupported(span, &what));
+        }
+        Ok(Some((aliases, name)))
+    }
+
+    /// A writer's `Formatter`'s options, `options` its parameter of them,
+    /// where the crate gives any (ADRs 0058, 0137); a closure's that writes
+    /// its maker's, its maker's (ADR 0539).
+    pub(super) fn writer_options(&self, state: &State<'_, 'tcx>, options: Option<&str>) -> Option<Expr> {
+        match state.writes_captured {
+            true => self.given_to_writer(None),
+            false => options.map(Expr::var),
+        }
+    }
+
+    /// Of a closure, `body`, that captured its maker's `Formatter`, given
+    /// `captures`, what it took, as its maker read them: which of its
+    /// environment's fields it is, and the string its maker writes to,
+    /// which JS's closure writes as its maker does (ADR 0539).
+    fn captured_formatter(&self, body: &mir::Body<'tcx>, captures: &[(Expr, bool)]) -> R<Option<(FieldIdx, String)>> {
+        let ty::Closure(_, args) = self.tcx.type_of(body.source.def_id()).skip_binder().kind() else {
+            return Ok(None);
+        };
+        let upvars = args.as_closure().upvar_tys();
+        let Some(at) = upvars
+            .iter()
+            .position(|ty| self.recognition().is_formatter_type(ty.peel_refs()))
+        else {
+            return Ok(None);
+        };
+        match captures.get(at).map(|(e, _)| &e.kind) {
+            Some(js::ExprKind::Var(name)) => Ok(Some((FieldIdx::from_usize(at), name.clone()))),
+            _ => Err(self.unsupported(self.tcx.def_span(body.source.def_id()), "this `Formatter`")),
+        }
+    }
+
     /// Whether a call of `def_id` takes a writer's `Formatter`, its `at`th
     /// argument, where a writer goes: the crate's own generic `fmt::Write`
     /// code, not a writer, which writes to it (ADR 0180).
@@ -422,9 +509,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Formatter`, `param`, that isn't a write to it, `write!`, `{}` of a
     /// value, another writer given it, a question of it, a `Debug` builder's
     /// chain, or the crate's generic `fmt::Write` code given it.
-    pub(super) fn writer_refusal(&self, body: &mir::Body<'tcx>, param: Local) -> Option<(Span, String)> {
+    pub(super) fn writer_refusal(&self, body: &mir::Body<'tcx>, aliases: &[Local]) -> Option<(Span, String)> {
         let this = || "this `Formatter`".to_string();
-        let aliases = formatter_aliases(body, param);
+        let aliases = aliases.to_vec();
         let builders = self.writer_builders(body, &aliases);
         let all: Vec<Local> = aliases.iter().chain(builders.keys()).copied().collect();
         let aliases = all;
@@ -449,10 +536,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if assign.0.projection.is_empty() && callables_given.contains(&assign.0.local));
                 // A struct that holds it, `FormatterSink { f }`: a handle on
                 // its text, which what the struct is given writes (ADR 0461).
+                // Or a closure that captured it, which writes to it as it does
+                // (ADR 0539).
                 let held = match &statement.kind {
                     StatementKind::Assign(assign) => match &assign.1 {
                         Rvalue::Aggregate(kind, items) => {
-                            matches!(**kind, mir::AggregateKind::Adt(..))
+                            matches!(**kind, mir::AggregateKind::Adt(..) | mir::AggregateKind::Closure(..))
                                 && items.iter().all(|item| {
                                     item.place().is_some_and(|p| p.projection.is_empty())
                                         || !mentions_locals(&aliases, |m| m.visit_operand(item, location))

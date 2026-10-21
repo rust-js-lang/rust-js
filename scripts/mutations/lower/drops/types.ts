@@ -255,4 +255,12 @@ export const mutations: Mutation[] = [
     replace: "            || false && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
+  {
+    name: "default-alias-put-in-impl-terms-twice",
+    breaks: "an associated type in a copied default's impl's terms, `<I as Iterator>::Item`, is put in them again, and rustc panics",
+    file: "src/lower/drops/types.rs",
+    find: "        if !in_trait_terms {\n            return None;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_own_params.rs$"],
+  },
 ];

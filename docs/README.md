@@ -607,6 +607,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0536 A blanket impl over `?Sized` types keeps its trait's defaults](decisions/0536-a-blanket-unsized-impl-keeps-its-defaults.md)
 - [0537 A `Cell` gives an `Option` back as it's kept](decisions/0537-a-cell-gives-its-option-as-its-kept.md)
 - [0538 A writer called through a `fn` pointer](decisions/0538-a-writer-called-through-a-fn-pointer.md)
+- [0539 A closure writes to its maker's `Formatter`, and `try_for_each`](decisions/0539-a-closure-writes-its-makers-formatter.md)
+- [0540 A copied default's types are put in its impl's terms once](decisions/0540-a-copied-defaults-types-in-its-impls-terms-once.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

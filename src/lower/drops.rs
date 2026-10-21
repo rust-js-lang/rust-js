@@ -134,7 +134,7 @@ struct SwappedDrops<'tcx> {
     given: HashSet<u32>,
     items: HashMap<ty::AliasTy<'tcx>, u32>,
     slots: HashSet<ty::AliasTy<'tcx>>,
-    self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>)>,
+    self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>, ty::GenericArgsRef<'tcx>)>,
     used: HashSet<u32>,
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
@@ -1087,8 +1087,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             given: std::mem::replace(&mut self.drop_state.types.given, given),
             items: std::mem::replace(&mut self.drop_state.types.items, items),
             slots: std::mem::replace(&mut self.drop_state.types.slots, slots),
-            self_args: (self.drop_state.types.self_args)
-                .replace((self_args, self.impl_typing_env().unwrap_or(self.typing_env))),
+            // And the default's own parameters, the body's owner's, which a
+            // type in its trait's terms names.
+            self_args: (self.drop_state.types.self_args).replace((
+                self_args,
+                self.impl_typing_env().unwrap_or(self.typing_env),
+                ty::GenericArgs::identity_for_item(self.tcx, self.body_owner),
+            )),
             used: std::mem::take(&mut self.drop_state.used_drops),
             unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,

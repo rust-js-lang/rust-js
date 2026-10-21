@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(at) = self.recognition().pointer_formatter(callee).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer.rs$"],
   },
+  {
+    name: "formatter-captured-by-closure-refused",
+    breaks: "a closure that captured its writer's `Formatter` is refused where it's made",
+    file: "src/lower/mir/writer.rs",
+    find: "                            matches!(**kind, mir::AggregateKind::Adt(..) | mir::AggregateKind::Closure(..))\n",
+    replace: "                            matches!(**kind, mir::AggregateKind::Adt(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+  },
 ];

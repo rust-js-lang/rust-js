@@ -55,8 +55,9 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
     /// A copied default's impl's arguments for its trait's parameters, and
     /// the impl's typing environment, whose body names a slot in the trait's
-    /// terms, `Self::Item` of the impl's `T::Item` (ADR 0421).
-    pub(super) self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>)>,
+    /// terms, `Self::Item` of the impl's `T::Item` (ADR 0421); and the
+    /// default's own parameters, which those terms name alone.
+    pub(super) self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>, ty::GenericArgsRef<'tcx>)>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -157,8 +158,18 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         else {
             return None;
         };
+        let (self_args, impl_env, own) = self.state.self_args?;
+        // One in the trait's terms names the default's own parameters alone:
+        // not `<I as Iterator>::Item`, in the impl's already.
+        let in_trait_terms = (args.iter().flat_map(|arg| arg.walk())).all(|part| match part.kind() {
+            ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(_)) || own.contains(&part),
+            ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(_)) || own.contains(&part),
+            ty::GenericArgKind::Lifetime(_) => true,
+        });
+        if !in_trait_terms {
+            return None;
+        }
         let ty = Ty::new_projection(tcx, ty::IsRigid::No, def_id, args);
-        let (self_args, impl_env) = self.state.self_args?;
         let ty = ty::EarlyBinder::bind(tcx, ty)
             .instantiate(tcx, self_args)
             .skip_normalization();

@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Taken by a `&mut`, it's stepped through what can't close it, but by
         // `try_fold`'s helper, which steps it as it is and closes nothing.
         let lent =
-            matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut)) && std_method != Some(IterMethod::TryFold);
+            matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut)) && !std_method.is_some_and(IterMethod::tries);
         if let Some(kept) = self.back_kept(std_method, &receiver, (iter_ty, output), (&mut values, arg_tys), span)? {
             return Ok(Some(kept));
         }
@@ -463,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
-            Some(IterMethod::TryFold) => self.try_folded(it, (arg(), arg()), (own, output), span)?,
+            Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,
             // Each item counted, and dropped as `count` drops it.
             Some(IterMethod::Count) => {
                 let n = self.fresh("n");
@@ -738,14 +738,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn try_folded(
         &mut self,
         it: Expr,
-        (init, f): (Expr, Expr),
+        method: IterMethod,
+        arg: &mut dyn FnMut() -> Expr,
         (own, output): (bool, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
+        // Into a `fmt::Result`, whose `Ok(())` is nothing and whose `Err` is
+        // thrown (ADR 0187): `try_for_each(f)` is each item's call, as
+        // `for_each`'s (ADR 0539).
+        if self.recognition().is_fmt_result(output) {
+            return match method {
+                IterMethod::TryForEach => Ok(Expr::call(
+                    Expr::member(it, "forEach"),
+                    vec![self.unary_callback(arg(), own)],
+                )),
+                _ => Err(self.unsupported(span, "`try_fold` into a `fmt::Result`, from its MIR")),
+            };
+        }
         let helper = match self.option_of(output) {
-            Some(made) if !self.boxed_payload(made) => "$tryFoldSome",
+            Some(_) => "$tryFoldSome",
             None if self.recognition().is_result(output) => "$tryFoldOk",
             _ => return Err(self.unsupported(span, &format!("`try_fold` into a `{output}`, from its MIR"))),
+        };
+        // `try_for_each(f)`, std's `try_fold((), |(), x| f(x))` (ADR 0539).
+        let (init, f) = match method {
+            IterMethod::TryForEach => (Expr::undefined(), self.unary_folded(arg())),
+            _ => (arg(), arg()),
         };
         let mut args = vec![it, init, self.binary_callback(f, own)];
         crate::lower::calls::given_to_js(&mut args);
@@ -1018,9 +1036,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `try_rfold`: `try_fold` of it reversed, which gives its items as
         // its own function does (ADR 0531).
         if method == IterMethod::TryRFold {
-            let (init, f) = (values.next().expect("the start"), values.next().expect("the function"));
             let reversed = Expr::call_helper("$rev", vec![it]);
-            return self.try_folded(reversed, (init, f), (false, output), span);
+            let mut arg = || values.next().expect("rustc checked the arguments");
+            return self.try_folded(reversed, method, &mut arg, (false, output), span);
         }
         let mut given = vec![it];
         given.extend(values);
@@ -1267,6 +1285,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Fold
                     | IterMethod::Reduce
                     | IterMethod::TryFold
+                    | IterMethod::TryForEach
                     | IterMethod::Collect
                     | IterMethod::Any
                     | IterMethod::All
@@ -1486,6 +1505,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// As `unary_callback`, of a function of two: `reduce`'s, given an index
     /// too. `f64::max`'s and `f64::min`'s helpers take two alone.
+    /// `f`, of an item, as a fold's callback, of what it's made so far and
+    /// the item: `(_, x) => ..` of `(x) => ..`.
+    fn unary_folded(&mut self, f: Expr) -> Expr {
+        let made = self.fresh("_");
+        match f.kind {
+            js::ExprKind::Arrow(mut params, body) if params.len() == 1 => {
+                params.insert(0, made.into());
+                Expr::arrow(params, body)
+            }
+            _ => {
+                let x = self.fresh("x");
+                let call = Expr::call(f, vec![Expr::var(&x)]);
+                Expr::arrow(
+                    vec![made.into(), x.into()],
+                    vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+                )
+            }
+        }
+    }
+
     fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,

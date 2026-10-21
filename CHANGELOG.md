@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A closure that writes to its writer's `Formatter`**, `|disp| disp.fmt(f)`;
+  **`try_for_each`**; and `try_fold` into an `Option` of what could look
+  like `None` (ADR 0539).
 - **A writer called through a `fn` pointer** given its `Formatter`,
   `cb(x, f)`; std's trait method as such a value is its function (ADR 0538).
 - **A `Cell`'s `take()`, `replace()` and `get()` of an `Option` of what
@@ -676,6 +679,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **rust-js crashed** on a trait's default with parameters of its own,
+  `collect_array<const N: usize>`, kept by an impl whose parameters are
+  numbered apart from its trait's (ADR 0540).
+- **rust-js crashed** on `{}` of a value holding a `dyn for<'a> FnMut(&'a
+  dyn Display)` (ADR 0539).
 - **A range mapped by a function it's given, folded from its back**,
   `(a..b).map(f).rfold(..)`, gave nothing (ADR 0535).
 - **`extend`, `chain` and `zip` of an `Option` or a range**: a `Some` was

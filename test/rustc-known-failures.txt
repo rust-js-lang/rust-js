@@ -25,7 +25,6 @@ codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not suppor
 const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support `type_name` of a type parameter yet
 const_prop/dont-propagate-generic-instance.rs	error: rust-js does not support a type's fact of `dyn Trait` given to generic code yet
 const-generics/type-dependent/issue-61936.rs	error: rust-js does not support a zeroed `T`, which may be no value of it yet
-const-generics/type-dependent/issue-71805.rs	error: rust-js does not support this trait implementation yet
 consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support this constant, from its MIR yet
 consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`

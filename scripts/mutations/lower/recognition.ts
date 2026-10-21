@@ -2549,4 +2549,12 @@ export const mutations: Mutation[] = [
     replace: "    matches!(ty.kind(), ty::Param(_))\n}",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_as_mut.rs$"],
   },
+  {
+    name: "try-for-each-unknown",
+    breaks: "`try_for_each` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"try_for_each\" => IterMethod::TryForEach,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
+  },
 ];

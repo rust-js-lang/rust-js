@@ -4017,6 +4017,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "fold" => IterMethod::Fold,
             "reduce" => IterMethod::Reduce,
             "try_fold" => IterMethod::TryFold,
+            "try_for_each" => IterMethod::TryForEach,
             "count" => IterMethod::Count,
             "sum" => IterMethod::Sum,
             "product" => IterMethod::Product,
@@ -6385,6 +6386,7 @@ pub(crate) enum IterMethod {
     Reduce,
     /// `try_fold(init, f)`, stopped at the first `None` or `Err` (ADR 0458).
     TryFold,
+    TryForEach,
     Count,
     Sum,
     Product,
@@ -6406,6 +6408,13 @@ impl IterMethod {
             self,
             IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind | IterMethod::TryRFold
         )
+    }
+
+    /// Whether it's a fold that may stop early, stepping what it's given
+    /// with its `next()` and closing nothing: `try_fold` and `try_for_each`
+    /// (ADRs 0458, 0539).
+    pub(crate) fn tries(self) -> bool {
+        matches!(self, IterMethod::TryFold | IterMethod::TryForEach)
     }
 
     /// A lazy adapter that holds what it steps, so an owning source given it

@@ -64,6 +64,9 @@ pub(super) fn failing_fns<'tcx>(
                             .into_iter()
                             .flat_map(|ty| ty.walk())
                             .filter_map(|part| part.as_type())
+                            // Not one a binder inside holds, `&'a dyn Display` of a
+                            // `dyn for<'a> FnMut(&'a dyn Display)`, a type only there.
+                            .filter(|part| !part.has_escaping_bound_vars())
                         {
                             if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {
                                 calls.push((caller, callee));
