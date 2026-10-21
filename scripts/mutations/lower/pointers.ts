@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "            _ => Err(refuse(\n                self.tcx,\n                span,\n                Refused::Memory(\"a pointer read as another type's\"),\n            )),\n",
     replace: "            _ => Ok(pointer),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pointer read as another type's"],
+    tests: ["test/diagnostics.test.ts", "-t", "a struct's pointer as a later field's"],
   },
   {
     name: "pointer-null-of-address",

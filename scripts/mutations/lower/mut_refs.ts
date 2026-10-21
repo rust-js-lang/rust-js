@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nested-mut-object-bounds-unread",
-    breaks: "`apply(c, |x| x.n += 1)` gives the closure a box of the object, and `x.n` is the box's",
+    breaks: "a closure's parameter holding a `&mut` to an object, `F: FnOnce(Vec<&mut T>)`, isn't refused, and the closure is given generic code's boxes",
     file: "src/lower/mut_refs.rs",
     find: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx) {\n",
     replace: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter().filter(|_| false) {\n",
-    tests: ["test/diagnostics.test.ts","-t","given to a closure"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec of generic &mut Ts to objects given to a closure"],
   },
   {
     name: "generic-result-kept-as-cell",
