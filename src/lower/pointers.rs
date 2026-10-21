@@ -614,9 +614,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
-    /// are but a pointer to a JS object, which is the object (ADR 0285).
+    /// are but a pointer to a JS object, which is the object (ADR 0285),
+    /// and one to what is its own pointer, `pointee_is_itself`.
     pub(super) fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
-        raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !pointee.is_slice())
+        raw_pointee(self.tcx, ty)
+            .is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !self.pointee_is_itself(pointee))
+    }
+
+    /// Whether a pointer to a `pointee` is the pointee itself, not a handle
+    /// on a place: a slice's is the slice, an array or a view of part of one
+    /// (ADR 0407); a `dyn`'s that's a pair is the pair, `{ value, impl }`,
+    /// as a `&dyn Trait` is (ADR 0562).
+    pub(super) fn pointee_is_itself(&self, pointee: Ty<'tcx>) -> bool {
+        pointee.is_slice() || matches!(pointee.kind(), ty::Dynamic(..)) && self.is_pair_dyn(pointee)
     }
 
     /// A pointer only read through, of what a reference or box refers to,
@@ -626,7 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
-        match named || pointee.is_slice() || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+        match named || self.pointee_is_itself(pointee) || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
             true => self.pointer_to(place, pointee, None, span),
             false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
         }
@@ -643,8 +653,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.extend(offset.map(|offset| Expr::int(i128::from(offset))));
             Expr::call(Expr::helper("$ptr"), args)
         };
-        // A slice's is the slice, an array or a view of part of one.
-        if pointee.is_slice() {
+        // A slice's is the slice, a pair `dyn`'s the pair.
+        if self.pointee_is_itself(pointee) {
             return Ok(place);
         }
         if let Some(dangling) = self.dangling_pointer(pointee, span)? {
@@ -697,17 +707,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a pointer to a `{pointee}`, aligned past 4096");
             return Err(refuse(self.tcx, span, Refused::Memory(&what)));
         }
-        if layout.size.bytes() != 0 {
+        if !self.is_zero_sized(pointee) {
             return Ok(None);
         }
         let align = Expr::int(i128::from(align));
         Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![align, Expr::int(0)])))
     }
 
-    /// What a pointer to a `pointee` points to: of a slice, the slice it is,
-    /// else the place it's a handle on, `pointee_place`.
+    /// Whether a `ty` has no size, a unit struct's or `()`'s, whose value
+    /// is `undefined` and whose pointer has no place (ADR 0562).
+    pub(super) fn is_zero_sized(&self, ty: Ty<'tcx>) -> bool {
+        self.layout(ty).is_some_and(|layout| layout.size.bytes() == 0)
+    }
+
+    /// What a pointer to a `pointee` points to: of a slice or a pair `dyn`,
+    /// the pointer itself, else the place it's a handle on, `pointee_place`.
     fn pointed_place(&self, pointer: Expr, pointee: Ty<'tcx>) -> Expr {
-        match pointee.is_slice() {
+        match self.pointee_is_itself(pointee) {
             true => pointer,
             false => self.pointee_place(pointer),
         }
@@ -781,12 +797,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => unreachable!("a `Box`"),
                 };
                 let value = arg();
+                // A `Box<dyn Trait>`'s, the pair it is (ADR 0562).
+                if self.pointee_is_itself(held) {
+                    return Ok(Some(value));
+                }
                 match self.is_object(held) && !self.is_cell_pointee(held) {
                     true => helper("$ptrTo", vec![value]),
                     false => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
                 }
             }
-            PointerOp::FromRaw => self.pointee_place(arg()),
+            PointerOp::FromRaw => self.pointed_place(arg(), pointee.expect("a pointer")),
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
             PointerOp::Swap => helper("$ptrSwap", vec![arg(), arg()]),
             PointerOp::Add => helper("$ptrAdd", vec![arg(), arg()]),
@@ -981,6 +1001,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ) && self.same_place(item, b) =>
             {
                 Ok(Some(Expr::call(Expr::helper("$ptr"), vec![value, Expr::int(0)])))
+            }
+            // A pair `dyn`'s pointer as its value's, `z as *const A`: a
+            // pointer to the pair's value (ADR 0562).
+            mir::CastKind::PtrToPtr
+                if let Some((a, _)) = raw_pointee(self.tcx, from)
+                    && matches!(a.kind(), ty::Dynamic(..))
+                    && self.pointee_is_itself(a)
+                    && let Some((b, _)) = raw_pointee(self.tcx, to)
+                    && self.is_handle_pointer(to) =>
+            {
+                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, None, span)?))
             }
             mir::CastKind::PtrToPtr if self.is_handle_pointer(from) && self.is_handle_pointer(to) => {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {

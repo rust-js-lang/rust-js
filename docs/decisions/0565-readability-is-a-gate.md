@@ -63,10 +63,10 @@ the diff shows what got better.
 - **Both directions blessed**, as std coverage is (ADR 0314): a ratchet
   that only ever refuses would let the file drift from the truth, and a
   gain that nobody records is one nobody defends next time.
-- **At 747 files and 86,064 lines**, the baseline is 0.1 temporaries, 2.4
-  labeled blocks, 16.8 `while (true)`, 61.8 `$iter`, 14.3 `Iterator.from`,
-  9.5 bare returns and 954.1 renames in ten thousand lines: the renames
-  are the cost to read first.
+- **At 748 files and 86,155 lines**, the baseline is 0.1 temporaries, 2.4
+  labeled blocks, 16.8 `while (true)`, 61.7 `$iter`, 14.3 `Iterator.from`,
+  9.5 bare returns and 953 renames in ten thousand lines: the renames are
+  the cost to read first.
 
 ## Alternatives
 
@@ -88,7 +88,7 @@ the diff shows what got better.
 - A change that adds a corpus case or snapshot runs `bun run bless`,
   which now blesses `docs/readability.txt` too; its diff is part of the
   review, as the snapshots' are.
-- The renames' share, 954.1, is the first number to bring down: a name
+- The renames' share, 953, is the first number to bring down: a name
   suffixed for a clash the Rust doesn't have, `value$1`, is a lowering
   that reads worse than it needs to.
 - `port measure` prints its counts from the same list, so a shape added

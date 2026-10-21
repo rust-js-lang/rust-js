@@ -319,11 +319,12 @@ rustc's suite reblessed.
    data, `$readInt`, `$writeInt`, `read_unaligned`, `[u8; N]` reads, a
    union's bytes, `Box<[u8]>` as text. `bytes_through_pointers` and
    `union_bytes`; aho-corasick, memchr's `memmem` and powerfmt measured.
-3. **Fat pointers and relayout**: `*const dyn Trait` as the pair, the
-   first-field and prefix rules, the five helpers folded into
-   `relayout`. `dyn_pointers` and `pointer_relayout`; anyhow and semver
-   measured.
-4. **Constants and statics** holding pointers. `pointer_constants`.
+3. **Fat pointers** (landed): `*const dyn Trait` as the pair, unsized
+   from a thin pointer, called and written through, made thin again, a
+   `Box<dyn Trait>` taken apart and put back. `dyn_pointers`.
+4. **Relayout**: the first-field and prefix rules, the five helpers
+   folded into `relayout`. `pointer_relayout`; anyhow and semver measured.
+5. **Constants and statics** holding pointers. `pointer_constants`.
 
 ## What holds it
 
@@ -354,6 +355,12 @@ rustc's suite reblessed.
   `[u32; 2]` and `u8`, against native Rust. `test/runtime-package.test.ts`
   holds that a union's `u32` reads as its `f32`, and that a field whose
   bytes JS has none of, a `&str`, is rust-js's error where it's read.
+- `test/corpus/dyn_pointers.rs`: a `*const dyn Shape` made of a `&Square`,
+  called through `&*z` and `*z`, `is_null`, a `*mut dyn Shape` written
+  through, `z as *const Square` read and equal to `&raw const square`, a
+  `Box<dyn Shape>` taken apart with `into_raw`, written through and put
+  back with `from_raw`, and a struct holding `*const dyn Shape`s called
+  later, against native Rust.
 - rustc's suite: `supported-cast.rs`, `coercion-as-explicit-cast.rs`,
   `negative-integer-cast-to-pointer.rs`, `dyn-fn-alignment.rs`,
   `misaligned-reference-drop-field-99838.rs` and

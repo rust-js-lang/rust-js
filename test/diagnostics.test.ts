@@ -20,7 +20,7 @@ for (const [name, source, message, crate] of [
   ["a zeroed std wrapper", "pub fn f() -> std::num::Wrapping<u32> { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::num::Wrapping<u32>`, which may be no value of it"],
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
   // Its address is a number of rust-js's own (ADR 0562).
-  ["a pointer to a dyn Trait", "pub fn f(x: &'static dyn std::fmt::Debug) -> *const dyn std::fmt::Debug { x as *const dyn std::fmt::Debug }", "does not support addressable memory yet: values of type `*const dyn std::fmt::Debug`"],
+  ["a pointer to text", "pub fn f(s: &str) -> *const str { s as *const str }", "does not support addressable memory yet: values of type `*const str`"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer through a &mut", "pub fn f(r: &mut u32) -> *mut u32 { r }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to"],

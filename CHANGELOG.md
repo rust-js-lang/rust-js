@@ -34,6 +34,13 @@ released any more: `rust-js build` is the one way to build an app.
   copied through a `*const u8`, as wasm32 lays them out, little-endian;
   a union's field read while it holds another plain one, its `u32` as
   its `f32`, its bytes or its halves; and `Box<[u8]>` transmuted to
+  `Box<str>`.
+- **A raw pointer to a `dyn Trait`** (ADR 0562): `*const dyn Trait` and
+  `*mut dyn Trait` are the `dyn`'s pair, as `&dyn Trait` and `Box<dyn
+  Trait>` are: made of a thin pointer, called and written through, made
+  thin again with `as *const T`, and a `Box<dyn Trait>` taken apart with
+  `into_raw` and put back with `from_raw`, as anyhow does. Stages 1 to 3
+  of the model; relayout and constants to come as its ADR says.
   `Box<str>`. Stages 1 and 2 of the model; fat pointers and constants
   to come as its ADR says.
   pointer's low bits, as once_cell's and semver's; stage 1 of the model,

@@ -2855,4 +2855,12 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
+  {
+    name: "raw-pointer-unsized-as-handle",
+    breaks: "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
+    file: "src/lower/mir.rs",
+    find: "                            let place = match self.is_zero_sized(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
+    replace: "                            let place = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
+  },
 ];
