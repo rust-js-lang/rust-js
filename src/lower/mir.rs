@@ -4299,14 +4299,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
                 let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
                 // Raw pointers compare by place or address (ADR 0562).
-                if self.is_handle_pointer(ty)
+                if self.compared_by_address(ty)
                     && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)
                 {
                     let same = self.pointers_equal(l.clone(), r.clone(), pointee, span)?;
                     return Ok(Value::Expr(match op {
                         BinOp::Eq => same,
                         BinOp::Ne => Expr::unary(js::UnaryOp::Not, same),
-                        BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
+                        BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge if self.is_handle_pointer(ty) => {
                             let size = self.pointee_size(pointee, span)?;
                             let order = Expr::call(Expr::helper("$ptrCmp"), vec![l, r, size]);
                             let js_op = match op {

@@ -706,8 +706,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.counted_rc(ty).is_some() => true,
             // A `Cow` compares what it borrows, not its variant (ADR 0400).
             ty::Adt(..) if self.recognition().is_cow(ty) => true,
-            // A raw pointer, by its handle, not what it points to (ADR 0407).
-            _ if self.is_handle_pointer(ty) => true,
+            // A raw pointer, by its handle or a `dyn`'s pair, not what it
+            // points to (ADRs 0407, 0562).
+            _ if self.compared_by_address(ty) => true,
             // `Vec`, `Box`, `Rc` and cells compare what they hold, and every
             // std type, its type's arguments, not its private fields: a
             // `BTreeMap`'s `NonNull` nodes are no pointer the program compares.
@@ -795,7 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A raw pointer: the same place, or the same address (ADR 0562).
-        if self.is_handle_pointer(ty)
+        if self.compared_by_address(ty)
             && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)
         {
             return self.pointers_equal(a, b, pointee, span);

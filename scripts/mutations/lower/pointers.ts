@@ -567,4 +567,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
     snapshots: true,
   },
+  {
+    name: "dyn-pointer-compared-as-objects",
+    breaks: "two `*const dyn` pointers to one value are compared as the two pair objects JS made, so `==` is false",
+    file: "src/lower/pointers.rs",
+    find: "            || raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee))\n",
+    replace: "            || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
+  },
 ];

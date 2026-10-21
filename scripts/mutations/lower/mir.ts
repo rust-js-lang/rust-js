@@ -2851,7 +2851,7 @@ export const mutations: Mutation[] = [
     name: "ptr-eq-by-identity",
     breaks: "`p == q` of raw pointers is `===`, so two pointers with no place at one address differ",
     file: "src/lower/mir.rs",
-    find: "                if self.is_handle_pointer(ty)\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
+    find: "                if self.compared_by_address(ty)\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
     replace: "                if false\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },

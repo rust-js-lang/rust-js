@@ -117,6 +117,9 @@ pub(in crate::lower) enum PointerOp {
     /// `ptr::dangling()`, `NonNull::dangling()`: a pointer with no place at
     /// the pointee's alignment.
     Dangling,
+    /// `ptr::addr_eq(p, q)`: the same address, of a `dyn`'s pointer its
+    /// value's, whatever its vtable.
+    AddrEq,
 }
 
 /// The type a pointer points to, and whether it's `*mut`: a raw pointer's,
@@ -212,6 +215,7 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::without_provenance", PointerOp::FromAddr),
     ("std::ptr::without_provenance_mut", PointerOp::FromAddr),
     ("std::ptr::dangling", PointerOp::Dangling),
+    ("std::ptr::addr_eq", PointerOp::AddrEq),
     ("std::ptr::dangling_mut", PointerOp::Dangling),
     ("std::ptr::NonNull::<T>::dangling", PointerOp::Dangling),
 ];
@@ -303,6 +307,7 @@ pub(in crate::lower) fn address_facts(tcx: ty::TyCtxt<'_>, def_id: DefId) -> Opt
         | PointerOp::ByteAdd { .. }
         | PointerOp::WrappingAdd { .. } => Some(&[TypeFact::Size]),
         PointerOp::IsAligned => Some(&[TypeFact::Size, TypeFact::Align]),
+        PointerOp::AddrEq => Some(&[TypeFact::Size]),
         _ => None,
     }
 }
@@ -717,10 +722,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `a == b` of two raw pointers to a `pointee` (ADR 0562): the same
     /// place, or the same address, `$ptrEq`, given the pointee's size, which
-    /// an empty array's address is of. The one place it's written.
+    /// an empty array's address is of; of two `dyn`'s pairs, the same value,
+    /// `$dynPtrEq`, as `ptr::addr_eq` asks too. The one place it's written.
     pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        if self.is_pair_dyn_pointee(pointee) {
+            return Ok(Expr::call(Expr::helper("$dynPtrEq"), vec![a, b]));
+        }
         let size = self.pointee_size(pointee, span)?;
         Ok(Expr::call(Expr::helper("$ptrEq"), vec![a, b, size]))
+    }
+
+    /// Whether a value of type `ty` is a raw pointer `==` compares by place
+    /// or address (ADR 0562): a handle on its place, or a `dyn`'s pair. The
+    /// one answer both `==`s ask, MIR's and a derived `PartialEq`'s.
+    pub(super) fn compared_by_address(&self, ty: Ty<'tcx>) -> bool {
+        self.is_handle_pointer(ty)
+            || raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee))
+    }
+
+    /// Whether a `pointee` is a `dyn` whose pointer is its pair.
+    fn is_pair_dyn_pointee(&self, pointee: Ty<'tcx>) -> bool {
+        matches!(pointee.kind(), ty::Dynamic(..)) && self.pointee_is_itself(pointee)
     }
 
     /// What a pointer at an address, `$ptrFrom`'s or `$ptrAt`'s, is given
@@ -981,6 +1003,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointee = generic_args.types().next().expect("the pointee");
                 let align = self.type_fact_value(pointee, TypeFact::Align, span)?;
                 helper("$ptrFrom", self.at_address(align, pointee, span)?)
+            }
+            PointerOp::AddrEq => {
+                let pointee = pointee.expect("a pointer");
+                let (p, q) = (arg(), arg());
+                self.pointers_equal(p, q, pointee, span)?
             }
         }))
     }

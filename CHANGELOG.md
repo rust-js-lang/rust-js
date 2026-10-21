@@ -92,6 +92,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **`{:x?}` of a composite** (ADR 0559 amended): an array, a `Vec`, a
   tuple, an `Option`, or a derived struct or enum shows each integer in
   hex, `{:X?}` upper-case and `{:#x?}` with `0x`, as Rust's does.
+- **Fixed: `==` of two `*const dyn` pointers to one value** was `false`;
+  it's the values' comparison now, and `ptr::addr_eq` compiles (ADR 0562).
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

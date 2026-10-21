@@ -75,9 +75,34 @@ fn main() {
     let back = unsafe { Box::from_raw(raw) };
     println!("{} {}", back.area(), back.name());
 
+    // Compared: the same value and vtable, `==`; the same value whatever the
+    // vtable, `addr_eq`.
+    let again: *const dyn Shape = &square;
+    let twin = Square { side: 5 };
+    let other: *const dyn Shape = &twin;
+    let as_named: *const dyn Named = &square;
+    println!(
+        "{} {} {} {}",
+        z == again,
+        z == other,
+        std::ptr::addr_eq(z, again),
+        std::ptr::addr_eq(z, as_named)
+    );
+
     // Kept in a struct, called later.
     let rect = Rect { w: 2, h: 5 };
     let slots = [Slot { shape: &square }, Slot { shape: &rect }];
     let areas: Vec<u32> = slots.iter().map(Slot::area).collect();
     println!("{areas:?}");
+}
+
+// Another trait the square is, another vtable.
+trait Named {
+    fn label(&self) -> &'static str;
+}
+
+impl Named for Square {
+    fn label(&self) -> &'static str {
+        "square"
+    }
 }

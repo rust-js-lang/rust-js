@@ -442,3 +442,20 @@ passed and now panicked:
   `mut_refs::borrow_outlives_call` counts a `'static` reference to the
   borrow's own pointee type, so the argument is given as its live cell,
   not a box copied back before the write.
+
+## Amendment: comparing pointers to a `dyn` (2026-10-22)
+
+Two `*const dyn Trait` made of one `&a` compared `===` as the two pair
+objects JS made, `false` where Rust's `==` is `true`: a wrong answer stage
+3 brought. `pointers::compared_by_address` is now the one answer to
+whether a raw pointer is compared by place or address, a handle on its
+place or a `dyn`'s pair, which MIR's `==`, a derived `PartialEq` and its
+check of a struct's fields each ask; `pointers_equal` writes two pairs'
+`==` as `$dynPtrEq(p, q)`, the same value, and `ptr::addr_eq(p, q)` the
+same way. Two pointers `==` can compare are of one trait, so one value's
+vtable is one: the vtable isn't compared, which no program can tell.
+`<` of two `dyn` pointers is refused. A pair of a value JS holds as
+itself, a number's, compares the numbers: two `dyn`s of two equal numbers
+are equal, where Rust's addresses differ (case B, as a number reached
+through a `&` has no place, above). `dyn_pointers` holds `==` and
+`addr_eq`, against native Rust.
