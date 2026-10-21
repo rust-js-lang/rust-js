@@ -201,11 +201,16 @@ const back = $ptrFrom(($addr(tagged, 1) & ~1) >>> 0, 1);
 
 ### Constants and statics
 
-- **A pointer rustc's const-eval made** is lowered from the allocation it
-  points into: a static's, `$ptrTo` or `$ptr` of the static by the
-  field rustc's layout puts at its offset; an interned value's, `&3`'s,
-  a cell of the module's, made once, as a constant's place is (ADR 0407);
-  a dangling one, an address with no place.
+- **A pointer rustc's const-eval made** is made as its initializer says,
+  the initializer lowered as code, as a constant rustc can't say as a
+  value tree is (ADR 0127): an integer made a pointer, semver's `HEAD`,
+  is its address; a null is `null`; `&42 as *const i32`, memory rustc
+  interned, is a cell of the value, as a constant's place is (ADR 0407),
+  and a static's field holding it is made once with the static. A
+  constant pointing into a static, `&raw const COUNT`, stays refused:
+  made once at the module's level it would read the static before the
+  module makes it, and the static's address isn't a module's to copy
+  (ADR 0096).
 
 ### What stays refused, as the one place says
 
@@ -235,6 +240,9 @@ yet: ..", with why (ADR 0390):
 - **A pointer as a map's key**, `HashSet<*const T>`, which needs the
   map's key encoding to be its address: a later stage. A struct holding
   one hashes it as its address.
+- **A constant pointing into a static**, `const P: *const u32 = &raw
+  const COUNT`, and a raw address of a static in a body (ADR 0096):
+  "constants of type `*const u32`" and "raw addresses of statics".
 
 ## Why
 
@@ -327,7 +335,12 @@ rustc's suite reblessed.
    the one owner of a cast between pointees; `$ptrFirst`, `$ptrWhole` and
    `$ptrRecast` stay its checks of what only the value can tell, a type
    parameter's. `pointer_relayout`; anyhow and semver measured.
-5. **Constants and statics** holding pointers. `pointer_constants`.
+5. **Constants and statics** holding pointers (landed): made as their
+   initializers say, the one route a value rustc can't say as a value
+   tree takes, now open to a type holding a pointer, which is shareable
+   as a handle is, and a function's own or an associated constant rustc
+   can't say as a value, semver's `HEAD` and `Prerelease::EMPTY`, is its
+   MIR as code (ADR 0127). `pointer_constants`; semver compiles.
 
 ## What holds it
 
@@ -369,6 +382,14 @@ rustc's suite reblessed.
   VTable)`, erased to `Impl<()>` and unerased in generic code, its fields
   read through each, and taken back as a `Box<Impl<u32>>`, against native
   Rust.
+- `test/corpus/pointer_constants.rs`: a static holding a null pointer and
+  one holding a pointer to interned memory, read through, a `NonNull`
+  constant of all ones compared with `usize::MAX`, a dangling constant's
+  address, a null constant, a function's own constant and an associated
+  constant holding a pointer, semver's `HEAD` and `Prerelease::EMPTY`,
+  against native Rust; rustc's
+  `const-cast-ptr-int.rs` and `static-raw-pointer-interning.rs` leave the
+  known failures.
 - rustc's suite: `supported-cast.rs`, `coercion-as-explicit-cast.rs`,
   `negative-integer-cast-to-pointer.rs`, `dyn-fn-alignment.rs`,
   `misaligned-reference-drop-field-99838.rs` and

@@ -29,7 +29,7 @@ newest release its requirement allows.
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | `core::fmt::Arguments::as_str`; its vtable-first `ErrorImpl` casts and `*const dyn Error` compile (ADR 0562) |
 | once_cell 1.21 | refused | `std::thread::current` called |
-| semver 1.0 | refused | a constant holding a pointer (ADR 0562, stage 5); its tagged pointers compile |
+| semver 1.0 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
 | uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
 | regex 1.11 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |

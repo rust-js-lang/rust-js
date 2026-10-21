@@ -218,8 +218,8 @@ export const mutations: Mutation[] = [
     name: "generic-const-refused",
     breaks: "a constant of the crate's rustc can't say as a value, arrayvec's `[const { MaybeUninit::uninit() }; CAP]`, is refused, where its MIR is code",
     file: "src/lower.rs",
-    find: "            _ if def_id.is_local() && self.tcx.generics_of(def_id).count() > 0 => {\n                self.crate_const_as_code(def_id, args)\n            }\n",
-    replace: "",
+    find: "            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),\n",
+    replace: "            _ if false => self.crate_const_as_code(def_id, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
   },
   {
@@ -297,5 +297,13 @@ export const mutations: Mutation[] = [
     replace: "    let by_name = matches!(callee.kind, js::ExprKind::Var(_))\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer.rs$"],
     snapshots: true,
+  },
+  {
+    name: "local-const-not-from-mir",
+    breaks: "a function's own constant rustc can't say as a value, semver's `HEAD`, is refused, not made from its MIR",
+    file: "src/lower.rs",
+    find: "            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),\n",
+    replace: "            _ if def_id.is_local() && self.tcx.generics_of(def_id).count() > 0 => self.crate_const_as_code(def_id, args),\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
   },
 ];

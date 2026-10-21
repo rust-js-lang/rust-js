@@ -386,6 +386,9 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,
             // A `TypeId`, its type's key, a string (ADR 0331).
             ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::TypeId) => true,
+            // A raw pointer, a `NonNull` too, is a handle on its place, or an
+            // address, which nothing changes in place (ADR 0562).
+            _ if super::pointers::raw_pointee(tcx, ty).is_some() => true,
             // A JS value that's `Copy`, react's `ElementType`, nothing changes
             // through (ADR 0234).
             ty::Adt(adt, args) if super::representation::marks_js_object(tcx, *adt, args) => {

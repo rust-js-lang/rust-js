@@ -192,4 +192,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^type_id_statics.rs$"],
   },
+  {
+    name: "raw-pointer-not-shareable",
+    breaks: "a static holding a raw pointer isn't made as its initializer says, and is refused",
+    file: "src/lower/copies.rs",
+    find: "            _ if super::pointers::raw_pointee(tcx, ty).is_some() => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
+  },
 ];

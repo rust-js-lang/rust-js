@@ -54,8 +54,12 @@ released any more: `rust-js build` is the one way to build an app.
   anyhow's `*const ErrorImpl` as `*const &'static ErrorVTable`, is the
   handle on that field, `p.value.vtable`; one layout of a `#[repr(C)]`
   struct as another, `ErrorImpl<E>` erased to `ErrorImpl<()>` and back,
-  is the same handle. Stages 1 to 4 of the model; constants to come as
-  its ADR says.
+  is the same handle.
+- **A constant or a static holding a pointer** (ADR 0562): a null, an
+  integer made a pointer, semver's `HEAD`, a dangling one, or `&42 as
+  *const i32` in a static's field, each made as its initializer says.
+  The model's five stages have landed; what stays refused, a constant
+  pointing into a static among them, its ADR lists.
 - **How the generated JS reads is a gate** (ADR 0565): the shapes a person
   wouldn't write, `port measure`'s seven, are counted over the corpus's
   and the snapshots' JS in `docs/readability.txt`, and no shape's share may

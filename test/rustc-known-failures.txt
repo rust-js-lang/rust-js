@@ -25,7 +25,6 @@ consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support this constant, from its MIR yet
 consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
 consts/const-block.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
-consts/const-cast-ptr-int.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
@@ -34,7 +33,6 @@ consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a 
 consts/issue-33537.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
 consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std::cell::UnsafeCell::<T>::new` yet
-consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
