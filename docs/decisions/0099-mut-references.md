@@ -364,3 +364,25 @@ gives, `store.lm_get_mut(i).unwrap().1` of an `Option<(&K, &mut V)>`, is
 that cell, kept or handed on as it is**: a part of the call's result,
 through fields and constant indices, `$unwrap(..)[1]`, made there once,
 as the call's own result is. litemap's `get_mut` hands one on so.
+
+## Amendment: a `&mut` shown is what it points at
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): the text is the same;
+only the JS reads better.
+
+**A `&mut` formatted, `println!("{r} {r:?}")` of `let r = &mut n`, shows
+`n`**: `${n} ${n}`, where it was a handle on `n` held in a variable named
+`value` and read through its getter. Two parts make it so:
+
+- A format argument is read through its references, and a pin through its
+  pointer (ADR 0329), where it's made: a handle is the place it's on. A
+  pointer's `{:p}` is its address, as it is.
+- A shared borrow of a kept `&mut`, `&r`, which `format_args!` takes, is
+  held as a handle on its place, read where it's used, as a shared borrow
+  of a place is. Only a shared one: a `&mut` given on, `f(&mut *t)`, is the
+  cell it is, not a new handle each time it's read.
+
+`mut_ref_local`, `mut_ref_compare` and `pin_box` show a `&mut` and a
+pinned `&mut` so; `function_given_for_a_mut_param` gives a reborrow twice.
+Mutations `fmt-arg-through-refs`, `fmt-arg-pin-unseen`,
+`held-shared-ref-handle` and `held-mut-ref-handle`.

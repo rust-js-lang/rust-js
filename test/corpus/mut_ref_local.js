@@ -14,16 +14,8 @@ function main() {
   let x = 5;
   x = (x + 2) | 0;
   console.log(`${x}`);
-  const value$1 = {
-    get value() {
-      return x;
-    },
-    set value(value) {
-      x = value;
-    },
-  };
   // Formatted, a `&mut` shows what it points at.
-  console.log(`${value$1.value} ${value$1.value}`);
+  console.log(`${x} ${x}`);
   const n = { value: x };
   bump(n);
   x = n.value;

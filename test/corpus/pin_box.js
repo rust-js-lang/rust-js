@@ -57,16 +57,8 @@ function main() {
   console.log(`${$byteLen(name)}`);
   pair.count = (pair.count + 9) >>> 0;
   console.log(`${pair.count} ${pair.name}`);
-  let seven = 7;
-  const value = {
-    get value() {
-      return seven;
-    },
-    set value(value) {
-      seven = value;
-    },
-  };
-  console.log(`${value.value} ${value.value}`);
+  const seven = 7;
+  console.log(`${seven} ${seven}`);
   const a = [1, 2];
   const b = [1, 3];
   const copy = a.slice();

@@ -2929,4 +2929,22 @@ export const mutations: Mutation[] = [
     replace: "        let pointer = ty;\n        let awaited = self.value_expr(awaited, span)?;",
     tests: ["test/compiler.test.ts", "-t", "async code"],
   },
+  {
+    name: "held-shared-ref-handle",
+    breaks: "a shared borrow of a kept `&mut` is a handle in a variable, not its place",
+    file: "src/lower/mir.rs",
+    find: "                Some(Expr::handle(target.clone()))\n",
+    replace: "                None\n",
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+    snapshots: true,
+  },
+  {
+    name: "held-mut-ref-handle",
+    breaks: "a `&mut` given on twice is a new handle each time, not the cell",
+    file: "src/lower/mir.rs",
+    find: "                if matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Not))\n                    && same_place(state, target)\n",
+    replace: "                if same_place(state, target)\n",
+    tests: ["test/corpus.test.ts", "-t", "function_given_for_a_mut_param"],
+    snapshots: true,
+  },
 ];

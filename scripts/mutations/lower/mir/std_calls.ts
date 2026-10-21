@@ -694,4 +694,21 @@ export const mutations: Mutation[] = [
     replace: "                let pretty = crate::lower::display::Pretty::Always;\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
   },
+  {
+    name: "fmt-arg-through-refs",
+    breaks: "a `&mut` shown is a handle on its place, held and read through its getter",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    _ => self.through_refs(value, self.recognition().pinned(ty).unwrap_or(ty)),\n",
+    replace: "                    _ => (value, ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+    snapshots: true,
+  },
+  {
+    name: "fmt-arg-pin-unseen",
+    breaks: "a pinned `&mut` shown isn't seen through its pointer, and is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    _ => self.through_refs(value, self.recognition().pinned(ty).unwrap_or(ty)),\n",
+    replace: "                    _ => self.through_refs(value, ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
 ];

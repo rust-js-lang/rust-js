@@ -2926,12 +2926,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // place, read where it's used (ADR 0023);
         // borrowck keeps it the same meanwhile.
         // And a tuple of them, `format_args!`'s.
-        let held = |value: &Value<'tcx>| match value {
+        // And a kept `&mut`'s, `&r` of `let r = &mut n`: a handle on its
+        // place, which nothing else changes while it's borrowed.
+        let held = |value: &Value<'tcx>, ty: Ty<'tcx>| match value {
             Value::Place(target)
                 if same_place(state, target)
                     && root_var(target).is_some_and(|root| self.locals.mir.alike.contains(root)) =>
             {
                 Some(target.clone())
+            }
+            Value::Ref(target)
+                if matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+                    && same_place(state, target)
+                    && fixed_place(target) =>
+            {
+                Some(Expr::handle(target.clone()))
             }
             _ => None,
         };
@@ -2943,13 +2952,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local];
+        // Each item's type, a tuple's field's.
+        let ty = state.body.local_decls[local].ty;
+        let item_ty = |i: usize| match ty.kind() {
+            ty::Tuple(tys) => tys.get(i).copied().unwrap_or(ty),
+            _ => ty,
+        };
         let places = match &value {
-            Value::List(items) => items
-                .iter()
-                .map(held)
+            Value::List(items) => (items.iter().enumerate())
+                .map(|(i, item)| held(item, item_ty(i)))
                 .collect::<Option<Vec<_>>>()
                 .map(|items| Value::List(items.into_iter().map(Value::Place).collect())),
-            value => held(value).map(Value::Place),
+            value => held(value, ty).map(Value::Place),
         };
         if one && let Some(places) = places {
             state.places.insert(local, places);
