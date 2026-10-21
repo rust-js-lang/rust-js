@@ -91,16 +91,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 typed.push((value, ty));
             }
-            let Some((kind, type_name, mut steps)) = state.built.remove(&root) else {
+            let Some((kind, type_name, mut steps, parts)) = state.built.remove(&root) else {
                 return Err(self.unsupported(span, "this `Debug` builder, from its MIR"));
             };
-            if let BuilderStep::Finish { non_exhaustive } = step {
-                let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
-                self.flush(state, out)?;
-                crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
-            } else {
-                steps.push((step, typed, generic_args));
-                state.built.insert(root, (kind, type_name, steps));
+            match (step, parts) {
+                (BuilderStep::Finish { non_exhaustive }, None) => {
+                    let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
+                    self.flush(state, out)?;
+                    crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+                }
+                // Held in a variable: its parts so far, none perhaps, where a
+                // struct's or a tuple's is its name alone (ADR 0532).
+                (BuilderStep::Finish { non_exhaustive }, Some(parts)) => {
+                    let all = vec![crate::lower::display::BuilderPart::Many(Expr::var(&parts))];
+                    let written = self.builder_assembled(kind, type_name.clone(), all, non_exhaustive);
+                    let written = match (kind, type_name) {
+                        (DebugBuilder::Struct | DebugBuilder::Tuple, Some(type_name)) if !non_exhaustive => {
+                            let none = Expr::bin(js::Op::Eq, Expr::member(Expr::var(&parts), "length"), Expr::int(0));
+                            Expr::cond(none, type_name, written)
+                        }
+                        _ => written,
+                    };
+                    self.flush(state, out)?;
+                    crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+                }
+                (step, Some(parts)) => {
+                    let part = self.builder_part(kind, (step, typed, generic_args), span, out)?;
+                    let added = match part {
+                        crate::lower::display::BuilderPart::One(text) => text,
+                        crate::lower::display::BuilderPart::Many(texts) => Expr::spread(texts),
+                    };
+                    self.flush(state, out)?;
+                    let push = Expr::call(Expr::member(Expr::var(&parts), "push"), vec![added]);
+                    out.push(StmtKind::Expr(push).at(self.js_span(span)));
+                    state.built.insert(root, (kind, type_name, steps, Some(parts)));
+                }
+                (step, None) => {
+                    steps.push((step, typed, generic_args));
+                    state.built.insert(root, (kind, type_name, steps, None));
+                }
             }
             return Ok(Some(Value::Expr(Expr::undefined())));
         }
@@ -152,7 +181,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => None,
                 };
-                state.built.insert(destination.local, (kind, type_name, Vec::new()));
+                // Held in a variable, which a branch may step or not: the
+                // array its steps add their parts to (ADR 0532).
+                let held = (state.body.var_debug_info.iter()).any(
+                    |info| matches!(info.value, mir::VarDebugInfoContents::Place(p) if p.local == destination.local),
+                );
+                let parts = held.then(|| self.fresh("parts"));
+                if let Some(parts) = &parts {
+                    self.flush(state, out)?;
+                    out.push(StmtKind::Let(parts.clone(), Some(Expr::array(Vec::new()))).at(self.js_span(span)));
+                }
+                state
+                    .built
+                    .insert(destination.local, (kind, type_name, Vec::new(), parts));
                 return Ok(Some(Value::Expr(Expr::undefined())));
             }
             let name = name.clone();
@@ -364,16 +405,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let this = || "this `Formatter`".to_string();
         let aliases = formatter_aliases(body, param);
         let builders = self.writer_builders(body, &aliases);
-        // A builder kept in a variable, which a loop may step: MIR's are a
-        // chain's.
-        let named = |local: Local| {
-            (body.var_debug_info.iter())
-                .any(|info| matches!(info.value, mir::VarDebugInfoContents::Place(p) if p.local == local))
-        };
-        if let Some(&local) = builders.keys().find(|&&local| named(local)) {
-            let span = body.local_decls[local].source_info.span;
-            return Some((span, "a `Debug` builder kept in a variable".to_string()));
-        }
         let all: Vec<Local> = aliases.iter().chain(builders.keys()).copied().collect();
         let aliases = all;
         // The arguments' tuple of a writer callable given this `Formatter`
@@ -384,6 +415,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             location.block = block;
             for (i, statement) in data.statements.iter().enumerate() {
                 location.statement_index = i;
+                // What borrowck alone reads, `let mut dbg = f.debug_struct(..)`'s.
+                if matches!(
+                    statement.kind,
+                    StatementKind::FakeRead(_) | StatementKind::PlaceMention(_)
+                ) {
+                    continue;
+                }
                 let of_alias = matches!(&statement.kind, StatementKind::Assign(assign)
                     if assign.0.projection.is_empty() && aliases.contains(&assign.0.local));
                 let given = matches!(&statement.kind, StatementKind::Assign(assign)

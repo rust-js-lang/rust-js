@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Debug` builder held in a variable**, stepped in a branch or a loop
+  (ADR 0532).
 - **`try_rfold`** (ADR 0531).
 - **A clone of a string's `chars()` and `char_indices()`, an `Option`'s
   and a `Result`'s `iter()`, a `VecDeque`'s and a `LinkedList`'s, and a

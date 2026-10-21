@@ -136,7 +136,6 @@ for (const [name, source, message, crate] of [
   // `len()` takes no item, so it runs none of a chain's closures (ADR 0036).
   ["len of a chain whose closure prints", 'pub fn f(v: &[u32]) -> usize { v.iter().map(|x| { println!("{x}"); x }).len() }', "`len()` of a lazy or generic `std::iter::Map`"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.
-  ["a Debug builder kept in a variable", "use std::fmt;\npub struct L(pub Vec<u32>);\nimpl fmt::Debug for L { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { let mut d = f.debug_list(); for x in &self.0 { d.entry(x); } d.finish() } }", "a `Debug` builder kept in a variable"],
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],

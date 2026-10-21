@@ -340,11 +340,14 @@ impl<'tcx> State<'_, 'tcx> {
 }
 
 /// A `Debug` builder's kind, a `DebugStruct` say, its type's name, and
-/// each step, `field` and the like, of its arguments and their types.
+/// each step, `field` and the like, of its arguments and their types; or of
+/// one held in a variable, the array its steps add their parts to as
+/// they're taken (ADR 0532).
 type Built<'tcx> = (
     DebugBuilder,
     Option<Expr>,
     Vec<(BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
+    Option<String>,
 );
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

@@ -83,5 +83,6 @@ function pointDebug_fmt(point, alternate) {
 
 - `{:#?}` and `f.alternate()` compile.
 - A `Debug` builder kept in a variable is still an error (ADR 0136).
+  (Amended: it compiles, [ADR 0532](0532-a-debug-builder-held-in-a-variable.md).)
 - The rustc suite compiles a test natively and as JS as at its own path,
   for what `file!()` and `dbg!` print to be the same.

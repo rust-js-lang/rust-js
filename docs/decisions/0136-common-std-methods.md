@@ -48,6 +48,8 @@ Some std methods that ordinary Rust calls all the time were errors:
   writes: its `&dyn Debug` arguments are the strings they show already (ADR
   0060), and `entries` an array of them, joined with the rest. A builder
   kept in a variable and written to in turn, and `{:#?}`, are still errors.
+  (Amended: both compile, ADRs [0137](0137-pretty-debug.md) and
+  [0532](0532-a-debug-builder-held-in-a-variable.md).)
 
 ## Why
 

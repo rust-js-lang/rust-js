@@ -83,6 +83,14 @@ impl Pretty {
     }
 }
 
+/// What a step of a `Debug` builder adds: one text, or an array of them,
+/// as `entries` may give none (ADR 0136).
+#[derive(Clone)]
+pub(super) enum BuilderPart {
+    One(Expr),
+    Many(Expr),
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// May calling `def_id` of `args` return `Err(fmt::Error)` (ADR 0187):
     /// the crate's or a library's function that may, or a dictionary's,
@@ -546,63 +554,85 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let pretty = self.writer_pretty();
-        #[derive(Clone)]
-        enum Part {
-            One(Expr),
-            Many(Expr),
-        }
         let mut parts = Vec::new();
-        for &(step, ref values, generic_args) in &steps {
-            // A `&dyn Debug` is the string it shows already (ADR 0060).
-            let debug_of = |this: &mut Self, (value, ty): (Expr, Ty<'tcx>)| -> R<Expr> {
-                match this.is_dyn_debug(ty) {
-                    true => Ok(value),
-                    false => this.debug_string(value, ty, span),
-                }
-            };
-            let mut values = values.iter().cloned();
-            let part = match (kind, step) {
-                (DebugBuilder::Struct, BuilderStep::Field) => {
-                    let (field, value) = (values.next().expect("a name"), values.next().expect("a value"));
-                    let shown = debug_of(self, value)?;
-                    Part::One(join(vec![field.0, Expr::str(": "), shown]))
-                }
-                (DebugBuilder::Tuple, BuilderStep::Field)
-                | (DebugBuilder::List | DebugBuilder::Set, BuilderStep::Entry) => {
-                    let value = values.next().expect("a value");
-                    Part::One(debug_of(self, value)?)
-                }
-                (DebugBuilder::Map, BuilderStep::Entry) => {
-                    let (key, value) = (values.next().expect("a key"), values.next().expect("a value"));
-                    let key = debug_of(self, key)?;
-                    let value = debug_of(self, value)?;
-                    Part::One(join(vec![key, Expr::str(": "), value]))
-                }
-                (DebugBuilder::List | DebugBuilder::Set | DebugBuilder::Map, BuilderStep::Entries) => {
-                    let items = values.next().expect("the entries").0;
-                    let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
-                    let iterable = *tys.last().expect("the entries' type");
-                    let items = self.iterable_items(items, iterable, span, out)?;
-                    let shown = if kind == DebugBuilder::Map {
-                        let pair = Expr::var("entry");
-                        let key =
-                            self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
-                        let value = self.debug_string_with(Expr::index(pair, Expr::int(1)), tys[1], span, &pretty)?;
-                        join(vec![key, Expr::str(": "), value])
-                    } else {
-                        self.debug_string_with(Expr::var("entry"), tys[0], span, &pretty)?
-                    };
-                    let each = Expr::arrow(
-                        vec!["entry".into()],
-                        vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                    );
-                    Part::Many(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items, each]))
-                }
-                _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
-            };
-            parts.push(part);
+        for (step, values, generic_args) in steps {
+            parts.push(self.builder_part(kind, (step, values, generic_args), span, out)?);
         }
+        Ok(self.builder_assembled(kind, type_name, parts, non_exhaustive))
+    }
+
+    /// What one step of a `Debug` builder of `kind` adds, as it's taken:
+    /// a field's or an entry's text, or of `entries`, an array of them.
+    #[allow(clippy::type_complexity)]
+    pub(super) fn builder_part(
+        &mut self,
+        kind: DebugBuilder,
+        (step, values, generic_args): (BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<BuilderPart> {
+        let pretty = self.writer_pretty();
+        // A `&dyn Debug` is the string it shows already (ADR 0060).
+        let debug_of = |this: &mut Self, (value, ty): (Expr, Ty<'tcx>)| -> R<Expr> {
+            match this.is_dyn_debug(ty) {
+                true => Ok(value),
+                false => this.debug_string(value, ty, span),
+            }
+        };
+        let mut values = values.into_iter();
+        Ok(match (kind, step) {
+            (DebugBuilder::Struct, BuilderStep::Field) => {
+                let (field, value) = (values.next().expect("a name"), values.next().expect("a value"));
+                let shown = debug_of(self, value)?;
+                BuilderPart::One(join(vec![field.0, Expr::str(": "), shown]))
+            }
+            (DebugBuilder::Tuple, BuilderStep::Field)
+            | (DebugBuilder::List | DebugBuilder::Set, BuilderStep::Entry) => {
+                let value = values.next().expect("a value");
+                BuilderPart::One(debug_of(self, value)?)
+            }
+            (DebugBuilder::Map, BuilderStep::Entry) => {
+                let (key, value) = (values.next().expect("a key"), values.next().expect("a value"));
+                let key = debug_of(self, key)?;
+                let value = debug_of(self, value)?;
+                BuilderPart::One(join(vec![key, Expr::str(": "), value]))
+            }
+            (DebugBuilder::List | DebugBuilder::Set | DebugBuilder::Map, BuilderStep::Entries) => {
+                let items = values.next().expect("the entries").0;
+                let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
+                let iterable = *tys.last().expect("the entries' type");
+                let items = self.iterable_items(items, iterable, span, out)?;
+                let shown = if kind == DebugBuilder::Map {
+                    let pair = Expr::var("entry");
+                    let key = self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
+                    let value = self.debug_string_with(Expr::index(pair, Expr::int(1)), tys[1], span, &pretty)?;
+                    join(vec![key, Expr::str(": "), value])
+                } else {
+                    self.debug_string_with(Expr::var("entry"), tys[0], span, &pretty)?
+                };
+                let each = Expr::arrow(
+                    vec!["entry".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                BuilderPart::Many(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items, each]))
+            }
+            _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
+        })
+    }
+
+    /// What a `Debug` builder of `kind` writes of its `parts`, as its
+    /// `finish`: its type's name, then the parts, as pretty as this writer
+    /// is (ADR 0137). Of one held in a variable, its parts are an array, as
+    /// many as its steps took, none perhaps (ADR 0532).
+    pub(super) fn builder_assembled(
+        &mut self,
+        kind: DebugBuilder,
+        type_name: Option<Expr>,
+        parts: Vec<BuilderPart>,
+        non_exhaustive: bool,
+    ) -> Expr {
+        let pretty = self.writer_pretty();
+        use BuilderPart as Part;
         // The parts, comma separated: in place when each is one string, else
         // an array of them joined, as `entries` may give none.
         let separated = |parts: Vec<Part>, extra: Option<&str>| -> Expr {
@@ -714,7 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         };
-        let written = match (&pretty, has_parts, pretty_open) {
+        match (&pretty, has_parts, pretty_open) {
             (Pretty::Plain, _, _) | (_, false, _) | (_, _, None) => written,
             (_, true, Some(open)) => {
                 let mut list = vec![open, array, Expr::str(pretty_close)];
@@ -724,8 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pretty_form = Expr::call(Expr::helper("$pretty"), list);
                 pretty.choose(pretty_form, written)
             }
-        };
-        Ok(written)
+        }
     }
 
     /// `{}` of a `ty` value: the string itself, `String(x)`, `$displayF64(x)`,

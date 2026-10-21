@@ -101,11 +101,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-rev-of-fresh-iter-rest",
-    breaks: "`rev()` of a `split` just made is `$rest($iter(…))` reversed, not the array's",
+    breaks: "`rev()` of a boxed array's iterator just made is `$rest($iter(…))` reversed, not the array's",
     file: "src/lower/mir/iter.rs",
     find: "                _ => crate::lower::iterators::iterated(receiver),\n",
     replace: "                _ => crate::js::Expr::call_helper(\"$rest\", vec![receiver]),\n",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    tests: ["test/corpus.test.ts","-t","^boxed_array_iter.rs$"],
+    snapshots: true,
   },
   {
     "name": "deque-iter-generic",

@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  const lines = items.map((item) => \"    \" + item + \",\\n\").join(\"\");",
     tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
+  {
+    name: "pretty-empty-rest-unspaced",
+    breaks: "`{:#?}` of a non-exhaustive struct given no field is `Open {..}`, not `Open { .. }`",
+    file: "src/runtime/pretty.js",
+    find: "    return open + (rest ? \" .. \" : \"\") + close;",
+    replace: "    return open + (rest ? \"..\" : \"\") + close;",
+    tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
+  },
 ];

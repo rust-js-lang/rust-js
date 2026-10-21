@@ -600,6 +600,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
 - [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
 - [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)
+- [0532 A `Debug` builder held in a variable](decisions/0532-a-debug-builder-held-in-a-variable.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
