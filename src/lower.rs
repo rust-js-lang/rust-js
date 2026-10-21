@@ -332,6 +332,9 @@ struct CrateFacts<'a, 'tcx> {
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
+    /// Whether the crate asks `{:x?}` of anything: then an integer a writer
+    /// shows is in hex where its options say (ADR 0559).
+    debug_hex: bool,
     /// The `RefCell`s a field holds as their value, never counted (ADR
     /// 0362), found once the first is asked of.
     plain_ref_cells: &'a std::cell::OnceCell<HashSet<Ty<'tcx>>>,

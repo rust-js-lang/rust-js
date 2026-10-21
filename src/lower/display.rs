@@ -343,6 +343,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let text = match kind {
+            // An integer's `{:?}` in a crate that asks `{:x?}`: in hex where
+            // the options say, as `{:x}` shows it, `0x` and all where it's
+            // alternate (ADR 0559).
+            Std::FmtDebug
+                if self.krate.debug_hex
+                    && let Some(num) = num.filter(|n| !n.float()) =>
+            {
+                let hex = Radix::LowerHex.digits(value.clone(), num);
+                Expr::call_helper("$debugInt", vec![shown_number(value), hex, options.clone()])
+            }
             _ if num.is_some() || ty.is_bool() => shown_number(value),
             Std::FmtDebug if ty.is_unit() => Expr::str("()"),
             Std::FmtDisplay if self.is_string_like(ty) => value,

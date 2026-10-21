@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
     replace: "        false && formatter_query(tcx, id).is_some_and(|query| query != FormatterQuery::Alternate)",
     tests: ["test/corpus.test.ts", "-t", "formatter_asked"],
   },
+  {
+    name: "debug-hex-unasked",
+    breaks: "a crate that asks `{:x?}` writes its writers' integers in decimal whatever their options say",
+    file: "src/lower/analysis/debug.rs",
+    find: "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some()))\n",
+    replace: "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some() && false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
+  },
 ];

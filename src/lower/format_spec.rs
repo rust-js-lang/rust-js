@@ -145,16 +145,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let num = Num::of(ty);
-        // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559).
+        // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559). Of
+        // another leaf, a string, a float or a `bool`, nothing: std's `fmt`
+        // of it reads no hex flag. A composite's passes it to each part, as
+        // its `Formatter` does, below.
         if let Some(radix) = spec.debug_hex {
-            if !num.is_some_and(|n| !n.float()) {
-                return Err(self.unsupported(span, &format!("`{{:x?}}` of a `{ty}`")));
-            }
-            let spec = Spec {
+            let leaf = Spec {
                 debug_hex: None,
                 ..spec
             };
-            return self.format_value(value, (Std::FmtRadix(radix), ty), spec, (width, precision), span);
+            if num.is_some_and(|n| !n.float()) {
+                return self.format_value(value, (Std::FmtRadix(radix), ty), leaf, (width, precision), span);
+            }
+            if self.is_debug_leaf(self.shown_type(ty)) {
+                return self.format_value(value, (kind, ty), leaf, (width, precision), span);
+            }
         }
         // Rust gives a placeholder's options to the `fmt` that shows the value,
         // which gives a `{:?}`'s to each part of what it shows, and hands its
@@ -164,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own, a generic `T`'s or a `dyn`'s is given them as an object.
         let shown = self.shown_type(ty);
         let leaf = num.is_some() || shown.is_bool() || shown.is_unit() || self.is_string_like(shown);
-        let options = width.is_some() || precision.is_some() || spec.plus;
+        let options = width.is_some() || precision.is_some() || spec.plus || spec.debug_hex.is_some();
         if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) {
             let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
             let options = Options { spec, width, precision };
@@ -325,6 +330,10 @@ fn options_object(spec: Spec, width: &Option<Expr>, precision: &Option<Expr>) ->
     }
     if spec.plus {
         field("plus", Expr::bool(true));
+    }
+    // `{:x?}`'s, which each integer of a composite reads (ADR 0559).
+    if let Some(radix) = spec.debug_hex {
+        field("debugHex", Expr::str(if radix == Radix::UpperHex { "X" } else { "x" }));
     }
     if spec.zero {
         field("zero", Expr::bool(true));

@@ -89,6 +89,9 @@ released any more: `rust-js build` is the one way to build an app.
 - **Fixed: an adapter's source is dropped when it's done** (ADR 0570):
   `Counter { .. }.map(f).sum()` of a source with a `Drop` never ran it;
   it runs where the chain is consumed to its end, as Rust's does.
+- **`{:x?}` of a composite** (ADR 0559 amended): an array, a `Vec`, a
+  tuple, an `Option`, or a derived struct or enum shows each integer in
+  hex, `{:X?}` upper-case and `{:#x?}` with `0x`, as Rust's does.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

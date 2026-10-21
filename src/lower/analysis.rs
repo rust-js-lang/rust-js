@@ -27,7 +27,7 @@ use crate::lower::recognition::{
     Recognition, StdItem, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
 pub(super) use closures::{ClosureFacts, clone_shares};
-use debug::{uses_format_options, uses_pretty_debug};
+use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
@@ -468,6 +468,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether the crate gives a placeholder's options to a value it doesn't
     /// apply them to itself: then its writers take them (ADR 0058).
     pub format_options: bool,
+    /// Whether the crate asks `{:x?}` of anything (ADR 0559).
+    pub debug_hex: bool,
     /// The thread-locals only read and set in their own module, which
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
@@ -786,6 +788,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // are every program, any of which may ask `{:#?}` of a `Peekable`.
     let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
     let format_options = uses_format_options(tcx, all_bodies);
+    let debug_hex = uses_debug_hex(tcx, all_bodies);
 
     Some(AnalyzedCrate {
         bodies,
@@ -822,6 +825,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         generic_consts,
         pretty_debug,
         format_options,
+        debug_hex,
         quiet_locals,
         named_expressions,
         local_functions,

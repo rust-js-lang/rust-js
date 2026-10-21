@@ -107,6 +107,18 @@ pub(super) fn uses_pretty_debug(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bo
     })
 }
 
+/// Whether the crate asks `{:x?}` or `{:X?}` of anything (ADR 0559): then
+/// what its writers show of an integer is in hex where their options say.
+pub(super) fn uses_debug_hex(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
+    all_bodies.iter().any(|body| {
+        format_calls(tcx, &body.thir).into_iter().any(|(pieces, _)| {
+            pieces
+                .iter()
+                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some()))
+        })
+    })
+}
+
 /// Does any body give a placeholder's options, a width, a precision, a sign
 /// or zeros, to a value that isn't a number, a `bool`, a `char`, a string
 /// or `()`: one of the crate's own, a generic `T`, a `dyn` (ADR 0058)? Or
@@ -144,7 +156,8 @@ pub(super) fn uses_format_options(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> 
                             || spec.width_from.is_some()
                             || spec.precision_from.is_some()
                             || spec.plus
-                            || spec.zero =>
+                            || spec.zero
+                            || spec.debug_hex.is_some() =>
                     {
                         Some(*index)
                     }
