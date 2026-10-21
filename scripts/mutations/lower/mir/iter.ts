@@ -1112,4 +1112,12 @@ export const mutations: Mutation[] = [
     replace: "            let reversed = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^try_rfold.rs$"],
   },
+  {
+    name: "mir-rev-of-a-lazy-map-refused",
+    breaks: "`rev()` of a lazy map of a range is refused, not stepped from its back",
+    file: "src/lower/mir/iter.rs",
+    find: "                Err(lazy) => {\n                    return Ok(Expr::call_helper(\n                        \"$rev\",\n                        vec![self.as_double_ended(lazy, iter_ty, span)?],\n                    ));\n                }",
+    replace: "                Err(_) => {\n                    return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n                }",
+    tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
+  },
 ];

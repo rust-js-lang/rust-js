@@ -46,6 +46,17 @@ pub(in crate::lower) fn stepped_ends(
     Expr::call(Expr::helper("$iterator"), list)
 }
 
+/// What a JS iterator `stepped_ends` made steps, `value` of `$iterator(value,
+/// next, ..)`: the one reader of its form. A map's source made a JS iterator
+/// before it's asked its back, `$iterator(range, $rangeNext)`, is stepped
+/// again from what it steps, not from the JS iterator (ADR 0535).
+pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    (callee.helper_name() == Some("$iterator")).then(|| args.first().cloned())?
+}
+
 /// Whether `id`'s type parameter `param`, bound by `Iterator`, is given as it
 /// is (ADR 0411): one an impl's type holds, `I` of `Doubled<I>`, or the
 /// function's signature has in anything but itself, `Wrap<I>` or a result,
@@ -565,6 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `dyn`'s or a type parameter's, itself.
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
+        let value = stepped_value(&value).unwrap_or(value);
         if self.knows_its_back(ty) {
             return Ok(value);
         }

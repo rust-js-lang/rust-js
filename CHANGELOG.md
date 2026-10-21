@@ -18,6 +18,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`rev()` of a lazy `map`** (ADR 0535).
 - **A bound of `Index<J>` or `IndexMut<J>` on a `Vec`, an array or a
   slice**, of a generic index (ADR 0534).
 - **`as_mut()` of an associated type**, `T::Buffer` (ADR 0533).
@@ -669,6 +670,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A range mapped by a function it's given, folded from its back**,
+  `(a..b).map(f).rfold(..)`, gave nothing (ADR 0535).
 - **`extend`, `chain` and `zip` of an `Option` or a range**: a `Some` was
   dropped, and a range given to `chain` or `zip` threw (ADR 0528).
 - **`scan` after a lazy chain** ran the chain's closures for every item,

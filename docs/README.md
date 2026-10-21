@@ -603,6 +603,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0532 A `Debug` builder held in a variable](decisions/0532-a-debug-builder-held-in-a-variable.md)
 - [0533 An associated type's `as_mut()` is its dictionary's](decisions/0533-an-associated-types-as-mut-is-its-dictionarys.md)
 - [0534 A bound of a sequence's `Index<J>` is its `J: SliceIndex<[T]>`](decisions/0534-a-sequences-index-bound-is-its-slice-index.md)
+- [0535 A lazy `map` steps from its back, its source as it is](decisions/0535-a-lazy-map-steps-from-its-back.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

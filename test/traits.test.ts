@@ -245,7 +245,7 @@ for (const [name, source, diagnostic] of [
   // A loop that owns its items drops what it hasn't reached (ADR 0098): of a
   // `Vec`, an array, an `Option` or an iterator of the crate's own that holds
   // one, not yet of an adapter.
-  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().map(|r| r).rev() { let _ = r; } }`, "`rev` of a lazy iterator"],
+  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().map(|r| r).rev() { let _ = r; } }`, "as a `DoubleEndedIterator`, which rust-js can't step from its back"],
   ["loop over an iterator holding one", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct It(R, u8); impl Iterator for It { type Item = R; fn next(&mut self) -> Option<R> { None } } pub fn f(it: It) { for r in it { let _ = r; } }`, null],
   // `collect()` drains a chain of owned items through `map`, `filter` and
   // `skip_while` (ADR 0098), not one that leaves some, as `take` does.
@@ -253,7 +253,7 @@ for (const [name, source, diagnostic] of [
   // iterator can't run from its other end, as `rev` would have it.
   // `rev` of a `map` or a `filter` over a slice is the chain over its items reversed (ADR 0164); an index made after a closure is not.
   ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, "\`rposition\` of a lazy iterator"],
-  ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "\`rev\` of a lazy iterator"],
+  ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "as a `DoubleEndedIterator`, which rust-js can't step from its back"],
   // A closure's drop drops the variables it took, where it's made (ADR 0098):
   // not part of one, nor where JS can't see them, nor given away by value
   // where a call may consume it without its body dropping them.

@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (_, Some(_)) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
                 }
-                _ => self.rev_or_peekable_items(receiver, iter_ty, std_method, name, span)?,
+                _ => self.rev_or_peekable_items(receiver, iter_ty, std_method, span)?,
             }));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
@@ -795,13 +795,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` or `peekable()` of a std iterator neither a range nor the
     /// crate's own: of items made already, an array's, a `$iter` of them,
     /// reversed for `rev`; a lazy chain made of its items reversed where its
-    /// closures run in the same order; else refused (ADR 0164).
+    /// closures run in the same order; else what steps it from its back,
+    /// reversed (ADR 0535).
     fn rev_or_peekable_items(
         &mut self,
         receiver: Expr,
         iter_ty: Ty<'tcx>,
         std_method: Option<IterMethod>,
-        name: &str,
         span: Span,
     ) -> R<Expr> {
         if let Some(closed) = self.closed_adapter(std_method, receiver.clone(), iter_ty, span)? {
@@ -815,7 +815,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && callee.helper_name() == Some("$fuse")
         {
             let mut given = given.clone();
-            given[0] = self.rev_or_peekable_items(given[0].clone(), inner, std_method, name, span)?;
+            given[0] = self.rev_or_peekable_items(given[0].clone(), inner, std_method, span)?;
             return Ok(Expr::call_helper("$fuse", given));
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
@@ -858,8 +858,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Err(lazy) if std_method == Some(IterMethod::Peekable) => {
                     return Ok(Expr::call_helper("$peekable", vec![lazy]));
                 }
-                Err(_) => {
-                    return Err(self.unsupported(span, &format!("`{name}` of a lazy iterator, from its MIR")));
+                // Of a lazy one, `rev()`, which rustc found steps from its
+                // back, a map's say: what steps it from there, as Rust's `Rev`
+                // does, its closures run as `next_back` runs them (ADR 0535).
+                Err(lazy) => {
+                    return Ok(Expr::call_helper(
+                        "$rev",
+                        vec![self.as_double_ended(lazy, iter_ty, span)?],
+                    ));
                 }
             },
         };

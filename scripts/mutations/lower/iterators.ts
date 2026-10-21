@@ -967,4 +967,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
     snapshots: true,
   },
+  {
+    name: "double-ended-of-a-js-iterator-again",
+    breaks: "a map's source made a JS iterator, `$iterator(range, $rangeNext)`, is stepped as a range again, and gives nothing",
+    file: "src/lower/iterators.rs",
+    find: "        let ty = self.reveal(ty);\n        let value = stepped_value(&value).unwrap_or(value);\n",
+    replace: "        let ty = self.reveal(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
+  },
 ];
