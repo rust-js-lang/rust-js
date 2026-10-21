@@ -594,4 +594,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
   },
+  {
+    name: "cell-take-of-boxed-option-refused",
+    breaks: "a `Cell`'s `take()` of an `Option` of what could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
+    replace: "            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
+  },
+  {
+    name: "cell-replace-of-boxed-option-refused",
+    breaks: "a `Cell`'s `replace()` of an `Option` of what could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
+    replace: "            | Std::CellTake\n            | Std::CellGet\n            | Std::OptionTake",
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
+  },
+  {
+    name: "cell-get-of-boxed-option-refused",
+    breaks: "a `Cell`'s `get()` of an `Option` of what could look like `None` is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
+    replace: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::OptionTake",
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
+  },
 ];

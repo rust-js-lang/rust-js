@@ -350,7 +350,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::ArrayMethod("find")
             | Std::Extreme(_)
             | Std::Step(StepOp::Next | StepOp::Peek)
-            // The old value, as it's kept: boxed already.
+            // The old value, as it's kept: boxed already, a cell's too (ADR 0537).
+            | Std::CellTake
+            | Std::CellReplace
+            | Std::CellGet
             | Std::OptionTake
             | Std::OptionPlace(OptionPlaceOp::TakeIf)
             // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.

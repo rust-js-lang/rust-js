@@ -1090,11 +1090,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rev-stored-items-lazy",
-    breaks: "a `rev()` of a string's `chars()` a variable holds is refused as a lazy iterator's",
+    breaks: "a `rev()` of a string's `chars()` a variable holds is a lazy iterator's, `$rev` of it, not what's left of its array reversed",
     file: "src/lower/mir/iter.rs",
     find: "        let items = match self.steps_an_array(iter_ty).then_some(()) {\n",
     replace: "        let items = match self.array_source(iter_ty).map(|_| ()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+    snapshots: true,
   },
   {
     name: "boxed-slice-collect-refused",

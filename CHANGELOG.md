@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Cell`'s `take()`, `replace()` and `get()` of an `Option` of what
+  could look like `None`**, `Cell<Option<I>>`'s (ADR 0537).
 - **A blanket impl over `?Sized` types**, `impl<T: Iterator + ?Sized> Ext
   for T {}`, that keeps its trait's defaults (ADR 0536).
 - **`rev()` of a lazy `map`** (ADR 0535).
