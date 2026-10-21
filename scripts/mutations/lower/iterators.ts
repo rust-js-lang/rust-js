@@ -971,8 +971,8 @@ export const mutations: Mutation[] = [
     name: "held-enumerate-not-knowing",
     breaks: "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
     file: "src/lower/iterators.rs",
-    find: "            if let Some(knowing) = self.knowing_source(value.clone(), source) {\n",
-    replace: "            if let Some(knowing) = self.knowing_source(value.clone(), source).filter(|_| false) {\n",
+    find: "        if let Some(knowing) = self.knowing_held(value.clone(), ty) {\n            return Ok(knowing);\n        }\n        if self.knows_its_back(ty)",
+    replace: "        if let Some(knowing) = self.knowing_held(value.clone(), ty).filter(|_| false) {\n            return Ok(knowing);\n        }\n        if self.knows_its_back(ty)",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
@@ -998,5 +998,13 @@ export const mutations: Mutation[] = [
     find: "                || self.stepped_from_its_back(ty);\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "held-never-knowing",
+    breaks: "a held adapter's source isn't given a use site's back and length",
+    file: "src/lower/iterators.rs",
+    find: "        if !self.held_adapter(ty) {\n            return None;\n        }\n        let source",
+    replace: "        if true {\n            return None;\n        }\n        let source",
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
 ];

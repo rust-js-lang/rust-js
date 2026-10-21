@@ -19,6 +19,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Fuse` a struct holds, stepped from its back** where it's known to
+  have one, wherever it was made (ADR 0549); and an impl's `as_mut()` of
+  an array it knows (ADR 0550).
 - **A library's generic iterator and its extension trait's defaults**,
   stepped by what its consumer gives (ADR 0548).
 - **`copied()` and `cloned()` of an iterator with a destructor**, dropped

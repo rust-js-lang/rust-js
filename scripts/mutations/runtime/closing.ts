@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
   },
+  {
+    name: "closing-hides-its-iter",
+    breaks: "what `$closing` closes isn't reachable, so a use site can't give it its back",
+    file: "src/runtime/closing.js",
+    find: "  closing.iter = it;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+  },
 ];

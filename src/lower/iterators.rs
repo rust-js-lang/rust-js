@@ -554,6 +554,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// $rangeLen)`; one already, itself.
     pub(in crate::lower) fn as_exact_size(&mut self, value: Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
+        // One a struct holds, as `as_double_ended` says (ADR 0549).
+        if let Some(knowing) = self.knowing_held(value.clone(), ty) {
+            return Ok(knowing);
+        }
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
             return Ok(value);
         }
@@ -594,21 +598,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         let value = stepped_value(&value).unwrap_or(value);
-        if self.knows_its_back(ty) {
-            return Ok(value);
-        }
         // One a struct holds, which keeps its source (ADR 0542): of one given
-        // as it is, its back and length this use's dictionaries'; of one made
-        // knowing them, an array's or a range's, itself.
-        if self.held_adapter(ty)
-            && let Some(source) = super::recognition::enumerated_source(self.tcx, ty.peel_refs())
-        {
-            if let Some(knowing) = self.knowing_source(value.clone(), source) {
-                return Ok(knowing);
-            }
-            if self.held_knows_its_back(ty) {
-                return Ok(value);
-            }
+        // as it is, its back and length this use's dictionaries', wherever it
+        // was made; of one made knowing them, an array's or a range's, itself.
+        if let Some(knowing) = self.knowing_held(value.clone(), ty) {
+            return Ok(knowing);
+        }
+        if self.knows_its_back(ty) || self.held_knows_its_back(ty) {
+            return Ok(value);
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
             return Ok(it);
@@ -754,22 +751,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// steps as it is: the one answer, of what steps it from its back.
     pub(in crate::lower) fn held_knows_its_back(&self, ty: Ty<'tcx>) -> bool {
         self.held_adapter(ty)
-            && super::recognition::enumerated_source(self.tcx, ty.peel_refs())
+            && super::recognition::held_steps_source(self.tcx, ty.peel_refs())
                 .is_some_and(|source| self.steps_an_array(source) || self.range_kind(source).is_some())
     }
 
-    /// `it`, an adapter a struct holds (ADR 0542), of a `source` given as it
-    /// is: it, stepped from its back by this use's dictionaries of what it
-    /// steps, `$knowing(it, IDoubleEndedIterator.next_back,
-    /// IExactSizeIterator.len)`. `None` where this use has none.
-    fn knowing_source(&self, it: Expr, source: Ty<'tcx>) -> Option<Expr> {
+    /// `it`, an adapter of type `ty` a struct holds (ADR 0542), of a source
+    /// given as it is: it, stepped from its back and counted by this use's
+    /// dictionaries of what it steps, `$knowing(it,
+    /// IDoubleEndedIterator.next_back, IExactSizeIterator.len)`, as it may
+    /// have been made where they weren't given (ADR 0549). `None` of
+    /// another, or where this use has neither.
+    pub(in crate::lower) fn knowing_held(&self, it: Expr, ty: Ty<'tcx>) -> Option<Expr> {
+        let ty = ty.peel_refs();
+        if !self.held_adapter(ty) {
+            return None;
+        }
+        let source = super::recognition::held_steps_source(self.tcx, ty)?;
         let entry = |trait_id: Option<DefId>| -> Option<Expr> {
             let trait_id = trait_id?;
             let name = super::recognition::extension_entry(self.tcx, trait_id);
             Some(Expr::member(self.iterator_evidence(source, trait_id)?, name))
         };
-        let back = entry(self.recognition().double_ended_iterator())?;
-        let len = entry(self.recognition().exact_size_iterator())?;
+        let back = entry(self.recognition().double_ended_iterator());
+        let len = entry(self.recognition().exact_size_iterator());
+        if back.is_none() && len.is_none() {
+            return None;
+        }
+        let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
         Some(Expr::call_helper("$knowing", vec![it, back, len]))
     }
 

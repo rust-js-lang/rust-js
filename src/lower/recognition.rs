@@ -1101,12 +1101,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_diagnostic_item(Symbol::intern("Any"), trait_) && tcx.item_name(def_id).as_str() == "type_id" {
             return Some(Std::Any(AnyOp::TypeIdOfValue));
         }
-        // `x.borrow()` of std's `Borrow`: the value itself, as its dictionary's
-        // is (ADR 0167). A type parameter's is its dictionary's.
-        if is_std_def(tcx, trait_, StdItem::Borrow)
-            && tcx.item_name(def_id).as_str() == "borrow"
-            && self.borrows_as_itself(ty, args.type_at(1))
-        {
+        // `x.borrow()` and `v.as_mut()`, a view of a value as itself.
+        if self.views_itself(trait_, def_id, ty, args) {
             return Some(Std::Same);
         }
         // `b.as_ref()` of std's `AsRef` where it's the same JS value, a `Box`'s,
@@ -4433,6 +4429,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_string_like(from) && to.is_str()) || (sequence && to.is_slice())
     }
 
+    /// Whether `method` of std's `trait_`, of a `ty` as a `to`, is the value
+    /// itself: `x.borrow()` of std's `Borrow`, as its dictionary's is (ADR
+    /// 0167); and `v.as_mut()` of std's `AsMut` of a sequence as a slice or
+    /// text as a `str`, of a type known here, the value its `&mut` is, as
+    /// its dictionary's is of the cell generic code has (ADRs 0454, 0550). A
+    /// type parameter's is its dictionary's.
+    fn views_itself(&self, trait_: DefId, method: DefId, ty: Ty<'tcx>, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let tcx = self.tcx;
+        (is_std_def(tcx, trait_, StdItem::Borrow)
+            && tcx.item_name(method).as_str() == "borrow"
+            && self.borrows_as_itself(ty, args.type_at(1)))
+            || (is_std_def(tcx, trait_, StdItem::AsMut)
+                && !known_by_bounds(ty.peel_refs())
+                && self.views_as_itself(ty, args.type_at(1)))
+    }
+
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a
     /// value as itself, through a reference, a `Box` or an `Rc` (ADR 0023),
     /// text as a `str`, and a `Vec` or an array as a slice.
@@ -6105,6 +6117,23 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
 /// one answer, of a type and of a kind the crate holds (ADR 0542).
 pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_path(tcx, id).starts_with("std::iter::")
+}
+
+/// What std's adapter of type `ty` a struct may hold (ADR 0542) steps
+/// from its back and counts as its source does, `I` of `Enumerate<I>` or
+/// `Fuse<I>`: the one answer, of what a use site makes knowing them.
+pub(crate) fn held_steps_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if matches!(
+                std_path(tcx, adt.did()).as_str(),
+                "std::iter::Enumerate" | "std::iter::Fuse"
+            ) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
 }
 
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.

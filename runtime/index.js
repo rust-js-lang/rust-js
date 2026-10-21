@@ -536,8 +536,9 @@ export function $add(set, item, drop) {
 // again. Of one that isn't a `FusedIterator`, not `fused`, `iter` is closed
 // as it ends, which drops it as std's does, and `undefined` then, as its
 // `Debug` shows it; a `FusedIterator`'s, which stays ended, is kept, and
-// stepped again, as std's is (ADR 0473). Of one that knows its back or its
-// length, it knows them too, as Rust's `Fuse` does (ADR 0528).
+// stepped again, as std's is (ADR 0473). Its back and its length are what
+// it steps', as Rust's `Fuse`'s are (ADR 0528), asked as they're stepped, as
+// a use site may give what it steps them (ADR 0549).
 export function $fuse(iter, fused = false) {
   const stepped = (step) => () => {
     if (it.iter === undefined) {
@@ -560,8 +561,8 @@ export function $fuse(iter, fused = false) {
   });
   it.iter = iter;
   it.fused = fused;
-  if (iter.back !== undefined) it.back = stepped(() => it.iter.back());
-  if (iter.len !== undefined) it.len = () => (it.iter === undefined ? 0 : it.iter.len());
+  it.back = stepped(() => it.iter.back());
+  it.len = () => (it.iter === undefined ? 0 : it.iter.len());
   return it;
 }
 
@@ -1100,10 +1101,12 @@ export function $findDropping(it, test, drop, boxed) {
 // An iterator an adapter holds, closed when the adapter ends early or is
 // dropped: `drop`, its own drop, given what it hasn't given, once, as Rust
 // drops it with the adapter (ADRs 0422, 0465); its back and its length
-// still its own, where it has them (ADR 0514).
+// still its own, where it has them (ADR 0514), or is given them where it's
+// stepped, `iter`, what it closes (ADR 0549).
 export function $closing(it, drop) {
   let closed = false;
   const closing = Object.create(Iterator.prototype);
+  closing.iter = it;
   closing.next = () => it.next();
   closing.back = () => it.back();
   closing.len = () => it.len();

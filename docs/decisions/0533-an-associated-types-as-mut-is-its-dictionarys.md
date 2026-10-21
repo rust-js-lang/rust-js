@@ -1,6 +1,7 @@
 # 0533. An associated type's `as_mut()` is its dictionary's
 
-Status: Accepted. Extends [0162](0162-generic-as-ref.md)
+Status: Accepted, amended by [0550](0550-a-known-as-mut-is-the-value.md):
+a known type's is the value. Extends [0162](0162-generic-as-ref.md)
 and [0180](0180-generic-writers.md).
 
 Case: D ([0262](0262-when-rust-and-js-disagree.md)) closed: what was

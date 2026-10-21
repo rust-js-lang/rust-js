@@ -36,7 +36,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 3 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 4 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -44,7 +44,7 @@ export function parseManifest(text) {
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")
           && Array.isArray(item.drops) && item.drops.every(Number.isInteger))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 3");
+      throw new Error("Invalid rust-js library contract; expected library ABI 4");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

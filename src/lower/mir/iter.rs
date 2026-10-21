@@ -240,13 +240,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.back_step(method, values, (iter_ty, output), span).map(Some);
         }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
-        // range or a `$iter` (ADR 0071); not a lazy or a generic one.
+        // range, a `$iter` or one held (ADRs 0071, 0549); not a lazy one.
         if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
+            let it = values.into_iter().next().expect("the receiver");
             // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
             // One its impl writes itself is its own, never asked here (ADR
             // 0492).
             if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) {
-                let it = values.into_iter().next().expect("the receiver");
                 let mut made = Vec::new();
                 let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
                 if !made.is_empty() {
@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.is_user_iterator(iter_ty) {
                 return Ok(None);
             }
-            let it = values.into_iter().next().expect("the receiver");
+            let it = self.knowing_held(it.clone(), iter_ty).unwrap_or(it);
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
             let array = self.has_a_back(iter_ty);
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {

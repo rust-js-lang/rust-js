@@ -5,6 +5,7 @@ import {
   $fuse,
   $iter,
   $iterator,
+  $knowing,
   $mapEnds,
   $next,
   $nextBack,
@@ -22,7 +23,14 @@ const PadUsing = {
     init = $foldBack(
       $mapEnds(
         $iterator(
-          { start: padUsing.iter.len(), end: padUsing.min },
+          {
+            start: $knowing(
+              padUsing.iter,
+              IDoubleEndedIterator.next_back,
+              IExactSizeIterator.len,
+            ).len(),
+            end: padUsing.min,
+          },
           $rangeNext,
           false,
           $rangeNextBack,

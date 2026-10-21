@@ -22,7 +22,8 @@ a marker or one rust-js answers itself, doesn't have.
 **A library's manifest says, of each function, which type parameters it
 steps by which trait, `stepped`, as the crate's own analysis does; a
 consumer reads it, `Foreign::steps`, where it would ask the analysis.** The
-manifest is version 4.
+manifest is version 4, which `tooling/manifest.js`, its reader in JS, asks too
+(amended: it asked 3, which `test/cargo-link.test.ts` caught on CI).
 
 - **`held_supertraits` is the one list of the supertraits a dictionary
   holds**, which both a dictionary's entries and a route through one ask.

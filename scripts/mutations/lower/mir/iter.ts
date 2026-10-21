@@ -1202,4 +1202,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "held-len-unknowing",
+    breaks: "a held adapter's `len()` and `next_back()` aren't made knowing this use's",
+    file: "src/lower/mir/iter.rs",
+    find: "            let it = self.knowing_held(it.clone(), iter_ty).unwrap_or(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+  },
 ];

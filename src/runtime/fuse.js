@@ -2,8 +2,9 @@
 // again. Of one that isn't a `FusedIterator`, not `fused`, `iter` is closed
 // as it ends, which drops it as std's does, and `undefined` then, as its
 // `Debug` shows it; a `FusedIterator`'s, which stays ended, is kept, and
-// stepped again, as std's is (ADR 0473). Of one that knows its back or its
-// length, it knows them too, as Rust's `Fuse` does (ADR 0528).
+// stepped again, as std's is (ADR 0473). Its back and its length are what
+// it steps', as Rust's `Fuse`'s are (ADR 0528), asked as they're stepped, as
+// a use site may give what it steps them (ADR 0549).
 function $fuse(iter, fused = false) {
   const stepped = (step) => () => {
     if (it.iter === undefined) {
@@ -26,7 +27,7 @@ function $fuse(iter, fused = false) {
   });
   it.iter = iter;
   it.fused = fused;
-  if (iter.back !== undefined) it.back = stepped(() => it.iter.back());
-  if (iter.len !== undefined) it.len = () => (it.iter === undefined ? 0 : it.iter.len());
+  it.back = stepped(() => it.iter.back());
+  it.len = () => (it.iter === undefined ? 0 : it.iter.len());
   return it;
 }

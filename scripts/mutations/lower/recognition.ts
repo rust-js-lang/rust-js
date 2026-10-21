@@ -2565,4 +2565,20 @@ export const mutations: Mutation[] = [
     replace: "        )",
     tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
   },
+  {
+    name: "as-mut-known-by-dictionary",
+    breaks: "a concrete `as_mut()` of an array goes to the dictionary, which takes a cell",
+    file: "src/lower/recognition.rs",
+    find: "            || (is_std_def(tcx, trait_, StdItem::AsMut)\n                && !known_by_bounds(ty.peel_refs())\n",
+    replace: "            || (is_std_def(tcx, trait_, StdItem::AsMut)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_associated_as_mut.rs$"],
+  },
+  {
+    name: "held-fuse-not-stepped",
+    breaks: "a held `Fuse` isn't one a use site makes knowing what it steps",
+    file: "src/lower/recognition.rs",
+    find: "\"std::iter::Enumerate\" | \"std::iter::Fuse\"",
+    replace: "\"std::iter::Enumerate\"",
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+  },
 ];
