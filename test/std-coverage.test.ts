@@ -4,8 +4,9 @@
 // refused now fails here, as one newly known does until it's blessed
 // (`BLESS=1`), so the diff shows it. Beside each, after a tab, what its body
 // in std is made of (the `std-bodies` draft): `safe`, MIR rust-js could
-// lower down to its vocabulary; `memory`, reaching addressable memory;
-// `opaque`, reaching a body the toolchain ships no MIR of; or `none`, no
+// lower down to its vocabulary; `spec`, reaching a std-private trait's
+// method on a type parameter; `opaque`, reaching a body the toolchain
+// ships no MIR of; `memory`, reaching addressable memory; or `none`, no
 // MIR of its own. That's the toolchain's, measured, not a promise: it's
 // held equal so a toolchain upgrade's change shows.
 
@@ -37,10 +38,10 @@ test("rust-js knows each std data structure method it knew", () => {
   expect(now).toBe(readFileSync(baseline, "utf8"));
 });
 
-test("each std method's body is measured as one of the four kinds", () => {
+test("each std method's body is measured as one of the five kinds", () => {
   const lines = readFileSync(baseline, "utf8").split("\n").filter((l) => /^[+-] /.test(l));
   expect(lines.length).toBeGreaterThan(500);
-  for (const line of lines) expect(line, line).toMatch(/^[+-] \S+\t(?:safe|memory|opaque|none)$/);
+  for (const line of lines) expect(line, line).toMatch(/^[+-] \S+\t(?:safe|spec|opaque|memory|none)$/);
   // The safe stratum is real: the methods a compiled std would take over
   // are the many, not the few, and what reaches memory stays measured.
   const kinds = lines.map((l) => l.split("\t")[1]);

@@ -35,18 +35,22 @@ compiled to JS of its own.
 
 `--std-coverage` measures what those bodies are made of, beside whether
 `classify` knows each method (`docs/std-coverage.txt`, held by
-`test/std-coverage.test.ts`): `safe`, MIR down to the vocabulary rust-js
-lowers anyway, a trait's method on a type parameter, a closure's call,
-`?`, a drop, a panic; `memory`, reaching a raw pointer made or read
-through, a transmute, an intrinsic or `std::ptr`; `opaque`, reaching a
-body with no MIR shipped; `none`, no MIR of its own. Of 827 methods at
-1.99.0: 252 safe, 532 memory, 16 opaque, 27 none.
+`test/std-coverage.test.ts`), each body the worst it reaches: `safe`, MIR
+down to the vocabulary rust-js lowers anyway, a trait's method on a type
+parameter, a closure's call, `?`, a drop, a panic; `spec`, reaching a
+std-private trait's method on a type parameter, one only std can name,
+private or unstable; `opaque`, reaching a body with no MIR shipped;
+`memory`, reaching a raw pointer made or read through, a transmute, an
+intrinsic or `std::ptr`, as `pointers::mir_addresses_memory` reads it;
+`none`, no MIR of its own. Of 827 methods at 1.99.0: 231 safe, 21 spec,
+5 opaque, 543 memory, 27 none.
 
 The split is by stratum, not by chance:
 
 | Stratum | Bodies | Examples |
 |---|---|---|
 | Values over the trait vocabulary | safe | `Option` 39 of 46, `Result` 34 of 36, `Pin` 16 of 16, `BTreeMap` 11, a slice's `contains`, `Vec::len`; and, outside the registry, `Peekable::next` and `next_back`, `Fuse::next`, `Iterator::try_fold`, `fold`, `count`, `position`, `max_by`, `Ord::max`, `Ordering::then_with` |
+| Over a trait only std names | spec | `str::contains`, `starts_with`, `find` and `strip_prefix` through `Pattern`, unstable; a slice's `contains` through `SliceContains`, its `fill`, `concat` and `join`; `LinkedList::contains` |
 | The containers and text | memory | `Vec::push` through `push_mut`'s raw pointer, `dedup_by`'s `copy_nonoverlapping`, a slice's `sort_by` (driftsort), `iter` (`Iter::new`), `str::split`, `trim` and `lines` (a `Pattern`'s searcher over bytes), `String::push_str`, every `Rc` and `Arc` |
 | Non-generic, not inlined | none | `str::to_lowercase`, `Instant`'s and `SystemTime`'s, `String`'s 9 |
 
@@ -90,6 +94,37 @@ a std call
   dictionary's; `FnMut::call_mut`, the closure called; `Try::branch`, `?`
   (ADR 0364); a `Drop` terminator, the value's drop; a function that
   never returns, the panic (ADR 0012); a `UbChecks` branch, off.
+- **One shape per std type, never per call site.** A type's JS is
+  decided once, by the type: once its body is compiled, every value of
+  it is its struct, a `Peekable<I>` `{ iter, peeked }` wherever it's
+  made, by generic code or by `v.iter().peekable()` in concrete code. A
+  recognizer rewrites a call, never a value's shape: `$peekable`'s
+  object and the struct can't both be a `Peekable`, as a value built
+  where one fact was known and stepped where another was is the bug
+  ADRs 0542 to 0548 each fixed once. Which shape a type has is
+  `representation.rs`'s one answer, as it is for the crate's types.
+- **A compiled iterator is a JS iterator at the boundary.** std's
+  iterators are JS `Iterator`s today, so `for...of`, `.toArray()`, a JS
+  caller and the `.d.ts` work on them; a compiled adapter's struct keeps
+  that: it's given `Iterator.prototype`, its `next` the compiled `next`
+  returning `{ value, done }`, as `$iterator(it, next)` gives the
+  crate's own (ADR 0055). Nothing at the boundary changes.
+- **Sources stay recognized, stepped by dictionary.** `slice::Iter::next`
+  and `Range::next` reach memory, or are primitives: a compiled
+  `Fuse<I>::next` steps `I` through the dictionary its caller gives,
+  `{ next: $next }` of a `$iter`, never through an inlined slice body.
+  Polymorphic optimized MIR leaves `I::next` unresolved, which is what
+  the measure counts as the vocabulary.
+- **A std-private trait on a type parameter is given as any bound is**
+  (ADR 0049): the dictionary of the impl rustc resolves for the caller's
+  type, in the caller's typing environment, so a `Pattern` of a `char`
+  is `char`'s impl and of a `P: Pattern` the caller's own dictionary
+  passed on; where a type meets only the blanket impl, `SpecFold`'s
+  `impl<I: Iterator>`, that one, the specializations being std's
+  optimizations of it, which `rustc_specialization_trait` says change
+  nothing a program sees. The impl's methods are std bodies, compiled or
+  recognized as any other. The `spec` count says how many bodies need
+  one.
 - **The primitives stay recognized**: a method whose body reaches memory
   has its JS from its type's module, as now, `Vec::push` `v.push(x)`.
   `classify` is where that's decided, as it is.
@@ -100,7 +135,9 @@ a std call
   compiled body against native Rust; retiring one changes no answer.
 - **`classify`'s refusal moves to the leaf**: a method it doesn't know is
   lowered from its body; what's refused is the memory operation in that
-  body, or in one it calls, naming the std function it's in.
+  body, or in one it calls, naming the std function it's in. What
+  addresses memory in MIR has one owner, `pointers::mir_addresses_memory`,
+  beside `raw_pointee`: the measure asks it, and the leaf's refusal will.
 
 ## Why
 
@@ -150,10 +187,10 @@ a std call
   through hashbrown; each is `none` one call down, the same answer.
 - **Specialization in std**, `SpecFromIter`, `SliceContains`: resolved by
   rustc for the body's types, as the measure resolves each call.
-- **The measure's predicate and the lowering's refusal are two readings
-  of one question**, what addresses memory: `std_coverage.rs`'s over MIR
-  and `refusal.rs`'s and `pointers.rs`'s in the lowering. Accepting this
-  draft gives it one owner, which both ask.
+- **After ADR 0549**, which teaches a held `Fuse` its source's back
+  through `$knowing`, no further adapter is modeled by hand: that stratum
+  is this draft's. The draft is rebased over 0549, which touches `$fuse`,
+  `$closing` and `knowing_held`.
 - **What it doesn't move**: 54 of rustc's 101 known failures are
   addressable memory, and the crate corpus stops on yoke, memchr and
   powerfmt, raw pointers all. A compiled std moves the adapter and trait
@@ -163,17 +200,22 @@ a std call
 
 1. **The measure covers the stratum it's about**: the `Iterator` trait's
    provided methods and `core::iter::adapters`' impls, beside the
-   registry's data structures, so the count of safe bodies a compiled std
-   takes over is measured, not quoted from a probe.
-2. **One external body end to end**: `Option::map` or `Peekable::next`,
-   lowered from std's optimized MIR with no THIR, into a std module an app
-   imports, run against native Rust by a corpus case.
+   registry's data structures, with `spec` counted apart, so the count of
+   safe bodies a compiled std takes over is measured, not quoted from a
+   probe, and not overstated by `SpecFold`'s and `ZipImpl`'s.
+2. **One external body end to end**: `Peekable::next`, lowered from std's
+   optimized MIR with no THIR, into a std module an app imports, run
+   against native Rust by corpus cases where `I` is a slice's iterator
+   and where it's a range, each stepped through its dictionary.
 3. **`classify`'s fallback**: a `Std` variant for a compiled body, its
    call emitted as a library's, and the leaf's refusal naming the std
-   function it's in, held by `test/diagnostics.test.ts`.
-4. **One retirement**: `$fuse` or `$peekable` replaced by the compiled
-   adapter, the corpus unchanged, `bun run port measure` unchanged, its
-   mutations caught by the compiled body's cases.
+   function it's in, asking `mir_addresses_memory`, held by
+   `test/diagnostics.test.ts`.
+4. **One retirement**: `$peekable`, `$peekableClone` and a held
+   `Peekable`'s `Debug` (ADRs 0514, 0543) replaced by the compiled
+   adapter, `held_peekable`, `peekable_drops`, `peekable_lazy` and
+   `peekable_len` in the corpus unchanged, `bun run port measure`
+   unchanged, their mutations caught by the compiled body's cases.
 5. **The release**: `@rust-js/std` generated and published with the
    compiler, as `@rust-js/runtime` is (ADR 0120).
 
@@ -184,5 +226,6 @@ a std call
   change shows, and the safe and memory strata stay the many.
 - The architecture test: recognition may name a std function only as an
   idiom's rewrite or a primitive's method; `std_coverage.rs` asks
-  recognition what addresses memory, `memory_intrinsic`,
-  `addresses_memory`, and spells no std name of its own.
+  recognition which std function addresses memory, `memory_intrinsic`,
+  `addresses_memory`, and `pointers.rs` which MIR does,
+  `mir_addresses_memory`, and spells no std name of its own.
