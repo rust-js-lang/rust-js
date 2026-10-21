@@ -59,9 +59,9 @@ where
 }
 
 // A bound the trait declares on it: the trait's dictionary has the
-// associated type's, as it has a supertrait's.
+// associated type's, as it has a supertrait's; a marker's, `Send`, has none.
 trait Labeled {
-    type Label: Display;
+    type Label: Display + Send;
     fn label(&self) -> Self::Label;
 }
 

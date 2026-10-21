@@ -180,10 +180,10 @@ export function validate(contact) {
 
 /** Text, an `@`, and a domain with a dot that neither starts nor ends it. */
 export function is_email(text) {
-  const value = $splitOnce(text, "@");
-  if (value) {
-    const user = value[0];
-    const domain = value[1];
+  const splitOnce = $splitOnce(text, "@");
+  if (splitOnce) {
+    const user = splitOnce[0];
+    const domain = splitOnce[1];
     return (
       !!(user && !domain.includes("@") && domain.includes(".") && !domain.startsWith(".")) &&
       !domain.endsWith(".")

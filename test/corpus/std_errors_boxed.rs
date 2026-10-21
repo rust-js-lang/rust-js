@@ -50,6 +50,22 @@ fn describe<E: Error>(e: &E) -> String {
     format!("{e} | {e:?} | {}", e.source().is_some())
 }
 
+// An error trait of the crate's bounded by marker traits too, as error
+// reporters bound theirs: its dictionary gives `Error`'s, not `Send`'s.
+trait Report: Error + Send + Sync {
+    fn code(&self) -> u32;
+}
+
+impl<E: Error + Send + Sync> Report for E {
+    fn code(&self) -> u32 {
+        self.to_string().len() as u32
+    }
+}
+
+fn reported(report: &dyn Report) -> String {
+    format!("{report} {}", report.code())
+}
+
 fn main() {
     for s in ["42", " 7 ", "-3", "x", "99999999999999999999", ""] {
         match parse_positive(s) {
@@ -68,4 +84,5 @@ fn main() {
     println!("{} {}", err.as_dyn(), err.as_dyn().source().is_none());
     println!("{}", describe(&u8::try_from(300i32).unwrap_err()));
     println!("{}", describe(&"maybe".parse::<bool>().unwrap_err()));
+    println!("{}", reported(&"x".parse::<u8>().unwrap_err()));
 }

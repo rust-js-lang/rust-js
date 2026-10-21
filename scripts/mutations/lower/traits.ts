@@ -626,11 +626,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-error-dictionary-markers",
-    breaks: "std's `Error` dictionary asks one of `MetaSized`, which has none",
+    breaks: "an associated type's marker bound, `type Label: Display + Send`, is asked a dictionary, which `Send` has none of",
     file: "src/lower/traits.rs",
     find: "            if operational(self.tcx, self.krate.foreign, bound.def_id) {\n                let dictionary = self.dictionary(bound, span)?;",
     replace: "            if true {\n                let dictionary = self.dictionary(bound, span)?;",
-    tests: ["test/corpus.test.ts","-t","std_errors_boxed"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
   },
   {
     name: "component-takes-dictionary",

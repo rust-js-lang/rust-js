@@ -8,6 +8,7 @@ export function entry() {
 
 const START = 5;
 const LIMIT = undefined;
+const SLOTS = [{ value: 1 }, { value: 2 }];
 
 function bump() {
   let c = 5;
@@ -34,5 +35,8 @@ function main() {
   } finally {
     $unborrow(borrow);
   }
+  const slots = [{ value: 1 }, { value: 2 }];
+  slots[1].value = 7;
+  console.log(`${slots[0].value} ${slots[1].value} ${{ value: 2 }.value}`);
 }
 //# sourceMappingURL=case.js.map
