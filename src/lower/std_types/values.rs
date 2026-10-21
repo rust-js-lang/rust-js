@@ -53,12 +53,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         // `v.extend(items)` moves each into `v`, and drops `items` once it's
         // given them all: that, of what holds nothing then, is nothing;
-        // `it.partition(f)` each into one of its two (ADR 0445), and
-        // `it.filter_map(f)` each to `f`, which owns it then, and `max_by`
+        // `it.partition(f)` each into one of its two (ADR 0445), and `max_by`
         // drops each it passes over; through a `&mut`, `find_map`'s, what it
-        // doesn't reach stays in the iterator. A lazy adapter, `zip`, moves
-        // what it's given into what it makes, which its type says is closed
-        // to drop it, or is refused (ADR 0465). A slice's op that lends its
+        // doesn't reach stays in the iterator. A lazy adapter, `zip` or
+        // `filter_map`, moves what it's given into what it makes, which its
+        // type says is closed to drop it, or is refused (ADRs 0465, 0518). A slice's op that lends its
         // items, or views of them, drops none (ADR 0507).
         let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
             || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
