@@ -870,6 +870,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_location(ty) {
             return self.location_shown(value, false, span);
         }
+        // `disabled backtrace`, or its frames (ADR 0568).
+        if self.recognition().is_backtrace(ty) {
+            return Ok(self.backtrace_shown(value, false));
+        }
         // A `Value`'s JSON, or a `Number`'s (ADR 0083).
         if let Some(shown) = self.json_value_display(value.clone(), ty, false) {
             return Ok(shown);
@@ -1028,6 +1032,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Location { file, line, column }`, as std's shows it (ADR 0427).
         if self.recognition().is_location(ty) {
             return self.location_shown(value, true, span);
+        }
+        // `<disabled>`, or its frames (ADR 0568).
+        if self.recognition().is_backtrace(ty) {
+            return Ok(self.backtrace_shown(value, true));
         }
         // A `Discriminant` shows its number, as std's does (ADR 0393).
         if self.recognition().is_discriminant(ty) {

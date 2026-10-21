@@ -67,6 +67,10 @@ released any more: `rust-js build` is the one way to build an app.
 - **`fmt::Arguments::as_str()`** (ADR 0034 amended): `Some` of the text the
   arguments are, within its contract, which promises the literal case
   alone; anyhow's `format_err` compiles.
+- **`std::backtrace::Backtrace`** (ADR 0568): `capture()` and `disabled()`
+  are disabled, as Rust's are unless `RUST_BACKTRACE` asks, which a page
+  can't; `force_capture()` is JS's own stack; `status()`, `{}` and `{:?}`
+  as std shows them.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

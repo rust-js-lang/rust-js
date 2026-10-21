@@ -120,6 +120,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_json_error(ty) || self.is_json_number(ty) => return None,
             // `{ file, line, column }` (ADR 0427).
             ty::Adt(..) if self.recognition().is_location(ty) => return None,
+            // `undefined`, or JS's stack (ADR 0568).
+            ty::Adt(..) if self.recognition().is_backtrace(ty) => return None,
             // `dyn Debug` is the string it shows (ADR 0060), and serde's `dyn
             // Expected` its text (ADR 0459).
             ty::Dynamic(..) if self.is_dyn_debug(ty) || super::recognition::is_dyn_expected(self.tcx, ty) => {

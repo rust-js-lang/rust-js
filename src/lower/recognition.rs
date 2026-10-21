@@ -171,6 +171,8 @@ pub(super) enum Std {
     Memchr(super::shipped::MemchrOp),
     /// `panic::Location`'s (ADR 0427).
     Location(super::std_types::location::LocationOp),
+    /// A `Backtrace`'s (ADR 0568).
+    Backtrace(super::std_types::backtrace::BacktraceOp),
     /// An `io::Error`'s: made, or its kind asked (ADR 0462).
     IoError(IoErrorOp),
     /// Hashing's (ADR 0463): a std hasher made, or its own method called, or
@@ -736,6 +738,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // Where a call is, `Location::caller()`, and its parts (ADR 0427).
         if let Some(op) = location_of(tcx, def_id) {
             return Some(Some(Std::Location(op)));
+        }
+        // A backtrace, disabled unless forced (ADR 0568).
+        if let Some(op) = super::std_types::backtrace::backtrace_op(&std_path(tcx, def_id)) {
+            return Some(Some(Std::Backtrace(op)));
         }
         if let Some(op) = self.io_error_op(def_id, args) {
             return Some(Some(Std::IoError(op)));
@@ -2382,6 +2388,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `io::Error`, a `$IoError` (ADR 0462).
     pub(super) fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
+    }
+
+    /// `std::backtrace::Backtrace`, `undefined` or JS's stack (ADR 0568).
+    pub(super) fn is_backtrace(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(b, _) if std_path(self.tcx, b.did()) == "std::backtrace::Backtrace")
     }
 
     /// `io::ErrorKind`, its variant's name (ADR 0462).
