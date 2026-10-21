@@ -765,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.cycled(it, arg_tys[0].peel_refs(), span)?
             }
             // A `Peekable`'s own methods, rewritten over std's struct, the
-            // JS iterator it is (ADR 0557): what it peeked at, or what it
+            // JS iterator it is (ADR 0561): what it peeked at, or what it
             // steps next, kept; `next_if`, its next item where the test
             // takes it, else kept.
             Std::Step(op @ (StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq))

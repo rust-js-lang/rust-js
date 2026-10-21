@@ -109,7 +109,7 @@ pub struct Artifact {
 impl Manifest {
     /// The manifest with each path relative to `dir`, its own directory:
     /// `@rust-js/std`'s, committed and built into the compiler, which reads
-    /// it wherever the checkout is (ADR 0557).
+    /// it wherever the checkout is (ADR 0561).
     pub fn relative_to(mut self, dir: &Path) -> Self {
         let rel = |path: &mut PathBuf| *path = PathBuf::from(crate::paths::relative(dir, path));
         rel(&mut self.input);

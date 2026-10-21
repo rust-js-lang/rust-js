@@ -23,7 +23,7 @@ use rustc_span::def_id::DefId;
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
 /// A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
-/// struct, `{ iter, peeked }` (ADR 0557): what it steps',
+/// struct, `{ iter, peeked }` (ADR 0561): what it steps',
 /// and what it peeked at. The one rewrite, of `size_hint()` and `len()`.
 pub(in crate::lower) fn peekable_hint(peekable: Expr) -> Expr {
     Expr::call_helper("$peekableHint", vec![peekable])
@@ -158,7 +158,7 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));
     // A trait's own method takes `Self` as its dictionary gives it, but one
     // compiled into `@rust-js/std` as a function over `Self`, `peekable`'s
-    // (ADR 0185, 0557), as a function's signature says.
+    // (ADR 0185, 0561), as a function's signature says.
     let signature = matches!(
         tcx.def_kind(id),
         rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
@@ -716,7 +716,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         // A `Peekable`'s, whose body reaches memory, over std's struct (ADR
-        // 0557).
+        // 0561).
         if self.is_peekable(ty) {
             return Ok(Expr::call(Expr::helper("$exactLen"), vec![peekable_hint(value)]));
         }
@@ -1910,7 +1910,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` (ADR 0518), `$mapEnds` (ADR 0455),
 /// `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528), `$memchrIter` (ADR
-/// 0529) and `$stdIterator` (ADR 0557), and each of its generators,
+/// 0529) and `$stdIterator` (ADR 0561), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
 pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
     "$stdIterator",

@@ -1,4 +1,4 @@
-// std's bodies as a package (ADR 0557): `@rust-js/std`,
+// std's bodies as a package (ADR 0561): `@rust-js/std`,
 // released with the compiler as `@rust-js/runtime` is. Its JS and its
 // manifest are made by the compiler from the bodies the toolchain ships,
 // `bun run std`, and committed in `std/`: the compiler builds the manifest
@@ -57,7 +57,7 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
 // What the compiler writes imports the package by its name, each module by
 // its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported. A
 // `Peekable` is made by std's own `peekable`, and stepped as the JS iterator
-// its struct is, `$next`, its `next` the compiled one (ADR 0557).
+// its struct is, `$next`, its `next` the compiled one (ADR 0561).
 test("a Peekable is made by std's own peekable, imported from @rust-js/std, and stepped as a JS iterator", () => {
   const dir = fixture("std-package-import");
   const file = join(dir, "lib.rs");

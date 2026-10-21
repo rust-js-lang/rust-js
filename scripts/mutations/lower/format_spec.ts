@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
+  {
+    name: "debug-hex-case-swapped",
+    breaks: "`{:x?}` shows upper-case digits, `{:X?}` lower",
+    file: "src/lower/format_spec.rs",
+    find: "                (true, _) => Some(Radix::LowerHex),",
+    replace: "                (true, _) => Some(Radix::UpperHex),",
+    tests: ["test/corpus.test.ts", "-t", "^debug_hex_integers.rs$"],
+  },
+  {
+    name: "debug-hex-integer-refused",
+    breaks: "`{:x?}` of an integer is refused",
+    file: "src/lower/format_spec.rs",
+    find: "            if !num.is_some_and(|n| !n.float()) {",
+    replace: "            if true {",
+    tests: ["test/corpus.test.ts", "-t", "^debug_hex_integers.rs$"],
+  },
 ];

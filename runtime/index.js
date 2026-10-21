@@ -7668,7 +7668,7 @@ export function $splitOff(items, at) {
   return items.splice(at);
 }
 
-// `peek()` of a `Peekable`, std's `{ iter, peeked }` (ADR 0557), whose body
+// `peek()` of a `Peekable`, std's `{ iter, peeked }` (ADR 0561), whose body
 // reaches memory: what it peeked at, or what it steps next, its own `next`'s
 // (`$stdIterator`), kept as `Some` of it, as Rust's `get_or_insert_with`
 // keeps it; the item, or `undefined` at the end.
@@ -7689,7 +7689,7 @@ export function $peekableHint(peekable) {
   return [low + more, high === undefined ? undefined : high + more];
 }
 
-// `next_if(f)` of a `Peekable` (ADR 0557): its next item where `f` takes it,
+// `next_if(f)` of a `Peekable` (ADR 0561): its next item where `f` takes it,
 // else kept as what it peeked at, as std's is, an end too.
 export function $nextIf(peekable, f) {
   const item = $next(peekable);
@@ -7699,7 +7699,7 @@ export function $nextIf(peekable, f) {
 }
 
 // A std struct whose `Iterator` impl is compiled into `@rust-js/std`, a
-// `Peekable`'s `{ iter, peeked }` (ADR 0557), as the JS iterator it is:
+// `Peekable`'s `{ iter, peeked }` (ADR 0561), as the JS iterator it is:
 // itself, with `Iterator.prototype`'s helpers, its `next` the compiled one,
 // `next`, which gives `Some` of an item boxed (ADR 0051), or `None` at its
 // end, as `$iterator` steps the crate's own.
@@ -8126,6 +8126,17 @@ export function $escapeAscii(bytes) {
     else text += `\\x${byte.toString(16).padStart(2, "0")}`;
   }
   return text;
+}
+
+// A byte's `escape_ascii()`, `ascii::escape_default(b)` (ADR 0558): the
+// bytes of its escape, as `$escapeAscii` writes it.
+export function $escapeByte(byte) {
+  return Array.from($escapeAscii([byte]), (c) => c.charCodeAt(0));
+}
+
+// `{}` of a byte's escape, stepped or not: the bytes it has left, as text.
+export function $restBytes(it) {
+  return String.fromCharCode(...it.items.slice(it.at, it.end));
 }
 
 // `bytes.utf8_chunks()`: each run of valid text and the bad bytes after it,

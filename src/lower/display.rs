@@ -813,6 +813,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if super::recognition::is_text_escape(self.tcx, ty) {
             return Ok(value);
         }
+        // A byte's escape, the bytes it has left (ADR 0558).
+        if super::recognition::is_byte_escape(self.tcx, ty) {
+            return Ok(Expr::call(Expr::helper("$restBytes"), vec![value]));
+        }
         if super::recognition::is_decode_utf16_error(self.tcx, ty) {
             let hex = Expr::call(Expr::member(value, "toString"), vec![Expr::int(16)]);
             return Ok(join(vec![Expr::str("unpaired surrogate found: "), hex]));

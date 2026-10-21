@@ -1305,7 +1305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
-            Std::SliceToArray { into } => {
+            Std::SliceToArray { into, owned } => {
                 let target = if into {
                     generic_args.type_at(1)
                 } else {
@@ -1330,11 +1330,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill("slice", slice, out)
                 };
                 let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
-                let value = match target.is_ref() || fresh {
+                // A `Vec`'s, moved, is itself, and given back as it's refused.
+                let value = match target.is_ref() || fresh || owned {
                     true => slice.clone(),
                     false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),
                 };
-                Expr::cond(fits, result::ok(value), result::err(Expr::undefined()))
+                let refused = match owned {
+                    true => slice.clone(),
+                    false => Expr::undefined(),
+                };
+                Expr::cond(fits, result::ok(value), result::err(refused))
             }
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
             Std::Cast { into } => {

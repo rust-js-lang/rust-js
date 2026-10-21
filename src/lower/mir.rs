@@ -442,7 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
                 // A body of the crate's maps to where it's written; a std one,
-                // read from its MIR, nowhere (ADR 0364, 0557).
+                // read from its MIR, nowhere (ADR 0364, 0561).
                 span: match body.def_id.as_local() {
                     Some(local) => self.js_span(self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))),
                     None => js::Span::NONE,
@@ -4505,7 +4505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable` or `clone`, is the JS iterator it
                 // is where it's made, its `next` the compiled impl's (ADR
-                // 0557).
+                // 0561).
                 if super::recognition::is_compiled_std_iterator(self.tcx, ty) {
                     let (next, _) = self.user_next(ty, std_item(self.tcx, StdItem::Iterator), "next", span)?;
                     return Ok(Value::Expr(Expr::call_helper("$stdIterator", vec![value, next])));

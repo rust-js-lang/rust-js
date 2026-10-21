@@ -1,6 +1,6 @@
 # 0514. A `Peekable` of what has a destructor
 
-Status: Superseded in part by [0557](0557-std-bodies.md): a `Peekable` is
+Status: Superseded in part by [0561](0561-std-bodies.md): a `Peekable` is
 std's own struct, dropped as a struct's fields are, its source and what it
 peeked at, with no `$peekable` to close. Extends [0164](0164-double-ended-iterators.md),
 [0422](0422-an-iterator-holding-a-value-is-closed-to-drop-it.md) and

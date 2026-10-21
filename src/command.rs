@@ -51,7 +51,7 @@ pub(crate) struct Build {
     /// `--std-coverage <file>` (ADR 0314).
     pub std_coverage: Option<PathBuf>,
     /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
-    /// lower, each from the MIR the toolchain ships (ADR 0557).
+    /// lower, each from the MIR the toolchain ships (ADR 0561).
     pub std_bodies: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,

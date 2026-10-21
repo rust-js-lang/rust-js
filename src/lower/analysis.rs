@@ -71,7 +71,7 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     bodies
 }
 
-/// std's bodies compiled into `@rust-js/std` (ADR 0557):
+/// std's bodies compiled into `@rust-js/std` (ADR 0561):
 /// each from the optimized MIR the toolchain ships, with no THIR beside it,
 /// as a dictionary has none (`pipeline.rs`'s `no_body`).
 pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
@@ -519,7 +519,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .map(|id| id.to_def_id())
         // And std's, whose methods a crate given std's bodies lowers (ADR
-        // 0557): each impl of a body of std's, once.
+        // 0561): each impl of a body of std's, once.
         .chain(all_bodies.iter().filter_map(|body| match body.def_id.is_local() {
             true => None,
             false => tcx.trait_impl_of_assoc(body.def_id),

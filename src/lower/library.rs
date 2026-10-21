@@ -113,7 +113,7 @@ pub(super) fn exports(
         items,
         impls,
         // Those its consumers must be given too: not `@rust-js/std`, built
-        // into the compiler they use (ADR 0557).
+        // into the compiler they use (ADR 0561).
         libraries: {
             let mut names: Vec<String> = (dependencies.libraries.iter())
                 .filter(|(_, library)| !library.builtin)
@@ -163,7 +163,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Is `id` a dependency's, one rust-js compiled as a library? Of
     /// `@rust-js/std`, built into the compiler, only what it compiled: the
-    /// rest of std is std's (ADR 0557).
+    /// rest of std is std's (ADR 0561).
     pub(super) fn in_library(&self, id: DefId) -> bool {
         !id.is_local()
             && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str())).is_some_and(|library| {
@@ -254,7 +254,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Is any library used, one whose values a program's may be, so their
     /// representations are shared (ADRs 0100, 0523)? Not `@rust-js/std`,
     /// built into the compiler, whose bodies are std's own over the
-    /// program's values as the program has them (ADR 0557).
+    /// program's values as the program has them (ADR 0561).
     pub(super) fn any(&self) -> bool {
         self.dependencies.libraries.values().any(|library| !library.builtin)
     }

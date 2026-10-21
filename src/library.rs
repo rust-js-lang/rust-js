@@ -102,7 +102,7 @@ pub struct Imported {
 #[derive(Default, Clone)]
 pub struct Exports {
     pub crate_hash: String,
-    /// Built into the compiler, `@rust-js/std`'s (ADR 0557):
+    /// Built into the compiler, `@rust-js/std`'s (ADR 0561):
     /// its bodies are the toolchain's std's, which the compiler links, so
     /// no metadata is checked against its hash.
     pub builtin: bool,

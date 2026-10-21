@@ -1,4 +1,4 @@
-//! What's measured of std (ADR 0314, ADR 0557), each by its
+//! What's measured of std (ADR 0314, ADR 0561), each by its
 //! name and where std defines it: its data structures, the iterator traits
 //! whose provided methods are bodies, and the adapters that implement them.
 

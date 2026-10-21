@@ -27,7 +27,7 @@ pub struct OutputPlan {
     /// The crate's settings for the JS (ADR 0117).
     pub settings: crate::settings::Settings,
     /// `@rust-js/std`'s build, whose manifest is committed beside its JS:
-    /// its paths relative to it (ADR 0557).
+    /// its paths relative to it (ADR 0561).
     pub std_bodies: bool,
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,

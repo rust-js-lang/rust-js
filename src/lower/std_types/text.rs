@@ -123,6 +123,9 @@ pub(in crate::lower) enum TextOp {
     Utf8Lossy,
     /// A byte slice's `escape_ascii()`: its text (ADR 0341).
     EscapeAscii,
+    /// `ascii::escape_default(b)` and `b.escape_ascii()` of a byte: its
+    /// escape's bytes, an array, which std's iterator steps (ADR 0558).
+    EscapeByte,
     /// A byte slice's `utf8_chunks()`: each run of valid text and the bad
     /// bytes after it, `{ valid, invalid }`.
     Utf8Chunks,
@@ -485,6 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::Utf8Lossy => call("$utf8Lossy", vec![arg()]),
             TextOp::EscapeAscii => call("$escapeAscii", vec![arg()]),
+            TextOp::EscapeByte => call("$escapeByte", vec![arg()]),
             TextOp::Utf8Chunks => call("$utf8Chunks", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
             TextOp::ParseErrorKind => call("$parseErrorKind", vec![arg()]),

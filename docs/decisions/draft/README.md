@@ -22,7 +22,7 @@ Estimated difficulty, hardest first; this is not implementation order:
    [regex](shipped-regex.md) and [url](shipped-url.md), each qualified on
    its own.
 2. [An iterator that's cloned, or holds items with a destructor, is rust-js's own](cloned-and-buffering-iterators.md):
-   what [0557](../0557-std-bodies.md) takes in as each adapter's body is
+   what [0561](../0561-std-bodies.md) takes in as each adapter's body is
    compiled, `Peekable`'s first.
 3. [`catch_unwind` catches a Rust panic](catch-unwind.md):
    panic identity, typed payload ownership, and an unresolved abort gate.

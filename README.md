@@ -113,7 +113,7 @@ Each helper should earn its place; readable output is a design constraint
 throughout the compiler. What std does that reaches no memory, a
 `Peekable`'s `next`, is std's own body, compiled from the MIR the toolchain
 ships into [`@rust-js/std`](std/README.md), imported the same way
-([ADR 0557](docs/decisions/0557-std-bodies.md)).
+([ADR 0561](docs/decisions/0561-std-bodies.md)).
 
 ### Work with JavaScript's runtime
 

@@ -1,4 +1,4 @@
-// `peek()` of a `Peekable`, std's `{ iter, peeked }` (ADR 0557), whose body
+// `peek()` of a `Peekable`, std's `{ iter, peeked }` (ADR 0561), whose body
 // reaches memory: what it peeked at, or what it steps next, its own `next`'s
 // (`$stdIterator`), kept as `Some` of it, as Rust's `get_or_insert_with`
 // keeps it; the item, or `undefined` at the end.

@@ -1087,7 +1087,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return ty;
         }
         let ty = self.in_impl_terms(ty);
-        let typing_env = self.given.self_env.unwrap_or(self.typing_env);
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         self.tcx
             .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
@@ -1101,7 +1101,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
-        let typing_env = self.given.self_env.unwrap_or(self.typing_env);
+        // The impl's, with the default's own bounds, which its own type
+        // parameters need, `[B]: Index<PatternID>` (ADR 0560).
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         super::items::resolve_instance_in(self.tcx, typing_env, def_id, args)
     }
 
@@ -2359,7 +2361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std trait's provided method compiled into `@rust-js/std`,
         // `Iterator::peekable`'s, called on a type parameter: the library's
         // function over `Self`, given its dictionary and drops (ADR 0185,
-        // ADR 0557).
+        // ADR 0561).
         if self.krate.foreign.item(id).is_some()
             && self.tcx.defaultness(id).has_value()
             && self.resolve_self_instance(id, generic_args)?.is_none()
@@ -2380,7 +2382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
-        // is a function over `Self` (ADR 0185, 0557).
+        // is a function over `Self` (ADR 0185, 0561).
         if let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()

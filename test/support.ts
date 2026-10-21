@@ -252,7 +252,7 @@ export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react 
 
 /** `@rust-js/runtime` and `@rust-js/std`, installed in an app outside the
  * checkout, as a package manager installs them: what its JS imports (ADRs
- * 0103, 0557). */
+ * 0103, 0561). */
 export function installRuntime(app: string) {
   mkdirSync(join(app, "node_modules", "@rust-js"), { recursive: true });
   symlinkSync(join(root, "runtime"), join(app, "node_modules", "@rust-js", "runtime"));

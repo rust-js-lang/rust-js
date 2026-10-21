@@ -42,7 +42,7 @@ fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tc
 
 /// Each function a body names, called or taken as a value, with its
 /// arguments: of its THIR, each function value; of a body read from its
-/// MIR alone, a std one's (ADR 0557), each constant of a
+/// MIR alone, a std one's (ADR 0561), each constant of a
 /// function's type.
 fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
     if !body.thir.exprs.is_empty() {
@@ -94,7 +94,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
         // A caller's parameter given to a library's function, a compiled std
-        // body's among them (ADR 0557), which its manifest says it steps by
+        // body's among them (ADR 0561), which its manifest says it steps by
         // a trait: stepped by it here.
         let steps_through =
             |stepped: &mut HashSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
@@ -132,7 +132,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         };
         // A parameter a body read from its MIR holds in a struct, `Peekable {
-        // iter: self, .. }` of std's `peekable` (ADR 0557):
+        // iter: self, .. }` of std's `peekable` (ADR 0561):
         // stepped as the struct's impl steps it, its `next`'s.
         for held in body_aggregates(tcx, body) {
             if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[held.into()])) {
@@ -191,7 +191,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 {
                     for &by in by.iter().filter(|&&by| by != iterator) {
                         // A compiled std iterator's, `Peekable<I>`'s (ADR
-                        // 0557): its compiled impl's, by what its manifest
+                        // 0561): its compiled impl's, by what its manifest
                         // says it steps; a rewrite's, `len()`'s, nothing.
                         if crate::lower::recognition::is_compiled_std_iterator(tcx, self_ty) {
                             if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, callee, args)
@@ -214,7 +214,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     }
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`.
-                // A compiled std iterator holding it, `Peekable<I>` (ADR 0557),
+                // A compiled std iterator holding it, `Peekable<I>` (ADR 0561),
                 // is a JS iterator, stepped with no dictionary of it; what its
                 // compiled impl of an extension takes, `next_back`'s of `I:
                 // DoubleEndedIterator`, its manifest says.

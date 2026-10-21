@@ -89,6 +89,17 @@ function $escapeAscii(bytes) {
   return text;
 }
 
+// A byte's `escape_ascii()`, `ascii::escape_default(b)` (ADR 0558): the
+// bytes of its escape, as `$escapeAscii` writes it.
+function $escapeByte(byte) {
+  return Array.from($escapeAscii([byte]), (c) => c.charCodeAt(0));
+}
+
+// `{}` of a byte's escape, stepped or not: the bytes it has left, as text.
+function $restBytes(it) {
+  return String.fromCharCode(...it.items.slice(it.at, it.end));
+}
+
 // `bytes.utf8_chunks()`: each run of valid text and the bad bytes after it,
 // `{ valid, invalid }`, cut where Rust's `Utf8Chunks` cuts them: a sequence
 // the bytes end inside of is one bad run.

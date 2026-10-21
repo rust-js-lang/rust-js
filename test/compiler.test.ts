@@ -1141,7 +1141,7 @@ test("the report's JS: function values, case mapping, and plain array reads", as
 // ADR 0071: an iterator stepped through is a `$iter`, which knows where it is.
 // A `Peekable` is std's own, `{ iter, peeked }` over the `$iter`, made by
 // std's `peekable` compiled into `@rust-js/std` and stepped as the JS
-// iterator it is, its `peek` and `next_if` rewritten over it (ADR 0557).
+// iterator it is, its `peek` and `next_if` rewritten over it (ADR 0561).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
   expect(js).toContain("return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };");

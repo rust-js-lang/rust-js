@@ -305,7 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
         let generic_args = self.in_impl_terms(generic_args);
         // Not `Iterator`'s of a compiled std iterator, `Peekable`'s `next` or
-        // `count`: its struct is a JS iterator, stepped as one (ADR 0557).
+        // `count`: its struct is a JS iterator, stepped as one (ADR 0561).
         if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
             && is_std_def(self.tcx, trait_id, StdItem::Iterator)
             && super::recognition::is_compiled_std_iterator(self.tcx, generic_args.type_at(0))
@@ -315,7 +315,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let resolved = self.resolve_self_instance(def_id, generic_args)?;
         // Or it's a std trait's provided method compiled into `@rust-js/std`,
         // `peekable`'s, a function over `Self` called on a type parameter
-        // too (ADR 0185, 0557).
+        // too (ADR 0185, 0561).
         Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()))
             || (self.krate.foreign.item(def_id).is_some() && self.tcx.defaultness(def_id).has_value()))
     }

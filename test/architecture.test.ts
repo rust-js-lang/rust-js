@@ -578,7 +578,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir.rs", "    fn mir_std_call(", 191],
   ["src/lower/mir.rs", "    fn mir_function(", 383],
   ["src/lower/recognition.rs", "    fn classify_inherent(", 768],
-  ["src/lower/recognition.rs", "    fn classify_trait_method(", 297],
+  ["src/lower/recognition.rs", "    fn classify_trait_method(", 294],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 644],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 338],
@@ -835,6 +835,16 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
   const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /matches!\(.*ty::Param\(_\) \| ty::Alias\(\.\.\)/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual(["src/lower/recognition.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
+});
+
+// Where a copied default's types are known, the impl's environment with the
+// default's own bounds, is `impl_typing_env`'s question: resolving a call
+// read the impl's alone, and missed a bound of the default's own type
+// parameter (ADR 0560).
+test("a copied default's typing environment is impl_typing_env's alone", () => {
+  const reading = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /self\.given\.self_env\b(?!\s*=)/.test(line) && !/self_env:/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(reading).toEqual(["src/lower/traits.rs: let impl_env = self.given.self_env?;"]);
 });
 
 test("only refusal.rs words a refusal", () => {
