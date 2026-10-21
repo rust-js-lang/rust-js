@@ -30,6 +30,7 @@ import { excerpt } from "./child";
 import { expected, same, type Outcome } from "./oracle";
 import { agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root } from "./support";
+import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 
 const corpus = join(root, "test/corpus");
 
@@ -93,11 +94,17 @@ async function bundle(js: string, dir: string): Promise<string> {
  * directives say and the JS does what native Rust does, as it's compiled
  * and as it's shipped. */
 async function check(file: string): Promise<string[]> {
-  const want = directives(readFileSync(file, "utf8"));
+  const text = readFileSync(file, "utf8");
+  const want = directives(text);
   if (typeof want === "string") return [want];
   const dir = fixture(`corpus-${basename(file, ".rs")}`);
   const native = runNative(file, dir, want.edition, want.native);
   if (typeof native === "string") return [native];
+  // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
+  // native Rust printed and how it ended, and what every case's share. The
+  // same as a run verified before isn't run again.
+  const ranKey = (what: string, js: string[]) =>
+    runKey([what, text, ...js, native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
 
   // The directive is checked against Rust itself, so it can't be wrong.
   const message = want.kind === "run-fail" || want.kind === "ignore-rust-js" ? want.message : undefined;
@@ -117,19 +124,27 @@ async function check(file: string): Promise<string[]> {
   }
   const problems: string[] = [];
   const runs: [string, Run][] = [];
-  if ("js" in compiled) {
+  // The program's runs, as compiled and as shipped: kept as verified once
+  // they agree with native Rust, or, of a case rust-js gets wrong for now,
+  // once they still don't.
+  const programKey = "js" in compiled ? ranKey("program", generatedTexts(dir, ["library", "production"])) : undefined;
+  const programVerified = programKey !== undefined && verified(programKey);
+  if ("js" in compiled && !programVerified) {
     for (const [name, cmd] of runtimes) runs.push([name, runJs(cmd, compiled.js, dir, name)]);
     runs.push(["node, minified", runJs([node ?? "node"], await bundle(compiled.js, dir), dir, "minified")]);
   }
   if (want.kind === "ignore-rust-js") {
     // Wrong for now, rejected or answered otherwise, but not a crash.
     if ("error" in compiled && compiled.kind === "crashed") return [compiled.error];
+    if (programVerified) return [];
     const passes = runs.length > 0 && runs.every(([, run]) => agree(run, native));
+    if (!passes && programKey !== undefined) record(programKey, basename(file));
     return passes ? [`it passes now: remove \`ignore-rust-js: ${want.reason}\``] : [];
   }
   if ("error" in compiled) return [`rust-js can't compile it:\n${compiled.error}`];
   const snapshot = snapshotProblem(file, compiled.js);
   if (snapshot) problems.push(snapshot);
+  const before = problems.length;
   for (const [name, run] of runs) {
     for (const stream of ["stdout", "stderr"] as const) {
       if (!run.bytes[stream].equals(native.bytes[stream])) {
@@ -140,6 +155,7 @@ async function check(file: string): Promise<string[]> {
       problems.push(`${name} ended ${show(run.outcome)}, native Rust ${show(native.outcome)}`);
     }
   }
+  if (programKey !== undefined && !programVerified && problems.length === before) record(programKey, basename(file));
   // Built as a library, as a crate another crate uses is (ADR 0360): it
   // does what native Rust does too, or it's refused, as its directive says.
   const library = compileJs(file, dir, want.edition, true);
@@ -151,8 +167,12 @@ async function check(file: string): Promise<string[]> {
   } else if (want.libraryRefused) {
     problems.push(`it compiles as a library now: remove \`library-refused: ${want.libraryRefused}\``);
   } else {
-    const run = runJs([node ?? "node"], library.js, dir, "library");
-    if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);
+    const libraryKey = ranKey("library", generatedTexts(join(dir, "library")));
+    if (!verified(libraryKey)) {
+      const run = runJs([node ?? "node"], library.js, dir, "library");
+      if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);
+      else record(libraryKey, basename(file));
+    }
   }
   return problems;
 }

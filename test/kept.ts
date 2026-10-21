@@ -1,24 +1,26 @@
-// The kept native programs (`nativeBinary`, test/support.ts): a directory
-// per program, holding a build of it for each set of files it read. Each use
-// marks its build used; a run prunes them when it starts, where none runs.
+// What the tests keep between runs, each a directory per thing, holding an
+// entry for each set of inputs it was made from: a native program's builds
+// (`nativeBinary`, test/support.ts), one for each set of files it read;
+// and a corpus case's verified runs (test/verified-runs.ts). Each use marks
+// its entry used; a run prunes them when it starts, where none runs.
 
 import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
 const day = 24 * 60 * 60;
 
-/** Mark `build`, a kept build of a program, used now: what's used stays. */
-export function markUsed(build: string) {
+/** Mark `entry`, a kept one, used now: what's used stays. */
+export function markUsed(entry: string) {
   const now = new Date();
   try {
-    utimesSync(build, now, now);
+    utimesSync(entry, now, now);
   } catch {}
 }
 
-/** Drop the builds in `cache` unused for `days`, and those a crash left half
- * made, `.building-*`, an hour on; then a program with none left. `now` is in
- * seconds. */
-export function pruneNativeCache(cache: string, now = Date.now() / 1000, days = 7) {
+/** Drop the entries in `cache` unused for `days`, and those a crash left
+ * half made, `.building-*`, an hour on; then a thing with none left. `now`
+ * is in seconds. */
+export function pruneKept(cache: string, now = Date.now() / 1000, days = 7) {
   let programs: string[];
   try {
     programs = readdirSync(cache);

@@ -181,6 +181,11 @@ What keeps them there:
 - **`bun run port measure`** fails when the port's compile does: a module
   that fails keeps its JS from before, which reads as no difference.
 
+- **A corpus case's runs are kept by what they ran** (ADR 0567), in
+  `target/corpus-cache`: the same JS, native output, runtime modules and
+  harness again, its four runs aren't run again; its two compiles always
+  are, and its snapshot is always checked. A `check:fast` whose change
+  leaves most cases' JS as it was runs the corpus in half the time.
 - **The react, webapi and js crates' metadata** is built only when their
   sources, build scripts or the toolchain change: a stamp beside it,
   `target/libreact.stamp`, says what it was made from. Built every run, it

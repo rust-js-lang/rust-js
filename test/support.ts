@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSy
 import { dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
-import { markUsed } from "./native-cache";
+import { markUsed } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 
@@ -79,7 +79,7 @@ export function contentDirectory(...contents: string[]): string {
  * which are checked each time it's used. A new build of it is kept beside
  * the ones before, which stay: another test file may be running one. Each
  * use marks it used, and a run drops what no test used for a week when it
- * starts (`pruneNativeCache`).
+ * starts (`pruneKept`).
  * A binary is built once, then, and so run once for the first time: macOS
  * checks each new one as it first runs, which takes longer than building
  * it, and one check at a time, however many test files run side by side.
