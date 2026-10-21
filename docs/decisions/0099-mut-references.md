@@ -374,8 +374,10 @@ only the JS reads better.
 `n`**: `${n} ${n}`, where it was a handle on `n` held in a variable named
 `value` and read through its getter. Two parts make it so:
 
-- A format argument is read through its references, and a pin through its
-  pointer (ADR 0329), where it's made: a handle is the place it's on. A
+- A format argument is read as it's shown where it's made, a handle the
+  place it's on: through its references, and its pins, counted `Rc`s and
+  guards (`shown_through`, the one place `{}`, `{:?}` and a format argument
+  all ask; `format_value`'s own read through references went with it). A
   pointer's `{:p}` is its address, as it is.
 - A shared borrow of a kept `&mut`, `&r`, which `format_args!` takes, is
   held as a handle on its place, read where it's used, as a shared borrow
@@ -384,5 +386,6 @@ only the JS reads better.
 
 `mut_ref_local`, `mut_ref_compare` and `pin_box` show a `&mut` and a
 pinned `&mut` so; `function_given_for_a_mut_param` gives a reborrow twice.
-Mutations `fmt-arg-through-refs`, `fmt-arg-pin-unseen`,
-`held-shared-ref-handle` and `held-mut-ref-handle`.
+Mutations `fmt-arg-through-refs`, `format-without-cells`,
+`held-shared-ref-handle` and `held-mut-ref-handle`; `rc_counts` shows a
+counted `Rc`'s `to_string()`, which `rc-debug-box` mutates.

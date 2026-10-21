@@ -813,11 +813,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-payload-place-of-temporary",
-    breaks: "`Some(first)` of a temporary holding a reference is read as the temporary, `_18`, losing its name",
+    breaks: "`Some(n)` of a temporary holding a reference is read as the temporary, losing its name, `next` for `n`",
     file: "src/lower/mir.rs",
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
     replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
+    snapshots: true,
   },
   {
     name: "mir-known-bounds-checked",

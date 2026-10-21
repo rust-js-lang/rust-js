@@ -182,6 +182,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.counted.counts(self.tcx, pointee).then_some(new)
     }
 
+    /// A value as `{}` and `{:?}` show it: through its references (ADR
+    /// 0099), and its counted `Rc`s, guards and pins, `through_boxes`'s.
+    pub(in crate::lower) fn shown_through(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        let (value, ty) = self.through_refs(value, ty);
+        self.through_boxes(value, ty)
+    }
+
     /// What a counted `Rc` points at, or a guard guards, through any others:
     /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
     /// `Pin`'s pointer does (ADR 0329). Any other value is itself.

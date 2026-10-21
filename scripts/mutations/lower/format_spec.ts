@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "format-without-cells",
-    breaks: "`println!(\"{y}\")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at",
-    file: "src/lower/format_spec.rs",
-    find: "        let (value, ty) = self.through_refs(value, ty);\n",
-    replace: "        let ty = ty.peel_refs();\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
-  },
-  {
     name: "options-not-handed-on",
     breaks: "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64`'s shows it unpadded, with all its digits",
     file: "src/lower/format_spec.rs",

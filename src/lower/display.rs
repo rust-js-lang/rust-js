@@ -776,8 +776,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `display_string`, of a `{:#}` or not, which only the crate's own
     /// `fmt` can tell (ADR 0137).
     pub(super) fn display_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
-        let (value, ty) = self.through_refs(value, ty);
-        let (value, ty) = self.through_boxes(value, ty);
+        let (value, ty) = self.shown_through(value, ty);
         let ty = self.shown_type(ty);
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
             return Ok(shown);
@@ -1020,8 +1019,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `debug_string`, plain or pretty, `{:#?}` (ADR 0137): a part of a
     /// value is shown as the value is.
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
-        let (value, ty) = self.through_refs(value, ty);
-        let (value, ty) = self.through_boxes(value, ty);
+        let (value, ty) = self.shown_through(value, ty);
         // A raw pointer shows its address, which JS hasn't (ADR 0407), and
         // so does a function pointer.
         if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {

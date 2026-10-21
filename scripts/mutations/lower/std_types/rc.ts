@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => rc,\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
+  {
+    name: "format-without-cells",
+    breaks: "`println!(\"{y}\")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at",
+    file: "src/lower/std_types/rc.rs",
+    find: "        let (value, ty) = self.through_refs(value, ty);\n        self.through_boxes(value, ty)\n",
+    replace: "        let ty = ty.peel_refs();\n        self.through_boxes(value, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+  },
 ];

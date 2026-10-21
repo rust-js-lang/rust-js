@@ -53,12 +53,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     value => self.value_expr(value, span)?,
                 };
-                // Shown through its references, and a pin through its pointer
-                // (ADR 0329), a handle the place it's on; a pointer's `{:p}`,
-                // its address, as it is.
+                // As it's shown, a handle the place it's on; a pointer's
+                // `{:p}`, its address, as it is.
                 let (value, ty) = match known {
                     Std::FmtPointer => (value, ty),
-                    _ => self.through_refs(value, self.recognition().pinned(ty).unwrap_or(ty)),
+                    _ => self.shown_through(value, ty),
                 };
                 // One read twice, `v == null ? "None" : ..`, is held first by
                 // tidy, which sees where nothing it does moves (ADR 0377).

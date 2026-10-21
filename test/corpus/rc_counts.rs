@@ -62,4 +62,10 @@ fn main() {
     let text = Rc::new(String::from("hi"));
     let other = Rc::clone(&text);
     println!("{} {}", Rc::unwrap_or_clone(text), Rc::strong_count(&other));
+
+    // Its text, as `{}` shows it, what it points at.
+    let seven = Rc::new(7);
+    let shared = Rc::clone(&seven);
+    let text: String = seven.to_string();
+    println!("{text} {}", Rc::strong_count(&shared));
 }

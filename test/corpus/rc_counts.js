@@ -703,6 +703,8 @@ function main() {
 
     const text = { value: "hi", strong: 1, weak: 0 };
     let other;
+
+    // Its text, as `{}` shows it, what it points at.
     try {
       other = $rcClone(text);
     } catch (error) {
@@ -732,6 +734,66 @@ function main() {
     }
     try {
       console.log(`${tmp$14} ${other.strong}`);
+    } catch (error) {
+      $rcDrop(other);
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    const seven = { value: 7, strong: 1, weak: 0 };
+    let shared;
+    try {
+      shared = $rcClone(seven);
+    } catch (error) {
+      $rcDrop(seven);
+      $rcDrop(other);
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    const text$1 = String(seven.value);
+    const value$5 = shared.strong;
+    try {
+      console.log(`${text$1} ${value$5}`);
+    } catch (error) {
+      $rcDrop(shared);
+      $rcDrop(seven);
+      $rcDrop(other);
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    try {
+      $rcDrop(shared);
+    } catch (error) {
+      $rcDrop(seven);
+      $rcDrop(other);
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    try {
+      $rcDrop(seven);
     } catch (error) {
       $rcDrop(other);
       const dropNode = (node) => {

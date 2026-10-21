@@ -138,7 +138,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (width, precision): (Option<Expr>, Option<Expr>),
         span: Span,
     ) -> R<Expr> {
-        let (value, ty) = self.through_refs(value, ty);
         // A value whose `Display` is itself, `js::shown`'s: `${value}`, as
         // JS's template shows any value (ADR 0312).
         if kind == Std::FmtDisplay && self.displays_itself(ty) {
