@@ -39,19 +39,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `u.field` read: what it holds there, or under its fields of the same
-    /// type, `$unionField(u, "a", "b")`. A field of no bytes, `()`, MIR
-    /// never reads.
-    pub(super) fn union_read(&self, union: Expr, ty: Ty<'tcx>, field: FieldIdx) -> Expr {
+    /// type, `$unionField(u, "a", ["b"], { c: (value) => .. })`, or of
+    /// another plain type, its bytes read as the field's, each other
+    /// field's decoder as `transmute` reads them (ADRs 0408, 0562). A field
+    /// of no bytes, `()`, MIR never reads.
+    pub(super) fn union_read(&mut self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, span: Span) -> R<Expr> {
         let (adt, args) = self.union_of(ty).expect("a union");
         let fields = &adt.non_enum_variant().fields;
         let read_ty = self.field_ty(&fields[field], args);
-        let mut list = vec![union, Expr::str(field_key(self.tcx, &fields[field]))];
-        list.extend(
-            (fields.iter_enumerated())
-                .filter(|&(other, def)| other != field && self.field_ty(def, args) == read_ty)
-                .map(|(_, def)| Expr::str(field_key(self.tcx, def))),
-        );
-        Expr::call(Expr::helper("$unionField"), list)
+        let key = field_key(self.tcx, &fields[field]);
+        let mut alike = Vec::new();
+        let mut decoders = Vec::new();
+        for (other, def) in fields.iter_enumerated() {
+            if other == field {
+                continue;
+            }
+            let other_ty = self.field_ty(def, args);
+            let other_key = field_key(self.tcx, def);
+            if other_ty == read_ty {
+                alike.push(Expr::str(other_key));
+            } else if let Some(decoder) = self.plain_decoder(other_ty, read_ty, span)? {
+                decoders.push(Prop::Field(other_key, decoder));
+            }
+        }
+        // The fields it may be read under, and the decoders, only where there are any.
+        let mut list = vec![union, Expr::str(key)];
+        if !alike.is_empty() || !decoders.is_empty() {
+            list.push(Expr::array(alike));
+        }
+        if !decoders.is_empty() {
+            list.push(Expr::object(decoders));
+        }
+        Ok(Expr::call(Expr::helper("$unionField"), list))
     }
 
     /// `u.field = value`: `$unionSet(u, "a", value)`, the field it holds now.

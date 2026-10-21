@@ -3518,7 +3518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.held(read, self.field_ty(&variant.fields[field], args)))
             }
             // A union's, what it holds there (ADR 0406).
-            (ty::Adt(adt, _), _) if adt.is_union() => Ok(self.union_read(base, ty.ty, field)),
+            (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
