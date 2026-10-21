@@ -133,13 +133,11 @@ export function tagged(s) {
   let n = 4;
   if (top == null) {
     n = 3;
-  } else if (top != null) {
-    if (top === "ab") {
-      n = 1;
-    } else if (value) {
-      if (top === "") {
-        n = 2;
-      }
+  } else if (top === "ab") {
+    n = 1;
+  } else if (value) {
+    if (top === "") {
+      n = 2;
     }
   }
   return [n, top === "a" || top === "src"];

@@ -691,8 +691,9 @@ test("string methods are JS's, and format! is a template literal", async () => {
   expect(js).toContain('  const c = windows ? "\\\\" : "/";');
   // A string literal pattern is `===` on the JS string, without `!= null` in `Some`.
   expect(js).toContain('  }\n  if (s === "abc" || s === "stats.rs") {');
-  // Of a tuple's part, the option bound where it was made (ADR 0369).
-  expect(js).toContain("    if (top === \"ab\") {");
+  // Of a tuple's part, the option bound where it was made (ADR 0369); its
+  // `else if (top != null)` after `if (top == null)`, decided, is gone (ADR 0564).
+  expect(js).toContain('  } else if (top === "ab") {');
 });
 
 // ADR 0033: enums with fields, in ReScript's shapes.

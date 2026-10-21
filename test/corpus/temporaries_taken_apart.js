@@ -303,10 +303,8 @@ function main() {
     throw error;
   }
   let tmp$7;
-  let tmp$8;
   try {
-    tmp$7 = make(8);
-    tmp$8 = [tmp$6, tmp$7];
+    tmp$7 = [tmp$6, make(8)];
   } catch (error) {
     if (tmp$6 != null) {
       loudDrop_drop(tmp$6);
@@ -316,13 +314,13 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
-  if (tmp$8[0]) {
-    const z = tmp$8[0];
+  if (tmp$7[0]) {
+    const z = tmp$7[0];
     try {
       console.log(`if ${z[0]}`);
     } catch (error) {
       loudDrop_drop(z);
-      loudDrop_drop(tmp$8[1]);
+      loudDrop_drop(tmp$7[1]);
       loudDrop_drop(y);
       loudDrop_drop(right);
       loudDrop_drop(x);
@@ -331,14 +329,14 @@ function main() {
     try {
       loudDrop_drop(z);
     } catch (error) {
-      loudDrop_drop(tmp$8[1]);
+      loudDrop_drop(tmp$7[1]);
       loudDrop_drop(y);
       loudDrop_drop(right);
       loudDrop_drop(x);
       throw error;
     }
     try {
-      loudDrop_drop(tmp$8[1]);
+      loudDrop_drop(tmp$7[1]);
     } catch (error) {
       loudDrop_drop(y);
       loudDrop_drop(right);
@@ -347,10 +345,10 @@ function main() {
     }
   } else {
     try {
-      if (tmp$8[0]) {
-        loudDrop_drop(tmp$8[0]);
+      if (tmp$7[0]) {
+        loudDrop_drop(tmp$7[0]);
       }
-      loudDrop_drop(tmp$8[1]);
+      loudDrop_drop(tmp$7[1]);
     } catch (error) {
       loudDrop_drop(y);
       loudDrop_drop(right);

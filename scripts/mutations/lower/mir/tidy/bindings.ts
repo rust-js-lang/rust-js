@@ -343,4 +343,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|range_values|or_bindings|interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "paired-temporaries-unpaired",
+    breaks: "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
+    replace: "                        true => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
+    snapshots: true,
+  },
 ];

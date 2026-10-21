@@ -32,6 +32,11 @@ released any more: `rust-js build` is the one way to build an app.
   type with a destructor compiles. `--std-coverage` says what each std
   body is made of, `safe`, `spec`, `opaque`, `memory` or `none`, and
   measures `Iterator`'s provided methods and the adapters.
+- **A std body's JS is tidied as the app's is** (ADR 0564): a test an
+  earlier one decided goes, `if (x != null) { return x; } .. if (x !=
+  null)`, a temporary assigned then read once each time is read where it's
+  made, and a tail both branches end with is written once after them; so
+  does the app's JS, where its MIR left such a shape.
 - **`{:x?}` and `{:X?}` of an integer** (ADR 0559).
 - **A trait's default indexing by the crate's own `Index` impl** of its
   type parameter (ADR 0560).

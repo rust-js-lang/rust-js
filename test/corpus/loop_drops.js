@@ -454,8 +454,6 @@ function main() {
                         throw error;
                       }
                       try {
-                        if (tmp$4) {
-                        }
                       } catch (error) {
                         for (const item of iter$1) {
                           noisyDrop_drop(item[1]);

@@ -146,6 +146,15 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut guarded);
     declarations(body);
     aliases(body, captured);
+    // A test an earlier one decided, `if (x != null) { return x; } .. if (x
+    // != null)`, where nothing between changes what it reads: its branch;
+    // and a tail MIR wrote into both branches, once, after them.
+    let changing = self::changing(body);
+    js::statement_lists(body, &mut |stmts| decided_tests(stmts, &changing));
+    // A flag whose only test was such a drop's, read nowhere now, goes
+    // with its writes.
+    flags::settled_flags(body, flags);
+    js::statement_lists(body, &mut shared_tails);
     // Of `const`s now, the iterator's too; and what a loop made so ends with,
     // a `continue` and its label, goes.
     // An iterator a loop inside another makes, a `let` assigned each time,
@@ -198,7 +207,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             }
         }
     });
-    let changing = changing(body);
+    let changing = self::changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
     alias_variables(body);
     read_handles(body);
@@ -215,6 +224,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A block, or branches, a function's body or a loop's ends in, the function's value made
     // in them, `?`'s.
     js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
+    js::statement_lists(body, &mut shared_tails);
     js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
@@ -233,17 +243,22 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));
     let changed = self::changing(body);
     let set = closures_set(body);
+    let paired = paired_temporaries(body);
     // What an element MIR made only where a test holds reads, as one value,
     // read in place below, where the test holds.
     // A match's table read, `TITLES[kind]`, where it's written, before
     // what it's given to reads it in place.
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
+    js::statement_lists(body, &mut |stmts| {
+        inlined(stmts, &changed, &set, plain, captured, &paired)
+    });
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
+    js::statement_lists(body, &mut |stmts| {
+        inlined(stmts, &changed, &set, plain, captured, &paired)
+    });
     // A tuple's part held, `const _3$0 = v.pop();`, which an arm's binding
     // takes, by that name.
     named_temporaries(body);
@@ -266,6 +281,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A copy made of what's spread, read in place, `{ ...a, ...{ ...b } }`:
     // what it's a copy of.
     js::each_expr_mut(body, &mut spread_spreads);
+    // Decided tests and shared tails again, of what's read in place now.
+    let changing = self::changing(body);
+    js::statement_lists(body, &mut |stmts| decided_tests(stmts, &changing));
+    js::statement_lists(body, &mut shared_tails);
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
@@ -392,10 +411,13 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut taken = HashSet::new();
     js::names_in(body, &mut taken);
     js::statement_lists(body, &mut |stmts| applied_values(stmts, &set, plain, &mut taken));
-    // A `let` declared first that nothing's left to assign or read.
+    // A `let` declared first, in the body or a block of it, that nothing's
+    // left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
+    });
     // A `const` nothing reads, of a value made only to be dropped, `drop(vec![..])`'s:
     // what making it does.
     js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));
@@ -660,11 +682,221 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 mod tests {
     use std::collections::HashSet;
 
-    use super::{is_temporary, settle_jumps, spread_spreads, temporary, turned, user_name};
-    use crate::js::{self, Expr, ExprKind, Op, Prop, StmtKind, UnaryOp};
+    use super::{
+        decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails, spread_spreads,
+        temporary, turned, user_name,
+    };
+    use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
 
     fn call(f: &str) -> js::Stmt {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
+    }
+
+    fn present(x: &str) -> Expr {
+        Expr::bin(Op::LooseNe, Expr::var(x), Expr::null())
+    }
+
+    fn returns(x: &str) -> Stmt {
+        StmtKind::Return(Some(Expr::var(x))).at(js::Span::NONE)
+    }
+
+    // `if (option != null) { return option; } .. if (option != null) { s }`,
+    // a std body's drop of what its early return gave away: the second test
+    // fails where it's reached, so it goes. Within `if (p != null) { .. }`,
+    // `p != null` holds, so an `if` of it there is its `then`, and one of
+    // `p.item != null` within `if (p.item == null)` is gone.
+    #[test]
+    fn a_test_an_earlier_one_decided_goes() {
+        let mut after = vec![
+            StmtKind::Const("option".into(), Expr::call(Expr::var("f"), Vec::new())).at(js::Span::NONE),
+            StmtKind::If(present("option"), vec![returns("option")], None).at(js::Span::NONE),
+            StmtKind::Const("x".into(), Expr::member(Expr::var("v"), "item")).at(js::Span::NONE),
+            StmtKind::If(present("option"), vec![call("drop")], None).at(js::Span::NONE),
+            returns("x"),
+        ];
+        decided_tests(&mut after, &HashSet::new());
+        assert!(matches!(
+            after.as_slice(),
+            [
+                Stmt {
+                    kind: StmtKind::Const(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::If(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::Const(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::Return(_),
+                    ..
+                },
+            ]
+        ));
+        let some_value = |x: &str| Expr::member(Expr::var(x), "item");
+        let absent = |e: Expr| Expr::bin(Op::LooseEq, e, Expr::null());
+        let innermost = StmtKind::If(
+            present("p"),
+            vec![
+                StmtKind::If(
+                    Expr::bin(Op::LooseNe, some_value("p"), Expr::null()),
+                    vec![call("g")],
+                    None,
+                )
+                .at(js::Span::NONE),
+            ],
+            None,
+        );
+        let mut within = vec![
+            StmtKind::If(
+                present("p"),
+                vec![
+                    StmtKind::If(
+                        absent(some_value("p")),
+                        vec![
+                            StmtKind::Assign(Expr::var("r"), Expr::int(0)).at(js::Span::NONE),
+                            innermost.at(js::Span::NONE),
+                        ],
+                        None,
+                    )
+                    .at(js::Span::NONE),
+                ],
+                None,
+            )
+            .at(js::Span::NONE),
+        ];
+        let changing: HashSet<String> = ["r".to_string()].into();
+        js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing));
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+        ] = within.as_slice()
+        else {
+            panic!("the outer if")
+        };
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+        ] = then.as_slice()
+        else {
+            panic!("the inner if")
+        };
+        assert!(matches!(
+            then.as_slice(),
+            [Stmt {
+                kind: StmtKind::Assign(..),
+                ..
+            }]
+        ));
+    }
+
+    // `let _5; let _6; _5 = a != null; _6 = !_5; if (!_6) { f(); }`, twice,
+    // of a `bool` optimized MIR made and tested once each time: each is read
+    // where it's made, `if (!!(a != null)) { f(); }`, as a `const` read once is.
+    #[test]
+    fn a_temporary_assigned_then_read_once_each_time_is_read_where_its_made() {
+        let (t5, t6) = (temporary(5), temporary(6));
+        let pair = |x: &str, f: &str| {
+            vec![
+                StmtKind::Assign(Expr::var(&t5), present(x)).at(js::Span::NONE),
+                StmtKind::Assign(Expr::var(&t6), Expr::unary(UnaryOp::Not, Expr::var(&t5))).at(js::Span::NONE),
+                StmtKind::If(Expr::unary(UnaryOp::Not, Expr::var(&t6)), vec![call(f)], None).at(js::Span::NONE),
+            ]
+        };
+        let mut body = vec![
+            StmtKind::Let(t5.clone(), None).at(js::Span::NONE),
+            StmtKind::Let(t6.clone(), None).at(js::Span::NONE),
+        ];
+        body.extend(pair("a", "f"));
+        body.extend(pair("b", "g"));
+        let paired = paired_temporaries(&body);
+        assert_eq!(paired, [t5.clone(), t6.clone()].into());
+        let changing: HashSet<String> = [t5.clone(), t6.clone()].into();
+        inlined(
+            &mut body,
+            &changing,
+            &HashSet::new(),
+            &HashSet::new(),
+            &HashSet::new(),
+            &paired,
+        );
+        let [
+            _,
+            _,
+            Stmt {
+                kind: StmtKind::If(test, ..),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::If(..), ..
+            },
+        ] = body.as_slice()
+        else {
+            panic!("two tests, {}", body.len())
+        };
+        assert!(matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, inner)
+            if matches!(&inner.kind, ExprKind::Unary(UnaryOp::Not, e) if matches!(&e.kind, ExprKind::Binary(Op::LooseNe, ..)))));
+        assert_eq!(js::mentions_in(&body, &t5) + js::mentions_in(&body, &t6), 0);
+    }
+
+    // `if (c) { a(); x = v; } else { b(); x = v; }`, one assignment MIR
+    // wrote into both branches: `if (c) { a(); } else { b(); } x = v;`; one
+    // that leaves, `return v;`, stays in each, the branches' shape; and `if
+    // (c) { a(); return v; } return v;` is `if (c) { a(); } return v;`.
+    #[test]
+    fn a_tail_both_branches_end_with_is_written_once() {
+        let branches = |then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>| {
+            StmtKind::If(Expr::var("c"), then, otherwise).at(js::Span::NONE)
+        };
+        let assigns = || StmtKind::Assign(Expr::var("x"), Expr::var("v")).at(js::Span::NONE);
+        let mut either = vec![branches(vec![call("a"), assigns()], Some(vec![call("b"), assigns()]))];
+        shared_tails(&mut either);
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, Some(otherwise)),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::Assign(..),
+                ..
+            },
+        ] = either.as_slice()
+        else {
+            panic!("the branches, then the assignment")
+        };
+        assert_eq!((then.len(), otherwise.len()), (1, 1));
+        let mut leaving = vec![branches(
+            vec![call("a"), returns("v")],
+            Some(vec![call("b"), returns("v")]),
+        )];
+        shared_tails(&mut leaving);
+        assert!(
+            matches!(leaving.as_slice(), [Stmt { kind: StmtKind::If(_, then, Some(otherwise)), .. }]
+            if then.len() == 2 && otherwise.len() == 2)
+        );
+        let mut fallen = vec![branches(vec![call("a"), returns("v")], None), returns("v")];
+        shared_tails(&mut fallen);
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::Return(_),
+                ..
+            },
+        ] = fallen.as_slice()
+        else {
+            panic!("the branch, then the return")
+        };
+        assert_eq!(then.len(), 1);
     }
 
     // A labeled block MIR made, `l: { a(); break l; }`, its `break` going

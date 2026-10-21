@@ -254,15 +254,15 @@ compiled impl's call.
   every drop parameter is (ADR 0300): a std body calls them with what its
   caller gave, which of an item without a destructor is nothing. The
   crate's own generic `nth` had crashed on it.
-- **What it doesn't move**: 54 of rustc's 101 known failures are
+- **What it doesn't move**: 68 of rustc's 99 known failures are
   addressable memory, and the crate corpus stops on yoke, memchr and
   powerfmt, raw pointers all. A compiled std moves the adapter and trait
   tail, not memory, which needs a decision of its own.
 - **Next**: each adapter after `Peekable`, a line of `COMPILED_STD` each,
   retiring its helper, `$fuse`'s and the held adapters' (ADRs 0542 to
   0549), and `Iterator`'s provided methods the recognizers don't rewrite.
-  And tidy of a std body's JS as of the app's: `next_back`'s dead `if
-  (option != null)` after its early return, folded.
+  Tidy of a std body's JS as of the app's, `next_back`'s dead `if (option
+  != null)` after its early return, is [0564](0564-a-std-body-is-tidied-as-the-apps-are.md).
 
 ## What holds it
 

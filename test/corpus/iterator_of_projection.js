@@ -32,15 +32,10 @@ function genDrop_drop(gen, AArray, dropA) {
   while (true) {
     const value = genIterator_next(iter, AArray, dropA);
     if (value == null) {
-      if (value != null) {
-        AArray.$dropItem?.($someValue(value));
-      }
       break;
     }
     n = (n + 1) | 0;
-    if (value != null) {
-      AArray.$dropItem?.($someValue(value));
-    }
+    AArray.$dropItem?.($someValue(value));
   }
   console.log(`drained ${n}`);
 }

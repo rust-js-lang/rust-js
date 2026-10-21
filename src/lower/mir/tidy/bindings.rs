@@ -635,13 +635,25 @@ pub(super) fn inlined(
     set: &HashSet<String>,
     plain: &HashSet<String>,
     captured: &HashSet<String>,
+    paired: &HashSet<String>,
 ) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let (head, rest) = stmts.split_at_mut(i + 1);
-        let StmtKind::Const(name, value) = &head[i].kind else {
-            i += 1;
-            continue;
+        // Or an assignment of a temporary each of whose is read once, by
+        // the statement after it (`paired_temporaries`).
+        let (name, value, assigned) = match &head[i].kind {
+            StmtKind::Const(name, value) => (name, value, false),
+            StmtKind::Assign(target, value)
+                if let ExprKind::Var(name) = &target.kind
+                    && paired.contains(name) =>
+            {
+                (name, value, true)
+            }
+            _ => {
+                i += 1;
+                continue;
+            }
         };
         let temporary = is_temporary(name) || captured.contains(name);
         // What's read before it: what does nothing, where it does nothing
@@ -678,7 +690,13 @@ pub(super) fn inlined(
             i += 1;
             continue;
         };
-        if !temporary || js::mentions_in(rest, name) != 1 || js::mentions_in(&rest[at..=at], name) != 1 {
+        // Read once in what follows; of a paired temporary, assigned again
+        // after, once by the statement after it.
+        let once = match assigned {
+            true => js::mentions_in(&rest[..=at], name) == 1,
+            false => js::mentions_in(rest, name) == 1,
+        };
+        if !temporary || !once || js::mentions_in(&rest[at..=at], name) != 1 {
             i += 1;
             continue;
         }
@@ -1038,4 +1056,44 @@ pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
         StmtKind::Destructure { pattern, .. } => pattern.names(),
         _ => Vec::new(),
     })
+}
+
+/// The temporaries MIR declared once and assigned in more than one place,
+/// `let _5; .. _5 = a; f(_5); .. _5 = b; g(_5);`, each assignment read
+/// once, by the statement after it, and nowhere else: each is read where
+/// it's made, as a `const` read once is (`inlined`, ADR 0564). Optimized
+/// MIR's `bool`s are such, a test made and negated along each path to it.
+pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
+    let mut mentions: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    let mut lets = HashSet::new();
+    let mut pairs: HashMap<String, usize> = HashMap::new();
+    let mut unpaired = HashSet::new();
+    js::statement_lists(&mut body.to_vec(), &mut |list| {
+        for (k, stmt) in list.iter().enumerate() {
+            match &stmt.kind {
+                StmtKind::Let(name, None) if is_temporary(name) => {
+                    lets.insert(name.clone());
+                }
+                StmtKind::Assign(target, value)
+                    if let ExprKind::Var(name) = &target.kind
+                        && is_temporary(name) =>
+                {
+                    let read_next =
+                        (list.get(k + 1)).is_some_and(|s| js::mentions_in(std::slice::from_ref(s), name) == 1);
+                    match !value.mentions_var(name) && read_next {
+                        true => *pairs.entry(name.clone()).or_default() += 1,
+                        false => {
+                            unpaired.insert(name.clone());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
+    (lets.into_iter())
+        .filter(|name| !unpaired.contains(name))
+        .filter(|name| pairs.get(name).is_some_and(|&n| mentions.get(name) == Some(&(2 * n))))
+        .collect()
 }

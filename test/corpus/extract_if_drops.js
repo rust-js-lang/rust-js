@@ -146,8 +146,6 @@ function from_maps() {
       throw error;
     }
     try {
-      if (tmp) {
-      }
     } catch (error) {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         loudDrop_drop(value);

@@ -1209,3 +1209,255 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
         i += 1;
     }
 }
+
+/// A test an earlier one decided, of what nothing changes between: in `if
+/// (t) { a } else { b }`, `t` holds through `a` and fails through `b`, and
+/// where `a` leaves, fails through what follows the `if` (where `b` leaves,
+/// holds); so an `if (t)` there is its `then`, or its `else`, and an `if
+/// (!t)` the other way. A std body's drop of what its early return gave
+/// away, `if (option != null) { return option; } .. if (option != null) {
+/// drop }`, and a drop's test inside its own (ADR 0564). `t` of what nothing
+/// assigns, `changing`'s; one that reads through a field or a helper,
+/// `x.value`, `$someValue(x)`, only up to the next call or assignment
+/// through a field, which may change it.
+pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::If(test, then, otherwise) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        if !decidable(test, changing) {
+            i += 1;
+            continue;
+        }
+        let test = test.clone();
+        let then_leaves = then.last().is_some_and(ends);
+        let else_leaves = otherwise.as_ref().is_some_and(|o| o.last().is_some_and(ends));
+        let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind else {
+            unreachable!("matched")
+        };
+        decided_in(then, 0, &test, true);
+        if let Some(otherwise) = otherwise {
+            decided_in(otherwise, 0, &test, false);
+        }
+        match (then_leaves, else_leaves) {
+            (true, false) => decided_in(stmts, i + 1, &test, false),
+            (false, true) => decided_in(stmts, i + 1, &test, true),
+            _ => {}
+        }
+        i += 1;
+    }
+}
+
+/// Whether `test` can be decided by an earlier reading of it: it does
+/// nothing, reads no variable something assigns, and isn't a constant.
+fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
+    let mut stable = !test.has_effects() && !test.is_constant();
+    test.visit_vars(&mut |v| stable &= !changing.contains(v));
+    stable
+}
+
+/// `stmts` from `from` on, where `test` is known to hold, or to fail: each
+/// `if` of it, or of its negation, its branch taken, up to what may change
+/// what `test` reads.
+fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool) {
+    let mut j = from;
+    while j < stmts.len() {
+        match &mut stmts[j].kind {
+            StmtKind::If(t, ..) if disturbs(t, test) => return,
+            StmtKind::If(t, ..) if let Some(taken) = decided(t, test) => {
+                let StmtKind::If(_, then, otherwise) = stmts.remove(j).kind else {
+                    unreachable!("matched")
+                };
+                let branch = match taken == holds {
+                    true => then,
+                    false => otherwise.unwrap_or_default(),
+                };
+                stmts.splice(j..j, branch);
+                // What the branch had is where it was, known the same there.
+            }
+            StmtKind::If(_, then, otherwise) => {
+                decided_in(then, 0, test, holds);
+                let mut disturbed = disturbs_any(then, test);
+                if let Some(otherwise) = otherwise {
+                    decided_in(otherwise, 0, test, holds);
+                    disturbed |= disturbs_any(otherwise, test);
+                }
+                if disturbed {
+                    return;
+                }
+                j += 1;
+            }
+            StmtKind::Labeled(_, body) => {
+                decided_in(body, 0, test, holds);
+                if disturbs_any(body, test) {
+                    return;
+                }
+                j += 1;
+            }
+            _ => match disturbs_any(std::slice::from_ref(&stmts[j]), test) {
+                true => return,
+                false => j += 1,
+            },
+        }
+    }
+}
+
+/// Whether `t` is `test`, `Some(true)`, or its negation, `Some(false)`.
+fn decided(t: &Expr, test: &Expr) -> Option<bool> {
+    let same = |a: &Expr, b: &Expr| same_test(a, b) || a.written_alike(b);
+    if same(t, test) {
+        return Some(true);
+    }
+    same(&t.clone().negated_test(), test).then_some(false)
+}
+
+/// Whether evaluating `e` may change what `test` reads: nothing, of a test
+/// that reads only variables nothing assigns; of one that reads through a
+/// field or a helper, anything that does something.
+fn disturbs(e: &Expr, test: &Expr) -> bool {
+    !test.reads_only_vars() && e.has_effects()
+}
+
+/// Whether running `stmts` may change what `test` reads: an assignment of a
+/// variable it reads; and, of one that reads through a field or a helper,
+/// an assignment through a field, or anything that does something.
+fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
+    let mut vars = Vec::new();
+    test.visit_vars(&mut |v| vars.push(v.to_string()));
+    if vars.iter().any(|v| assigns(stmts, v)) {
+        return true;
+    }
+    if test.reads_only_vars() {
+        return false;
+    }
+    let mut stmts = stmts.to_vec();
+    let mut disturbed = false;
+    js::statement_lists(&mut stmts, &mut |list| {
+        disturbed |= list.iter().any(|s| {
+            matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if !matches!(target.kind, ExprKind::Var(_)))
+        });
+    });
+    js::each_expr_mut(&mut stmts, &mut |e| disturbed |= e.has_effects());
+    disturbed
+}
+
+/// What both branches of an `if` end with, one statement MIR wrote into
+/// each, `if (c) { a; x = 1; } else { b; x = 1; }`: written once, after
+/// it, `if (c) { a } else { b } x = 1;`; and of an `if` without `else` whose
+/// branch ends as what follows the `if` does, `if (c) { a; return v; }
+/// return v;`, the branch's copy goes, `if (c) { a } return v;` (ADR 0564).
+/// A tail that leaves, `return v`, stays in its two branches: where each
+/// exits is the branches' shape, the guard clause `let_else_first` and
+/// `early_returns` make of it; and a branch's copy of what follows goes
+/// only of a `return` of a value or a `throw`, a `return;` of nothing or
+/// of `undefined` being the function's end `tail_returns` writes as a
+/// guard clause, and a `break` or `continue` a loop's, `early_breaks`'. A
+/// branch that is only the tail stays, an arm
+/// `decisions` merges with the one alike; and one that reads what a branch
+/// declares stays in it.
+pub(super) fn shared_tails(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::If(_, then, otherwise) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        match otherwise {
+            Some(otherwise) => {
+                let shared = shared_tail(then, otherwise);
+                let (kept_then, kept_else) = (&then[..then.len() - shared], &otherwise[..otherwise.len() - shared]);
+                let tail = &then[then.len() - shared..];
+                if shared == 0
+                    || tail.last().is_some_and(ends)
+                    || kept_then.is_empty()
+                    || reads_declared(tail, kept_then.iter().chain(kept_else))
+                {
+                    i += 1;
+                    continue;
+                }
+                let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
+                    unreachable!("matched")
+                };
+                let tail = then.split_off(then.len() - shared);
+                otherwise.truncate(otherwise.len() - shared);
+                if otherwise.is_empty() {
+                    let StmtKind::If(_, _, otherwise) = &mut stmts[i].kind else {
+                        unreachable!("matched")
+                    };
+                    *otherwise = None;
+                }
+                stmts.splice(i + 1..i + 1, tail);
+            }
+            // Of a tail that returns a value, or throws: a `return;`, of
+            // nothing or of `undefined`, is the function's end, `tail_returns`'
+            // guard clause, and a `break` or `continue` a loop's, `early_breaks`'.
+            None if then.last().is_some_and(returns_a_value) => {
+                let rest = &stmts[i + 1..];
+                let shared = shared_tail(then, rest);
+                let kept = &then[..then.len() - shared];
+                if shared == 0 || shared != rest.len() || kept.is_empty() || reads_declared(rest, kept.iter()) {
+                    i += 1;
+                    continue;
+                }
+                let StmtKind::If(_, then, None) = &mut stmts[i].kind else {
+                    unreachable!("matched")
+                };
+                then.truncate(then.len() - shared);
+            }
+            None => {}
+        }
+        // A branch with nothing left: `if (c) {} else { b }` is `if (!c) { b }`,
+        // and `if (c) {}` of a test that does nothing is nothing.
+        let StmtKind::If(test, then, otherwise) = &mut stmts[i].kind else {
+            unreachable!("matched")
+        };
+        match (then.is_empty(), otherwise.take()) {
+            (true, Some(otherwise)) if !otherwise.is_empty() => {
+                let test = std::mem::replace(test, Expr::undefined()).negated_test();
+                stmts[i].kind = StmtKind::If(test, otherwise, None);
+            }
+            (true, _) if !test.has_effects() => {
+                stmts.remove(i);
+                continue;
+            }
+            (true, _) => {
+                let test = std::mem::replace(test, Expr::undefined());
+                stmts[i].kind = StmtKind::Expr(test);
+            }
+            (false, Some(otherwise)) if !otherwise.is_empty() => {
+                let StmtKind::If(_, _, slot) = &mut stmts[i].kind else {
+                    unreachable!("matched")
+                };
+                *slot = Some(otherwise);
+            }
+            (false, _) => {}
+        }
+        i += 1;
+    }
+}
+
+/// Whether `stmt` leaves with the function's answer: a `return` of a value
+/// other than `undefined`, or a `throw`.
+fn returns_a_value(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Return(Some(value)) => !matches!(value.kind, ExprKind::Undefined),
+        StmtKind::Throw(_) => true,
+        _ => false,
+    }
+}
+
+/// How many statements `a` and `b` end with that do the same.
+fn shared_tail(a: &[Stmt], b: &[Stmt]) -> usize {
+    (a.iter().rev().zip(b.iter().rev()))
+        .take_while(|(x, y)| decisions::same_stmt(x, y))
+        .count()
+}
+
+/// Whether `tail` reads a name `branches` declare, which it can't be moved
+/// out of.
+fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -> bool {
+    let branches: Vec<Stmt> = branches.cloned().collect();
+    declared(&branches).any(|name| js::mentions_in(tail, name) > 0)
+}

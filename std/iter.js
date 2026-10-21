@@ -47,9 +47,6 @@ export function peekableDoubleEndedIterator_next_back(
     }
     const x = v.value;
     v.value = undefined;
-    if (option != null) {
-      dropIItem?.($someValue(option));
-    }
     return x;
   }
 }

@@ -21,9 +21,7 @@ export function entry() {
 
 function subscriptionDrop_drop(subscription) {
   const bus = $upgrade(subscription.bus);
-  let bus$0$live = true;
   if (bus) {
-    bus$0$live = false;
     try {
       const tmp = $borrowMut(bus.value, true);
       try {
@@ -35,13 +33,6 @@ function subscriptionDrop_drop(subscription) {
     } finally {
       $rcDrop(bus);
     }
-  } else {
-    if (bus) {
-      if (bus$0$live) {
-        $rcDrop(bus);
-      }
-    }
-    bus$0$live = false;
   }
 }
 

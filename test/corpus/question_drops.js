@@ -26,7 +26,6 @@ function climb(d) {
     dDrop_drop(d);
     throw error;
   }
-  let result;
   if (tmp) {
     try {
       dDrop_drop(d);
@@ -54,10 +53,8 @@ function climb(d) {
       d = tmp$1;
       return d;
     }
-    result = undefined;
-  } else {
-    result = undefined;
   }
+  const result = undefined;
   dDrop_drop(d);
   return result;
 }
@@ -155,7 +152,6 @@ function twice(base, TCheckedDouble, dropT) {
     dropT?.(base);
     throw error;
   }
-  let result;
   if (tmp != null) {
     const value = $someValue(tmp);
     try {
@@ -185,10 +181,8 @@ function twice(base, TCheckedDouble, dropT) {
       base = value;
       return $some(base);
     }
-    result = undefined;
-  } else {
-    result = undefined;
   }
+  const result = undefined;
   dropT?.(base);
   return result;
 }

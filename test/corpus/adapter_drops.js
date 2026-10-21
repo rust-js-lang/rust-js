@@ -441,8 +441,6 @@ function main() {
           throw error;
         }
         try {
-          if (tmp$2) {
-          }
         } catch (error) {
           iter.return();
           if (fused$live) {
@@ -545,8 +543,6 @@ function main() {
       }
     }
     try {
-      if (tmp$2) {
-      }
     } catch (error) {
       iter.return();
       if (fused$live) {
