@@ -38,9 +38,9 @@ export const mutations: Mutation[] = [
     name: "mir-static-mut-not-a-place",
     breaks: "a pointer to a `static mut` is a handle on another place than its `{ value }`'s, so writes to it are lost",
     file: "src/lower/mir.rs",
-    find: "                        vec![self.fn_ref(def_id), Expr::str(js::HELD)],\n",
-    replace: "                        vec![self.fn_ref(def_id), Expr::str(\"held\")],\n",
-    tests: ["test/corpus.test.ts","-t","static_mut_shared"],
+    find: "                        vec![self.fn_ref(def_id), Expr::str(js::HELD), Expr::int(0)],\n",
+    replace: "                        vec![self.fn_ref(def_id), Expr::str(\"held\"), Expr::int(0)],\n",
+    tests: ["test/corpus.test.ts", "-t", "static_mut_shared"],
   },
   {
     name: "mir-promoted-const-unseen",
@@ -2846,5 +2846,13 @@ export const mutations: Mutation[] = [
     find: "        let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));\n",
     replace: "        let fields = (0..borrowed).any(|i| self.borrows_field(def_id, span, i));\n",
     tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
+  },
+  {
+    name: "ptr-eq-by-identity",
+    breaks: "`p == q` of raw pointers is `===`, so two pointers with no place at one address differ",
+    file: "src/lower/mir.rs",
+    find: "                if self.is_handle_pointer(ty)\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
+    replace: "                if false\n                    && let Some((pointee, _)) = super::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
 ];

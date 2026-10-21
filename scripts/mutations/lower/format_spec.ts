@@ -126,9 +126,9 @@ export const mutations: Mutation[] = [
     name: "pointer-p-refused",
     breaks: "`{:p}` of a raw pointer is refused, even where an assertion that holds never shows it",
     file: "src/lower/format_spec.rs",
-    find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value),\n",
+    find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,\n",
     replace: "",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer"],
+    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
   },
   {
     name: "exp-precision-dropped",

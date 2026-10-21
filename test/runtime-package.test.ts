@@ -226,9 +226,10 @@ pub fn rewritten() -> f32 {
   expect(call("rewritten")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
 });
 
-// A pointer's address, which JS hasn't, is rust-js's error where it's
-// shown; a null one's is `0x0`, as every program shows it (ADR 0407).
-test("a pointer's address is rust-js's error where it's shown", () => {
+// A pointer's address is a number of rust-js's own, shown as Rust shows one,
+// `0x` and hex; the same place shows the same, and a null one's is `0x0`,
+// as every program shows it (ADR 0562).
+test("a pointer's address is shown", () => {
   const dir = fixture("pointer-shown");
   writeFileSync(join(dir, "lib.rs"), `pub fn debug() -> String {
     let x = 1;
@@ -237,11 +238,19 @@ test("a pointer's address is rust-js's error where it's shown", () => {
 
 pub fn pointer() -> String {
     let x = 1;
-    format!("{:p}", &raw const x)
+    let p = &raw const x;
+    let again = format!("{:p}", p);
+    format!("{:p} {}", p, again == format!("{:p}", p))
 }
 
 pub fn none() -> String {
     format!("{:?} {:p}", std::ptr::null::<u8>(), std::ptr::null::<u8>())
+}
+
+// Reading through a pointer to no place is rust-js's error where it runs.
+pub fn no_place() -> u8 {
+    let p = 7 as *const u8;
+    unsafe { *p }
 }
 
 fn named() {}
@@ -267,11 +276,11 @@ pub fn type_id() -> String {
   run([compiler, join(dir, "lib.rs"), "-o", out]);
   const call = (name: string) =>
     run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
-  const error = "rust-js does not support showing a pointer's address, which JS hasn't\n";
-  expect(call("debug")).toBe(error);
-  expect(call("pointer")).toBe(error);
+  expect(call("debug")).toMatch(/^0x[0-9a-f]+\n$/);
+  expect(call("pointer")).toMatch(/^0x[0-9a-f]+ true\n$/);
+  expect(call("no_place")).toBe("rust-js does not support reading through a pointer to no place, at 0x7, which reads memory by where it is\n");
+  expect(call("function_pointer")).toMatch(/^0x[0-9a-f]+\n$/);
   expect(call("none")).toBe("0x0 0x0\n");
-  expect(call("function_pointer")).toBe(error);
   expect(call("compared")).toBe("true\n");
   expect(call("type_id")).toBe("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep\n");
 });

@@ -90,7 +90,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut reads = Vec::new();
         self.plain_reads(value.clone(), &source, 0, &mut reads);
-        let size = self.layout(from).expect("laid out").size.bytes();
+        // A reference to a type parameter's object is a scalar with no layout
+        // of its own (ADR 0562).
+        let size = match self.layout(from) {
+            Some(layout) => layout.size.bytes(),
+            None => self.scalar_bytes(from),
+        };
         // A `[u8; N]` is the bytes themselves.
         if self.is_bytes(to) {
             return self.bytes_of(&value, &reads, (from, size), span);
@@ -197,7 +202,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Rust's own, not std's structs JS has as numbers, as a `Duration`'s
         // nanoseconds, whose bytes aren't its value's.
         let number = matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_)) && Num::of(ty).is_some();
-        if number || ty.is_bool() || ty.is_char() {
+        // A thin pointer is 4 bytes, its address's; a reference to an object
+        // too (ADR 0562).
+        let sized = |pointee: Ty<'tcx>| pointee.is_sized(self.tcx, self.typing_env);
+        let pointer = super::pointers::raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| sized(pointee))
+            || matches!(ty.kind(), ty::Ref(_, pointee, _)
+                if sized(*pointee) && (self.is_object(*pointee) && !self.is_cell_pointee(*pointee) || self.is_unknown(*pointee)));
+        if number || ty.is_bool() || ty.is_char() || pointer {
             return Some(Plain::Scalar(ty));
         }
         // A `MaybeUninit<T>` is its `T`, laid out alike (ADR 0332).
@@ -244,6 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match Num::of(ty) {
             Some(num) => num.literal(0),
             None if ty.is_bool() => Expr::bool(false),
+            None if super::pointers::raw_pointee(self.tcx, ty).is_some() => Expr::null(),
             None => Expr::str("\0"),
         }
     }
@@ -300,6 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match Num::of(ty) {
             Some(num) => u64::from(num.bits() / 8),
             None if ty.is_bool() => 1,
+            // A `char`'s, and a thin pointer's, wasm32's (ADR 0562).
             None => 4,
         }
     }
@@ -335,7 +348,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::helper("$floatToBits"),
                 vec![value, Expr::int(i128::from(num.bits() / 8))],
             )),
+            // A pointer's bits are its address, a reference's to an object
+            // the object's (ADR 0562).
+            None if let Some(pointee) = self.address_of(ty) => {
+                let size = self.pointee_size(pointee, span)?;
+                Ok(Expr::call(Expr::helper("$addr"), vec![value, size]))
+            }
             _ => self.cast(value, ty, bits, span),
+        }
+    }
+
+    /// What a scalar `ty` whose bits are an address points to: a raw
+    /// pointer's pointee, or a reference's object (ADR 0562).
+    fn address_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Ref(_, pointee, _) => Some(*pointee),
+            _ => super::pointers::raw_pointee(self.tcx, ty).map(|(pointee, _)| pointee),
         }
     }
 
@@ -348,6 +376,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             Some(_) => self.cast(bits, self.bits_type(ty), ty, span)?,
             None if ty.is_bool() => Expr::bin(Op::Ne, bits, Expr::int(0)),
+            // A pointer of an address's bits, a reference what's there (ADR
+            // 0562).
+            None if let Some(pointee) = self.address_of(ty) => {
+                let size = self.pointee_size(pointee, span)?;
+                let pointer = Expr::call(Expr::helper("$ptrFrom"), vec![bits, size]);
+                match ty.kind() {
+                    ty::Ref(..) => Expr::held(pointer),
+                    _ => pointer,
+                }
+            }
             None => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![bits]),
         })
     }

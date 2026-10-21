@@ -5,7 +5,7 @@ a union isn't addressable memory; reading its bytes as another type's is,
 refused where it runs; and by [0407](0407-a-raw-pointer-is-a-handle-on-its-place.md):
 a raw pointer is a handle on its place; its address isn't JS's; and by
 [0408](0408-plain-data-is-its-bytes.md): a `transmute` of plain data and a
-zeroed one are its numbers' bytes. Extends [0262](0262-when-rust-and-js-disagree.md).
+zeroed one are its numbers' bytes. Extends [0262](0262-when-rust-and-js-disagree.md); and by [0562](0562-a-pointer-is-a-place-and-an-address.md): a pointer has an address, and bytes of plain data are read through one.
 
 Case: D ([0262](0262-when-rust-and-js-disagree.md)): JavaScript has no
 memory a program can address, so what reads or writes it can't be kept.

@@ -19,8 +19,7 @@ for (const [name, source, message, crate] of [
   ["a zeroed std struct", "pub fn f() -> std::time::Duration { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::time::Duration`, which may be no value of it"],
   ["a zeroed std wrapper", "pub fn f() -> std::num::Wrapping<u32> { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::num::Wrapping<u32>`, which may be no value of it"],
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
-  ["a pointer's address", "pub fn f() -> usize { let x = 1; let p = &raw const x; p as usize }", "does not support addressable memory yet: a pointer's address"],
-  ["a pointer made of an address", "pub fn f() -> bool { let p = 3 as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer made of an address"],
+  // Its address is a number of rust-js's own (ADR 0562).
   ["a pointer read as another type's", "pub fn f() -> u16 { let x = 1u32; let p = &raw const x as *const u16; unsafe { *p } }", "does not support addressable memory yet: a pointer read as another type's"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],

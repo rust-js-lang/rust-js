@@ -3,7 +3,6 @@
 import {
   $at,
   $drain,
-  $index,
   $iter,
   $iterator,
   $nextSome,
@@ -46,7 +45,7 @@ function takenIterator_next(taken, dropT) {
 /** A `&mut`'s, only read through: where it is matters to nothing. */
 function peeked(count) {
   count.value = (count.value + 1) >>> 0;
-  const p = $ptr(count, "value");
+  const p = $ptr(count, "value", 0);
   return p.value;
 }
 
@@ -80,15 +79,7 @@ function dropped_tail() {
     }
     throw error;
   }
-  let first;
-  try {
-    first = $index(items, 0);
-  } catch (error) {
-    for (const item of items) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
+  const first = items[0];
   try {
     console.log(`${first[0]}`);
   } finally {

@@ -2508,6 +2508,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Char => Hashed::Char,
             ty::Str => Hashed::Text,
             ty::Ref(_, pointee, _) => Hashed::Pointer(pointee),
+            // A raw pointer hashes its address (ADR 0562).
+            _ if let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty) => Hashed::Address(pointee),
             ty::Tuple(parts) => Hashed::Tuple(parts.to_vec()),
             ty::Slice(item) | ty::Array(item, _) => Hashed::Slice(item),
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => Hashed::Pointer(args.type_at(0)),
@@ -5550,6 +5552,12 @@ pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::ascii::EscapeDefault")
 }
 
+/// Whether `id` is `mem::transmute`, which reads one type's bytes as
+/// another's (ADR 0408).
+pub(crate) fn is_transmute(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.is_diagnostic_item(sym::transmute, id)
+}
+
 /// A `char`'s `to_uppercase()` or `to_lowercase()`: the `char`s of its
 /// mapping, an array (ADR 0070).
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
@@ -6085,7 +6093,19 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
         "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
         // Its size and its alignment (ADR 0417).
         "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],
+        // An address asks the pointee's size, an item's stride; a dangling
+        // pointer its alignment (ADR 0562).
+        "std::ptr::with_exposed_provenance"
+        | "std::ptr::with_exposed_provenance_mut"
+        | "std::ptr::without_provenance"
+        | "std::ptr::without_provenance_mut" => return &[TypeFact::Size],
+        "std::ptr::dangling" | "std::ptr::dangling_mut" | "std::ptr::NonNull::<T>::dangling" => {
+            return &[TypeFact::Size, TypeFact::Align];
+        }
         _ => {}
+    }
+    if let Some(facts) = super::pointers::address_facts(tcx, def_id) {
+        return facts;
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).
     let any = tcx.get_diagnostic_item(Symbol::intern("Any"));
