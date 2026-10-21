@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "    v[i] = clone ? clone(src[i]) : src[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
+  {
+    name: "fill-with-replaced-not-dropped",
+    breaks: "what `fill_with` replaces isn't dropped",
+    file: "src/runtime/slice_ops.js",
+    find: "    drop?.(v[i]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
+  },
+  {
+    name: "fill-with-dropped-before-made",
+    breaks: "what `fill_with` replaces is dropped before the new one is made, not after",
+    file: "src/runtime/slice_ops.js",
+    find: "    const made = f();\n    drop?.(v[i]);\n    v[i] = made;\n",
+    replace: "    drop?.(v[i]);\n    v[i] = f();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
+  },
 ];

@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "fill_with of values with a destructor"],
+    tests: ["test/diagnostics.test.ts", "-t", "swap_with_slice of values with a destructor"],
   },
   {
     name: "mir-mut-borrowed-unchanged",

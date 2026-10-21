@@ -502,8 +502,8 @@ export const mutations: Mutation[] = [
     name: "fill-refused",
     breaks: "`fill` of values with a destructor is refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Slice(SliceOp::Fill)\n",
-    replace: "",
+    find: "                    | Std::Slice(SliceOp::Fill | SliceOp::FillWith)\n",
+    replace: "                    | Std::Slice(SliceOp::FillWith)\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
   {
@@ -625,5 +625,13 @@ export const mutations: Mutation[] = [
     find: "                    | Std::IterSource(IterSource::Successors)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
+  },
+  {
+    name: "fill-with-takes-drops-refused",
+    breaks: "`fill_with` of items with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Slice(SliceOp::Fill | SliceOp::FillWith)\n",
+    replace: "                    | Std::Slice(SliceOp::Fill)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
   },
 ];

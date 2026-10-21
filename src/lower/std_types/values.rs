@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Comb::ResizeWith
                     )
                     // And what it replaces, `fill`'s (ADR 0507).
-                    | Std::Slice(SliceOp::Fill)
+                    | Std::Slice(SliceOp::Fill | SliceOp::FillWith)
                     // What changes a collection's capacity, and drops nothing;
                     // `pop_if` and `pop_front_if`, which give back what they
                     // take; an array's `map`, whose function owns each item;

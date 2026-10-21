@@ -97,6 +97,8 @@ released any more: `rust-js build` is the one way to build an app.
 - **`iter::successors` of a value with a destructor** (ADR 0465 amended):
   each item is the consumer's, and the next one it holds is dropped where
   it's stopped early or never stepped, as Rust's is.
+- **`fill_with` of items with a destructor** (ADR 0507): each new one made,
+  then the one it replaces dropped, as `*item = f()` does.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

@@ -590,7 +590,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::call(Expr::member(items, "fill"), vec![value]),
                 }
             }
-            SliceOp::FillWith => helper("$fillWith", vec![arg(), arg()]),
+            // Each made, then what it replaces dropped (ADR 0507).
+            SliceOp::FillWith => {
+                let (items, f) = (arg(), arg());
+                let drop = self.std_drop_function(item(), span)?;
+                helper("$fillWith", Expr::optional_args(vec![items, f], vec![drop]))
+            }
             SliceOp::CopyFromSlice => helper("$copyFromSlice", vec![arg(), arg()]),
             // Each by its type's `clone_from` where it may have one, as std's
             // calls it, else a clone of each; of items with a destructor,
