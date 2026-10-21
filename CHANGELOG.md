@@ -19,6 +19,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A library's struct with a derived `Ord`**, compared and sorted: uuid
+  runs as native Rust, and hex too (ADR 0555).
 - **A filter or a map an `Either` holds, `rev()`'d**: either runs as
   native Rust (ADR 0554).
 - **`mem::replace` of a field holding a generic iterator**, in a method

@@ -623,6 +623,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0552 An `IntoIterator` whose iterator is held as it is is given as it is](decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)
 - [0553 `mem::replace` of a field holding an iterator given as it is](decisions/0553-replace-of-a-field-holding-a-given-iterator.md)
 - [0554 A filter a type holds, asked to be double-ended, is made knowing its back](decisions/0554-a-filter-a-type-holds-asked-double-ended.md)
+- [0555 A library's derived order is field by field](decisions/0555-a-librarys-derived-order-is-field-by-field.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
