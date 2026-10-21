@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
   },
+  {
+    name: "closing-hint-hidden",
+    breaks: "a `$closing` hides what it closes' size hint",
+    file: "src/runtime/closing.js",
+    find: "  closing.hint = () => $sizeHint(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
+  },
 ];

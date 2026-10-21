@@ -340,4 +340,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::str(\"network\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
+  {
+    name: "fused-fact-unanswered",
+    breaks: "a type parameter's `Fused` no caller says is refused, not `false`",
+    file: "src/lower/std_types/number.rs",
+    find: "                return Ok(self.fused_fact(param.index).unwrap_or_else(|| Expr::bool(false)));\n",
+    replace: "                return self.fused_fact(param.index).ok_or_else(|| self.unsupported(span, \"Fused\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
+  },
 ];

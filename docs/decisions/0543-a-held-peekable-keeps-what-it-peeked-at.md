@@ -35,8 +35,11 @@ steps, `iter`, and what it peeked at, `peeked`.**
   writes of the type.
 - **Whether a type parameter is a `FusedIterator` is its caller's fact,
   `IFused`**, as `TSort` is (ADR 0471): generic code's `fuse()` is
-  `$fuse(it, IFused)`, kept as it ends where it's one. Of an impl's
-  parameter, given no fact, it's cleared as before.
+  `$fuse(it, IFused)`, kept as it ends where it's one. Where no caller
+  says, an impl's parameter or a trait default's `Self`, it's `false`,
+  cleared as before: `fused_fact` is the one answer.
+- A `$closing` passes on what it closes' size hint, as it does its back
+  and its length.
 
 ## Why
 

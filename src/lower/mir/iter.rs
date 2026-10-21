@@ -575,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn fused(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
         let mut list = vec![it];
         if let ty::Param(param) = iter_ty.kind()
-            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused)
+            && let Some(fused) = self.fused_fact(param.index)
         {
             list.push(fused);
         } else if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {

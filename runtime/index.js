@@ -1107,6 +1107,8 @@ export function $closing(it, drop) {
   closing.next = () => it.next();
   closing.back = () => it.back();
   closing.len = () => it.len();
+  // Its size hint, what it closes' (ADR 0543).
+  closing.hint = () => $sizeHint(it);
   closing.return = () => {
     if (!closed) {
       closed = true;

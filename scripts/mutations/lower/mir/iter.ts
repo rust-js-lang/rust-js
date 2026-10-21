@@ -1173,8 +1173,8 @@ export const mutations: Mutation[] = [
     name: "fuse-not-told-fused",
     breaks: "generic code's `fuse()` isn't given its caller's `IFused`, and a `FusedIterator`'s `Fuse` drops it as it ends",
     file: "src/lower/mir/iter.rs",
-    find: "            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused)\n",
-    replace: "            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused).filter(|_| false)\n",
+    find: "            && let Some(fused) = self.fused_fact(param.index)\n",
+    replace: "            && let Some(fused) = self.fused_fact(param.index).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
 ];

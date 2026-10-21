@@ -1097,6 +1097,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The fact of its type parameter `index` this function was given,
     /// `TSize` (ADR 0145).
+    /// Whether type parameter `index` is a `FusedIterator`, as its caller
+    /// says, `IFused` (ADR 0543): `None` where none says, which is `false`,
+    /// a generic iterator's `Fuse` cleared as it ends, as most are (ADR
+    /// 0473). The one answer, of a `fuse()` and of a callee asking it.
+    pub(super) fn fused_fact(&self, index: u32) -> Option<Expr> {
+        self.given_type_fact(index, TypeFact::Fused)
+    }
+
     pub(super) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
         (self.given.type_facts.iter())
             .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)
