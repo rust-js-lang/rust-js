@@ -634,4 +634,12 @@ export const mutations: Mutation[] = [
     replace: "                    | Std::Slice(SliceOp::Fill)\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
   },
+  {
+    name: "swap-with-slice-takes-drops-refused",
+    breaks: "`swap_with_slice` of items with a destructor is refused, where it drops none",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Slice(SliceOp::SwapWithSlice)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^swap_with_slice_drops.rs$"],
+  },
 ];
