@@ -19,7 +19,7 @@ newest release its requirement allows.
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.15 | compiles | no probe yet |
+| either 1.15 | runs | measured 2026-10-21, after ADR 0554 |
 | itertools 0.14 | runs | measured 2026-10-21, after ADR 0552 |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
@@ -41,7 +41,7 @@ newest release its requirement allows.
 | hex 0.4 | compiles | no probe yet |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-15 of 22 compile, and each of the 9 with a probe runs as natively.
+15 of 22 compile, and each of the 11 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and
