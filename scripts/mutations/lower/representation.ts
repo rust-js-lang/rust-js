@@ -493,4 +493,12 @@ export const mutations: Mutation[] = [
     replace: "            && !self.is_object(ty)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
+  {
+    name: "given-iterator-written-refused",
+    breaks: "an iterator given as it is isn't written in place, so `*b = b_orig.clone()` of a `&mut` to one, and `mem::replace` of one a closure captured, are refused",
+    file: "src/lower/representation.rs",
+    find: "        !self.is_cell_pointee(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))",
+    replace: "        !self.is_cell_pointee(ty) && self.is_object(ty)",
+    tests: ["test/corpus.test.ts", "-t", "^(replace_held_given_iterator|iterator_written_through).rs$"],
+  },
 ];

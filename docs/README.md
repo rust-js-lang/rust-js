@@ -621,6 +621,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0550 A known type's `as_mut()` is the value its `&mut` is](decisions/0550-a-known-as-mut-is-the-value.md)
 - [0551 A parameter given as it is, given on where a JS iterator goes, is made one](decisions/0551-self-given-on-where-a-js-iterator-goes.md)
 - [0552 An `IntoIterator` whose iterator is held as it is is given as it is](decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)
+- [0553 `mem::replace` of a field holding an iterator given as it is](decisions/0553-replace-of-a-field-holding-a-given-iterator.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

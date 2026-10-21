@@ -19,6 +19,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`mem::replace` of a field holding a generic iterator**, in a method
+  or a closure (ADR 0553).
 - **An `IntoIterator` whose iterator a generic function holds**, cloned
   and stepped as it is: itertools runs as native Rust does (ADR 0552).
 - **A `&mut Self` given on where an `IntoIterator` goes**, through a

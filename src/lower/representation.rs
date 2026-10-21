@@ -283,6 +283,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_boxable(ty) || self.is_generic_boxed(ty, self.typing_env.param_env)
     }
 
+    /// Whether what a `&mut` to a `ty` is, isn't a cell, is changed in place
+    /// to write it: an object, or an iterator given as it is (ADRs 0147,
+    /// 0411). The one answer, of `*r = v`, `$assign`, and of `mem::replace`
+    /// and the like, `$take` (ADR 0553).
+    pub(super) fn written_in_place(&self, ty: Ty<'tcx>) -> bool {
+        !self.is_cell_pointee(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))
+    }
+
     /// A `&mut` to a value JS can't change in place, as a value: a cell, a box
     /// or a handle, whose `value` is the place it points at (ADR 0099).
     pub(super) fn is_cell(&self, ty: Ty<'tcx>) -> bool {
