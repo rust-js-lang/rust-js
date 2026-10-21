@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
+  {
+    name: "iterator-hint-ignored",
+    breaks: "a JS iterator given the crate's `size_hint` doesn't answer `$sizeHint` with it",
+    file: "src/runtime/iterator.js",
+    find: "    it.hint = () => hint(iterator);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
 ];

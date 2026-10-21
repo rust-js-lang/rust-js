@@ -79,6 +79,8 @@ released any more: `rust-js build` is the one way to build an app.
   union's bytes; a value of no size reads through a dangling pointer; an
   empty slice of `NonNull::dangling()` is at that address; a `&'static
   mut` made of a `&'a mut` by `transmute` writes through to it.
+- **Fixed: `size_hint()` of the crate's iterator in generic code** was
+  `(0, None)` where its impl has its own; it's the impl's now (ADR 0170).
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

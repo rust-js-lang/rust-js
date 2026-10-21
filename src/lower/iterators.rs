@@ -23,26 +23,33 @@ use rustc_span::def_id::DefId;
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
-    stepped_ends(value, next, boxed, back, None)
+    stepped_ends(value, next, boxed, back, None, None)
 }
 
 /// `stepped`'s, given `len` too, its length, one that knows it, an
-/// `ExactSizeIterator`'s (ADR 0456).
+/// `ExactSizeIterator`'s (ADR 0456), and `hint`, its own `size_hint`, an
+/// iterator of the crate's whose impl has one: what `size_hint()` of it
+/// gives in generic code, as in its own.
 pub(in crate::lower) fn stepped_ends(
     value: Expr,
     next: Expr,
     boxed: bool,
     back: Option<Expr>,
     len: Option<Expr>,
+    hint: Option<Expr>,
 ) -> Expr {
     let mut list = vec![value, next];
-    if boxed || back.is_some() || len.is_some() {
+    let given = [back.is_some(), len.is_some(), hint.is_some()];
+    if boxed || given.contains(&true) {
         list.push(Expr::bool(boxed));
     }
-    if back.is_some() || len.is_some() {
+    if given[1..].contains(&true) || back.is_some() {
         list.push(back.unwrap_or_else(Expr::undefined));
     }
-    list.extend(len);
+    if hint.is_some() || len.is_some() {
+        list.push(len.unwrap_or_else(Expr::undefined));
+    }
+    list.extend(hint);
     Expr::call(Expr::helper("$iterator"), list)
 }
 
@@ -659,6 +666,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false,
                 from_back,
                 Some(Expr::helper("$rangeLen")),
+                None,
             ));
         }
         if self.steps_an_array(ty) {
@@ -779,7 +787,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
-        Ok(stepped(value, next, boxed, None))
+        let hint = self.own_size_hint(ty, span)?;
+        Ok(stepped_ends(value, next, boxed, None, None, hint))
+    }
+
+    /// The `size_hint` of the crate's iterator `ty`, where its impl has one
+    /// of its own: what `size_hint()` gives of it made a JS iterator, as of
+    /// it as it is. `None` of one that has std's, `(0, None)`, which
+    /// `$sizeHint` gives too.
+    fn own_size_hint(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let size_hint = trait_method(self.tcx, iterator, "size_hint");
+        let args = self.args_of(iterator, ty.peel_refs());
+        let own = self
+            .resolve_instance(size_hint, args)?
+            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()));
+        if !own {
+            return Ok(None);
+        }
+        Ok(Some(self.user_next(ty, iterator, "size_hint", span)?.0))
     }
 
     /// What steps a compiled std iterator's struct of type `ty` where it's
@@ -955,7 +981,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let back = entry(back, self.recognition().double_ended_iterator())?;
         let len = entry(len, self.recognition().exact_size_iterator())?;
         let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-        Some(stepped_ends(value, Expr::member(dictionary, "next"), boxed, back, len))
+        Some(stepped_ends(
+            value,
+            Expr::member(dictionary, "next"),
+            boxed,
+            back,
+            len,
+            None,
+        ))
     }
 
     /// `ty`'s dictionary of an iterator's extension trait, `trait_id`, given
@@ -1866,6 +1899,18 @@ fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     };
     if matches!(callee.helper_name(), Some("$rev" | "$knowing")) && !given.is_empty() {
         stepped_in_place(&mut given[0], false, fuse);
+    }
+    // An iterator of the crate's stepped till it ends, which nothing asks
+    // its size: given no `size_hint`, nor the places before it.
+    if callee.helper_name() == Some("$iterator") && given.len() == 6 {
+        given.truncate(5);
+        while given.len() > 2 && matches!(given.last().map(|e| &e.kind), Some(js::ExprKind::Undefined)) {
+            given.pop();
+        }
+        if given.len() == 3 && matches!(given[2].kind, js::ExprKind::Bool(false)) {
+            given.pop();
+        }
+        return;
     }
     let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.as_str()) == fuse);
     let replacement = match callee.helper_name() {

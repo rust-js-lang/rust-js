@@ -24,8 +24,6 @@ const-generics/type-dependent/issue-61936.rs	error: rust-js does not support a z
 consts/const_fn_unsize.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs	error: rust-js does not support this constant, from its MIR yet
 consts/const_refs_to_static.rs	error: rust-js does not support addressable memory yet: constants of type `*const i32`
-consts/const-block.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
-consts/const-cast.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of type `reassemble_ptr_fragments_in_static::Thing` yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
@@ -79,4 +77,3 @@ union/union-drop-assign.rs	error: rust-js does not support a `&mut` to a union's
 union/union-generic-rpass.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
 union/union-nonzero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `*const u8` as `U2<&u8, ()>`, which aren't numbers alone
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone
-zero-sized/write-volatile-zst.rs	error: rust-js does not support addressable memory yet: a pointer made of an address

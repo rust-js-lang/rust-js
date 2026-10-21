@@ -25,7 +25,7 @@ function main() {
   console.log(`${sum(first)}`);
   const raw = first;
   console.log(`${raw.value.value}`);
-  console.log(`${!null} ${$ptrEq(first, raw)}`);
+  console.log(`${!null} ${$ptrEq(first, raw, 8)}`);
   let n = 5;
   const handle = {
     get value() {

@@ -6,7 +6,7 @@
 // is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
 // an `ExactSizeIterator`'s (ADR 0456).
-function $iterator(iterator, next, boxed = false, nextBack, len) {
+function $iterator(iterator, next, boxed = false, nextBack, len, hint) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = Iterator.from({
     next() {
@@ -15,12 +15,16 @@ function $iterator(iterator, next, boxed = false, nextBack, len) {
   });
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
   if (len !== undefined) {
     it.len = () => len(iterator);
+  }
+  // Its own `size_hint`, the crate's impl's, which `$sizeHint` reads.
+  if (hint !== undefined) {
+    it.hint = () => hint(iterator);
   }
   // Its back and its length, a use site's, where they weren't given where
   // it was made, of the value it steps (ADR 0542).
