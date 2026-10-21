@@ -217,7 +217,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body);
     named_temporaries(body);
-    iterators::consumed_fuses(body);
+    iterators::consumed_into_iters(body);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
@@ -264,9 +264,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
-    // $iter(xs);`: the array's; a `Fuse` stepped there, what it steps; and
-    // a range made there, its numbers made as they're stepped.
-    iterators::consumed_fuses(body);
+    // $iter(xs);`: the array's; and a range made there, its numbers made as
+    // they're stepped.
+    iterators::consumed_into_iters(body);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,

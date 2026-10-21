@@ -11,6 +11,289 @@
     "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
     "items": [
       {
+        "key": "608f92abc48d28dae88ef68b00d41a68",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseClone",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28da2fa080d07a4764b",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseClone_clone",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28dad7c6b45e359c3dfc",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDebug",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28dab18f1298f700408e",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDebug_fmt",
+        "member": null,
+        "drops": [],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
+      },
+      {
+        "key": "608f92abc48d28dab3aa1f47239e2c7e",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDoubleEndedIterator_next_back",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [
+          [
+            0,
+            "Fused"
+          ]
+        ],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da4f480206661c12b6",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDoubleEndedIterator_rfold",
+        "member": null,
+        "drops": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ],
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da76ebb43050b899ce",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::ExactSizeIterator>::len",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseExactSizeIterator_len",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da50b3843aa530f08e"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da1e0eddc5451450c4",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [
+          [
+            0,
+            "Fused"
+          ]
+        ],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3e925d12815bdb08",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator_size_hint",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da39a37bb37378e0ee",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplI_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da57eb1719f7feb9c2",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplIFusedIterator_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28da5ccd9950fd144a16",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplIFusedIterator_next_back",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ]
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa341f1f271c7982b",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplI_next_back",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ]
+        ]
+      },
+      {
         "key": "608f92abc48d28da7243376338849ce",
         "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::clone::Clone>",
         "module": [
@@ -156,6 +439,34 @@
         ]
       },
       {
+        "key": "608f92abc48d28daef865f7868e6ce0a",
+        "rust_path": "rust_js_std::core::iter::Iterator::fuse",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_fuse",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [
+          [
+            0,
+            "Fused"
+          ]
+        ],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ]
+      },
+      {
         "key": "608f92abc48d28dac64ab3a680f6d81c",
         "rust_path": "rust_js_std::core::iter::Iterator::peekable",
         "module": [
@@ -177,13 +488,39 @@
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
         ]
+      },
+      {
+        "key": "608f92abc48d28da1aaf1bcbaee06fe8",
+        "rust_path": "rust_js_std::core::iter::adapters::fuse::and_then_or_clear",
+        "module": [
+          "iter"
+        ],
+        "export": "and_then_or_clear",
+        "member": null,
+        "drops": [
+          0,
+          1,
+          2
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": []
       }
     ],
     "impls": [
       "608f92abc48d28da2b3a75d574f34954",
+      "608f92abc48d28da6ccc1f127504f7e6",
       "608f92abc48d28da7243376338849ce",
+      "608f92abc48d28da7e04e5d5f64639a",
       "608f92abc48d28daa79dd9d70cde8ae6",
-      "608f92abc48d28dac4289554910bba96"
+      "608f92abc48d28dac4289554910bba96",
+      "608f92abc48d28dacd4e5382e53ca842",
+      "608f92abc48d28dad7c6b45e359c3dfc",
+      "608f92abc48d28dae88ef68b00d41a68",
+      "608f92abc48d28daeb8dedd4e1e2a616",
+      "608f92abc48d28daf58b2d9f4f4328c5"
     ],
     "libraries": [],
     "inputs": [
@@ -216,9 +553,24 @@
         "peekableDoubleEndedIterator_rfold",
         "peekableClone_clone",
         "peekableDebug_fmt",
+        "fuseIterator_next",
+        "fuseIterator_size_hint",
+        "fuseDoubleEndedIterator_next_back",
+        "fuseDoubleEndedIterator_rfold",
+        "fuseExactSizeIterator_len",
+        "fuseFuseImplI_next",
+        "fuseFuseImplIFusedIterator_next",
+        "fuseFuseImplI_next_back",
+        "fuseFuseImplIFusedIterator_next_back",
+        "fuseClone_clone",
+        "fuseDebug_fmt",
         "iterator_peekable",
+        "iterator_fuse",
+        "and_then_or_clear",
         "peekableClone",
-        "peekableDebug"
+        "peekableDebug",
+        "fuseClone",
+        "fuseDebug"
       ],
       "links": [],
       "type_links": []
@@ -227,7 +579,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "c36677895315e5a7"
+      "hash": "226991c3df20a8f9"
     },
     {
       "file": "iter.js.map",

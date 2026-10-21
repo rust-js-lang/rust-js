@@ -449,14 +449,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
-    name: "fuse-clone-shared",
-    breaks: "a `Fuse`'s clone steps the same iterator as it",
-    file: "src/lower/std_impls.rs",
-    find: "                Ok(Expr::call_helper(\"$fuse\", vec![Expr::bin(Op::And, iter, copy), fused]))\n",
-    replace: "                Ok(Expr::call_helper(\"$fuse\", vec![iter, fused]))\n",
-    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
-  },
-  {
     name: "cloned-apart-is-itself",
     breaks: "a clone of a closure cloned apart is the closure itself",
     file: "src/lower/std_impls.rs",

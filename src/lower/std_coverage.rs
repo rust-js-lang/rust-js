@@ -199,7 +199,7 @@ impl Bodies {
                 // A trait's method of a type parameter: the vocabulary, of a
                 // trait a program can name; std's own, a specialization's.
                 _ => match tcx.trait_of_assoc(callee) {
-                    Some(trait_def) if std_private(tcx, trait_def) => Body::Spec,
+                    Some(trait_def) if recognition::std_private(tcx, trait_def) => Body::Spec,
                     _ => Body::Safe,
                 },
             };
@@ -274,10 +274,4 @@ fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
         }
     }
     seen
-}
-
-/// A trait only std can name: private to its crate, or unstable, which a
-/// program on stable Rust can't implement or name (ADR 0110).
-fn std_private(tcx: TyCtxt<'_>, trait_def: DefId) -> bool {
-    !tcx.visibility(trait_def).is_public() || tcx.lookup_stability(trait_def).is_some_and(|s| s.is_unstable())
 }

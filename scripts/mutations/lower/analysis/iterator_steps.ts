@@ -201,4 +201,20 @@ export const mutations: Mutation[] = [
     replace: "        for held in body_aggregates(tcx, body).into_iter().take(0) {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "library-supertrait-not-stepped",
+    breaks: "a parameter given to a library function whose manifest says it steps it by a supertrait of its bound, `Iterator` of an `I: DoubleEndedIterator`, isn't stepped by it, so `rfold` of a held `Fuse` is refused",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {\n",
+    replace: "                        for by in [bound.def_id()] {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "fused-specialization-not-stepped",
+    breaks: "a std body's call of a std-private trait's method whose impl the caller's type picks, `FuseImpl::next`, steps nothing, so the impls' methods aren't given `I`'s dictionary",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args) {\n",
+    replace: "            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

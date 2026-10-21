@@ -1528,24 +1528,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
-            // A `Fuse`, `Fuse { iter: Some(..) }` of what it steps, or `None`
-            // once it's ended (ADR 0473).
-            ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {
-                let iter = Expr::member(Expr::var("fuse"), "iter");
-                let stepped = Expr::call_helper("$iteratorValue", vec![iter.clone()]);
-                let shown = self.debug_string_with(stepped, inner, span, pretty)?;
-                let some_plain = join(vec![Expr::str("Some("), shown.clone(), Expr::str(")")]);
-                let some = self.pretty_or(pretty, some_plain, "Some(", Expr::array(vec![shown]), ")");
-                let held = Expr::cond(Expr::bin(Op::Eq, iter, Expr::undefined()), Expr::str("None"), some);
-                let plain = join(vec![Expr::str("Fuse { iter: "), held.clone(), Expr::str(" }")]);
-                let field = join(vec![Expr::str("iter: "), held]);
-                let shown = self.pretty_or(pretty, plain, "Fuse {", Expr::array(vec![field]), "}");
-                let show = Expr::arrow(
-                    vec!["fuse".into()],
-                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                );
-                Ok(self.applied(show, value))
-            }
             ty::Adt(_, args) if self.is_set(ty) => {
                 let items = self.in_order_of(value, ty, span)?;
                 self.debug_items(items, args.type_at(0), "{", "}", span, pretty)

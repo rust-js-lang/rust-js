@@ -3,9 +3,10 @@
 //! of a map keyed by one (ADR 0466), and what std's unstable sort of them
 //! picks (ADR 0471), which a caller's type answers.
 
+use super::iterator_steps::{body_aggregates, body_fn_defs};
 use crate::lower::recognition::{
-    TypeFact, bound_by_any, debug_named, map_of_param, phantom_named, pointer_target, points_at_dyn_any,
-    points_at_dyn_debug, type_facts, unstable_sort_items,
+    StdItem, TypeFact, bound_by_any, debug_named, fused_specialization, map_of_param, phantom_named, pointer_target,
+    points_at_dyn_any, points_at_dyn_debug, std_item, trait_method, type_facts, unstable_sort_items,
 };
 use crate::lower::traits::{Given, bounds, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -36,21 +37,37 @@ pub(super) fn type_fact_params<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
-    let mut asked: HashSet<(DefId, u32, TypeFact)> = HashSet::new();
-    // What a trait's dictionaries carry of its associated type, asked of
-    // `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
-    // as a callee's type parameter.
-    let mut carried: HashSet<(DefId, TypeFact)> = HashSet::new();
-    let mut passed_carried: Vec<(DefId, (DefId, u32))> = Vec::new();
-    // A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
-    let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
-    // A call of the crate's function, with its arguments: what its callee asks
-    // of a slot, instantiated, is of the caller's own where it's one of its
-    // slots, `Self::Item` of `self.map(f).counts()`'s `K` (ADR 0466).
-    let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)> = Vec::new();
+    let next = trait_method(tcx, std_item(tcx, StdItem::Iterator), "next");
+    let mut asking = Asking::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
+        // A body read from its MIR alone, a std one's (ADR 0561): what it
+        // asks is read from each function it names, and from each struct it
+        // makes of a compiled std iterator, `Fuse { iter: self }` of std's
+        // `fuse`, whose `next` asks what it asks.
+        if body.thir.exprs.is_empty() {
+            let mut named = body_fn_defs(body);
+            for held in body_aggregates(tcx, body) {
+                if let Ok(Some(instance)) =
+                    ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[held.into()]))
+                {
+                    named.push((instance.def_id(), instance.args));
+                }
+            }
+            for (callee, args) in named {
+                // A std-private trait's method whose impl the caller's type
+                // picks, `FuseImpl::next`'s of a `Fuse<I>`: whether `I` is a
+                // `FusedIterator`, its caller's, `IFused` (ADRs 0543, 0561).
+                if let Some(spec) = fused_specialization(tcx, typing_env, callee, args)
+                    && let Some(index) = slot_of(tcx, foreign, caller, spec.of)
+                {
+                    asking.asked.insert((caller, index, TypeFact::Fused));
+                }
+                asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
+            }
+            continue;
+        }
         for expr in body.thir.exprs.iter() {
             // A map or a set of a type parameter's keys a std call makes,
             // `HashMap::new()`'s or `collect()`'s: its class, its caller's
@@ -62,7 +79,7 @@ pub(super) fn type_fact_params<'tcx>(
                 && let Some((key, fact)) = map_of_param(tcx, expr.ty)
                 && let Some(index) = slot_of(tcx, foreign, caller, key)
             {
-                asked.insert((caller, index, fact));
+                asking.asked.insert((caller, index, fact));
             }
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
@@ -75,7 +92,7 @@ pub(super) fn type_fact_params<'tcx>(
                 && points_at_dyn_any(tcx, expr.ty)
                 && !bound_by_any(tcx, caller, param.index)
             {
-                asked.insert((caller, param.index, TypeFact::Id));
+                asking.asked.insert((caller, param.index, TypeFact::Id));
                 continue;
             }
             // A `PhantomData<K>` made a `dyn Debug`, a derived `Debug`'s
@@ -88,7 +105,7 @@ pub(super) fn type_fact_params<'tcx>(
                 && points_at_dyn_debug(tcx, expr.ty)
             {
                 for index in phantom_named(tcx, body.thir[source].ty) {
-                    asked.insert((caller, index, TypeFact::Name));
+                    asking.asked.insert((caller, index, TypeFact::Name));
                 }
                 continue;
             }
@@ -111,12 +128,12 @@ pub(super) fn type_fact_params<'tcx>(
                     if let Some(index) = pointee_param(expr.ty).or_else(|| pointee_param(from))
                         && (expr.ty.is_integral() || from.is_integral())
                     {
-                        asked.insert((caller, index, TypeFact::Size));
+                        asking.asked.insert((caller, index, TypeFact::Size));
                     }
                 }
                 ExprKind::Binary { lhs, .. } if expr.ty.is_bool() => {
                     if let Some(index) = pointee_param(body.thir[lhs].ty) {
-                        asked.insert((caller, index, TypeFact::Size));
+                        asking.asked.insert((caller, index, TypeFact::Size));
                     }
                 }
                 _ => {}
@@ -129,18 +146,7 @@ pub(super) fn type_fact_params<'tcx>(
             if crate::lower::recognition::is_transmute(tcx, callee)
                 && let Some(index) = args.types().next().and_then(pointee_param)
             {
-                asked.insert((caller, index, TypeFact::Size));
-                continue;
-            }
-            // `fuse()` of a type parameter's iterator, whose `Fuse` keeps it
-            // as it ends where it's a `FusedIterator`: its caller's, `IFused`
-            // (ADR 0543).
-            // Of the function's own parameter: an impl's is given no fact.
-            if crate::lower::recognition::is_iterator_fuse(tcx, callee)
-                && let Some(index) = args.types().next().and_then(|it| slot_of(tcx, foreign, caller, it))
-                && index >= tcx.generics_of(caller).parent_count as u32
-            {
-                asked.insert((caller, index, TypeFact::Fused));
+                asking.asked.insert((caller, index, TypeFact::Size));
                 continue;
             }
             // An unstable sort of a type parameter's items, whose order std
@@ -148,99 +154,19 @@ pub(super) fn type_fact_params<'tcx>(
             if let Some(item) = unstable_sort_items(tcx, callee, args)
                 && let Some(index) = slot_of(tcx, foreign, caller, item)
             {
-                asked.insert((caller, index, TypeFact::Sort));
+                asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
             }
-            let facts = type_facts(tcx, callee);
-            for &fact in facts {
-                // `size_of_val` of an unsized `T` is the value's, not the type's:
-                // a size or an alignment is asked of a sized one, and its name
-                // of any, a `T: ?Sized`'s too.
-                // A downcast's type is its last, after its `Box`'s allocator.
-                // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
-                if let Some(of) = args.types().last()
-                    && let ty::Param(param) = of.kind()
-                    && (of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align))
-                    && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
-                {
-                    asked.insert((caller, param.index, fact));
-                }
-                // Of a type that holds them, `Cow<'_, T>`: its name, each one's.
-                if fact == TypeFact::Name
-                    && let Some(of) = args.types().last()
-                    && !matches!(of.kind(), ty::Param(_))
-                {
-                    for part in of.walk().filter_map(|part| part.as_type()) {
-                        if let ty::Param(param) = part.kind() {
-                            asked.insert((caller, param.index, fact));
-                        }
-                    }
-                }
-                if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
-                    carried.insert((assoc, fact));
-                }
-            }
-            if !facts.is_empty() {
-                continue;
-            }
-            // Each impl whose dictionary it's given for a bound, `collect()`'s
-            // `B: FromIterator` of an `ArrayVec<T, CAP>`: what that asks of
-            // its type parameters, of a caller's given it, the caller asks.
-            for bound in bounds(tcx, foreign, given, callee) {
-                let bound = ty::EarlyBinder::bind(tcx, bound).instantiate(tcx, args);
-                let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, bound) else {
-                    continue;
-                };
-                // A `Debug` of a `PhantomData<K>`, `{:?}`'s, shows `K`'s name.
-                for index in debug_named(tcx, bound) {
-                    asked.insert((caller, index, TypeFact::Name));
-                }
-                let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
-                    continue;
-                };
-                for (index, arg) in impl_args.iter().enumerate() {
-                    if let Some(ty) = arg.as_type()
-                        && let ty::Param(param) = ty.kind()
-                    {
-                        match impl_id.is_local() {
-                            true => passed.push(((caller, param.index), (impl_id, index as u32))),
-                            false => {
-                                for (at, fact) in foreign.type_facts(impl_id) {
-                                    if at as usize == index {
-                                        asked.insert((caller, param.index, fact));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // A library's function, which asks what its manifest says: of a
-            // caller's type parameter given it, the caller asks it too.
-            if !callee.is_local() {
-                for (index, fact) in foreign.type_facts(callee) {
-                    if let Some(ty) = args.get(index as usize).and_then(|arg| arg.as_type())
-                        && let ty::Param(param) = ty.kind()
-                    {
-                        asked.insert((caller, param.index, fact));
-                    }
-                }
-                continue;
-            }
-            // A trait's method of the crate's, called through its dictionary
-            // or resolved, of its own type parameters (ADR 0466).
-            let trait_method = callee.is_local() && tcx.trait_of_assoc(callee).is_some();
-            if !trait_method && (!fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some()) {
-                continue;
-            }
-            calls.push((caller, callee, args));
-            for (index, arg) in args.iter().enumerate() {
-                if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(ty)) {
-                    passed_carried.push((assoc, (callee, index as u32)));
-                }
-            }
+            asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
         }
     }
+    let Asking {
+        mut asked,
+        mut carried,
+        passed_carried,
+        passed,
+        calls,
+    } = asking;
     let mut changed = true;
     while changed {
         changed = false;
@@ -332,8 +258,12 @@ pub(super) fn type_fact_params<'tcx>(
         // the impl's own parameters, the method's, which its dictionary,
         // asked them above, gives it of its own.
         let own = index >= tcx.generics_of(id).parent_count as u32;
+        // A std trait's provided method compiled as a function over `Self`
+        // (ADRs 0185, 0561), `Iterator::fuse`'s: of `Self` too, given as a
+        // value is.
+        let compiled = crate::lower::recognition::is_compiled_std(tcx, id);
         let ask = match (tcx.trait_of_assoc(id), tcx.trait_impl_of_assoc(id)) {
-            (Some(_), _) => own,
+            (Some(_), _) => own || compiled,
             (None, Some(impl_id)) => own || (index as usize) < tcx.generics_of(impl_id).count(),
             (None, None) => true,
         };
@@ -350,6 +280,143 @@ pub(super) fn type_fact_params<'tcx>(
         facts.dedup();
     }
     params
+}
+
+/// What the bodies ask, as they're read.
+#[derive(Default)]
+struct Asking<'tcx> {
+    asked: HashSet<(DefId, u32, TypeFact)>,
+    /// What a trait's dictionaries carry of its associated type, asked of
+    /// `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
+    /// as a callee's type parameter.
+    carried: HashSet<(DefId, TypeFact)>,
+    passed_carried: Vec<(DefId, (DefId, u32))>,
+    /// A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
+    passed: Vec<((DefId, u32), (DefId, u32))>,
+    /// A call of the crate's function, with its arguments: what its callee asks
+    /// of a slot, instantiated, is of the caller's own where it's one of its
+    /// slots, `Self::Item` of `self.map(f).counts()`'s `K` (ADR 0466).
+    calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)>,
+}
+
+impl<'tcx> Asking<'tcx> {
+    /// What `caller` asks by naming `callee` with `args`: a std function's
+    /// facts, what the impls it gives dictionaries of ask, a library's as its
+    /// manifest says, and a crate function's, followed once all are read.
+    #[allow(clippy::too_many_arguments)]
+    fn of_call(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        given: Given<'_>,
+        fns: &HashMap<DefId, FnInfo>,
+        typing_env: ty::TypingEnv<'tcx>,
+        caller: DefId,
+        callee: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) {
+        let facts = type_facts(tcx, callee);
+        for &fact in facts {
+            // `size_of_val` of an unsized `T` is the value's, not the type's:
+            // a size or an alignment is asked of a sized one, and its name
+            // of any, a `T: ?Sized`'s too.
+            // A downcast's type is its last, after its `Box`'s allocator.
+            // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
+            if let Some(of) = args.types().last()
+                && let ty::Param(param) = of.kind()
+                && (of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align))
+                && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
+            {
+                self.asked.insert((caller, param.index, fact));
+            }
+            // Of a type that holds them, `Cow<'_, T>`: its name, each one's.
+            if fact == TypeFact::Name
+                && let Some(of) = args.types().last()
+                && !matches!(of.kind(), ty::Param(_))
+            {
+                for part in of.walk().filter_map(|part| part.as_type()) {
+                    if let ty::Param(param) = part.kind() {
+                        self.asked.insert((caller, param.index, fact));
+                    }
+                }
+            }
+            if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
+                self.carried.insert((assoc, fact));
+            }
+        }
+        if !facts.is_empty() {
+            return;
+        }
+        // Each impl whose dictionary it's given for a bound, `collect()`'s
+        // `B: FromIterator` of an `ArrayVec<T, CAP>`: what that asks of
+        // its type parameters, of a caller's given it, the caller asks.
+        for bound in bounds(tcx, foreign, given, callee) {
+            let bound = ty::EarlyBinder::bind(tcx, bound).instantiate(tcx, args);
+            let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, bound) else {
+                continue;
+            };
+            // A `Debug` of a `PhantomData<K>`, `{:?}`'s, shows `K`'s name.
+            for index in debug_named(tcx, bound) {
+                self.asked.insert((caller, index, TypeFact::Name));
+            }
+            let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
+                continue;
+            };
+            for (index, arg) in impl_args.iter().enumerate() {
+                if let Some(ty) = arg.as_type()
+                    && let ty::Param(param) = ty.kind()
+                {
+                    match impl_id.is_local() {
+                        true => self.passed.push(((caller, param.index), (impl_id, index as u32))),
+                        false => {
+                            for (at, fact) in foreign.type_facts(impl_id) {
+                                if at as usize == index {
+                                    self.asked.insert((caller, param.index, fact));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // A library's function, which asks what its manifest says: of a
+        // caller's type parameter given it, or a std associated type of one,
+        // `I::IntoIter`'s, the caller asks it too; a trait's method, of the
+        // impl's method it resolves to, `Fuse<I>`'s `next_back` (ADR 0561).
+        // Not a std body compiled with this crate, which is followed as the
+        // crate's own are.
+        if !callee.is_local() && !fns.contains_key(&callee) {
+            let mut named = vec![(callee, args)];
+            if let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
+                && instance.def_id() != callee
+            {
+                named.push((instance.def_id(), instance.args));
+            }
+            for (id, args) in named {
+                for (index, fact) in foreign.type_facts(id) {
+                    if let Some(ty) = args.get(index as usize).and_then(|arg| arg.as_type())
+                        && let Some(slot) = slot_of(tcx, foreign, caller, ty)
+                    {
+                        self.asked.insert((caller, slot, fact));
+                    }
+                }
+            }
+            return;
+        }
+        // A trait's method of the crate's, called through its dictionary
+        // or resolved, of its own type parameters (ADR 0466); or one of the
+        // crate's functions, a compiled std impl's method among them.
+        let trait_method = callee.is_local() && tcx.trait_of_assoc(callee).is_some();
+        if !trait_method && !fns.contains_key(&callee) {
+            return;
+        }
+        self.calls.push((caller, callee, args));
+        for (index, arg) in args.iter().enumerate() {
+            if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(ty)) {
+                self.passed_carried.push((assoc, (callee, index as u32)));
+            }
+        }
+    }
 }
 
 /// The associated type of the crate's own trait `ty` projects, whose facts

@@ -257,6 +257,7 @@ test("each `$` name the compiler writes is the runtime's", () => {
   const others = new Map([
     ["$someNone", "src/lower/std_types/option.rs"], // a `Some` of `None`'s box's field (ADR 0051)
     ["$drop", "src/js.rs"], // a `dyn`'s dictionary's destructor
+    ["$steps", "src/lower/mir.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
     ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
     ["$circleShape", "src/names.rs"], // a dictionary's cache, in a unit test
   ]);
@@ -581,7 +582,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition.rs", "    fn classify_trait_method(", 294],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 644],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
-  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 338],
+  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 334],
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

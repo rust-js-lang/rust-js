@@ -3,7 +3,9 @@
 import {
   $foldBack,
   $iterator,
+  $peekableHint,
   $pretty,
+  $sizeHint,
   $some,
   $someMut,
   $someValue,
@@ -11,7 +13,7 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $peekableClone, $peekableDebug;
+var $peekableClone, $peekableDebug, $fuseClone, $fuseDebug;
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -98,9 +100,7 @@ export function peekableClone_clone(peekable, IClone, IIterator, IItemClone) {
   } else {
     tmp = undefined;
   }
-  return $stdIterator({ iter: value, peeked: tmp }, (iterator) =>
-    peekableIterator_next(iterator, IIterator),
-  );
+  return $stdIterator({ iter: value, peeked: tmp }, peekable.$steps);
 }
 
 export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
@@ -129,10 +129,172 @@ export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
     : `Peekable { iter: ${shown}, peeked: ${shown$1} }`;
 }
 
-export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
-  return $stdIterator({ iter: self }, (iterator) =>
-    peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
+export function fuseIterator_next(fuse, IIterator, IFused, dropI, dropIItem) {
+  return IFused
+    ? fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem)
+    : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
+}
+
+export function fuseIterator_size_hint(fuse, IIterator, dropI, dropIItem) {
+  if (fuse.iter != null) {
+    const iter = $someValue(fuse.iter);
+    return $sizeHint(iter);
+  }
+  return [0, 0];
+}
+
+export function fuseDoubleEndedIterator_next_back(
+  fuse,
+  IDoubleEndedIterator,
+  IFused,
+  dropI,
+  dropIItem,
+) {
+  return IFused
+    ? fuseFuseImplIFusedIterator_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem)
+    : fuseFuseImplI_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem);
+}
+
+export function fuseDoubleEndedIterator_rfold(
+  fuse,
+  acc,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  if (fuse.iter != null) {
+    const iter = $someValue(fuse.iter);
+    const value = $foldBack(
+      $iterator(iter, IIterator.next, true, IDoubleEndedIterator.next_back),
+      acc,
+      fold,
+    );
+    dropFold?.(fold);
+    acc = value;
+    return acc;
+  }
+  const result = acc;
+  dropFold?.(fold);
+  return result;
+}
+
+export function fuseExactSizeIterator_len(fuse, IExactSizeIterator, dropI, dropIItem) {
+  if (fuse.iter != null) {
+    const iter = $someValue(fuse.iter);
+    return IExactSizeIterator.len(iter);
+  }
+  return 0;
+}
+
+export function fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem) {
+  const opt = { value: fuse.iter };
+  const result = and_then_or_clear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
+  fuse.iter = opt.value;
+  return result;
+}
+
+export function fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem) {
+  let option;
+  if (fuse.iter != null) {
+    const x = $someValue(fuse.iter);
+    option = $some(x);
+    const v = $someValue(option);
+    return IIterator.next({ TAG: "Continue", _0: v }._0);
+  }
+  option = undefined;
+}
+
+export function fuseFuseImplI_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+  const opt = { value: fuse.iter };
+  const result = and_then_or_clear(
+    opt,
+    (x0) => IDoubleEndedIterator.next_back(x0.value),
+    dropI,
+    dropIItem,
   );
+  fuse.iter = opt.value;
+  return result;
+}
+
+export function fuseFuseImplIFusedIterator_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+  let option;
+  if (fuse.iter != null) {
+    const x = $someValue(fuse.iter);
+    option = $some(x);
+    const v = $someValue(option);
+    return IDoubleEndedIterator.next_back({ TAG: "Continue", _0: v }._0);
+  }
+  option = undefined;
+}
+
+export function fuseClone_clone(fuse, IClone) {
+  let tmp;
+  if (fuse.iter != null) {
+    const x = $someValue(fuse.iter);
+    tmp = $some(IClone.clone(x));
+  } else {
+    tmp = undefined;
+  }
+  return $stdIterator({ iter: tmp }, fuse.$steps);
+}
+
+export function fuseDebug_fmt(fuse, options, IDebug) {
+  const shown =
+    fuse.iter == null
+      ? "None"
+      : options?.alternate
+        ? $pretty("Some(", [IDebug.fmt($someValue(fuse.iter), options)], ")")
+        : `Some(${IDebug.fmt($someValue(fuse.iter), options)})`;
+  return options?.alternate
+    ? $pretty("Fuse {", [`iter: ${shown}`], "}")
+    : `Fuse { iter: ${shown} }`;
+}
+
+export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
+  return $stdIterator(
+    { iter: self },
+    {
+      next: (iterator) => peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
+      hint: $peekableHint,
+    },
+  );
+}
+
+export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfItem) {
+  return $stdIterator(
+    { iter: $some(self) },
+    {
+      next: (iterator) =>
+        fuseIterator_next(iterator, SelfIterator, SelfFused, dropSelf, dropSelfItem),
+      hint: (iterator) => fuseIterator_size_hint(iterator, SelfIterator, dropSelf, dropSelfItem),
+    },
+  );
+}
+
+export function and_then_or_clear(opt, f, dropT, dropU, dropFnOnce) {
+  let x;
+  let option;
+  if (opt.value != null) {
+    const x$1 = $someMut(opt);
+    option = x$1;
+    const v = option;
+    x = f({ TAG: "Continue", _0: v }._0);
+    if (x == null) {
+      if (opt.value != null) {
+        dropT?.($someValue(opt.value));
+      }
+      opt.value = undefined;
+    }
+    return x;
+  }
+  option = undefined;
+  x = undefined;
+  dropFnOnce?.(f);
+  return x;
 }
 
 export function peekableClone(IClone, IIterator, IItemClone) {
@@ -150,6 +312,24 @@ export function peekableDebug(IDebug, IItemDebug) {
   }
   return $traitImpl($peekableDebug, [IDebug, IItemDebug], () => ({
     fmt: (arg0, arg1) => peekableDebug_fmt(arg0, arg1, IDebug, IItemDebug),
+  }));
+}
+
+export function fuseClone(IClone) {
+  if ($fuseClone === undefined) {
+    $fuseClone = new WeakMap();
+  }
+  return $traitImpl($fuseClone, [IClone], () => ({
+    clone: (arg0) => fuseClone_clone(arg0, IClone),
+  }));
+}
+
+export function fuseDebug(IDebug) {
+  if ($fuseDebug === undefined) {
+    $fuseDebug = new WeakMap();
+  }
+  return $traitImpl($fuseDebug, [IDebug], () => ({
+    fmt: (arg0, arg1) => fuseDebug_fmt(arg0, arg1, IDebug),
   }));
 }
 //# sourceMappingURL=iter.js.map

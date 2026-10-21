@@ -303,6 +303,10 @@ outside its owner, and how much each module knows of the rest.
 | What's measured of std, each by its name and where std defines it: its data structures, the iterator traits and the adapters (ADRs 0314, 0561) | `recognition/registry.rs` | `measured` |
 | Which std bodies are compiled into `@rust-js/std`, which std type is its struct and which struct is a JS iterator, and which of the crate's modules a std body goes into (ADR 0561) | `recognition.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
 | What addresses memory in MIR, a raw pointer made, read or written through, or a cast to one (ADRs 0407, 0561) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory` |
+| A std-private trait's call whose impl rustc leaves to the caller's type: the impls' methods, and the type whose being a `FusedIterator` picks (ADR 0566) | `recognition.rs` | `fused_specialization`, `std_private` |
+| What steps a compiled std iterator's struct where it's made, its `next` and its `size_hint`, and whether a use site can step it by a compiled extension's method (ADR 0566) | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
+| What a type parameter makes as an `IntoIterator` held as it is, and a value of it (ADRs 0552, 0566) | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
+| Which of a function value's parameters generic code gives a box of what its caller has as an object (ADRs 0454, 0566) | `mut_refs.rs` | `unboxed_by_function` |
 | The module a body's JS goes into, the crate's own or a std body's (ADR 0561) | `lower.rs` | `body_module` |
 | std's bodies as the crate's, each from the MIR the toolchain ships, with its closures (ADR 0561) | `analysis.rs` | `collect_std_bodies` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
@@ -527,8 +531,8 @@ architecture audit found the rest.
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
 - **The safe stratum compiled, one adapter at a time** (ADR 0561):
-  `Peekable` is; each other adapter is a line of `COMPILED_STD` and the
-  retirement of its hand-modeled helper, `$fuse`'s and the held
+  `Peekable` and `Fuse` are (ADR 0566); each other adapter is a line of
+  `COMPILED_STD` and the retirement of its hand-modeled helper, the held
   adapters' (ADRs 0542 to 0549); and `Iterator`'s provided methods the
   recognizers don't rewrite. A std adapter's derived `Debug` not yet
   compiled, `Copied`'s, is refused where a compiled type shows it.

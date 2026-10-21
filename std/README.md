@@ -7,7 +7,11 @@ name, `@rust-js/std/iter.js`, as it imports `@rust-js/runtime`'s helpers
 `peekable`, `next`, `next_back`, `rfold`, clone and `Debug` are here, its
 struct made the JS iterator it is where `peekable` makes it; its `peek`
 and `next_if`, whose bodies reach memory or read as `next`'s, are helpers
-of the runtime's over the same struct.
+of the runtime's over the same struct. A `Fuse`'s `fuse`, `next`,
+`size_hint`, `next_back`, `rfold`, `len`, clone and `Debug` are here too,
+with both of std's `FuseImpl`s, which the caller's `IFused` picks between,
+and `and_then_or_clear`, which `Fuse` keeps private
+([ADR 0566](../docs/decisions/0566-fuse-is-stds.md)).
 
 Generated: `bun run std` compiles [`lib.rs`](lib.rs), a crate of nothing
 but the modules std's bodies are written into, with `--std-bodies`, and

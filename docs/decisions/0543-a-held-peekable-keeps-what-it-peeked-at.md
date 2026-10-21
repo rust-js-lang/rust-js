@@ -2,7 +2,8 @@
 
 Status: Superseded in part by [0561](0561-std-bodies.md): a `Peekable` is
 std's own struct, `{ iter, peeked }`, its `next`, its clone and its
-`Debug` compiled from std's MIR, wherever it's made or held. Extends [0164](0164-double-ended-iterators.md),
+`Debug` compiled from std's MIR, wherever it's made or held; its `IFused`
+is what a compiled `Fuse` asks ([0566](0566-fuse-is-stds.md)). Extends [0164](0164-double-ended-iterators.md),
 [0466](0466-a-generic-maps-class-is-its-callers.md), [0473](0473-fuse-is-rusts-fuse.md) and
 [0542](0542-a-held-adapter-keeps-its-source-and-state.md).
 

@@ -21,6 +21,15 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **`Fuse` is std's own** (ADR 0566): `fuse()` of any iterator, its
+  `next`, `size_hint`, `next_back`, `rfold`, `len`, its clone and its
+  `Debug` are std's bodies in `@rust-js/std`, over `{ iter }`, and which of
+  std's two `FuseImpl`s steps it, the one that keeps a `FusedIterator` as
+  it ends or the one that drops another, is picked by the caller's fact,
+  `IFused`, in generic code too. `$fuse` is gone. With it: a function
+  given to generic code for an `F: FnMut(&mut T)` of an object, which was
+  refused (ADR 0454); an `IntoIterator` whose iterator a function holds in
+  a struct, given as it is and stepped through its dictionary (ADR 0552).
 - **A pointer has an address** (ADR 0562): `p as usize`, `addr()`,
   `with_addr`, `map_addr`, `wrapping_add` past an allocation and back,
   `n as *const T`, `dangling()`, pointers compared and ordered by address,

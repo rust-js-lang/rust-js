@@ -1,6 +1,8 @@
 # 0473. `fuse()` is Rust's `Fuse`
 
-Status: Accepted. Amends [0055](0055-iterator.md); extends
+Status: Superseded by [0566](0566-fuse-is-stds.md): `Fuse` is std's own
+struct, its bodies compiled from std's MIR, and `$fuse` is gone. Amended
+[0055](0055-iterator.md); extended
 [0465](0465-dropping-an-adapter-is-closing-it.md) and
 [0170](0170-size-hint.md).
 

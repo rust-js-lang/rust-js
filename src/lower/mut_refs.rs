@@ -148,11 +148,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (!self.is_cell_pointee(pointee)).then(|| Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee))
     }
 
+    /// Of a function value given for `def_id`'s parameter `i`, an `F:
+    /// FnOnce(&mut T)` of `and_then_or_clear`'s, in a call of it,
+    /// `generic_args`: which of the function's parameters generic code gives
+    /// a box of what the caller has as an object, `&mut T` of a `T` that's
+    /// one here (ADR 0454). `None` where none is.
+    pub(super) fn unboxed_by_function(
+        &self,
+        def_id: DefId,
+        i: usize,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<Vec<bool>> {
+        let sig = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let ty::Param(_) = sig.inputs().get(i)?.kind() else {
+            return None;
+        };
+        let param_env = self.tcx.param_env(def_id);
+        let unboxed: Vec<bool> = (self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .map(|bound| bound.skip_binder().trait_ref)
+            .find(|tr| tr.self_ty() == sig.inputs()[i] && self.tcx.fn_trait_kind_from_def_id(tr.def_id).is_some())?
+            .args
+            .type_at(1)
+            .tuple_fields()
+            .iter()
+            .map(|given| {
+                matches!(*given.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                    if self.is_generic_boxed(pointee, param_env)
+                        && !self.is_cell_pointee(self.instantiated(pointee, generic_args)))
+            })
+            .collect();
+        unboxed.iter().any(|&unboxed| unboxed).then_some(unboxed)
+    }
+
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a
     /// call of it, `generic_args`, anywhere but a parameter or its result: in
-    /// a field of the crate's own type, an `Option` or a `Vec`, or a closure's
-    /// parameters. Generic code has a cell there (ADR 0099), and the caller
-    /// the object; a parameter is given a box, and the result's taken out.
+    /// a field of the crate's own type, an `Option` or a `Vec`; not a
+    /// function's parameter through `F: Fn(&mut T)`, which the function
+    /// given takes out of generic code's box (`unboxed_by_function`). Generic
+    /// code has a cell there (ADR 0099), and the caller the object; a
+    /// parameter is given a box, and the result's taken out.
     pub(super) fn nested_mut_object(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
         let sig = self
             .tcx
@@ -180,15 +220,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut given = Vec::new();
         for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx) {
             let clause = clause.skip_normalization();
+            // A function's parameters, `F: FnOnce(&mut T)`'s, past each
+            // `&mut`, which the function given takes out of the box.
+            let walked = |trait_id: DefId, args: ty::GenericArgsRef<'tcx>| -> Vec<Ty<'tcx>> {
+                match self.tcx.fn_trait_kind_from_def_id(trait_id).is_some() {
+                    true => (args.type_at(1).tuple_fields().iter())
+                        .map(|given| match *given.kind() {
+                            ty::Ref(_, pointee, Mutability::Mut) => pointee,
+                            _ => given,
+                        })
+                        .collect(),
+                    false => args.types().skip(1).collect(),
+                }
+            };
             if let Some(bound) = clause.as_trait_clause() {
                 let args = bound.skip_binder().trait_ref.args;
-                todo.extend(args.types().skip(1));
+                todo.extend(walked(bound.def_id(), args));
                 given.push(args.type_at(0));
             }
             if let Some(projection) = clause.as_projection_clause() {
                 let projection = projection.skip_binder();
                 let args = projection.projection_term.args;
-                todo.extend(args.types().skip(1));
+                todo.extend(walked(projection.projection_term.trait_def_id(self.tcx), args));
                 given.extend(args.types().next());
                 todo.extend(projection.term.as_type());
             }

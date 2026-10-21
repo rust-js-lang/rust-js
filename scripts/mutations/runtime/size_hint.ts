@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
   {
-    name: "fuse-size-hint-unknown",
-    breaks: "`size_hint()` of a `Fuse` is a lazy iterator's, `(0, None)`",
-    file: "src/runtime/size_hint.js",
-    find: "  if (it.fused !== undefined) {\n",
-    replace: "  if (false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
-  },
-  {
     name: "size-hint-not-adapters-own",
     breaks: "an explicit adapter's size hint isn't its own",
     file: "src/runtime/size_hint.js",

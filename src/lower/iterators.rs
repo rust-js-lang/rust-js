@@ -22,13 +22,6 @@ use rustc_span::def_id::DefId;
 /// boxed (ADR 0051), `boxed`, unboxed; given `back`, its `next_back`, one
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
-/// A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
-/// struct, `{ iter, peeked }` (ADR 0561): what it steps',
-/// and what it peeked at. The one rewrite, of `size_hint()` and `len()`.
-pub(in crate::lower) fn peekable_hint(peekable: Expr) -> Expr {
-    Expr::call_helper("$peekableHint", vec![peekable])
-}
-
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
     stepped_ends(value, next, boxed, back, None)
 }
@@ -77,20 +70,56 @@ fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
 
 /// Whether `id` holds what `into` makes as an `IntoIterator`, its
 /// `IntoIter`, as it is: bounds it by a trait that reads its value,
-/// `<T as IntoIterator>::IntoIter: Clone`. Then `into`, a type parameter or
-/// an associated type, is given as it is, with its `IntoIterator`
-/// dictionary, which makes its `IntoIter` as it is (ADR 0552).
+/// `<T as IntoIterator>::IntoIter: Clone`, or its signature holds it in a
+/// type of the crate's or a compiled std type, `Pair<I::IntoIter>` given
+/// back, whose struct holds it as it is (ADRs 0411, 0561); not in a std
+/// adapter, `Zip<I::IntoIter, J>`, a JS iterator of it. Then `into`, a type
+/// parameter or an associated type, is given as it is, with its
+/// `IntoIterator` dictionary, which makes its `IntoIter` as it is (ADR 0552).
 pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
     let into_iterator = std_item(tcx, StdItem::IntoIterator);
     let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
-    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+    let is_its_iter = |ty: Ty<'tcx>| {
+        matches!(*ty.kind(), ty::Alias(_, ty::AliasTy {
+            kind: ty::Projection { def_id }, args, ..
+        }) if def_id == into_iter && args.type_at(0) == into)
+    };
+    let read = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-        .any(|p| {
-            matches!(*p.self_ty().skip_binder().kind(), ty::Alias(_, ty::AliasTy {
-                kind: ty::Projection { def_id }, args, ..
-            }) if def_id == into_iter && args.type_at(0) == into)
-                && reads_its_value(tcx, p.def_id())
+        .any(|p| is_its_iter(p.self_ty().skip_binder()) && reads_its_value(tcx, p.def_id()));
+    let holds = |ty: Ty<'tcx>| {
+        ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
+            Some(ty::Adt(adt, args))
+                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, adt.did()) =>
+            {
+                args.types()
+                    .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
+            }
+            _ => false,
         })
+    };
+    let held = matches!(
+        tcx.def_kind(id),
+        rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+    ) && tcx
+        .fn_sig(id)
+        .instantiate_identity()
+        .skip_binder()
+        .inputs_and_output
+        .iter()
+        .any(holds);
+    read || held
+}
+
+/// Whether `ty` is what a type parameter of `id` makes as an `IntoIterator`,
+/// `<I as IntoIterator>::IntoIter`, held as it is (ADR 0552): stepped by the
+/// `Iterator` its `IntoIterator` dictionary carries of it.
+pub(in crate::lower) fn into_iter_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
+    matches!(*ty.kind(), ty::Alias(_, ty::AliasTy {
+        kind: ty::Projection { def_id }, args, ..
+    }) if def_id == into_iter && into_iter_held_as_it_is(tcx, id, args.type_at(0)))
 }
 
 /// Whether `callee`'s type parameter `index` is its trait's, `Self` or a
@@ -566,8 +595,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator or a `$iter`, which `*it = other` writes in place, `$assign`
     /// (ADR 0481).
     pub(in crate::lower) fn iterator_given_as_it_is(&self, ty: ty::Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Param(param)
-            if given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param))
+        let owner = self.tcx.typeck_root_def_id(self.item);
+        matches!(ty.kind(), ty::Param(param) if given_as_it_is(self.tcx, owner, *param))
+            || into_iter_as_it_is(self.tcx, owner, ty)
     }
 
     /// Whether an adapter of `source`, a type parameter given as it is, is
@@ -605,7 +635,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn as_exact_size(&mut self, value: Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         // One a struct holds, as `as_double_ended` says (ADR 0549).
-        if let Some(knowing) = self.knowing_held(value.clone(), ty) {
+        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
         }
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
@@ -651,7 +681,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One a struct holds, which keeps its source (ADR 0542): of one given
         // as it is, its back and length this use's dictionaries', wherever it
         // was made; of one made knowing them, an array's or a range's, itself.
-        if let Some(knowing) = self.knowing_held(value.clone(), ty) {
+        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
         }
         if self.knows_its_back(ty) || self.held_knows_its_back(ty) {
@@ -715,10 +745,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        // A `Peekable`'s, whose body reaches memory, over std's struct (ADR
-        // 0561).
-        if self.is_peekable(ty) {
-            return Ok(Expr::call(Expr::helper("$exactLen"), vec![peekable_hint(value)]));
+        // A compiled std iterator's, `Peekable`'s, whose `len` isn't: its
+        // struct's hint, which it knows as it knows its `next` (ADR 0561).
+        if super::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            return Ok(Expr::call(
+                Expr::helper("$exactLen"),
+                vec![Expr::call_helper("$sizeHint", vec![value])],
+            ));
         }
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
@@ -747,6 +780,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
         Ok(stepped(value, next, boxed, None))
+    }
+
+    /// What steps a compiled std iterator's struct of type `ty` where it's
+    /// made, `$stdIterator`'s `steps` (ADR 0561): its `next`, the compiled
+    /// impl's, and its `hint`, its `size_hint`, the compiled impl's, or the
+    /// rewrite of one whose body reaches memory, `$peekableHint`.
+    pub(in crate::lower) fn std_iterator_steps(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let (next, _) = self.user_next(ty, iterator, "next", span)?;
+        let mut props = vec![crate::js::Prop::Field("next".into(), next)];
+        let hint = match self.compiled_step(ty, iterator, "size_hint") {
+            true => Some(self.user_next(ty, iterator, "size_hint", span)?.0),
+            false => self.is_peekable(ty).then(|| Expr::helper("$peekableHint")),
+        };
+        props.extend(hint.map(|hint| crate::js::Prop::Field("hint".into(), hint)));
+        Ok(Expr::object(props))
+    }
+
+    /// Whether `ty`, a compiled std iterator, has `trait_id`'s `method`
+    /// compiled, `Fuse`'s `next_back`, and is a `trait_id` here, so a
+    /// use site can give what steps it by that (ADR 0561).
+    pub(in crate::lower) fn compiled_step(&self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str) -> bool {
+        let ty = ty.peel_refs();
+        if !super::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            return false;
+        }
+        let tr = self
+            .tcx
+            .erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, trait_id, [ty]));
+        self.tcx
+            .codegen_select_candidate(self.typing_env.as_query_input(tr))
+            .is_ok()
+            && self
+                .resolve_instance(trait_method(self.tcx, trait_id, method), self.args_of(trait_id, ty))
+                .is_ok_and(|instance| {
+                    instance.is_some_and(|i| super::recognition::is_compiled_std(self.tcx, i.def_id()))
+                })
     }
 
     /// The function that steps the crate's iterator of type `ty`, its impl's
@@ -797,11 +867,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // in `impl<T: Iterator> Trait for T` (ADR 0492).
         let ty = self.impl_type(ty.peel_refs());
         // Only of one given as it is: another's is a JS iterator (ADR 0061),
-        // whatever bound names `Iterator`, a supertrait's too.
-        let ty::Param(param) = ty.kind() else {
-            return None;
-        };
-        if !given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param) {
+        // whatever bound names `Iterator`, a supertrait's too. Or of what an
+        // `IntoIterator` held as it is makes, through its dictionary (ADR
+        // 0552).
+        if !self.iterator_given_as_it_is(ty) {
             return None;
         }
         self.evidence_for(ty::TraitRef::new(self.tcx, trait_id, [ty]))
@@ -820,14 +889,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given as it is: it, stepped from its back and counted by this use's
     /// dictionaries of what it steps, `$knowing(it,
     /// IDoubleEndedIterator.next_back, IExactSizeIterator.len)`, as it may
-    /// have been made where they weren't given (ADR 0549). `None` of
-    /// another, or where this use has neither.
-    pub(in crate::lower) fn knowing_held(&self, it: Expr, ty: Ty<'tcx>) -> Option<Expr> {
+    /// have been made where they weren't given (ADR 0549). Or a compiled
+    /// std iterator's struct, `Fuse`'s, given its compiled `next_back` and
+    /// `len` with this use's dictionaries, where it's each here (ADR 0561).
+    /// `None` of another, or where this use has neither.
+    pub(in crate::lower) fn knowing_held(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let ty = ty.peel_refs();
-        if !self.held_adapter(ty) {
-            return None;
+        if super::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            let traits = [
+                (self.recognition().double_ended_iterator(), "next_back"),
+                (self.recognition().exact_size_iterator(), "len"),
+            ];
+            let mut steps = Vec::new();
+            for (trait_id, method) in traits {
+                steps.push(match trait_id {
+                    Some(trait_id) if self.compiled_step(ty, trait_id, method) => {
+                        Some(self.user_next(ty, trait_id, method, span)?.0)
+                    }
+                    _ => None,
+                });
+            }
+            let len = steps.pop().expect("len");
+            let back = steps.pop().expect("back");
+            if back.is_none() && len.is_none() {
+                return Ok(None);
+            }
+            let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
+            return Ok(Some(Expr::call_helper("$knowing", vec![it, back, len])));
         }
-        let source = super::recognition::held_steps_source(self.tcx, ty)?;
+        if !self.held_adapter(ty) {
+            return Ok(None);
+        }
+        let Some(source) = super::recognition::held_steps_source(self.tcx, ty) else {
+            return Ok(None);
+        };
         let entry = |trait_id: Option<DefId>| -> Option<Expr> {
             let trait_id = trait_id?;
             let name = super::recognition::extension_entry(self.tcx, trait_id);
@@ -836,10 +931,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let back = entry(self.recognition().double_ended_iterator());
         let len = entry(self.recognition().exact_size_iterator());
         if back.is_none() && len.is_none() {
-            return None;
+            return Ok(None);
         }
         let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
-        Some(Expr::call_helper("$knowing", vec![it, back, len]))
+        Ok(Some(Expr::call_helper("$knowing", vec![it, back, len])))
     }
 
     /// `value`, of `ty`, a type parameter given as it is, as a JS iterator
@@ -1713,15 +1808,15 @@ pub(in crate::lower) fn given_into_iter(items: Expr) -> Expr {
     }
 }
 
-/// Of an iterator stepped in place by what steps it till it ends, `$fuse(x,
-/// true).map(f)` or `for (const n of $intoIter(xs))`, as each JS consumer
-/// and helper does: what steps the same, `unfused`'s (ADRs 0473, 0475).
-/// Each statement's: a `for`'s iterable, and each expression's.
-pub(in crate::lower) fn consumed_fuses(body: &mut Vec<Stmt>) {
+/// Of an `$intoIter(xs)` stepped in place by what steps it till it ends,
+/// `$intoIter(xs).map(f)` or `for (const n of $intoIter(xs))`, as each JS
+/// consumer and helper does: what steps the same, `stepped_in_place`'s
+/// (ADR 0475). Each statement's: a `for`'s iterable, and each expression's.
+pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::ForOf { iterable, .. } = &mut stmt.kind {
-                unfused(iterable, true);
+                stepped_in_place(iterable, true);
             }
         }
     });
@@ -1730,7 +1825,7 @@ pub(in crate::lower) fn consumed_fuses(body: &mut Vec<Stmt>) {
             && let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
-            unfused(object, false);
+            stepped_in_place(object, false);
         }
     });
 }
@@ -1741,16 +1836,14 @@ const STEPPED_TILL_DONE: [&str; 11] = [
     "map", "filter", "take", "drop", "flatMap", "toArray", "reduce", "forEach", "some", "every", "find",
 ];
 
-/// `e`, stepped till it ends, by a `for` or not: of a `$fuse(x, ..)`, `x`,
-/// which steps the same, and is closed where the `Fuse` would be (ADR
-/// 0473); of an `$intoIter(xs)`, where nothing reads where it is, JS's
-/// iterator of `xs`, which a `for` makes itself (ADR 0475).
-fn unfused(e: &mut Expr, by_for: bool) {
+/// `e`, stepped till it ends, by a `for` or not: of an `$intoIter(xs)`,
+/// where nothing reads where it is, JS's iterator of `xs`, which a `for`
+/// makes itself (ADR 0475).
+fn stepped_in_place(e: &mut Expr, by_for: bool) {
     let js::ExprKind::Call(callee, given) = &e.kind else {
         return;
     };
     match callee.helper_name() {
-        Some("$fuse") => *e = given[0].clone(),
         Some("$intoIter") if by_for => *e = given[0].clone(),
         Some("$intoIter") => *e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
         _ => {}
@@ -1906,20 +1999,18 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
-/// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
+/// The runtime's helpers that make a JS iterator: `$iterator`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` (ADR 0518), `$mapEnds` (ADR 0455),
 /// `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528), `$memchrIter` (ADR
 /// 0529) and `$stdIterator` (ADR 0561), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 23] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
     "$filterEnds",
     "$enumerate",
     "$iterator",
-    "$fuse",
     "$intoIter",
     "$cycle",
     "$cycleOf",

@@ -257,8 +257,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let it = values.into_iter().next().expect("the receiver");
             // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
             // One its impl writes itself is its own, never asked here (ADR
-            // 0492). A `Peekable`'s is a rewrite over its struct (ADR 0561).
-            if (self.is_user_iterator(iter_ty) || self.is_peekable(iter_ty)) && std_method == Some(IterMethod::Len) {
+            // 0492). A compiled std iterator's whose `len` isn't compiled,
+            // `Peekable`'s, is its struct's hint (ADR 0561).
+            if (self.is_user_iterator(iter_ty)
+                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))
+                && std_method == Some(IterMethod::Len)
+            {
                 let mut made = Vec::new();
                 let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
                 if !made.is_empty() {
@@ -269,7 +273,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.is_user_iterator(iter_ty) {
                 return Ok(None);
             }
-            let it = self.knowing_held(it.clone(), iter_ty).unwrap_or(it);
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
             let array = self.has_a_back(iter_ty);
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
@@ -341,14 +344,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
                 Some(_) => return Err(unsupported(self)),
-                None => self.rev_items(receiver, (iter_ty, output), span)?,
+                None => self.rev_items(receiver, iter_ty, span)?,
             }));
-        }
-        // A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
-        // struct (ADR 0561).
-        if std_method == Some(IterMethod::SizeHint) && self.is_peekable(iter_ty) {
-            let it = values.into_iter().next().expect("the receiver");
-            return Ok(Some(crate::lower::iterators::peekable_hint(it)));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
         // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
@@ -535,19 +532,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             Some(IterMethod::ByRef) => it,
-            Some(IterMethod::Fuse) => self.fused(it, iter_ty),
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
     }
 
     /// Whether `$sizeHint` finds an `iter_ty`'s size: a `$iter`'s, exact, a
-    /// generic one's, as it finds it (ADR 0170), and a `Fuse`'s of one, what
-    /// it steps, or none once it's ended (ADR 0473).
+    /// generic one's, as it finds it (ADR 0170), and a compiled std
+    /// iterator's, its struct's own hint (ADR 0561).
     fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
-        let stepped = self.recognition().fuse_of(iter_ty).unwrap_or(iter_ty);
         // One a struct holds, its own of its source's (ADR 0542).
-        self.array_source(stepped).is_some() || self.is_unknown(stepped) || self.held_adapter(stepped)
+        self.array_source(iter_ty).is_some()
+            || self.is_unknown(iter_ty)
+            || self.held_adapter(iter_ty)
+            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)
     }
 
     /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
@@ -593,24 +591,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => num.literal(start),
         };
         Expr::call(Expr::member(it, "reduce"), vec![f, start])
-    }
-
-    /// `it.fuse()`, of an `iter_ty`: `$fuse(it)`, which steps it till it
-    /// ends, then never again, and of a `FusedIterator` rustc knows whole,
-    /// `$fuse(it, true)`, keeps it (ADR 0473); of a type parameter's, as its
-    /// caller says where it's given that, `$fuse(it, IFused)` (ADR 0543);
-    /// another generic one's, which may be any, is cleared as it ends, as
-    /// most are.
-    fn fused(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
-        let mut list = vec![it];
-        if let ty::Param(param) = iter_ty.kind()
-            && let Some(fused) = self.fused_fact(param.index)
-        {
-            list.push(fused);
-        } else if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {
-            list.push(Expr::bool(true));
-        }
-        Expr::call_helper("$fuse", list)
     }
 
     /// `it.collect()` into `output`: a heap of its items in heap order,
@@ -829,19 +809,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items made already, an array's, a `$iter` of them reversed; a lazy
     /// chain made of its items reversed where its closures run in the same
     /// order; else what steps it from its back, reversed (ADR 0535).
-    fn rev_items(&mut self, receiver: Expr, (iter_ty, output): (Ty<'tcx>, Ty<'tcx>), span: Span) -> R<Expr> {
+    fn rev_items(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         if let Some(closed) = self.closed_rev(receiver.clone(), iter_ty, span)? {
             return Ok(closed);
-        }
-        // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
-        // it steps reversed (ADR 0473).
-        if let Some(inner) = self.recognition().fuse_of(iter_ty)
-            && let js::ExprKind::Call(callee, given) = &receiver.kind
-            && callee.helper_name() == Some("$fuse")
-        {
-            let mut given = given.clone();
-            given[0] = self.rev_items(given[0].clone(), (inner, output), span)?;
-            return Ok(Expr::call_helper("$fuse", given));
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
         let items = match self.steps_an_array(iter_ty).then_some(()) {
@@ -1315,7 +1285,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::RPosition
                     | IterMethod::Enumerate
                     | IterMethod::ByRef
-                    | IterMethod::Fuse
                     | IterMethod::Sum
                     | IterMethod::Product
                     | IterMethod::Count

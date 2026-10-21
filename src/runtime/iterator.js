@@ -34,10 +34,11 @@ function $iterator(iterator, next, boxed = false, nextBack, len) {
 // `it`, an explicit adapter (ADR 0542), stepped by a use site that knows its
 // source's back and length, `back` and `len`, functions of the value the
 // `$iterator` it steps steps, which that's given: what it steps from its
-// back as Rust's does.
+// back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
+// `$stdIterator`'s, given its own.
 function $knowing(it, back, len) {
   let source = it;
-  while (source.of === undefined && source.iter !== undefined) source = source.iter;
+  while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
   source.knowing?.(back, len);
   return it;
 }
