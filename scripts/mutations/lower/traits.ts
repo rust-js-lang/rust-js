@@ -1541,8 +1541,8 @@ export const mutations: Mutation[] = [
     name: "default-drops-without-method-bounds",
     breaks: "a copied default's type naming the trait method's own const parameter is asked about where only the impl's are, and rustc crashes",
     file: "src/lower/traits.rs",
-    find: "(impl_env.param_env.caller_bounds().iter()).chain(self.typing_env.param_env.caller_bounds().iter());\n",
-    replace: "impl_env.param_env.caller_bounds().iter();\n",
+    find: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized);",
+    replace: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(sized);",
     tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
   },
   {
@@ -1820,5 +1820,13 @@ export const mutations: Mutation[] = [
     find: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args)),",
     replace: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args))\n                    .filter(|_| false),",
     tests: ["test/corpus.test.ts", "-t", "^blanket_unsized_impl.rs$"],
+  },
+  {
+    name: "default-sized-not-impls",
+    breaks: "a default's `Self: Sized` isn't the impl's `T: Sized`, and its trait on an adapter of `Self` is refused",
+    file: "src/lower/traits.rs",
+    find: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized);",
+    replace: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized.filter(|_| false));",
+    tests: ["test/corpus.test.ts", "-t", "^default_on_an_adapter_of_self.rs$"],
   },
 ];

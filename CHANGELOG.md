@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A trait's default that calls its trait on an adapter of `Self`**,
+  `self.enumerate().minmax()`, of an impl over `?Sized` types (ADR 0541).
 - **A closure that writes to its writer's `Formatter`**, `|disp| disp.fmt(f)`;
   **`try_for_each`**; and `try_fold` into an `Option` of what could look
   like `None` (ADR 0539).

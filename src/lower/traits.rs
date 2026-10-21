@@ -1041,8 +1041,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// method's `N`, the bounds of each (ADR 0107). `None` elsewhere.
     pub(super) fn impl_typing_env(&self) -> Option<ty::TypingEnv<'tcx>> {
         let impl_env = self.given.self_env?;
-        let bounds =
-            (impl_env.param_env.caller_bounds().iter()).chain(self.typing_env.param_env.caller_bounds().iter());
+        // The default's own, in its trait's terms, which its body names; and
+        // its `Self: Sized` in the impl's, `T: Sized`, which `Enumerate<T>`
+        // asks of an impl over `?Sized` types (ADR 0541). No other: one in
+        // the impl's terms would be chosen over the impl that meets it.
+        let own = self.typing_env.param_env.caller_bounds().iter();
+        let sized = (own.clone())
+            .filter(|clause| {
+                (clause.as_trait_clause()).is_some_and(|tr| self.tcx.is_lang_item(tr.def_id(), LangItem::Sized))
+            })
+            .map(|clause| self.in_impl_terms(clause));
+        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized);
         let param_env = ty::ParamEnv::new(self.tcx.mk_clauses_from_iter(bounds));
         Some(ty::TypingEnv::new(param_env, impl_env.typing_mode()))
     }
