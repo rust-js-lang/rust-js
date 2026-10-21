@@ -5,10 +5,10 @@
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
 
-use crate::lower::recognition::{Recognition, filtered_source, is_double_ended, mapped_source};
+use crate::lower::recognition::{Recognition, filtered_source, is_double_ended, is_iter_adapter_def, mapped_source};
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use std::collections::HashSet;
 
 /// Each such type `all_bodies` step from its back, regions erased.
@@ -23,17 +23,53 @@ pub(super) fn back_stepped<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // What it asks to be double-ended holds such a type, as an
+            // `Either` of filters does, stepped from its back by the impl
+            // that asks it of what it holds; the type asked itself is its
+            // call's own, below or at its `rev()`.
+            for (clause, _) in tcx.clauses_of(callee).instantiate(tcx, args) {
+                let Some(asked) = clause.skip_normalization().as_trait_clause() else {
+                    continue;
+                };
+                if !is_double_ended(tcx, asked.def_id()) {
+                    continue;
+                }
+                let asked = recognition.reveal(asked.self_ty().skip_binder().peel_refs());
+                // Not through a std adapter, whose own call steps what it
+                // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
+                let mut walk = asked.walk();
+                while let Some(part) = walk.next() {
+                    let Some(held) = part.as_type() else { continue };
+                    if matches!(held.kind(), ty::Adt(adt, _) if is_iter_adapter_def(tcx, adt.did())) {
+                        if held != asked {
+                            stepped.extend(back_stepped_adapter(tcx, recognition, held));
+                        }
+                        walk.skip_current_subtree();
+                    }
+                }
+            }
             if !tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr)) {
                 continue;
             }
             let Some(adapter) = args.types().next().map(|ty| ty.peel_refs()) else {
                 continue;
             };
-            let source = mapped_source(tcx, adapter).or_else(|| filtered_source(tcx, adapter));
-            if source.is_some_and(|source| recognition.array_source(source.peel_refs()).is_none()) {
-                stepped.insert(tcx.erase_and_anonymize_regions(adapter));
-            }
+            stepped.extend(back_stepped_adapter(tcx, recognition, adapter));
         }
     }
     stepped
+}
+
+/// `adapter`, regions erased, where it's a map or a filter of a source not
+/// an array's, which its own forms step from their back.
+fn back_stepped_adapter<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    adapter: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let source = mapped_source(tcx, adapter).or_else(|| filtered_source(tcx, adapter))?;
+    recognition
+        .array_source(source.peel_refs())
+        .is_none()
+        .then(|| tcx.erase_and_anonymize_regions(adapter))
 }

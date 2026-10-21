@@ -2702,7 +2702,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_std_type(ty, StdItem::HashSet) || self.is_std_type(ty, StdItem::BTreeSet)
     }
 
-    /// A `Peekable`, std's struct, `{ iter, peeked }` (ADR 0552).
+    /// A `Peekable`, std's struct, `{ iter, peeked }` (ADR 0557).
     pub(super) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
@@ -4227,6 +4227,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .unwrap_or(ty)
     }
 
+    /// Whether `ty`'s `IntoIterator` is std's of every iterator, `impl<I:
+    /// Iterator> IntoIterator for I`: its `into_iter()` is itself (ADR 0552).
+    pub(super) fn iterates_as_itself(&self, ty: Ty<'tcx>) -> bool {
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        let tr = ty::TraitRef::new(self.tcx, into_iterator, [self.tcx.erase_and_anonymize_regions(ty)]);
+        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+            Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)
+                && matches!(self.tcx.type_of(imp.impl_def_id).instantiate_identity().skip_normalization().kind(), ty::Param(_)))
+    }
+
     /// The `Clone` impl of the crate's that a `ty`'s is, if it has a
     /// `clone_from` of its own, which `clone_from_slice` calls (ADR 0324).
     pub(super) fn own_clone_from(&self, ty: Ty<'tcx>) -> bool {
@@ -5239,7 +5249,7 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// std's bodies rust-js compiles from the MIR the toolchain ships, into
-/// `@rust-js/std` (ADR 0552): each by its type, as
+/// `@rust-js/std` (ADR 0557): each by its type, as
 /// `core::iter` exports it, the trait of the impl, or none for the type's
 /// own, and the method. Each is one the measure says is safe
 /// (`docs/std-coverage.txt`); what reaches memory stays recognized.
@@ -5347,7 +5357,7 @@ pub(crate) fn std_home(tcx: TyCtxt<'_>, id: DefId) -> String {
 }
 
 /// An intrinsic of addressable memory, or of anything JS hasn't (ADR
-/// 0552): any but a hint to the optimizer, `cold_path`,
+/// 0557): any but a hint to the optimizer, `cold_path`,
 /// `assume`, `likely`, `unlikely`, `black_box`, and `ub_checks`, which
 /// rust-js reads as off (ADR 0364).
 pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
@@ -7178,7 +7188,7 @@ fn cell_method(name: &str, refcell: bool) -> Option<Std> {
 }
 
 /// Which `StepOp` a `Peekable`'s own method is, of those whose bodies reach
-/// memory, rewritten over std's struct (ADR 0513, 0552).
+/// memory, rewritten over std's struct (ADR 0513, 0557).
 fn peekable_step(name: &str) -> Option<StepOp> {
     Some(match name {
         "peek" => StepOp::Peek,

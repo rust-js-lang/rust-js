@@ -1,4 +1,4 @@
-// A `Peekable` is std's own (ADR 0552): its `next`,
+// A `Peekable` is std's own (ADR 0557): its `next`,
 // `next_back`, `count`, `nth`, `last`, `fold`, `next_if` and `next_if_eq`,
 // its clone and its `Debug` are std's bodies, compiled from the MIR the
 // toolchain ships into `@rust-js/std`, over `{ iter, peeked }`. What it

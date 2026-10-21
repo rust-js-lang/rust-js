@@ -101,7 +101,7 @@ pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -
     }
 }
 
-/// Whether an assignment addresses memory (ADR 0552): a raw
+/// Whether an assignment addresses memory (ADR 0557): a raw
 /// pointer made of a place, a transmute, a pointer cast, or a place read or
 /// written through a raw pointer. The one reading of MIR for what JS
 /// hasn't, which the measure of std's bodies asks, and a leaf's refusal

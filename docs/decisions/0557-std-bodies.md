@@ -1,4 +1,4 @@
-# 0552. std's bodies are std's own; a recognizer is a proved rewrite to an idiom
+# 0557. std's bodies are std's own; a recognizer is a proved rewrite to an idiom
 
 Status: Accepted. Extends [0364](0364-mir-lowering.md),
 [0314](0314-std-data-structures.md), [0100](0100-separate-crates.md),

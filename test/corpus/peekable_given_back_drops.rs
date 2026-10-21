@@ -1,6 +1,6 @@
 // Generic code given a type with a destructor where it takes none, a
 // `peekable` of an iterator of it that it gives back: std's own `Peekable`,
-// compiled (ADR 0552), drops what it holds as Rust does,
+// compiled (ADR 0557), drops what it holds as Rust does,
 // its source and what it peeked at, when the caller drops it.
 struct D(u32);
 

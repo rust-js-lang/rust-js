@@ -37,6 +37,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rust-js/runtime": "workspace:*",
+        "@rust-js/std": "workspace:*",
         "next": "16.4.0",
         "react": "19.2.8",
         "react-dom": "19.2.8",
@@ -54,6 +55,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@rust-js/runtime": "workspace:*",
+        "@rust-js/std": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",

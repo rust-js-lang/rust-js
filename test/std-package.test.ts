@@ -1,4 +1,4 @@
-// std's bodies as a package (ADR 0552): `@rust-js/std`,
+// std's bodies as a package (ADR 0557): `@rust-js/std`,
 // released with the compiler as `@rust-js/runtime` is. Its JS and its
 // manifest are made by the compiler from the bodies the toolchain ships,
 // `bun run std`, and committed in `std/`: the compiler builds the manifest

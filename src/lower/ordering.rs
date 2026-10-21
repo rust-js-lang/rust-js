@@ -221,8 +221,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(adt, _) if adt.is_enum() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
             // Another crate's struct orders as its impl says, which may not be
-            // field by field.
-            ty::Adt(adt, _) if !adt.did().is_local() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
+            // field by field; but a derive's is, as the crate's own (ADR 0555).
+            ty::Adt(adt, _)
+                if !adt.did().is_local()
+                    && !self.recognition().derives(if partial { partial_ord } else { ord }, ty) =>
+            {
+                Err(self.unsupported(span, &format!("comparing `{ty}`s")))
+            }
             // A type of one value, `()` or a struct of no fields, `struct
             // Zst;`: `Equal` to itself, as its derive has it.
             _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),

@@ -34,7 +34,7 @@ mkdirSync(dirname(output), { recursive: true });
 const staging = mkdtempSync(join(dirname(output), ".rust-js-distribution-"));
 try {
   // @rust-js/runtime and @rust-js/std, what the JS the compiler writes
-  // imports (ADR 0103, 0552).
+  // imports (ADR 0103, 0557).
   for (const [directory, file] of hosts) {
     run([process.execPath, "pm", "pack", "--ignore-scripts", "--filename", join(staging, file)], join(root, directory));
   }

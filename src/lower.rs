@@ -101,7 +101,7 @@ pub struct Body<'tcx> {
 
 impl Body<'_> {
     /// Its root expression, of its THIR; none of a body read from its MIR
-    /// alone, a std one's (ADR 0552), whose THIR is empty.
+    /// alone, a std one's (ADR 0557), whose THIR is empty.
     pub(crate) fn root(&self) -> Option<ExprId> {
         (!self.thir.exprs.is_empty()).then_some(self.expr)
     }
@@ -117,7 +117,7 @@ struct FnInfo {
 }
 
 /// The module `def_id`'s JS is written into: the crate's own item's, the
-/// module it's in; a std body's (ADR 0552), the crate's
+/// module it's in; a std body's (ADR 0557), the crate's
 /// module named as std's is, `iter` of `core::iter::Peekable`'s. The one
 /// answer to where a body goes.
 pub(crate) fn body_module(tcx: TyCtxt<'_>, def_id: DefId) -> LocalModId {

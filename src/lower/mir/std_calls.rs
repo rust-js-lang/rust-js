@@ -765,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.cycled(it, arg_tys[0].peel_refs(), span)?
             }
             // A `Peekable`'s `peek()` and `peek_mut()`, whose bodies reach
-            // memory, over std's struct (ADR 0552): what it
+            // memory, over std's struct (ADR 0557): what it
             // peeked at, or what it steps next, kept.
             Std::Step(op @ (StepOp::Peek | StepOp::PeekMut))
                 if arg_tys.first().is_some_and(|t| self.is_peekable(t.peel_refs())) =>

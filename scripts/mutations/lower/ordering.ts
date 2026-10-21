@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "        false\n            || matches!",
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
   },
+  {
+    name: "library-derive-refused",
+    breaks: "a library's struct with a derived `Ord` is refused, compared as one whose impl may not be field by field",
+    file: "src/lower/ordering.rs",
+    find: " && !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "derived_order"],
+  },
+  {
+    name: "library-partial-derive-as-ord",
+    breaks: "a library's derived `PartialOrd` is asked as an `Ord`, which it hasn't, and refused",
+    file: "src/lower/ordering.rs",
+    find: "derives(if partial { partial_ord } else { ord }, ty)",
+    replace: "derives(ord, ty)",
+    tests: ["test/crates.test.ts", "-t", "derived_order"],
+  },
 ];

@@ -3,7 +3,7 @@
 std's own bodies, compiled to JavaScript by rust-js from the MIR the
 toolchain ships, which the JS rust-js writes imports by the package's
 name, `@rust-js/std/iter.js`, as it imports `@rust-js/runtime`'s helpers
-([ADR 0552](../docs/decisions/0552-std-bodies.md)). A `Peekable`'s `next`
+([ADR 0557](../docs/decisions/0557-std-bodies.md)). A `Peekable`'s `next`
 is here; its `peek`, whose body reaches memory, is a helper of the
 runtime's over the same struct.
 

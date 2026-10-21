@@ -19,8 +19,8 @@ newest release its requirement allows.
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.15 | compiles | no probe yet |
-| itertools 0.14 | refused | `IntoIterator::into_iter` in its generic code |
+| either 1.15 | runs | measured 2026-10-21, after ADR 0554 |
+| itertools 0.14 | runs | measured 2026-10-21, after ADR 0552 |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
 | smallvec 1.15 | runs | |
@@ -30,18 +30,18 @@ newest release its requirement allows.
 | anyhow 1.0 | refused | a `*const dyn Error` pointer, its error's type erased |
 | once_cell 1.21 | refused | `std::thread::current` called |
 | semver 1.0 | refused | a pointer's address |
-| uuid 1.18 | compiles | no probe yet |
+| uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
-| regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
-| rust_decimal 1.38 | compiles | no probe yet |
-| chrono 0.4 (`alloc`) | compiles | no probe yet |
+| regex 1.11 | blocked | aho-corasick: unaligned reads of a byte pointer; regex-syntax compiles (ADR 0556) |
+| rust_decimal 1.38 | runs | measured 2026-10-21 |
+| chrono 0.4 (`alloc`) | runs | measured 2026-10-21 |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
 | base64 0.22 | runs | an `io::Error` a value, its writer's errors thrown (ADR 0462) |
-| hex 0.4 | compiles | no probe yet |
+| hex 0.4 | runs | measured 2026-10-21 |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-15 of 22 compile, and each of the 9 with a probe runs as natively.
+15 of 22 compile, and each of the 15 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and
@@ -55,7 +55,11 @@ it drops, and when, of items with a destructor: a `Drain` taken in part,
 either, measured 2026-10-16, after ADR 0425, compiles past its `Future`,
 `io::Read`, `BufRead` and `Seek` impls, now allowed and never lowered, and
 stops at generic code that calls `Extend::extend` on an `L: Extend<A>`;
-itertools stops there too.
+itertools stopped there too.
+itertools, measured 2026-10-21, after ADRs 0532 to 0552, runs whole: its
+probe's 36 lines of adapters and consumers, `pad_using` from its back, `tuples`,
+`collect_tuple`, `multi_cartesian_product`, `chunk_by`, `tee` and the rest,
+as native Rust gives them.
 arrayvec, measured 2026-10-16, after ADRs 0407 and 0392's amendments, runs
 whole: its `ArrayVec` and `ArrayString`, of raw pointers into an array of
 `MaybeUninit`s, and its `io::Write`. Earlier, 4 of 16 compiled, and each of

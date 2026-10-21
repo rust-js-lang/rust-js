@@ -13,7 +13,7 @@ For macOS on Apple silicon, with Rust 1.99.0, from 1.98.1. `@rust-js/builtins`
 is 0.0.2 and `@rust-js/webapi` 0.0.3, each its own release (ADR 0116). New
 with it: `@rust-js/std`, std's own bodies compiled to JS, which the JS
 rust-js writes imports as it imports `@rust-js/runtime`, so an app installs
-both (ADR 0552); `@rust-js/typescript`, which prints each module's `.d.ts` with
+both (ADR 0557); `@rust-js/typescript`, which prints each module's `.d.ts` with
 TypeScript 7.1.0-beta, a beta, pinned (ADR 0206);
 `@rust-js/next`, Next.js's crate, at 0.0.4; and `@rust-js/node`, Node.js's,
 at its own 0.0.1. `@rust-js/vite-plugin` and `@rust-js/resources` aren't
@@ -21,7 +21,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
-- **std's bodies are std's own** (ADR 0552): a std function whose body
+- **std's bodies are std's own** (ADR 0557): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
   std's struct, `{ iter, peeked }`: `peekable()` of any iterator, the
@@ -32,6 +32,16 @@ released any more: `rust-js build` is the one way to build an app.
   type with a destructor compiles. `--std-coverage` says what each std
   body is made of, `safe`, `spec`, `opaque`, `memory` or `none`, and
   measures `Iterator`'s provided methods and the adapters.
+- **A `copied()` given back as an `impl Iterator`**: regex-syntax
+  compiles (ADR 0556).
+- **A library's struct with a derived `Ord`**, compared and sorted: uuid
+  runs as native Rust, and hex too (ADR 0555).
+- **A filter or a map an `Either` holds, `rev()`'d**: either runs as
+  native Rust (ADR 0554).
+- **`mem::replace` of a field holding a generic iterator**, in a method
+  or a closure (ADR 0553).
+- **An `IntoIterator` whose iterator a generic function holds**, cloned
+  and stepped as it is: itertools runs as native Rust does (ADR 0552).
 - **A `&mut Self` given on where an `IntoIterator` goes**, through a
   dictionary too: itertools' `collect_tuple` (ADR 0551).
 - **A `Fuse` a struct holds, stepped from its back** where it's known to

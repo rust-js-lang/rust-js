@@ -42,7 +42,7 @@ fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tc
 
 /// Each function a body names, called or taken as a value, with its
 /// arguments: of its THIR, each function value; of a body read from its
-/// MIR alone, a std one's (ADR 0552), each constant of a
+/// MIR alone, a std one's (ADR 0557), each constant of a
 /// function's type.
 fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
     if !body.thir.exprs.is_empty() {
@@ -94,7 +94,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
         // A caller's parameter given to a library's function, a compiled std
-        // body's among them (ADR 0552), which its manifest says it steps by
+        // body's among them (ADR 0557), which its manifest says it steps by
         // a trait: stepped by it here.
         let steps_through =
             |stepped: &mut HashSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
@@ -132,7 +132,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         };
         // A parameter a body read from its MIR holds in a struct, `Peekable {
-        // iter: self, .. }` of std's `peekable` (ADR 0552):
+        // iter: self, .. }` of std's `peekable` (ADR 0557):
         // stepped as the struct's impl steps it, its `next`'s.
         for held in body_aggregates(tcx, body) {
             if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[held.into()])) {
@@ -203,7 +203,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     }
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`;
-                // a library's, std's `Peekable<I>` among them (ADR 0552), by
+                // a library's, std's `Peekable<I>` among them (ADR 0557), by
                 // what its manifest says its `next` steps.
                 if let Ok(Some(instance)) =
                     ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
@@ -217,7 +217,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 continue;
             }
             // A std type's own method rewritten over its struct, a
-            // `Peekable<I>`'s `peek()` (ADR 0552), steps what it holds as its
+            // `Peekable<I>`'s `peek()` (ADR 0557), steps what it holds as its
             // `next` does.
             if let Some(imp) = tcx.inherent_impl_of_assoc(callee)
                 && let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind()

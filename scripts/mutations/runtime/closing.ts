@@ -40,6 +40,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "  closing.iter = it;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back_drops.rs$"],
   },
 ];

@@ -1,7 +1,7 @@
 {
   "name": "@rust-js/std",
   "version": "0.0.4",
-  "description": "std's bodies compiled to JS by rust-js, which the JS it writes imports, released with the compiler as @rust-js/runtime is. See docs/decisions/0552-std-bodies.md.",
+  "description": "std's bodies compiled to JS by rust-js, which the JS it writes imports, released with the compiler as @rust-js/runtime is. See docs/decisions/0557-std-bodies.md.",
   "license": "MIT",
   "repository": {
     "type": "git",

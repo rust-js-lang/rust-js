@@ -306,7 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;
         // Or it's a std trait's provided method compiled into `@rust-js/std`,
         // `peekable`'s, a function over `Self` called on a type parameter
-        // too (ADR 0185, 0552).
+        // too (ADR 0185, 0557).
         Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()))
             || (self.krate.foreign.item(def_id).is_some() && self.tcx.defaultness(def_id).has_value()))
     }

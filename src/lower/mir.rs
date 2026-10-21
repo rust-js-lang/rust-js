@@ -508,7 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
                 // A body of the crate's maps to where it's written; a std one,
-                // read from its MIR, nowhere (ADR 0364, 0552).
+                // read from its MIR, nowhere (ADR 0364, 0557).
                 span: match body.def_id.as_local() {
                     Some(local) => self.js_span(self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))),
                     None => js::Span::NONE,
@@ -3042,9 +3042,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Place::ty_from(base.local, base.projection, decls, self.tcx).ty.kind(),
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
-            && let pointee = place.ty(decls, self.tcx).ty
-            && !self.is_cell_pointee(pointee)
-            && (self.is_object(pointee) || self.iterator_given_as_it_is(pointee))
+            && self.written_in_place(place.ty(decls, self.tcx).ty)
         {
             let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
@@ -4283,7 +4281,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
                 // An enum's discriminant compared with a variant's, `is_none`'s
-                // inlined into a std body (ADR 0552): the test
+                // inlined into a std body (ADR 0557): the test
                 // of that variant, as a switch on it is.
                 if let (BinOp::Eq | BinOp::Ne, Value::Discriminant(..), Some(variant)) = (op, &l, known) {
                     let test = self.switch_test(&l, ty, variant as u128, span)?;
@@ -5158,14 +5156,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&mut` to a variable as its `i`th argument, `&mut current`, which a
     /// closure may have captured: a place JS assigns.
     fn borrows_variable(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> bool {
-        self.thir_call_args(def_id, span)
-            .and_then(|args| self.mut_borrowed(*args.get(i)?))
-            .is_some_and(|place| {
-                matches!(
-                    self.thir[self.strip(place)].kind,
-                    thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }
-                )
-            })
+        self.borrowed_place(def_id, span, i)
+            .is_some_and(|place| matches!(place, thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }))
+    }
+
+    /// Whether the call's `i`th argument borrows a field, `&mut self.orig`,
+    /// whose JS is the field itself, a place (ADR 0553).
+    fn borrows_field(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> bool {
+        self.borrowed_place(def_id, span, i)
+            .is_some_and(|place| matches!(place, thir::ExprKind::Field { .. }))
+    }
+
+    /// What the call's `i`th argument borrows by `&mut`, as THIR has it.
+    fn borrowed_place(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> Option<&thir::ExprKind<'tcx>> {
+        let place = self
+            .thir_call_args(def_id, span)
+            .and_then(|args| self.mut_borrowed(*args.get(i)?))?;
+        Some(&self.thir[self.strip(place)].kind)
     }
 
     /// THIR's update whose base is the call at `span`, MIR's there, of a
@@ -5942,6 +5949,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // for a `&mut` to it, which assigning would only rebind.
         let borrowed = if known == Std::Swap { 2 } else { 1 };
         let variables = (0..borrowed).all(|i| self.borrows_variable(def_id, span, i));
+        let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));
         let own = |e: &Expr| {
             matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
                 .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
@@ -5953,6 +5961,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, value) in values.enumerate() {
             given.push(match value {
                 Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
+                // Of fields, `&mut self.orig`: each field, written as a place.
+                Value::Expr(e) | Value::Place(e)
+                    if i < borrowed && fields && matches!(e.kind, js::ExprKind::Member(..)) =>
+                {
+                    Value::Ref(e)
+                }
                 // A cell, a generic `&mut V` a store gives: its `value`, the
                 // place, of what's held once, as it's read and written.
                 Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {
@@ -5969,7 +5983,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let first = values.next().expect("a `&mut`");
         let Value::Ref(a) = first else {
             // Of an object: changed in place.
-            if !matches!(known, Std::Swap | Std::Replace | Std::MemTake) || !self.is_object(pointee) {
+            if !matches!(known, Std::Swap | Std::Replace | Std::MemTake) || !self.written_in_place(pointee) {
                 return Err(self.unsupported(span, "this `&mut` given to `mem::swap` and the like, from its MIR"));
             }
             let a = self.value_expr(first, span)?;

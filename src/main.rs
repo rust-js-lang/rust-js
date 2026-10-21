@@ -117,7 +117,7 @@ struct RustJs {
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
     /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
-    /// the toolchain ships (ADR 0552).
+    /// the toolchain ships (ADR 0557).
     std_bodies: bool,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
     cargo: bool,
@@ -369,7 +369,7 @@ impl Drop for Stage {
 fn compile(build: command::Build) -> Result<ExitCode, String> {
     let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
     // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
-    // that crate's own, which is them (ADR 0552).
+    // that crate's own, which is them (ADR 0557).
     if !build.std_bodies {
         dependencies.add_std()?;
     }

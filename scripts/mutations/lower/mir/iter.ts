@@ -1210,4 +1210,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
+  {
+    name: "into-iter-held-as-given-iterable",
+    breaks: "`into_iter()` of one whose `IntoIter` is held as it is is `$intoIter`, a JS iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "        if std_method == Some(IterMethod::IntoIter) && !self.holds_into_iter(receiver_ty) {\n",
+    replace: "        if std_method == Some(IterMethod::IntoIter) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
+  {
+    name: "copied-behind-impl-unseen",
+    breaks: "a `copied()` given back as an `impl Iterator` isn't seen for the copy of its source it is, and is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "        // Behind the `impl Iterator` it's given back as too.\n        let ty = self.reveal(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_back.rs$"],
+  },
 ];

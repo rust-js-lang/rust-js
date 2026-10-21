@@ -414,6 +414,13 @@ fn bound_of<'tcx>(
         let steps = given.stepped.contains(&(id, param.index, tr.def_id)) || foreign.steps(id, param.index, tr.def_id);
         return steps.then_some(tr);
     }
+    // An `IntoIterator` whose `IntoIter` is held as it is: its dictionary,
+    // which makes it so (ADR 0552).
+    if is_std_def(tcx, tr.def_id, StdItem::IntoIterator)
+        && super::iterators::into_iter_held_as_it_is(tcx, id, tr.self_ty())
+    {
+        return Some(tr);
+    }
     (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }
 
@@ -1659,6 +1666,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = Expr::arrow(vec![name.into()], body);
             return Ok(Expr::object(vec![Prop::Field("into_iter".into(), f)]));
         }
+        // std's `IntoIterator` of a type known here, given where what it
+        // makes is held as it is (ADR 0552): `into_iter` of it as concrete
+        // code has it, an iterator's, a range's too, itself, an array's
+        // `$iter`.
+        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
+            && !matches!(ty.kind(), ty::Ref(..))
+            && !super::recognition::known_by_bounds(ty)
+            && !self.has_user_impl(tr.def_id, ty)
+        {
+            let itself = Expr::arrow(
+                vec!["items".into()],
+                vec![StmtKind::Return(Some(Expr::var("items"))).at(js::Span::NONE)],
+            );
+            if self.recognition().iterates_as_itself(ty) {
+                return Ok(Expr::object(vec![Prop::Field("into_iter".into(), itself)]));
+            }
+            let into_iter = super::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
+            let known = self
+                .recognition()
+                .classify(into_iter, tr.args)
+                .ok_or_else(|| self.no_evidence(span, tr))?;
+            let into_iter_ty = super::recognition::trait_method(self.tcx, tr.def_id, "IntoIter");
+            let output = Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, tr.args);
+            let output = (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+                .unwrap_or(output);
+            let mut body = Vec::new();
+            let items = self.std_by_values(
+                known,
+                into_iter,
+                tr.args,
+                &[ty],
+                vec![Expr::var("items")],
+                output,
+                span,
+                &mut body,
+            )?;
+            let made = self.std_iterator(items, output);
+            body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
+            let f = Expr::arrow(vec!["items".into()], body);
+            return Ok(Expr::object(vec![Prop::Field("into_iter".into(), f)]));
+        }
         // An `io::Write`'s bytes, of a `Vec<u8>`, added to it, or of a
         // standard stream, written to it (ADR 0392).
         if is_std_def(self.tcx, tr.def_id, StdItem::IoWrite)
@@ -2310,7 +2359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std trait's provided method compiled into `@rust-js/std`,
         // `Iterator::peekable`'s, called on a type parameter: the library's
         // function over `Self`, given its dictionary and drops (ADR 0185,
-        // ADR 0552).
+        // ADR 0557).
         if self.krate.foreign.item(id).is_some()
             && self.tcx.defaultness(id).has_value()
             && self.resolve_self_instance(id, generic_args)?.is_none()
@@ -2331,7 +2380,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
-        // is a function over `Self` (ADR 0185, 0552).
+        // is a function over `Self` (ADR 0185, 0557).
         if let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
@@ -2420,7 +2469,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
-        if std_written_in_place(self.tcx, trait_id, tr.self_ty(), known_here) {
+        // Not an `IntoIterator` whose `IntoIter` is held as it is, its
+        // dictionary's (ADR 0552).
+        if std_written_in_place(self.tcx, trait_id, tr.self_ty(), known_here) && !self.holds_into_iter(tr.self_ty()) {
             return Ok(None);
         }
         // A std trait's dictionary has only its required methods, and those
@@ -3148,8 +3199,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's a copied default. Nothing but a bound makes one `IntoIterator`:
     /// a `&mut I` of an `I: Iterator` is an iterator, stepped as it is.
     pub(super) fn known_trait_call(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        // Nor of one whose `IntoIter` is held as it is, its dictionary's
+        // (ADR 0552).
         if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
-            && into_iter_by_dictionary(self.tcx, trait_id, self.in_impl_terms(generic_args).type_at(0))
+            && let self_ty = self.in_impl_terms(generic_args).type_at(0)
+            && (into_iter_by_dictionary(self.tcx, trait_id, self_ty)
+                || (is_std_def(self.tcx, trait_id, StdItem::IntoIterator) && self.holds_into_iter(self_ty)))
         {
             return None;
         }

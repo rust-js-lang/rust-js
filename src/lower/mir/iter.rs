@@ -180,6 +180,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `copied()`, or a `cloned()` of what needs no clone, each item as it
     /// is (ADR 0547). The one answer, of what's made and what's dropped.
     fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
+        // Behind the `impl Iterator` it's given back as too.
+        let ty = self.reveal(ty);
         let item = || {
             self.iterator_item(ty)
                 .is_some_and(|item| !self.needs_clone(item.peel_refs()))
@@ -209,8 +211,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(stepped));
         }
         // `x.into_iter()`: a range stays one, an iterator is itself, and a
-        // collection's items are a JS iterator of them.
-        if std_method == Some(IterMethod::IntoIter) {
+        // collection's items a JS iterator; not one held as it is (ADR 0552).
+        if std_method == Some(IterMethod::IntoIter) && !self.holds_into_iter(receiver_ty) {
             let value = values.into_iter().next().expect("the receiver");
             if self.recognition().is_given_iterable(receiver_ty) {
                 return Ok(Some(crate::lower::iterators::given_into_iter(value)));
@@ -333,7 +335,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }));
         }
         // A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
-        // struct (ADR 0552).
+        // struct (ADR 0557).
         if std_method == Some(IterMethod::SizeHint) && self.is_peekable(iter_ty) {
             let it = values.into_iter().next().expect("the receiver");
             return Ok(Some(crate::lower::iterators::peekable_hint(it)));
