@@ -25,6 +25,11 @@ impl<I: DoubleEndedIterator> Ends<I> {
     {
         self.inner.map(Tag).rfold(init, f)
     }
+
+    fn held_back(self) -> Option<Tag<I::Item>> {
+        let mut tagged = self.inner.map(Tag);
+        tagged.next_back()
+    }
 }
 
 fn main() {
@@ -36,4 +41,5 @@ fn main() {
     println!("{tags:?}");
     let words = Ends { inner: vec!["x", "y"].into_iter() }.tagged_back(String::new(), |s, t| s + t.0);
     println!("{words}");
+    println!("{:?}", Ends { inner: 5..8 }.held_back());
 }

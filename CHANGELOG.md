@@ -18,6 +18,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Peekable` a struct holds**: its `Debug`, its clone and its size
+  hint; and a generic iterator's `Fuse` keeps a `FusedIterator` as it ends
+  (ADR 0543).
 - **An `Enumerate` a struct holds**: its size hint, its back where its
   impl's bounds give it, and its `Debug`, as Rust's (ADR 0542).
 - **A trait's default that calls its trait on an adapter of `Self`**,

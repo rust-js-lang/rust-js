@@ -69,7 +69,7 @@ function pairIterator_size_hint(pair, dropI, dropIItem) {
   return $sizeHint(pair.i);
 }
 
-function pair(i) {
+function pair(i, IIntoIterFused) {
   return { i: $fuse($intoIter(i)) };
 }
 
@@ -101,7 +101,7 @@ function main() {
   console.log(
     `[${$lent(v).toArray().join(", ")}] ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(v))}`,
   );
-  const flips = pair($iterator([0], flipIterator_next));
+  const flips = pair($iterator([0], flipIterator_next), false);
   console.log(`${pairDebug_fmt(flips, flipDebug())}`);
   const again = {
     ...flips,

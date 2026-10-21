@@ -406,6 +406,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {
                 Ok(Expr::call(Expr::member(place, "slice"), Vec::new()))
             }
+            // A `Peekable` a struct holds (ADR 0543): one of a clone of what it
+            // steps, and of what it peeked at.
+            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) => {
+                let iter = self.clone_value(Expr::member(place.clone(), "iter"), args.type_at(0), span, out)?;
+                let item = self.iterator_item(ty).expect("an iterator's item");
+                let clone = self.clone_fn("value", item, span)?;
+                Ok(Expr::call_helper("$peekableClone", vec![place, iter, clone]))
+            }
             // A `Fuse`, `$fuse(..)`: one of a clone of what it steps, or of
             // none once it's ended (ADR 0473).
             ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {

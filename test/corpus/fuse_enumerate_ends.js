@@ -29,15 +29,15 @@ function ends(it) {
   return [first, last, e.len()];
 }
 
-function fused_len(it) {
-  const f = $fuse(Iterator.from(it));
+function fused_len(it, IFused) {
+  const f = $fuse(Iterator.from(it), IFused);
   $next(f);
   const left = f.len();
   return [left, f.reduce((n) => n + 1, 0)];
 }
 
-function fused_back(it) {
-  const f = $fuse(Iterator.from(it));
+function fused_back(it, IFused) {
+  const f = $fuse(Iterator.from(it), IFused);
   const last = $nextBack(f);
   const rest = $rev(f).toArray();
   $extend(rest, last == null ? [] : [last]);
@@ -54,10 +54,10 @@ function main() {
   console.log(
     `(${value[0] == null ? "None" : `Some((${value[0][0]}, ${value[0][1]}))`}, ${value[1] == null ? "None" : `Some((${value[1][0]}, ${value[1][1]}))`}, ${value[2]})`,
   );
-  const value$1 = fused_len($iter([1, 2, 3]));
+  const value$1 = fused_len($iter([1, 2, 3]), true);
   console.log(`(${value$1[0]}, ${value$1[1]})`);
   console.log(
-    `[${fused_back($iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack)).join(
+    `[${fused_back($iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack), true).join(
       ", ",
     )}]`,
   );

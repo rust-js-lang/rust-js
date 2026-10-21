@@ -5809,11 +5809,14 @@ pub(crate) enum TypeFact {
     /// What std's unstable sort picks for its items by their layout, its
     /// small sort or partition (ADRs 0342, 0471).
     Sort,
+    /// Whether it's a `FusedIterator`, whose `Fuse` keeps it as it ends
+    /// (ADRs 0473, 0543).
+    Fused,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 8] = [
+    pub(crate) const ALL: [TypeFact; 9] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -5822,6 +5825,7 @@ impl TypeFact {
         TypeFact::Map,
         TypeFact::Set,
         TypeFact::Sort,
+        TypeFact::Fused,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -5840,6 +5844,7 @@ impl TypeFact {
             TypeFact::Map => "Map",
             TypeFact::Set => "Set",
             TypeFact::Sort => "Sort",
+            TypeFact::Fused => "Fused",
         }
     }
 }
@@ -5871,6 +5876,12 @@ fn unstable_sort(name: &str) -> Option<SliceOp> {
         true => SliceOp::SelectNth { with },
         false => SliceOp::SortUnstable { with },
     })
+}
+
+/// Whether `def_id` is std's `Iterator::fuse`, whose `Fuse` keeps a
+/// `FusedIterator` as it ends (ADR 0543).
+pub(crate) fn is_iterator_fuse(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    trait_method(tcx, std_item(tcx, StdItem::Iterator), "fuse") == def_id
 }
 
 /// The items of a slice `def_id`, std's, sorts by std's unstable algorithm,

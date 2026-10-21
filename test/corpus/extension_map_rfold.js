@@ -35,6 +35,14 @@ const Ends = {
       f,
     );
   },
+
+  held_back(ends, IIterator, IDoubleEndedIterator) {
+    const tagged = $mapEnds(
+      $iterator(ends.inner, IIterator.next, true, IDoubleEndedIterator.next_back),
+      (value) => [value],
+    );
+    return $nextBack(tagged);
+  },
 };
 
 function main() {
@@ -67,6 +75,14 @@ function main() {
       { next_back: $nextBack },
     );
     console.log(`${words}`);
+    const value$4 = Ends.held_back(
+      { inner: { start: 5, end: 8 } },
+      { next: $rangeNext },
+      { next_back: $rangeNextBack },
+    );
+    console.log(
+      `${value$4 == null ? "None" : `Some(${tagDebug_fmt(value$4, { fmt: (value) => String(value) })})`}`,
+    );
   } finally {
     loudDrop_drop(loud);
   }

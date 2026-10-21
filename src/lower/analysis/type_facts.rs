@@ -95,6 +95,17 @@ pub(super) fn type_fact_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // `fuse()` of a type parameter's iterator, whose `Fuse` keeps it
+            // as it ends where it's a `FusedIterator`: its caller's, `IFused`
+            // (ADR 0543).
+            // Of the function's own parameter: an impl's is given no fact.
+            if crate::lower::recognition::is_iterator_fuse(tcx, callee)
+                && let Some(index) = args.types().next().and_then(|it| slot_of(tcx, foreign, caller, it))
+                && index >= tcx.generics_of(caller).parent_count as u32
+            {
+                asked.insert((caller, index, TypeFact::Fused));
+                continue;
+            }
             // An unstable sort of a type parameter's items, whose order std
             // picks by their layout: its caller's, `TSort` (ADR 0471).
             if let Some(item) = unstable_sort_items(tcx, callee, args)

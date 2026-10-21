@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (_, Some(_)) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
                 }
-                _ => self.rev_or_peekable_items(receiver, iter_ty, std_method, span)?,
+                _ => self.rev_or_peekable_items(receiver, (iter_ty, output), std_method, span)?,
             }));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
@@ -568,11 +568,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it.fuse()`, of an `iter_ty`: `$fuse(it)`, which steps it till it
     /// ends, then never again, and of a `FusedIterator` rustc knows whole,
-    /// `$fuse(it, true)`, keeps it; a generic one's, which may be any, is
-    /// cleared as it ends, as most are (ADR 0473).
+    /// `$fuse(it, true)`, keeps it (ADR 0473); of a type parameter's, as its
+    /// caller says where it's given that, `$fuse(it, IFused)` (ADR 0543);
+    /// another generic one's, which may be any, is cleared as it ends, as
+    /// most are.
     fn fused(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
         let mut list = vec![it];
-        if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {
+        if let ty::Param(param) = iter_ty.kind()
+            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused)
+        {
+            list.push(fused);
+        } else if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {
             list.push(Expr::bool(true));
         }
         Expr::call_helper("$fuse", list)
@@ -819,12 +825,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn rev_or_peekable_items(
         &mut self,
         receiver: Expr,
-        iter_ty: Ty<'tcx>,
+        (iter_ty, output): (Ty<'tcx>, Ty<'tcx>),
         std_method: Option<IterMethod>,
         span: Span,
     ) -> R<Expr> {
         if let Some(closed) = self.closed_adapter(std_method, receiver.clone(), iter_ty, span)? {
             return Ok(closed);
+        }
+        // One a struct holds, which keeps what it peeked at: `$peekable` of
+        // what it steps, whatever that is (ADR 0543).
+        if std_method == Some(IterMethod::Peekable) && self.held_adapter(output) {
+            let it = self.held_source(receiver, iter_ty, span)?;
+            return Ok(Expr::call_helper("$peekable", vec![it]));
         }
         // A `Fuse` made here, not yet stepped, `$fuse(it)`: the same of what
         // it steps reversed (ADR 0473).
@@ -834,7 +846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && callee.helper_name() == Some("$fuse")
         {
             let mut given = given.clone();
-            given[0] = self.rev_or_peekable_items(given[0].clone(), inner, std_method, span)?;
+            given[0] = self.rev_or_peekable_items(given[0].clone(), (inner, output), std_method, span)?;
             return Ok(Expr::call_helper("$fuse", given));
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).

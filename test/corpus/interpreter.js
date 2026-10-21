@@ -14,6 +14,7 @@ import {
   $next,
   $parseF64,
   $peek,
+  $peekable,
   $unborrow,
   $unwrapOk,
 } from "@rust-js/runtime";
@@ -84,7 +85,7 @@ function lexErrorDisplay_fmt(lexError) {
 
 const Lexer = {
   new(src) {
-    return { chars: $iter(Array.from(src)), pos: 0 };
+    return { chars: $peekable($iter(Array.from(src))), pos: 0 };
   },
 
   bump(lexer) {

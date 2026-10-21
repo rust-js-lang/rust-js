@@ -171,4 +171,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
+  {
+    name: "fused-fact-of-impls",
+    breaks: "`fuse()` of an impl's type parameter asks a fact its dictionary can't be given, and is refused",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                && index >= tcx.generics_of(caller).parent_count as u32\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
+  },
 ];

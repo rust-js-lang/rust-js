@@ -611,6 +611,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0540 A copied default's types are put in its impl's terms once](decisions/0540-a-copied-defaults-types-in-its-impls-terms-once.md)
 - [0541 A copied default's `Self: Sized` is its impl's](decisions/0541-a-defaults-sized-is-its-impls.md)
 - [0542 An adapter a struct holds keeps its source and its state](decisions/0542-a-held-adapter-keeps-its-source-and-state.md)
+- [0543 A `Peekable` a struct holds keeps what it peeked at](decisions/0543-a-held-peekable-keeps-what-it-peeked-at.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

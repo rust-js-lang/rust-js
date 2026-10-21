@@ -1448,6 +1448,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::NeedsDrop => "needs_drop",
             TypeFact::Map | TypeFact::Set => "a map's class",
             TypeFact::Sort => "an unstable sort",
+            TypeFact::Fused => "whether it's a `FusedIterator`",
         };
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
@@ -1496,6 +1497,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is (ADR 0466).
         if matches!(fact, TypeFact::Map | TypeFact::Set) {
             return self.map_class(fact == TypeFact::Set, Some(of), span);
+        }
+        // Whether its `Fuse` keeps it as it ends (ADR 0543).
+        if fact == TypeFact::Fused {
+            return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
         }
         // What std's unstable sort of it picks by its layout (ADR 0471).
         if fact == TypeFact::Sort {

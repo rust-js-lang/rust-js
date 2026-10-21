@@ -858,7 +858,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "        let stepped = self.recognition().fuse_of(iter_ty).unwrap_or(iter_ty);\n",
     replace: "        let stepped = iter_ty;\n",
-    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
   },
   {
     name: "held-source-own-drop-unclosed",
@@ -872,8 +872,8 @@ export const mutations: Mutation[] = [
     name: "fused-iterator-unknown",
     breaks: "a `FusedIterator`'s `Fuse` drops it as it ends, where std's keeps it till the `Fuse` is dropped",
     file: "src/lower/mir/iter.rs",
-    find: "        if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {\n",
-    replace: "        if false {\n",
+    find: "        } else if !iter_ty.has_param() && self.recognition().is_fused_iterator(iter_ty) {\n",
+    replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
@@ -1160,5 +1160,21 @@ export const mutations: Mutation[] = [
     find: "        self.array_source(stepped).is_some() || self.is_unknown(stepped) || self.held_adapter(stepped)\n",
     replace: "        self.array_source(stepped).is_some() || self.is_unknown(stepped)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+  },
+  {
+    name: "held-peekable-peeks-array",
+    breaks: "a held `Peekable` isn't `$peekable`, which keeps what it peeked at",
+    file: "src/lower/mir/iter.rs",
+    find: "        if std_method == Some(IterMethod::Peekable) && self.held_adapter(output) {\n",
+    replace: "        if std_method == Some(IterMethod::Peekable) && self.held_adapter(output) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
+  },
+  {
+    name: "fuse-not-told-fused",
+    breaks: "generic code's `fuse()` isn't given its caller's `IFused`, and a `FusedIterator`'s `Fuse` drops it as it ends",
+    file: "src/lower/mir/iter.rs",
+    find: "            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused)\n",
+    replace: "            && let Some(fused) = self.given_type_fact(param.index, crate::lower::TypeFact::Fused).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
 ];
