@@ -541,7 +541,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0470 A function given by value is dropped where its taker drops it](decisions/0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md)
 - [0471 A generic unstable sort is sorted as its caller's type picks](decisions/0471-a-generic-unstable-sort-is-its-callers.md)
 - [0472 An `Option` an `Option` holds is given as it's held](decisions/0472-an-options-option-is-given-as-its-held.md)
-- [0473 `fuse()` is Rust's `Fuse`](decisions/0473-fuse-is-rusts-fuse.md) *(superseded by 0563)*
+- [0473 `fuse()` is Rust's `Fuse`](decisions/0473-fuse-is-rusts-fuse.md) *(superseded by 0566)*
 - [0474 An iterator another bound reads is given as it is](decisions/0474-an-iterator-another-bound-reads-is-given-as-it-is.md)
 - [0475 A generic `into_iter()` is the iterator concrete code has](decisions/0475-a-generic-into-iter-is-the-iterator-concrete-code-has.md)
 - [0476 A generic `sum` is its caller's](decisions/0476-a-generic-sum-is-its-callers.md)
@@ -596,7 +596,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0525 A cloned `map` or `filter` is made again](decisions/0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](decisions/0526-a-filter-steps-from-its-back.md)
 - [0527 An associated iterator steps its impl's parameter](decisions/0527-an-associated-iterator-steps-its-impls-parameter.md)
-- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0563)*
+- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566)*
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
 - [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
 - [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)
@@ -617,7 +617,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0546 A declaration names a function as its JS does](decisions/0546-a-declaration-names-a-function-as-its-js-does.md)
 - [0547 A `copied()` of an iterator with a destructor drops it](decisions/0547-a-copied-iterator-with-a-destructor-is-closed.md)
 - [0548 A library's manifest says which type parameters it steps](decisions/0548-a-librarys-manifest-says-which-parameters-it-steps.md)
-- [0549 A held `Fuse` is stepped from its back as its use site knows it](decisions/0549-a-held-fuse-steps-what-a-use-site-gives.md) *(superseded by 0563)*
+- [0549 A held `Fuse` is stepped from its back as its use site knows it](decisions/0549-a-held-fuse-steps-what-a-use-site-gives.md) *(superseded by 0566)*
 - [0550 A known type's `as_mut()` is the value its `&mut` is](decisions/0550-a-known-as-mut-is-the-value.md)
 - [0551 A parameter given as it is, given on where a JS iterator goes, is made one](decisions/0551-self-given-on-where-a-js-iterator-goes.md)
 - [0552 An `IntoIterator` whose iterator is held as it is is given as it is](decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)
@@ -631,7 +631,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0560 A copied default resolves a call with its own bounds](decisions/0560-a-copied-default-resolves-with-its-own-bounds.md)
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](decisions/0561-std-bodies.md)
 - [0562 A pointer is a place and an address; bytes are plain data's](decisions/0562-a-pointer-is-a-place-and-an-address.md)
-- [0563 `Fuse` is std's; a specialization is picked by its caller's fact](decisions/0563-fuse-is-stds.md)
+- [0563 What's found once of a crate is keyed by the crate's own files](decisions/0563-found-once-is-keyed-by-the-crates-own-files.md)
+- [0566 `Fuse` is std's; a specialization is picked by its caller's fact](decisions/0566-fuse-is-stds.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

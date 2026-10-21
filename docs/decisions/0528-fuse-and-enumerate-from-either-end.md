@@ -1,6 +1,6 @@
 # 0528. A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives
 
-Status: Accepted; superseded in part by [0563](0563-fuse-is-stds.md), whose
+Status: Accepted; superseded in part by [0566](0566-fuse-is-stds.md), whose
 `Fuse` is std's own, its back and its length its compiled impls'. Extends
 [0455](0455-stepping-from-the-back.md),
 [0456](0456-a-generic-exact-size-iterator.md) and

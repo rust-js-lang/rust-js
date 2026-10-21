@@ -189,15 +189,17 @@ pub fn copied() -> String {
   expect(call("copied")).toBe(error);
 });
 
-// A union's field read while it holds another reads its bytes as another
-// type's, which JS has none of: rust-js's error where it runs; a field of
-// the same type reads the same bytes (ADR 0406).
-test("a union's field it doesn't hold is rust-js's error where it's read", () => {
+// A union's field read while it holds another reads the bytes it holds as
+// the field's type: plain data's, as wasm32 lays them out (ADR 0562); a
+// field of the same type reads the same bytes (ADR 0406); a field whose
+// bytes JS has none of, rust-js's error where it runs.
+test("a union's field it doesn't hold reads the bytes it holds, or is rust-js's error where it's read", () => {
   const dir = fixture("union-punned");
   writeFileSync(join(dir, "lib.rs"), `union Number {
     int: u32,
     float: f32,
     same: u32,
+    name: &'static str,
 }
 
 pub fn punned() -> f32 {
@@ -215,14 +217,20 @@ pub fn rewritten() -> f32 {
     n.int = 2;
     unsafe { n.float }
 }
+
+pub fn named() -> &'static str {
+    let n = Number { int: 1 };
+    unsafe { n.name }
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
   const call = (name: string) =>
     run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
-  expect(call("punned")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
+  expect(call("punned")).toBe("1.401298464324817e-45\n");
   expect(call("same")).toBe("7\n");
-  expect(call("rewritten")).toBe("rust-js does not support reading a union's `float` while it holds `int`, which reads its bytes as another type's\n");
+  expect(call("rewritten")).toBe("2.802596928649634e-45\n");
+  expect(call("named")).toBe("rust-js does not support reading a union's `name` while it holds `int`, which reads its bytes as another type's\n");
 });
 
 // A pointer's address is a number of rust-js's own, shown as Rust shows one,

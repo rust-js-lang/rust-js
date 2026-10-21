@@ -848,6 +848,23 @@ test("a copied default's typing environment is impl_typing_env's alone", () => {
   expect(reading).toEqual(["src/lower/traits.rs: let impl_env = self.given.self_env?;"]);
 });
 
+// What's found once of a crate, a React name's structs and hooks, is kept
+// by a key of the crate's content, so the playground's crate compiled again
+// is found again (ADR 0563). The key is read on each lookup, so it costs
+// less than what it keeps: of this crate, its own files' hashes, not every
+// file in rustc's source map, which holds each std file a span has touched,
+// some four hundred, and a compile looked them all up a thousand times.
+test("what's found once of a crate is keyed by the crate's own files", () => {
+  const bindings = read("src/lower/bindings.rs");
+  const key = /fn of_crate\([^]*?\n\}\n/.exec(bindings)?.[0];
+  expect(key).toBeDefined();
+  const files = [...key!.matchAll(/source_map\(\)\.files\(\)[^;]*/g)].map((m) => m[0]);
+  expect(files.length).toBeGreaterThan(0);
+  expect(files.filter((use) => !/\.filter\(\|file\| file\.cnum == LOCAL_CRATE\)/.test(use))).toEqual([]);
+  // Hashes compared as they are, not as their text.
+  expect(key).not.toContain("format!");
+});
+
 test("only refusal.rs words a refusal", () => {
   const wording = sources.filter(file => file !== "src/lower/refusal.rs" && read(file).includes("rust-js does not support"));
   expect(wording).toEqual([]);

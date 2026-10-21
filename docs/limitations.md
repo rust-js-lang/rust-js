@@ -48,9 +48,10 @@ depends on what the program does:
 - Reading through a pointer with no place, an integer made a pointer, or
   the address of a value JS holds as itself, a number reached through a
   `&`.
-- A union's field read while it holds another, its bytes read as another
-  type's.
-- A pointer read as another type's, bytes read as another type's, a pointer
+- A union's field read while it holds one whose bytes JS has none of, a
+  `&str`'s or a `String`'s; plain data's bytes read as another type's
+  (ADR 0562).
+- A pointer to what has no bytes, a `String`, read as bytes; a pointer
   stepped outside an array or into what JS holds as a copy.
 
 ## Types

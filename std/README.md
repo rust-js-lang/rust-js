@@ -11,7 +11,7 @@ of the runtime's over the same struct. A `Fuse`'s `fuse`, `next`,
 `size_hint`, `next_back`, `rfold`, `len`, clone and `Debug` are here too,
 with both of std's `FuseImpl`s, which the caller's `IFused` picks between,
 and `and_then_or_clear`, which `Fuse` keeps private
-([ADR 0563](../docs/decisions/0563-fuse-is-stds.md)).
+([ADR 0566](../docs/decisions/0566-fuse-is-stds.md)).
 
 Generated: `bun run std` compiles [`lib.rs`](lib.rs), a crate of nothing
 but the modules std's bodies are written into, with `--std-bodies`, and

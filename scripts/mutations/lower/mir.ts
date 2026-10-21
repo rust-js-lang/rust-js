@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "mir-union-field-read",
     breaks: "a union's field read is its object's member, `undefined` where it holds another",
     file: "src/lower/mir.rs",
-    find: "            (ty::Adt(adt, _), _) if adt.is_union() => Ok(self.union_read(base, ty.ty, field)),\n",
+    find: "            (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","union_const"],
   },

@@ -214,5 +214,13 @@ function main() {
   console.log(
     `[${arg.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
+  // Storage held as one `MaybeUninit<[T; N]>`, as heapless holds it: a
+  // pointer to it cast to a `T`'s is its first item's.
+  const storage = [0, 0, 0];
+  const slot = $ptr(storage, 0);
+  slot.value = 5;
+  $ptrAdd(slot, 1).value = 6;
+  $ptrAdd(slot, 2).value = 7;
+  console.log(`[${storage.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

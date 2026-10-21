@@ -1,6 +1,6 @@
 # 0549. A held `Fuse` is stepped from its back as its use site knows it
 
-Status: Superseded by [0563](0563-fuse-is-stds.md): a `Fuse` is a compiled
+Status: Superseded by [0566](0566-fuse-is-stds.md): a `Fuse` is a compiled
 std iterator, given its compiled `next_back` and `len` by a use site in
 this decision's form, `$knowing`, of the struct itself; a held
 `Enumerate` is still this decision's. Extended [0542](0542-a-held-adapter-keeps-its-source-and-state.md)

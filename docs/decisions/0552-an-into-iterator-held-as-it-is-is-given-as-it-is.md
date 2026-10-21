@@ -1,6 +1,6 @@
 # 0552. An `IntoIterator` whose iterator is held as it is is given as it is
 
-Status: Accepted; extended by [0563](0563-fuse-is-stds.md): an `IntoIter`
+Status: Accepted; extended by [0566](0566-fuse-is-stds.md): an `IntoIter`
 the signature holds in a struct is held as it is too, and the
 `IntoIterator` dictionary carries its `Iterator`, which steps it. Amends
 [0061](0061-generic-iterators.md); extends

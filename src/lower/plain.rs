@@ -17,7 +17,7 @@ use super::recognition::Std;
 use super::refusal::{Refused, refuse};
 use super::representation::Num;
 use super::{FnCx, R};
-use crate::js::{self, Expr, Op, Stmt};
+use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 /// A plain value's layout: a number, a `bool` or a `char`, or its parts,
 /// each at its offset in it.
@@ -70,12 +70,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.transmute(value, (from, to), call.span, out).map(Some)
     }
 
+    /// Plain data's codec, for a pointer to its bytes (ADR 0562): its size,
+    /// `(value) => bytes` and `(bytes) => value`, as `transmute` writes
+    /// each way. `None` of what isn't plain data.
+    pub(super) fn plain_codec(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<(Expr, Expr, Expr)>> {
+        let Some(layout) = self.layout(ty).filter(|_| self.plain(ty).is_some()) else {
+            return Ok(None);
+        };
+        let size = layout.size.bytes();
+        let bytes = Ty::new_array(self.tcx, self.tcx.types.u8, size);
+        let arrow = |cx: &mut Self, name: &str, from: Ty<'tcx>, to: Ty<'tcx>| -> R<Expr> {
+            let mut body = Vec::new();
+            let made = cx.transmute(Expr::var(name), (from, to), span, &mut body)?;
+            body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
+            Ok(Expr::arrow(vec![name.into()], body))
+        };
+        let encode = arrow(self, "value", ty, bytes)?;
+        let decode = arrow(self, "bytes", bytes, ty)?;
+        Ok(Some((Expr::int(i128::from(size)), encode, decode)))
+    }
+
+    /// A union's field of `held` read as `read` (ADR 0562): its bytes as
+    /// `transmute` reads them, `(value) => ..`; `None` where either isn't
+    /// plain data.
+    pub(super) fn plain_decoder(&mut self, held: Ty<'tcx>, read: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        if self.plain(held).is_none() || self.plain(read).is_none() {
+            return Ok(None);
+        }
+        // A field read past the one held reads bytes Rust leaves undefined:
+        // none, so the read is rust-js's error (ADR 0406).
+        if let (Some(held), Some(read)) = (self.layout(held), self.layout(read))
+            && held.size.bytes() < read.size.bytes()
+        {
+            return Ok(None);
+        }
+        let mut body = Vec::new();
+        let made = self.transmute(Expr::var("value"), (held, read), span, &mut body)?;
+        body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
+        Ok(Some(Expr::arrow(vec!["value".into()], body)))
+    }
+
     /// `value`, a `from`, as a `to` of the same bytes: itself, of a type
-    /// that differs only in its lifetimes, else of plain data, its parts.
+    /// that differs only in its lifetimes, else of plain data, its parts;
+    /// bytes as text, `Box<[u8]>` as `Box<str>`, decoded (ADR 0562).
     fn transmute(&mut self, value: Expr, (from, to): (Ty<'tcx>, Ty<'tcx>), span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let erased = |ty| self.tcx.erase_and_anonymize_regions(ty);
         if erased(from) == erased(to) {
             return Ok(value);
+        }
+        let pointee = |ty: Ty<'tcx>| match ty.kind() {
+            ty::Ref(_, inner, _) => Some(*inner),
+            ty::Adt(_, args) if ty.is_box() => Some(args.type_at(0)),
+            _ => None,
+        };
+        if let (Some(bytes), Some(text)) = (pointee(from), pointee(to))
+            && matches!(bytes.kind(), ty::Slice(item) if *item == self.tcx.types.u8)
+            && text.is_str()
+        {
+            return Ok(Expr::call(Expr::helper("$utf8Decode"), vec![value]));
         }
         if let Some(value) = self.transparent_transmute(value.clone(), (from, to)) {
             return Ok(value);

@@ -1,6 +1,6 @@
 # 0454. A `&mut` given as a type parameter's value is a box
 
-Status: Accepted; amended by [0563](0563-fuse-is-stds.md), which lifts the
+Status: Accepted; amended by [0566](0566-fuse-is-stds.md), which lifts the
 refusal of a closure's parameter below: a function given for an `F:
 Fn(&mut T)` takes generic code's box apart. Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user.

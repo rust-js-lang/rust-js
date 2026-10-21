@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  if (Object.hasOwn(union, key)) return union[key];\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
   },
+  {
+    name: "union-decoder-ignored",
+    breaks: "a union's field of another plain type is refused where its decoder would read it",
+    file: "src/runtime/unions.js",
+    find: "  if (decoders[held] !== undefined) return decoders[held](union[held]);",
+    replace: "  if (false) return decoders[held](union[held]);",
+    tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
+  },
 ];

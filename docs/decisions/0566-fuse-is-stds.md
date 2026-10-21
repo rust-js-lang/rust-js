@@ -1,4 +1,4 @@
-# 0563. `Fuse` is std's; a specialization is picked by its caller's fact
+# 0566. `Fuse` is std's; a specialization is picked by its caller's fact
 
 Status: Accepted. Extends [0561](0561-std-bodies.md); supersedes
 [0473](0473-fuse-is-rusts-fuse.md) and
