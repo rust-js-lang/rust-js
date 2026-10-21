@@ -80,6 +80,7 @@ branch's one running, and no branch's run touches another's.
 | Generated programs (fuzz) | | | yes |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
+| How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
 
 Every local run is five minutes at most
 ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)); what may take

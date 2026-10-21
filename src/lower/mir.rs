@@ -4376,6 +4376,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
                         }
                         let value = self.mir_expr(state, operand, out)?;
+                        // A raw pointer's: its place's value made the `dyn`,
+                        // and a pointer to that again where the target is a
+                        // handle on it, `*const Foo<dyn Trait>`; a `*const dyn
+                        // Trait` is the pair itself (ADR 0562).
+                        if self.is_handle_pointer(from) {
+                            // A pointer to a value of no size has no place;
+                            // the value is `undefined`.
+                            let place = match self.is_zero_sized(self.pointee(from)) {
+                                true => Expr::undefined(),
+                                false => self.pointee_place(value),
+                            };
+                            let unsized_ = self.unsize_trait(from, *to, place, span, out)?;
+                            return Ok(Value::Expr(match self.is_handle_pointer(*to) {
+                                true => self.pointer_to(unsized_, self.pointee(*to), None, span)?,
+                                false => unsized_,
+                            }));
+                        }
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
                             return Ok(Value::Expr(match self.knows_its_back(*to) {

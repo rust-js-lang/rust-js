@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && settings.declarations.is_some() {\n",
     tests: ["test/settings.test.ts", "-t", "no key"],
   },
+  {
+    name: "settings-no-manifest-no-dir",
+    breaks: "a file compiled alone with no Cargo.toml above it has no directory, and TypeScript is run nowhere: `node` can't be run",
+    file: "src/settings.rs",
+    find: "            return Ok(Settings {\n                dir: crate::paths::parent_dir(&crate::paths::absolute(input)?).to_path_buf(),\n                ..Settings::default()\n            });",
+    replace: "            return Ok(Settings::default());",
+    tests: ["test/declarations.test.ts", "-t", "no Cargo.toml above it has its declarations"],
+  },
 ];

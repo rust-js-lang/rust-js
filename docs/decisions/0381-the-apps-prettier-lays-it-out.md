@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0117](0117-output-hooks.md) and
 [0207](0207-declarations-printed-by-typescript.md); delivers the layout
-rule of [0378](0378-one-file-at-a-time.md).
+rule of [0378](0378-one-file-at-a-time.md). Amended below: the app's
+build only, not a file compiled alone.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): how the JS is laid
 out, not what it means.
@@ -57,3 +58,30 @@ stands, oxfmt's.**
   each file it writes.
 - The `.d.ts` of an app without a Prettier config is TypeScript's
   printer's, as before (ADR 0207).
+
+## Amendment: the app's build, not a file compiled alone
+
+An app's Rust is compiled one way, `rust-js build`, through Cargo
+([0412](0412-rust-js-build-is-its-own-process.md)); a file compiled alone
+is a test's, rustc's suite's or the playground's, and has no crate
+([0414](0414-a-library-on-npm-as-rescripts-are.md)). Yet the rule above
+ran for a file compiled alone too, from the nearest `Cargo.toml` above it,
+maybe another's: each of the corpus's 1,400 compiles a run started Node
+and imported Prettier from rust-js's own checkout to be told there's no
+config. That was 30 ms of a small case's 80, and a third of the corpus's
+compile time.
+
+**The app's Prettier lays out the app's build, Cargo's; a file compiled
+alone keeps rust-js's layout**, as its module header names no crate
+(0414). Its hooks are still the `Cargo.toml`'s above it (0117): a hook is
+named there, where Prettier is found from the file, and a file's JS that
+no build wrote is nobody's `prettier --check`.
+
+- `prettier.rs` asks only when `settings.cargo`.
+- The tests of the layout build their crate through Cargo, as an app is
+  built; "a file compiled alone keeps rust-js's layout, whatever Prettier
+  config is above it" holds the rule, and the mutation
+  `prettier-for-a-file-compiled-alone` proves it. "A crate with Prettier
+  and no config of its own keeps rust-js's layout" is what the corpus
+  showed before, now of a Cargo build.
+- A small corpus case compiles in 52 ms, not 85.

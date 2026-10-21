@@ -2887,4 +2887,12 @@ export const mutations: Mutation[] = [
     replace: "                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args)).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^function_given_for_a_mut_param.rs$"],
   },
+  {
+    name: "raw-pointer-unsized-as-handle",
+    breaks: "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
+    file: "src/lower/mir.rs",
+    find: "                            let place = match self.is_zero_sized(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
+    replace: "                            let place = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
+  },
 ];
