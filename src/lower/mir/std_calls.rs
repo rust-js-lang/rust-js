@@ -753,11 +753,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?
             }
             // `cycle()` of another iterator than std's over an array, cloned
-            // (ADR 0491).
+            // (ADR 0491); and one a struct holds, of an array's too, which
+            // keeps both it cycles (ADR 0544).
             Std::Step(StepOp::Cycle)
-                if !arg_tys
-                    .first()
-                    .is_some_and(|t| self.array_source(t.peel_refs()).is_some()) =>
+                if self.held_adapter(output)
+                    || !arg_tys
+                        .first()
+                        .is_some_and(|t| self.array_source(t.peel_refs()).is_some()) =>
             {
                 let it = values.map(|v| self.value_expr(v, span)).next().expect("the iterator")?;
                 self.cycled(it, arg_tys[0].peel_refs(), span)?

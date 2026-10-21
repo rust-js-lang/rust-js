@@ -414,6 +414,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let clone = self.clone_fn("value", item, span)?;
                 Ok(Expr::call_helper("$peekableClone", vec![place, iter, clone]))
             }
+            // A `Cycle` a struct holds: the one it carries, of clones of what
+            // it started with and what it steps (ADR 0544).
+            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {
+                Ok(Expr::call_helper("$clone", vec![place]))
+            }
             // A `Fuse`, `$fuse(..)`: one of a clone of what it steps, or of
             // none once it's ended (ADR 0473).
             ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {

@@ -2376,7 +2376,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// std's `iter::Empty<T>`: `[]`, as `iter::empty()` is (ADR 0128).
-    fn is_iter_empty(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_iter_empty(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(empty, _) if std_path(self.tcx, empty.did()) == "std::iter::Empty")
     }
 
@@ -6082,6 +6082,14 @@ pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Enumerate" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
+/// What std's `Cycle` adapter of type `ty` cycles, `I` of `Cycle<I>`.
+pub(crate) fn cycled_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Cycle" => Some(args.type_at(0)),
         _ => None,
     }
 }

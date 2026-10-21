@@ -685,4 +685,20 @@ export const mutations: Mutation[] = [
     replace: "        if self.is_unknown(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
+  {
+    name: "held-cycle-debug-refused",
+    breaks: "a held `Cycle`'s `Debug` is refused",
+    file: "src/lower/display.rs",
+    find: "                    && let Some(source) = super::recognition::cycled_source(self.tcx, ty) =>\n",
+    replace: "                    && let Some(source) = super::recognition::cycled_source(self.tcx, ty).filter(|_| false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
+  {
+    name: "empty-debug-refused",
+    breaks: "an `iter::Empty`'s `Debug` is refused",
+    file: "src/lower/display.rs",
+    find: "            ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str(\"Empty\")),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
 ];

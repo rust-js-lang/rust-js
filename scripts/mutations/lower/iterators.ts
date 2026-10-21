@@ -983,4 +983,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|source| self.range_kind(source).is_some())\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
+  {
+    name: "cycle-of-array-unstepped",
+    breaks: "`cycled()` of an array's iterator a struct holds is refused",
+    file: "src/lower/iterators.rs",
+    find: "            None if self.steps_an_array(ty) => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
+    replace: "            None if self.steps_an_array(ty) && false => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
 ];

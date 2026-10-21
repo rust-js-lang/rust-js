@@ -9067,18 +9067,23 @@ export function* $cycle(items, clone = (item) => item) {
 // Closed, it drops both, the one kept first, as `Cycle`'s fields are. `boxed`: whether `next` gives a `Some` that may look like
 // `None` boxed (ADR 0051).
 export function $cycleOf(iterator, clone, next, boxed = false, drop) {
-  const orig = clone(iterator);
-  let it = iterator;
+  return $cycleFrom(clone(iterator), iterator, clone, next, boxed, drop);
+}
+
+// A `Cycle` of what it started with, `orig`, and what it steps, `iter`,
+// both kept on it for its `Debug`, its size hint and a clone, where it is,
+// which it carries (ADR 0544).
+export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   let closed = false;
-  return Iterator.from({
+  const cycled = Iterator.from({
     next() {
       if (closed) return { done: true, value: undefined };
-      let item = next(it);
+      let item = next(cycled.iter);
       if (item === undefined) {
-        const fresh = clone(orig);
-        drop?.(it);
-        it = fresh;
-        item = next(it);
+        const fresh = clone(cycled.orig);
+        drop?.(cycled.iter);
+        cycled.iter = fresh;
+        item = next(cycled.iter);
         if (item === undefined) return { done: true, value: undefined };
       }
       return { done: false, value: boxed ? $someValue(item) : item };
@@ -9086,12 +9091,22 @@ export function $cycleOf(iterator, clone, next, boxed = false, drop) {
     return() {
       if (!closed) {
         closed = true;
-        drop?.(orig);
-        drop?.(it);
+        drop?.(cycled.orig);
+        drop?.(cycled.iter);
       }
       return { done: true, value: undefined };
     },
   });
+  cycled.orig = orig;
+  cycled.iter = iter;
+  // Rust's: none of an empty one, else without end.
+  cycled.hint = () => {
+    const [low, high] = $sizeHint(cycled.orig);
+    if (low === 0 && high === 0) return [0, 0];
+    return low === 0 ? [0, undefined] : [4294967295, undefined];
+  };
+  cycled[$cloneKey] = () => $cycleFrom(clone(cycled.orig), clone(cycled.iter), clone, next, boxed, drop);
+  return cycled;
 }
 
 export function* $successors(next, successor, boxed = false) {

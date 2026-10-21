@@ -1531,6 +1531,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
+            // An empty iterator, std's `Empty`, which shows no state.
+            ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),
+            // A `Cycle` a struct holds, which keeps what it started with and
+            // what it steps (ADR 0544): `Cycle { orig: .., iter: .. }`.
+            ty::Adt(..)
+                if self.held_adapter(ty)
+                    && let Some(source) = super::recognition::cycled_source(self.tcx, ty) =>
+            {
+                let it = Expr::var("cycle");
+                let orig = self.debug_string_with(Expr::member(it.clone(), "orig"), source, span, pretty)?;
+                let iter = self.debug_string_with(Expr::member(it, "iter"), source, span, pretty)?;
+                let plain = join(vec![
+                    Expr::str("Cycle { orig: "),
+                    orig.clone(),
+                    Expr::str(", iter: "),
+                    iter.clone(),
+                    Expr::str(" }"),
+                ]);
+                let fields = vec![
+                    join(vec![Expr::str("orig: "), orig]),
+                    join(vec![Expr::str("iter: "), iter]),
+                ];
+                let shown = self.pretty_or(pretty, plain, "Cycle {", Expr::array(fields), "}");
+                let show = Expr::arrow(
+                    vec!["cycle".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                Ok(self.applied(show, value))
+            }
             // A `Fuse`, `Fuse { iter: Some(..) }` of what it steps, or `None`
             // once it's ended (ADR 0473).
             ty::Adt(..) if let Some(inner) = self.recognition().fuse_of(ty) => {

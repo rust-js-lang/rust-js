@@ -544,4 +544,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
   },
+  {
+    name: "held-cycle-clone-refused",
+    breaks: "a held `Cycle`'s clone is refused",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {\n",
+    replace: "            ty::Adt(..) if self.held_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
 ];

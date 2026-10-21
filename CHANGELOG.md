@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Cycle` a struct holds**: its `Debug` and its clone; and `{:?}` of
+  an `iter::Empty` (ADR 0544).
 - **A `Peekable` a struct holds**: its `Debug`, its clone and its size
   hint; and a generic iterator's `Fuse` keeps a `FusedIterator` as it ends
   (ADR 0543).

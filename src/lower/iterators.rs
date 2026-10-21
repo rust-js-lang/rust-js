@@ -844,6 +844,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let iterator = std_item(self.tcx, StdItem::Iterator);
                 self.user_next(ty, iterator, "next", span)?
             }
+            // An array's, a struct holds, its `$iter` stepped (ADR 0544).
+            None if self.steps_an_array(ty) => {
+                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
+                (Expr::helper(if boxed { "$nextSome" } else { "$next" }), boxed)
+            }
             None => match self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator)) {
                 Some(dictionary) => {
                     let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
