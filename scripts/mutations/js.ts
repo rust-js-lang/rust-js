@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "            \"map\",\n            \"join\",\n",
     replace: "            \"join\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^slice_arrays.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(slice_methods|text_edits).rs$"],
     snapshots: true,
   },
   {
