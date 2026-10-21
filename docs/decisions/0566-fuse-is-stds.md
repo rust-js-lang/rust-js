@@ -156,6 +156,17 @@ $rev($knowing(f, (iterator) => fuseDoubleEndedIterator_next_back(iterator, { nex
   `$sizeHint` of its struct, as before (ADR 0170); its `len()` through
   `ExactSizeIterator`'s dictionary is exact. A gap of its own.
 - `docs/std-coverage.txt`: `Fuse` 10 of 14, `Iterator::fuse` known.
+- **The readability gate** (ADR 0565): three shares grew, each by a
+  tenth of a point in ten thousand lines or so, and are blessed here.
+  `$iter`, 61.7 to 62.2: `fused_iterator`'s `sizes.iter().fuse().map(..)`
+  and `chars().fuse().rev()` keep their `$iter`, now that a `fuse()` is
+  std's call and no longer rewritten away (two), `both`'s `IntoIterator`
+  dictionaries of `Vec`s (two), and `std_fuse`'s own (one). `return;`,
+  9.5 to 9.6, and `renamed x$1`, 953 to 955.2: the new programs,
+  `std_fuse` and `function_given_for_a_mut_param`, whose `main`s hold a
+  `value$n` for each of many `{:?}` arguments; and the denominator
+  shrank, `held_peekable` losing 410 lines of inlined `Fuse` `Debug` for
+  `fuseDebug(..)`, which no counted shape credits.
 - Of ADR 0454's refusals, a closure's parameter is lifted: an `Option<&mut
   T>`, a field and a `Vec<&mut T>` stand.
 - **Next**: each adapter after `Fuse`, `Copied`'s derive among them, which
