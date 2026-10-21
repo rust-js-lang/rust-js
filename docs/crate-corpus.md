@@ -32,10 +32,10 @@ newest release its requirement allows.
 | semver 1.0 | refused | a pointer's address |
 | uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
-| regex 1.11 | blocked | aho-corasick: unaligned reads of a byte pointer; regex-syntax compiles (ADR 0556) |
+| regex 1.11 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |
 | rust_decimal 1.38 | runs | measured 2026-10-21 |
 | chrono 0.4 (`alloc`) | runs | measured 2026-10-21 |
-| time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
+| time 0.3 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
 | base64 0.22 | runs | an `io::Error` a value, its writer's errors thrown (ADR 0462) |
 | hex 0.4 | runs | measured 2026-10-21 |

@@ -4,6 +4,7 @@
 //   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check it as it's pushed, again
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
+//   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
@@ -13,6 +14,7 @@ import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { changedSince } from "./mutations";
+import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -136,6 +138,38 @@ async function plan() {
   console.log(`shards=${mutationShards(count)}`);
 }
 
+/** An artifact a run uploaded, as GitHub lists them, the newest first. */
+export type Artifact = { name: string; run: number; createdAt: string; expired: boolean };
+
+/** The run whose shards' timings this run's are balanced by: the newest
+ * that uploaded any, `timings-<shard>`, still kept; or none, when no run
+ * has, and the shards split by file count, as a first run's do. */
+export function timingsRun(artifacts: Artifact[]): number | undefined {
+  return [...artifacts]
+    .filter((a) => /^timings-\d+$/.test(a.name) && !a.expired)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.run;
+}
+
+/** In CI, before the suite: the last run's `timings-*` artifacts, into
+ * `target/shard-timings/`, which `bun run test` gives `bun test --shard`
+ * (scripts/test.ts). */
+function fetchTimings() {
+  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
+    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+  );
+  const run = timingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+  const dir = join(root, shardTimings);
+  rmSync(dir, { recursive: true, force: true });
+  if (run === undefined) {
+    console.log("no run has kept its timings yet: the shards split by file count");
+    return;
+  }
+  mkdirSync(dir, { recursive: true });
+  gh(["run", "download", String(run), "--pattern=timings-*", `--dir=${dir}`]);
+  const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
+  console.log(`the shards balance by run ${run}'s timings, ${files.length} file${files.length === 1 ? "" : "s"} in ${shardTimings}`);
+}
+
 function bless(branch: string) {
   const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
   if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
@@ -169,8 +203,9 @@ if (import.meta.main) {
     else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
     else if (command === "plan") await plan();
+    else if (command === "timings") fetchTimings();
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings");
       process.exit(2);
     }
   } catch (error) {

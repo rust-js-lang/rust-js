@@ -18,3 +18,9 @@ export function shardArg(args: string[]): { index: number; count: number } | und
   const [index, count] = arg.slice("--shard=".length).split("/").map(Number);
   return { index, count };
 }
+
+/** Where the last run's shards' timings of each test file are kept, from
+ * `target/`, for `bun test --shard` to balance this run's by: `bun
+ * scripts/ci.ts timings` downloads them there, and `bun run test` gives
+ * each file in it. */
+export const shardTimings = "target/shard-timings";

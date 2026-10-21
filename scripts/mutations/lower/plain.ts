@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: "            || false && matches!(ty.kind(), ty::Ref(_, pointee, _)",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
+  {
+    name: "text-transmute-refused",
+    breaks: "`Box<[u8]>` as `Box<str>` is refused, where it's the bytes decoded",
+    file: "src/lower/plain.rs",
+    find: "            && text.is_str()\n        {\n            return Ok(Expr::call(Expr::helper(\"$utf8Decode\"), vec![value]));",
+    replace: "            && text.is_str()\n            && false\n        {\n            return Ok(Expr::call(Expr::helper(\"$utf8Decode\"), vec![value]));",
+    tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
+  },
 ];

@@ -2,13 +2,15 @@
 
 import {
   $addr,
+  $fromBytes,
   $ptrAt,
   $ptrBytes,
   $ptrEq,
   $ptrFrom,
+  $ptrRetyped,
   $ptrTo,
-  $ptrTyped,
   $rotateBits,
+  $toBytes,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -59,12 +61,17 @@ function main() {
   console.log(`${waiter.signaled} ${waiter.count} ${untagged(COMPLETE_PTR)[1]}`);
   console.log(`${COMPLETE_PTR === null} ${$addr(COMPLETE_PTR, 8)}`);
 
-  const heap = $ptrBytes({ value: 16706 });
+  const heap = $ptrBytes(
+    { value: 16706 },
+    2,
+    (value) => $toBytes(value, 2, true),
+    (bytes) => $fromBytes(bytes, 2, true, false),
+  );
   const repr = ptr_to_repr(heap);
   const topBit = $addr(repr, 1) >>> 31;
   const original = repr_to_ptr(repr);
   console.log(`${topBit} ${$ptrEq(original, heap)} ${$ptrEq(repr, heap)}`);
-  console.log(`${$ptrTyped(original).value}`);
-  const value = $ptrTyped(original).value;
+  console.log(`${$ptrRetyped(original, 2, false).value}`);
+  const value = $ptrRetyped(original, 2, false).value;
 }
 //# sourceMappingURL=case.js.map

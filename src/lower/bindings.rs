@@ -2,6 +2,7 @@
 
 use crate::js;
 use rustc_ast::LitKind;
+use rustc_data_structures::svh::Svh;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
@@ -9,7 +10,7 @@ use rustc_hir::{CoroutineKind, CoroutineSource};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{CrateNum, DefId, DefIndex, LOCAL_CRATE, LocalDefId, LocalModId, StableCrateId};
-use rustc_span::{Span, Symbol, sym};
+use rustc_span::{SourceFileHash, Span, Symbol, sym};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -762,7 +763,18 @@ pub(super) fn is_props(tcx: TyCtxt<'_>, adt: DefId) -> bool {
 
 /// What's found of a crate, by its crate's identity and content, so a
 /// crate compiled again, the playground's, is found again.
-type Found = Mutex<Vec<((StableCrateId, String), Arc<HashSet<DefIndex>>)>>;
+type Found = Mutex<Vec<((StableCrateId, Content), Arc<HashSet<DefIndex>>)>>;
+
+/// A crate's content, as its key says it (ADR 0563): another crate's hash,
+/// its metadata's; this one's own sources' hashes, as rustc hashes HIR
+/// only for what needs it, metadata, and a test build doesn't. Only its
+/// own files: the source map holds each file of std a span has touched,
+/// hundreds, and the key is read on every lookup.
+#[derive(PartialEq, Eq)]
+enum Content {
+    Sources(Vec<SourceFileHash>),
+    Metadata(Svh),
+}
 
 /// `found`'s answer of crate `krate`, found once by `find`.
 fn of_crate(
@@ -771,14 +783,14 @@ fn of_crate(
     krate: CrateNum,
     find: impl FnOnce() -> HashSet<DefIndex>,
 ) -> Arc<HashSet<DefIndex>> {
-    // Another crate's hash, its metadata's; this one's sources', as rustc
-    // hashes HIR only for what needs it, metadata, and a test build doesn't.
     let content = match krate == LOCAL_CRATE {
-        true => (tcx.sess.source_map().files().iter())
-            .map(|file| format!("{:?}", file.src_hash))
-            .collect::<Vec<_>>()
-            .concat(),
-        false => tcx.crate_hash(krate).to_string(),
+        true => Content::Sources(
+            (tcx.sess.source_map().files().iter())
+                .filter(|file| file.cnum == LOCAL_CRATE)
+                .map(|file| file.src_hash)
+                .collect(),
+        ),
+        false => Content::Metadata(tcx.crate_hash(krate)),
     };
     let key = (tcx.stable_crate_id(krate), content);
     let known = (found.lock().expect("not poisoned").iter())

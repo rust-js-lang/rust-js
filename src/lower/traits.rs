@@ -2844,6 +2844,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn pointee(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
+            _ if let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty) => inner,
             ty::Adt(_, args) if self.is_std_wrapper(ty) => args.type_at(0),
             _ => ty,
         }

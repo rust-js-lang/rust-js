@@ -25,8 +25,26 @@ released any more: `rust-js build` is the one way to build an app.
   `with_addr`, `map_addr`, `wrapping_add` past an allocation and back,
   `n as *const T`, `dangling()`, pointers compared and ordered by address,
   `{:p}`, a pointer `transmute`d to and from its address, and a tag in a
-  pointer's low bits, as once_cell's and semver's; stage 1 of the model,
-  the rest to come as its ADR says.
+  pointer's low bits, as once_cell's and semver's.
+- **Bytes through a pointer** (ADR 0562): a `*const u8` into a byte slice
+  cast to a `*const u32`, a `*const u16`, a `*const [u8; N]` or a
+  `*const i8` and read, `read_unaligned` and `write_unaligned` at any
+  offset, as aho-corasick's and memchr's word loads do; an integer
+  array's or a `#[repr(C)]` struct's bytes read, written, sliced and
+  copied through a `*const u8`, as wasm32 lays them out, little-endian;
+  a union's field read while it holds another plain one, its `u32` as
+  its `f32`, its bytes or its halves; and `Box<[u8]>` transmuted to
+  `Box<str>`.
+- **A raw pointer to a `dyn Trait`** (ADR 0562): `*const dyn Trait` and
+  `*mut dyn Trait` are the `dyn`'s pair, as `&dyn Trait` and `Box<dyn
+  Trait>` are: made of a thin pointer, called and written through, made
+  thin again with `as *const T`, and a `Box<dyn Trait>` taken apart with
+  `into_raw` and put back with `from_raw`, as anyhow does. Stages 1 to 3
+  of the model; relayout and constants to come as its ADR says.
+- **How the generated JS reads is a gate** (ADR 0565): the shapes a person
+  wouldn't write, `port measure`'s seven, are counted over the corpus's
+  and the snapshots' JS in `docs/readability.txt`, and no shape's share may
+  grow unblessed; `bun run bless` blesses it with the snapshots.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is

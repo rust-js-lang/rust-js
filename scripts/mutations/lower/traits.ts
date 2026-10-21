@@ -1877,4 +1877,12 @@ export const mutations: Mutation[] = [
     replace: "        let typing_env = self.given.self_env.unwrap_or(self.typing_env);\n        super::items::resolve_instance_in(",
     tests: ["test/corpus.test.ts", "-t", "^default_crate_index.rs$"],
   },
+  {
+    name: "pointee-not-of-raw-pointer",
+    breaks: "a raw pointer's pointee is the pointer, so `*const dyn Trait` isn't unsized to a pair",
+    file: "src/lower/traits.rs",
+    find: "            _ if let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty) => inner,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
+  },
 ];

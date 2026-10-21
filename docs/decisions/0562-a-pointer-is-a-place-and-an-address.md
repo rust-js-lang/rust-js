@@ -309,21 +309,22 @@ yet: ..", with why (ADR 0390):
 Each stage lands with a failing corpus case first, its mutations, and
 rustc's suite reblessed.
 
-1. **An address** (this commit): a field's offset in its handle, `$addr`,
+1. **An address** (landed): a field's offset in its handle, `$addr`,
    `$ptrFrom`, `$ptrAt`, `$ptrEq`, pointer `==`, `<`, hash and `{:p}`,
    `as` casts both ways, `addr`, `expose_provenance`,
    `with_exposed_provenance`, `with_addr`, `map_addr`, `wrapping_add`,
    `wrapping_byte_add`, `is_aligned`, `dangling`, a pointer as plain
    data. `pointer_addresses` and `tagged_pointers`.
-2. **Bytes**: `$ptrBytes` views of integer arrays and of plain data,
-   `$readInt`, `$writeInt`, `read_unaligned`, `[u8; N]` reads, a union's
-   bytes, `Box<[u8]>` as text. `bytes_through_pointers` and
+2. **Bytes** (landed): `$ptrBytes` views of integer arrays and of plain
+   data, `$readInt`, `$writeInt`, `read_unaligned`, `[u8; N]` reads, a
+   union's bytes, `Box<[u8]>` as text. `bytes_through_pointers` and
    `union_bytes`; aho-corasick, memchr's `memmem` and powerfmt measured.
-3. **Fat pointers and relayout**: `*const dyn Trait` as the pair, the
-   first-field and prefix rules, the five helpers folded into
-   `relayout`. `dyn_pointers` and `pointer_relayout`; anyhow and semver
-   measured.
-4. **Constants and statics** holding pointers. `pointer_constants`.
+3. **Fat pointers** (landed): `*const dyn Trait` as the pair, unsized
+   from a thin pointer, called and written through, made thin again, a
+   `Box<dyn Trait>` taken apart and put back. `dyn_pointers`.
+4. **Relayout**: the first-field and prefix rules, the five helpers
+   folded into `relayout`. `pointer_relayout`; anyhow and semver measured.
+5. **Constants and statics** holding pointers. `pointer_constants`.
 
 ## What holds it
 
@@ -340,6 +341,26 @@ rustc's suite reblessed.
   back, each against native Rust. `test/runtime-package.test.ts` holds
   that reading through a pointer to no place is rust-js's error where it
   runs, and that an address is shown.
+- `test/corpus/bytes_through_pointers.rs`: a byte slice read as `u32`s
+  and a `u16` at any offset, as `[u8; 3]` and as an `i8`, a `u32`
+  pointer stepped over it, aho-corasick's `is_equal_raw` four bytes at a
+  time, a `u32` and a `u16` written into a byte buffer and read back as
+  bytes and as an `i8`, `Box<[u8]>` transmuted to `Box<str>`, a `u32`
+  array's bytes read across an item, sliced, patched and copied into, and
+  a `#[repr(C)]` struct's bytes read, sliced and written through a byte
+  pointer, each against native Rust.
+- `test/corpus/union_bytes.rs`: a union's `u32` read as its `f32`, its
+  `[u8; 4]` and its `(u16, u16)`, a `f32` written and read as `u32` and
+  bytes, bytes written and read as `u32` and halves, and a `u64` read as
+  `[u32; 2]` and `u8`, against native Rust. `test/runtime-package.test.ts`
+  holds that a union's `u32` reads as its `f32`, and that a field whose
+  bytes JS has none of, a `&str`, is rust-js's error where it's read.
+- `test/corpus/dyn_pointers.rs`: a `*const dyn Shape` made of a `&Square`,
+  called through `&*z` and `*z`, `is_null`, a `*mut dyn Shape` written
+  through, `z as *const Square` read and equal to `&raw const square`, a
+  `Box<dyn Shape>` taken apart with `into_raw`, written through and put
+  back with `from_raw`, and a struct holding `*const dyn Shape`s called
+  later, against native Rust.
 - rustc's suite: `supported-cast.rs`, `coercion-as-explicit-cast.rs`,
   `negative-integer-cast-to-pointer.rs`, `dyn-fn-alignment.rs`,
   `misaligned-reference-drop-field-99838.rs` and

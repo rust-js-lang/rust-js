@@ -4,11 +4,12 @@
 // they say of the JS said of the Rust.
 
 import { beforeAll, expect, test } from "bun:test";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { decodeMappings, lookup } from "./sourcemap";
-import { buildCompiler, buildReact, compiler, fixture, root, target } from "./support";
+import { check } from "./crates";
+import { buildCompiler, compiler, fixture, root } from "./support";
 
 beforeAll(buildCompiler);
 
@@ -32,6 +33,24 @@ function build(settings: string, flags: string[] = [], source = rust, prettier?:
   const p = runSync([compiler, join(dir, "src", "lib.rs"), "-o", join(dir, "out", "lib.js"), ...flags], dir, 60_000);
   const js = join(dir, "out", "lib.js");
   return { ...p, dir, js: existsSync(js) ? readFileSync(js, "utf8") : "", map: existsSync(`${js}.map`) ? readFileSync(`${js}.map`, "utf8") : "" };
+}
+
+/** `source`, as `src/lib.rs` of a crate `set` with a `.prettierrc` of
+ * `prettier` and an `.editorconfig` if given, its directory `setUp`, and
+ * `dependencies` in its Cargo.toml, built through Cargo, as an app is (ADR
+ * 0412): its JS, its map, and its `.d.ts`, which a Cargo build always
+ * writes. */
+async function cargoBuilt(source: string, prettier?: object, editorconfig?: string, setUp?: (dir: string) => void, dependencies = "") {
+  const dir = fixture("settings-cargo");
+  setUp?.(dir);
+  mkdirSync(join(dir, "src"));
+  writeFileSync(join(dir, "src", "lib.rs"), source);
+  if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
+  if (editorconfig) writeFileSync(join(dir, ".editorconfig"), editorconfig);
+  writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "set"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\n${dependencies}`);
+  const { js } = await check(join(dir, "Cargo.toml"), { packageName: "set" });
+  const text = (file: string) => (existsSync(file) ? readFileSync(file, "utf8") : "");
+  return { dir, js: text(js), map: text(`${js}.map`), types: text(js.replace(/\.jsx?$/, ".d.ts")) };
 }
 
 /** A crate whose Cargo.toml has `hooks`, compiled with `flags`. */
@@ -122,43 +141,52 @@ pub fn hi() -> &'static str {
 
 // The app's own layout (ADR 0381): where Prettier finds a config for a
 // file, as the app's `prettier --check` does, Prettier lays it out, and the
-// map follows it. This checkout has Prettier, and no config of its own.
-test("where Prettier finds a config, it lays the JS out, and the map follows it", () => {
+// map follows it, of the app's build, Cargo's. This checkout has Prettier,
+// and no config of its own.
+test("where Prettier finds a config, it lays the JS out, and the map follows it", async () => {
   const signature = "export function total(firstAmount, secondAmount, thirdAmount, fourthAmount, fifthAmount, sixthAmount) {";
   // 103 columns: past rust-js's own 100, and within 120.
-  const plain = build("", [], long);
+  const plain = await cargoBuilt(long);
   expect(plain.js).not.toContain(signature);
-  const styled = build("", [], `${rust}\n${long}`, { printWidth: 120, tabWidth: 4, singleQuote: true, semi: false });
-  expect(styled.stderr).toBe("");
+  const styled = await cargoBuilt(`${rust}\n${long}`, { printWidth: 120, tabWidth: 4, singleQuote: true, semi: false });
   expect(styled.js).toContain(`\n${signature}\n`);
   expect(styled.js).toContain("\n    const greeting = `Hello, ${name}!`\n");
   expect(styled.js).toContain("\n    return 'hi'\n");
   expect(rustOf(styled.js, styled.map, "greeting =")).toEqual([2, 5]);
+}, 300_000);
+
+// A config, not Prettier installed, decides: this checkout's Prettier is
+// found from the fixture, and no config is, so the layout is rust-js's,
+// 100 columns, not Prettier's defaults' 80.
+test("a crate with Prettier and no config of its own keeps rust-js's layout", async () => {
+  // 91 columns.
+  const signature = "export function total(firstAmount, secondAmount, thirdAmount, fourthAmount, fifth) {";
+  const source = "pub fn total(first_amount: u32, second_amount: u32, third_amount: u32, fourth_amount: u32, fifth: u32) -> u32 {\n    first_amount + second_amount + third_amount + fourth_amount + fifth\n}\n";
+  const unstyled = await cargoBuilt(source);
+  expect(unstyled.js).toContain(`\n${signature}\n`);
+}, 300_000);
+
+// A file compiled alone, a test's or the playground's, is no app's (ADR
+// 0414): the Cargo.toml above it, maybe another's, names its hooks, but its
+// JS is nobody's to check, and the Prettier above it isn't asked, which
+// is Node started and Prettier imported, 30 ms of a small file's 80.
+test("a file compiled alone keeps rust-js's layout, whatever Prettier config is above it", () => {
+  const signature = "export function total(firstAmount, secondAmount, thirdAmount, fourthAmount, fifthAmount, sixthAmount) {";
+  const alone = build("", [], `${rust}\n${long}`, { printWidth: 120, semi: false });
+  expect(alone.stderr).toBe("");
+  expect(alone.js).not.toContain(signature);
+  expect(alone.js).toContain("\n  return greeting;\n");
 });
 
 // Prettier lays JSX out otherwise than oxfmt, here at 40 columns: it
 // breaks JSX's text, with a `{" "}` rust-js's lines hadn't, and it's the
 // same program, so it's kept, and the map finds the Rust each probe did.
-test("Prettier's layout of the app's JSX is kept, and the map still finds the Rust", () => {
-  buildReact();
-  const app = (prettier?: object) => {
-    const dir = fixture("prettier");
-    mkdirSync(join(dir, "src"));
-    copyFileSync(join(root, "examples", "vite-react", "src", "App.rs"), join(dir, "src", "App.rs"));
-    writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
-    if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
-    const js = join(dir, "src", "App.jsx");
-    const p = runSync(
-      [compiler, join(dir, "src", "App.rs"), "-o", js, "--", "-L", target, ...["js", "webapi", "react"].flatMap((name) => ["--extern", `${name}=${join(target, `lib${name}.rmeta`)}`])],
-      dir,
-      120_000,
-    );
-    expect(p.code).toBe(0);
-    return { stderr: p.stderr, js: readFileSync(js, "utf8"), map: readFileSync(`${js}.map`, "utf8") };
-  };
-  const plain = app();
-  const pretty = app({ printWidth: 40 });
-  expect(pretty.stderr).toBe("");
+test("Prettier's layout of the app's JSX is kept, and the map still finds the Rust", async () => {
+  const source = `#![allow(non_snake_case)]\n${readFileSync(join(root, "examples", "vite-react", "src", "App.rs"), "utf8")}`;
+  const crates = ["react", "js"].map((name) => `${name} = { package = "rust-js-${name === "js" ? "builtins" : name}", path = ${JSON.stringify(join(root, name === "js" ? "builtins" : name))} }\n`).join("");
+  const app = (prettier?: object) => cargoBuilt(source, prettier, undefined, undefined, crates);
+  const plain = await app();
+  const pretty = await app({ printWidth: 40 });
   expect(pretty.js.split('{" "}').length).toBeGreaterThan(plain.js.split('{" "}').length);
   for (const word of ["useState(0)", "setCount(", "font-bold text-emerald-500", "Get started", "heroImg}"]) {
     expect([word, rustOf(pretty.js, pretty.map, word)]).toEqual([word, rustOf(plain.js, plain.map, word)]);
@@ -168,34 +196,28 @@ test("Prettier's layout of the app's JSX is kept, and the map still finds the Ru
 // Prettier 2, react.dev's, is CommonJS: imported, its API is the module's
 // `default`. A CommonJS `prettier` of the fixture's own, Prettier 3's
 // CommonJS build, stands for it.
-test("a CommonJS Prettier, as Prettier 2 is, lays the JS out too", () => {
-  const out = build("", [], `${rust}\n${long}`, { singleQuote: true }, undefined, (dir) => {
+test("a CommonJS Prettier, as Prettier 2 is, lays the JS out too", async () => {
+  const out = await cargoBuilt(`${rust}\n${long}`, { singleQuote: true }, undefined, (dir) => {
     mkdirSync(join(dir, "node_modules", "prettier"), { recursive: true });
     writeFileSync(join(dir, "node_modules", "prettier", "package.json"), JSON.stringify({ name: "prettier", main: "index.js" }));
     writeFileSync(join(dir, "node_modules", "prettier", "index.js"), `module.exports = require(${JSON.stringify(join(root, "node_modules", "prettier", "index.cjs"))});\n`);
   });
-  expect(out.stderr).toBe("");
   expect(out.js).toContain("\n  return 'hi';\n");
-});
+}, 300_000);
 
 // Prettier reads `.editorconfig` too, as the app's `prettier --check` does.
-test("Prettier's config is the app's `.editorconfig`'s too", () => {
-  const out = build("", [], rust, {}, "root = true\n\n[*]\nindent_style = space\nindent_size = 4\n");
-  expect(out.stderr).toBe("");
+test("Prettier's config is the app's `.editorconfig`'s too", async () => {
+  const out = await cargoBuilt(rust, {}, "root = true\n\n[*]\nindent_style = space\nindent_size = 4\n");
   expect(out.js).toContain("\n    const greeting = `Hello, ${name}!`;\n");
-});
+}, 300_000);
 
-test("a crate's declarations are laid out by Prettier too", () => {
+test("a crate's declarations are laid out by Prettier too", async () => {
   const source = "pub struct Point {\n    pub x: f64,\n}\n\npub fn origin() -> Point {\n    Point { x: 0.0 }\n}\n";
-  const typed = (prettier?: object) => {
-    const out = build("", ["--declarations"], source, prettier);
-    expect(out.stderr).toBe("");
-    return readFileSync(join(out.dir, "out", "lib.d.ts"), "utf8");
-  };
+  const typed = async (prettier?: object) => (await cargoBuilt(source, prettier)).types;
   // TypeScript's printer's four spaces, and Prettier's two.
-  expect(typed()).toContain("\n    x: number;\n");
-  expect(typed({})).toContain("\n  x: number;\n");
-});
+  expect(await typed()).toContain("\n    x: number;\n");
+  expect(await typed({})).toContain("\n  x: number;\n");
+}, 300_000);
 
 test("the formatter's options are the app's Prettier config's, not Cargo.toml's", () => {
   const out = build("[package.metadata.rust-js.format]\nprintWidth = 120");

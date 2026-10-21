@@ -128,6 +128,9 @@ declared, and again once temporaries are read in place, before `and_tests`;
 - `test/std-package.test.ts`: the committed `std/iter.js` is what the
   compiler writes, and has no test its early return decided, no once-read
   `bool` and no tail written twice.
+- `docs/readability.txt` (ADR 0565): `return;` 82 to 81 and `renamed x$1`
+  8211 to 8198 over the committed JS, 30 lines fewer; `$iter` stays 532,
+  its share 61.7 to 61.8 in 10,000 lines only as the lines fall.
 - The corpus cases above, their JS snapshots reviewed; `examples/strings.rs`'s;
   and `test/corpus/decided_tests_past_a_call.rs`, against native Rust: a
   field's test after a call that clears the field is read again.

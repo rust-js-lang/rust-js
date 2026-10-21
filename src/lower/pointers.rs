@@ -19,6 +19,7 @@ use super::calls::Call;
 use super::recognition::Std;
 use super::recognition::TypeFact;
 use super::refusal::{Refused, refuse};
+use super::representation::Num;
 use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
@@ -172,7 +173,9 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::null_mut", PointerOp::Null),
     ("std::ptr::read", PointerOp::Read),
     ("std::ptr::read_volatile", PointerOp::Read),
+    ("std::ptr::read_unaligned", PointerOp::Read),
     ("std::ptr::write", PointerOp::Write),
+    ("std::ptr::write_unaligned", PointerOp::Write),
     ("std::ptr::write_volatile", PointerOp::Write),
     ("std::ptr::replace", PointerOp::Replace),
     ("std::ptr::swap", PointerOp::Swap),
@@ -217,8 +220,10 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("is_null", PointerOp::IsNull),
     ("read", PointerOp::Read),
     ("read_volatile", PointerOp::Read),
+    ("read_unaligned", PointerOp::Read),
     ("write", PointerOp::Write),
     ("write_volatile", PointerOp::Write),
+    ("write_unaligned", PointerOp::Write),
     ("replace", PointerOp::Replace),
     ("swap", PointerOp::Swap),
     ("add", PointerOp::Add),
@@ -261,7 +266,9 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("as_ref", PointerOp::Place),
     ("as_mut", PointerOp::PlaceMut),
     ("read", PointerOp::Read),
+    ("read_unaligned", PointerOp::Read),
     ("write", PointerOp::Write),
+    ("write_unaligned", PointerOp::Write),
     ("replace", PointerOp::Replace),
     ("swap", PointerOp::Swap),
     ("add", PointerOp::Add),
@@ -607,9 +614,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
-    /// are but a pointer to a JS object, which is the object (ADR 0285).
+    /// are but a pointer to a JS object, which is the object (ADR 0285),
+    /// and one to what is its own pointer, `pointee_is_itself`.
     pub(super) fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
-        raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !pointee.is_slice())
+        raw_pointee(self.tcx, ty)
+            .is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !self.pointee_is_itself(pointee))
+    }
+
+    /// Whether a pointer to a `pointee` is the pointee itself, not a handle
+    /// on a place: a slice's is the slice, an array or a view of part of one
+    /// (ADR 0407); a `dyn`'s that's a pair is the pair, `{ value, impl }`,
+    /// as a `&dyn Trait` is (ADR 0562).
+    pub(super) fn pointee_is_itself(&self, pointee: Ty<'tcx>) -> bool {
+        pointee.is_slice() || matches!(pointee.kind(), ty::Dynamic(..)) && self.is_pair_dyn(pointee)
     }
 
     /// A pointer only read through, of what a reference or box refers to,
@@ -619,7 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
-        match named || pointee.is_slice() || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+        match named || self.pointee_is_itself(pointee) || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
             true => self.pointer_to(place, pointee, None, span),
             false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
         }
@@ -636,8 +653,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.extend(offset.map(|offset| Expr::int(i128::from(offset))));
             Expr::call(Expr::helper("$ptr"), args)
         };
-        // A slice's is the slice, an array or a view of part of one.
-        if pointee.is_slice() {
+        // A slice's is the slice, a pair `dyn`'s the pair.
+        if self.pointee_is_itself(pointee) {
             return Ok(place);
         }
         if let Some(dangling) = self.dangling_pointer(pointee, span)? {
@@ -690,17 +707,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a pointer to a `{pointee}`, aligned past 4096");
             return Err(refuse(self.tcx, span, Refused::Memory(&what)));
         }
-        if layout.size.bytes() != 0 {
+        if !self.is_zero_sized(pointee) {
             return Ok(None);
         }
         let align = Expr::int(i128::from(align));
         Ok(Some(Expr::call(Expr::helper("$ptrFrom"), vec![align, Expr::int(0)])))
     }
 
-    /// What a pointer to a `pointee` points to: of a slice, the slice it is,
-    /// else the place it's a handle on, `pointee_place`.
+    /// Whether a `ty` has no size, a unit struct's or `()`'s, whose value
+    /// is `undefined` and whose pointer has no place (ADR 0562).
+    pub(super) fn is_zero_sized(&self, ty: Ty<'tcx>) -> bool {
+        self.layout(ty).is_some_and(|layout| layout.size.bytes() == 0)
+    }
+
+    /// What a pointer to a `pointee` points to: of a slice or a pair `dyn`,
+    /// the pointer itself, else the place it's a handle on, `pointee_place`.
     fn pointed_place(&self, pointer: Expr, pointee: Ty<'tcx>) -> Expr {
-        match pointee.is_slice() {
+        match self.pointee_is_itself(pointee) {
             true => pointer,
             false => self.pointee_place(pointer),
         }
@@ -774,12 +797,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => unreachable!("a `Box`"),
                 };
                 let value = arg();
+                // A `Box<dyn Trait>`'s, the pair it is (ADR 0562).
+                if self.pointee_is_itself(held) {
+                    return Ok(Some(value));
+                }
                 match self.is_object(held) && !self.is_cell_pointee(held) {
                     true => helper("$ptrTo", vec![value]),
                     false => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
                 }
             }
-            PointerOp::FromRaw => self.pointee_place(arg()),
+            PointerOp::FromRaw => self.pointed_place(arg(), pointee.expect("a pointer")),
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
             PointerOp::Swap => helper("$ptrSwap", vec![arg(), arg()]),
             PointerOp::Add => helper("$ptrAdd", vec![arg(), arg()]),
@@ -975,6 +1002,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Some(Expr::call(Expr::helper("$ptr"), vec![value, Expr::int(0)])))
             }
+            // A pair `dyn`'s pointer as its value's, `z as *const A`: a
+            // pointer to the pair's value (ADR 0562).
+            mir::CastKind::PtrToPtr
+                if let Some((a, _)) = raw_pointee(self.tcx, from)
+                    && matches!(a.kind(), ty::Dynamic(..))
+                    && self.pointee_is_itself(a)
+                    && let Some((b, _)) = raw_pointee(self.tcx, to)
+                    && self.is_handle_pointer(to) =>
+            {
+                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, None, span)?))
+            }
             mir::CastKind::PtrToPtr if self.is_handle_pointer(from) && self.is_handle_pointer(to) => {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {
                     unreachable!("pointers")
@@ -1024,20 +1062,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type, arrayvec's `ptr.cast::<u8>()` of a type with no size: checked
     /// where it's made, `$ptrRecast`. Else it reads one type's memory as
     /// another's, which is refused.
-    pub(super) fn recast(&self, pointer: Expr, a: Ty<'tcx>, b: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn recast(&mut self, pointer: Expr, a: Ty<'tcx>, b: Ty<'tcx>, span: Span) -> R<Expr> {
         if self.same_place(a, b) || a.is_unit() || b.is_unit() {
             return Ok(pointer);
         }
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);
+        let (a, b) = (value(a), value(b));
+        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8) | ty::Int(ty::IntTy::I8));
+        let integer = |t: Ty<'tcx>| Num::of(t).is_some_and(|n| !n.float());
         match (a.kind(), b.kind()) {
             (ty::Array(item, _), _) if self.same_place(*item, b) => Ok(self.first_item_pointer(pointer)),
-            (_, ty::Array(item, length)) if self.same_place(a, *item) => {
+            (_, ty::Array(item, length)) if self.same_place(a, *item) && !is_bytes(a) => {
                 Ok(helper("$ptrWhole", vec![pointer, self.const_arg(*length, span)?]))
             }
-            // To bytes, which JS has none of, and back: an allocation's
-            // pointer, given to the allocator (ADR 0417).
-            (_, ty::Uint(ty::UintTy::U8)) => Ok(helper("$ptrBytes", vec![pointer])),
-            (ty::Uint(ty::UintTy::U8), _) => Ok(helper("$ptrTyped", vec![pointer])),
+            // From bytes: an integer, a `u8`'s as an `i8` too, or a `[u8;
+            // N]`, read where they are; another type, what was cast to bytes.
+            (_, _) if is_bytes(a) && integer(b) => {
+                let width = self.pointee_size(b, span)?;
+                let signed = Expr::bool(b.is_signed());
+                Ok(helper("$ptrRetyped", vec![pointer, width, signed]))
+            }
+            (_, ty::Array(item, length)) if is_bytes(a) && is_bytes(*item) => {
+                let width = self.const_arg(*length, span)?;
+                Ok(helper("$ptrRetyped", vec![pointer, width, Expr::str("bytes")]))
+            }
+            (_, _) if is_bytes(a) => Ok(helper("$ptrTyped", vec![pointer])),
+            // To bytes: plain data's, a struct's or an integer's, as wasm32
+            // holds them, through its codec (ADR 0562); of what has none, an
+            // allocation's slots given to the allocator (ADR 0417), cast back
+            // only.
+            (_, _) if is_bytes(b) => Ok(match self.plain_codec(a, span)? {
+                Some((size, encode, decode)) => helper("$ptrBytes", vec![pointer, size, encode, decode]),
+                None => helper("$ptrBytes", vec![pointer]),
+            }),
+            // Between integers of two widths, and plain data read as an
+            // integer or as bytes: through the bytes.
+            (_, _)
+                if (integer(a) || self.plain_codec(a, span)?.is_some())
+                    && (integer(b) || matches!(b.kind(), ty::Array(item, _) if is_bytes(*item))) =>
+            {
+                let bytes = self.recast(pointer, a, self.tcx.types.u8, span)?;
+                self.recast(bytes, self.tcx.types.u8, b, span)
+            }
             // A whole array's pointer as its first item's, of a type each of
             // whose impls of the item's trait is an array of it, smallvec's
             // `*const A` as `*const A::Item` (ADR 0417).
@@ -1099,12 +1166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An array's pointer as its first item's, `arr.as_ptr()` or `&arr as
     /// *const T`: `$ptr(arr, 0)`.
     pub(super) fn first_item_pointer(&self, pointer: Expr) -> Expr {
-        let array = match &pointer.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptrTo") && args.len() == 1 => {
-                args[0].clone()
-            }
-            _ => Expr::held(pointer),
-        };
+        let array = self.pointee_place(pointer);
         Expr::call(Expr::helper("$ptr"), vec![array, Expr::int(0)])
     }
 
