@@ -1901,4 +1901,20 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
+  {
+    name: "dyn-tail-through-wrapper",
+    breaks: "a struct's last field a `ManuallyDrop<dyn T>` is taken for a struct of its own, given the `impl`",
+    file: "src/lower/traits.rs",
+    find: "            let field = self.unwrapped(self.field_ty(last, args));\n",
+    replace: "            let field = self.field_ty(last, args);\n",
+    tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
+  },
+  {
+    name: "dyn-shown-of-read-pair-refused",
+    breaks: "a struct's `dyn` last field, shown, is refused as made where it's shown",
+    file: "src/lower/traits.rs",
+    find: "        if !pair.parts_read_same() {\n",
+    replace: "        if !pair.reads_same() {\n",
+    tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
+  },
 ];

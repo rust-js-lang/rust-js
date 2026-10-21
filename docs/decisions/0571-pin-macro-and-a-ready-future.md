@@ -88,3 +88,25 @@ through its `DerefMut`, was refused.
   `transparent-held-unchecked`, `manually-drop-shaped-a-struct`,
   `uninit-always-holds`, `await-pinned-cell`, `pin-mut-gives-a-handle`,
   `pin-borrow-a-write`, `pin-macro-unnamed`.
+
+## Amendment: an `IntoFuture` of the crate's
+
+**`.await` of a value whose `IntoFuture` is the crate's own awaits what its
+`into_future` makes**: `Doubled(x).await` is `await
+doubledIntoFuture_into_future([x])`, the impl's method named as every
+std trait's impl method is. Its impl was refused; now it's compiled as any
+impl's method is, and `.await` calls it first where `own_into_future`, the
+one place that asks whether a type's `IntoFuture` is the crate's, says so.
+`unlowered_future` asks the same of `Future::poll` through one function,
+`own_impl_of`.
+
+Generic code bound by `IntoFuture`, `async fn g<T: IntoFuture>(t: T)`,
+awaits what it's given as a promise, which every other `IntoFuture` is;
+given one of the crate's own, it's refused where it's called, naming the
+type, rather than awaiting the value. A dictionary of `IntoFuture` would
+need std's impl for every future, a promise, to be one too.
+
+Held by `test/async.rs`'s `doubled`, the diagnostics test "an IntoFuture
+of the crate's given to generic code", the limitation it lists, and
+mutations `own-into-future-uncalled`, `own-into-future-given-unrefused`,
+`into-future-unimplementable` and `own-into-future-awaited-refused`.

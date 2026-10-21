@@ -2,8 +2,8 @@
 //! and the webapi crate's promises: `fetch`, binary data and WebAssembly.
 
 use std::cell::RefCell;
-use std::future::ready;
-use std::pin::pin;
+use std::future::{IntoFuture, ready};
+use std::pin::{Pin, pin};
 use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
@@ -75,6 +75,23 @@ pub async fn pinned(x: u32) -> u32 {
     let mut done = pin!(ready(x));
     let block = pin!(async move { double(x).await });
     done.as_mut().await + block.await
+}
+
+/// A request of the crate's, awaited as what its `IntoFuture` makes.
+pub struct Doubled(pub u32);
+
+impl IntoFuture for Doubled {
+    type Output = u32;
+    type IntoFuture = Pin<Box<dyn Future<Output = u32>>>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(double(self.0))
+    }
+}
+
+/// `.await` of an `IntoFuture` of the crate's: its `into_future` awaited.
+pub async fn doubled(x: u32) -> u32 {
+    Doubled(x).await + 1
 }
 
 /// A spawned task runs up to its first `.await` right away (a JS promise is

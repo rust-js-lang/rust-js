@@ -4386,6 +4386,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         wraps.then(|| held.find(|t| !t.is_unit())).flatten()
     }
 
+    /// What `ty` is in JS through each type that's the value it holds:
+    /// `dyn Display` of a `ManuallyDrop<dyn Display>`; `ty` if it's none.
+    pub(super) fn unwrapped(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+        while let Some(held) = self.transparent(ty) {
+            ty = held;
+        }
+        ty
+    }
+
     /// A pinned reference, a `&mut` to which is the pin, which only what it
     /// points at is changed through (ADR 0329).
     pub(super) fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
@@ -4410,13 +4419,48 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Pin` of one: an impl rust-js never lowers (ADR 0425), so no JS
     /// promise is a value of it, and what would await one is refused.
     pub(super) fn unlowered_future(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.future_pointee(ty);
-        let Some(poll) = self.tcx.lang_items().get(LangItem::FuturePoll) else {
+        self.own_impl_of(LangItem::FuturePoll, self.future_pointee(ty))
+    }
+
+    /// Whether `ty`'s impl of the std trait method `method` is the crate's
+    /// own, or a library's rust-js compiled.
+    fn own_impl_of(&self, method: LangItem, ty: Ty<'tcx>) -> bool {
+        let Some(method) = self.tcx.lang_items().get(method) else {
             return false;
         };
         let args = self.tcx.mk_args(&[ty.into()]);
-        matches!(super::items::resolve_instance_in(self.tcx, self.typing_env, poll, args),
+        matches!(super::items::resolve_instance_in(self.tcx, self.typing_env, method, args),
             Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| self.is_rust_trait(imp)))
+    }
+
+    /// A type whose `IntoFuture` is the crate's own (ADR 0571), awaited as
+    /// what its `into_future` makes, not as the promise it isn't.
+    pub(super) fn own_into_future(&self, ty: Ty<'tcx>) -> bool {
+        self.own_impl_of(LangItem::IntoFutureIntoFuture, ty)
+    }
+
+    /// A type with an `own_into_future` that calling `def_id` of `args`
+    /// asks an `IntoFuture` of, among its bounds, other than `into_future`
+    /// itself: generic code, which awaits what it's given as a promise.
+    pub(super) fn own_into_future_given(&self, (def_id, args): (DefId, ty::GenericArgsRef<'tcx>)) -> Option<Ty<'tcx>> {
+        if self.tcx.is_lang_item(def_id, LangItem::IntoFutureIntoFuture) {
+            return None;
+        }
+        self.tcx
+            .clauses_of(def_id)
+            .instantiate(self.tcx, args)
+            .into_iter()
+            .find_map(|(clause, _)| match clause.skip_normalization().kind().skip_binder() {
+                ty::ClauseKind::Trait(bound)
+                    if self
+                        .tcx
+                        .is_diagnostic_item(Symbol::intern("IntoFuture"), bound.def_id())
+                        && self.own_into_future(bound.self_ty()) =>
+                {
+                    Some(bound.self_ty())
+                }
+                _ => None,
+            })
     }
 
     /// What a future, or a reference, `Box` or `Pin` of one, is of.
@@ -5105,6 +5149,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         // visitor's (ADR 0459).
         || serde_visitor(tcx, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
+        // What `.await` calls first, `into_future` (ADR 0571).
+        || tcx.is_diagnostic_item(Symbol::intern("IntoFuture"), id)
         // Never lowered (ADRs 0168, 0425).
         || unlowered_trait(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:

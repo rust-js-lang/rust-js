@@ -109,7 +109,7 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time)).
 - Sleeping: `std::thread::sleep(std::time::Duration::from_millis(1));`
 - A time's `{:?}`, its platform's fields: `println!("{:?}", std::time::Instant::now());`
 - `future::poll_fn`: `let f = std::future::poll_fn(|_| std::task::Poll::Ready(1)); let _ = f;`
-- An `IntoFuture` of the crate's: `struct F; impl std::future::IntoFuture for F { type Output = u32; type IntoFuture = std::future::Ready<u32>; fn into_future(self) -> Self::IntoFuture { std::future::ready(1) } } async fn g() -> u32 { F.await } let _ = g();`
+- An `IntoFuture` of the crate's given to generic code bound by `IntoFuture`, which awaits it as a promise: `struct F; impl std::future::IntoFuture for F { type Output = u32; type IntoFuture = std::future::Ready<u32>; fn into_future(self) -> Self::IntoFuture { std::future::ready(1) } } async fn g<T: std::future::IntoFuture<Output = u32>>(t: T) -> u32 { t.await } let _ = g(F);`
 - A `Wake` of the crate's: `struct W; impl std::task::Wake for W { fn wake(self: std::sync::Arc<Self>) {} } let w = std::task::Waker::from(std::sync::Arc::new(W)); drop(w);`
 
 ## serde

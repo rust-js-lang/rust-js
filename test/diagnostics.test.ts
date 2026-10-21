@@ -21,6 +21,7 @@ for (const [name, source, message, crate] of [
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.
   // Its address is a number of rust-js's own (ADR 0562).
   ["a pointer to text", "pub fn f(s: &str) -> *const str { s as *const str }", "does not support addressable memory yet: values of type `*const str`"],
+  ["an IntoFuture of the crate's given to generic code", "use std::future::{IntoFuture, Ready, ready};\npub struct F;\nimpl IntoFuture for F { type Output = u32; type IntoFuture = Ready<u32>; fn into_future(self) -> Ready<u32> { ready(1) } }\nasync fn g<T: IntoFuture<Output = u32>>(t: T) -> u32 { t.await }\npub async fn h() -> u32 { g(F).await }", "does not support `F` where any `IntoFuture` goes yet: its `IntoFuture` is the crate's own"],
   ["a ManuallyDrop of what's refused", "pub fn f(x: std::mem::ManuallyDrop<*const str>) -> std::mem::ManuallyDrop<*const str> { x }", "does not support addressable memory yet: values of type `*const str`"],
   // A struct's pointer as a field's that rustc doesn't lay at its offset 0 (ADR 0562).
   ["a struct's pointer as a later field's", "#[repr(C)] pub struct R { name: String, n: u32 }\npub fn f(p: *const R) -> u32 { unsafe { *(p as *const u32) } }", "does not support addressable memory yet: a pointer read as another type's"],

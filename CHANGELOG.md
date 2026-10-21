@@ -21,13 +21,18 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A struct's `dyn` last field shown** (ADR 0409): `format!("{}",
+  &tagged.value)` of a `&Tagged<dyn Display>` is
+  `tagged.impl.fmt(tagged.value)`, where it was refused, and so is one held
+  in a `ManuallyDrop`.
 - **A `&mut` shown is what it points at** (ADR 0099): `println!("{r}
   {r:?}")` of `let r = &mut n` is `${n} ${n}`, where it was a handle on `n`
   in a variable named `value`. So is a pinned `&mut`.
 - **`pin!` and `future::ready`** (ADR 0571): `pin!(fut).await` is `await
   fut`, the variable named as the `Pin`'s binding, and `ready(v)` is
   `Promise.resolve(v)`. A `&mut ManuallyDrop<u32>` written through is a
-  `&mut` to the number, where it was refused.
+  `&mut` to the number, where it was refused. `.await` of a type whose
+  `IntoFuture` is the crate's awaits what its `into_future` makes.
 - **A temporary is named as rust-analyzer suggests** (ADR 0569): after the
   call the source makes, `const floor = Math.floor(x)`, `const next =
   $next(entries)`, or the program's type it holds, `const point = find(..)`,

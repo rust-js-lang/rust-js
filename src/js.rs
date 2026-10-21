@@ -2084,6 +2084,13 @@ impl Expr {
     /// Is this the same value, cheaply, however often it's read? A variable,
     /// a property of one, an item of one at a constant index (`t[0]`), or a
     /// constant: what can be written twice.
+    /// Can its parts be read apart, once each: one that `reads_same`, or a
+    /// `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
+    /// f.impl }`, whose `value` and `impl` are those (ADR 0409).
+    pub fn parts_read_same(&self) -> bool {
+        self.reads_same() || matches!(&self.kind, ExprKind::Object(props) if is_read_pair(props))
+    }
+
     pub fn reads_same(&self) -> bool {
         match &self.kind {
             ExprKind::Var(_) | ExprKind::Symbol(_) => true,

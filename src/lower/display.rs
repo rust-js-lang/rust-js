@@ -901,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `dyn ToString`'s text, what `to_string()` of it gives, is its
         // dictionary's `to_string` of its value (ADR 0141).
         if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {
-            if !value.reads_same() {
+            if !value.parts_read_same() {
                 return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));
             }
             let dictionary = Expr::member(value.clone(), js::DICTIONARY);

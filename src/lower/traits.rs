@@ -2832,7 +2832,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         // Read twice: once for its dictionary, once for its value.
-        if !pair.reads_same() {
+        if !pair.parts_read_same() {
             return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));
         }
         let mut values = vec![Expr::held(pair)];
@@ -2990,7 +2990,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(last) = adt.non_enum_variant().fields.iter().last() else {
                 return path;
             };
-            let field = self.field_ty(last, args);
+            // A `ManuallyDrop` is the value it holds, a `dyn` the struct holds.
+            let field = self.unwrapped(self.field_ty(last, args));
             if matches!(field.kind(), ty::Dynamic(..)) || !matches!(field.kind(), ty::Adt(..)) {
                 return path;
             }

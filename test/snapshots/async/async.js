@@ -64,6 +64,15 @@ export async function pinned(x) {
   return ((await done) + (await block)) >>> 0;
 }
 
+function doubledIntoFuture_into_future(doubled) {
+  return double(doubled[0]);
+}
+
+/** `.await` of an `IntoFuture` of the crate's: its `into_future` awaited. */
+export async function doubled(x) {
+  return ((await doubledIntoFuture_into_future([x])) + 1) >>> 0;
+}
+
 /**
  * A spawned task runs up to its first `.await` right away (a JS promise is
  * already running), and the rest later.

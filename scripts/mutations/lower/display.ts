@@ -693,4 +693,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
+  {
+    name: "dyn-to-string-of-read-pair-refused",
+    breaks: "`to_string()` of a struct's `dyn ToString` last field is refused as made where it's shown",
+    file: "src/lower/display.rs",
+    find: "            if !value.parts_read_same() {\n",
+    replace: "            if !value.reads_same() {\n",
+    tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
+  },
 ];

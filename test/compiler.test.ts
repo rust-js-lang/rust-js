@@ -278,6 +278,7 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
   expect(await asyncs.blocks(5)).toBe(26);
   expect(await asyncs.held()).toBe(5);
   expect(await asyncs.pinned(3)).toBe(9);
+  expect(await asyncs.doubled(4)).toBe(9);
   // The listener heard the first ping, and was gone for the second.
   expect(asyncs.listen_until_aborted()).toBe(1);
   // A spawned task runs up to its first `.await` at once, the rest later.

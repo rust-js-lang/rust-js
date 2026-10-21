@@ -67,3 +67,27 @@ A `Box<Fat<dyn T>>` is the struct given its `impl`, as a reference's is,
 and drops its last field through it, `fat.impl.$drop?.(fat.inner)`, where
 Rust drops it; so is one of a `dyn` of std's or of no trait (ADR 0436).
 An `Rc` of one, which may be counted, is still refused.
+
+## Amendment: shown through a reference, and through a `ManuallyDrop`
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): what's shown is the
+same; a refusal is lifted.
+
+- **The last field shown**, `format!("{}", &tagged.value)` of a
+  `&Tagged<dyn Display>`, or its `to_string()`, is
+  `tagged.impl.fmt(tagged.value)`. Its pair, `{ value: tagged.value, impl:
+  tagged.impl }`, was refused as "made where it's shown", since it isn't
+  one value read twice; its parts are each a read, which
+  `Expr::parts_read_same` says, and the pair's `impl` and `value` read as
+  those (`Expr::member`'s folding).
+- **A `ManuallyDrop<T>` last field** is the `T` it holds (ADR 0571), so the
+  struct is what holds the `dyn`: given its `impl` by `tail_path`, and its
+  field read as a pair, each through `unwrapped`, what a type is in JS
+  through each type that's the value it holds. It was taken for a struct of
+  its own, given the `impl`, and rustc's `packed/dyn-trait.rs` crashed
+  projecting a field of it.
+
+`test/corpus/manually_drop_unsized.rs` shows each, against native Rust;
+mutations `dyn-shown-of-read-pair-refused`,
+`dyn-to-string-of-read-pair-refused`, `dyn-tail-through-wrapper` and
+`dyn-field-through-wrapper`.

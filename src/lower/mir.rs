@@ -2061,9 +2061,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return Err(self.unlowered_future_awaited(future, *fn_span));
                 }
+                if let Some(given) = fn_def(func.ty(&state.body.local_decls, self.tcx))
+                    .and_then(|call| self.recognition().own_into_future_given(call))
+                {
+                    let what = format!("`{given}` where any `IntoFuture` goes");
+                    let why = "its `IntoFuture` is the crate's own, which generic code would await as a promise";
+                    return Err(refuse(self.tcx, *fn_span, Refused::Because(&what, why)));
+                }
                 let mut called = Vec::new();
                 let value = match state.awaits.contains(&block) {
-                    true => self.mir_await(state, args, *fn_span, &mut called),
+                    true => self.mir_await(state, func, args, *fn_span, &mut called),
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
                 let value = value?;
@@ -4169,7 +4176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // struct was given when it was made one, a pair; of a `&mut`,
                 // one on the field's place (ADR 0409).
                 if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()
-                    && matches!(place.ty(decls, tcx).ty.kind(), ty::Dynamic(..))
+                    && matches!(self.unwrapped(place.ty(decls, tcx).ty).kind(), ty::Dynamic(..))
                 {
                     let base_ty = base.ty(decls, tcx).ty;
                     let base = mir::Place::from(base.local).project_deeper(base.projection, tcx);
@@ -5384,17 +5391,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         refuse(self.tcx, span, Refused::Because(&what, why))
     }
 
-    /// `.await` of what's given, `into_future(x)`'s (`awaits.rs`).
+    /// `.await` of what's given, `into_future(x)`'s (`awaits.rs`): of an
+    /// `IntoFuture` of the crate's, of what its `into_future` makes (ADR
+    /// 0571).
     fn mir_await(
         &mut self,
         state: &mut State<'_, 'tcx>,
+        func: &Operand<'tcx>,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
-        let ty = operands[0].ty(&state.body.local_decls, self.tcx);
-        let awaited = self.take_operands(state, &operands, out)?.remove(0);
+        let mut ty = operands[0].ty(&state.body.local_decls, self.tcx);
+        let mut awaited = self.take_operands(state, &operands, out)?.remove(0);
+        if self.recognition().own_into_future(ty)
+            && let Some((def_id, generic_args)) = fn_def(func.ty(&state.body.local_decls, self.tcx))
+        {
+            let sig = self
+                .tcx
+                .fn_sig(def_id)
+                .instantiate(self.tcx, generic_args)
+                .skip_normalization();
+            let made = self.tcx.instantiate_bound_regions_with_erased(sig).output();
+            let made = self
+                .tcx
+                .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(made));
+            awaited = self.mir_call_values(state, (def_id, generic_args), (vec![awaited], &[ty]), made, span, out)?;
+            ty = made;
+        }
         // A pinned `&mut` to a future, `pin!(f).await`, is the promise it
         // points at (ADR 0329): the place it's to, or its cell's `value`.
         let pointer = self.recognition().pinned(ty).unwrap_or(ty);

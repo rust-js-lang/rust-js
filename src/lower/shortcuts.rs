@@ -171,6 +171,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_lang_adt(ty, item)
     }
 
+    /// What `ty` is in JS through each type that's the value it holds.
+    pub(super) fn unwrapped(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        self.recognition().unwrapped(ty)
+    }
+
     /// A pinned reference, a `&mut` to which is the pin (ADR 0329).
     pub(super) fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().mut_is_the_pin(ty)
