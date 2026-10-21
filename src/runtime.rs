@@ -99,7 +99,6 @@ helpers! {
     BackSteps,
     RangeLen,
     NextBackSome,
-    PeekSome,
     Scan,
     JsonFail,
     BigDiv,
@@ -200,7 +199,6 @@ helpers! {
     JsonCollect,
     FloatEuclid,
     FloatMidpoint,
-    Peekable,
     TryFoldOk,
     StartsBy,
     StrGet,
@@ -238,6 +236,7 @@ helpers! {
     SplitOff,
     Peek,
     NextIf,
+    StdIterator,
     Rest,
     RestStr,
     UnwrapErr,
@@ -626,7 +625,6 @@ impl Helper {
             Helper::IoError => include_str!("runtime/io_error.js"),
             Helper::Hasher => include_str!("runtime/hasher.js"),
             Helper::DropEach => include_str!("runtime/drop_each.js"),
-            Helper::Peekable => include_str!("runtime/peekable.js"),
             Helper::TryFoldOk => include_str!("runtime/try_fold_ok.js"),
             Helper::StartsBy => include_str!("runtime/starts_by.js"),
             Helper::StrGet => include_str!("runtime/str_get.js"),
@@ -846,8 +844,6 @@ impl Helper {
             Helper::BackSteps => include_str!("runtime/back_steps.js"),
             Helper::RangeLen => include_str!("runtime/range_len.js"),
             Helper::NextBackSome => include_str!("runtime/next_back_some.js"),
-            // A `Peekable`'s `peek()` of a generic `T`'s, boxed as `$nextSome` boxes.
-            Helper::PeekSome => include_str!("runtime/peek_some.js"),
             // `a.total_cmp(&b)`: Rust's, which compares the bits as `i64`s,
             // negative ones with all but the sign flipped.
             Helper::TotalCmp => include_str!("runtime/total_cmp.js"),
@@ -875,8 +871,9 @@ impl Helper {
             // each item out, until it gives `None`.
             Helper::Scan => include_str!("runtime/scan.js"),
             Helper::Peek => include_str!("runtime/peek.js"),
-            // `it.next_if(f)`: the next item if `f` says so, and then past it.
             Helper::NextIf => include_str!("runtime/next_if.js"),
+            Helper::StdIterator => include_str!("runtime/std_iterator.js"),
+            // `it.next_if(f)`: the next item if `f` says so, and then past it.
             // What's left of one, as an array; it then has nothing left.
             Helper::Rest => include_str!("runtime/rest.js"),
             // `chars.as_str()`: what's left, as a string, still there to step through.

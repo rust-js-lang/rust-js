@@ -20,7 +20,7 @@ const identity = parseCompilerIdentity(run([compiler, "--version-json"]));
 // Each package of the hosts', by the directory it's packed from and the
 // tarball it's packed as: with the compiler's and the crates', what
 // `distribution.json` names, the one list of a distribution's files.
-const hosts = [["tooling", "build.tgz"], ["runtime", "runtime.tgz"], ["typescript", "typescript.tgz"]];
+const hosts = [["tooling", "build.tgz"], ["runtime", "runtime.tgz"], ["std", "std.tgz"], ["typescript", "typescript.tgz"]];
 const named = (directory: string) => JSON.parse(readFileSync(join(root, directory, "package.json"), "utf8"));
 for (const [directory] of hosts) {
   const pkg = named(directory);
@@ -33,7 +33,8 @@ const source = { commit: run(["git", "rev-parse", "HEAD"]).trim(), clean: run(["
 mkdirSync(dirname(output), { recursive: true });
 const staging = mkdtempSync(join(dirname(output), ".rust-js-distribution-"));
 try {
-  // @rust-js/runtime, what the JS the compiler writes imports (ADR 0103).
+  // @rust-js/runtime and @rust-js/std, what the JS the compiler writes
+  // imports (ADR 0103, 0561).
   for (const [directory, file] of hosts) {
     run([process.execPath, "pm", "pack", "--ignore-scripts", "--filename", join(staging, file)], join(root, directory));
   }

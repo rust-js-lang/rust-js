@@ -4,7 +4,7 @@
 
 use super::bindings::{JsForm, is_binding, is_method, js_form, js_import};
 use super::fn_def;
-use super::recognition::Std;
+use super::recognition::{Std, StdItem, is_std_def};
 use super::representation::Num;
 use super::std_types::number::NumOp;
 use super::std_types::text::TextOp;
@@ -303,8 +303,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator, its own `next` (ADRs 0049, 0492). The one answer, of what's
     /// std's and what's the crate's.
     pub(super) fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
+        // Not `Iterator`'s of a compiled std iterator, `Peekable`'s `next` or
+        // `count`: its struct is a JS iterator, stepped as one (ADR 0561).
+        if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
+            && is_std_def(self.tcx, trait_id, StdItem::Iterator)
+            && super::recognition::is_compiled_std_iterator(self.tcx, self.in_impl_terms(generic_args).type_at(0))
+        {
+            return Ok(false);
+        }
         let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;
-        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id())))
+        // Or it's a std trait's provided method compiled into `@rust-js/std`,
+        // `peekable`'s, a function over `Self`: called on a type parameter,
+        // which resolves to nothing, or on a type, which resolves to the
+        // method itself; never one an impl writes itself (ADRs 0185, 0561).
+        Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()))
+            || (super::recognition::is_compiled_std(self.tcx, def_id) && resolved.is_none_or(|i| i.def_id() == def_id)))
     }
 
     /// `ty`, of a function's own generics, in a call of it, `generic_args`.

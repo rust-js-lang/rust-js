@@ -582,7 +582,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0511 The crate's traits that extend `Iterator`](decisions/0511-the-crates-iterator-extension-traits.md)
 - [0512 A list of one item left is the item](decisions/0512-a-list-of-one-item-left-is-the-item.md)
 - [0513 `iter::repeat_n` and `Peekable::peek_mut`](decisions/0513-repeat-n-and-peek-mut.md)
-- [0514 A `Peekable` of what has a destructor](decisions/0514-a-peekable-of-what-has-a-destructor.md)
+- [0514 A `Peekable` of what has a destructor](decisions/0514-a-peekable-of-what-has-a-destructor.md) *(superseded in part by 0561)*
 - [0515 `map_while`, and the `Some`s an iterator keeps](decisions/0515-map-while-and-kept-somes.md)
 - [0516 `rev()` steps what it holds from its back](decisions/0516-rev-steps-what-it-holds-from-its-back.md)
 - [0517 `scan` is lazy, and an iterator's combinators one way](decisions/0517-scan-is-lazy-and-iterator-combinators-one-way.md)
@@ -611,7 +611,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0540 A copied default's types are put in its impl's terms once](decisions/0540-a-copied-defaults-types-in-its-impls-terms-once.md)
 - [0541 A copied default's `Self: Sized` is its impl's](decisions/0541-a-defaults-sized-is-its-impls.md)
 - [0542 An adapter a struct holds keeps its source and its state](decisions/0542-a-held-adapter-keeps-its-source-and-state.md)
-- [0543 A `Peekable` a struct holds keeps what it peeked at](decisions/0543-a-held-peekable-keeps-what-it-peeked-at.md)
+- [0543 A `Peekable` a struct holds keeps what it peeked at](decisions/0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561)*
 - [0544 A `Cycle` a struct holds keeps both it cycles](decisions/0544-a-held-cycle-keeps-both-it-cycles.md)
 - [0545 A map the crate steps from its back is made knowing it](decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md)
 - [0546 A declaration names a function as its JS does](decisions/0546-a-declaration-names-a-function-as-its-js-does.md)
@@ -629,6 +629,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0558 A byte's escape is its bytes](decisions/0558-a-bytes-escape-is-its-bytes.md)
 - [0559 `{:x?}` of an integer is its hex](decisions/0559-debug-hex-of-an-integer.md)
 - [0560 A copied default resolves a call with its own bounds](decisions/0560-a-copied-default-resolves-with-its-own-bounds.md)
+- [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](decisions/0561-std-bodies.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -1,6 +1,8 @@
 # 0543. A `Peekable` a struct holds keeps what it peeked at
 
-Status: Accepted. Extends [0164](0164-double-ended-iterators.md),
+Status: Superseded in part by [0561](0561-std-bodies.md): a `Peekable` is
+std's own struct, `{ iter, peeked }`, its `next`, its clone and its
+`Debug` compiled from std's MIR, wherever it's made or held. Extends [0164](0164-double-ended-iterators.md),
 [0466](0466-a-generic-maps-class-is-its-callers.md), [0473](0473-fuse-is-rusts-fuse.md) and
 [0542](0542-a-held-adapter-keeps-its-source-and-state.md).
 

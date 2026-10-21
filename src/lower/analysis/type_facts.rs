@@ -49,7 +49,7 @@ pub(super) fn type_fact_params<'tcx>(
     // slots, `Self::Item` of `self.map(f).counts()`'s `K` (ADR 0466).
     let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)> = Vec::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
         for expr in body.thir.exprs.iter() {
             // A map or a set of a type parameter's keys a std call makes,

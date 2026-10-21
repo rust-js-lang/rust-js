@@ -1026,6 +1026,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
   },
   {
+    name: "std-provided-self-given-by-trait",
+    breaks: "a compiled std provided method's `Self`, `peekable`'s, isn't given as it is, so `@rust-js/std`'s `iterator_peekable` takes no dictionary for it, and a caller's generic iterator steps nothing",
+    file: "src/lower/iterators.rs",
+    find: "    ) && (tcx.trait_of_assoc(id).is_none() || super::recognition::is_compiled_std(tcx, id))\n",
+    replace: "    ) && tcx.trait_of_assoc(id).is_none()\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "into-iter-never-held",
     breaks: "no `IntoIterator`'s `IntoIter` is held as it is, so a range is given as a JS iterator and stepped as a range",
     file: "src/lower/iterators.rs",

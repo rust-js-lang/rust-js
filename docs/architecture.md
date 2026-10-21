@@ -236,7 +236,7 @@ and answer. Each is checked to stay that way.
 | `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
 | `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
-| `std_coverage.rs` | How much of std's data structures rust-js knows: each stable method of each in `recognition/registry.rs`, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (the `std-bodies` draft) |
+| `std_coverage.rs` | How much of std rust-js knows: each stable method of what `recognition/registry.rs` measures, its data structures, the iterator traits' provided methods and the adapters' impls, `+` where `classify` knows it or its body is compiled, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (ADR 0561) |
 
 **Lowering of Rust's constructs.**
 
@@ -300,7 +300,11 @@ outside its owner, and how much each module knows of the rest.
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
-| Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
+| What's measured of std, each by its name and where std defines it: its data structures, the iterator traits and the adapters (ADRs 0314, 0561) | `recognition/registry.rs` | `measured` |
+| Which std bodies are compiled into `@rust-js/std`, which std type is its struct and which struct is a JS iterator, and which of the crate's modules a std body goes into (ADR 0561) | `recognition.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
+| What addresses memory in MIR, a raw pointer made, read or written through, or a cast to one (ADRs 0407, 0561) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory` |
+| The module a body's JS goes into, the crate's own or a std body's (ADR 0561) | `lower.rs` | `body_module` |
+| std's bodies as the crate's, each from the MIR the toolchain ships, with its closures (ADR 0561) | `analysis.rs` | `collect_std_bodies` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
 | What a runtime helper is: one the package exports, the helper that declares a name, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 
@@ -395,6 +399,14 @@ refused. Compiled output is reusable only when its source inputs,
 dependencies, features, target options, compiler, toolchain, and ABI
 versions agree.
 
+`@rust-js/std` is a library of this kind whose bodies are std's own, each
+lowered from the MIR the toolchain ships ([ADR 0561](decisions/0561-std-bodies.md)):
+`bun run std` compiles `std/lib.rs` with `--std-bodies` and commits its JS
+and manifest in `std/`; the compiler builds the manifest in, so every
+other crate is compiled against it and imports it by the package's name,
+`@rust-js/std/iter.js`. Only its own items are a library's: the rest of
+std is std's, and its values are the program's as the program has them.
+
 ## Publication
 
 A versioned manifest is the contract between compiler and hosts. Named producer
@@ -467,6 +479,7 @@ instead of inferring compiler output.
 | Driver and syntax | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs`, `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
 | Linking and runtime | `src/link.rs`, `src/reachability.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
+| std's bodies as a package | `std/lib.rs`, the crate `bun run std` compiles with `--std-bodies`; `std/*.js` and `std/manifest.json`, what it writes, committed and built in (ADR 0561) |
 | JS tree and presentation | `src/js.rs`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/format.rs`, `src/typescript.rs` |
 | Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
 | Libraries, settings and hooks | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
@@ -513,6 +526,12 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
+- **The safe stratum compiled, one adapter at a time** (ADR 0561):
+  `Peekable` is; each other adapter is a line of `COMPILED_STD` and the
+  retirement of its hand-modeled helper, `$fuse`'s and the held
+  adapters' (ADRs 0542 to 0549); and `Iterator`'s provided methods the
+  recognizers don't rewrite. A std adapter's derived `Debug` not yet
+  compiled, `Copied`'s, is refused where a compiled type shows it.
 - **Short functions:** `mir_call` (118 lines), `mir_call_values` (301),
   `mir_std_call` (254), `mir_function` (414), `classify_inherent` (840),
   `classify_trait_method` (422), `comb_values` (691) and `mir_iter_call`

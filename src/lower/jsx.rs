@@ -475,7 +475,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// gives, `undefined`.
     pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> bool {
         let thir = &body.thir;
-        let mut call = super::body_queries::strip(thir, body.expr);
+        let Some(root) = body.root() else { return false };
+        let mut call = super::body_queries::strip(thir, root);
         if let ExprKind::Block { block } = thir[call].kind {
             call = match (&thir[block].stmts[..], thir[block].expr) {
                 ([], Some(value)) => super::body_queries::strip(thir, value),

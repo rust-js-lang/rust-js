@@ -61,6 +61,17 @@ function final_one(items, dropIItem, dropIIntoIter) {
   return result;
 }
 
+// An iterator itself, not an `IntoIterator`, consumed: dropped after too.
+function how_many(items, dropI, dropIItem) {
+  const iter = items;
+  const result = Iterator.from(iter).reduce((n, item) => {
+    dropIItem?.(item);
+    return n + 1;
+  }, 0);
+  dropI?.(iter);
+  return result;
+}
+
 function countdownIterator_next(countdown) {
   const value = $checked(countdown.left - 1, 0, 4294967295);
   if (value == null) {
@@ -184,5 +195,14 @@ function main() {
       loudDrop_drop(value$11);
     }
   }
+  console.log(
+    `${how_many(
+      $iterator({ left: 2, _tag: [9, "tag"] }, countdownIterator_next),
+      (it) => {
+        loudDrop_drop(it.of._tag);
+      },
+      loudDrop_drop,
+    )}`,
+  );
 }
 //# sourceMappingURL=case.js.map

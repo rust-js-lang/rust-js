@@ -1036,7 +1036,7 @@ export function $lastDropping(it, drop) {
   let last;
   let seen = false;
   for (const item of it) {
-    if (seen) drop(last);
+    if (seen) drop?.(last);
     last = item;
     seen = true;
   }
@@ -1049,7 +1049,7 @@ export function $lastDropping(it, drop) {
 export function $nthDropping(it, n, drop, boxed) {
   for (const item of it) {
     if (n === 0) return boxed ? $some(item) : item;
-    drop(item);
+    drop?.(item);
     n--;
   }
   return undefined;
@@ -1093,7 +1093,7 @@ export function $instantCheckedSince(a, b) {
 export function $findDropping(it, test, drop, boxed) {
   for (const item of it) {
     if (test(item)) return boxed ? $some(item) : item;
-    drop(item);
+    drop?.(item);
   }
   return undefined;
 }
@@ -1135,7 +1135,7 @@ export function $skipDropping(it, n, drop) {
           skipping = 0;
           return step;
         }
-        drop(step.value);
+        drop?.(step.value);
       }
       return it.next();
     },
@@ -1355,14 +1355,6 @@ export function $rangeLen(range) {
 export function $nextBackSome(it) {
   const step = it.back();
   return step.done ? undefined : $some(step.value);
-}
-
-export function $peekSome(it) {
-  if (it.items === undefined) {
-    const step = it.peek();
-    return step.done ? undefined : $some(step.value);
-  }
-  return it.at < it.end ? $some(it.items[it.at]) : undefined;
 }
 
 // `it.scan(init, f)` of a JS iterator, lazy as Rust's: each `Some` `f`
@@ -4049,77 +4041,6 @@ export function $floatMidpoint(a, b) {
   const hi = Number.MAX_VALUE / 2;
   if (Math.abs(a) <= hi && Math.abs(b) <= hi) return (a + b) / 2;
   return a / 2 + b / 2;
-}
-
-// A lazy iterator made `peekable()` (ADR 0164): a JS iterator that steps
-// it only when asked, and keeps the step `peek` took for the next `next`,
-// as Rust's `Peekable` does. One of an array's items is its `$iter`, which
-// peeks at its array. Of items with a destructor, `drop`'s: closed, its
-// source first, then what it peeked at, as Rust drops a `Peekable`'s
-// fields (ADR 0514). What it steps is `iter`, as an explicit adapter's,
-// whose `Debug` and clone read it and `peeked` (ADR 0543).
-export class $Peekable extends Iterator {
-  constructor(it, drop) {
-    super();
-    this.iter = it;
-    this.peeked = undefined;
-    this.drop = drop;
-  }
-  next() {
-    const step = this.peeked ?? this.iter.next();
-    this.peeked = undefined;
-    return step;
-  }
-  peek() {
-    this.peeked ??= this.iter.next();
-    return this.peeked;
-  }
-  // Its last, `next_back()`'s, as Rust's: what it peeked at, once what it
-  // steps has none left.
-  back() {
-    if (this.peeked === undefined) return this.iter.back();
-    if (this.peeked.done) return this.peeked;
-    const step = this.iter.back();
-    if (!step.done) return step;
-    const peeked = this.peeked;
-    this.peeked = undefined;
-    return peeked;
-  }
-  // Its size hint, Rust's: what it steps', and what it peeked at, an end
-  // none (ADR 0543).
-  hint() {
-    if (this.peeked?.done) return [0, 0];
-    const more = this.peeked === undefined ? 0 : 1;
-    const [low, high] = $sizeHint(this.iter);
-    return [low + more, high === undefined ? undefined : high + more];
-  }
-  len() {
-    return (this.peeked === undefined || this.peeked.done ? 0 : 1) + this.iter.len();
-  }
-  return() {
-    this.iter.return?.();
-    const peeked = this.peeked;
-    this.peeked = undefined;
-    if (peeked !== undefined && !peeked.done) this.drop?.(peeked.value);
-    return { done: true, value: undefined };
-  }
-}
-export function $peekable(it, drop) {
-  return new $Peekable(it, drop);
-}
-
-// A clone of `peekable`, where it is (ADR 0543): of `iter`, a clone of what
-// it steps, and of what it peeked at, an item's clone, `clone`, made.
-export function $peekableClone(peekable, iter, clone) {
-  const copy = new $Peekable(iter, peekable.drop);
-  const peeked = peekable.peeked;
-  copy.peeked = peeked === undefined || peeked.done ? peeked : { done: false, value: clone(peeked.value) };
-  return copy;
-}
-
-// What `peekable` peeked at, an item, for its `Debug` (ADR 0543).
-export function $peekedItem(peekable) {
-  return peekable.peeked.value;
 }
 
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
@@ -7747,20 +7668,48 @@ export function $splitOff(items, at) {
   return items.splice(at);
 }
 
-export function $peek(it) {
-  if (it.items === undefined) {
-    const step = it.peek();
-    return step.done ? undefined : step.value;
-  }
-  return it.at < it.end ? it.items[it.at] : undefined;
+// `peek()` of a `Peekable`, std's `{ iter, peeked }` (ADR 0561), whose body
+// reaches memory: what it peeked at, or what it steps next, its own `next`'s
+// (`$stdIterator`), kept as `Some` of it, as Rust's `get_or_insert_with`
+// keeps it; the item, or `undefined` at the end.
+export function $peek(peekable) {
+  if (peekable.peeked === undefined) peekable.peeked = $some($next(peekable));
+  return $someValue(peekable.peeked);
+}
+// Of items that may look like `None`, `Option`s: each boxed (ADR 0051).
+export function $peekSome(peekable) {
+  if (peekable.peeked === undefined) peekable.peeked = $some($nextSome(peekable));
+  return $someValue(peekable.peeked);
+}
+// Its size hint, Rust's: what it steps', and what it peeked at, an end none.
+export function $peekableHint(peekable) {
+  if (peekable.peeked !== undefined && $someValue(peekable.peeked) === undefined) return [0, 0];
+  const more = peekable.peeked === undefined ? 0 : 1;
+  const [low, high] = $sizeHint(peekable.iter);
+  return [low + more, high === undefined ? undefined : high + more];
 }
 
-export function $nextIf(it, f) {
-  if (it.items === undefined) {
-    const step = it.peek();
-    return !step.done && f(step.value) ? it.next().value : undefined;
-  }
-  return it.at < it.end && f(it.items[it.at]) ? it.items[it.at++] : undefined;
+// `next_if(f)` of a `Peekable` (ADR 0561): its next item where `f` takes it,
+// else kept as what it peeked at, as std's is, an end too.
+export function $nextIf(peekable, f) {
+  const item = $next(peekable);
+  if (item !== undefined && f(item)) return item;
+  peekable.peeked = $some(item);
+  return undefined;
+}
+
+// A std struct whose `Iterator` impl is compiled into `@rust-js/std`, a
+// `Peekable`'s `{ iter, peeked }` (ADR 0561), as the JS iterator it is:
+// itself, with `Iterator.prototype`'s helpers, its `next` the compiled one,
+// `next`, which gives `Some` of an item boxed (ADR 0051), or `None` at its
+// end, as `$iterator` steps the crate's own.
+export function $stdIterator(struct, next) {
+  const it = Object.assign(Object.create(Iterator.prototype), struct);
+  it.next = () => {
+    const item = next(it);
+    return item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) };
+  };
+  return it;
 }
 
 export function $rest(it) {
@@ -8970,20 +8919,16 @@ export function* $flatMap(it, f) {
 // `peek_mut()` of a `Peekable` of numbers or text: a handle on the item it
 // gives next, whose write changes it there, as Rust's `&mut` to it does; of
 // one at its end, `undefined` (ADR 0513).
-export function $peekCell(it) {
-  if (it.items === undefined) {
-    const step = it.peek();
-    if (step.done) return undefined;
-    return {
-      get value() {
-        return step.value;
-      },
-      set value(value) {
-        step.value = value;
-      },
-    };
-  }
-  return it.at < it.end ? $mutAt(it.items, it.at) : undefined;
+export function $peekCell(peekable) {
+  if ($peek(peekable) === undefined) return undefined;
+  return {
+    get value() {
+      return $someValue(peekable.peeked);
+    },
+    set value(value) {
+      peekable.peeked = $some(value);
+    },
+  };
 }
 
 // `it.rev()` of a JS iterator that knows its back, a `$iter` or one closed

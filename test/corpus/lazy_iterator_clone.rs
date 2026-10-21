@@ -39,6 +39,13 @@ fn main() {
     });
     println!("{:?}", both(odd));
 
+    // A `copied()` of a map over a slice, cloned apart: its clone is what it
+    // copies' (ADR 0480).
+    let doubled = [1, 2, 3, 4].iter().map(|x| x).copied().filter(|x| x % 2 == 0);
+    let mut half = doubled.clone();
+    half.next();
+    println!("{:?} {:?}", half.collect::<Vec<_>>(), doubled.collect::<Vec<_>>());
+
     let tripled = scaled(1..4, 3);
     let mut rest = tripled.clone();
     rest.next();

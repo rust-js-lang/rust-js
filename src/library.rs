@@ -85,6 +85,7 @@ pub struct Library {
 
 /// An item as a consumer imports it: from a JS file, relative to its own
 /// output, by name, and a method of what it names.
+#[derive(Clone)]
 pub struct Imported {
     pub from: String,
     pub export: String,
@@ -98,9 +99,13 @@ pub struct Imported {
 }
 
 /// What one library gives its consumers.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Exports {
     pub crate_hash: String,
+    /// Built into the compiler, `@rust-js/std`'s (ADR 0561):
+    /// its bodies are the toolchain's std's, which the compiler links, so
+    /// no metadata is checked against its hash.
+    pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
     pub items: HashMap<String, Imported>,
@@ -122,7 +127,7 @@ impl Dependencies {
         let parent = output.parent().ok_or("output has no parent")?;
         for path in paths {
             result.inputs.push(crate::paths::absolute(path)?);
-            let manifest = Manifest::read(&std::fs::read(path).map_err(|e| e.to_string())?)?;
+            let manifest = Manifest::read_from(path)?;
             result.inputs.extend(manifest.sources.iter().cloned());
             if manifest.compiler.as_ref() != Some(&Compiler::current()) {
                 return Err(format!("incompatible dependency compiler identity: {}", path.display()));
@@ -191,6 +196,61 @@ impl Dependencies {
         result.inputs.sort();
         result.inputs.dedup();
         Ok(result)
+    }
+}
+
+/// `@rust-js/std`: std's bodies compiled by this compiler (the std-bodies
+/// decision), the package every crate's JS imports them from, as the
+/// runtime's helpers are imported from `@rust-js/runtime` (ADR 0103).
+pub const STD_PACKAGE: &str = "@rust-js/std";
+
+/// `@rust-js/std`'s manifest, written by `bun run std` and committed beside
+/// its JS, built into the compiler that reads it: the one std its JS calls.
+const STD_MANIFEST: &str = include_str!("../std/manifest.json");
+
+impl Dependencies {
+    /// `@rust-js/std` added to what a crate is compiled against: each of
+    /// its items, keyed as std's are, imported from its package by the
+    /// module's path, `@rust-js/std/iter.js`.
+    pub fn add_std(&mut self) -> Result<(), String> {
+        let manifest = Manifest::read(STD_MANIFEST.as_bytes())?;
+        let library = manifest.library.ok_or("the std manifest has no library contract")?;
+        if library.version != VERSION {
+            return Err(format!(
+                "the std manifest's library ABI is {}; expected {VERSION}",
+                library.version
+            ));
+        }
+        let mut exports = Exports {
+            crate_hash: library.crate_hash,
+            builtin: true,
+            keeps_capacity: library.keeps_capacity,
+            writers_take_options: library.writers_take_options,
+            impls: library.impls.into_iter().collect(),
+            ..Exports::default()
+        };
+        for item in library.items {
+            let imported = Imported {
+                from: format!("{STD_PACKAGE}/{}.js", item.module.join("/")),
+                export: item.export,
+                member: item.member,
+                drops: item.drops,
+                fails: item.fails,
+                no_drops: item.no_drops,
+                type_facts: item.type_facts,
+                takes_location: item.takes_location,
+                stepped: item.stepped,
+            };
+            if exports.items.insert(item.key, imported).is_some() {
+                return Err("duplicate std export".into());
+            }
+        }
+        // Its items are std's, found by the crate each is of: `core`'s,
+        // `alloc`'s or `std`'s, not the std crate's own name.
+        for krate in ["core", "alloc", "std"] {
+            self.libraries.insert(krate.to_string(), exports.clone());
+        }
+        Ok(())
     }
 }
 

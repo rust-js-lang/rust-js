@@ -35,7 +35,7 @@ use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use rustc_span::hygiene::{ExpnKind, MacroKind};
 use rustc_span::{Symbol, sym};
 
@@ -2716,6 +2716,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_std_type(ty, StdItem::HashSet) || self.is_std_type(ty, StdItem::BTreeSet)
     }
 
+    /// A `Peekable`, std's struct, `{ iter, peeked }` (ADR 0561).
     pub(super) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
@@ -2803,9 +2804,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "ExactSizeIterator")
     }
 
+    /// Is `ty` an iterator of the crate's, or a library's, stepped by its
+    /// impl's `next` (ADR 0055)? Not a compiled std one's, `Peekable`'s,
+    /// whose struct steps itself, a JS iterator (ADR 0561).
     pub(super) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
-        matches!(ty.peel_refs().kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty.peel_refs())
+        matches!(ty.peel_refs().kind(), ty::Adt(..))
+            && self.has_user_impl(iterator, ty.peel_refs())
+            && !is_compiled_std_iterator(self.tcx, ty)
     }
 
     pub(super) fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
@@ -3813,25 +3819,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             // `rev()`'s of an array's items, stepped from its back (ADR 0516).
             "std::iter::Rev" => sources.next().filter(|&source| self.array_source(source).is_some()),
-            // `peekable()`'s: its source, and what it peeked at, whatever its
-            // source holds; not of one that drops what it is (ADR 0514).
-            "std::iter::Peekable" => {
-                let source = sources.next().filter(|&source| !self.drops_what_it_is(source))?;
-                Some(Ty::new_tup(self.tcx, &[source, self.iterator_item(source)?]))
-            }
             _ => None,
         }
-    }
-
-    /// Whether an iterator steps a value of the crate's, or a type
-    /// parameter's, which may drop what it is, not only what it hasn't given:
-    /// JS's iterators, stepped to their end, are never closed, where Rust
-    /// drops it (ADR 0514).
-    pub(super) fn drops_what_it_is(&self, source: Ty<'tcx>) -> bool {
-        source
-            .walk()
-            .filter_map(|part| part.as_type())
-            .any(|ty| self.is_user_iterator(ty) || known_by_bounds(ty))
     }
 
     /// What closing an adapter of `source` and another it holds, `other`,
@@ -4010,7 +3999,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "next" => IterMethod::Next,
             "size_hint" => IterMethod::SizeHint,
             "rev" => IterMethod::Rev,
-            "peekable" => IterMethod::Peekable,
             "by_ref" => IterMethod::ByRef,
             "fuse" => IterMethod::Fuse,
             "map" => IterMethod::Map,
@@ -5281,8 +5269,110 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
     path.starts_with("std::ptr::") || matches!(path.as_str(), "std::mem::transmute_copy" | "std::mem::uninitialized")
 }
 
-/// An intrinsic of addressable memory, or of anything JS hasn't (the
-/// `std-bodies` draft): any but a hint to the optimizer, `cold_path`,
+/// std's bodies rust-js compiles from the MIR the toolchain ships, into
+/// `@rust-js/std` (ADR 0561): each by its type, as
+/// `core::iter` exports it, the trait of the impl, or none for the type's
+/// own, and the method. Each is one the measure says is safe
+/// (`docs/std-coverage.txt`); what reaches memory stays recognized.
+const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
+    ("Peekable", Some("Iterator"), "next"),
+    ("Peekable", Some("DoubleEndedIterator"), "next_back"),
+    ("Peekable", Some("DoubleEndedIterator"), "rfold"),
+    ("Peekable", Some("Clone"), "clone"),
+    ("Peekable", Some("Debug"), "fmt"),
+];
+
+/// And the iterator traits' provided methods compiled, each by its trait and
+/// its name: a function over `Self`, given its dictionary (ADR 0185).
+const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable")];
+
+thread_local! {
+    /// `compiled_std`'s answer, found once for the session's rustc.
+    static COMPILED: std::cell::OnceCell<std::rc::Rc<Vec<DefId>>> = const { std::cell::OnceCell::new() };
+}
+
+/// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
+/// `COMPILED_STD_PROVIDED` name, each found in std, and the closures each
+/// makes, found as they're collected.
+pub(crate) fn compiled_std(tcx: TyCtxt<'_>) -> std::rc::Rc<Vec<DefId>> {
+    COMPILED.with(|cache| cache.get_or_init(|| std::rc::Rc::new(find_compiled_std(tcx))).clone())
+}
+
+/// The module of a crate given std's bodies that a std body is written
+/// into: the one named as std's own is, `iter` of `core::iter::Peekable`'s.
+pub(crate) fn std_home_module(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalModId> {
+    let home = std_home(tcx, id);
+    let mut found = None;
+    tcx.hir_for_each_module(|module| {
+        if found.is_none() && module != CRATE_MOD_ID && tcx.item_name(module.to_def_id()).as_str() == home {
+            found = Some(module);
+        }
+    });
+    found
+}
+
+/// Whether `id` is a std body compiled into `@rust-js/std`, one of
+/// `compiled_std`'s, or a closure one makes.
+pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    !id.is_local()
+        && (compiled_std(tcx).contains(&id) || {
+            let mut owner = id;
+            while matches!(tcx.def_kind(owner), DefKind::Closure) {
+                owner = tcx.parent(owner);
+            }
+            owner != id && compiled_std(tcx).contains(&owner)
+        })
+}
+
+fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
+    let trait_named = |name: &str| tcx.get_diagnostic_item(Symbol::intern(name));
+    let mut found = Vec::new();
+    for &(type_name, trait_name, method) in COMPILED_STD {
+        let Some(adt) = registry::by_path(tcx, "core", &["iter", type_name]) else {
+            continue;
+        };
+        let impls: Vec<DefId> = match trait_name {
+            None => tcx.inherent_impls(adt).to_vec(),
+            Some(trait_name) => match trait_named(trait_name) {
+                Some(trait_def) => tcx
+                    .all_impls(trait_def)
+                    .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
+                    .collect(),
+                None => Vec::new(),
+            },
+        };
+        for imp in impls {
+            found.extend(
+                (tcx.associated_items(imp).in_definition_order())
+                    .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
+                    .map(|item| item.def_id),
+            );
+        }
+    }
+    for &(trait_name, method) in COMPILED_STD_PROVIDED {
+        let Some(trait_def) = trait_named(trait_name) else {
+            continue;
+        };
+        found.extend(
+            (tcx.associated_items(trait_def).in_definition_order())
+                .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
+                .map(|item| item.def_id),
+        );
+    }
+    found
+}
+
+/// The module of `@rust-js/std` a std body is written into: std's own
+/// module's name under its crate, `iter` of `core::iter::Peekable`'s.
+pub(crate) fn std_home(tcx: TyCtxt<'_>, id: DefId) -> String {
+    let path = std_path(tcx, id);
+    let mut parts = path.split("::");
+    let _krate = parts.next();
+    parts.next().unwrap_or_default().to_string()
+}
+
+/// An intrinsic of addressable memory, or of anything JS hasn't (ADR
+/// 0561): any but a hint to the optimizer, `cold_path`,
 /// `assume`, `likely`, `unlikely`, `black_box`, and `ub_checks`, which
 /// rust-js reads as off (ADR 0364).
 pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
@@ -6148,7 +6238,30 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
 /// Whether `id` is std's iterator adapter, `iter::Map` and the like: the
 /// one answer, of a type and of a kind the crate holds (ADR 0542).
 pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id).starts_with("std::iter::")
+    std_path(tcx, id).starts_with("std::iter::") && !is_compiled_std_type(tcx, id)
+}
+
+/// A std type whose bodies are compiled into `@rust-js/std` (the std-bodies
+/// decision), `Peekable`: std's struct, `{ iter, peeked }`, as a type of
+/// the crate's is, wherever a value of it is made or read.
+pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    !id.is_local()
+        && COMPILED_STD
+            .iter()
+            .any(|&(type_name, _, _)| std_path(tcx, id) == format!("std::iter::{type_name}"))
+}
+
+/// A compiled std type whose `Iterator` impl is compiled, `Peekable`'s: its
+/// struct is a JS iterator, `$stdIterator` of it where it's made, its `next`
+/// the compiled one, so a value of it is stepped as any JS iterator is, by
+/// `$next`, `for...of` and the helpers, with no dictionary of what it holds
+/// (ADR 0561). The one answer, of what's made a JS iterator and what's
+/// stepped as one.
+pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, adt.did())
+    && COMPILED_STD.iter().any(|&(type_name, tr, name)| {
+        tr == Some("Iterator") && name == "next" && std_path(tcx, adt.did()) == format!("std::iter::{type_name}")
+    }))
 }
 
 /// What std's adapter of type `ty` a struct may hold (ADR 0542) steps
@@ -6469,7 +6582,6 @@ pub(crate) enum IterMethod {
     Len,
     SizeHint,
     Rev,
-    Peekable,
     ByRef,
     Fuse,
     Map,
@@ -7109,7 +7221,8 @@ fn cell_method(name: &str, refcell: bool) -> Option<Std> {
     })
 }
 
-/// Which `StepOp` a `Peekable`'s own method is (ADRs 0071, 0513).
+/// Which `StepOp` a `Peekable`'s own method is, each a rewrite over std's
+/// struct, stepped as the JS iterator it is (ADRs 0513, 0561).
 fn peekable_step(name: &str) -> Option<StepOp> {
     Some(match name {
         "peek" => StepOp::Peek,
@@ -7121,11 +7234,10 @@ fn peekable_step(name: &str) -> Option<StepOp> {
 }
 
 /// Which `StepOp` an `Iterator` method is, one that steps a `$iter` (ADR
-/// 0071): `peekable()`, and `cycle()`, of one over an array, whose clone is
-/// what it has left (ADR 0181), or of another, cloned (ADR 0491).
+/// 0071): `cycle()`, of one over an array, whose clone is what it has left
+/// (ADR 0181), or of another, cloned (ADR 0491).
 fn iterator_step(name: &str) -> Option<StepOp> {
     match name {
-        "peekable" => Some(StepOp::Peekable),
         "cycle" => Some(StepOp::Cycle),
         _ => None,
     }

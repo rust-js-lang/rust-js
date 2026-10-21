@@ -116,6 +116,9 @@ struct RustJs {
     /// `--std-coverage <file>`: where to write how much of std's data
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
+    /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
+    /// the toolchain ships (ADR 0561).
+    std_bodies: bool,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
     cargo: bool,
 }
@@ -188,6 +191,10 @@ impl Callbacks for RustJs {
         let serde_attrs = lower::serde_attributes(tcx);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx);
+        // `@rust-js/std`'s: std's own, from the MIR the toolchain ships.
+        if self.std_bodies {
+            bodies.extend(lower::collect_std_bodies(tcx));
+        }
         let mut initializers = lower::collect_initializers(tcx);
         // Then, read from their MIR, what runs (ADR 0364): the initializers
         // lowered as code too.
@@ -211,6 +218,7 @@ impl Callbacks for RustJs {
                 &serde_attrs,
                 &self.dependencies,
                 self.export_library,
+                self.std_bodies,
             )
             && tcx.dcx().has_errors().is_none()
         {
@@ -359,7 +367,12 @@ impl Drop for Stage {
 /// A build: rustc run with rust-js's callbacks, then what it made published
 /// and checked. Its error, whichever step's, `main` says.
 fn compile(build: command::Build) -> Result<ExitCode, String> {
-    let dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
+    let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
+    // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
+    // that crate's own, which is them (ADR 0561).
+    if !build.std_bodies {
+        dependencies.add_std()?;
+    }
     let (rustc_args, staged) = build.rustc_args()?;
     let stage = Stage::create(&staged, &rustc_args)?;
     let command::Build {
@@ -372,6 +385,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         declarations,
         manifest,
         std_coverage,
+        std_bodies,
         ..
     } = build;
     let command::Staged { metadata, dep_info, .. } = staged;
@@ -383,12 +397,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
+    plan.std_bodies = std_bodies;
     let mut callbacks = RustJs {
         dependencies,
         export_library,
         metadata: metadata.is_some(),
         lowered: None,
         std_coverage,
+        std_bodies,
         cargo,
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));

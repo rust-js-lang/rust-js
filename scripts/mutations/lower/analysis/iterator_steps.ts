@@ -193,4 +193,12 @@ export const mutations: Mutation[] = [
     replace: ");",
     tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
   },
+  {
+    name: "std-held-parameter-not-stepped",
+    breaks: "a parameter a std body holds in a struct whose impl steps it, `peekable`'s `Self`, isn't stepped, so `@rust-js/std` steps what its callers give as they give it",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "        for held in body_aggregates(tcx, body) {\n",
+    replace: "        for held in body_aggregates(tcx, body).into_iter().take(0) {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

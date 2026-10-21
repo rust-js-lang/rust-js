@@ -176,7 +176,7 @@ test("@rust-js/create's README says to install the Rust it prints", () => {
 test("--local makes the app install a distribution's packages", () => {
   const index = packed();
   const dist = fixture("create-dist");
-  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/typescript", "typescript.tgz"], ["@rust-js/native", "native.tgz"]]
+  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/std", "std.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/typescript", "typescript.tgz"], ["@rust-js/native", "native.tgz"]]
     .map(([name, file]) => ({ file, package: name }));
   writeFileSync(join(dist, "distribution.json"), JSON.stringify({ version: 1, platform: process.platform, arch: process.arch, compiler: { version }, artifacts }));
   const cwd = fixture("create-local");
@@ -185,6 +185,7 @@ test("--local makes the app install a distribution's packages", () => {
   const manifest = JSON.parse(readFileSync(join(cwd, "app", "package.json"), "utf8"));
   const file = (name: string) => `file:${join(dist, name)}`;
   expect(manifest.dependencies["@rust-js/runtime"]).toBe(file("runtime.tgz"));
+  expect(manifest.dependencies["@rust-js/std"]).toBe(file("std.tgz"));
   expect(manifest.devDependencies).toMatchObject({
     "@rust-js/build": file("build.tgz"),
     "@rust-js/native": file("native.tgz"),

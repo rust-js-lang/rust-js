@@ -2236,9 +2236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl's evidence.
     /// The impl's own, `id`, or the trait's default.
     fn impl_const_getter(&mut self, id: DefId, span: Span) -> R<Expr> {
-        let body = id
-            .as_local()
-            .and_then(|local| self.krate.closures.get(&local).copied())
+        let body = (self.krate.closures.get(&id).copied())
             .ok_or_else(|| self.unsupported(span, "a generic impl's constant of its parameters"))?;
         let enclosing = self.enter_body(
             body,
@@ -2360,9 +2358,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
+        // A std trait's provided method compiled into `@rust-js/std`,
+        // `Iterator::peekable`'s, called on a type parameter: the library's
+        // function over `Self`, given its dictionary and drops (ADR 0185,
+        // ADR 0561).
+        if super::recognition::is_compiled_std(self.tcx, id) && self.resolve_self_instance(id, generic_args)?.is_none()
+        {
+            let mut values = values;
+            let given = self
+                .tcx
+                .fn_sig(id)
+                .instantiate(self.tcx, generic_args)
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .to_vec();
+            self.given_iterators(id, &mut values, &given, span)?;
+            values.extend(self.evidence_args(id, generic_args, span)?);
+            let called = Expr::call(self.fn_ref(id), values);
+            return Ok(Some(self.fmt_result_value(id, generic_args, called)));
+        }
+        // A library's function the call resolves to: an impl's method, or
+        // a std trait's provided method compiled into `@rust-js/std`, which
+        // is a function over `Self` (ADR 0185, 0561).
         if let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
-            && self.tcx.trait_of_assoc(instance.def_id()).is_none()
+            && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
+                || self.krate.foreign.item(instance.def_id()).is_some())
         {
             let mut values = values;
             let given = self
@@ -3902,9 +3924,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A method's, or a constant's initializer, a trait's default (ADR 0176).
         let body = match self.krate.bodies.get(&id) {
             Some(body) => *body,
-            None => id
-                .as_local()
-                .and_then(|local| self.krate.closures.get(&local).copied())
+            None => (self.krate.closures.get(&id).copied())
                 .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,
         };
         let nested = super::Nested::Default {

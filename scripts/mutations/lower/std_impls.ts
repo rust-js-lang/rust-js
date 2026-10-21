@@ -537,14 +537,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
   },
   {
-    name: "held-peekable-clone-refused",
-    breaks: "a held `Peekable`'s clone is refused",
-    file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) => {\n",
-    replace: "            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) && false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
-  },
-  {
     name: "held-cycle-clone-refused",
     breaks: "a held `Cycle`'s clone is refused",
     file: "src/lower/std_impls.rs",

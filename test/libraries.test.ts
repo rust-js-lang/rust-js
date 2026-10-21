@@ -192,6 +192,7 @@ test("a library packed by npm is built into an app by each package manager's ins
     expect({ manager, code: installed.code, stderr: installed.code ? installed.stderr : "" }).toEqual({ manager, code: 0, stderr: "" });
     mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
     symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+    symlinkSync(join(root, "std"), join(dir, "node_modules", "@rust-js", "std"), "dir");
     // A witness of the installed file: one written through is seen in it.
     const installedJs = realpathSync(join(dir, "node_modules", "@acme", "greet", "src", "lib.js"));
     const shipped = readFileSync(installedJs, "utf8");

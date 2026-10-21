@@ -4,7 +4,7 @@
 function $findDropping(it, test, drop, boxed) {
   for (const item of it) {
     if (test(item)) return boxed ? $some(item) : item;
-    drop(item);
+    drop?.(item);
   }
   return undefined;
 }

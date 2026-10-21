@@ -2365,14 +2365,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
   {
-    name: "peekable-of-own-drops-allowed",
-    breaks: "a `Peekable` of an iterator that drops what it is, stepped to its end, is allowed, and never dropped",
-    file: "src/lower/recognition.rs",
-    find: "                let source = sources.next().filter(|&source| !self.drops_what_it_is(source))?;\n",
-    replace: "                let source = sources.next()?;\n",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic peekable takes none"],
-  },
-  {
     name: "rev-type-unclosed",
     breaks: "a `Rev` of an array's items with a destructor held is a std type refused",
     file: "src/lower/recognition.rs",
@@ -2588,6 +2580,15 @@ export const mutations: Mutation[] = [
     find: "            Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
     replace: "            Ok(ImplSource::UserDefined(imp)) if false && self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
+  },
+  {
+    name: "compiled-iterator-a-user-iterator",
+    breaks: "a compiled std iterator, a `Peekable`, is taken for an iterator stepped by its impl's `next`, and wrapped in a `$iterator` where it's stepped, the JS iterator it is already",
+    file: "src/lower/recognition.rs",
+    find: "            && !is_compiled_std_iterator(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
+    snapshots: true,
   },
   {
     name: "vec-to-array-refused",

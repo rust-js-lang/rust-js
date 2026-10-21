@@ -77,7 +77,7 @@ mod untagged;
 
 use crate::names::{fresh_in, js_ident};
 use crate::program::TestFn;
-pub use analysis::{collect_bodies, collect_initializers, collect_mir};
+pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_std_bodies};
 use bindings::{Export, is_binding};
 pub use pipeline::lower_crate;
 use recognition::{Std, TypeFact};
@@ -91,12 +91,20 @@ type R<T> = Result<T, ErrorGuaranteed>;
 /// A function's THIR, copied out of rustc before borrowck steals it: read
 /// for the shape and facts its MIR is lowered with.
 pub struct Body<'tcx> {
-    def_id: LocalDefId,
+    def_id: DefId,
     thir: Thir<'tcx>,
     expr: ExprId,
     facts: body_queries::BodyFacts,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
     mir: Option<mir::Mir<'tcx>>,
+}
+
+impl Body<'_> {
+    /// Its root expression, of its THIR; none of a body read from its MIR
+    /// alone, a std one's (ADR 0561), whose THIR is empty.
+    pub(crate) fn root(&self) -> Option<ExprId> {
+        (!self.thir.exprs.is_empty()).then_some(self.expr)
+    }
 }
 
 /// Where a function or a `const` ends up in the JS: its module's file,
@@ -106,6 +114,22 @@ struct FnInfo {
     name: String,
     /// A method's type's object of methods (ADR 0047): `Counter` for `Counter.tick`.
     owner: Option<String>,
+}
+
+/// The module `def_id`'s JS is written into: the crate's own item's, the
+/// module it's in; a std body's (ADR 0561), the crate's
+/// module named as std's is, `iter` of `core::iter::Peekable`'s. The one
+/// answer to where a body goes.
+pub(crate) fn body_module(tcx: TyCtxt<'_>, def_id: DefId) -> LocalModId {
+    if let Some(local) = def_id.as_local() {
+        return tcx.parent_module_from_def_id(local);
+    }
+    recognition::std_home_module(tcx, def_id).unwrap_or_else(|| {
+        panic!(
+            "a crate given std's bodies has no module for {}",
+            tcx.def_path_str(def_id)
+        )
+    })
 }
 
 /// A module's path below the crate root, e.g. `["math", "stats"]`.
@@ -290,7 +314,7 @@ struct CrateFacts<'a, 'tcx> {
     drop_checks: &'a RefCell<Vec<drops::DropCheck>>,
     /// What the functions that take only the drops they use did with them (ADR 0300).
     drop_uses: &'a RefCell<drops::DropUses>,
-    closures: &'a HashMap<LocalDefId, &'a Body<'tcx>>,
+    closures: &'a HashMap<DefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,
     imports: &'a HashMap<LocalModId, HashMap<Export, String>>,

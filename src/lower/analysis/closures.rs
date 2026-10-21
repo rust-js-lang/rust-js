@@ -136,7 +136,7 @@ pub(super) fn fn_dyns_drop<'tcx>(
     let closure_drops = || {
         foreign_drops
             || all_bodies.iter().any(|body| {
-                let id = body.def_id.to_def_id();
+                let id = body.def_id;
                 tcx.is_closure_like(id) && {
                     let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
                     drops(ty) || params_may_drop && ty.has_non_region_param()

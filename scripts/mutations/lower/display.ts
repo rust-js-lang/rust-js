@@ -670,14 +670,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
   },
   {
-    name: "held-peekable-debug-refused",
-    breaks: "a held `Peekable`'s `Debug` is refused",
-    file: "src/lower/display.rs",
-    find: "            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) => {\n                let it = Expr::var(\"peekable\");\n",
-    replace: "            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) && false => {\n                let it = Expr::var(\"peekable\");\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
-  },
-  {
     name: "given-debug-unread",
     breaks: "a type's `Debug` a bound gives, `Peekable<Fuse<I>>: Debug`, isn't its dictionary's",
     file: "src/lower/display.rs",

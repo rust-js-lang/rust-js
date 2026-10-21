@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "named-expression-module-name",
     breaks: "a function a block makes and gives takes a module name, so the static it's given to is `Label$1`",
     file: "src/lower/analysis/naming.rs",
-    find: "            None if named_expressions.contains(&def_id.to_def_id()) => (js_name, None),\n",
+    find: "            None if named_expressions.contains(&def_id) => (js_name, None),\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
   },

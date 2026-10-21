@@ -19,6 +19,10 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
 /// type of its own it can't name, base64's `Utf8SingleCodeUnitWriter`'s
 /// `io::Write`, by a bound (ADR 0100).
 pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    // A std body compiled into `@rust-js/std` is what its consumers call.
+    if super::recognition::is_compiled_std(tcx, id) {
+        return true;
+    }
     let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);
     matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true })
         || id
@@ -108,8 +112,13 @@ pub(super) fn exports(
         crate_hash: tcx.crate_hash(LOCAL_CRATE).to_string(),
         items,
         impls,
+        // Those its consumers must be given too: not `@rust-js/std`, built
+        // into the compiler they use (ADR 0561).
         libraries: {
-            let mut names: Vec<String> = dependencies.libraries.keys().cloned().collect();
+            let mut names: Vec<String> = (dependencies.libraries.iter())
+                .filter(|(_, library)| !library.builtin)
+                .map(|(name, _)| name.clone())
+                .collect();
             names.sort();
             names
         },
@@ -140,6 +149,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         for &krate in self.tcx.crates(()) {
             let name = self.tcx.crate_name(krate);
             if let Some(library) = self.dependencies.libraries.get(name.as_str())
+                && !library.builtin
                 && self.tcx.crate_hash(krate).to_string() != library.crate_hash
             {
                 self.tcx.dcx().err(format!(
@@ -151,17 +161,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         matched
     }
 
-    /// Is `id` a dependency's, one rust-js compiled as a library?
+    /// Is `id` a dependency's, one rust-js compiled as a library? Of
+    /// `@rust-js/std`, built into the compiler, only what it compiled: the
+    /// rest of std is std's (ADR 0561).
     pub(super) fn in_library(&self, id: DefId) -> bool {
         !id.is_local()
-            && self
-                .dependencies
-                .libraries
-                .contains_key(self.tcx.crate_name(id.krate).as_str())
+            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str())).is_some_and(|library| {
+                !library.builtin || {
+                    let key = key(self.tcx, id);
+                    library.items.contains_key(&key) || library.impls.contains(&key)
+                }
+            })
     }
 
-    /// The item `id` is in its library's JS, if the library exports it.
-    /// What a library's item asks of its type parameters (ADR 0145).
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
         (self.item(id).into_iter().flat_map(|item| &item.type_facts))
             .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (*index, fact)))
@@ -239,8 +251,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// Does this crate use a library?
+    /// Is any library used, one whose values a program's may be, so their
+    /// representations are shared (ADRs 0100, 0523)? Not `@rust-js/std`,
+    /// built into the compiler, whose bodies are std's own over the
+    /// program's values as the program has them (ADR 0561).
     pub(super) fn any(&self) -> bool {
-        !self.dependencies.libraries.is_empty()
+        self.dependencies.libraries.values().any(|library| !library.builtin)
     }
 
     /// Every item the dependencies export, as the imports they'd be.

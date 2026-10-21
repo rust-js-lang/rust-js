@@ -1,9 +1,10 @@
-//! std's data structures, each by its name and where std defines it
-//! (ADR 0314): what rust-js lowers of each is measured against this list.
+//! What's measured of std (ADR 0314, ADR 0561), each by its
+//! name and where std defines it: its data structures, the iterator traits
+//! whose provided methods are bodies, and the adapters that implement them.
 
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::ty::TyCtxt;
 use rustc_middle::ty::fast_reject::SimplifiedType;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
@@ -40,6 +41,42 @@ const PATHS: &[(&str, &str, &[&str])] = &[
     ("SystemTime", "std", &["time", "SystemTime"]),
 ];
 
+/// The iterator traits, whose provided methods are bodies: each by its lang
+/// item or diagnostic item.
+const TRAITS: &[(&str, Option<LangItem>)] = &[
+    ("Iterator", Some(LangItem::Iterator)),
+    ("DoubleEndedIterator", None),
+    ("ExactSizeIterator", None),
+    ("FusedIterator", Some(LangItem::FusedIterator)),
+];
+
+/// std's iterator adapters, by their paths as `core::iter` exports them:
+/// each is measured by its inherent methods and its impls of the traits.
+const ADAPTERS: &[&str] = &[
+    "Map",
+    "Filter",
+    "FilterMap",
+    "Peekable",
+    "Fuse",
+    "Enumerate",
+    "Rev",
+    "Skip",
+    "Take",
+    "SkipWhile",
+    "TakeWhile",
+    "MapWhile",
+    "Scan",
+    "Chain",
+    "Zip",
+    "Cycle",
+    "StepBy",
+    "Flatten",
+    "FlatMap",
+    "Inspect",
+    "Copied",
+    "Cloned",
+];
+
 /// The primitives', by their kind.
 const PRIMITIVES: &[(&str, SimplifiedType)] = &[
     ("str", SimplifiedType::Str),
@@ -48,8 +85,59 @@ const PRIMITIVES: &[(&str, SimplifiedType)] = &[
     ("char", SimplifiedType::Char),
 ];
 
+/// What's measured of one std item: a type's impls, or a trait.
+pub(in crate::lower) enum Measured {
+    /// A type's impls: a data structure's inherent ones, an adapter's inherent
+    /// ones and its impls of the iterator traits.
+    Impls(Vec<DefId>),
+    /// A trait, whose provided methods are measured.
+    Trait(DefId),
+}
+
+/// Each std item measured, by its name: its data structures and their
+/// inherent impls, then the iterator traits, then the adapters.
+pub(in crate::lower) fn measured(tcx: TyCtxt<'_>) -> Vec<(&'static str, Measured)> {
+    let mut all: Vec<(&'static str, Measured)> = data_structures(tcx)
+        .into_iter()
+        .map(|(name, impls)| (name, Measured::Impls(impls)))
+        .collect();
+    let traits: Vec<(&'static str, Option<DefId>)> = TRAITS
+        .iter()
+        .map(|&(name, lang)| {
+            let def = match lang {
+                Some(lang) => tcx.lang_items().get(lang),
+                None => tcx
+                    .get_diagnostic_item(Symbol::intern(name))
+                    .or_else(|| by_path(tcx, "core", &["iter", name])),
+            };
+            (name, def)
+        })
+        .collect();
+    for &(name, def) in &traits {
+        if let Some(def) = def {
+            all.push((name, Measured::Trait(def)));
+        }
+    }
+    for &name in ADAPTERS {
+        let Some(adt) = by_path(tcx, "core", &["iter", name]) else {
+            all.push((name, Measured::Impls(Vec::new())));
+            continue;
+        };
+        let mut impls = tcx.inherent_impls(adt).to_vec();
+        for &(_, trait_def) in &traits {
+            let Some(trait_def) = trait_def else { continue };
+            impls.extend(
+                tcx.all_impls(trait_def)
+                    .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt)),
+            );
+        }
+        all.push((name, Measured::Impls(impls)));
+    }
+    all
+}
+
 /// Each data structure std has, by its name, and its inherent impls.
-pub(in crate::lower) fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
+fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
     let mut types = Vec::new();
     for &name in DIAGNOSTIC {
         let adt = tcx.get_diagnostic_item(Symbol::intern(name));
@@ -83,7 +171,7 @@ pub(in crate::lower) fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, V
 }
 
 /// The item at `path` in the crate named `krate`, through its modules' children.
-fn by_path(tcx: TyCtxt<'_>, krate: &str, path: &[&str]) -> Option<DefId> {
+pub(super) fn by_path(tcx: TyCtxt<'_>, krate: &str, path: &[&str]) -> Option<DefId> {
     let root = tcx.crates(()).iter().find(|&&c| tcx.crate_name(c).as_str() == krate)?;
     let mut at = root.as_def_id();
     for part in path {

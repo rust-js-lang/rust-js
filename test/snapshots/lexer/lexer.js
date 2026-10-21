@@ -4,13 +4,13 @@
 // `next_if` and `next_if_eq`; and iterators that `next()` steps through,
 // then hands the rest of (ADR 0071).
 
+import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $debugStr,
   $iter,
   $next,
   $nextIf,
   $peek,
-  $peekable,
   $restStr,
   $toDigit,
   $unwrap,
@@ -31,7 +31,7 @@ function tokDebug_fmt(tok) {
 
 export const Lexer = {
   new(src) {
-    return { chars: $peekable($iter(Array.from(src))), line: 1 };
+    return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };
   },
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));

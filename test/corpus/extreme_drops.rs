@@ -40,6 +40,11 @@ fn final_one<I: IntoIterator>(items: I) -> Option<I::Item> {
     items.into_iter().last()
 }
 
+// An iterator itself, not an `IntoIterator`, consumed: dropped after too.
+fn how_many<I: Iterator>(items: I) -> usize {
+    items.count()
+}
+
 // Counts down, holding a tag it drops when it's dropped.
 struct Countdown {
     left: u32,
@@ -68,4 +73,5 @@ fn main() {
     println!("{:?}", greatest(vec![None::<u32>]));
     println!("{:?}", final_one(loud()));
     println!("{:?}", final_one(Countdown { left: 3, _tag: Loud(0, "tag") }));
+    println!("{}", how_many(Countdown { left: 2, _tag: Loud(9, "tag") }));
 }

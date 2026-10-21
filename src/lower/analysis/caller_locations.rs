@@ -30,7 +30,7 @@ pub(super) fn caller_location_fns<'tcx>(
     // entry of it does.
     let mut families: HashMap<DefId, Vec<DefId>> = HashMap::new();
     for body in all_bodies {
-        let owner = body.def_id.to_def_id();
+        let owner = body.def_id;
         if !tracks_caller(tcx, owner) {
             continue;
         }

@@ -1499,42 +1499,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
-            // A `Peekable` a struct holds, which keeps what it steps and what
-            // it peeked at (ADR 0543): `Peekable { iter: .., peeked: .. }`,
-            // `None`, `Some(None)` of an end, or `Some(Some(x))`.
-            ty::Adt(_, args) if self.held_adapter(ty) && self.recognition().is_peekable(ty) => {
-                let it = Expr::var("peekable");
-                let item = self.iterator_item(ty).expect("an iterator's item");
-                let stepped = Expr::call_helper("$iteratorValue", vec![Expr::member(it.clone(), "iter")]);
-                let iter = self.debug_string_with(stepped, args.type_at(0), span, pretty)?;
-                let peeked = Expr::member(it.clone(), "peeked");
-                let peeked_item = Expr::call_helper("$peekedItem", vec![it.clone()]);
-                let shown = self.debug_string_with(peeked_item, item, span, pretty)?;
-                let some = |cx: &mut Self, shown: Expr| {
-                    let plain = join(vec![Expr::str("Some("), shown.clone(), Expr::str(")")]);
-                    cx.pretty_or(pretty, plain, "Some(", Expr::array(vec![shown]), ")")
-                };
-                let (end, item) = (some(self, Expr::str("None")), some(self, shown));
-                let held = Expr::cond(Expr::member(peeked.clone(), "done"), end, some(self, item));
-                let held = Expr::cond(Expr::bin(Op::Eq, peeked, Expr::undefined()), Expr::str("None"), held);
-                let plain = join(vec![
-                    Expr::str("Peekable { iter: "),
-                    iter.clone(),
-                    Expr::str(", peeked: "),
-                    held.clone(),
-                    Expr::str(" }"),
-                ]);
-                let fields = vec![
-                    join(vec![Expr::str("iter: "), iter]),
-                    join(vec![Expr::str("peeked: "), held]),
-                ];
-                let shown = self.pretty_or(pretty, plain, "Peekable {", Expr::array(fields), "}");
-                let show = Expr::arrow(
-                    vec!["peekable".into()],
-                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                );
-                Ok(self.applied(show, value))
-            }
             // An empty iterator, std's `Empty`, which shows no state.
             ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),
             // A `Cycle` a struct holds, which keeps what it started with and

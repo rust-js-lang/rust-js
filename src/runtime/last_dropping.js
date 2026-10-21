@@ -5,7 +5,7 @@ function $lastDropping(it, drop) {
   let last;
   let seen = false;
   for (const item of it) {
-    if (seen) drop(last);
+    if (seen) drop?.(last);
     last = item;
     seen = true;
   }

@@ -239,12 +239,13 @@ pub(super) enum IterSource {
     FromFn,
 }
 
-/// Stepping through an iterator (ADR 0071): a `Peekable`, and a local that
-/// `next()` is called on, are a `$iter` object, `{ items, at, end }`.
+/// Stepping through an iterator (ADR 0071): a local that `next()` is called
+/// on is a `$iter` object, `{ items, at, end }`; a `Peekable` std's struct,
+/// `{ iter, peeked }`, a JS iterator, whose own methods are rewritten over
+/// it (ADR 0561).
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum StepOp {
     Next,
-    Peekable,
     Peek,
     /// A `Peekable`'s `peek_mut`: the item, or a handle on it (ADR 0513).
     PeekMut,

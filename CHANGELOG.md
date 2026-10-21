@@ -11,7 +11,9 @@ version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 For macOS on Apple silicon, with Rust 1.99.0, from 1.98.1. `@rust-js/builtins`
 is 0.0.2 and `@rust-js/webapi` 0.0.3, each its own release (ADR 0116). New
-with it: `@rust-js/typescript`, which prints each module's `.d.ts` with
+with it: `@rust-js/std`, std's own bodies compiled to JS, which the JS
+rust-js writes imports as it imports `@rust-js/runtime`, so an app installs
+both (ADR 0561); `@rust-js/typescript`, which prints each module's `.d.ts` with
 TypeScript 7.1.0-beta, a beta, pinned (ADR 0206);
 `@rust-js/next`, Next.js's crate, at 0.0.4; and `@rust-js/node`, Node.js's,
 at its own 0.0.1. `@rust-js/vite-plugin` and `@rust-js/resources` aren't
@@ -19,6 +21,17 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **std's bodies are std's own** (ADR 0561): a std function whose body
+  reaches no memory is compiled from the MIR the toolchain ships into
+  `@rust-js/std`, a library built into the compiler, and a `Peekable` is
+  std's struct, `{ iter, peeked }`, the JS iterator it is: `peekable()` of
+  any iterator, the crate's own too, `next`, `next_back`, `rfold`, its
+  clone and its `Debug` are std's; `peek`, `peek_mut`, `next_if`,
+  `next_if_eq`, `size_hint` and `len` are rewritten over it, and the rest
+  are a JS iterator's idioms. Generic code that gives back a `peekable` of a
+  type with a destructor compiles. `--std-coverage` says what each std
+  body is made of, `safe`, `spec`, `opaque`, `memory` or `none`, and
+  measures `Iterator`'s provided methods and the adapters.
 - **`{:x?}` and `{:X?}` of an integer** (ADR 0559).
 - **A trait's default indexing by the crate's own `Index` impl** of its
   type parameter (ADR 0560).

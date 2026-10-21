@@ -69,3 +69,17 @@ tries each of its own type parameters as `&str`, `char` and `usize`, and
 counts it known if `classify` knows it for one: `str` 45 of 83, not 24,
 and slices 35 of 133, not 32. The rule is the Consequences' first: known
 for some types counts as known.
+
+## Amendment: the iterator traits and the adapters are measured too
+
+ADR 0561 measures what each std body is made of, and its
+stratum is the iterator traits' provided methods and the adapters, not the
+data structures. The registry's `measured` lists, beside the data
+structures and their inherent impls, `Iterator`, `DoubleEndedIterator`,
+`ExactSizeIterator` and `FusedIterator`, whose provided methods are
+measured, and the adapters `core::iter` exports, `Map` to `Cloned`, each
+by its inherent methods and its impls of those traits. An impl's method
+is known as a call is classified, the trait's method on the impl's type,
+`Iterator::next` of a `Peekable<I>`, and is as stable and as hidden as
+the trait's method it implements, or as its impl. The ratchet holds them
+as it holds the data structures' methods.

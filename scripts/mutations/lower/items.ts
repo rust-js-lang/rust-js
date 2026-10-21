@@ -122,4 +122,13 @@ export const mutations: Mutation[] = [
     replace: "        let resolved = self.resolve_self_instance(def_id, generic_args)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
+  {
+    name: "compiled-iterator-stepped-by-library",
+    breaks: "`Iterator`'s methods of a compiled std iterator, a `Peekable`'s `next`, resolve to the library's compiled impl and are called there, not stepped as the JS iterator its struct is",
+    file: "src/lower/items.rs",
+    find: "            && is_std_def(self.tcx, trait_id, StdItem::Iterator)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
+    snapshots: true,
+  },
 ];

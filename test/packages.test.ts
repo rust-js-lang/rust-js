@@ -41,7 +41,7 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
     expect(distribution.compiler).toEqual(JSON.parse(run([compiler, "--version-json"])));
     // The packages, and the crates an app's Cargo builds with.
     expect(distribution.artifacts.map(({ file }: { file: string }) => file).sort()).toEqual(
-      ["build.tgz", "native.tgz", "runtime.tgz", "typescript.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)].sort(),
+      ["build.tgz", "native.tgz", "runtime.tgz", "std.tgz", "typescript.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)].sort(),
     );
     run(["shasum", "-a", "256", "-c", "SHA256SUMS"], bundle);
     const previousDistribution = readFileSync(join(bundle, "distribution.json"), "utf8");
@@ -60,6 +60,7 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
         "@rust-js/build": "./artifacts/build.tgz",
         "@rust-js/native": "./artifacts/native.tgz",
         "@rust-js/runtime": "./artifacts/runtime.tgz",
+        "@rust-js/std": "./artifacts/std.tgz",
       },
       overrides: { "@rust-js/build": "./artifacts/build.tgz", "@rust-js/typescript": "./artifacts/typescript.tgz" },
     }));

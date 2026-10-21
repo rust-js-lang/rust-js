@@ -147,7 +147,7 @@ pub(in crate::lower) fn copied_params<'tcx>(
     }
     let mut passed = Vec::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        let caller = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;

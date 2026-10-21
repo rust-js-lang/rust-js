@@ -184,6 +184,9 @@ What keeps them there:
   by the tests as by a shell. `.env.test` gives the tests' programs `1`,
   and a build with it rebuilt every dependency, 22 s, and the next one
   without it again.
+- **`@rust-js/std` is generated**, as `runtime/index.js` is: `bun run std`
+  after a change to what std's bodies lower to, then a rebuild, which
+  builds its manifest in; `test/std-package.test.ts` holds it (ADR 0561).
 - **Mutations keep their crate** in `target/mutants/crate`, writing only
   the files that differ, and the compiler built without a mutation while
   the sources are what it was built from. They run four at a time, one

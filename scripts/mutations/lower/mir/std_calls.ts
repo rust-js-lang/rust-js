@@ -178,8 +178,8 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-as-str-refused",
     "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
     "file": "src/lower/mir/std_calls.rs",
-    "find": "            ) if op == StepOp::AsStr\n",
-    "replace": "            ) if false\n",
+    "find": "                if op == StepOp::AsStr\n",
+    "replace": "                if false\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",

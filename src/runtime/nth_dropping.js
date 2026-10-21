@@ -4,7 +4,7 @@
 function $nthDropping(it, n, drop, boxed) {
   for (const item of it) {
     if (n === 0) return boxed ? $some(item) : item;
-    drop(item);
+    drop?.(item);
     n--;
   }
   return undefined;
