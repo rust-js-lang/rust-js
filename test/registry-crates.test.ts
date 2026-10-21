@@ -77,18 +77,19 @@ test("a crate of crates.io's upgraded is the new version's JS, the old one's gon
   expect(readFileSync(join(at, "rust-js", "crates", "greet-0.2.0", "src", "lib.js"), "utf8")).toContain("Hi, ");
 }, 600_000);
 
-// One rust-js can't compile, an address read as a number (ADR 0390), is its
+// One rust-js can't compile, a `transmute_copy`, which addresses memory
+// (ADR 0390; an address read as a number no longer does, ADR 0562), is its
 // types alone, as rustc builds it: an app that uses its types builds, and a
 // call into it is refused, saying why its crate isn't compiled.
 test("a crate of crates.io's rust-js can't compile is its types alone, and a call into it is refused", () => {
   const dir = fixture("registry-refused");
-  const crate = gitCrate(dir, "addr", "0.1.0", "pub struct Byte(pub u8);\n\npub fn address(x: &Byte) -> usize {\n    &x.0 as *const u8 as usize\n}\n");
+  const crate = gitCrate(dir, "addr", "0.1.0", "pub struct Byte(pub u8);\n\npub fn address(x: &Byte) -> u32 {\n    unsafe { std::mem::transmute_copy::<Byte, u8>(x) as u32 }\n}\n");
   const typed = app(dir, { addr: crate }, "pub fn first(bytes: &[addr::Byte]) -> u8 {\n    bytes[0].0\n}\n");
   const built = build(typed);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   expect(existsSync(join(typed, "rust-js"))).toBe(false);
-  writeFileSync(join(typed, "src", "lib.rs"), "pub fn at(b: &addr::Byte) -> usize {\n    addr::address(b)\n}\n");
+  writeFileSync(join(typed, "src", "lib.rs"), "pub fn at(b: &addr::Byte) -> u32 {\n    addr::address(b)\n}\n");
   const called = build(typed);
   expect(called.code).not.toBe(0);
   expect(called.stderr).toContain("addr::address");
