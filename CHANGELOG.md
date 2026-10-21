@@ -19,6 +19,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `copied()` given back as an `impl Iterator`**: regex-syntax
+  compiles (ADR 0556).
 - **A library's struct with a derived `Ord`**, compared and sorted: uuid
   runs as native Rust, and hex too (ADR 0555).
 - **A filter or a map an `Either` holds, `rev()`'d**: either runs as

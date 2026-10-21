@@ -32,7 +32,7 @@ newest release its requirement allows.
 | semver 1.0 | refused | a pointer's address |
 | uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
-| regex 1.11 | blocked | memchr: a pointer into what JS may hold a copy of |
+| regex 1.11 | blocked | aho-corasick: unaligned reads of a byte pointer; regex-syntax compiles (ADR 0556) |
 | rust_decimal 1.38 | runs | measured 2026-10-21 |
 | chrono 0.4 (`alloc`) | runs | measured 2026-10-21 |
 | time 0.3 (`alloc`) | blocked | powerfmt: a pointer to a slice of `MaybeUninit`s; deranged compiles (ADR 0165) |
