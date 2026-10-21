@@ -173,10 +173,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fused-fact-of-impls",
-    breaks: "`fuse()` of an impl's type parameter asks a fact its dictionary can't be given, and is refused",
+    breaks: "`fuse()` of an impl's type parameter asks a fact its dictionary can't be given, so the impl's method takes an `IFused` no caller has, `false`",
     file: "src/lower/analysis/type_facts.rs",
     find: "                && index >= tcx.generics_of(caller).parent_count as u32\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
+    snapshots: true,
   },
 ];
