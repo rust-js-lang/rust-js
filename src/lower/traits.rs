@@ -409,7 +409,10 @@ fn bound_of<'tcx>(
     if (is_std_def(tcx, tr.def_id, StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, tr.def_id))
         && let ty::Param(param) = tr.self_ty().kind()
     {
-        return given.stepped.contains(&(id, param.index, tr.def_id)).then_some(tr);
+        // This crate's, as its analysis says; a library's, as its manifest
+        // does (ADR 0548).
+        let steps = given.stepped.contains(&(id, param.index, tr.def_id)) || foreign.steps(id, param.index, tr.def_id);
+        return steps.then_some(tr);
     }
     (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }
@@ -571,6 +574,22 @@ fn full_type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
 /// dictionary and its caller agree; and the supertrait with
 /// `args`, its own lifetimes erased: a `for<'a> B<&'a ()>` is one
 /// dictionary, and rustc's trait selection takes no bound ones (ADR 0106).
+/// The supertraits a dictionary of `trait_id` has an entry of, each by its
+/// name: those whose dictionaries are passed, not `Iterator`'s of a crate's
+/// extension of it, which a function is given apart (ADRs 0411, 0548). The
+/// one answer, of what's made and the route that reads it.
+pub(super) fn held_supertraits<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<(String, ty::TraitRef<'tcx>)> {
+    (supertraits(tcx, trait_id, args).into_iter())
+        .filter(|(_, tr, _)| operational(tcx, foreign, tr.def_id))
+        .map(|(name, tr, _)| (name, tr))
+        .collect()
+}
+
 pub(super) fn supertraits<'tcx>(
     tcx: TyCtxt<'tcx>,
     trait_id: DefId,
@@ -745,9 +764,9 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
         if !self.recognition.holds_supertraits(from.def_id) {
             return None;
         }
-        supertraits(self.recognition.tcx, from.def_id, from.args)
+        held_supertraits(self.recognition.tcx, self.recognition.foreign, from.def_id, from.args)
             .into_iter()
-            .find_map(|(name, tr, _)| {
+            .find_map(|(name, tr)| {
                 let mut rest = self.super_route(tr, to)?;
                 rest.insert(0, name);
                 Some(rest)
@@ -3127,10 +3146,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that have one, each made where it's asked: `Display: () =>
     /// innerDisplay()` of an `Error`'s.
     fn supertrait_entries(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
-        let found = supertraits(self.tcx, tr.def_id, tr.args)
-            .into_iter()
-            .map(|(name, tr, _)| (name, tr));
-        self.entries_of(found.collect(), span)
+        let found = held_supertraits(self.tcx, self.krate.foreign, tr.def_id, tr.args);
+        self.entries_of(found, span)
     }
 
     /// The entries of `tr`'s dictionary that give the bounds its trait

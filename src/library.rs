@@ -8,8 +8,10 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
-/// library and in a crate that uses one (ADR 0523).
-pub const VERSION: u32 = 3;
+/// library and in a crate that uses one (ADR 0523). 4: each item says the
+/// type parameters it's given an `Iterator` dictionary for, or an
+/// extension's (ADR 0548).
+pub const VERSION: u32 = 4;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -46,6 +48,11 @@ pub struct Item {
     /// before had none, as it refused what reads one.
     #[serde(default)]
     pub takes_location: bool,
+    /// The type parameters it steps as they are, given a dictionary of the
+    /// trait each is stepped by, `Iterator`'s or an extension's, by the
+    /// trait's key (ADRs 0411, 0548), which its consumers' calls give it.
+    #[serde(default)]
+    pub stepped: Vec<(u32, String)>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,6 +94,7 @@ pub struct Imported {
     pub no_drops: Vec<u32>,
     pub type_facts: Vec<(u32, String)>,
     pub takes_location: bool,
+    pub stepped: Vec<(u32, String)>,
 }
 
 /// What one library gives its consumers.
@@ -167,6 +175,7 @@ impl Dependencies {
                     no_drops: item.no_drops,
                     type_facts: item.type_facts,
                     takes_location: item.takes_location,
+                    stepped: item.stepped,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());

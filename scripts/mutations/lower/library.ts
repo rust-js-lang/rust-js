@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "    id\n",
     tests: ["test/crates.test.ts", "-t", "private type's impl"],
   },
+  {
+    name: "library-stepped-unsaid",
+    breaks: "a library's manifest says no type parameter it steps",
+    file: "src/lower/library.rs",
+    find: "                    .filter(|&&(of, _, _)| of == id)\n",
+    replace: "                    .filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
+  },
 ];

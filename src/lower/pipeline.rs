@@ -769,6 +769,7 @@ pub fn lower_crate<'tcx>(
                     no_drops: &no_drops.borrow(),
                     type_facts: &type_facts,
                     caller_locations: &caller_locations,
+                    stepped: &stepped,
                     keeps_capacity,
                     writers_take_options,
                 },

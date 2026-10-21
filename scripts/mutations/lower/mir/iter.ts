@@ -976,8 +976,8 @@ export const mutations: Mutation[] = [
     name: "cloned-strings-mapped",
     breaks: "`cloned()` of strings maps each to itself",
     file: "src/lower/mir/iter.rs",
-    find: "                Some(item) if !self.needs_clone(item.peel_refs()) => it,\n",
-    replace: "                Some(item) if self.is_copy(item.peel_refs()) => it,\n",
+    find: "                .is_some_and(|item| !self.needs_clone(item.peel_refs()))\n",
+    replace: "                .is_some_and(|item| self.is_copy(item.peel_refs()))\n",
     tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
   },
   {
@@ -1184,5 +1184,22 @@ export const mutations: Mutation[] = [
     find: "                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n                    None => receiver.clone(),\n                };\n                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n                let f =",
     replace: "                    None => receiver.clone(),\n                };\n                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n                let f =",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "consumed-copied-undropped",
+    breaks: "a `copied()` of an iterator with a destructor, consumed to its end, never drops it",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || (self.is_its_source(receiver) && self.recognition().closed_on_drop(receiver).is_some())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+  },
+  {
+    name: "cloned-mapped-anyway",
+    breaks: "a `cloned()` of what needs no clone is mapped as one that does",
+    file: "src/lower/mir/iter.rs",
+    find: "            || (crate::lower::recognition::cloned_source(self.tcx, ty).is_some() && item())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+    snapshots: true,
   },
 ];

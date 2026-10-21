@@ -3779,6 +3779,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::iter::StepBy"
             | "std::iter::Inspect"
             | "std::iter::Fuse"
+            // A copy or a clone of each it steps (ADR 0547).
+            | "std::iter::Copied"
+            | "std::iter::Cloned"
             // `filter_map`'s and `map_while`'s, a `map` and a `filter` or a
             // `take_while` of it (ADR 0518).
             | "std::iter::FilterMap"
@@ -5991,6 +5994,15 @@ pub(crate) fn copied_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// What std's `Cloned` adapter of type `ty` clones each item of, `I` of
+/// `Cloned<I>`.
+pub(crate) fn cloned_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Cloned" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
 /// What std's `Map` adapter of type `ty` maps, `I` of `Map<I, F>`, which a
 /// map steps from either end where it knows its back (ADR 0455).
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -6446,6 +6458,8 @@ impl IterMethod {
                 | IterMethod::Skip
                 | IterMethod::Enumerate
                 | IterMethod::Fuse
+                | IterMethod::Copied
+                | IterMethod::Cloned
         )
     }
 }

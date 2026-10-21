@@ -37,6 +37,9 @@ pub(super) struct Contracts<'a> {
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// Those that take their caller's location (ADR 0427).
     pub(super) caller_locations: &'a HashSet<DefId>,
+    /// The type parameters each steps as they are, by which trait (ADRs
+    /// 0411, 0548).
+    pub(super) stepped: &'a HashSet<(DefId, u32, DefId)>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
@@ -58,6 +61,7 @@ pub(super) fn exports(
         no_drops,
         type_facts,
         caller_locations,
+        stepped,
         keeps_capacity,
         writers_take_options,
     } = contracts;
@@ -81,6 +85,14 @@ pub(super) fn exports(
                 .map(|&(index, fact)| (index, fact.word().to_string()))
                 .collect(),
             takes_location: caller_locations.contains(&id),
+            stepped: {
+                let mut by: Vec<(u32, String)> = (stepped.iter())
+                    .filter(|&&(of, _, _)| of == id)
+                    .map(|&(_, index, by)| (index, key(tcx, by)))
+                    .collect();
+                by.sort();
+                by
+            },
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -181,6 +193,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
     pub(super) fn fails(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.fails)
+    }
+
+    /// Does a library's `id` step its type parameter `index` as it is, by
+    /// `by`, given its dictionary (ADRs 0411, 0548)?
+    pub(super) fn steps(&self, id: DefId, index: u32, by: DefId) -> bool {
+        let by = key(self.tcx, by);
+        self.item(id)
+            .is_some_and(|item| item.stepped.iter().any(|(at, of)| *at == index && *of == by))
     }
 
     /// Does a library's `id` take its caller's location (ADR 0427)?

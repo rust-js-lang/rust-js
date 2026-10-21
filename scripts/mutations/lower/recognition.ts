@@ -2549,4 +2549,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
+  {
+    name: "copied-not-closed",
+    breaks: "a `copied()` or `cloned()` of an iterator with a destructor isn't closed to drop it, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "            // A copy or a clone of each it steps (ADR 0547).\n            | \"std::iter::Copied\"\n            | \"std::iter::Cloned\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+  },
+  {
+    name: "copied-holds-no-source",
+    breaks: "a `copied()` of an iterator with a destructor doesn't hold it closed",
+    file: "src/lower/recognition.rs",
+    find: "                | IterMethod::Copied\n                | IterMethod::Cloned\n        )",
+    replace: "        )",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+  },
 ];

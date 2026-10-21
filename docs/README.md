@@ -615,6 +615,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0544 A `Cycle` a struct holds keeps both it cycles](decisions/0544-a-held-cycle-keeps-both-it-cycles.md)
 - [0545 A map the crate steps from its back is made knowing it](decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md)
 - [0546 A declaration names a function as its JS does](decisions/0546-a-declaration-names-a-function-as-its-js-does.md)
+- [0547 A `copied()` of an iterator with a destructor drops it](decisions/0547-a-copied-iterator-with-a-destructor-is-closed.md)
+- [0548 A library's manifest says which type parameters it steps](decisions/0548-a-librarys-manifest-says-which-parameters-it-steps.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

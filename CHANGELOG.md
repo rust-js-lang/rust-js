@@ -18,6 +18,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A library's generic iterator and its extension trait's defaults**,
+  stepped by what its consumer gives (ADR 0548).
+- **`copied()` and `cloned()` of an iterator with a destructor**, dropped
+  where Rust drops it (ADR 0547).
 - **A map the crate steps from its back, held in a variable**, a library's
   too: itertools compiles whole (ADR 0545).
 - **A `Cycle` a struct holds**: its `Debug` and its clone; and `{:?}` of

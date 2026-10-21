@@ -976,8 +976,8 @@ export const mutations: Mutation[] = [
     name: "iterator-bound-not-evidence",
     breaks: "an adapter's `I: Iterator` takes no dictionary, so its `next` has none to step `I` by",
     file: "src/lower/traits.rs",
-    find: "        return given.stepped.contains(&(id, param.index, tr.def_id)).then_some(tr);\n",
-    replace: "        return None;\n",
+    find: "given.stepped.contains(&(id, param.index, tr.def_id))",
+    replace: "false",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
@@ -1828,5 +1828,21 @@ export const mutations: Mutation[] = [
     find: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized);",
     replace: "        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized.filter(|_| false));",
     tests: ["test/corpus.test.ts", "-t", "^default_on_an_adapter_of_self.rs$"],
+  },
+  {
+    name: "library-steps-unread",
+    breaks: "a library's manifest isn't asked which type parameters it steps, and its consumer gives no dictionary",
+    file: "src/lower/traits.rs",
+    find: "|| foreign.steps(id, param.index, tr.def_id);\n",
+    replace: ";\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
+  },
+  {
+    name: "route-through-unheld-supertrait",
+    breaks: "a route to a dictionary goes through a supertrait no dictionary has, `SelfExt.Iterator()`",
+    file: "src/lower/traits.rs",
+    find: "        held_supertraits(self.recognition.tcx, self.recognition.foreign, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr)| {\n",
+    replace: "        supertraits(self.recognition.tcx, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr, _)| {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
   },
 ];

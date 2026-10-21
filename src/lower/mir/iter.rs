@@ -152,7 +152,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let closed = (self.recognition().closed_on_drop(receiver)).is_some_and(|held| self.given_drop(held).is_some());
         let dropped = match params_only {
             true => self.given_drop(receiver).is_some() || holds_function || closed,
-            false => self.is_user_iterator(receiver) || holds_function,
+            // And a `copied()` of one closed to drop what it holds, which is
+            // it, consumed to its end, which closes nothing (ADR 0547).
+            false => {
+                self.is_user_iterator(receiver)
+                    || holds_function
+                    || (self.is_its_source(receiver) && self.recognition().closed_on_drop(receiver).is_some())
+            }
         };
         let holds = output.walk().any(|part| part.as_type() == Some(receiver));
         if dropped && given && !holds {
@@ -168,6 +174,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         Ok(false)
+    }
+
+    /// Whether an adapter of type `ty` is its source itself in JS: a
+    /// `copied()`, or a `cloned()` of what needs no clone, each item as it
+    /// is (ADR 0547). The one answer, of what's made and what's dropped.
+    fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
+        let item = || {
+            self.iterator_item(ty)
+                .is_some_and(|item| !self.needs_clone(item.peel_refs()))
+        };
+        crate::lower::recognition::copied_source(self.tcx, ty).is_some()
+            || (crate::lower::recognition::cloned_source(self.tcx, ty).is_some() && item())
     }
 
     /// `mir_iter_call`'s, once what it drops is seen to.
@@ -483,9 +501,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let sum = std_method == Some(IterMethod::Sum);
                 self.accumulated((it, def_id), (output, item), sum, span)?
             }
-            Some(IterMethod::Copied) => it,
+            Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
             Some(IterMethod::Cloned) => match item {
-                Some(item) if !self.needs_clone(item.peel_refs()) => it,
                 Some(item) => {
                     let x = self.fresh("item");
                     let mut body = Vec::new();
@@ -1416,6 +1433,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().iterates_items(ty)
             // A `rev()` of one, its array reversed (ADR 0530).
             || crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| self.steps_an_array(source))
+            // A `copied()` of one, which is it in JS (ADR 0547).
+            || (self.is_its_source(ty)
+                && (crate::lower::recognition::copied_source(self.tcx, ty))
+                    .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))
+                    .is_some_and(|source| self.steps_an_array(source)))
             || self.recognition().is_str_chars(ty)
             || self.is_str_split(ty)
             || self.recognition().is_deque_iter(ty)
