@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A blanket impl over `?Sized` types**, `impl<T: Iterator + ?Sized> Ext
+  for T {}`, that keeps its trait's defaults (ADR 0536).
 - **`rev()` of a lazy `map`** (ADR 0535).
 - **A bound of `Index<J>` or `IndexMut<J>` on a `Vec`, an array or a
   slice**, of a generic index (ADR 0534).

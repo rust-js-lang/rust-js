@@ -1813,4 +1813,12 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr).filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },
+  {
+    name: "blanket-unsized-default-refused",
+    breaks: "a blanket impl over `?Sized` types that keeps its trait's default methods, `Itertools`'s, is refused",
+    file: "src/lower/traits.rs",
+    find: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args)),",
+    replace: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args))\n                    .filter(|_| false),",
+    tests: ["test/corpus.test.ts", "-t", "^blanket_unsized_impl.rs$"],
+  },
 ];

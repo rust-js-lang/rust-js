@@ -3263,14 +3263,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // rustc won't resolve one of a blanket impl over a `?Sized` type,
             // `impl<Q: ?Sized> Equivalent<K> for Q`, as a `dyn` might be that
-            // type too: in the impl's own dictionary it's the impl's item.
-            let own = || {
-                let method = *self.tcx.impl_item_implementor_ids(id).get(&item.def_id)?;
-                let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match param.kind {
-                    ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
-                    _ => self.tcx.mk_param_from_def(param),
-                });
-                Some(ty::Instance::new_raw(method, args))
+            // type too: in the impl's own dictionary it's the impl's item, or
+            // the trait's default it keeps, `impl<T: Iterator + ?Sized>
+            // Itertools for T {}`'s (ADR 0536).
+            let own = || match self.tcx.impl_item_implementor_ids(id).get(&item.def_id) {
+                Some(&method) => {
+                    let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match param.kind {
+                        ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+                        _ => self.tcx.mk_param_from_def(param),
+                    });
+                    Some(ty::Instance::new_raw(method, args))
+                }
+                None => self
+                    .tcx
+                    .defaultness(item.def_id)
+                    .has_value()
+                    .then(|| ty::Instance::new_raw(item.def_id, args)),
             };
             let instance = self
                 .resolve_instance(item.def_id, args)?
