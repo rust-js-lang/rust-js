@@ -236,7 +236,7 @@ and answer. Each is checked to stay that way.
 | `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
 | `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
-| `std_coverage.rs` | How much of std's data structures rust-js knows: each stable method of each in `recognition/registry.rs`, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314) |
+| `std_coverage.rs` | How much of std's data structures rust-js knows: each stable method of each in `recognition/registry.rs`, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `memory`, `opaque` or `none` (the `std-bodies` draft) |
 
 **Lowering of Rust's constructs.**
 

@@ -5243,6 +5243,23 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
     path.starts_with("std::ptr::") || matches!(path.as_str(), "std::mem::transmute_copy" | "std::mem::uninitialized")
 }
 
+/// An intrinsic of addressable memory, or of anything JS hasn't (the
+/// `std-bodies` draft): any but a hint to the optimizer, `cold_path`,
+/// `assume`, `likely`, `unlikely`, `black_box`, and `ub_checks`, which
+/// rust-js reads as off (ADR 0364).
+pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.intrinsic(id).is_some()
+        && !matches!(
+            std_path(tcx, id).as_str(),
+            "std::intrinsics::cold_path"
+                | "std::intrinsics::assume"
+                | "std::intrinsics::likely"
+                | "std::intrinsics::unlikely"
+                | "std::intrinsics::black_box"
+                | "std::intrinsics::ub_checks"
+        )
+}
+
 /// A type of addressable memory, or with one in it (ADR 0390): a raw
 /// pointer, a union, whose fields share their bytes, or std's `NonNull`;
 /// in what a crate's own type holds too, but not in std's, whose private
