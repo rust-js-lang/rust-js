@@ -10,6 +10,7 @@ import {
   $next,
   $nextIf,
   $peek,
+  $peekable,
   $restStr,
   $toDigit,
   $unwrap,
@@ -30,7 +31,7 @@ function tokDebug_fmt(tok) {
 
 export const Lexer = {
   new(src) {
-    return { chars: $iter(Array.from(src)), line: 1 };
+    return { chars: $peekable($iter(Array.from(src))), line: 1 };
   },
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));
