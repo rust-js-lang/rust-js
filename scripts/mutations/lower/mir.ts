@@ -1885,8 +1885,8 @@ export const mutations: Mutation[] = [
     name: "mir-same-trait-dispatched",
     breaks: "MIR's `b.as_ref()` of a `Box<dyn Any>` asks for `AsRef`'s evidence, not the same JS value",
     file: "src/lower/mir.rs",
-    find: "        if !matches!(known, Some(Std::Any(_) | Std::Same))\n",
-    replace: "        if !matches!(known, Some(Std::Any(_)))\n",
+    find: "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_)))\n",
+    replace: "        if !matches!(known, Some(Std::Any(_) | Std::FmtTo(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_any"],
   },
   {

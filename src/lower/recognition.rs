@@ -173,6 +173,9 @@ pub(super) enum Std {
     Location(super::std_types::location::LocationOp),
     /// A `Backtrace`'s (ADR 0568).
     Backtrace(super::std_types::backtrace::BacktraceOp),
+    /// A `fmt` trait's method called as a function on a `Formatter` held
+    /// where it isn't its writer's, `Display::fmt(&x, self.0)` (ADR 0461).
+    FmtTo(WriteCall),
     /// An `io::Error`'s: made, or its kind asked (ADR 0462).
     IoError(IoErrorOp),
     /// Hashing's (ADR 0463): a std hasher made, or its own method called, or
@@ -664,6 +667,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // handle it is (ADR 0461).
         if self.formatter_write(def_id, args) {
             return Some(Some(Std::PushStr));
+        }
+        if let Some(operation) = self.formatter_fmt_to(def_id) {
+            return Some(Some(Std::FmtTo(operation)));
         }
         if type_facts(tcx, def_id) == [TypeFact::NeedsDrop] {
             return Some(Some(Std::NeedsDrop));
@@ -3368,7 +3374,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 }
 
-pub(super) enum WriteCall {
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) enum WriteCall {
     Text,
     /// `f.pad(s)`: `s`, given the `Formatter`'s options (ADR 0143).
     Pad,
@@ -3421,6 +3428,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         });
         (inherent && matches!(self.tcx.item_name(def_id).as_str(), "write_str" | "write_fmt"))
             || self.fmt_write_on_formatter(def_id, args)
+    }
+
+    /// `Display::fmt(&x, f)`, `Debug::fmt` or another `fmt` trait's, called
+    /// as a function, on a `Formatter` held where it isn't its writer's
+    /// (ADR 0461): what it writes.
+    pub(super) fn formatter_fmt_to(&self, def_id: DefId) -> Option<WriteCall> {
+        let operation = self.write_call(def_id, false);
+        if !matches!(operation, WriteCall::Display | WriteCall::Debug | WriteCall::OtherFmt) {
+            return None;
+        }
+        let sig = self
+            .tcx
+            .instantiate_bound_regions_with_erased(self.tcx.fn_sig(def_id).instantiate_identity().skip_normalization());
+        sig.inputs()
+            .get(1)
+            .is_some_and(|t| self.is_formatter(*t))
+            .then_some(operation)
     }
 
     /// A `Formatter`, whose text is a string in JS (ADR 0054).

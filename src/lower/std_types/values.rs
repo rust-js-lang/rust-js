@@ -506,7 +506,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SortByKey => {
                 unreachable!("handled above")
             }
-            Std::PushStr | Std::AssignOperator(_) | Std::StringEdit(_) | Std::StringWithCapacity => {
+            Std::PushStr | Std::FmtTo(_) | Std::AssignOperator(_) | Std::StringEdit(_) | Std::StringWithCapacity => {
                 unreachable!("handled above")
             }
             Std::VecMacro | Std::FmtNew | Std::AssertFailed => unreachable!("handled above"),

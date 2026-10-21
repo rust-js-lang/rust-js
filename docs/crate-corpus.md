@@ -27,7 +27,7 @@ newest release its requirement allows.
 | arrayvec 0.7 | runs | |
 | hashbrown 0.17 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0 | runs | |
-| anyhow 1.0 | refused | `Display::fmt(&self.0, f)`, a `fmt` trait's method called as a function; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034) and `Backtrace` (ADR 0568) compile |
+| anyhow 1.0 | refused | a `&mut ErrorImpl` in a generic function's parameters; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
 | once_cell 1.21 | refused | `std::thread::current` called |
 | semver 1.0 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
 | uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |

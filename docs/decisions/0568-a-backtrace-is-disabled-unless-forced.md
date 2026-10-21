@@ -65,8 +65,7 @@ recognition names them; `runtime/backtrace.js` the three helpers.
 
 ## Consequences
 
-- anyhow compiles past it, and stops next at `Display::fmt` called as a
-  function, `Display::fmt(&self.0, f)`.
+- anyhow compiles past it.
 - `{:?}` of a forced backtrace shows JS's frames, not Rust's `Backtrace [{
   fn: .. }]`: the frames a page has, listed here as a difference.
 - `BacktraceStatus::Unsupported` is never given.

@@ -239,6 +239,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..
         } = call;
         Ok(Some(Value::Expr(match known {
+            // `Display::fmt(&x, self.0)` of a `Formatter` held where it isn't
+            // its writer's: what it writes, appended to the handle's text,
+            // plain, as the handle keeps no options (ADR 0461).
+            Std::FmtTo(operation) => {
+                let shown = self.value_expr(values.next().expect("what's shown"), span)?;
+                let place = match values.next() {
+                    Some(Value::Ref(place)) => place,
+                    Some(Value::Expr(place))
+                        if matches!(
+                            place.kind,
+                            js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)
+                        ) =>
+                    {
+                        place
+                    }
+                    _ => return Err(self.unsupported(span, "this `Formatter`")),
+                };
+                let pretty = crate::lower::display::Pretty::Plain;
+                let written = self.written_of(operation, def_id, generic_args, vec![shown], &pretty, span, out)?;
+                self.flush(state, out)?;
+                crate::lower::display::append_written(&place, written, false, self.js_span(span), out);
+                Expr::undefined()
+            }
             // `s.push_str(t)`, `write!(s, ..)`: JS strings don't change, so `s`
             // gets a new one.
             Std::PushStr => {

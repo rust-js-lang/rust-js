@@ -2647,4 +2647,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
   },
+  {
+    name: "fmt-to-held-formatter-refused",
+    breaks: "`Display::fmt(&x, self.0)` on a `Formatter` held in a struct is refused",
+    file: "src/lower/recognition.rs",
+    find: "        if let Some(operation) = self.formatter_fmt_to(def_id) {\n            return Some(Some(Std::FmtTo(operation)));\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
+  },
 ];

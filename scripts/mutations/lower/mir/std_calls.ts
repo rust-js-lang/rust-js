@@ -686,4 +686,12 @@ export const mutations: Mutation[] = [
     replace: "                if !arg_tys\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
+  {
+    name: "fmt-to-held-formatter-pretty",
+    breaks: "what a `fmt` trait's method writes to a held `Formatter` is written pretty, where the handle keeps no options",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let pretty = crate::lower::display::Pretty::Plain;\n",
+    replace: "                let pretty = crate::lower::display::Pretty::Always;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
+  },
 ];

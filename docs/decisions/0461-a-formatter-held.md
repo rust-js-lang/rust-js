@@ -88,3 +88,15 @@ on, `$writeCheck($writeOf(encode(..)))` of a generic one. It gave `Ok`.
 
 - A held `Formatter`'s options, `f.width()` or `f.pad(s)` through the
   struct, aren't the handle's: each is refused.
+
+## Amendment: a `fmt` trait's method called on a held `Formatter`
+
+`Display::fmt(&x, self.0)`, `Debug::fmt` or another `fmt` trait's,
+called as a function on a `Formatter` held in a struct (2026-10-21), as
+anyhow's `Quoted` writer escapes what it's given into the one it holds:
+what the method writes, appended to the handle's text, `self.0.value +=
+..`, as `self.0.write_str(s)` is. Plain, as the handle keeps no options
+(above). `recognition::formatter_fmt_to` names it, `Std::FmtTo`;
+`std_calls.rs` writes it beside `push_str`. The corpus's
+`fmt_to_held_formatter.rs` holds anyhow's `Quoted` and a generic `show`
+through a held `Formatter` against native Rust.
