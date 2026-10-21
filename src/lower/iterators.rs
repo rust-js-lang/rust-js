@@ -22,18 +22,6 @@ use rustc_span::def_id::DefId;
 /// boxed (ADR 0051), `boxed`, unboxed; given `back`, its `next_back`, one
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
-/// The `next` of an `Iterator` dictionary, `{ next: $next }`'s `$next`: the
-/// field's value of one written here, else the member.
-pub(in crate::lower) fn next_of(dictionary: Expr) -> Expr {
-    if let js::ExprKind::Object(props) = &dictionary.kind
-        && let [js::Prop::Field(name, value)] = props.as_slice()
-        && name == "next"
-    {
-        return value.clone();
-    }
-    Expr::member(dictionary, "next")
-}
-
 /// A `Peekable`'s `size_hint()`, whose body reaches memory, over std's
 /// struct, `{ iter, peeked }` (ADR 0557): what it steps',
 /// and what it peeked at. The one rewrite, of `size_hint()` and `len()`.
@@ -764,7 +752,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The function that steps the crate's iterator of type `ty`, its impl's
     /// `method` of `trait_id`, `countdownIterator_next`, and whether its
     /// `Some` is boxed, as a generic `next`'s is (ADR 0051).
-    fn user_next(&mut self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str, span: Span) -> R<(Expr, bool)> {
+    pub(in crate::lower) fn user_next(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        trait_id: DefId,
+        method: &str,
+        span: Span,
+    ) -> R<(Expr, bool)> {
         let next = trait_method(self.tcx, trait_id, method);
         let args = self.args_of(trait_id, ty.peel_refs());
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
@@ -1914,11 +1908,12 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$fuse`,
 /// `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
-/// `$rev` (ADR 0516), `$closing` and `$peekable` (ADR 0518), `$mapEnds`
-/// (ADR 0455), `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528) and
-/// `$memchrIter` (ADR 0529), and each of its generators,
+/// `$rev` (ADR 0516), `$closing` (ADR 0518), `$mapEnds` (ADR 0455),
+/// `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528), `$memchrIter` (ADR
+/// 0529) and `$stdIterator` (ADR 0557), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 23] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 24] = [
+    "$stdIterator",
     "$memchrIter",
     "$mapEnds",
     "$filterEnds",

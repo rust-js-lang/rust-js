@@ -1138,16 +1138,16 @@ test("the report's JS: function values, case mapping, and plain array reads", as
   expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255));");
 });
 
-// ADR 0071: an iterator stepped through is a `$iter`, which knows where it is;
-// a `Peekable` a struct holds, `$peekable` of it (ADR 0543).
-// A `Peekable` is std's own, `{ iter, peeked }` over the `$iter`, its `next`
-// and `next_if` compiled into `@rust-js/std`, its `peek` rewritten (ADR 0557).
+// ADR 0071: an iterator stepped through is a `$iter`, which knows where it is.
+// A `Peekable` is std's own, `{ iter, peeked }` over the `$iter`, made by
+// std's `peekable` compiled into `@rust-js/std` and stepped as the JS
+// iterator it is, its `peek` and `next_if` rewritten over it (ADR 0557).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
   expect(js).toContain("return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };");
-  expect(js).toContain("const c = $peek(lexer.chars, $next);");
-  expect(js).toContain("Peekable.next_if_eq(");
-  expect(js).toContain('Peekable.next_if(lexer.chars, (c) => c !== "\\n", { next: $next }) == null');
+  expect(js).toContain("const c = $peek(lexer.chars);");
+  expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
+  expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = it.toArray();");
   expect(js).toContain("return c.toUpperCase() + $restStr(chars);");

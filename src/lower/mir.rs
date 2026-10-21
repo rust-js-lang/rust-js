@@ -107,52 +107,6 @@ impl<'tcx> Mir<'tcx> {
                     }
                 }
             }
-            // A discriminant read in more than one block into one local, as an
-            // inlined `is_none` reads it, is each block's own: a temporary
-            // read once, where it's tested, as a body of the crate's reads it.
-            let mut assigned: IndexVec<Local, usize> = IndexVec::from_elem(0, &body.local_decls);
-            for data in body.basic_blocks.iter() {
-                for statement in &data.statements {
-                    if let StatementKind::Assign(assign) = &statement.kind
-                        && let Some(local) = assign.0.as_local()
-                    {
-                        assigned[local] += 1;
-                    }
-                }
-            }
-            let mut decls = body.local_decls.clone();
-            for data in body.basic_blocks.as_mut() {
-                for i in 0..data.statements.len() {
-                    let StatementKind::Assign(assign) = &data.statements[i].kind else {
-                        continue;
-                    };
-                    let (Some(local), Rvalue::Discriminant(_)) = (assign.0.as_local(), &assign.1) else {
-                        continue;
-                    };
-                    if assigned[local] < 2 {
-                        continue;
-                    }
-                    let fresh = decls.push(decls[local].clone());
-                    let mut rename = RenameLocal {
-                        tcx,
-                        from: local,
-                        to: fresh,
-                    };
-                    for statement in &mut data.statements[i..] {
-                        rustc_middle::mir::visit::MutVisitor::visit_statement(
-                            &mut rename,
-                            statement,
-                            mir::Location::START,
-                        );
-                    }
-                    rustc_middle::mir::visit::MutVisitor::visit_terminator(
-                        &mut rename,
-                        data.terminator_mut(),
-                        mir::Location::START,
-                    );
-                }
-            }
-            body.local_decls = decls;
             // A discriminant read for a switch that went, which the block's
             // terminator no longer tests: dropped with it.
             for data in body.basic_blocks.as_mut() {
@@ -176,26 +130,6 @@ impl<'tcx> Mir<'tcx> {
             false => Default::default(),
         };
         Mir { body, promoted, awaits }
-    }
-}
-
-/// A local renamed in a block's statements and terminator: a discriminant's
-/// temporary, which an optimized body assigns in more than one block.
-struct RenameLocal<'tcx> {
-    tcx: ty::TyCtxt<'tcx>,
-    from: Local,
-    to: Local,
-}
-
-impl<'tcx> rustc_middle::mir::visit::MutVisitor<'tcx> for RenameLocal<'tcx> {
-    fn tcx(&self) -> ty::TyCtxt<'tcx> {
-        self.tcx
-    }
-
-    fn visit_local(&mut self, local: &mut Local, _: PlaceContext, _: mir::Location) {
-        if *local == self.from {
-            *local = self.to;
-        }
     }
 }
 
@@ -4280,16 +4214,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
-                // An enum's discriminant compared with a variant's, `is_none`'s
-                // inlined into a std body (ADR 0557): the test
-                // of that variant, as a switch on it is.
-                if let (BinOp::Eq | BinOp::Ne, Value::Discriminant(..), Some(variant)) = (op, &l, known) {
-                    let test = self.switch_test(&l, ty, variant as u128, span)?;
-                    return Ok(Value::Expr(match op {
-                        BinOp::Eq => test,
-                        _ => test.negated_test(),
-                    }));
-                }
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
                 let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
@@ -4577,7 +4501,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;
                 let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
-                Ok(Value::Expr(self.adt_value(ty, *variant_index, exprs, &nulled, span)?))
+                let value = self.adt_value(ty, *variant_index, exprs, &nulled, span)?;
+                // A compiled std iterator's struct, `Peekable { iter, peeked }`
+                // in std's own `peekable` or `clone`, is the JS iterator it
+                // is where it's made, its `next` the compiled impl's (ADR
+                // 0557).
+                if super::recognition::is_compiled_std_iterator(self.tcx, ty) {
+                    let (next, _) = self.user_next(ty, std_item(self.tcx, StdItem::Iterator), "next", span)?;
+                    return Ok(Value::Expr(Expr::call_helper("$stdIterator", vec![value, next])));
+                }
+                Ok(Value::Expr(value))
             }
             AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
             // An `async` body, what it holds as a closure's environment.

@@ -24,11 +24,11 @@ released any more: `rust-js build` is the one way to build an app.
 - **std's bodies are std's own** (ADR 0557): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
-  std's struct, `{ iter, peeked }`: `peekable()` of any iterator, the
-  crate's own too, `next`, `next_back`, `count`, `nth`, `last`, `fold`,
-  `rfold`, `next_if`, `next_if_eq`, its clone and its `Debug` are std's;
-  `peek`, `peek_mut`, `size_hint` and `len`, whose bodies reach memory,
-  are rewritten over it. Generic code that gives back a `peekable` of a
+  std's struct, `{ iter, peeked }`, the JS iterator it is: `peekable()` of
+  any iterator, the crate's own too, `next`, `next_back`, `rfold`, its
+  clone and its `Debug` are std's; `peek`, `peek_mut`, `next_if`,
+  `next_if_eq`, `size_hint` and `len` are rewritten over it, and the rest
+  are a JS iterator's idioms. Generic code that gives back a `peekable` of a
   type with a destructor compiles. `--std-coverage` says what each std
   body is made of, `safe`, `spec`, `opaque`, `memory` or `none`, and
   measures `Iterator`'s provided methods and the adapters.

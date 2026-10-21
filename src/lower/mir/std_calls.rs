@@ -764,10 +764,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = values.map(|v| self.value_expr(v, span)).next().expect("the iterator")?;
                 self.cycled(it, arg_tys[0].peel_refs(), span)?
             }
-            // A `Peekable`'s `peek()` and `peek_mut()`, whose bodies reach
-            // memory, over std's struct (ADR 0557): what it
-            // peeked at, or what it steps next, kept.
-            Std::Step(op @ (StepOp::Peek | StepOp::PeekMut))
+            // A `Peekable`'s own methods, rewritten over std's struct, the
+            // JS iterator it is (ADR 0557): what it peeked at, or what it
+            // steps next, kept; `next_if`, its next item where the test
+            // takes it, else kept.
+            Std::Step(op @ (StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq))
                 if arg_tys.first().is_some_and(|t| self.is_peekable(t.peel_refs())) =>
             {
                 let mut exprs = values
@@ -775,20 +776,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect::<R<Vec<_>>>()?
                     .into_iter();
                 let it = exprs.next().expect("the iterator");
-                let ty::Adt(_, args) = arg_tys[0].peel_refs().kind() else {
-                    unreachable!("a `Peekable`")
-                };
-                let next = crate::lower::iterators::next_of(self.iterator_dictionary(args.type_at(0), span)?);
+                let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
                 match op {
+                    StepOp::Peek if boxed => Expr::call_helper("$peekSome", vec![it]),
+                    StepOp::Peek => Expr::call_helper("$peek", vec![it]),
                     // A handle on a number or text, else the item itself.
-                    StepOp::PeekMut
-                        if self
-                            .iterator_item(arg_tys[0].peel_refs())
-                            .is_some_and(|item| self.is_boxable(item)) =>
-                    {
-                        Expr::call_helper("$peekCell", vec![it, next])
+                    StepOp::PeekMut => match self.iterator_item(arg_tys[0].peel_refs()) {
+                        Some(item) if self.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),
+                        _ => Expr::call_helper("$peek", vec![it]),
+                    },
+                    // Of items that may look like `None`, which the test would
+                    // be given unboxed: refused.
+                    _ if boxed => {
+                        return Err(self.unsupported(span, "`next_if` of items that may be `None`"));
                     }
-                    _ => Expr::call_helper("$peek", vec![it, next]),
+                    StepOp::NextIf => {
+                        let f = exprs.next().expect("a test");
+                        Expr::call_helper("$nextIf", vec![it, f])
+                    }
+                    _ => {
+                        let item = arg_tys[1];
+                        if !self.eq_is_identity(item) {
+                            return Err(self.unsupported(span, &format!("`next_if_eq` of `{}`s", item.peel_refs())));
+                        }
+                        let x = exprs.next().expect("a value");
+                        let x = if x.reads_same() {
+                            x
+                        } else {
+                            self.spill("expected", x, out)
+                        };
+                        let same = Expr::arrow(
+                            vec!["item".into()],
+                            vec![StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x))).at(js::Span::NONE)],
+                        );
+                        Expr::call_helper("$nextIf", vec![it, same])
+                    }
                 }
             }
             // A slice's or string's iterator's own: of a `$iter`, which knows

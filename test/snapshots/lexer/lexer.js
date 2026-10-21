@@ -4,8 +4,17 @@
 // `next_if` and `next_if_eq`; and iterators that `next()` steps through,
 // then hands the rest of (ADR 0071).
 
-import { Peekable, iterator_peekable, peekableIterator_next } from "@rust-js/std/iter.js";
-import { $debugStr, $iter, $next, $peek, $restStr, $toDigit, $unwrap } from "@rust-js/runtime";
+import { iterator_peekable } from "@rust-js/std/iter.js";
+import {
+  $debugStr,
+  $iter,
+  $next,
+  $nextIf,
+  $peek,
+  $restStr,
+  $toDigit,
+  $unwrap,
+} from "@rust-js/runtime";
 
 function tokDebug_fmt(tok) {
   if (tok.TAG === "Num") {
@@ -27,7 +36,7 @@ export const Lexer = {
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));
     while (true) {
-      const c = $peek(lexer.chars, $next);
+      const c = $peek(lexer.chars);
       if (c == null) {
         break;
       }
@@ -36,18 +45,14 @@ export const Lexer = {
         break;
       }
       n = ((Math.imul(n, 10) >>> 0) + d) >>> 0;
-      peekableIterator_next(lexer.chars, { next: $next });
+      $next(lexer.chars);
     }
     return n;
   },
   word(lexer, first) {
     let w = first;
     while (true) {
-      const c = Peekable.next_if(
-        lexer.chars,
-        (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_",
-        { next: $next },
-      );
+      const c = $nextIf(lexer.chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
       if (c == null) {
         break;
       }
@@ -58,7 +63,7 @@ export const Lexer = {
   tokens(lexer) {
     const out = [];
     while (true) {
-      const c = peekableIterator_next(lexer.chars, { next: $next });
+      const c = $next(lexer.chars);
       if (c == null) {
         break;
       }
@@ -79,7 +84,7 @@ export const Lexer = {
                   if (c === '"') {
                     let s = "";
                     while (true) {
-                      const ch = peekableIterator_next(lexer.chars, { next: $next });
+                      const ch = $next(lexer.chars);
                       if (ch == null) {
                         return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
                       }
@@ -91,19 +96,9 @@ export const Lexer = {
                     out.push({ TAG: "Str", _0: s });
                     break bb67;
                   }
-                  if (
-                    c === "/" &&
-                    Peekable.next_if_eq(
-                      lexer.chars,
-                      "/",
-                      { next: $next },
-                      { eq: (a, b) => a === b },
-                    ) != null
-                  ) {
+                  if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
                     while (true) {
-                      if (
-                        Peekable.next_if(lexer.chars, (c) => c !== "\n", { next: $next }) == null
-                      ) {
+                      if ($nextIf(lexer.chars, (c) => c !== "\n") == null) {
                         break bb67;
                       }
                     }

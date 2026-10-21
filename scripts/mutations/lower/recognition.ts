@@ -2589,4 +2589,13 @@ export const mutations: Mutation[] = [
     replace: "            Ok(ImplSource::UserDefined(imp)) if false && self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
+  {
+    name: "compiled-iterator-a-user-iterator",
+    breaks: "a compiled std iterator, a `Peekable`, is taken for an iterator stepped by its impl's `next`, and wrapped in a `$iterator` where it's stepped, the JS iterator it is already",
+    file: "src/lower/recognition.rs",
+    find: "            && !is_compiled_std_iterator(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
+    snapshots: true,
+  },
 ];

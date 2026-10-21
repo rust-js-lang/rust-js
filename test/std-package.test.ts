@@ -47,7 +47,7 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
     expect(body(join(dir, "std", file)), file).toBe(body(join(root, "std", file)));
   }
   // Each item is std's: keyed as rustc keys it, in a module of the package.
-  expect(committed.library.items.length).toBeGreaterThan(10);
+  expect(committed.library.items.length).toBeGreaterThan(4);
   expect(committed.library.items.every((item: { rust_path: string }) => item.rust_path.includes("core::iter"))).toBe(true);
   const pkg = JSON.parse(readFileSync(join(root, "std", "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
@@ -55,14 +55,18 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
 });
 
 // What the compiler writes imports the package by its name, each module by
-// its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported.
-test("a Peekable's next is std's own, imported from @rust-js/std", () => {
+// its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported. A
+// `Peekable` is made by std's own `peekable`, and stepped as the JS iterator
+// its struct is, `$next`, its `next` the compiled one (ADR 0557).
+test("a Peekable is made by std's own peekable, imported from @rust-js/std, and stepped as a JS iterator", () => {
   const dir = fixture("std-package-import");
   const file = join(dir, "lib.rs");
   Bun.write(file, "pub fn first(v: &[u32]) -> Option<u32> { let mut p = v.iter().copied().peekable(); p.next() }\n");
   run([compiler, file, "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('from "@rust-js/std/iter.js"');
-  expect(js).toContain("peekableIterator_next(");
-  expect(js).toContain("iterator_peekable(");
+  expect(js).toContain('import { iterator_peekable } from "@rust-js/std/iter.js"');
+  expect(js).toContain("$next(p)");
+  expect(js).not.toContain("peekableIterator_next");
+  const std = readFileSync(join(root, "std", "iter.js"), "utf8");
+  expect(std).toContain("return $stdIterator({ iter: self }, (iterator) =>");
 });

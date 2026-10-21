@@ -235,6 +235,8 @@ helpers! {
     Drain,
     SplitOff,
     Peek,
+    NextIf,
+    StdIterator,
     Rest,
     RestStr,
     UnwrapErr,
@@ -869,6 +871,8 @@ impl Helper {
             // each item out, until it gives `None`.
             Helper::Scan => include_str!("runtime/scan.js"),
             Helper::Peek => include_str!("runtime/peek.js"),
+            Helper::NextIf => include_str!("runtime/next_if.js"),
+            Helper::StdIterator => include_str!("runtime/std_iterator.js"),
             // `it.next_if(f)`: the next item if `f` says so, and then past it.
             // What's left of one, as an array; it then has nothing left.
             Helper::Rest => include_str!("runtime/rest.js"),

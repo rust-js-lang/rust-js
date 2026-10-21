@@ -247,8 +247,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let it = values.into_iter().next().expect("the receiver");
             // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
             // One its impl writes itself is its own, never asked here (ADR
-            // 0492).
-            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) {
+            // 0492). A `Peekable`'s is a rewrite over its struct (ADR 0557).
+            if (self.is_user_iterator(iter_ty) || self.is_peekable(iter_ty)) && std_method == Some(IterMethod::Len) {
                 let mut made = Vec::new();
                 let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
                 if !made.is_empty() {

@@ -2790,9 +2790,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "ExactSizeIterator")
     }
 
+    /// Is `ty` an iterator of the crate's, or a library's, stepped by its
+    /// impl's `next` (ADR 0055)? Not a compiled std one's, `Peekable`'s,
+    /// whose struct steps itself, a JS iterator (ADR 0557).
     pub(super) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
-        matches!(ty.peel_refs().kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty.peel_refs())
+        matches!(ty.peel_refs().kind(), ty::Adt(..))
+            && self.has_user_impl(iterator, ty.peel_refs())
+            && !is_compiled_std_iterator(self.tcx, ty)
     }
 
     pub(super) fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
@@ -5255,16 +5260,10 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// (`docs/std-coverage.txt`); what reaches memory stays recognized.
 const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("Iterator"), "next"),
-    ("Peekable", Some("Iterator"), "count"),
-    ("Peekable", Some("Iterator"), "nth"),
-    ("Peekable", Some("Iterator"), "last"),
-    ("Peekable", Some("Iterator"), "fold"),
     ("Peekable", Some("DoubleEndedIterator"), "next_back"),
     ("Peekable", Some("DoubleEndedIterator"), "rfold"),
     ("Peekable", Some("Clone"), "clone"),
     ("Peekable", Some("Debug"), "fmt"),
-    ("Peekable", None, "next_if"),
-    ("Peekable", None, "next_if_eq"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -6230,6 +6229,19 @@ pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
             .any(|&(type_name, _, _)| std_path(tcx, id) == format!("std::iter::{type_name}"))
 }
 
+/// A compiled std type whose `Iterator` impl is compiled, `Peekable`'s: its
+/// struct is a JS iterator, `$stdIterator` of it where it's made, its `next`
+/// the compiled one, so a value of it is stepped as any JS iterator is, by
+/// `$next`, `for...of` and the helpers, with no dictionary of what it holds
+/// (ADR 0557). The one answer, of what's made a JS iterator and what's
+/// stepped as one.
+pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, adt.did())
+    && COMPILED_STD.iter().any(|&(type_name, tr, name)| {
+        tr == Some("Iterator") && name == "next" && std_path(tcx, adt.did()) == format!("std::iter::{type_name}")
+    }))
+}
+
 /// What std's adapter of type `ty` a struct may hold (ADR 0542) steps
 /// from its back and counts as its source does, `I` of `Enumerate<I>` or
 /// `Fuse<I>`: the one answer, of what a use site makes knowing them.
@@ -7187,12 +7199,14 @@ fn cell_method(name: &str, refcell: bool) -> Option<Std> {
     })
 }
 
-/// Which `StepOp` a `Peekable`'s own method is, of those whose bodies reach
-/// memory, rewritten over std's struct (ADR 0513, 0557).
+/// Which `StepOp` a `Peekable`'s own method is, each a rewrite over std's
+/// struct, stepped as the JS iterator it is (ADRs 0513, 0557).
 fn peekable_step(name: &str) -> Option<StepOp> {
     Some(match name {
         "peek" => StepOp::Peek,
         "peek_mut" => StepOp::PeekMut,
+        "next_if" => StepOp::NextIf,
+        "next_if_eq" => StepOp::NextIfEq,
         _ => return None,
     })
 }

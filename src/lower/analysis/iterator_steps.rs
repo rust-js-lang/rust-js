@@ -190,6 +190,17 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     && is_std_crate(tcx, adt.did())
                 {
                     for &by in by.iter().filter(|&&by| by != iterator) {
+                        // A compiled std iterator's, `Peekable<I>`'s (ADR
+                        // 0557): its compiled impl's, by what its manifest
+                        // says it steps; a rewrite's, `len()`'s, nothing.
+                        if crate::lower::recognition::is_compiled_std_iterator(tcx, self_ty) {
+                            if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, callee, args)
+                                && foreign.item(instance.def_id()).is_some()
+                            {
+                                steps_through(&mut stepped, instance.def_id(), instance.args);
+                            }
+                            continue;
+                        }
                         // What its impl of it asks of what it holds, as rustc
                         // proves it: `Enumerate<I>`'s back asks `I`'s length
                         // too (ADR 0542); else the same of each.
@@ -202,32 +213,17 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         }
                     }
                 }
-                // The crate's iterator holding it, stepped by its impl's `next`;
-                // a library's, std's `Peekable<I>` among them (ADR 0557), by
-                // what its manifest says its `next` steps.
+                // The crate's iterator holding it, stepped by its impl's `next`.
+                // A compiled std iterator holding it, `Peekable<I>` (ADR 0557),
+                // is a JS iterator, stepped with no dictionary of it; what its
+                // compiled impl of an extension takes, `next_back`'s of `I:
+                // DoubleEndedIterator`, its manifest says.
                 if let Ok(Some(instance)) =
                     ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
+                    && fns.contains_key(&instance.def_id())
                 {
-                    if fns.contains_key(&instance.def_id()) {
-                        pass_on(&mut passed, instance.def_id(), instance.args);
-                    } else if foreign.item(instance.def_id()).is_some() {
-                        steps_through(&mut stepped, instance.def_id(), instance.args);
-                    }
+                    pass_on(&mut passed, instance.def_id(), instance.args);
                 }
-                continue;
-            }
-            // A std type's own method rewritten over its struct, a
-            // `Peekable<I>`'s `peek()` (ADR 0557), steps what it holds as its
-            // `next` does.
-            if let Some(imp) = tcx.inherent_impl_of_assoc(callee)
-                && let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind()
-                && crate::lower::recognition::is_compiled_std_type(tcx, adt.did())
-                && let Some(self_ty) = args.types().next()
-                && let Ok(Some(instance)) =
-                    ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.peel_refs().into()]))
-                && foreign.item(instance.def_id()).is_some()
-            {
-                steps_through(&mut stepped, instance.def_id(), instance.args);
                 continue;
             }
             // A function of the crate's, or an impl's item, a dictionary's

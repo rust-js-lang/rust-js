@@ -3,82 +3,15 @@
 import {
   $foldBack,
   $iterator,
-  $lastDropping,
-  $lent,
-  $nthDropping,
   $pretty,
   $some,
   $someMut,
   $someValue,
+  $stdIterator,
   $traitImpl,
 } from "@rust-js/runtime";
 
 var $peekableClone, $peekableDebug;
-
-export const Peekable = {
-  next_if(peekable, func, IIterator, dropI, dropFnOnce, dropIItem) {
-    const peeked = peekable.peeked;
-    peekable.peeked = undefined;
-    const v = peeked != null ? $someValue(peeked) : IIterator.next(peekable.iter);
-    bb5: {
-      let tmp;
-      let tmp$1;
-      let tmp$2;
-      let other;
-      if (v != null) {
-        const matched = $someValue(v);
-        if (func(matched)) {
-          const matched = $someValue(v);
-          return $some(matched);
-        }
-        other = v;
-        tmp = peekable.peeked != null;
-        tmp$2 = !tmp;
-        if (!tmp$2) {
-          break bb5;
-        }
-        tmp$1 = $some(other);
-        if (peekable.peeked != null) {
-          if ($someValue(peekable.peeked) != null) {
-            dropIItem?.($someValue($someValue(peekable.peeked)));
-          }
-        }
-        peekable.peeked = tmp$1;
-        return;
-      }
-      other = v;
-      tmp = peekable.peeked != null;
-      tmp$2 = !tmp;
-      if (!tmp$2) {
-        break bb5;
-      }
-      tmp$1 = $some(other);
-      if (peekable.peeked != null) {
-        if ($someValue(peekable.peeked) != null) {
-          dropIItem?.($someValue($someValue(peekable.peeked)));
-        }
-      }
-      peekable.peeked = tmp$1;
-      const result = undefined;
-      dropFnOnce?.(func);
-      return result;
-    }
-    throw new Error("assertion failed: self.peeked.is_none()");
-  },
-  next_if_eq(peekable, expected, IIterator, IItemPartialEqT, dropI, dropT, dropIItem) {
-    return Peekable.next_if(
-      peekable,
-      (next) => {
-        const other = expected;
-        return IItemPartialEqT.eq(next, other);
-      },
-      IIterator,
-      dropI,
-      undefined,
-      dropIItem,
-    );
-  },
-};
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -87,155 +20,6 @@ export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
     return $someValue(peeked);
   }
   return IIterator.next(peekable.iter);
-}
-
-export function peekableIterator_count(peekable, IIterator, dropI, dropIItem) {
-  const peeked = peekable.peeked;
-  peekable.peeked = undefined;
-  let result;
-  bb10: {
-    if (peeked != null) {
-      if ($someValue(peeked) == null) {
-        result = 0;
-        if (peeked != null) {
-          if ($someValue(peeked) != null) {
-            dropIItem?.($someValue($someValue(peeked)));
-          }
-        }
-        dropI?.(peekable.iter);
-        break bb10;
-      }
-      const iter = peekable.iter;
-      const result$1 = $iterator(iter, IIterator.next, true).reduce((n, item) => {
-        dropIItem?.(item);
-        return n + 1;
-      }, 0);
-      dropI?.(iter);
-      result = (1 + result$1) >>> 0;
-    } else {
-      const iter = peekable.iter;
-      const result$1 = $iterator(iter, IIterator.next, true).reduce((n, item) => {
-        dropIItem?.(item);
-        return n + 1;
-      }, 0);
-      dropI?.(iter);
-      result = result$1;
-    }
-    if (peeked != null) {
-      if ($someValue(peeked) != null) {
-        dropIItem?.($someValue($someValue(peeked)));
-      }
-    }
-  }
-  if (peekable.peeked != null) {
-    if ($someValue(peekable.peeked) != null) {
-      dropIItem?.($someValue($someValue(peekable.peeked)));
-    }
-  }
-  return result;
-}
-
-export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
-  const peeked = peekable.peeked;
-  peekable.peeked = undefined;
-  let v;
-  if (peeked != null) {
-    if ($someValue(peeked) == null) {
-      v = undefined;
-    } else {
-      if (n === 0) {
-        return $someValue(peeked);
-      }
-      v = $nthDropping(
-        $lent($iterator(peekable.iter, IIterator.next, true)),
-        (n - 1) >>> 0,
-        dropIItem,
-        true,
-      );
-    }
-  } else {
-    v = $nthDropping($lent($iterator(peekable.iter, IIterator.next, true)), n, dropIItem, true);
-  }
-  if (peeked != null) {
-    if ($someValue(peeked) != null) {
-      dropIItem?.($someValue($someValue(peeked)));
-    }
-    return v;
-  }
-  return v;
-}
-
-export function peekableIterator_last(peekable, IIterator, dropI, dropIItem) {
-  const peeked = peekable.peeked;
-  peekable.peeked = undefined;
-  let x;
-  let peekOpt;
-  if (peeked != null) {
-    if ($someValue(peeked) == null) {
-      x = undefined;
-      if (peeked != null) {
-        if ($someValue(peeked) != null) {
-          dropIItem?.($someValue($someValue(peeked)));
-        }
-      }
-      dropI?.(peekable.iter);
-      if (peekable.peeked != null) {
-        if ($someValue(peekable.peeked) != null) {
-          dropIItem?.($someValue($someValue(peekable.peeked)));
-        }
-      }
-      return x;
-    }
-    peekOpt = $someValue(peeked);
-  } else {
-    peekOpt = undefined;
-  }
-  const option = $lastDropping($iterator(peekable.iter, IIterator.next, true), dropIItem);
-  const optb = peekOpt;
-  if (option != null) {
-    x = option;
-    if (optb != null) {
-      dropIItem?.($someValue(optb));
-    }
-  } else {
-    x = optb;
-    if (option != null) {
-      dropIItem?.($someValue(option));
-    }
-  }
-  if (peekable.peeked != null) {
-    if ($someValue(peekable.peeked) != null) {
-      dropIItem?.($someValue($someValue(peekable.peeked)));
-    }
-  }
-  return x;
-}
-
-export function peekableIterator_fold(
-  peekable,
-  init,
-  fold,
-  IIterator,
-  dropI,
-  dropAcc,
-  dropFold,
-  dropIItem,
-) {
-  if (peekable.peeked != null) {
-    if ($someValue(peekable.peeked) == null) {
-      const result = init;
-      dropFold?.(fold);
-      dropI?.(peekable.iter);
-      return result;
-    }
-    const v = $someValue($someValue(peekable.peeked));
-    init = fold(init, v);
-  }
-  const iter = peekable.iter;
-  const value = $iterator(iter, IIterator.next, true).reduce((a, b) => fold(a, b), init);
-  dropI?.(iter);
-  dropFold?.(fold);
-  return value;
 }
 
 export function peekableDoubleEndedIterator_next_back(
@@ -317,7 +101,9 @@ export function peekableClone_clone(peekable, IClone, IIterator, IItemClone) {
   } else {
     tmp = undefined;
   }
-  return { iter: value, peeked: tmp };
+  return $stdIterator({ iter: value, peeked: tmp }, (iterator) =>
+    peekableIterator_next(iterator, IIterator),
+  );
 }
 
 export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
@@ -347,7 +133,9 @@ export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
 }
 
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
-  return { iter: self };
+  return $stdIterator({ iter: self }, (iterator) =>
+    peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
+  );
 }
 
 export function peekableClone(IClone, IIterator, IItemClone) {

@@ -28,10 +28,10 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
 // `$intoIter` (ADR 0475), `$cycleOf` (ADR 0491), `$repeating` and
 // `$repeatingN` (ADR 0513), `$rev` (ADR 0516), `$closing` (ADR 0518),
 // `$mapEnds` (ADR 0455), `$filterEnds` (ADR 0526),
-// `$enumerate` (ADR 0528) and `$memchrIter` (ADR 0529), and each of the
-// runtime's generators (ADR 0472): the
-// compiler's list, held to the runtime.
-test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $mapEnds, $filterEnds, $enumerate, $memchrIter and the runtime's generators", () => {
+// `$enumerate` (ADR 0528), `$memchrIter` (ADR 0529) and `$stdIterator`, a
+// compiled std struct's (ADR 0557), and each of the runtime's generators
+// (ADR 0472): the compiler's list, held to the runtime.
+test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $mapEnds, $filterEnds, $enumerate, $memchrIter, $stdIterator and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -56,6 +56,7 @@ test("the compiler's iterator helpers are $iterator, $fuse, $intoIter, $cycleOf,
       "$filterEnds",
       "$enumerate",
       "$memchrIter",
+      "$stdIterator",
       ...generators,
     ].toSorted(),
   );

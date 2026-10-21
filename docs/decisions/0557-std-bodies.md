@@ -108,10 +108,8 @@ a std call
   crate's module named as std's is, `recognition::std_home_module`. What
   its optimized MIR has that the crate's hasn't, `Mir::new` reads as
   rust-js does: a switch that goes one way whatever it tests, which drop
-  elaboration leaves, is that way, and the discriminant it read nothing else does goes; a
-  discriminant read into one local in more than one block, an inlined
-  `is_none`'s, is each block's own temporary; a discriminant compared with
-  a variant's is that variant's test; `#[rustc_inherit_overflow_checks]`
+  elaboration leaves, is that way, and the discriminant it read nothing
+  else does goes; `#[rustc_inherit_overflow_checks]`
   arithmetic wraps, as the release profile's (ADR 0011); and its drops,
   elaborated by rustc already, each drop what's there, with no dataflow of
   rust-js's own, which its optimized switches wouldn't let be.
@@ -132,16 +130,25 @@ a std call
   }` of a `Peekable<I>`, wherever a value of it is made or read, in
   generic code or concrete: no longer a `$iter` of a slice's items, nor
   `$peekable`'s object, nor an adapter a struct holds (ADR 0542). Its
-  `peeked` is boxed as a generic `Option` is (ADR 0051). A recognizer
-  rewrites a call, never a value's shape: `peek()` and `peek_mut()`, whose
-  bodies reach memory, are `$peek(p, next)` and `$peekCell(p, next)` over
-  the struct, given what steps `I`; `size_hint()` and `len()` are
-  `$peekableHint`'s. Its `Debug` and its clone are its derives' bodies,
-  `peekableDebug` and `peekableClone`, dictionaries of the library's.
-- **A compiled iterator is a JS iterator as the crate's own are** (ADR
-  0055): `$iterator(p, (it) => peekableIterator_next(it, IIterator))`
-  where one is stepped by JS, since its `Iterator` impl is a library's,
-  `foreign.has_impl`.
+  `peeked` is boxed as a generic `Option` is (ADR 0051). Its `Debug` and
+  its clone are its derives' bodies, `peekableDebug` and `peekableClone`,
+  dictionaries of the library's.
+- **A compiled iterator's struct is a JS iterator, where it's made.** One
+  whose `Iterator` impl is compiled, `is_compiled_std_iterator`, is
+  `$stdIterator(struct, next)` where std's own body makes it, `peekable`'s
+  and `clone`'s: itself, with `Iterator.prototype`, its `next` the
+  compiled `peekableIterator_next` given the dictionaries the body has,
+  so `for...of`, `.toArray()`, JS callers and the `.d.ts` see what they
+  saw. So a value of it is stepped as any JS iterator is, wherever it's
+  stepped, with no dictionary of what it holds: `Iterator`'s methods of
+  it never resolve to the library (`resolves_to_crate`), and the
+  recognizers give the idioms, `$next(p)`, `p.toArray()`, `p.reduce(..)`;
+  what a use site needs of `I` is the compiled impl's alone, `next_back`'s
+  `IDoubleEndedIterator`. A recognizer rewrites a call, never a value's
+  shape: `peek()`, `peek_mut()`, `next_if()` and `next_if_eq()`, whose
+  bodies reach memory or read as `next`'s, are `$peek(p)`, `$peekCell(p)`
+  and `$nextIf(p, f)` over the struct, stepping it by its own `next`;
+  `size_hint()` and `len()` are `$peekableHint`'s.
 - **Sources stay recognized, stepped by dictionary.** `slice::Iter::next`
   and `Range::next` reach memory, or are primitives: a compiled
   `Peekable<I>::next` steps `I` through the dictionary its caller gives,
@@ -173,12 +180,15 @@ a std call
   its own items are a library's, `Foreign::in_library`.
 
 What's compiled first is `Peekable`: `Iterator::peekable`, its `next`,
-`count`, `nth`, `last` and `fold`, `next_back` and `rfold`, `next_if` and
-`next_if_eq`, its clone and its `Debug`. `$peekable`, `$peekableClone`,
-`$peekedItem`, `$peekSome` and `$nextIf` are gone, and so is the
-refusal of a `peekable` of the crate's own iterator, and of a `peekable`
-generic code gives back of a type with a destructor
-(`test/corpus/peekable_given_back_drops.rs`).
+`next_back` and `rfold`, its clone and its `Debug`; what the struct's own
+`next` steps, `count`, `nth`, `last` and `fold`, are the JS iterator's
+idioms, as any JS iterator's. `$peekable`, `$peekableClone` and
+`$peekedItem` are gone, and so is the refusal of a `peekable` of the
+crate's own iterator, and of a `peekable` generic code gives back of a
+type with a destructor (`test/corpus/peekable_given_back_drops.rs`). The
+app's JS reads as it read, but for a `peekable()`, which is
+`iterator_peekable(it, { next: $next })`, and a `next_back()`, the
+compiled impl's call.
 
 ## Why
 
@@ -252,8 +262,8 @@ generic code gives back of a type with a destructor
 ## What holds it
 
 - `test/std-package.test.ts`: the committed `@rust-js/std` is what the
-  compiler writes of std's bodies, and a `Peekable`'s `next` is imported
-  from it.
+  compiler writes of std's bodies, a `Peekable` is made by its `peekable`,
+  imported from it, and stepped as a JS iterator, `$next(p)`.
 - `test/corpus/std_peekable.rs` and `peekable_given_back_drops.rs`,
   against native Rust; `held_peekable`, `peekable_drops`, `peekable_lazy`
   and `peekable_len` unchanged in what they print; `examples/lexer.rs`'s
@@ -265,5 +275,7 @@ generic code gives back of a type with a destructor
   types, `compiled_std`, `is_compiled_std_type`, `std_home_module`,
   `memory_intrinsic` and `addresses_memory`; `pointers.rs` alone reads
   MIR for memory, `mir_addresses_memory`; and the dispatchers didn't grow.
-- Mutations `discriminant-compared-refused`,
-  `std-provided-self-given-by-trait` and `std-held-parameter-not-stepped`.
+- Mutations `dead-switch-kept`, `dead-discriminant-kept`,
+  `std-struct-not-a-js-iterator`, `compiled-iterator-stepped-by-library`,
+  `compiled-iterator-a-user-iterator`, `std-provided-self-given-by-trait`
+  and `std-held-parameter-not-stepped`.

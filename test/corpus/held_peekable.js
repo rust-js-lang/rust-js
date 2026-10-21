@@ -5,7 +5,6 @@ import {
   peekableClone_clone,
   peekableDebug,
   peekableDebug_fmt,
-  peekableIterator_next,
 } from "@rust-js/std/iter.js";
 import {
   $debugStr,
@@ -17,6 +16,7 @@ import {
   $next,
   $nextSome,
   $peek,
+  $peekSome,
   $peekableHint,
   $pretty,
   $rangeNext,
@@ -67,14 +67,14 @@ function with_position(iter, IIterator, IFused) {
 }
 
 function withPositionIterator_next(withPosition) {
-  const value = peekableIterator_next(withPosition.peekable, { next: $nextSome });
+  const value = $nextSome(withPosition.peekable);
   if (value == null) {
     return;
   }
   const item = $someValue(value);
   const first = !withPosition.handled_first;
   withPosition.handled_first = true;
-  const last = $peek(withPosition.peekable, $nextSome) == null;
+  const last = $peekSome(withPosition.peekable) == null;
   return [first ? (last ? "only" : "first") : last ? "last" : "middle", item];
 }
 
@@ -695,7 +695,7 @@ function main() {
       .join(", ")}]`,
   );
   const lexer = { chars: iterator_peekable($iter(["x", "y"]), { next: $next }) };
-  $peek(lexer.chars, $next);
+  $peek(lexer.chars);
   const arg$1 = $peekableHint(lexer.chars);
   console.log(
     `${lexerDebug_fmt(lexer)} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
