@@ -9,8 +9,8 @@ export function entry() {
 const C = { b: 10n };
 
 function main() {
-  const a = $unionField(C, "a", "b");
-  const b = $unionField(C, "b", "a");
+  const a = $unionField(C, "a", ["b"]);
+  const b = $unionField(C, "b", ["a"]);
   console.log(`${a} ${b}`);
 }
 //# sourceMappingURL=case.js.map

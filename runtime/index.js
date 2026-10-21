@@ -2251,12 +2251,15 @@ export class $CowSet extends $KeySet {
 }
 
 // A union's field `key` read (ADR 0406): what it holds there, or under one
-// of `alike`, its fields of the same type, whose bytes are the same. A
-// field it doesn't hold read as another type's bytes, which JS has none
-// of, is rust-js's error.
-export function $unionField(union, key, ...alike) {
+// of `alike`, its fields of the same type, whose bytes are the same; or,
+// of a field of another plain type, its bytes read as `key`'s, by that
+// field's decoder (ADR 0562). A field it doesn't hold that isn't plain
+// data, whose bytes JS has none of, is rust-js's error.
+export function $unionField(union, key, alike = [], decoders = {}) {
   for (const field of [key, ...alike]) if (Object.hasOwn(union, field)) return union[field];
   const held = Object.keys(union)[0];
+  // Plain data's, as the field asked reads its bytes (ADR 0562).
+  if (decoders[held] !== undefined) return decoders[held](union[held]);
   throw new Error(
     `rust-js does not support reading a union's \`${key}\` while it holds \`${held}\`, which reads its bytes as another type's`,
   );
@@ -2361,6 +2364,9 @@ export function $ptrTo(object) {
 // `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array a
 // pointer is into; of another, where JS has no place, rust-js's error.
 export function $ptrAdd(pointer, count) {
+  if (pointer !== null && pointer.bytes !== undefined) {
+    return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
+  }
   if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined) {
     throw new Error("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
@@ -2371,6 +2377,9 @@ export function $ptrAdd(pointer, count) {
 // two, which Rust leaves undefined, rust-js's error.
 export function $ptrOffsetFrom(p, q) {
   if (p === q) return 0;
+  if (p?.bytes !== undefined && q?.bytes !== undefined && $bytesOf(p) === $bytesOf(q)) {
+    return (p.at - q.at) / p.width;
+  }
   if (p.of !== q.of || !Array.isArray(p.of)) {
     throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
   }
@@ -2413,7 +2422,10 @@ export let $nextBase = 0x10000;
 
 // The allocation a pointer is into, and the handle its address is of: a
 // `$ptrTo` of an object that's an array's item, the array's item's.
+export const $strides = new WeakMap();
+
 export function $allocationOf(pointer) {
+  if (pointer.bytes !== undefined) return pointer.plain !== undefined ? $allocationOf(pointer.plain) : $bytesOf(pointer);
   return $placed(pointer).of ?? pointer;
 }
 
@@ -2443,6 +2455,9 @@ export function $addresses(allocation, bytes) {
 // A handle's byte offset in its allocation, given the range's stride of an
 // array's items.
 export function $offsetIn(pointer, range) {
+  if (pointer.bytes !== undefined) {
+    return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
+  }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
   if (Array.isArray(pointer.of) && typeof pointer.at === "number") return pointer.at * range.stride;
   if (pointer.offset !== undefined) return pointer.offset;
@@ -2455,11 +2470,14 @@ export function $addr(pointer, size) {
     throw new Error("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
   }
   if (pointer.addr !== undefined) return pointer.addr;
+  if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size);
   pointer = $placed(pointer);
   const allocation = $allocationOf(pointer);
-  const items = Array.isArray(allocation) && pointer.of !== undefined && typeof pointer.at === "number";
-  const range = $addresses(allocation, items ? allocation.length * size : 0);
-  if (items && range.stride === undefined) range.stride = size;
+  const view = pointer.bytes !== undefined && pointer.plain === undefined;
+  const items = Array.isArray(allocation) && ((pointer.of !== undefined && typeof pointer.at === "number") || view);
+  const stride = view ? pointer.stride : size;
+  const range = $addresses(allocation, items ? allocation.length * stride : 0);
+  if (items && range.stride === undefined) range.stride = stride;
   const addr = range.base + $offsetIn(pointer, range);
   if (!items) $exposedPlaces.set(addr, pointer);
   return addr;
@@ -2538,7 +2556,14 @@ export function $ptrEq(p, q) {
   if (p.addr !== undefined && q.addr !== undefined) return p.addr === q.addr;
   if (p.addr === undefined && q.addr === undefined) {
     const [a, b] = [$placed(p), $placed(q)];
-    return a === b || ($allocationOf(a) === $allocationOf(b) && a.at === b.at && a.offset === b.offset);
+    if (a === b) return true;
+    if ($allocationOf(a) !== $allocationOf(b)) return false;
+    // Two of one kind, by where they are; a byte view and a handle, by the
+    // offset both are at, where the array's stride is known.
+    if ((a.bytes !== undefined) === (b.bytes !== undefined)) return a.at === b.at && a.offset === b.offset;
+    const [bytes, handle] = a.bytes !== undefined ? [a, b] : [b, a];
+    const stride = $strides.get($allocationOf(handle));
+    return stride !== undefined && typeof handle.at === "number" && handle.at * stride === bytes.at;
   }
   const [handle, addr] = p.addr === undefined ? [$placed(p), q.addr] : [$placed(q), p.addr];
   const range = $ranges.get($allocationOf(handle));
@@ -2556,6 +2581,12 @@ export function $ptrCmp(p, q, size) {
 // `copyWithin`.
 export function $ptrCopy(src, dst, count, copy) {
   if (count === 0) return;
+  if (src.bytes !== undefined || dst.bytes !== undefined) {
+    const [from, to] = [$asBytes(src), $asBytes(dst)];
+    const read = Array.from({ length: count }, (_, i) => $byteAt(from, i));
+    for (let i = 0; i < count; i++) $byteSet(to, i, read[i]);
+    return;
+  }
   if (count === 1) {
     dst.value = copy === undefined ? src.value : copy(src.value);
     return;
@@ -2574,6 +2605,7 @@ export function $ptrCopy(src, dst, count, copy) {
 // `slice::from_raw_parts(p, n)`: the `n` items from where `p` points, a
 // copy, as a shared subslice is, or all of an array, the array itself.
 export function $ptrSlice(pointer, count) {
+  if (pointer.bytes !== undefined) return Array.from({ length: count }, (_, i) => $byteAt(pointer, i));
   const [items, start] = $ptrItems(pointer, count);
   return start === 0 && count === items.length ? items : $slots(items, start, count);
 }
@@ -2581,6 +2613,13 @@ export function $ptrSlice(pointer, count) {
 // `slice::from_raw_parts_mut(p, n)`: a view of the `n` items from where `p`
 // points (ADR 0335), or all of an array, the array itself.
 export function $ptrSliceMut(pointer, count) {
+  // A byte slice's own bytes write through; another's, read as bytes, don't.
+  if (pointer.bytes !== undefined) {
+    if (pointer.plain === undefined && pointer.stride === 1 && pointer.width === 1) {
+      return $view(pointer.of, pointer.at, pointer.at + count);
+    }
+    throw new Error("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
+  }
   const [items, start] = $ptrItems(pointer, count);
   if (start + count > items.length && $spares.has(items)) {
     throw new Error("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
@@ -2617,37 +2656,119 @@ export function $ptrFirst(pointer) {
   return pointer === null ? null : $ptr(pointer.value, 0);
 }
 
-// A pointer as one to bytes, `p.cast::<u8>()`, which JS has none of (ADR
-// 0417): one for each, given to the allocator and cast back, `$ptrTyped`,
-// but not read, written or stepped through.
-export const $bytesViews = new WeakMap();
-
-export function $ptrBytes(pointer) {
+// A pointer to bytes (ADR 0562): a view of plain data's bytes, as wasm32
+// holds them, little-endian. Of an array of integers, the item each byte
+// falls in, `stride` bytes each, read and patched in place, no copy; of a
+// value with a codec, a struct's or a field's, its bytes `encode`d where
+// read and `decode`d back where written. `at` is the view's byte offset,
+// `width` the bytes one read is, a `u32`'s 4, `signed` how they're read,
+// or `"bytes"` for a `[u8; N]`. Of what has no codec, an allocation's slots
+// (ADR 0417), the view is cast back only, `$ptrTyped`.
+export function $ptrBytes(pointer, stride, encode, decode) {
   if (pointer === null || pointer.bytes !== undefined) return pointer;
-  let view = $bytesViews.get(pointer);
-  if (view === undefined) {
-    const refused = () => {
-      throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
-    };
-    view = {
-      bytes: pointer,
-      get value() {
-        return refused();
-      },
-      set value(value) {
-        refused();
-      },
-    };
-    $bytesViews.set(pointer, view);
+  if (stride === undefined) return $byteView({ opaque: true, typed: pointer });
+  if (Array.isArray(pointer.of) && typeof pointer.at === "number") {
+    $strides.set(pointer.of, stride);
+    return $byteView({ of: pointer.of, at: pointer.at * stride, stride, typed: pointer });
   }
-  return view;
+  return $byteView({ plain: pointer, at: 0, stride, encode, decode });
 }
 
-// A pointer to bytes as one to a type: what was cast to bytes, or an
-// allocation's first item. Of bytes that are bytes, rust-js's error.
-export function $ptrTyped(pointer) {
+export function $byteView(view) {
+  view.bytes = true;
+  view.width ??= 1;
+  view.signed ??= false;
+  return Object.defineProperty(view, "value", {
+    get() {
+      if (this.opaque) {
+        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+      }
+      if (this.signed === "bytes") return Array.from({ length: this.width }, (_, i) => $byteAt(this, i));
+      return $readInt(this, this.width, this.signed);
+    },
+    set(value) {
+      if (this.opaque) {
+        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+      }
+      if (this.signed === "bytes") {
+        for (let i = 0; i < this.width; i++) $byteSet(this, i, value[i]);
+        return;
+      }
+      $writeInt(this, this.width, value);
+    },
+  });
+}
+
+// A pointer to `u8`s as the view of their bytes it is: a view already; or
+// `$ptr(array, i)` into a byte array, whose items are its bytes, or one
+// `u8`'s handle, the byte its value is.
+export function $asBytes(pointer) {
+  if (pointer === null || pointer.bytes !== undefined) return pointer;
+  return $ptrBytes(pointer, 1, (value) => [value], (bytes) => bytes[0]);
+}
+
+// `p.cast::<u32>()` of a pointer to bytes: the same bytes, read `width` at
+// a time, `signed` so, or as a `[u8; width]`.
+export function $ptrRetyped(pointer, width, signed) {
   if (pointer === null) return null;
-  if (pointer.bytes !== undefined) return pointer.bytes;
+  return $byteView({ ...$asBytes(pointer), width, signed });
+}
+
+// The array a view's bytes are of: its own, or the one encoded.
+export function $bytesOf(view) {
+  return view.plain !== undefined ? view.plain : view.of;
+}
+
+// The byte `i` past where `view` is.
+export function $byteAt(view, i) {
+  const at = view.at + i;
+  if (view.plain !== undefined) return view.encode(view.plain.value)[at];
+  if (view.stride === 1) return $slot(view.of, at);
+  const item = Math.floor(at / view.stride);
+  return $toBytes($slot(view.of, item), view.stride, true)[at % view.stride];
+}
+
+export function $byteSet(view, i, byte) {
+  const at = view.at + i;
+  if (view.plain !== undefined) {
+    const bytes = view.encode(view.plain.value);
+    bytes[at] = byte;
+    view.plain.value = view.decode(bytes);
+    return;
+  }
+  if (view.stride === 1) {
+    view.of[at] = byte;
+    return;
+  }
+  const item = Math.floor(at / view.stride);
+  const bytes = $toBytes($slot(view.of, item), view.stride, true);
+  bytes[at % view.stride] = byte;
+  view.of[item] = $fromBytes(bytes, view.stride, true, false);
+}
+
+// `read_unaligned` of a `width`-byte integer at a byte pointer: the bytes
+// there, little-endian, `signed` as the type is; `write_unaligned` the
+// reverse.
+export function $readInt(view, width, signed) {
+  if (width === 1 && view.plain === undefined && view.stride === 1 && !signed) return $slot(view.of, view.at);
+  const bytes = Array.from({ length: width }, (_, i) => $byteAt(view, i));
+  return $fromBytes(bytes, width, true, signed);
+}
+
+export function $writeInt(view, width, value) {
+  const bytes = width === 1 ? [value] : $toBytes(value, width, true);
+  for (let i = 0; i < width; i++) $byteSet(view, i, bytes[i]);
+}
+
+// A pointer to bytes as one to a type: what was cast to bytes, or the
+// array's item its bytes start at. Of bytes that are bytes alone, rust-js's
+// error.
+export function $ptrTyped(view) {
+  if (view === null || view.bytes === undefined) return view;
+  if (view.opaque) return view.typed;
+  if (view.typed !== undefined && view.at === view.typed.at * view.stride) return view.typed;
+  if (view.plain !== undefined && view.at === 0) return view.plain;
+  if (view.of !== undefined && view.at % view.stride === 0) return $ptr(view.of, view.at / view.stride);
   throw new Error("rust-js does not support bytes read as another type's, which reads memory by where it is");
 }
 

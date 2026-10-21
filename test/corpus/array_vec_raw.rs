@@ -172,4 +172,14 @@ fn main() {
     unsafe { ptr::copy_nonoverlapping(points.as_ptr(), moved.as_mut_ptr(), 2) };
     moved[0].x = 10;
     println!("{:?} {:?}", points.as_slice(), moved);
+    // Storage held as one `MaybeUninit<[T; N]>`, as heapless holds it: a
+    // pointer to it cast to a `T`'s is its first item's.
+    let mut storage = MaybeUninit::new([0u32; 3]);
+    let slot = (&raw mut storage).cast::<u32>();
+    unsafe {
+        slot.write(5);
+        slot.add(1).write(6);
+        slot.add(2).write(7);
+    }
+    println!("{:?}", unsafe { storage.assume_init() });
 }

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "union-read-no-alike",
     breaks: "a union's field of the same type as the one it holds is rust-js's error, where it reads the same bytes",
     file: "src/lower/unions.rs",
-    find: "        list.extend(\n",
-    replace: "        list.truncate(2);\n        Vec::<Expr>::new().extend(\n",
+    find: "            if other_ty == read_ty {\n                alike.push(Expr::str(other_key));\n",
+    replace: "            if other_ty == read_ty {\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
   },
   {
@@ -25,5 +25,13 @@ export const mutations: Mutation[] = [
     find: "            if !self.contains_mutated(field_ty) {\n                continue;\n",
     replace: "            if true {\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
+  {
+    name: "union-no-decoders",
+    breaks: "a union's read is given no decoder, so a field of another plain type is refused",
+    file: "src/lower/unions.rs",
+    find: "                decoders.push(Prop::Field(other_key, decoder));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
   },
 ];

@@ -16,7 +16,6 @@ cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: values of type `*const u16`
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support this constant, from its MIR yet
-codegen/box-str-drop-glue.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<[u8]>` as `std::boxed::Box<str>`, which aren't numbers alone
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support `type_name` of a type parameter yet
@@ -32,7 +31,7 @@ consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of ty
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
 consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::NonNull::<T>::dangling`
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
-consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
+consts/issue-33537.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
 consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std::cell::UnsafeCell::<T>::new` yet
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
@@ -58,7 +57,6 @@ mir/mir_raw_fat_ptr.rs	error: rust-js does not support addressable memory yet: v
 packed/dyn-trait.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
 packed/issue-118537-field-offset.rs	error: rust-js does not support calling `std::mem::size_of_val_raw` yet
-packed/packed-struct-address-of-element.rs	error: rust-js does not support addressable memory yet: calling `std::ptr::const_ptr::<impl *const T>::read_unaligned`
 packed/packed-struct-optimized-enum.rs	error: rust-js does not support addressable memory yet: a pointer's address
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet

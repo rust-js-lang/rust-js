@@ -6,13 +6,17 @@
 // Refresh waits past its test's timeout: each passes alone, and with only
 // each other. `bun run test --shard=2/4` runs a quarter of each, as CI
 // splits the suite across its machines (DEVELOPMENT.md).
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { pruneNativeCache } from "../test/native-cache";
+import { shardTimings } from "./shard";
+
+const root = join(import.meta.dir, "..");
 
 // What no test used for a week, before any runs (test/native-cache.ts).
-pruneNativeCache(join(import.meta.dir, "../target/native-cache"));
+pruneNativeCache(join(root, "target/native-cache"));
 
 // A suite past twice its usual minutes says what it's waiting on, each
 // minute: the processes then, and, on Linux, what each of Bun's is blocked
@@ -28,6 +32,14 @@ done`], { stdout: "inherit", stderr: "inherit" });
 
 const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map((name) => `test/${name}.test.ts`);
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
+// How long each file took, this checkout's, and the last CI run's shards'
+// where `bun scripts/ci.ts timings` put them: `bun test` balances the
+// shards by them all, and writes this run's to the first.
+const kept = join(root, shardTimings);
+const timings = [
+  "--timings=target/test-timings.json",
+  ...(existsSync(kept) ? [...new Bun.Glob("**/*.json").scanSync(kept)].sort().map((file) => `--timings=${join(shardTimings, file)}`) : []),
+];
 // And past 25 minutes, it's stopped, and fails: a test worker on CI spun
 // for 34 minutes in a `spawnSync` of rustc, which had ended unreaped, past
 // its own timeout (2026-10-15), and the job ran on till it was cancelled.
@@ -54,7 +66,7 @@ const run = async (args: string[]) => {
   running = undefined;
   return code;
 };
-const rest = await run(["--timings=target/test-timings.json", "--update-timings", ...browsers.map((file) => `--path-ignore-patterns=${file}`)]);
-const pages = Date.now() < deadline ? await run(["--timings=target/test-timings.json", ...browsers]) : 1;
+const rest = await run([...timings, "--update-timings", ...browsers.map((file) => `--path-ignore-patterns=${file}`)]);
+const pages = Date.now() < deadline ? await run([...timings, ...browsers]) : 1;
 watchdog.kill();
 process.exit(rest || pages);
