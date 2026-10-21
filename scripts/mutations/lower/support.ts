@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                    id.is_local() && self.dyn_supported(id)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: dyn_trait"],
   },
+  {
+    name: "dyn-pointer-refused",
+    breaks: "a raw pointer to a `dyn Trait` is refused as a value",
+    file: "src/lower/support.rs",
+    find: "                && !matches!(self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(), ty::Str) =>\n",
+    replace: "                && !matches!(\n                    self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(),\n                    ty::Str | ty::Dynamic(..)\n                ) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
+  },
 ];
