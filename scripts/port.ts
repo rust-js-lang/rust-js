@@ -9,6 +9,7 @@
 // compile keeps the JS before, which would read as no difference.
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { SHAPES } from "./readability";
 import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -46,18 +47,10 @@ if (command === "measure") {
   compile();
   const diff = run(["git", "diff", "-U0", "--", ...generated]).out;
   console.log(run(["git", "diff", "--shortstat", "--", ...generated]).out.trim());
-  // What a person wouldn't write, each as many lines as MIR adds of it.
-  const shapes: [string, RegExp][] = [
-    ["temporaries", /^\+.*\b(const|let) _\d+\b/],
-    ["labeled blocks", /^\+\s*bb\d+:/],
-    ["while (true)", /^\+\s*(bb\d+: )?while \(true\)/],
-    ["$iter", /^\+.*\$iter\(/],
-    ["Iterator.from", /^\+.*Iterator\.from/],
-    ["return;", /^\+\s*return;$/],
-    ["renamed x$1", /^\+.*\b[A-Za-z_]\w*\$\d+\b/],
-  ];
-  const added = diff.split("\n");
-  for (const [name, shape] of shapes) console.log(`${name.padEnd(16)} ${added.filter((line) => shape.test(line)).length}`);
+  // What a person wouldn't write (`readability.ts`'s shapes, ADR 0565),
+  // each as many lines as MIR adds of it.
+  const added = diff.split("\n").filter((line) => line.startsWith("+") && !line.startsWith("+++")).map((line) => line.slice(1));
+  for (const [name, shape] of SHAPES) console.log(`${name.padEnd(16)} ${added.filter((line) => shape.test(line)).length}`);
   console.log("most differing:");
   const numstat = run(["git", "diff", "--numstat", "--", ...generated]).out.trim().split("\n");
   for (const line of numstat.sort((a, b) => Number(b.split("\t")[0]) - Number(a.split("\t")[0])).slice(0, 5)) {

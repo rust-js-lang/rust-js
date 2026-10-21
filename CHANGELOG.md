@@ -41,6 +41,10 @@ released any more: `rust-js build` is the one way to build an app.
   thin again with `as *const T`, and a `Box<dyn Trait>` taken apart with
   `into_raw` and put back with `from_raw`, as anyhow does. Stages 1 to 3
   of the model; relayout and constants to come as its ADR says.
+- **How the generated JS reads is a gate** (ADR 0565): the shapes a person
+  wouldn't write, `port measure`'s seven, are counted over the corpus's
+  and the snapshots' JS in `docs/readability.txt`, and no shape's share may
+  grow unblessed; `bun run bless` blesses it with the snapshots.
 - **std's bodies are std's own** (ADR 0561): a std function whose body
   reaches no memory is compiled from the MIR the toolchain ships into
   `@rust-js/std`, a library built into the compiler, and a `Peekable` is
