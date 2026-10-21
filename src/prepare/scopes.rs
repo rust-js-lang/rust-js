@@ -25,6 +25,9 @@ pub(super) struct Tree {
     scopes: Vec<Scope>,
     /// Each name's reads.
     reads: HashMap<String, Vec<Read>>,
+    /// The scopes declaring each name: asked of each name renamed, which
+    /// a scan of every scope made a function's size times its names.
+    declaring: HashMap<String, Vec<usize>>,
 }
 
 impl Tree {
@@ -52,8 +55,10 @@ impl Tree {
     /// passes a declaration of `to` before its own; and no read of `to`
     /// passes one of `from` before its own.
     pub(super) fn renames(&self, from: &str, to: &str) -> bool {
-        let declaring: Vec<usize> = (0..self.scopes.len()).filter(|&s| self.declares(s, from)).collect();
-        if declaring.is_empty() || declaring.iter().any(|&s| self.declares(s, to)) {
+        let Some(declaring) = self.declaring.get(from).filter(|d| !d.is_empty()) else {
+            return false;
+        };
+        if declaring.iter().any(|&s| self.declares(s, to)) {
             return false;
         }
         let passes = |read: &Read, name: &str| {
@@ -75,11 +80,13 @@ impl Tree {
 
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
     pub(super) fn rename(&mut self, from: &str, to: &str) {
-        for scope in &mut self.scopes {
-            if let Some(id) = scope.names.remove(from) {
-                scope.names.insert(to.to_string(), id);
+        let declaring = self.declaring.remove(from).unwrap_or_default();
+        for &scope in &declaring {
+            if let Some(id) = self.scopes[scope].names.remove(from) {
+                self.scopes[scope].names.insert(to.to_string(), id);
             }
         }
+        self.declaring.entry(to.to_string()).or_default().extend(declaring);
         if let Some(reads) = self.reads.remove(from) {
             self.reads.entry(to.to_string()).or_default().extend(reads);
         }
@@ -113,6 +120,7 @@ impl Walk {
         self.declared += 1;
         let scope = *self.stack.last().expect("a declaration is in a scope");
         self.twice |= self.tree.scopes[scope].names.insert(name.to_string(), id).is_some();
+        self.tree.declaring.entry(name.to_string()).or_default().push(scope);
     }
 
     fn read(&mut self, name: &str) {

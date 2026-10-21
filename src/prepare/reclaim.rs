@@ -5,7 +5,7 @@
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use super::scopes;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
@@ -35,8 +35,11 @@ fn imports(module: &mut js::Module) {
         )
         .cloned()
         .collect();
+    // What the module mentions, read once: a name reclaimed is one more
+    // base mentioned, and the name it was, `label$1`, is no base, as a base
+    // has no `$` (`reclaimable`).
+    let mut mentioned = mentions(module);
     for local in locals {
-        let mentioned = mentions(module);
         let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
             continue;
         };
@@ -58,6 +61,7 @@ fn imports(module: &mut js::Module) {
         for item in &mut module.items {
             names_mut(item, true, &mut rename);
         }
+        mentioned.insert(base);
     }
 }
 
@@ -72,8 +76,8 @@ fn own_items(module: &mut js::Module) {
             _ => None,
         })
         .collect();
+    let mut mentioned = mentions(module);
     for local in own {
-        let mentioned = mentions(module);
         let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
             continue;
         };
@@ -89,11 +93,17 @@ fn own_items(module: &mut js::Module) {
             }
             names_mut(item, true, &mut rename);
         }
+        mentioned.insert(base);
     }
 }
 
 /// Each local of `item`'s, of a name where each read is still of what it
 /// was: its base, `n` of `n$2`, or else the first of `n$1` on that is.
+/// The scope tree is asked and renamed as each is decided, and the item
+/// written once at the end, each name as what the renames in their order
+/// made of it: written after each, a function of four thousand lines with
+/// six hundred such names took 60 ms being walked, and as long again in
+/// the tree.
 fn locals(item: &mut js::Item) {
     let Some(mut tree) = scopes::Tree::of(item) else { return };
     let mut declared = Vec::new();
@@ -102,6 +112,8 @@ fn locals(item: &mut js::Item) {
             declared.push(name.clone());
         }
     });
+    // Each name renamed, as it's written in the item, to what it is now.
+    let mut renamed: HashMap<String, String> = HashMap::new();
     for local in declared {
         let Some(base) = reclaimable(&local, &HashSet::new()) else {
             continue;
@@ -114,9 +126,19 @@ fn locals(item: &mut js::Item) {
             continue;
         };
         tree.rename(&local, &to);
+        // What was renamed to `local` before is `to` now, as writing the
+        // item each time would have made it.
+        for now in renamed.values_mut() {
+            if *now == local {
+                now.clone_from(&to);
+            }
+        }
+        renamed.insert(local, to);
+    }
+    if !renamed.is_empty() {
         names_mut(item, true, &mut |name| {
-            if *name == local {
-                name.clone_from(&to);
+            if let Some(to) = renamed.get(name) {
+                name.clone_from(to);
             }
         });
     }

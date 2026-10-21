@@ -9,8 +9,8 @@ export const mutations: Mutation[] = [
     name: "scopes-twice-allowed",
     breaks: "`const n = items.pop(); const n = ..` in one block, which JS refuses",
     file: "src/prepare/scopes.rs",
-    find: "        if declaring.is_empty() || declaring.iter().any(|&s| self.declares(s, to)) {",
-    replace: "        if declaring.is_empty() {",
+    find: "        if declaring.iter().any(|&s| self.declares(s, to)) {",
+    replace: "        if false {",
     tests: ["test/lowering.test.ts", "-t", "reuses a name"],
   },
   {
