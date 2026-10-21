@@ -230,9 +230,11 @@ pub(super) enum Std {
         unreachable: bool,
     },
     /// `<&[T; N]>::try_from(slice)`, or `<[T; N]>`'s: `Ok` of the slice where
-    /// it's `N` long (ADR 0189).
+    /// it's `N` long (ADR 0189); of a `Vec`, `owned`, moved, its `Err` the
+    /// `Vec` given back (ADR 0557).
     SliceToArray {
         into: bool,
+        owned: bool,
     },
     /// `format!(..)`'s `format`: its `format_args!`, a string already (ADR
     /// 0034), or std's panic where what it formats fails (ADR 0187).
@@ -760,6 +762,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::str::Utf8Chunk::<'a>::valid" => Some(TextOp::Utf8Part("valid")),
             "std::str::Utf8Chunk::<'a>::invalid" => Some(TextOp::Utf8Part("invalid")),
             "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
+            // A byte's escape, its bytes (ADR 0558).
+            "std::ascii::escape_default" | "std::num::<impl u8>::escape_ascii" => Some(TextOp::EscapeByte),
             _ => None,
         };
         if let Some(op) = utf8 {
@@ -1374,15 +1378,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::TryFromInt { into });
         }
-        // A slice into an array of its length, shared or copied (ADR 0189).
+        // A slice into an array of its length, shared or copied (ADR 0189);
+        // a `Vec`, moved into one (ADR 0557).
         if let (Some(from), Some(to)) = (from_ty, to_ty)
-            && matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice())
-            && match to.kind() {
-                ty::Ref(_, array, Mutability::Not) => array.is_array(),
-                _ => to.is_array(),
-            }
+            && let Some(owned) = self.sequence_to_array(from, to)
         {
-            return Some(Std::SliceToArray { into });
+            return Some(Std::SliceToArray { into, owned });
         }
         let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
         let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_);
@@ -1390,6 +1391,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (from_str || to_owned && ty.is_str())
             .then_some(Std::Same)
             .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
+    }
+
+    /// Whether `from` converts into `to` as an array of its length: a slice,
+    /// `Some(false)`, into an array or a reference to one (ADR 0189); a
+    /// `Vec`, `Some(true)`, moved into an array (ADR 0557).
+    fn sequence_to_array(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<bool> {
+        let owned = matches!(from.kind(), ty::Adt(adt, _) if self.tcx.is_diagnostic_item(sym::Vec, adt.did()));
+        let slice = matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice());
+        let array = match to.kind() {
+            ty::Ref(_, array, Mutability::Not) => slice && array.is_array(),
+            _ => to.is_array(),
+        };
+        ((slice || owned) && array).then_some(owned)
     }
 
     /// `size_hint()` of an iterator of the crate's that keeps std's, of std's
@@ -4060,6 +4074,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
             "std::option::Iter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"))
+            // A byte's escape, its bytes (ADR 0558).
+            || is_byte_escape(self.tcx, ty)
     }
 
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
@@ -5436,6 +5452,12 @@ pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
             && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::"))
             // A byte slice's `escape_ascii()` (ADR 0341).
             || std_path(tcx, adt.did()) == "std::slice::EscapeAscii"))
+}
+
+/// A byte's `escape_ascii()`, `ascii::escape_default(b)`: a `$iter` of its
+/// escape's bytes (ADR 0558).
+pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::ascii::EscapeDefault")
 }
 
 /// A `char`'s `to_uppercase()` or `to_lowercase()`: the `char`s of its

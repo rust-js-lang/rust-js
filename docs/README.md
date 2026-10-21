@@ -625,6 +625,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0554 A filter a type holds, asked to be double-ended, is made knowing its back](decisions/0554-a-filter-a-type-holds-asked-double-ended.md)
 - [0555 A library's derived order is field by field](decisions/0555-a-librarys-derived-order-is-field-by-field.md)
 - [0556 A `copied()` given back as an `impl Iterator` is what it copies](decisions/0556-a-copied-given-back-as-impl-iterator.md)
+- [0557 A `Vec` into an array of its length](decisions/0557-a-vec-into-an-array-of-its-length.md)
+- [0558 A byte's escape is its bytes](decisions/0558-a-bytes-escape-is-its-bytes.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

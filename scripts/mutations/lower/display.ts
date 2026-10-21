@@ -701,4 +701,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
+  {
+    name: "byte-escape-shown-whole",
+    breaks: "`{}` of a byte's escape is refused, as if it weren't shown",
+    file: "src/lower/display.rs",
+    find: "        if super::recognition::is_byte_escape(self.tcx, ty) {",
+    replace: "        if false {",
+    tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
+  },
 ];

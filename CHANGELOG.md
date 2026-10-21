@@ -19,6 +19,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `Vec` into an array of its length**, `<[T; N]>::try_from(v)` (ADR
+  0557); and **a byte's escape**, `ascii::escape_default(b)` and
+  `b.escape_ascii()`, iterated and shown (ADR 0558).
 - **A `copied()` given back as an `impl Iterator`**: regex-syntax
   compiles (ADR 0556).
 - **A library's struct with a derived `Ord`**, compared and sorted: uuid
