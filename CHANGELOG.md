@@ -18,6 +18,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A map the crate steps from its back, held in a variable**, a library's
+  too: itertools compiles whole (ADR 0545).
 - **A `Cycle` a struct holds**: its `Debug` and its clone; and `{:?}` of
   an `iter::Empty` (ADR 0544).
 - **A `Peekable` a struct holds**: its `Debug`, its clone and its size
@@ -688,6 +690,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A function named `new`, `delete` or another word JS keeps** was
+  declared by that name, which TypeScript can't read; it's its JS's, `new$`
+  (ADR 0546).
 - **rust-js crashed** on a trait's default with parameters of its own,
   `collect_array<const N: usize>`, kept by an impl whose parameters are
   numbered apart from its trait's (ADR 0540).

@@ -990,8 +990,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // it (ADR 0488).
             Some(IterMethod::Map) if self.knows_its_back(output) || self.knows_its_length(output) => {
                 let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));
-                let it =
-                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());
+                // One the crate steps from its back, of a range made knowing
+                // it; a source given as it is is given it where it's asked
+                // (ADR 0545).
+                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
+                    Some(it) => it,
+                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
+                        self.as_double_ended(receiver.clone(), iter_ty, span)?
+                    }
+                    None => receiver.clone(),
+                };
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
@@ -1020,8 +1028,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .iterator_item(output)
                         .is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing) =>
             {
-                let it = (self.given_js_iterator(receiver.clone(), iter_ty, true, false))
-                    .unwrap_or_else(|| receiver.clone());
+                let it = match self.given_js_iterator(receiver.clone(), iter_ty, true, false) {
+                    Some(it) => it,
+                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
+                        self.as_double_ended(receiver.clone(), iter_ty, span)?
+                    }
+                    None => receiver.clone(),
+                };
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let p = self.unary_callback(values.next().expect("the test"), own);
                 Expr::call_helper("$filterEnds", vec![it, p])

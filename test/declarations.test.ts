@@ -529,6 +529,19 @@ test("an enum of no variants is declared never", () => {
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
 
+// A function named as JS keeps a word apart, `new`, is declared by its JS
+// name, `new$`, which its JS exports (ADR 0546).
+test("declarations name a function as its JS does", () => {
+  const dir = fixture("declarations-kept-word");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub fn new() -> u32 {\n    1\n}\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("export function new$()");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function new$(): number;");
+  writeFileSync(join(dir, "use.ts"), 'import { new$ } from "./lib.js";\nexport const one: number = new$();\n');
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});
+
 // A style is React's `CSSProperties`, as a `<button>`'s `style` is, where it
 // was `any`.
 test("declarations type a style as React does", () => {

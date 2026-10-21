@@ -33,10 +33,12 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
     plain_ref_cells: &HashSet<Ty<'tcx>>,
+    fns: &HashMap<DefId, super::FnInfo>,
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         module,
+        fns,
         files,
         plain_ref_cells,
         imports: BTreeSet::new(),
@@ -234,6 +236,9 @@ fn is_any(ty: &Value) -> bool {
 struct Declarations<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     module: LocalModId,
+    /// Each function's and `const`'s JS name, as its JS has it: `new$` of a
+    /// `new` (ADR 0546).
+    fns: &'a HashMap<DefId, super::FnInfo>,
     /// The `RefCell`s a field holds as their value (ADR 0362).
     plain_ref_cells: &'a HashSet<Ty<'tcx>>,
     /// The crate's modules that have a file, by their path: those whose
@@ -518,6 +523,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `export function Tag(props: TagProps): ReactNode;`
+    /// A function's or a `const`'s name, as its JS has it.
+    fn js_name(&self, def_id: DefId) -> String {
+        (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())
+    }
+
     fn function(&mut self, def_id: DefId) -> Value {
         let sig = self
             .tcx
@@ -555,7 +565,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         };
         json!({
             "kind": "function",
-            "name": fn_name(self.tcx, def_id),
+            "name": self.js_name(def_id),
             "exported": true,
             "declare": false,
             "typeParameters": self.generics(def_id),
@@ -770,7 +780,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));
         json!({
             "kind": "const",
-            "name": fn_name(self.tcx, def_id),
+            "name": self.js_name(def_id),
             "exported": true,
             "declare": false,
             "type": ty,

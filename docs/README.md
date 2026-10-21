@@ -613,6 +613,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0542 An adapter a struct holds keeps its source and its state](decisions/0542-a-held-adapter-keeps-its-source-and-state.md)
 - [0543 A `Peekable` a struct holds keeps what it peeked at](decisions/0543-a-held-peekable-keeps-what-it-peeked-at.md)
 - [0544 A `Cycle` a struct holds keeps both it cycles](decisions/0544-a-held-cycle-keeps-both-it-cycles.md)
+- [0545 A map the crate steps from its back is made knowing it](decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md)
+- [0546 A declaration names a function as its JS does](decisions/0546-a-declaration-names-a-function-as-its-js-does.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

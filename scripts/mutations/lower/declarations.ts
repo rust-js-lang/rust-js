@@ -544,4 +544,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = jsdoc;\n",
     tests: ["test/declarations.test.ts", "-t", "doc comments as JSDoc"],
   },
+  {
+    name: "declaration-named-as-rust",
+    breaks: "a function named as JS keeps a word apart is declared as `new`, not its JS's `new$`",
+    file: "src/lower/declarations.rs",
+    find: "        (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())\n",
+    replace: "        fn_name(self.tcx, def_id)\n",
+    tests: ["test/declarations.test.ts", "-t", "as its JS does"],
+  },
 ];

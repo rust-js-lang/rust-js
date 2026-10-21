@@ -69,6 +69,7 @@ pub fn lower_crate<'tcx>(
         closure_facts,
         cloned,
         held_adapters,
+        back_stepped,
         changed_vecs,
         mut drop_params,
         copied,
@@ -203,6 +204,7 @@ pub fn lower_crate<'tcx>(
         closure_facts: &closure_facts,
         cloned: &cloned,
         held_adapters: &held_adapters,
+        back_stepped: &back_stepped,
         generic_consts: &generic_consts,
         changed_vecs: &changed_vecs,
         drop_params: &drop_params,
@@ -673,7 +675,7 @@ pub fn lower_crate<'tcx>(
             let no_plain = HashSet::new();
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
             let declarations =
-                super::declarations::module(tcx, module, default_export, &paths, &reexports, plain_ref_cells);
+                super::declarations::module(tcx, module, default_export, &paths, &reexports, plain_ref_cells, &fns);
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),

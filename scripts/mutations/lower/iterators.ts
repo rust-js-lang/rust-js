@@ -831,9 +831,9 @@ export const mutations: Mutation[] = [
     name: "given-map-knows-no-back",
     breaks: "a held `map` of an `I` given as it is doesn't know its back, and its `rfold` is refused",
     file: "src/lower/iterators.rs",
-    find: "            return self.knows_its_back(source)\n                || self.made_knowing(source, self.recognition().double_ended_iterator());\n",
-    replace: "            return self.knows_its_back(source);\n",
-    tests: ["test/corpus.test.ts", "-t", "^extension_map_rfold.rs$"],
+    find: "                || self.made_knowing(source, self.recognition().double_ended_iterator())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
     name: "cycle-iterator-undropped",
@@ -990,5 +990,13 @@ export const mutations: Mutation[] = [
     find: "            None if self.steps_an_array(ty) => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
     replace: "            None if self.steps_an_array(ty) && false => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
+  {
+    name: "back-stepped-unknowing",
+    breaks: "a map the crate steps from its back isn't made knowing it",
+    file: "src/lower/iterators.rs",
+    find: "                || self.stepped_from_its_back(ty);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
 ];

@@ -430,6 +430,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))
     }
 
+    /// Whether `ty`, a map's or a filter's, is one the crate steps from its
+    /// back (ADR 0545), made knowing it where it's made: the one answer, of
+    /// what's made and what's stepped.
+    pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
+        (self.krate.back_stepped).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
+    }
+
     /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
     /// crate's types hold, which keeps its source and its state wherever the
     /// crate makes one. The one answer, of what's made and what's asked of it.
@@ -448,9 +455,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0455), a filter or a `filter_map`, `$filterEnds` (ADR 0526); a
         // copy of one, which it is (ADR 0480); of a type parameter given as
         // it is, of the JS iterator made of it (ADR 0488).
+        // And a map or a filter the crate steps from its back, made knowing
+        // it (ADR 0545).
         if let Some(source) = super::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source)
-                || self.made_knowing(source, self.recognition().double_ended_iterator());
+                || self.made_knowing(source, self.recognition().double_ended_iterator())
+                || self.stepped_from_its_back(ty);
         }
         // An enumeration of one that knows its length too, `$enumerate`,
         // whose index from the back is where it is (ADR 0528).

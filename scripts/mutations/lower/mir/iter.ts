@@ -944,9 +944,9 @@ export const mutations: Mutation[] = [
     name: "given-map-source-raw",
     breaks: "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
     file: "src/lower/mir/iter.rs",
-    find: "                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));\n                let it =\n                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).unwrap_or_else(|| receiver.clone());\n",
-    replace: "                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));\n                let it =\n                    (self.given_js_iterator(receiver.clone(), iter_ty, back, len)).filter(|_| false).unwrap_or_else(|| receiver.clone());\n",
-    tests: ["test/corpus.test.ts", "-t", "^extension_map_rfold.rs$"],
+    find: "                // (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {\n",
+    replace: "                // (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
     name: "consumed-closed-adapter-refused",
@@ -1176,5 +1176,13 @@ export const mutations: Mutation[] = [
     find: "            && let Some(fused) = self.fused_fact(param.index)\n",
     replace: "            && let Some(fused) = self.fused_fact(param.index).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
+  },
+  {
+    name: "back-stepped-source-raw",
+    breaks: "a range a map the crate steps from its back maps is given as it is, not knowing its back",
+    file: "src/lower/mir/iter.rs",
+    find: "                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n                    None => receiver.clone(),\n                };\n                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n                let f =",
+    replace: "                    None => receiver.clone(),\n                };\n                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n                let f =",
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
 ];
