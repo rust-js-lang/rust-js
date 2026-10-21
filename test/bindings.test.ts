@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildNode, buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -718,7 +718,7 @@ pub fn manifest(version: Option<&'static str>) -> String {
 // react.dev's errors page reads its Markdown in `getStaticProps`.
 test("node's modules are imported, and its globals called", async () => {
   const dir = fixture("node");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::{BufferEncoding, fs, process};
 
 pub fn read(path: &str) -> String {
@@ -754,7 +754,7 @@ pub fn shouted(path: &str) -> String {
     }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('import { readFileSync } from "fs";');
   // A `match` of what it threw is JS's `try`, as the page has it (ADR 0035).
@@ -777,7 +777,7 @@ pub fn shouted(path: &str) -> String {
 // in `getStaticPaths`: `const readdir = promisify(fs.readdir)`.
 test("node's callback functions are promisified", async () => {
   const dir = fixture("node-promisify");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::{fs, path, util};
 
 pub async fn listed(dir: String) -> Vec<String> {
@@ -791,7 +791,7 @@ pub async fn listed(dir: String) -> Vec<String> {
     kinds
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('import { promisify } from "util";');
   expect(js).toContain("promisify(readdir)");
@@ -863,7 +863,7 @@ pub fn borrowed(dirs: &[String]) -> Vec<Promise<Vec<String>>> {
 // and a platform's own, `win32.join`, as Node's `path` has them.
 test("node's path module is bound whole", async () => {
   const dir = fixture("node-path");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::path::{self, FormatInputPathObject, ParsedPath, PlatformPath};
 
 fn parts(parsed: ParsedPath) -> String {
@@ -908,7 +908,7 @@ pub fn spread(parts: &[&str]) -> String {
     path::join(parts)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('join("a", "b", "../c")');
   // A `None` of an optional parameter is left out, a `Some` given (ADR 0443).
@@ -943,7 +943,7 @@ pub fn spread(parts: &[&str]) -> String {
 // numbers each of their Rust type, run by Node itself.
 test("node's buffers are made, read and written", () => {
   const dir = fixture("node-buffer");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::BufferEncoding;
 use node::buffer::{self, Buffer, TranscodeEncoding};
 
@@ -981,7 +981,7 @@ pub fn all() -> Vec<String> {
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   // Each optional argument a `None` is left out, as a person writes the
   // call; a union's `Some(&value)` is the value (ADR 0443).
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -1005,7 +1005,7 @@ console.log(JSON.stringify(all()));
 // signal, run by Node itself.
 test("node's events are typed by their emitters", () => {
   const dir = fixture("node-events");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::event::Exit;
 use node::events::{self, Emits, EventEmitter, EventEmitterExt};
 use node::process::{self, Signals};
@@ -1060,7 +1060,7 @@ pub fn signalled() {
     process::emit(Signals::Sigusr2, (Signals::Sigusr2,));
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('emitter.emit("ping", 1, "a")');
   // What a `None` leaves out isn't written (ADR 0443).
@@ -1092,7 +1092,7 @@ console.log(JSON.stringify({ got, logged }));
 // whose own `process` says what each should be.
 test("node's process global is read and written", () => {
   const dir = fixture("node-process");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
 use node::process::{self, NumberOrStr, ProcessFeaturesTypeScript};
 
@@ -1146,7 +1146,7 @@ pub fn all() -> Vec<String> {
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
   writeFileSync(join(dir, "run.js"), `import { all } from "./lib.js";
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -1173,7 +1173,7 @@ console.log(JSON.stringify({ got, want }));
 // back, each value one text or a list of them.
 test("node's querystring module is bound whole", async () => {
   const dir = fixture("node-querystring");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
 use node::querystring::{
     self, ParseOptions, ParsedUrlQuery, ParsedUrlQueryInput, ParsedUrlQueryInputItem, ParsedUrlQueryInputValue,
@@ -1215,7 +1215,7 @@ pub fn all() -> Vec<String> {
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('from "querystring";');
   expect(js).toContain('stringify(input),\n    stringify(input, ";"),\n    stringify(input, ";", ":"),');
@@ -1242,7 +1242,7 @@ pub fn all() -> Vec<String> {
 // and its own: file URLs, domains, and a URL written without its parts.
 test("node's url module binds its own and the WHATWG classes", async () => {
   const dir = fixture("node-url");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::url::{self, FileUrlToPathOptions, PathToFileUrlOptions, URLFormatOptions, URLSearchParams};
 use node::webapi;
 
@@ -1265,7 +1265,7 @@ pub fn all() -> Vec<String> {
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('from "url";');
   const lib = await import(join(dir, "lib.js"));
@@ -1290,7 +1290,7 @@ pub fn all() -> Vec<String> {
 // where it hasn't one, and its query a text or parsed.
 test("node's url module parses and formats legacy URL objects", async () => {
   const dir = fixture("node-url-legacy");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
 use node::querystring::{ParsedUrlQueryInput, ParsedUrlQueryInputValue, ParsedUrlQueryValue};
 use node::url::{self, Url, UrlObject, UrlObjectPort, UrlObjectQuery, UrlQuery, UrlWithStringQuery};
@@ -1348,7 +1348,7 @@ pub fn formatted() -> Vec<String> {
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const lib = await import(join(dir, "lib.js"));
   const url = await import("node:url");
   const link = url.parse("https://u:p@example.com:8080/a/b?x=1&x=2#h");
@@ -1368,7 +1368,7 @@ pub fn formatted() -> Vec<String> {
 // and Next.js's Pages Router: what's read of one and written to the other.
 test("node's http request is read and its response written", async () => {
   const dir = fixture("node-http");
-  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::http::{IncomingMessage, ServerResponse};
 
 pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
@@ -1379,7 +1379,7 @@ pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
     res.end(Some(&format!("{} {} {}", req.url().unwrap_or_default(), req.http_version(), seen)));
 }
 `.replace("let seen = req.has_header_named(\"x-seen\");", "let seen = req.raw_headers().iter().any(|h| h == \"x-seen\");"));
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("res.statusCode = 201;");
   expect(js).toContain('res.setHeader("x-many", ["a", "b"]);');

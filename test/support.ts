@@ -343,6 +343,30 @@ export function buildReact() {
   }
 }
 
+/** The node crate's metadata, and the webapi and js crates' it uses beside
+ * it, in `target/node`, built once for the run and not again while what
+ * they're made from is what it was, as the react crate's are (`buildReact`):
+ * in a directory of their own, as node's build writes the webapi crate's
+ * metadata too, which another test file may be reading from `target`. Ten
+ * tests built it each, 1.5 s each. Where it is: `-L` it, and `--extern
+ * node=<it>/libnode.rmeta`. */
+let node: string | undefined;
+export function buildNode(): string {
+  const dir = join(target, "node");
+  if (node === undefined) {
+    buildCompiler();
+    const inputs = ["node/src", "node/build.sh", "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
+      .map((path) => join(root, path))
+      .concat(compiler);
+    const outputs = ["node", "webapi", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
+    once(join(target, "tests-node", thisRun()), () =>
+      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, () => run(["node/build.sh", "-o", join(dir, "libnode.rmeta")])),
+    );
+    node = dir;
+  }
+  return node;
+}
+
 /** The generated JS files under `dir`, by their paths from there: no maps. */
 function generated(dir: string): string[] {
   if (!existsSync(dir)) return [];
