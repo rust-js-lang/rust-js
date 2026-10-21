@@ -6121,15 +6121,6 @@ pub(crate) fn function_kind<'tcx>(tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>)
     }
 }
 
-/// Whether the `Iterator` method `name`, an `IterComb`, leaves no item with
-/// a destructor undropped (`IterComb::leaves_none`), or holds what it steps,
-/// closed to drop it (`IterComb::holds_its_sources`); or is `cycle()`, which
-/// gives each item it makes (ADR 0491).
-pub(crate) fn leaves_none(name: &str) -> bool {
-    methods::iterator(name).is_some_and(|comb| comb.leaves_none() || comb.holds_its_sources())
-        || iterator_step(name) == Some(StepOp::Cycle)
-}
-
 /// The type parameters whose names `{:?}` of `ty` shows, each a
 /// `PhantomData<K>`'s, `PhantomData<{type_name::<K>()}>` (ADR 0452), in it
 /// or a struct of the crate's it holds, through what points at it.

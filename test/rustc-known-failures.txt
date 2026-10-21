@@ -37,7 +37,7 @@ consts/issue-105536-const-val-roundtrip-ptr-eq.rs	error: rust-js does not suppor
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	error: rust-js does not support addressable memory yet: a pointer read as another type's
 consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
-consts/oncecell-const-init-57781.rs	error: rust-js does not support values of type `K` yet
+consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std::cell::UnsafeCell::<T>::new` yet
 consts/static-raw-pointer-interning.rs	error: rust-js does not support addressable memory yet: statics of type `Foo`
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 derives/debug/derive-debug.rs	error: rust-js does not support addressable memory yet: values of type `*const (dyn std::marker::Send + 'static)`
@@ -85,7 +85,6 @@ structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support addressa
 structs-enums/tag-align-u64.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&Tag` as `usize`, which aren't numbers alone
 traits/dyn-drop-principal.rs	error: rust-js does not support calling `std::alloc::Layout::for_value` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
-traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
 traits/principal-less-objects.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 try-trait/try-operator-various-contexts.rs	error: rust-js does not support calling `std::fs::File::open` yet

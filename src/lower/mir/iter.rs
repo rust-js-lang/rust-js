@@ -1309,7 +1309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::SkipWhile
             )
         );
-        if keeps_each || crate::lower::recognition::leaves_none(name) {
+        if keeps_each {
             return Ok(());
         }
         Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))

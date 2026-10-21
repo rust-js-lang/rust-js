@@ -691,14 +691,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_of_char_indices.rs$"],
   },
   {
-    name: "filter-map-method-leaves",
-    breaks: "`filter_map` of items with a destructor, a method of a chain, is refused",
-    file: "src/lower/mir/iter.rs",
-    find: "        if keeps_each || crate::lower::recognition::leaves_none(name) {\n",
-    replace: "        if keeps_each {\n",
-    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
-  },
-  {
     name: "back-step-receiver-wrapped",
     breaks: "`nth_back` and `rfold` of an iterator that knows its back wrap it again, `$nthBack($iter(it), ..)`, which `$iter` gives back as it is (ADR 0456)",
     file: "src/lower/mir/iter.rs",

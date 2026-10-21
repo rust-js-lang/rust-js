@@ -2317,14 +2317,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
-    name: "cycle-leaves-items",
-    breaks: "`cycle()` of items with a destructor is refused as one that may leave some undropped",
-    file: "src/lower/recognition.rs",
-    find: "        || iterator_step(name) == Some(StepOp::Cycle)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
-  },
-  {
     name: "splice-unowned",
     breaks: "a `splice`'s items, what it took out, aren't its own, and are refused",
     file: "src/lower/recognition.rs",
