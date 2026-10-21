@@ -8179,7 +8179,7 @@ export function $escapeAscii(bytes) {
   return text;
 }
 
-// A byte's `escape_ascii()`, `ascii::escape_default(b)` (ADR 0557): the
+// A byte's `escape_ascii()`, `ascii::escape_default(b)` (ADR 0558): the
 // bytes of its escape, as `$escapeAscii` writes it.
 export function $escapeByte(byte) {
   return Array.from($escapeAscii([byte]), (c) => c.charCodeAt(0));
