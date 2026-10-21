@@ -25,7 +25,7 @@ function pad(iter, min, IIterator, IFused, dropI, dropIItem) {
   return { iter: iterator_fuse(iter, IIterator, IFused, dropI, dropIItem), min };
 }
 
-function padIterator_next(pad, IFused, dropI, dropIItem) {
+function padIterator_next(pad, dropI, dropIItem) {
   return $nextSome(pad.iter);
 }
 
@@ -89,7 +89,7 @@ function main() {
   console.log(`[${back.join(", ")}]`);
   const it = pad([0, 5], 1, { next: countdownIterator_next }, false, countdownDrop_drop);
   try {
-    const tmp = padIterator_next(it, false, countdownDrop_drop);
+    const tmp = padIterator_next(it, countdownDrop_drop);
     const tmp$1 = padDoubleEndedIterator_next_back(
       it,
       { next_back: countdownDoubleEndedIterator_next_back },

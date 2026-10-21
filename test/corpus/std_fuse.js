@@ -118,7 +118,7 @@ const Held = {
   },
 
   // By the `next` it was made with, which knows what it holds.
-  drained_front(held, IDebug, IFused) {
+  drained_front(held, IDebug) {
     while ($nextSome(held.f) != null) {}
     return fuseDebug_fmt(held.f, undefined, IDebug);
   },
@@ -148,7 +148,7 @@ function main() {
     { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
     true,
   );
-  console.log(`${Held.drained_front(value$2, steadyDebug(), true)}`);
+  console.log(`${Held.drained_front(value$2, steadyDebug())}`);
   const value$3 = fused_of(
     [0],
     { into_iter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },

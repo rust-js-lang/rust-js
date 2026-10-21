@@ -123,23 +123,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
-    name: "compiled-iterator-stepped-by-library",
-    breaks: "`Iterator`'s methods of a compiled std iterator, a `Peekable`'s `next`, resolve to the library's compiled impl and are called there, not stepped as the JS iterator its struct is",
-    file: "src/lower/items.rs",
-    find: "            && is_std_def(self.tcx, trait_id, StdItem::Iterator)\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "compiled-provided-of-compiled-iterator-not-crates",
-    breaks: "a compiled provided method of a compiled std iterator, `peekable()` of a `Fuse`, doesn't resolve to the library, and is refused",
-    file: "src/lower/items.rs",
-    find: "            && !super::recognition::is_compiled_std(self.tcx, def_id)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
-  },
-  {
     name: "fused-specialization-not-crates",
     breaks: "a std-private trait's call whose impl the caller's type picks doesn't resolve to the crate's impls, and is refused",
     file: "src/lower/items.rs",

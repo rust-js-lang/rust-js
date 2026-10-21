@@ -2622,4 +2622,21 @@ export const mutations: Mutation[] = [
     replace: "                && !tcx.visibility(called).is_public()\n                && false\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "compiled-iterator-stepped-by-library",
+    breaks: "`Iterator`'s methods of a compiled std iterator, a `Peekable`'s `next`, resolve to the library's compiled impl and are called there, not stepped as the JS iterator its struct is",
+    file: "src/lower/recognition.rs",
+    find: "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && !is_compiled_std(tcx, def_id)\n",
+    replace: "            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))\n        && false\n        && !is_compiled_std(tcx, def_id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "compiled-provided-of-compiled-iterator-not-crates",
+    breaks: "a compiled provided method of a compiled std iterator, `peekable()` of a `Fuse`, doesn't resolve to the library, and is refused",
+    file: "src/lower/recognition.rs",
+    find: "        && !is_compiled_std(tcx, def_id)\n}\n",
+    replace: "}\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
+  },
 ];

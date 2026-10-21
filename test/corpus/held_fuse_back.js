@@ -25,7 +25,7 @@ function pad(iter, min, IIterator, IFused) {
   return { iter: iterator_fuse(iter, IIterator, IFused), min };
 }
 
-function padIterator_next(pad, IFused) {
+function padIterator_next(pad) {
   return $nextSome(pad.iter);
 }
 
@@ -71,7 +71,7 @@ function main() {
   ).toArray();
   console.log(`[${back.join(", ")}]`);
   const it = pad([0, 5], 1, { next: countdownIterator_next }, false);
-  const value = padIterator_next(it, false);
+  const value = padIterator_next(it);
   const value$1 = padDoubleEndedIterator_next_back(
     it,
     { next_back: countdownDoubleEndedIterator_next_back },

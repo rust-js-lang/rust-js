@@ -4,7 +4,7 @@
 
 use super::bindings::{JsForm, is_binding, is_method, js_form, js_import};
 use super::fn_def;
-use super::recognition::{Std, StdItem, is_std_def};
+use super::recognition::Std;
 use super::representation::Num;
 use super::std_types::number::NumOp;
 use super::std_types::text::TextOp;
@@ -307,11 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `count`: its struct is a JS iterator, stepped as one, and sized by
         // the hint it carries; but a provided method compiled, `fuse()`'s,
         // of one too (ADR 0561).
-        if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
-            && is_std_def(self.tcx, trait_id, StdItem::Iterator)
-            && super::recognition::is_compiled_std_iterator(self.tcx, self.in_impl_terms(generic_args).type_at(0))
-            && !super::recognition::is_compiled_std(self.tcx, def_id)
-        {
+        if super::recognition::stepped_as_js_iterator(self.tcx, def_id, self.in_impl_terms(generic_args)) {
             return Ok(false);
         }
         let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;

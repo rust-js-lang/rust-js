@@ -387,7 +387,10 @@ impl<'tcx> Asking<'tcx> {
         // crate's own are.
         if !callee.is_local() && !fns.contains_key(&callee) {
             let mut named = vec![(callee, args)];
-            if let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
+            // Not of a struct stepped as the JS iterator it is, `Fuse<I>`'s
+            // `next`, whose impl's facts its caller never passes.
+            if !crate::lower::recognition::stepped_as_js_iterator(tcx, callee, args)
+                && let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
                 && instance.def_id() != callee
             {
                 named.push((instance.def_id(), instance.args));

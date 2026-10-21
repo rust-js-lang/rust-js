@@ -50,7 +50,7 @@ function pairDebug_fmt(pair, IDebug) {
   return `Pair { i: ${fuseDebug_fmt(pair.i, undefined, IDebug)} }`;
 }
 
-function pairIterator_next(pair, IFused, dropI, dropIItem) {
+function pairIterator_next(pair, dropI, dropIItem) {
   return $nextSome(pair.i);
 }
 
@@ -94,18 +94,13 @@ function main() {
   );
   console.log(`${pairDebug_fmt(flips, flipDebug())}`);
   const again = { ...flips, i: fuseClone_clone(flips.i, { clone: (value) => [value[0]] }) };
-  const value$5 = pairIterator_next(flips, false);
-  const value$6 = pairIterator_next(flips, false);
+  const value$5 = pairIterator_next(flips);
+  const value$6 = pairIterator_next(flips);
   console.log(
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${pairDebug_fmt(flips, flipDebug())}`,
   );
   console.log(`${pairDebug_fmt(again, flipDebug())}`);
-  console.log(
-    `[${$iterator(again, (iterator) => pairIterator_next(iterator, false), true)
-      .take(3)
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${$iterator(again, pairIterator_next, true).take(3).toArray().join(", ")}]`);
   const loud = iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop);
   let loud$live;
   try {

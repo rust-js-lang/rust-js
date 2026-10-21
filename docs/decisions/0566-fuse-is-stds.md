@@ -137,9 +137,13 @@ $rev($knowing(f, (iterator) => fuseDoubleEndedIterator_next_back(iterator, { nex
 
 ## Consequences
 
-- **The app's JS**: a `fuse()` is `iterator_fuse(it, { next: $next },
-  true)`, in a chain consumed in place too, which `consumed_fuses` had
-  left as its source, the accepted cost, as a `peekable()` was; a `Fuse`'s
+- **The app's JS**: a `fuse()` of a struct of the crate's is
+  `iterator_fuse(it, { next: f }, true)`, in a chain consumed in place
+  too, since only the lowering knows whether `f` boxes its `Some`; one of
+  a JS iterator stepped till it ends, `xs.iter().fuse().map(f).sum()`, is
+  its source, `xs.map(f)`, as `consumed_fuses` had it (the recognizer's
+  proved rewrite, ADR 0561: a `Fuse` ends where its source's first `done`
+  does), and `$rev` of an array's iterator its `toReversed()`; a `Fuse`'s
   `next_back()`, `len()` and `rfold()` are the library's calls with this
   use's dictionaries, and an impl method stepping a held `Fuse<I>` from
   its back takes `IFused`; its `rev()` is `$rev($knowing(..))`; a

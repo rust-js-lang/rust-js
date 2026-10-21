@@ -72,6 +72,10 @@ pub(super) struct Hints<'h> {
     pub(super) concise: &'h [js::Span],
     /// Each drop flag, `noisy$live`: whether a value is there to drop.
     pub(super) flags: &'h HashSet<String>,
+    /// What `Iterator::fuse`'s compiled body is called here, `iterator_fuse`,
+    /// where the module imports it: a `Fuse` stepped till it ends is its
+    /// source (ADR 0561).
+    pub(super) fuse: Option<&'h str>,
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -92,6 +96,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         forwarding,
         concise,
         flags,
+        fuse,
     } = *hints;
     let super::hints::Written {
         tables,
@@ -217,7 +222,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body);
     named_temporaries(body);
-    iterators::consumed_into_iters(body);
+    iterators::consumed_into_iters(body, fuse);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
@@ -266,7 +271,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's; and a range made there, its numbers made as
     // they're stepped.
-    iterators::consumed_into_iters(body);
+    iterators::consumed_into_iters(body, fuse);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,

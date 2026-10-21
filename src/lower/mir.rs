@@ -904,16 +904,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
-        // And the module's imports, whose fields JS's modules never change
-        // either, `HighlightStyle.define`, as `reads_alike` has them.
-        let mut plain = self.locals.mir.plain.clone();
-        plain.extend(
-            self.krate
-                .imports
-                .get(&self.module)
-                .into_iter()
-                .flat_map(|imports| imports.values().cloned()),
-        );
+        let plain = self.plain_names();
         // Each drop flag, by its name (`mir/drops.rs`).
         let flags: HashSet<String> = state.flags.iter().flatten().cloned().collect();
         tidy::tidy(
@@ -937,12 +928,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
                 flags: &flags,
+                fuse: self.fuse_import().as_deref(),
             },
         );
         tidy::destructured_params(&mut params, &mut out);
         tidy::named(&params, &mut out, &flags);
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
+    }
+
+    /// The names of plain values, which nothing changes (`Locals::plain`),
+    /// and the module's imports, whose fields JS's modules never change
+    /// either, `HighlightStyle.define`, as `reads_alike` has them.
+    fn plain_names(&self) -> HashSet<String> {
+        let mut plain = self.locals.mir.plain.clone();
+        plain.extend(
+            self.krate
+                .imports
+                .get(&self.module)
+                .into_iter()
+                .flat_map(|imports| imports.values().cloned()),
+        );
+        plain
     }
 
     /// The locals that patterns bind in an enum's variant, by THIR's

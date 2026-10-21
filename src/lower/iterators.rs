@@ -1808,15 +1808,33 @@ pub(in crate::lower) fn given_into_iter(items: Expr) -> Expr {
     }
 }
 
-/// Of an `$intoIter(xs)` stepped in place by what steps it till it ends,
-/// `$intoIter(xs).map(f)` or `for (const n of $intoIter(xs))`, as each JS
-/// consumer and helper does: what steps the same, `stepped_in_place`'s
-/// (ADR 0475). Each statement's: a `for`'s iterable, and each expression's.
-pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>) {
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What `Iterator::fuse`'s compiled body is called in this module, where
+    /// the module imports it: `consumed_into_iters`'s `fuse`.
+    pub(in crate::lower) fn fuse_import(&self) -> Option<String> {
+        super::recognition::compiled_provided_method(self.tcx, "Iterator", "fuse")
+            .and_then(|id| self.krate.foreign.item(id))
+            .and_then(|item| {
+                self.krate
+                    .imports
+                    .get(&self.module)?
+                    .get(&(item.from.clone(), item.export.clone()))
+            })
+            .cloned()
+    }
+}
+
+/// Of an `$intoIter(xs)` or a `fuse()` stepped in place by what steps it
+/// till it ends, `$intoIter(xs).map(f)` or `for (const n of $intoIter(xs))`,
+/// as each JS consumer and helper does: what steps the same,
+/// `stepped_in_place`'s (ADRs 0475, 0561). Each statement's: a `for`'s
+/// iterable, and each expression's. `fuse` is what `Iterator::fuse`'s
+/// compiled body is called here, where it's imported.
+pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&str>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::ForOf { iterable, .. } = &mut stmt.kind {
-                stepped_in_place(iterable, true);
+                stepped_in_place(iterable, true, fuse);
             }
         }
     });
@@ -1825,7 +1843,7 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>) {
             && let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
-            stepped_in_place(object, false);
+            stepped_in_place(object, false, fuse);
         }
     });
 }
@@ -1838,15 +1856,33 @@ const STEPPED_TILL_DONE: [&str; 11] = [
 
 /// `e`, stepped till it ends, by a `for` or not: of an `$intoIter(xs)`,
 /// where nothing reads where it is, JS's iterator of `xs`, which a `for`
-/// makes itself (ADR 0475).
-fn stepped_in_place(e: &mut Expr, by_for: bool) {
-    let js::ExprKind::Call(callee, given) = &e.kind else {
+/// makes itself (ADR 0475); of a `fuse()` of a JS iterator, the iterator,
+/// which ends at its first `done` as the `Fuse` would, and of `$knowing`
+/// of an array's iterator, which knows its back and length already, the
+/// iterator (ADR 0561); through `$rev` of one.
+fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
+    let js::ExprKind::Call(callee, given) = &mut e.kind else {
         return;
     };
-    match callee.helper_name() {
-        Some("$intoIter") if by_for => *e = given[0].clone(),
-        Some("$intoIter") => *e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
-        _ => {}
+    if matches!(callee.helper_name(), Some("$rev" | "$knowing")) && !given.is_empty() {
+        stepped_in_place(&mut given[0], false, fuse);
+    }
+    let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.as_str()) == fuse);
+    let replacement = match callee.helper_name() {
+        Some("$intoIter") if by_for => given[0].clone(),
+        Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
+        Some("$knowing") if is_stepped_items(&given[0]) => given[0].clone(),
+        // `$rev($iter(v))`: the array's iterator from its end, `$iter(v.toReversed())`.
+        Some("$rev") if let Some(items) = fresh_iter_source(&given[0]) => Expr::call_helper(
+            "$iter",
+            vec![Expr::call(Expr::member(items.clone(), "toReversed"), Vec::new())],
+        ),
+        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),
+        _ => return,
+    };
+    *e = replacement;
+    if fused {
+        stepped_in_place(e, by_for, fuse);
     }
 }
 
@@ -1996,7 +2032,7 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
 }
 
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
-    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
+    fresh_iter_source(e).is_some()
 }
 
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),

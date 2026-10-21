@@ -211,4 +211,13 @@ export const mutations: Mutation[] = [
     replace: "                        && let Some(slot) = slot_of(tcx, foreign, caller, ty).filter(|_| matches!(ty.kind(), ty::Param(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_fuse.rs$"],
   },
+  {
+    name: "stepped-iterator-impl-facts-asked",
+    breaks: "a caller asks the facts of `Fuse<I>`'s `next` impl, stepped as a JS iterator, so its impl methods take an `IFused` nothing reads",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            if !crate::lower::recognition::stepped_as_js_iterator(tcx, callee, args)\n",
+    replace: "            if true\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+    snapshots: true,
+  },
 ];

@@ -5294,6 +5294,15 @@ thread_local! {
     static COMPILED: std::cell::OnceCell<std::rc::Rc<Vec<DefId>>> = const { std::cell::OnceCell::new() };
 }
 
+/// The provided method `method` of std's trait `trait_name` compiled into
+/// `@rust-js/std`, `Iterator::fuse`'s: the one place that finds it.
+pub(crate) fn compiled_provided_method(tcx: TyCtxt<'_>, trait_name: &str, method: &str) -> Option<DefId> {
+    let trait_def = tcx.get_diagnostic_item(Symbol::intern(trait_name))?;
+    (tcx.associated_items(trait_def).in_definition_order())
+        .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
+        .map(|item| item.def_id)
+}
+
 /// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
 /// `COMPILED_STD_PROVIDED` name, each found in std, and the closures each
 /// makes, found as they're collected.
@@ -5366,14 +5375,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         }
     }
     for &(trait_name, method) in COMPILED_STD_PROVIDED {
-        let Some(trait_def) = trait_named(trait_name) else {
-            continue;
-        };
-        found.extend(
-            (tcx.associated_items(trait_def).in_definition_order())
-                .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-                .map(|item| item.def_id),
-        );
+        found.extend(compiled_provided_method(tcx, trait_name, method));
     }
     // And each function std keeps private that a compiled body calls,
     // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:
@@ -6371,6 +6373,21 @@ pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && COMPILED_STD
             .iter()
             .any(|&(type_name, _, _)| std_path(tcx, id) == format!("std::iter::{type_name}"))
+}
+
+/// Whether a call of `def_id`, an `Iterator` method of a compiled std
+/// iterator that isn't itself compiled, `Peekable`'s `next` or `count`,
+/// steps the struct as the JS iterator it is (ADR 0561): not the library's
+/// function, so neither its body nor its manifest's facts are asked. The
+/// one answer, of what resolves to the crate and of what a caller asks.
+pub(crate) fn stepped_as_js_iterator<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.trait_of_assoc(def_id)
+        .is_some_and(|trait_id| is_std_def(tcx, trait_id, StdItem::Iterator))
+        && args
+            .types()
+            .next()
+            .is_some_and(|self_ty| is_compiled_std_iterator(tcx, self_ty))
+        && !is_compiled_std(tcx, def_id)
 }
 
 /// A compiled std type whose `Iterator` impl is compiled, `Peekable`'s: its
