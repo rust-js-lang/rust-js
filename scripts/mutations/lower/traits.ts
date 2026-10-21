@@ -1933,4 +1933,12 @@ export const mutations: Mutation[] = [
     replace: "                true => value.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "rc_dyn_struct_tail"],
   },
+  {
+    name: "into-iterator-of-bound-iterator-refused",
+    breaks: "an iterator only bounds know, `J::IntoIter`, given where an `IntoIterator` is held as it is, has no evidence",
+    file: "src/lower/traits.rs",
+    find: "            && (!super::recognition::known_by_bounds(ty) || self.recognition().iterates_as_itself(ty))\n",
+    replace: "            && !super::recognition::known_by_bounds(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
+  },
 ];

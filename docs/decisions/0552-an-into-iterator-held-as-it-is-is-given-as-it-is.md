@@ -67,3 +67,29 @@ Rust.
 - Mutations answer no, leave the parameter a JS iterator, give no
   dictionary, write `into_iter()` as std's or `$intoIter`, and refuse an
   iterator's own `IntoIterator`.
+
+## Amendment: an iterator only bounds know, and an impl's bound
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): refusals lifted;
+itertools compiles again, which ADR 0566's `Fuse` had stopped.
+
+- **An iterator only bounds know, given where an `IntoIterator` is held as
+  it is**, `put_back(j)` of a `j: J::IntoIter`, has std's `IntoIterator`
+  for every iterator, `iterates_as_itself`: its evidence is `{ into_iter:
+  (items) => items, IntoIterIterator }`, the latter the `Iterator` its
+  bounds give. It was refused, as a type only bounds know was taken to
+  have none.
+- **An impl's bound is its dictionary's**, which each of its methods is
+  given: whether its `IntoIter` is held as it is is the impl's answer and
+  its methods' alike, any of them holding it. `impl<A: IntoIterator>
+  From<(A,)> for Zip<(A::IntoIter,)>`'s `from` holds it in `Zip`; the impl
+  alone, no function, said not, so its dictionary took none and its
+  method asked one.
+
+`test/corpus/into_iter_of_a_bound.rs` has both, `put_back` and a
+`From` impl given to generic code as `multizip` is, against native Rust.
+The readability measure's `$iter` share grows, 61.9 to 62.3 in ten
+thousand lines: the case gives a `Vec`'s `IntoIterator` dictionary,
+`into_iter: (items) => $iter(items)`, this ADR's form, three times.
+Mutations `into-iterator-of-bound-iterator-refused` and
+`impl-bound-held-by-itself`.

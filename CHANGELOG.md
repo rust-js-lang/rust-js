@@ -836,6 +836,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **itertools compiles again** (ADR 0552 amended): an iterator only bounds
+  know, given where an `IntoIterator` is held as it is, has std's
+  `IntoIterator` for it; an impl's bound is held as its methods hold it.
+  ADR 0566's `Fuse` had stopped it.
 - **A function named `new`, `delete` or another word JS keeps** was
   declared by that name, which TypeScript can't read; it's its JS's, `new$`
   (ADR 0546).

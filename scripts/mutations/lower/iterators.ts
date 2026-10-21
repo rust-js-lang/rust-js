@@ -1123,4 +1123,12 @@ export const mutations: Mutation[] = [
     replace: "            return false && self.knows_its_length(source)\n                || false && self.steps_an_array(source)\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
+  {
+    name: "impl-bound-held-by-itself",
+    breaks: "whether an impl's `IntoIterator` bound is held is asked of the impl alone, which holds nothing, where its method's result holds it",
+    file: "src/lower/iterators.rs",
+    find: "    match impl_of {\n        Some(imp) =>",
+    replace: "    match impl_of.filter(|_| false) {\n        Some(imp) =>",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
+  },
 ];

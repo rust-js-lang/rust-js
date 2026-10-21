@@ -1703,9 +1703,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // code has it, an iterator's, a range's too, itself, an array's
         // `$iter`; and the `Iterator` of what it makes, which steps that as
         // it is, `IntoIterIterator`, as the trait declares its `IntoIter`.
+        // Of one only bounds know, an iterator's, std's for every iterator:
+        // itself, stepped by the dictionary its bounds give.
         if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
             && !matches!(ty.kind(), ty::Ref(..))
-            && !super::recognition::known_by_bounds(ty)
+            && (!super::recognition::known_by_bounds(ty) || self.recognition().iterates_as_itself(ty))
             && !self.has_user_impl(tr.def_id, ty)
         {
             let itself = Expr::arrow(

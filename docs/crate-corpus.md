@@ -20,7 +20,7 @@ newest release its requirement allows.
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
 | either 1.15 | runs | measured 2026-10-21, after ADR 0554 |
-| itertools 0.14 | runs | measured 2026-10-21, after ADR 0552 |
+| itertools 0.14 | compiles | measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
 | smallvec 1.15 | runs | |
