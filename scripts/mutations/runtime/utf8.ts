@@ -114,4 +114,28 @@ export const mutations: Mutation[] = [
     replace: "  return String.fromCharCode(...it.items);",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
+  {
+    name: "encode-utf8-unwritten",
+    breaks: "`encode_utf8` writes nothing to its buffer",
+    file: "src/runtime/utf8.js",
+    find: "  bytes.forEach((b, i) => (buf[i] = b));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
+  {
+    name: "encode-utf8-text-apart",
+    breaks: "the `&mut str` `encode_utf8` gives is a text of its own, so a change through it isn't written to the buffer",
+    file: "src/runtime/utf8.js",
+    find: "  return $utf8Mut(buf, bytes.length);\n",
+    replace: "  return { value: c };\n",
+    tests: ["test/corpus.test.ts", "-t", "^encode_utf8_written.rs$"],
+  },
+  {
+    name: "utf8-mut-whole-buffer",
+    breaks: "the `&mut str` `encode_utf8` gives reads the whole buffer, its zero bytes too",
+    file: "src/runtime/utf8.js",
+    find: "length === bytes.length ? bytes : bytes.slice(0, length)",
+    replace: "bytes",
+    tests: ["test/corpus.test.ts", "-t", "^encode_utf8_written.rs$"],
+  },
 ];

@@ -95,3 +95,12 @@ if (head != null) {
   `split_at_mut_checked` panic, drop a box given to a function, keep a
   leak unboxed or its read boxed, and give a binding the pairs.
 - `docs/std-coverage.txt`: `str` 79 of 83, `String` 32 of 43.
+
+## Amendment: `encode_utf8`'s `&mut str` is its buffer's bytes
+
+`c.encode_utf8(&mut buf)` wrote the bytes and gave a cell of the `char`'s
+text, apart from `buf`, so `s.make_ascii_uppercase()` changed the cell
+alone (#138). It gives the `&mut str` `from_utf8_mut` does, read and
+written through the bytes, `$utf8Mut(buf, length)`, of the first `length`
+of them: `out += $encodeUtf8(c, b).value` where it's read alone. Held by
+`test/corpus/encode_utf8_written.rs`.

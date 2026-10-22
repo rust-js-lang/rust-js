@@ -34,18 +34,6 @@ function $escapeUnicode(s) {
   return out;
 }
 
-// `c.encode_utf8(&mut buf)`: its bytes at the start of `buf`, and itself;
-// a `buf` too short panics, as std's does.
-function $encodeUtf8(c, buf) {
-  const bytes = new TextEncoder().encode(c);
-  if (bytes.length > buf.length) {
-    const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
-  }
-  bytes.forEach((b, i) => (buf[i] = b));
-  return c;
-}
-
 // `char::decode_utf16(units)`: each `char`, `Ok`, or `Err` of an unpaired
 // surrogate, its code.
 function $decodeUtf16(units) {

@@ -98,7 +98,7 @@ function main() {
   console.log(`${$escapeUnicode("hé")}`);
   const buffer = [0, 0, 0, 0];
   const text = $encodeUtf8("é", buffer);
-  console.log(`${text} ${$byteLen(text)}`);
+  console.log(`${text.value} ${$byteLen(text.value)}`);
   console.log(`[${buffer.join(", ")}]`);
   const decoded = Iterator.from($decodeUtf16([104, 55357, 56832, 55296, 105]))
     .map((r) => (r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r))

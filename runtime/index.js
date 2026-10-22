@@ -3792,18 +3792,6 @@ export function $escapeUnicode(s) {
   return out;
 }
 
-// `c.encode_utf8(&mut buf)`: its bytes at the start of `buf`, and itself;
-// a `buf` too short panics, as std's does.
-export function $encodeUtf8(c, buf) {
-  const bytes = new TextEncoder().encode(c);
-  if (bytes.length > buf.length) {
-    const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
-  }
-  bytes.forEach((b, i) => (buf[i] = b));
-  return c;
-}
-
 // `char::decode_utf16(units)`: each `char`, `Ok`, or `Err` of an unpaired
 // surrogate, its code.
 export function $decodeUtf16(units) {
@@ -8496,21 +8484,38 @@ export function $fromUtf8(bytes, owned = false) {
   return { TAG: "Err", _0: owned ? { bytes, error } : error };
 }
 
-// `str::from_utf8_mut(bytes)` (ADR 0334): `Ok` of a `&mut str` read and
-// written through `bytes`, which nothing it does makes longer or shorter,
-// or `from_utf8`'s `Err`; `unchecked`, the `&mut str` itself.
-export function $fromUtf8Mut(bytes, unchecked = false) {
-  const text = {
+// A `&mut str` of the first `length` of `bytes`, read and written through
+// them, which nothing it does makes longer or shorter (ADR 0334).
+export function $utf8Mut(bytes, length = bytes.length) {
+  return {
     get value() {
-      return $utf8Decode(bytes);
+      return $utf8Decode(length === bytes.length ? bytes : bytes.slice(0, length));
     },
     set value(next) {
       new TextEncoder().encode(next).forEach((byte, i) => (bytes[i] = byte));
     },
   };
+}
+
+// `str::from_utf8_mut(bytes)`: `Ok` of its `&mut str`, or `from_utf8`'s
+// `Err`; `unchecked`, the `&mut str` itself.
+export function $fromUtf8Mut(bytes, unchecked = false) {
+  const text = $utf8Mut(bytes);
   if (unchecked) return text;
   const result = $fromUtf8(bytes);
   return result.TAG === "Ok" ? { TAG: "Ok", _0: text } : result;
+}
+
+// `c.encode_utf8(&mut buf)`: its bytes at the start of `buf`, and the
+// `&mut str` of them; a `buf` too short panics, as std's does.
+export function $encodeUtf8(c, buf) {
+  const bytes = new TextEncoder().encode(c);
+  if (bytes.length > buf.length) {
+    const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+  }
+  bytes.forEach((b, i) => (buf[i] = b));
+  return $utf8Mut(buf, bytes.length);
 }
 
 // `String::from_utf8_lossy(bytes)`: a `Cow`, borrowed where the bytes are

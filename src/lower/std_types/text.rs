@@ -4,7 +4,7 @@
 //! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
 
 use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
@@ -416,11 +416,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Escape { kind: "default", .. } => call("$escapeDefault", vec![arg()]),
             TextOp::Escape { kind: "unicode", .. } => call("$escapeUnicode", vec![arg()]),
             TextOp::Escape { str, .. } => call("$escapeDebug", vec![arg(), Expr::bool(str)]),
-            // Its `&mut str`, a cell of the `char`'s text (ADR 0099).
-            TextOp::EncodeUtf8 => {
-                let written = call("$encodeUtf8", vec![arg(), arg()]);
-                Expr::object(vec![Prop::Field(js::HELD.into(), written)])
-            }
+            // Its `&mut str`, read and written through `buf`'s bytes, as
+            // `from_utf8_mut`'s (ADR 0334).
+            TextOp::EncodeUtf8 => call("$encodeUtf8", vec![arg(), arg()]),
             TextOp::DecodeUtf16 => call("$decodeUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: false } => call("$fromUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: true } => call("$fromUtf16Lossy", vec![arg()]),

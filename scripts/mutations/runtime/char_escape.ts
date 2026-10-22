@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
-    name: "encode-utf8-unwritten",
-    breaks: "`encode_utf8` writes nothing to its buffer",
-    file: "src/runtime/char_escape.js",
-    find: "  bytes.forEach((b, i) => (buf[i] = b));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
-  },
-  {
     name: "decode-utf16-unpaired-pairs",
     breaks: "`decode_utf16` takes a surrogate pair as two errors",
     file: "src/runtime/char_escape.js",
