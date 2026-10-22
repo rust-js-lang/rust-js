@@ -1,7 +1,7 @@
 //! The types something changes in place, which a copy is made of where
 //! it's read (ADR 0052).
 
-use crate::lower::recognition::replaces_whole;
+use crate::lower::recognition::{flattens_mut, replaces_whole};
 use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -45,6 +45,15 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                     arg,
                 } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {
                     mutated.insert(body.thir[arg].ty);
+                }
+                // And `as_flattened_mut()`, the items of each array of a slice
+                // of arrays, which it changes through: each array's.
+                ExprKind::Call { fun, ref args, .. }
+                    if fn_def(body.thir[fun].ty).is_some_and(|(id, _)| flattens_mut(tcx, id))
+                        && let [rows] = &args[..]
+                        && let ty::Slice(row) | ty::Array(row, _) = body.thir[*rows].ty.peel_refs().kind() =>
+                {
+                    mutated.insert(*row);
                 }
                 _ => {}
             }

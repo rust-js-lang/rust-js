@@ -170,3 +170,11 @@ which are changed, of all but `LinkedList`, so a clone of one changed
 after was the same array (#157). `VEC_LIKE` is the one list, which both
 ask, and the architecture test holds it. Held by
 `test/corpus/linked_list_clone.rs`.
+
+## Amendment: rows changed through `as_flattened_mut`
+
+An array something takes `&mut` of is changed; but `as_flattened_mut()`
+of a grid, `[[u8; 2]; 3]`, takes the grid's and changes its rows, the
+inner arrays, which weren't recorded, so `[[0; 2]; 3]` was one row three
+times (#159). A call of it records each row's type as changed. Held by
+`test/corpus/flattened_rows_apart.rs`.

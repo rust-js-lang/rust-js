@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "    }\n    holds || parts\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_mut_bindings_copied.rs$"],
   },
+  {
+    name: "flattened-rows-unchanged",
+    breaks: "a grid's rows changed through `as_flattened_mut()` are one array, `new Array(3).fill([0, 0])`, so a change shows in each",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                    mutated.insert(*row);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_rows_apart.rs$"],
+  },
 ];

@@ -601,6 +601,14 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || tcx.crate_name(id.krate) == sym::core && std_path(tcx, id) == "std::mem::take"
 }
 
+/// Is `id` a slice of arrays' `as_flattened_mut`, a `&mut` to the items of
+/// each array, which it changes through?
+pub(crate) fn flattens_mut(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate) == sym::core
+        && tcx.item_name(id).as_str() == "as_flattened_mut"
+        && tcx.inherent_impl_of_assoc(id).is_some()
+}
+
 /// Is `id` std's `FromStr`, which has no diagnostic item to know it by?
 pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
