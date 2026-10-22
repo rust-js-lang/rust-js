@@ -1,4 +1,4 @@
-// docs/limitations.md is kept true: each item it says is refused at compile
+// docs/guide/limitations.md is kept true: each item it says is refused at compile
 // time ends with an example, compiled here as a program's `main`. One that
 // compiles, a limitation lifted, fails this, and says to take its line out.
 
@@ -9,7 +9,7 @@ import { buildCompiler, compiler, fixture, root } from "./support";
 
 /** Each `- item: \`example\`` line of the page, its item and its example. */
 function examples(): { item: string; example: string }[] {
-  const page = readFileSync(join(root, "docs/limitations.md"), "utf8");
+  const page = readFileSync(join(root, "docs/guide/limitations.md"), "utf8");
   return [...page.matchAll(/^- (.+?): `([^`]+)`$/gm)].map((m) => ({ item: m[1], example: m[2] }));
 }
 
@@ -18,7 +18,7 @@ test("the limitations page has examples to check", () => {
 });
 
 for (const { item, example } of examples()) {
-  test(`refused, as docs/limitations.md says: ${item}`, () => {
+  test(`refused, as docs/guide/limitations.md says: ${item}`, () => {
     buildCompiler();
     const dir = fixture("limitation");
     writeFileSync(join(dir, "main.rs"), `#![allow(unused)]\nfn main() {\n${example}\n}\n`);
@@ -27,7 +27,7 @@ for (const { item, example } of examples()) {
     // Refused by rust-js, not rustc's error of an example written wrong.
     expect(
       [result.exitCode === 0, stderr.includes("rust-js does not support")],
-      result.exitCode === 0 ? `it compiles: take "${item}" out of docs/limitations.md` : stderr,
+      result.exitCode === 0 ? `it compiles: take "${item}" out of docs/guide/limitations.md` : stderr,
     ).toEqual([false, true]);
   });
 }

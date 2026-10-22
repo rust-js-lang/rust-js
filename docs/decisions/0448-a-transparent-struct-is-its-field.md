@@ -77,4 +77,4 @@ from_bytes_ref(bytes) {
 ## Consequences
 
 - `ptr::eq` of a `&T` and the `&Wrapper` made from it is `false`.
-- A `&mut` transmute is listed in [the limitations](../limitations.md).
+- A `&mut` transmute is listed in [the limitations](../guide/limitations.md).

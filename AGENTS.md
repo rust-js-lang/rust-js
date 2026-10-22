@@ -199,6 +199,23 @@ well it runs.
 - **A port is faithful**: the same behavior, and output as close to the
   original as its Rust allows.
 
+## The guide is how rust-js is used
+
+[The guide](docs/guide/README.md) says how to write a JavaScript app in
+rust-js as rust-js is today: what each Rust construct becomes, how to bind
+a JavaScript API, how to export one, what's refused. It's the one place
+that answers "what do I write?"; the decisions say why, as they were made,
+and a later one may have changed an earlier one.
+
+- **Consult it before writing Rust for rust-js**, a port above all: write
+  what the guide says, the way it says. Where the guide has no answer, or
+  its answer doesn't work, that's a gap in rust-js or in the guide: fix
+  it, never work around it.
+- **Keep it true in the same commit.** A change that adds, amends or
+  supersedes a decision, or changes what a program writes or becomes,
+  updates the guide's page that says so. A guide that disagrees with the
+  code is a bug, as a failing test is.
+
 ## Making changes
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md): how a change is made, proved and

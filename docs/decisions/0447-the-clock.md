@@ -11,7 +11,7 @@ rest: the same times, differences and errors as std's.
 ## Context
 
 `SystemTime::now()` and `Instant::now()` were refused (listed in
-[the limitations](../limitations.md)). A UI times what it does, and code
+[the limitations](../guide/limitations.md)). A UI times what it does, and code
 shared with a server stamps what it makes: uuid's v1 and v7 read
 `SystemTime::now().duration_since(UNIX_EPOCH)`, chrono's `Utc::now()` reads
 it, and a frame's or a request's time is an `Instant`'s `elapsed()`. Each
@@ -102,4 +102,4 @@ by its value, as it was by its shape before.
 - `Instant::now()` counts from the epoch, `timeOrigin`, where a platform's
   counts from its boot; what an `Instant` is is opaque in std, so only
   its differences are read.
-- A time's `{:?}` is refused, listed in [the limitations](../limitations.md).
+- A time's `{:?}` is refused, listed in [the limitations](../guide/limitations.md).

@@ -66,7 +66,7 @@ cloned".
 
 ## Consequences
 
-- `docs/limitations.md` loses "A clone of a closure that changes what it
+- `docs/guide/limitations.md` loses "A clone of a closure that changes what it
   captured".
 - `FnDyns` is `ClosureFacts`, `analysis/closures.rs`: what the crate does
   with its closures.

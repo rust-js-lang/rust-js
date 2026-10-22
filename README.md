@@ -13,6 +13,10 @@ The goal is simple:
 
 > **Write Rust. Get *readable* JavaScript that works with every tool you already use.**
 
+**[Read the guide](docs/guide/README.md)**: how to write a JavaScript app in
+Rust.js, as it is today, from a first Vite app to bindings, React and the
+semantics.
+
 [Try the playground](https://rust-js-lang.github.io/rust-js/) — compilation runs
 entirely in your browser. The playground itself is written in Rust and
 compiled by Rust.js.
@@ -129,7 +133,7 @@ promise and lets the JavaScript event loop run the work without a Rust executor.
 It also means a future that is never awaited can still have effects.
 
 These differences belong in the design, documentation, and tests.
-[How Rust behaves in Rust.js](docs/semantics.md) lists each one, as it is
+[How Rust behaves in Rust.js](docs/guide/semantics.md) lists each one, as it is
 today, and the [design decisions](docs/README.md) record their reasons and
 costs. When a feature has no supported translation, compilation fails
 clearly.
@@ -167,9 +171,9 @@ Rust.js supports a growing subset of Rust aimed at JavaScript applications:
 
 Support is specific to each feature. For example, a `HashMap` iterates in
 insertion order, and `std::thread::spawn` and a `u128` in JSON are refused.
-[How Rust behaves in Rust.js](docs/semantics.md) says what each part of Rust
+[How Rust behaves in Rust.js](docs/guide/semantics.md) says what each part of Rust
 does today and how it differs from native Rust, and
-[the known limitations](docs/limitations.md) what's refused.
+[the known limitations](docs/guide/limitations.md) what's refused.
 
 ## Get started
 

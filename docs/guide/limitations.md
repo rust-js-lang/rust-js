@@ -3,7 +3,7 @@
 What rust-js doesn't do yet. It never writes JS that runs differently from
 Rust by accident: what it can't compile as Rust runs, it refuses, with an
 error that names it, `rust-js does not support .. yet`
-([ADR 0006](decisions/0006-errors-and-unsupported-features.md)). This page
+([ADR 0006](../decisions/0006-errors-and-unsupported-features.md)). This page
 lists what's refused. How a program that compiles behaves is
 [the semantics](semantics.md), area by area, and where it deliberately
 differs from native Rust, [its one list](semantics.md#differences-from-native-rust-in-one-list).
@@ -17,12 +17,13 @@ a person can meet adds one.
 Where to see more:
 
 - **rustc's own run-pass tests**: each in scope that fails is in
-  [`test/rustc-known-failures.txt`](../test/rustc-known-failures.txt), with
-  its first error ([ADR 0089](decisions/0089-rustc-tests.md)). Most need
+  [`test/rustc-known-failures.txt`](../../test/rustc-known-failures.txt), with
+  its first error ([ADR 0089](../decisions/0089-rustc-tests.md)). Most need
   addressable memory, below.
-- **Crates from crates.io**: which compile and run, and what stops the rest,
-  in [the crate corpus](crate-corpus.md).
-- **React and JSX**: [their own page](jsx.md).
+- **Crates from crates.io**: how they compile, and what's refused, in
+  [Crates from crates.io](libraries/crates-io.md); which compile and run,
+  and what stops the rest, in [the crate corpus](../crate-corpus.md).
+- **React and JSX**: [their own pages](README.md#react).
 
 ## Memory and unsafe code
 
@@ -31,9 +32,11 @@ at an address. rust-js gives raw pointers, `transmute` and the like the
 meaning Rust's have where it can model them: a raw pointer to a local or
 into an array, its `add` and `offset_from`, a `transmute` between types of
 numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
-or between a `#[repr(transparent)]` struct and its field, by value or
-through a reference, `slice::from_raw_parts` of an array's pointer. What reads memory by where
-it is, it refuses:
+`slice::from_raw_parts` of an array's pointer. A `#[repr(transparent)]`
+struct is its field, so a `transmute` between them, by value or through
+either reference, is the value itself
+([ADR 0584](../decisions/0584-a-transparent-struct-is-its-field.md)). What
+reads memory by where it is, it refuses:
 
 - A raw address of a `static`, or a `&mut` to a `static mut`: `static mut N: u32 = 0; let r = unsafe { &mut *std::ptr::addr_of_mut!(N) }; *r += 1;`
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
@@ -43,13 +46,13 @@ depends on what the program does:
 
 - A `TypeId`'s hash shown, which rust-js doesn't keep. Only an assertion
   that fails shows one: `assert_eq!` of two compiles. A pointer's address
-  is shown, a number of rust-js's own (ADR 0562).
+  is shown, a number of rust-js's own ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md)).
 - Reading through a pointer with no place, an integer made a pointer, or
   the address of a value JS holds as itself, a number reached through a
   `&`.
 - A union's field read while it holds one whose bytes JS has none of, a
   `&str`'s or a `String`'s; plain data's bytes read as another type's
-  (ADR 0562).
+  ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md)).
 - A pointer to what has no bytes, a `String`, read as bytes; a pointer
   stepped outside an array or into what JS holds as a copy.
 
@@ -62,11 +65,13 @@ depends on what the program does:
 - `size_of_val` of a value without one size, a `dyn`'s: `let b: Box<dyn std::fmt::Debug> = Box::new(5u64); println!("{}", std::mem::size_of_val(&*b));`
 - A map key whose `PartialEq` is the crate's own: `use std::collections::HashMap; #[derive(Hash)] struct K(u32); impl PartialEq for K { fn eq(&self, o: &K) -> bool { self.0 % 10 == o.0 % 10 } } impl Eq for K {} let mut m = HashMap::new(); m.insert(K(1), 1); println!("{}", m.contains_key(&K(11)));`
 - A `&mut` to an object given for a type parameter inside what generic code takes or gives, an `Option`, which it has as a box and its caller as the object: `fn some<D>(d: Option<D>) -> Option<D> { d } let mut v = vec![1]; if let Some(r) = some(Some(&mut v)) { r.push(2); }`
+- A `RefCell`'s guard mapped to part of what it holds, `Ref::map` or `RefMut::map`: `let c = std::cell::RefCell::new((1, 2)); let r = std::cell::Ref::map(c.borrow(), |p| &p.0); println!("{}", *r);`
 - A `&mut` to an object given for a type parameter that's a closure's parameter: `fn apply<D, F: Fn(D) -> usize>(d: D, f: F) -> usize { f(d) } let mut v = vec![1]; println!("{}", apply(&mut v, |w: &mut Vec<i32>| w.len()));`
 
 ## Iterators and collections
 
 - A clone of a lazy iterator generic code makes where its source isn't bound by `Clone`: `fn doubled<I: Iterator<Item = i32>>(it: I) -> std::iter::Map<I, fn(i32) -> i32> { it.map(|x| x * 2) } let d = doubled(1..4); let e = d.clone(); println!("{:?} {:?}", d.count(), e.count());`
+- A collection of the crate's given where any `IntoIterator` goes, which wouldn't call its `into_iter`: `struct Cart(Vec<u32>); impl IntoIterator for Cart { type Item = u32; type IntoIter = std::vec::IntoIter<u32>; fn into_iter(self) -> Self::IntoIter { self.0.into_iter() } } let mut v = vec![1]; v.extend(Cart(vec![2])); println!("{v:?}");`
 - Looking a key up by what the crate's own `Borrow` gives: `use std::borrow::Borrow; use std::collections::HashMap; #[derive(PartialEq, Eq, Hash)] struct K(String); impl Borrow<str> for K { fn borrow(&self) -> &str { &self.0 } } let mut m = HashMap::new(); m.insert(K("a".into()), 1); println!("{:?}", m.get("a"));`
 
 ## Numbers and text
@@ -76,14 +81,14 @@ depends on what the program does:
 
 ## Formatting
 
-- A placeholder's options, a width or `{:x?}`, for a `dyn Debug`, which is the string it shows already (ADR 0060): `let b: Box<dyn std::fmt::Debug> = Box::new(31u8); println!("{:x?}", b);`
+- A placeholder's options, a width or `{:x?}`, for a `dyn Debug`, which is the string it shows already ([ADR 0060](../decisions/0060-debug.md)): `let b: Box<dyn std::fmt::Debug> = Box::new(31u8); println!("{:x?}", b);`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
 
 ## Hashing
 
 std's hashers and a crate's own hash as native Rust's
-([ADR 0463](decisions/0463-hashing-is-stds.md)); a `HashMap` or a `HashSet`
-keys by value and never hashes ([ADR 0121](decisions/0121-value-keys.md)).
+([ADR 0463](../decisions/0463-hashing-is-stds.md)); a `HashMap` or a `HashSet`
+keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 
 - A `BuildHasher`, `RandomState`'s: `use std::hash::BuildHasher; let s = std::hash::RandomState::new(); println!("{}", s.hash_one(5u32) == s.hash_one(5u32));`
 - `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
@@ -122,6 +127,6 @@ serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
 
 ## Platforms and builds
 
-- Releases are for macOS on Apple silicon ([the changelog](../CHANGELOG.md)).
-- What else isn't built yet is in [the architecture's "Not yet"](architecture.md#not-yet)
-  and [the roadmap](../ROADMAP.md).
+- Releases are for macOS on Apple silicon ([the changelog](../../CHANGELOG.md)).
+- What else isn't built yet is in [the architecture's "Not yet"](../architecture.md#not-yet)
+  and [the roadmap](../../ROADMAP.md).

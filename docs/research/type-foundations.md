@@ -85,7 +85,7 @@ is its payload, told apart by `typeof` and `instanceof` (`docs/manual/variant.md
 (0030, 0051, with the same nested-`None` box), enums with fields as
 ReScript's tagged objects (0033), untagged enums (0214), 32-bit integers
 wrapped and 64-bit ones `BigInt` (0011, 0086), a JS object type as a struct
-of a `JsObject` (0111). `docs/semantics.md` summarizes them.
+of a `JsObject` (0111). `docs/guide/semantics.md` summarizes them.
 
 ## Layer 1: the JS standard library, and the escape hatch
 
@@ -114,7 +114,7 @@ Typed arrays share one type per element kind, so a `Uint8Array.t` is an
 **rust-js.** The `js` crate (`builtins/src/lib.rs`, ADR 0102): `JsObject`,
 `Promise<T>`, `JsError`, `ArrayBuffer`, `Uint8Array`, `RegExp`, timers,
 `object::from_entries`. There's no general unknown value and no dynamic
-property access. A binding is trusted as declared (`docs/semantics.md`),
+property access. A binding is trusted as declared (`docs/guide/semantics.md`),
 `link_name = "this"` is an unchecked cast, and `&'static JsObject` is an
 opaque object.
 

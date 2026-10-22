@@ -11,7 +11,7 @@ gives it.
 ## Context
 
 `std::pin::pin!(fut)` and `std::future::ready(v)` were refused, both listed
-in docs/limitations.md. Each is common in async Rust: `pin!` to await or
+in docs/guide/limitations.md. Each is common in async Rust: `pin!` to await or
 poll a future held on the stack, `ready` for a value where a future is
 asked.
 

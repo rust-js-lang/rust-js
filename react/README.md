@@ -36,7 +36,7 @@ in the JS.
 imported as any macro is, `use react::jsx;`.
 Tags and attributes look like JSX; expressions inside braces are Rust.
 Text is quoted (`{"Hello"}`), and handlers are Rust closures. See the
-[syntax guide](../docs/jsx.md) for components, spreads and current limits.
+[JSX guide](../docs/guide/react/jsx.md) for components, spreads and current limits.
 
 **Use JSX to construct elements.** Element builders and `component(...)` are
 compiler plumbing; direct use produces an error. Hooks, styles and React DOM

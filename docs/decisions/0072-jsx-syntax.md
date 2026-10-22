@@ -75,7 +75,7 @@ is not expanded. Stock rust-analyzer does not know this extension. Components
 with generic props, memo and context remain expressible through typed bindings.
 Named component props cannot be mixed with a spread: use an explicit Rust
 struct update. The syntax reserves `jsx!` and a component's name in the macro
-namespace. See the [syntax guide](../jsx.md) for the complete current boundary.
+namespace. See the [JSX guide](../guide/react/jsx.md) for the complete current boundary.
 
 Tests cover handwritten-style output, runtime rendering, evaluation order,
 props errors, module loading, original source lines, native/WASM output parity,

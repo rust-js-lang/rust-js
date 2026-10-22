@@ -7,12 +7,13 @@ sentence, borrowed from ReScript:
 > language and JS disagree, pick the JS behavior that keeps the output small
 > and readable, and write that choice down.
 
-This folder is where we write those choices down. How a disagreement is
+To write an app in rust-js, read [the guide](guide/README.md): it says
+what's current. This folder is where we write the choices down, and why. How a disagreement is
 decided, by what the program can observe: [0262](decisions/0262-when-rust-and-js-disagree.md).
 
 For what Rust does under rust-js today, read
-[How Rust behaves in rust-js](semantics.md), and for what it refuses,
-[the known limitations](limitations.md). The decisions below record why,
+[How Rust behaves in rust-js](guide/semantics.md), and for what it refuses,
+[the known limitations](guide/limitations.md). The decisions below record why,
 as each was made: a later one may lift an earlier one's "not yet" or "still
 an error", and the page says what's current.
 

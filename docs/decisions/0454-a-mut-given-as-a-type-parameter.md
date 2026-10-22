@@ -76,7 +76,7 @@ $assign(items, items$1.value);
 - A `&mut` to an object given for a type parameter is boxed and copied
   back, `$assign(items, items$1.value)`, where the object was given before.
 - `Option<D>` of `Some(&mut v)`, which generic code passed through as the
-  object, is refused, listed in [the limitations](../limitations.md).
+  object, is refused, listed in [the limitations](../guide/limitations.md).
 
 ## Amendment: a trait method's `&mut` result through a dictionary
 

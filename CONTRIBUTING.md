@@ -12,7 +12,7 @@ to set up and run its checks is there too.
 behaves as the Rust does, or the compiler refuses the program with a clear
 error that names what isn't supported. Never emit JavaScript that runs but
 behaves differently, except for the deliberate differences listed in
-[the semantics](docs/semantics.md), each documented and tested.
+[the semantics](docs/guide/semantics.md), each documented and tested.
 
 - **Never bypass rustc's checks** to make a feature compile, and never
   publish partial output when compilation fails.
@@ -94,7 +94,8 @@ explain why that coupling is necessary.
 
 ## Making a change
 
-Read the relevant [design decisions](docs/README.md), including later
+Read [the guide](docs/guide/README.md), which says how rust-js is used today,
+the relevant [design decisions](docs/README.md), including later
 amendments, the [architecture](docs/architecture.md), which says where a
 change goes, and the existing implementation and tests. Follow the
 established phases and reuse evaluation-order machinery. Verify uncertain
@@ -119,12 +120,18 @@ library behavior from local source.
    [docs/README.md](docs/README.md). Explain the choice, its reasons, and the
    alternatives and costs considered. A change to an existing decision amends
    it, saying what changed and why. A difference from native Rust also goes in
-   [the semantics](docs/semantics.md), with its section's other differences
+   [the semantics](docs/guide/semantics.md), with its section's other differences
    and in the list at its end.
-6. **Track progress.** Update [roadmap](ROADMAP.md) items when their
+6. **Update the guide.** [The guide](docs/guide/README.md) is how rust-js
+   is used today, the one place that says what a program writes and what it
+   becomes. A change that adds, amends or supersedes a decision, or changes
+   what a construct compiles to, a binding's shape, a diagnostic or a
+   build step, updates the page that says so, its examples recompiled, in
+   the same commit. A decision says why; the guide says what's current.
+7. **Track progress.** Update [roadmap](ROADMAP.md) items when their
    acceptance criteria are met, with evidence;
    [the crate corpus](docs/crate-corpus.md) when a change moves it; and
-   [the known limitations](docs/limitations.md) when a change lifts a
+   [the known limitations](docs/guide/limitations.md) when a change lifts a
    refusal a person can meet, or adds one: `test/limitations.test.ts`
    fails on an example there that compiles.
 

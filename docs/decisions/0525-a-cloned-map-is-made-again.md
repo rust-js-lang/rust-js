@@ -47,7 +47,7 @@ const copy = $clone(it);
 - **A closure that writes nothing it took is shared**: `clone_shares` asks
   what its captures do, not its kind, which a `map`'s bound makes `FnMut`.
 
-Still refused, in [the limitations](../limitations.md): a clone of one that
+Still refused, in [the limitations](../guide/limitations.md): a clone of one that
 keeps a count of its own, an `enumerate`'s, a `take`'s or a `skip`'s, whose
 JS helper hides it; one of items with a destructor, or lent; and one
 generic code makes where its source isn't bound by `Clone`, which it
@@ -62,7 +62,7 @@ field holds, against native Rust.
 
 ## Consequences
 
-- `docs/limitations.md` loses "A clone of a lazy iterator", and gains its
+- `docs/guide/limitations.md` loses "A clone of a lazy iterator", and gains its
   narrower remains.
 - Mutations stop following impl bounds, revealing an `impl Clone`, or
   matching generic code's closure; share a source or a closure; and make
