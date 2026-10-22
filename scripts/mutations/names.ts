@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "    KEPT.contains(&name) || GLOBALS.contains(&name)\n}",
     tests: ["test/lowering-names.test.ts", "-t", "nothing it shadows"],
   },
+  {
+    name: "global-map-unnamed-apart",
+    breaks: "a Rust name `Map` keeps it, hiding the global the output reads, `new Map(..)`",
+    file: "src/names.rs",
+    find: "    \"Map\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^js_global_names.rs$"],
+  },
+  {
+    name: "global-console-unnamed-apart",
+    breaks: "a Rust function `console` keeps its name, hiding the global `console.log` reads",
+    file: "src/names.rs",
+    find: "    \"console\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^js_global_names.rs$"],
+  },
 ];

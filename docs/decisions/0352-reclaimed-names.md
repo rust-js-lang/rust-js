@@ -68,3 +68,14 @@ react.dev's MDXComponents writes `function Math({children})`, which was
 reads it by, and one in a module that reads the global, `Math.imul`,
 stays apart. A lowering test has all three; mutations keep the name
 apart, and reclaim an exported one.
+
+## Amendment: every JS global the output may read
+
+The names named apart were `Math`, `Error`, `String` and a few more, so a
+Rust name `console`, `Map`, `Set`, `Array` or `TextEncoder` kept its name
+and hid the global the output reads: `const console = 3; console.log(..)`,
+`const Array = new Array(3)` (#142). `GLOBALS` is every ECMAScript global
+and the hosts' rust-js reads, `console`, `TextEncoder`, `globalThis` and
+the rest; reclaiming gives the name back where the module never reads the
+global, so a program that doesn't sees no change. Held by
+`test/corpus/js_global_names.rs`.
