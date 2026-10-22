@@ -27,7 +27,7 @@ function sorted(items, compare, TSort) {
 }
 
 function smallest(items, k, TOrd, TClone, TSort) {
-  $selectNthUnstable(items, k, (a, b) => TOrd.cmp(a, b) < 0, TSort);
+  $selectNthUnstable(items, k, (a, b) => TOrd.cmp(a, b) < 0, TSort, true);
   return $slice(items, 0, k).map((item) => TClone.clone(item));
 }
 

@@ -227,7 +227,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if self.recognition().own_clone_from(item) {
             let place = Expr::index(Expr::var("items"), Expr::var("i"));
-            let target = match self.is_boxable(item) {
+            let target = match self.handles_mut(item) {
                 true => Expr::handle(place),
                 false => place,
             };
@@ -346,7 +346,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut list = vec![items];
         list.extend(index);
         list.extend([is_less, kind]);
-        if select && self.is_boxable(item) {
+        if select && self.handles_mut(item) {
             list.push(Expr::bool(true));
         }
         let name = if select { "$selectNthUnstable" } else { "$sortUnstable" };
@@ -435,7 +435,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         item: ty::Ty<'tcx>,
     ) -> Expr {
         let mut list = vec![items, start, end.unwrap_or_else(Expr::undefined), f];
-        if self.is_boxable(item) {
+        if self.handles_mut(item) {
             list.push(Expr::bool(true));
         }
         Expr::call(Expr::helper("$extractIf"), list)
@@ -489,7 +489,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, Some((n, None))) => list.extend([n, Expr::bool(true)]),
             (Some(last), _) => {
                 list.push(Expr::bool(last));
-                if mutable && self.is_boxable(item) {
+                if mutable && self.handles_mut(item) {
                     list.push(Expr::bool(true));
                 }
             }
@@ -665,7 +665,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::SplitEndMut { last } => {
                 let mut list = vec![arg(), Expr::bool(last)];
-                if self.is_boxable(item()) {
+                if self.handles_mut(item()) {
                     list.push(Expr::bool(true));
                 }
                 self.view_call("$splitEndMut", list)
@@ -693,7 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::GetDisjointMut { unchecked } => {
                 let index = generic_args.type_at(1);
                 let mut list = vec![arg(), arg()];
-                let handle = index.is_usize() && self.is_boxable(item());
+                let handle = index.is_usize() && self.handles_mut(item());
                 let inclusive = self.range_kind(index) == Some(RangeKind::Inclusive);
                 if handle || inclusive {
                     list.push(Expr::bool(handle));
@@ -882,21 +882,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if at {
                     given.push(arg());
                 }
-                if self.is_boxable(item()) {
+                if self.handles_mut(item()) {
                     given.push(Expr::bool(true));
                 }
                 helper(if at { "$insertMut" } else { "$pushMut" }, given)
             }
             SliceOp::PushFrontMut => {
                 let mut given = vec![arg(), arg()];
-                if self.is_boxable(item()) {
+                if self.handles_mut(item()) {
                     given.push(Expr::bool(true));
                 }
                 helper("$pushFrontMut", given)
             }
             SliceOp::DequeInsert { mutable } => {
                 let mut given = vec![arg(), arg(), arg()];
-                if mutable && self.is_boxable(item()) {
+                if mutable && self.handles_mut(item()) {
                     given.push(Expr::bool(true));
                 }
                 helper("$dequeInsert", given)
@@ -904,13 +904,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::DequeSwapRemove { front } => helper("$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)]),
             // What `retain_mut` doesn't keep, dropped as it goes (ADR 0499).
             SliceOp::RetainMut => {
-                let handles = self.is_boxable(item());
+                let handles = self.handles_mut(item());
                 let mut given = vec![arg(), arg(), Expr::bool(handles)];
                 given.extend(self.std_drop_function(item(), span)?);
                 helper("$retainMut", given)
             }
             SliceOp::PopFrontIf => {
-                let handles = self.is_boxable(item());
+                let handles = self.handles_mut(item());
                 helper("$popFrontIf", vec![arg(), arg(), Expr::bool(handles)])
             }
             SliceOp::CopyWithin => unreachable!("lowered above"),

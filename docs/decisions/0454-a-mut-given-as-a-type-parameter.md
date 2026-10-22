@@ -117,3 +117,18 @@ the object, is taken off, by `held_in_box`, the one question
 `IntoIterator`'s entries ask too (ADR 0457). The
 `mut_ref_to_object_impl` corpus case adds through such an impl where its
 type is known and through generic code, against native Rust.
+
+## Amendment: std's `&mut` of a type parameter's item is a handle
+
+Where std gives a closure a `&mut` of an item, `retain_mut`'s,
+`HashMap::retain`'s value, `extract_if`'s, or gives one back,
+`select_nth_unstable`'s, `get_disjoint_mut`'s, an entry's `get_mut`, it
+was a handle only of a value JS can't change in place, `is_boxable`: of
+a type parameter's item, the item itself, though the closure made at the
+call, a `&mut i32`'s, writes `n.value`, and a struct's reads its
+handle's, `(x0) => f(x0.value)` (#131). `handles_mut` is the one answer:
+of a value JS can't change in place, or of a type parameter, whose `&mut`
+generic code reads through its `value`. Each such site in `slice.rs` and
+`map.rs` asks it, held by the architecture test, and so does a guard of
+a type parameter (ADR 0328). Held by `test/corpus/generic_retain_handles.rs`
+and the mutation `type-parameter-mut-not-handle`.

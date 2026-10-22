@@ -886,6 +886,16 @@ test("a local written again is written_again's alone", () => {
   expect(counting).toEqual([]);
 });
 
+// Whether a `&mut` of an item std gives a closure, or gives back, is a
+// handle is `handles_mut`'s: a value JS can't change in place, or a type
+// parameter's, which generic code boxes (ADR 0454). `retain_mut` in generic
+// code asked `is_boxable` alone, gave a closure that writes `x.value` the
+// item itself, and threw (#131).
+test("a std call's `&mut` handle is handles_mut's alone", () => {
+  const asking = ["src/lower/std_types/slice.rs", "src/lower/std_types/map.rs"].filter((file) => /\bis_boxable\(/.test(read(file)));
+  expect(asking).toEqual([]);
+});
+
 // Whether an arrow is only the function it passes its arguments on to,
 // `(x) => f(x)`, `() => { f(); }`, is `iterators::passed_on`'s, which an
 // array method's callback (ADR 0279) and an event's handler (ADR 0198) both

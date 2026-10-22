@@ -19,10 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("a guard")
         };
         let guarded = args.types().next().expect("what it guards");
-        // A type parameter's `&mut` is read through its `value` too, as a box's.
-        match self.cell_dyn_trait(guarded).is_some()
-            || (mutable && (self.is_boxable(guarded) || self.is_unknown(guarded)))
-        {
+        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.handles_mut(guarded)) {
             true => guard,
             false => Expr::held(guard),
         }

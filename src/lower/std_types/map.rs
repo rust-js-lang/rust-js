@@ -479,7 +479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match set {
                     true => map_ops("$retainSet", with_drops(vec![m, f, entries], vec![keys_drop])),
                     false => {
-                        let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));
+                        let handles = types.get(1).is_some_and(|&value| self.handles_mut(value));
                         let list = vec![m, f, entries, Expr::bool(handles)];
                         map_ops("$retainMap", with_drops(list, vec![values_drop, keys_drop]))
                     }
@@ -620,7 +620,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Entry => map_ops("$entry", with_drops(vec![arg(), arg()], vec![keys_drop])),
             MapOp::VacantInsert | MapOp::AndModify => {
                 let mut list = vec![arg(), arg()];
-                if types.get(1).is_some_and(|&value| self.is_boxable(value)) {
+                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {
                     list.push(Expr::bool(true));
                 }
                 let name = match op {
@@ -636,7 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::EntryKey => Expr::index(arg(), Expr::int(1)),
             MapOp::EntryGet { mutable } => {
                 let mut list = vec![arg()];
-                if mutable && types.get(1).is_some_and(|&value| self.is_boxable(value)) {
+                if mutable && types.get(1).is_some_and(|&value| self.handles_mut(value)) {
                     list.push(Expr::bool(true));
                 }
                 map_ops("$entryGet", list)
@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => (m.clone(), m),
         };
         let handles = !set
-            && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
+            && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.handles_mut(value)));
         Ok(Expr::call(
             Expr::helper("$mapExtractIf"),
             vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
@@ -726,7 +726,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let cmp = self.cmp_fn(key, false, span)?;
         // `range_mut` of numbers or strings: each value a handle on it, as
         // `iter_mut`'s is (ADR 0152).
-        let handles = mutable && self.is_boxable(map.type_at(1));
+        let handles = mutable && self.handles_mut(map.type_at(1));
         let m = match handles && !m.reads_same() {
             true => self.spill("map", m, out),
             false => m,

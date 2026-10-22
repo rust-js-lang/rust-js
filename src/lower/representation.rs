@@ -232,6 +232,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// be the object itself: changes through it change the one object (ADR 0025).
     /// A value that a `&mut` to must be a box to change (ADR 0072): one that
     /// isn't a JS object, as a `String`, a number or a fieldless enum is.
+    /// Is a `&mut` of a `ty` a handle, `{ value }`, where std gives one to a
+    /// closure, `retain_mut`'s, or a guard derefs to one: of a value JS can't
+    /// change in place, `is_boxable`, or of a type parameter, which generic
+    /// code reads through its `value`, a box's (ADR 0454).
+    pub(super) fn handles_mut(&self, ty: Ty<'tcx>) -> bool {
+        self.is_boxable(ty) || self.is_unknown(ty)
+    }
+
     pub(super) fn is_boxable(&self, ty: Ty<'tcx>) -> bool {
         // What an `impl Trait` is, a returned closure's the closure.
         let ty = self.reveal(ty);

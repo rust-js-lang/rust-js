@@ -557,4 +557,12 @@ export const mutations: Mutation[] = [
     replace: "        // A `Pin` is its pointer",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_mut_lent.rs$"],
   },
+  {
+    name: "type-parameter-mut-not-handle",
+    breaks: "a `&mut` of a type parameter's item std gives a closure, generic `retain_mut`'s, is the item, where the closure made at the call writes its handle's `value`",
+    file: "src/lower/representation.rs",
+    find: "        self.is_boxable(ty) || self.is_unknown(ty)\n",
+    replace: "        self.is_boxable(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_retain_handles|refcell_generic_mut_method).rs$"],
+  },
 ];
