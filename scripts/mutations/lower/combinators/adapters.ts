@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
   },
+  {
+    name: "map-while-fused",
+    breaks: "`map_while` is a map then a `take_while`, which stays ended after a `None`, where Rust's `MapWhile` steps on",
+    file: "src/lower/combinators/adapters.rs",
+    find: "Expr::call(Expr::helper(\"$lazyMapWhile\"), vec![items, next(), present()])",
+    replace: "Expr::call(Expr::helper(\"$lazyTakeWhile\"), vec![method(items, \"map\", vec![next()]), present()])",
+    tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
+  },
 ];

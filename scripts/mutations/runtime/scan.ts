@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "scan-past-none",
     breaks: "`scan` goes on past its first `None`",
     file: "src/runtime/scan.js",
-    find: "    if (next === undefined) return;\n",
-    replace: "    if (next === undefined) continue;\n",
+    find: "    source.return?.();\n    return { done: true, value: undefined };\n  };\n  it.return = () => {",
+    replace: "    return it.next();\n  };\n  it.return = () => {",
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {
@@ -17,5 +17,13 @@ export const mutations: Mutation[] = [
     find: "  const state = handle ? { value: init } : init;",
     replace: "  const state = { value: init };",
     tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
+  },
+  {
+    name: "scan-fused",
+    breaks: "`scan` stays ended after a `None`, where Rust's `Scan` steps its source on",
+    file: "src/runtime/scan.js",
+    find: "    if (next !== undefined) return { done: false, value: next };\n",
+    replace: "    if (next !== undefined) return { done: false, value: next };\n    it.next = () => ({ done: true, value: undefined });\n",
+    tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
   },
 ];

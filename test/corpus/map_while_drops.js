@@ -5,7 +5,7 @@ import {
   $debugStr,
   $dropEach,
   $iter,
-  $lazyTakeWhile,
+  $lazyMapWhile,
   $some,
   $someValue,
   $tryFromInt,
@@ -21,32 +21,33 @@ function loudDrop_drop(loud) {
 
 function mapped() {
   const v = [1, 2, -3, 4];
-  const pos = $lazyTakeWhile(
-    v.values().map((x) => {
+  const pos = $lazyMapWhile(
+    $iter(v),
+    (x) => {
       const result = $tryFromInt(x, 0, 4294967295);
       return result.TAG === "Ok" ? result._0 : undefined;
-    }),
+    },
     (item) => item != null,
   ).toArray();
   console.log(`[${pos.join(", ")}]`);
-  const nested = $lazyTakeWhile(
-    [1, $some(undefined), undefined, 2].values().map((x) => x),
+  const nested = $lazyMapWhile(
+    $iter([1, $some(undefined), undefined, 2]),
+    (x) => x,
     (item) => item != null,
   )
     .map($someValue)
     .toArray();
   console.log(`[${nested.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
-  const words = $lazyTakeWhile(
-    "a b  c"
-      .split(" ")
-      .values()
-      .map((w) => (w ? w : undefined)),
+  const words = $lazyMapWhile(
+    $iter("a b  c".split(" ")),
+    (w) => (w ? w : undefined),
     (item) => item != null,
   ).toArray();
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const louds = [[1], [2], [0], [3]];
-  const kept = $lazyTakeWhile(
-    $closing($iter(louds), $dropEach(loudDrop_drop)).map((l) => {
+  const kept = $lazyMapWhile(
+    $closing($iter(louds), $dropEach(loudDrop_drop)),
+    (l) => {
       const value = l[0] > 0;
       const value$1 = () => l[0];
       try {
@@ -54,7 +55,7 @@ function mapped() {
       } finally {
         loudDrop_drop(l);
       }
-    }),
+    },
     (item) => item != null,
   ).toArray();
   console.log(`[${kept.join(", ")}]`);
