@@ -126,3 +126,13 @@ A handle on a map's value nothing reads, of an `or_insert` whose `&mut`
 goes unused, isn't made: `$mutGet` only makes a value of what it's
 given, one of the runtime's pure helpers. `entry_and_modify` runs it
 against native Rust, of a `HashMap` and a `BTreeMap`.
+
+## Amendment: a set's operators
+
+`&a - &b`, `&a | &b`, `&a & &b` and `&a ^ &b` of a `HashSet` or a
+`BTreeSet` were refused as calls of `Sub::sub` and the like (#120,
+#156). Each is its algebra's method, collected: `new Set($setAlgebra(a,
+b, "difference"))`, a B-tree's in its order. Which operator a std trait
+is, recognition asked by two lists of its own beside `value_operator`'s
+and `assign_operator`'s; it asks those, and the architecture test holds
+the one list. Held by `test/corpus/set_operators.rs`.

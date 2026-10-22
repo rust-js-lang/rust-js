@@ -607,7 +607,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 372],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 761],
-  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 285],
+  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 267],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 639],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 316],
@@ -622,6 +622,15 @@ test("the dispatchers of what's called don't grow", () => {
   for (const [file, signature, cap] of dispatchers) {
     expect(length(file, signature), signature).toBe(cap);
   }
+});
+
+// Which operator a std trait is, `Add`'s `+`, is one list's, `value_operator`'s
+// and `assign_operator`'s, which the rest ask: recognition wrote both
+// lists again, the second answer to the same question.
+test("an operator trait's operator is one list's", () => {
+  const listed = /\(LangItem::\w+, (?:Ok\()?BinOp::\w+/;
+  const writers = ["src/lower.rs", ...files("src/lower")].filter(file => listed.test(read(file)));
+  expect(writers).toEqual(["src/lower/recognition/traits.rs"]);
 });
 
 // Recognition is what the rest asks: it asks neither the destructors'

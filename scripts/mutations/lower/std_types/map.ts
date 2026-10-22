@@ -363,4 +363,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
+  {
+    name: "set-operator-items",
+    breaks: "`&a - &b` of sets is an array of the items, not a set",
+    file: "src/lower/std_types/map.rs",
+    find: "                    MapOp::SetOperator(_) => Expr::new_(Expr::var(\"Set\"), vec![items]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
+  },
 ];
