@@ -321,8 +321,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to write it: an object, or an iterator given as it is (ADRs 0147,
     /// 0411). The one answer, of `*r = v`, `$assign`, and of `mem::replace`
     /// and the like, `$take` (ADR 0553).
+    /// Not a guard's, whose object is the cell it guards: writing it in
+    /// place would write what the cell holds.
     pub(super) fn written_in_place(&self, ty: Ty<'tcx>) -> bool {
-        !self.is_cell_pointee(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))
+        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))
     }
 
     /// A `&mut` to a value JS can't change in place, as a value: a cell, a box

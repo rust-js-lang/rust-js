@@ -497,8 +497,8 @@ export const mutations: Mutation[] = [
     name: "given-iterator-written-refused",
     breaks: "an iterator given as it is isn't written in place, so `*b = b_orig.clone()` of a `&mut` to one, and `mem::replace` of one a closure captured, are refused",
     file: "src/lower/representation.rs",
-    find: "        !self.is_cell_pointee(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))",
-    replace: "        !self.is_cell_pointee(ty) && self.is_object(ty)",
+    find: "(self.is_object(ty) || self.iterator_given_as_it_is(ty))",
+    replace: "self.is_object(ty)",
     tests: ["test/corpus.test.ts", "-t", "^(replace_held_given_iterator|iterator_written_through).rs$"],
   },
   {
@@ -564,5 +564,13 @@ export const mutations: Mutation[] = [
     find: "        self.is_boxable(ty) || self.is_unknown(ty)\n",
     replace: "        self.is_boxable(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_retain_handles|refcell_generic_mut_method).rs$"],
+  },
+  {
+    name: "guard-written-in-place",
+    breaks: "`mem::swap` of two `RefCell` guards through `&mut`s swaps what the cells hold, where Rust swaps the guards",
+    file: "src/lower/representation.rs",
+    find: "        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (",
+    replace: "        !self.is_cell_pointee(ty) && (",
+    tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
   },
 ];

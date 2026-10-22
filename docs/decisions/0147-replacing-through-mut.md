@@ -132,3 +132,13 @@ but written in place, as std documents it's equivalent to. A crate's impl
 known to have its own is called. A clone of an array made where it's
 cloned, `$slice(v, 0, n)`'s, is that array (`clone_items`), as is one moved
 into a collection, `[..].map(f).into()`.
+
+## Amendment: a guard isn't written in place
+
+A `&mut` to an object is the object, and `mem::swap` and `mem::replace`
+of one write it in place, `$exchange(a, b)`. A `RefCell`'s or a lock's
+guard is the cell it guards, so `mem::swap(&mut x.borrow_mut(), &mut
+y.borrow_mut())` swapped what `x` and `y` held, where Rust swaps the
+guards (#150). A guard isn't written in place (`written_in_place`):
+two variables of guards swap as variables do, and a guard that isn't a
+variable's is refused. Held by `test/corpus/guard_swap_refused.rs`.
