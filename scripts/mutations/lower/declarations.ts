@@ -336,8 +336,8 @@ export const mutations: Mutation[] = [
     name: "cell-field-declared-any",
     breaks: "a `Cell` field is declared `any`, where it's the number it holds",
     file: "src/lower/declarations.rs",
-    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell) || self.plain_ref_cells.contains(&ty) =>",
-    replace: "                if self.plain_ref_cells.contains(&ty) =>",
+    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
+    replace: "                if super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
   {
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     "name": "plain-refcell-declared-cell",
     "breaks": "a field's `RefCell` held as its value is declared `{ value }`",
     "file": "src/lower/declarations.rs",
-    "find": "                if is_std_def(self.tcx, adt.did(), StdItem::Cell) || self.plain_ref_cells.contains(&ty) =>",
+    "find": "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
     "replace": "                if is_std_def(self.tcx, adt.did(), StdItem::Cell) =>",
     "tests": [
       "test/declarations.test.ts"

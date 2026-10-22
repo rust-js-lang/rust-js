@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     replace: "                true => variable.clone(),\n                false => variable,\n",
     tests: ["test/lowering.test.ts", "-t", "an insert in a thread-local's closure"],
   },
+  {
+    name: "nullable-field-unchecked",
+    breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
+    file: "src/lower/bindings.rs",
+    find: "                if is_nullable(tcx, field)\n                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
+    replace: "                if false\n                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
+  },
 ];

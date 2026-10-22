@@ -124,14 +124,17 @@ function main() {
   );
 
   // What a `Cell` or a `RefCell` holds, replaced or taken.
-  const count = { value: 5 };
-  const old = $cellReplace(count, 6);
-  const taken = $cellReplace(count, 0);
-  console.log(`${old} ${taken} ${count.value}`);
-  const label = { value: "x" };
-  const take = $cellReplace(label);
+  let count = 5;
+  const old = count;
+  count = 6;
+  const taken = count;
+  count = 0;
+  console.log(`${old} ${taken} ${count}`);
+  let label = "x";
+  const old$1 = label;
+  label = undefined;
   console.log(
-    `${take == null ? "None" : `Some(${$debugStr(take, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
+    `${old$1 == null ? "None" : `Some(${$debugStr(old$1, "'")})`} ${label == null ? "None" : `Some(${$debugStr(label, "'")})`}`,
   );
   const log = { value: [1] };
   const before = $cellReplace($borrowMut(log), [2, 3]);

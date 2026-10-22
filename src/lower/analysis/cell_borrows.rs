@@ -267,10 +267,14 @@ fn called<'tcx>(
     }
     // A borrow, of the cell its receiver is: a thread-local's by its key.
     // A thread-local's own, but its `with_borrow`, may change it.
+    let refcell = receiver.is_some_and(|(thir, r)| recognition.is_std_type(thir[r].ty.peel_refs(), StdItem::RefCell));
     let mutable = match recognition.classify(id, instance.args) {
         Some(Std::Borrow { mutable, .. } | Std::TryBorrow { mutable, .. } | Std::LocalBorrow { mutable }) => {
             Some(mutable)
         }
+        // A `RefCell`'s own write borrows it mutably while it runs. A
+        // `swap`'s other cell is lent, a cell whose borrows are counted.
+        Some(Std::CellReplace | Std::CellTake | Std::CellSwap | Std::CellReplaceWith) if refcell => Some(true),
         _ if recognition.asks_borrows(id) => Some(true),
         _ => None,
     };

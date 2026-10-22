@@ -5280,6 +5280,83 @@ pub fn numbers() -> bool {
   expect([lib.same(t, t), lib.same(t, lib.task(1)), lib.numbers()]).toEqual([true, false, false]);
 });
 
+// ADR 0585: a field's \`RefCell\` that \`replace\` and \`take\` write, each
+// holding it only while it swaps the value, is its value, as React's
+// scheduler's task's callback is: read, then written. One borrowed across
+// a \`replace\` is still counted, and the \`replace\` throws as Rust panics.
+test("a field's RefCell written by replace and take is its value", async () => {
+  const dir = fixture("refcell-field-replace");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Task {
+    callback: RefCell<Option<Box<dyn FnMut(u32) -> u32>>>,
+}
+
+pub fn task() -> Task {
+    Task { callback: RefCell::new(Some(Box::new(|n| n + 1))) }
+}
+
+pub fn run(task: &Task, n: u32) -> Option<u32> {
+    let callback = task.callback.take();
+    if let Some(mut callback) = callback {
+        let result = callback(n);
+        task.callback.replace(Some(Box::new(move |m| m * result)));
+        return Some(result);
+    }
+    None
+}
+
+pub fn cancelled(task: &Task) -> bool {
+    task.callback.borrow().is_none()
+}
+
+pub fn cancel(task: &Task) {
+    task.callback.replace(None);
+}
+
+pub struct Log {
+    lines: RefCell<Vec<String>>,
+}
+
+fn reset(log: &Log) -> usize {
+    log.lines.replace(Vec::new());
+    0
+}
+
+pub fn clash() -> usize {
+    let log = Log { lines: RefCell::new(vec![String::from("a")]) };
+    log.lines.borrow().len() + reset(&log)
+}
+
+#[derive(Default)]
+pub struct Items {
+    n: u32,
+}
+
+pub struct Bag {
+    items: RefCell<Items>,
+}
+
+pub fn emptied(bag: &Bag) -> u32 {
+    bag.items.take().n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const callback = task.callback;\n  task.callback = undefined;");
+  expect(js).toContain("export function cancel(task) {\n  task.callback = undefined;\n}");
+  expect(js).toContain("return task.callback == null;");
+  expect(js).toContain("return { callback: (n) => (n + 1) >>> 0 };");
+  // \`take\` runs a \`Default\` of the crate's while it holds the cell.
+  expect(js).toContain("$cellReplace($borrowMut(bag.items)");
+  const lib = await import(join(dir, "lib.js"));
+  const t = lib.task();
+  expect([lib.run(t, 1), lib.run(t, 3), lib.cancelled(t)]).toEqual([2, 6, false]);
+  lib.cancel(t);
+  expect([lib.cancelled(t), lib.run(t, 1)]).toEqual([true, undefined]);
+  expect(() => lib.clash()).toThrow("already borrowed");
+});
+
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where
 // it may not be: React's scheduler asks for \`setImmediate\`, then
 // \`MessageChannel\`, then \`setTimeout\`.

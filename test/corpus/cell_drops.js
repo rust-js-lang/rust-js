@@ -19,12 +19,14 @@ function main() {
     if (old$1 != null) {
       loudDrop_drop(old$1);
     }
-    const old = $cellReplace(c);
+    const old = c.value;
+    c.value = undefined;
     const value = (l) => l[0];
     try {
       const value$1 = old ? value(old) : undefined;
       console.log(`old ${value$1 == null ? "None" : `Some(${value$1})`}`);
-      const taken = $cellReplace(c);
+      const taken = c.value;
+      c.value = undefined;
       try {
         console.log(`taken ${!taken}`);
         const cell = c;

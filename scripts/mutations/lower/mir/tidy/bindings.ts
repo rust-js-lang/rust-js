@@ -380,4 +380,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^temporary_names_imported.rs$"],
     snapshots: true,
   },
+  {
+    name: "unread-read-kept",
+    breaks: "an old value a `replace` gave and nothing reads stays, `const old = task.callback;`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)\n",
+    replace: "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
+    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+  },
 ];

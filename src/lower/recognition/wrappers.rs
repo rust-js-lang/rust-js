@@ -337,6 +337,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether `T::default()` of `ty` is std's, which runs nothing of the
+    /// program's: `Option`'s, a number's, `Vec`'s; not a derive's.
+    pub(in crate::lower) fn std_default(&self, ty: Ty<'tcx>) -> bool {
+        let Some(default) = (self.tcx.get_diagnostic_item(sym::Default))
+            .and_then(|t| self.tcx.associated_item_def_ids(t).first().copied())
+        else {
+            return false;
+        };
+        let args = self.tcx.mk_args(&[ty.into()]);
+        matches!(
+            crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, default, args),
+            Ok(Some(instance)) if self.is_std(instance.def_id())
+        )
+    }
+
     /// A `RefCell`, a `Mutex` or an `RwLock`: what a guard borrows (ADR 0328).
     pub(in crate::lower) fn is_borrowed_cell(&self, ty: Ty<'tcx>) -> bool {
         [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]

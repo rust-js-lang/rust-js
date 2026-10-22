@@ -4,11 +4,23 @@
 use super::*;
 
 /// `const x = [loud(1), 2]` nothing reads: each part that does something, in
-/// turn, `loud(1);`, as the array, made here, is never seen; and `const x =
-/// f()`, what a call gave, its `fmt::Result` say: `f();`.
+/// turn, `loud(1);`, as the array, made here, is never seen; `const x =
+/// f()`, what a call gave, its `fmt::Result` say: `f();`; and `const old =
+/// task.callback; task.callback = next;`, the old value a `replace` read of
+/// the place it writes: `task.callback = next;`. Not another read, which
+/// may be a binding's getter, `el.offsetWidth`, which lays the page out.
 pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
     let mut i = 0;
     while i < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && !mentions.contains_key(name)
+            && !value.has_effects()
+            && matches!(stmts.get(i + 1).map(|next| &next.kind),
+                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)
+        {
+            stmts.remove(i);
+            continue;
+        }
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && !mentions.contains_key(name)
             && let ExprKind::Array(parts) = &value.kind

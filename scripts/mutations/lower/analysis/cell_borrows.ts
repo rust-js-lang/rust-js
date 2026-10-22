@@ -54,4 +54,13 @@ export const mutations: Mutation[] = [
       "borrowed for a prop is its value"
     ]
   },
+  {
+    name: "refcell-write-borrows-nothing",
+    breaks: "a `RefCell`'s `replace` borrows nothing, so a guard held across it isn't counted and the `replace` doesn't throw where Rust panics",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        Some(Std::CellReplace | Std::CellTake | Std::CellSwap | Std::CellReplaceWith) if refcell => Some(true),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+  },
+
 ];

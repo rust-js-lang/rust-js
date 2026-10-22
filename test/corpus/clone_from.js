@@ -28,14 +28,12 @@ function loudDrop_drop(loud) {
 }
 
 function copyInto(dest, source, TClone) {
-  const old = dest.value;
   dest.value = TClone.clone(source);
 }
 
 function main() {
-  let a = { name: "a", n: 1 };
   const b = { name: "b", n: 2 };
-  a = { ...b };
+  const a = { ...b };
   a.name += "!";
   const items = [1, 2];
   $take(items, [3].slice());

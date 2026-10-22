@@ -79,6 +79,20 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 }
             }
         }
+        // A `#[rust_js::nullable]` field is an `Option` whose `None` is `null`
+        // (ADR 0196): of one that isn't, a cell of one say, it's nothing to do.
+        if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
+            for field in tcx.adt_def(def).all_fields() {
+                let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                if is_nullable(tcx, field)
+                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
+                {
+                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, whose `None` is `null`; this one isn't";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
+            }
+        }
         // A discriminated union's variants are objects of named fields, none
         // of them its tag's (ADR 0284), but its last, which may be any other
         // object, `#[rust_js::otherwise]`, a variant of one field: the object.

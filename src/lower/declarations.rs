@@ -851,7 +851,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn field_ts(&mut self, ty: Ty<'tcx>) -> Value {
         match ty.kind() {
             ty::Adt(adt, args)
-                if is_std_def(self.tcx, adt.did(), StdItem::Cell) || self.plain_ref_cells.contains(&ty) =>
+                if is_std_def(self.tcx, adt.did(), StdItem::Cell)
+                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>
             {
                 self.ts(args.type_at(0))
             }

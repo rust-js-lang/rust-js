@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "replace-unchecked",
     breaks: "`replace` while a `borrow()` lives runs on",
     file: "src/lower/std_types/cell.rs",
-    find: "                let cell = match self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) {",
-    replace: "                let cell = match false {",
+    find: "                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {\n",
+    replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_replace_while_borrowed"],
   },
   {
@@ -163,5 +163,13 @@ export const mutations: Mutation[] = [
     find: "            js::applied_blocks(&mut function.body);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+  },
+  {
+    name: "plain-replace-borrowed",
+    breaks: "a `replace` of a `RefCell` held as its value borrows a handle on it, `$cellReplace($borrowMut({ get value() .. }))`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {\n",
+    replace: "                if self.is_std_type(held, StdItem::RefCell) {\n",
+    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
   },
 ];

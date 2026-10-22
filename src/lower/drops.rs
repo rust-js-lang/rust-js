@@ -37,6 +37,7 @@ mod uses;
 pub(super) use self::uses::*;
 
 use facts::{Facts, find_facts};
+pub(super) use parts::is_plain_ref_cell;
 pub(super) use types::Drops;
 use types::{DropQuery, TypeDrops, describe};
 

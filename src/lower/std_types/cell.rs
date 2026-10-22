@@ -73,18 +73,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::call(Expr::helper("$replaceWith"), given)
             }
+            // A `RefCell` whose borrows are counted is borrowed to do it; a
+            // `Cell`, or a `RefCell` held for a moment (ADR 0362), is read and
+            // written: `const old = task.callback; task.callback = next;`.
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                let cell = match self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) {
-                    true => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
-                    false => cell,
-                };
                 let next = match known {
                     Std::CellReplace => arg(),
                     _ => self.default_value(item, span)?,
                 };
-                Expr::call(Expr::helper("$cellReplace"), vec![cell, next])
+                let held = tys[0].peel_refs();
+                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {
+                    let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
+                    return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
+                }
+                let cell = match cell.has_effects() {
+                    true => self.spill("cell", cell, out),
+                    false => cell,
+                };
+                let old = self.spill("old", Expr::held(cell.clone()), out);
+                out.push(StmtKind::Assign(Expr::held(cell), next).at(js_span));
+                old
             }
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).

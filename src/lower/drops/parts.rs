@@ -319,9 +319,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or of a type with a destructor, or a library's, is a cell.
     pub(in crate::lower) fn plain_ref_cell(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::RefCell)
-            && (self.krate.plain_ref_cells)
-                .get_or_init(|| self.find_plain_ref_cells())
-                .contains(&ty)
+            && is_plain_ref_cell(
+                (self.krate.plain_ref_cells).get_or_init(|| self.find_plain_ref_cells()),
+                self.tcx,
+                ty,
+            )
     }
 
     fn find_plain_ref_cells(&self) -> HashSet<Ty<'tcx>> {
@@ -354,11 +356,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let thir = &body.thir;
             let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
-            // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
+            // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`,
+            // or to a write that holds it only while it swaps the value,
+            // `x.f.replace(v)`, whose old value drops after; `x.f.take()`
+            // runs `T::default()` too, which std's runs nothing of.
+            let writes_for_a_moment = |fun: rustc_middle::thir::ExprId| {
+                crate::lower::fn_def(thir[fun].ty).is_some_and(|(id, args)| match recognition.classify(id, args) {
+                    Some(crate::lower::Std::CellReplace) => true,
+                    Some(crate::lower::Std::CellTake) => {
+                        args.types().next().is_some_and(|held| recognition.std_default(held))
+                    }
+                    _ => false,
+                })
+            };
             let mut for_a_moment = HashSet::new();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                    && facts.momentary.contains(&fun)
+                    && (facts.momentary.contains(&fun) || writes_for_a_moment(fun))
                     && let Some(&lent) = args.first()
                     && let ExprKind::Borrow { arg, .. } = thir[crate::lower::body_queries::strip(thir, lent)].kind
                 {
@@ -432,6 +446,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.krate.counted,
             &state,
         );
+        // Each of its regions erased, as `is_plain_ref_cell` asks.
+        let erased = |set: HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
+            set.into_iter().map(|ty| tcx.erase_and_anonymize_regions(ty)).collect()
+        };
+        let cells = erased(cells);
+        let mut plain = erased(plain);
         plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
         plain
     }
@@ -472,4 +492,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
+}
+
+/// Whether `ty` is one of `plain`, the crate's `RefCell`s held as their
+/// values (ADR 0362), of its regions erased: a field's own type says `dyn
+/// FnMut() + 'static`, a body's `'{erased}`.
+pub(in crate::lower) fn is_plain_ref_cell<'tcx>(plain: &HashSet<Ty<'tcx>>, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    plain.contains(&tcx.erase_and_anonymize_regions(ty))
 }
