@@ -226,6 +226,11 @@ helpers! {
     IndexMap,
     EmptyPattern,
     ToJson,
+    JsonDecoder,
+    JsonReader,
+    JsonContent,
+    JsonFlat,
+    JsonValueReader,
     FromJson,
     JsonValue,
     JsonError,
@@ -867,6 +872,13 @@ impl Helper {
             // A `serde_json::Error` on its way out: a message, and where in the
             // text, line 0 when it's not about a place.
             Helper::JsonFail => include_str!("runtime/json_fail.js"),
+            // What serde's impls and derives read, from the text or from a
+            // value read (ADRs 0078, 0083), in the order they extend it.
+            Helper::JsonDecoder => include_str!("runtime/json_decoder.js"),
+            Helper::JsonReader => include_str!("runtime/json_reader.js"),
+            Helper::JsonContent => include_str!("runtime/json_content.js"),
+            Helper::JsonFlat => include_str!("runtime/json_flat.js"),
+            Helper::JsonValueReader => include_str!("runtime/json_value_reader.js"),
             Helper::FromJson => include_str!("runtime/from_json.js"),
             Helper::JsonValue => include_str!("runtime/json_value.js"),
             // serde_json's writer (ADR 0077): `write` makes serde's calls on it,

@@ -76,8 +76,9 @@ tracked or new, the runtime's helpers with the Rust.
 
 ## What holds it
 
-- `test/architecture.test.ts`, "a compiler file is at most the cap, one
-  listed over it only shrinking".
+- `test/architecture.test.ts`, "a compiler file is at most the cap" (the
+  list of files over it, and its ratchet, went with the last of them;
+  see the last amendment).
 - `scripts/file-sizes.ts`, the one place that counts.
 
 ## Amendment: recognition, split by concept (2026-10-22)
@@ -190,3 +191,15 @@ checks of what it's given; `drops/parts.rs`, `scopes.rs`, `functions.rs`
 and `uses.rs` are the rest, beside `types.rs` and `facts.rs`, each listed
 as an owner of `self.drop_state`. A `DropUses` is written beside its
 fields, in `uses.rs`, with the two calls that write them.
+
+## Amendment: serde's JSON reading, a helper for each reader (2026-10-22)
+
+`runtime/from_json.js`, 2,009 lines, is six helpers, in the order they
+extend `$JsonDecoder`: `json_decoder.js`, `json_reader.js`,
+`json_content.js`, `json_flat.js`, `json_value_reader.js` and
+`from_json.js`. `Helper` lists them in that order, so `@rust-js/runtime`
+is the same module, byte for byte.
+
+With it no compiler file is over the cap, and the list of those that were
+is gone, and its ratchet with it: the test holds every file at 1,500
+lines, and one that would grow past them is split first.
