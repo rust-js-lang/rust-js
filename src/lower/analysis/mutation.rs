@@ -19,9 +19,16 @@ use std::collections::{HashMap, HashSet};
 pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<Ty<'tcx>> {
     let mut mutated = HashSet::new();
     for body in all_bodies {
+        // A `let`'s pattern's too, `let (a, _) = &mut t;`.
+        for stmt in body.thir.stmts.iter() {
+            if let rustc_middle::thir::StmtKind::Let { ref pattern, .. } = stmt.kind {
+                ref_mut_holders(tcx, pattern, &mut mutated);
+            }
+        }
         for expr in body.thir.exprs.iter() {
-            // An enum something takes `&mut` of, or matches with a `ref mut`
-            // binding, may have a variant's field changed through it.
+            // An enum something takes `&mut` of may have a variant's field
+            // changed through it (and one matched with a `ref mut` binding,
+            // `ref_mut_holders`, below).
             let enum_ty = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if adt.is_enum());
             match expr.kind {
                 ExprKind::Borrow {
@@ -39,18 +46,19 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                 } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {
                     mutated.insert(body.thir[arg].ty);
                 }
-                ExprKind::Match {
-                    scrutinee, ref arms, ..
-                } if enum_ty(body.thir[scrutinee].ty)
-                    && arms.iter().any(|&arm| binds_ref_mut(&body.thir[arm].pattern)) =>
-                {
-                    mutated.insert(body.thir[scrutinee].ty.peel_refs());
+                _ => {}
+            }
+            // A `ref mut` binding of a pattern, through a `&mut` subject too,
+            // `let (a, _) = &mut t`, may change the field it binds, of the
+            // tuple or struct it's in, at any depth.
+            match expr.kind {
+                ExprKind::Match { ref arms, .. } => {
+                    for &arm in arms.iter() {
+                        ref_mut_holders(tcx, &body.thir[arm].pattern, &mut mutated);
+                    }
                 }
-                ExprKind::Let {
-                    expr: scrutinee,
-                    ref pat,
-                } if enum_ty(body.thir[scrutinee].ty) && binds_ref_mut(pat) => {
-                    mutated.insert(body.thir[scrutinee].ty.peel_refs());
+                ExprKind::Let { ref pat, .. } => {
+                    ref_mut_holders(tcx, pat, &mut mutated);
                 }
                 _ => {}
             }
@@ -123,17 +131,48 @@ fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     }
 }
 
-/// Does `pat` bind a variable by `ref mut`, or through a `&mut` subject?
-pub(super) fn binds_ref_mut(pat: &rustc_middle::thir::Pat<'_>) -> bool {
-    let mut found = false;
-    pat.walk_always(|p| {
-        if let rustc_middle::thir::PatKind::Binding { mode, .. } = p.kind
-            && matches!(mode.0, rustc_hir::ByRef::Yes(_, rustc_ast::Mutability::Mut))
-        {
-            found = true;
+/// Each object-like type a `ref mut` binding of `pat` is a part of, which
+/// a write through it changes in place, into `mutated`, an enum's variant's
+/// too; and whether `pat` holds one.
+fn ref_mut_holders<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pat: &rustc_middle::thir::Pat<'tcx>,
+    mutated: &mut HashSet<Ty<'tcx>>,
+) -> bool {
+    use rustc_middle::thir::PatKind;
+    let mut holds = false;
+    let mut subpatterns: Vec<&rustc_middle::thir::Pat<'tcx>> = Vec::new();
+    match &pat.kind {
+        PatKind::Binding { mode, subpattern, .. } => {
+            holds = matches!(mode.0, rustc_hir::ByRef::Yes(_, Mutability::Mut));
+            subpatterns.extend(subpattern.as_deref());
         }
-    });
-    found
+        PatKind::Leaf { subpatterns: fields }
+        | PatKind::Variant {
+            subpatterns: fields, ..
+        } => {
+            subpatterns.extend(fields.iter().map(|field| &field.pattern));
+        }
+        PatKind::Deref { subpattern, .. } => subpatterns.push(subpattern),
+        PatKind::Slice { prefix, slice, suffix } | PatKind::Array { prefix, slice, suffix } => {
+            subpatterns.extend(prefix.iter().chain(slice.as_deref()).chain(suffix.iter()));
+        }
+        PatKind::Or { pats } => subpatterns.extend(pats.iter()),
+        _ => {}
+    }
+    let parts = subpatterns
+        .into_iter()
+        .fold(false, |any, sub| ref_mut_holders(tcx, sub, mutated) | any);
+    if parts
+        && !matches!(
+            pat.kind,
+            PatKind::Binding { .. } | PatKind::Deref { .. } | PatKind::Or { .. }
+        )
+        && object_like(tcx, pat.ty.peel_refs())
+    {
+        mutated.insert(pat.ty.peel_refs());
+    }
+    holds || parts
 }
 
 /// The type parameters whose `Copy` bound takes a copy function, `TCopy`

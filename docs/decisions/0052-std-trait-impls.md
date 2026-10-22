@@ -148,3 +148,16 @@ the loop's lowering doesn't yet know (`slice_patterns`).
 
 Held by `test/corpus/arrays_changed_through_slices.rs` and the mutations
 `array-borrowed-mut-unchanged` and `fresh-array-copied`.
+
+## Amendment: a pattern's `ref mut` binding changes what it's in
+
+An enum matched with a `ref mut` binding was recorded as changed, but a
+tuple's or a struct's wasn't: `let (a, _) = &mut t; *a = 10;`, a binding
+of default binding mode through a `&mut` subject, wrote `t[0]` where a
+copy made before, `const o = t`, was the same array (#126); so did `if
+let`, `match` and a `for` over `iter_mut()` of tuples. `ref_mut_holders`
+records each object-like type a `ref mut` binding is a field of, at any
+depth, an enum's variant's too, of every pattern, a `let` statement's
+included: one walk, where the enum's were two arms of their own. Held by
+`test/corpus/ref_mut_bindings_copied.rs` and the mutation
+`ref-mut-holders-unseen`.

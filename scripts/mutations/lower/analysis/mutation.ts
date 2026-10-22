@@ -123,4 +123,12 @@ export const mutations: Mutation[] = [
     replace: "                } if false && matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_changed_through_slices.rs$"],
   },
+  {
+    name: "ref-mut-holders-unseen",
+    breaks: "a `ref mut` binding of a pattern, `let (a, _) = &mut t`, isn't seen to change the tuple or struct it's a field of, so a copy made before shares it",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        mutated.insert(pat.ty.peel_refs());\n    }\n    holds || parts\n",
+    replace: "    }\n    holds || parts\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_mut_bindings_copied.rs$"],
+  },
 ];
