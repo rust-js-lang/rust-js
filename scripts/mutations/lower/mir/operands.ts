@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "text.contains('\\n') && false",
     tests: ["test/lowering.test.ts", "-t", "a string written across lines keeps its lines"],
   },
+  {
+    name: "optional-global-unguarded",
+    breaks: "a global some hosts lack, an `Option` binding, is read where it isn't, a `ReferenceError`",
+    file: "src/lower/mir/operands.rs",
+    find: "        match self.option_of(self.tcx.type_of(def_id).instantiate_identity().skip_normalization()) {\n",
+    replace: "        match None::<()> {\n",
+    tests: ["test/lowering.test.ts", "-t", "an Option global binding"],
+  },
 ];

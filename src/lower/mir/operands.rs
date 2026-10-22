@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !tcx.is_mutable_static(def_id)
         {
             let referred = match tcx.is_foreign_item(def_id) {
-                true => Some(self.js_ref(&bindings::js_name(tcx, def_id))),
+                true => Some(self.js_global(def_id)),
                 false => self.krate.fns.contains_key(&def_id).then(|| self.fn_ref(def_id)),
             };
             if let Some(referred) = referred {
@@ -336,6 +336,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         })
+    }
+
+    /// A JS global a binding names (ADR 0021): one some hosts lack, its
+    /// static an `Option`, is `undefined` where it isn't (ADR 0583).
+    fn js_global(&self, def_id: rustc_span::def_id::DefId) -> Expr {
+        let global = self.js_ref(&bindings::js_name(self.tcx, def_id));
+        match self.option_of(self.tcx.type_of(def_id).instantiate_identity().skip_normalization()) {
+            Some(_) => Expr::cond(
+                Expr::bin(
+                    js::Op::Ne,
+                    Expr::unary(js::UnaryOp::Typeof, global.clone()),
+                    Expr::str("undefined"),
+                ),
+                global,
+                Expr::undefined(),
+            ),
+            None => global,
+        }
     }
 
     /// The static a constant points to the start of: `&LOG`, a promoted

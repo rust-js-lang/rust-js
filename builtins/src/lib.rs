@@ -663,6 +663,17 @@ pub fn clear_interval(id: Option<&IntervalId>) {
     unreachable!()
 }
 
+/// What `set_immediate` gives, an object of Node's.
+pub struct Immediate(PhantomData<JsObject>);
+
+unsafe extern "Rust" {
+    /// [`setImmediate(callback)`](https://nodejs.org/api/timers.html#setimmediatecallback-args):
+    /// `callback` once, after what's queued now; Node's, Bun's and Deno's,
+    /// which a browser lacks, so `None` there (ADR 0583).
+    #[link_name = "setImmediate"]
+    pub safe static set_immediate: Option<fn(Box<dyn FnOnce()>) -> &'static Immediate>;
+}
+
 /// A JS [`RegExp`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp),
 /// for what Rust would use the `regex` crate for. `replace` with a string is
 /// here; with a closure, and `matchAll`, are bindings a program declares, typed

@@ -5280,6 +5280,43 @@ pub fn numbers() -> bool {
   expect([lib.same(t, t), lib.same(t, lib.task(1)), lib.numbers()]).toEqual([true, false, false]);
 });
 
+// ADR 0583: a global some hosts lack is an \`Option\` binding, read where
+// it may not be: React's scheduler asks for \`setImmediate\`, then
+// \`MessageChannel\`, then \`setTimeout\`.
+test("an Option global binding is undefined where the host lacks it", async () => {
+  const dir = fixture("optional-globals");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Hook(std::marker::PhantomData<()>);
+
+impl Hook {
+    #[rust_js::link_name = "this()"]
+    pub fn call(&self, _n: f64) -> f64 {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsPresentHook"]
+    pub safe static PRESENT: Option<&'static Hook>;
+    #[link_name = "rustJsAbsentHook"]
+    pub safe static ABSENT: Option<&'static Hook>;
+}
+
+pub fn present(n: f64) -> Option<f64> {
+    PRESENT.map(|hook| hook.call(n))
+}
+
+pub fn absent(n: f64) -> Option<f64> {
+    ABSENT.map(|hook| hook.call(n))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('typeof rustJsAbsentHook !== "undefined" ? rustJsAbsentHook : undefined');
+  (globalThis as Record<string, unknown>).rustJsPresentHook = (n: number) => n + 1;
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.present(1), lib.absent(1)]).toEqual([2, undefined]);
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read
