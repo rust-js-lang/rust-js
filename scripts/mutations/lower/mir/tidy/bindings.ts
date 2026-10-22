@@ -104,7 +104,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     replace: "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
-    tests: ["test/lowering.test.ts","-t","of .matches!. from MIR"],
+    tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
+    snapshots: true,
   },
   {
     "name": "target-root-not-inlined",

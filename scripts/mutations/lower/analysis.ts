@@ -44,11 +44,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-object-deref-lowered",
-    breaks: "a JS class's `Deref` to the class it extends is lowered, a pointer cast rust-js refuses",
+    breaks: "a JS class's `Deref` to the class it extends is lowered, a function making a pointer to nothing",
     file: "src/lower/analysis.rs",
     find: "                    && !is_js_object_deref(tcx, parent)\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/bindings.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
   },
   {
     name: "reexport-only-module-unwritten",

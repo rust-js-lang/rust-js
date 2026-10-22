@@ -48,6 +48,9 @@ function main() {
   console.log(
     `${stride} 5 ${two[1].a} ${$ptrEq(through, $ptr(two, 1), 5)} ${$addr(through, 5) === $addr($ptr(two, 1), 5)}`,
   );
+  // A pointer made of the item alone, where generic code has it, is at the
+  // item's place in its array.
+  console.log(`${addressOf(two[1], 5) === $addr($ptr(two, 1), 5)}`);
 
   // Round trips: an address made a pointer again is the pointer.
   const again = $ptrFrom(base, 4);

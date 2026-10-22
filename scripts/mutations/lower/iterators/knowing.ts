@@ -51,15 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
   {
-    name: "given-map-knows-no-back",
-    breaks: "a held `map` of an `I` given as it is doesn't know its back, and its `rfold` is refused",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                || self.made_knowing(source, self.recognition().double_ended_iterator())\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
-    snapshots: true,
-  },
-  {
     name: "default-evidence-trait-terms",
     breaks: "a copied default's `Self` is asked its `Iterator` dictionary in the trait's terms, finds none, and is stepped as a JS iterator",
     file: "src/lower/iterators/knowing.rs",
@@ -119,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "back-stepped-unknowing",
     breaks: "a map the crate steps from its back isn't made knowing it",
     file: "src/lower/iterators/knowing.rs",
-    find: "                || self.stepped_from_its_back(ty);\n",
-    replace: ";\n",
+    find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
+    replace: "            return self.knows_its_back(source);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {

@@ -102,6 +102,9 @@ fn main() {
     println!("{:?} {:?}", numbered.iter.next_back(), numbered.iter.next());
     let mut wrap = Wrap { inner: vec![4u32, 5].into_iter() };
     println!("{:?} {:?}", wrap.last_tripled(), wrap.inner.next());
+    // Of a range, stepped as it is by its dictionaries.
+    let mut counted = Wrap { inner: 1u32..4 };
+    println!("{:?} {:?}", counted.last_tripled(), counted.inner.next());
     // A range given as it is, stepped from its back by its dictionaries.
     let mut big = positions(1..20u32, |x| x > 16);
     println!("{:?} {:?} {:?}", big.next(), big.next_back(), big.next());

@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        js::ExprKind::Cond(_, then, otherwise) => fresh(then) && fresh(otherwise),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
     snapshots: true,
   },
   {

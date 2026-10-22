@@ -60,14 +60,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
-    name: "double-ended-rev-refused",
-    breaks: "`rev()` of a generic `T: DoubleEndedIterator` is refused",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        if self.knows_its_back(iter_ty) {\n            return Some(Expr::call_helper(\"$rev\", vec![it.clone()]));\n",
-    replace: "        if false {\n            return Some(Expr::call_helper(\"$rev\", vec![it.clone()]));\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
-  },
-  {
     "name": "rev-chain-refused",
     "breaks": "`rev()` of a lazy chain over a slice, `v.iter().map(f).rev()`, is refused, though its closures run in the same order over the items reversed",
     "file": "src/lower/mir/iter/backs.rs",
@@ -90,14 +82,6 @@ export const mutations: Mutation[] = [
       "-t",
       "rev_of_lazy_chains"
     ]
-  },
-  {
-    name: "rev-iterator-from-unreversed",
-    breaks: "`rev()` of a chain over a string's `char_indices()`, writeable's, is refused",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "    if let Ok(source) = crate::lower::iterators::from_iterator(e.clone()) {\n",
-    replace: "    if let Ok(source) = Err::<Expr, Expr>(e.clone()) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_of_char_indices.rs$"],
   },
   {
     name: "back-step-receiver-wrapped",
@@ -139,6 +123,7 @@ export const mutations: Mutation[] = [
     find: "    if let Some(range) = crate::lower::iterators::stepped_range(e)\n        && !range.back\n    {\n",
     replace: "    if let Some(range) = crate::lower::iterators::stepped_range(e)\n        && false\n    {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-range-chain-inclusive-as-exclusive",
@@ -155,6 +140,7 @@ export const mutations: Mutation[] = [
     find: "        let back = Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back);\n",
     replace: "        let back: Expr = return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
+    snapshots: true,
   },
   {
     name: "given-map-source-raw",
