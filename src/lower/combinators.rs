@@ -311,9 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(values.remove(0));
         }
         let subject = values.remove(0);
-        if let Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault = comb
-            && let Some(value) = result::unwrapped_made(&subject, &values)
-        {
+        if let Some(value) = self.made_in_place(comb, boxed, subject_ty, &subject, &values) {
             return Ok(value);
         }
         // A slice's `concat` of parts written out, `[path, &[last]].concat()`:
@@ -915,3 +913,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a combinator is, made of its subject where it's read once: an
+    /// `unwrap_or_else` of a `Result` just made, its value; and
+    /// `is_some_and(|first| Rc::ptr_eq(first, &task))`, a comparison of the
+    /// `Some` with a value of its type, which, its `Some` not boxed, can't
+    /// be `undefined` nor `null`: `peek(queue) === task`, which a `None`
+    /// fails (ADR 0591).
+    fn made_in_place(
+        &mut self,
+        comb: Comb,
+        boxed: bool,
+        subject_ty: Ty<'tcx>,
+        subject: &Expr,
+        values: &[Expr],
+    ) -> Option<Expr> {
+        if let Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault = comb {
+            return result::unwrapped_made(subject, values);
+        }
+        if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {
+            let compared = compared_with(&values[0])?;
+            return Some((compared.substitute(&|v| (v == HELD_SOME).then(|| subject.clone()))).unwrap_or(compared));
+        }
+        None
+    }
+}
+
+/// What `p`, an `is_some_and`'s predicate, is of its argument where it's a
+/// comparison of it with what's not it, `x === task`, the argument written
+/// `HELD_SOME`: the `===`, `HELD_SOME === task`.
+fn compared_with(p: &Expr) -> Option<Expr> {
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
+    let js::ExprKind::Binary(Op::Eq, a, b) = &applied.kind else {
+        return None;
+    };
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if v == HELD_SOME);
+    let mentions = js::mentions_in(&[StmtKind::Expr(applied.clone()).at(applied.span)], HELD_SOME);
+    ((held(a) || held(b)) && mentions == 1).then_some(applied)
+}
+
+/// The argument `compared_with` gives a predicate: a name no Rust variable
+/// has.
+const HELD_SOME: &str = "$some";

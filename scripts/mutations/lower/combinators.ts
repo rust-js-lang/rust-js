@@ -457,4 +457,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },
+  {
+    name: "is-some-and-compared-tested",
+    breaks: "`is_some_and` of a comparison with what's never nullish still tests the `Some` first, `option != null && option === task`",
+    file: "src/lower/combinators.rs",
+    find: "        if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {\n",
+    replace: "        if comb == Comb::IsSomeAnd && false && self.option_of(subject_ty).is_some() {\n",
+    tests: ["test/lowering.test.ts", "-t", "is_some_and of an equality"],
+  },
+  {
+    name: "is-some-and-unread-dropped",
+    breaks: "`is_some_and(|_| n == 5)` of a `None` is `n === 5`, its predicate run where Rust's isn't",
+    file: "src/lower/combinators.rs",
+    find: "    ((held(a) || held(b)) && mentions == 1).then_some(applied)\n",
+    replace: "    (mentions <= 1).then_some(applied)\n",
+    tests: ["test/lowering.test.ts", "-t", "is_some_and of an equality"],
+  },
 ];

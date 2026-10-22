@@ -2308,7 +2308,8 @@ test("an Option compared to a literal needs no test that it's there", async () =
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('const option = segments.at(-1);\n  if (option === "index") {');
+  // Read once, where it's tested (ADR 0591).
+  expect(js).toContain('if (segments.at(-1) === "index") {');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.trimmed(["a", "index"]), lib.trimmed(["a"]), lib.trimmed([])]).toEqual([["a"], ["a"], []]);
 });
@@ -5593,6 +5594,50 @@ pub fn both(a: u8, b: u8) -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect([1, 3, 5, 9].map(lib.timeout)).toEqual([-1, 5000, 1073741823, 10000]);
   expect([lib.both(3, 4), lib.both(3, 5), lib.both(1, 3)]).toEqual([true, false, false]);
+});
+
+// ADR 0591: \`is_some_and\` of a comparison of its \`Some\` with a value of
+// a type that's never \`undefined\` nor \`null\` is that comparison, which a
+// \`None\` fails: React's scheduler's \`peek(taskQueue) === currentTask\`.
+test("is_some_and of an equality with a defined value is the equality", async () => {
+  const dir = fixture("is-some-and-equal");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub struct Task {
+    pub id: u32,
+}
+
+pub fn first(tasks: &[Rc<Task>], task: &Rc<Task>) -> bool {
+    tasks.first().is_some_and(|first| Rc::ptr_eq(first, task))
+}
+
+pub fn found(numbers: &[u32], n: u32) -> bool {
+    numbers.iter().position(|&x| x == n).is_some_and(|at| at == 0)
+}
+
+pub fn big(numbers: &[u32]) -> bool {
+    numbers.first().is_some_and(|&x| x > 9)
+}
+
+pub fn any_when(numbers: &[u32], n: u32) -> bool {
+    numbers.first().is_some_and(|_| n == 5)
+}
+
+pub fn task(id: u32) -> Rc<Task> {
+    Rc::new(Task { id })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function first(tasks, task) {\n  return tasks[0] === task;\n}");
+  expect(js).toContain("=== 0;");
+  expect(js).toMatch(/!= null && .* > 9/);
+  const lib = await import(join(dir, "lib.js"));
+  const a = lib.task(1);
+  expect([lib.first([a], a), lib.first([], a), lib.first([lib.task(1)], a)]).toEqual([true, false, false]);
+  expect([lib.found([5, 6], 5), lib.found([5, 6], 6), lib.found([5], 7)]).toEqual([true, false, false]);
+  expect([lib.big([10]), lib.big([]), lib.big([1])]).toEqual([true, false, false]);
+  expect([lib.anyWhen([1], 5), lib.anyWhen([], 5)]).toEqual([true, false]);
 });
 
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where
