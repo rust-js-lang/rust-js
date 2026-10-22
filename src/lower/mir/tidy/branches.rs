@@ -221,7 +221,7 @@ pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
     booleans: &HashSet<String>,
-    (result, comments, switches): (&str, &[js::Span], &[Vec<SwitchArm>]),
+    (result, comments, switches): (&str, &[js::Span], &[Switch]),
 ) {
     stmts.retain_mut(|stmt| {
         let span = stmt.span;

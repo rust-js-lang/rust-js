@@ -27,9 +27,13 @@ an expression, was at the end of another line, `return 1; /* "O" */ /*
 **A block comment with code after it on its line is after the JS of the
 code right before it**: the source map's token of that line nearest
 before it, a name, a number or a string, and the comment after its text,
-`37 /* "%" */`. A `case` is where its pattern's constant is written
-(`Constant::Value`), so its comment follows it, `case 79 /* "O" */:`. A
-comment the map has no such token for is at its line's end, as before.
+`37 /* "%" */`; the nearest whose JS is one, where another token maps
+from the same place. A `case` is where its pattern's constant is written
+(`Constant::Value`), and its `switch` where its `match` is (`Switch`'s
+span), not its first case's constant, which a source map holds one token
+of: so each comment follows its constant, `case 79 /* "O" */:`. A comment
+the map has no such token for is at its line's end, as before, never
+lost.
 
 ## Why
 
@@ -40,4 +44,5 @@ comment the map has no such token for is at its line's end, as before.
 
 - `test/lowering-names.test.ts`, "a comment inside an expression is
   after the code before it".
-- Mutations `inside-comment-at-line-end`, `case-constant-unplaced`.
+- Mutations `inside-comment-at-line-end`, `case-constant-unplaced`,
+  `switch-at-first-case`.

@@ -131,9 +131,23 @@ test("a comment inside an expression is after the code before it", () => {
         _ => 2,
     }
 }
+
+fn half(n: f64) -> f64 {
+    n / 2.0
+}
+
+pub fn unit(code: f64, log: &mut Vec<u32>) {
+    match half(code) {
+        79.0 /* "O" */ | 99.0 /* "c" */ | 100.0 /* "d" */ => log.push(1),
+        _ => {}
+    }
+    log.push(0);
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // A switch is where its `match` is, not its first case's constant.
+  expect(js).toContain('  switch (half(code)) {\n    case 79 /* "O" */:\n    case 99 /* "c" */:\n    case 100 /* "d" */:\n      log.push(1);\n');
   expect(js).toContain('if (code !== 37 /* "%" */) {');
   expect(js).toContain('case 79 /* "O" */:\n    case 99 /* "c" */:\n    case 100 /* "d" */:\n');
 });

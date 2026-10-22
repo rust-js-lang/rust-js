@@ -6,7 +6,7 @@
 use std::collections::HashSet;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
-use crate::lower::mir::hints::{Constant, SwitchArm};
+use crate::lower::mir::hints::{Constant, Switch, SwitchArm};
 
 use super::{first_written, is_temporary, relabeled, written_loop};
 
@@ -18,7 +18,7 @@ const LOOP_LABEL: &str = "loop";
 /// Each chain of `body` that tests the arms of a `match` of `switches`, in
 /// the order written, a `switch`; a `break` in it of a loop around it, of
 /// that loop's label, the program's of `loops` where it wrote one.
-pub(super) fn switches(body: &mut Vec<Stmt>, switches: &[Vec<SwitchArm>], loops: &[(js::Span, bool, Option<String>)]) {
+pub(super) fn switches(body: &mut Vec<Stmt>, switches: &[Switch], loops: &[(js::Span, bool, Option<String>)]) {
     if switches.is_empty() {
         return;
     }
@@ -37,7 +37,7 @@ struct Around<'l> {
 /// they're in.
 fn walk(
     list: &mut Vec<Stmt>,
-    switches: &[Vec<SwitchArm>],
+    switches: &[Switch],
     loops: &[(js::Span, bool, Option<String>)],
     labels: &mut Vec<String>,
     mut around: Option<&mut Around>,
@@ -198,15 +198,11 @@ type Case = (Vec<Expr>, Vec<Stmt>, bool, js::Span);
 /// The `switch` of the chain at `stmts[at]`, of the `match` whose first
 /// arm's pattern its test is written at, and how many statements it is.
 /// `around`, the loop it's in, whose label each `break` of it names now.
-fn switch_at(
-    stmts: &[Stmt],
-    at: usize,
-    switches: &[Vec<SwitchArm>],
-    around: Option<&mut Around>,
-) -> Option<(Stmt, usize)> {
+fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut Around>) -> Option<(Stmt, usize)> {
     let first = &stmts[at];
     let at_test = tested_at(first)?;
-    let arms = (switches.iter()).find(|arms| arms.first().is_some_and(|arm| within(at_test, arm.pattern)))?;
+    let written = (switches.iter()).find(|s| s.arms.first().is_some_and(|arm| within(at_test, arm.pattern)))?;
+    let arms = &written.arms;
     let mut discriminant = None;
     let (mut cases, mut taken) = chain(&stmts[at..], arms, false, &mut discriminant)?;
     let discriminant = discriminant?;
@@ -244,12 +240,15 @@ fn switch_at(
             false => switched.push((values, body)),
         }
     }
+    // Where the `match` is written, not its first arm's pattern, which the
+    // first case's constant is (ADR 0630).
+    let span = written.span;
     let switch = StmtKind::Switch {
         discriminant,
         cases: switched,
         default,
     };
-    Some((switch.at(first.span), taken))
+    Some((switch.at(span), taken))
 }
 
 /// The cases `stmts` test of `arms`, in order, and how many statements they
@@ -395,7 +394,12 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
         if !fits || !compared(discriminant, tested) {
             return None;
         }
-        values.push((**value).clone().or_at(written));
+        // Where its pattern's constant is written, the test's being MIR's.
+        let mut value = (**value).clone();
+        if !written.is_none() {
+            value.span = written;
+        }
+        values.push(value);
     }
     Some(values)
 }
@@ -457,8 +461,12 @@ fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
 
 /// Whether `if (test)`, at `span`, tests an arm of a `match` of constants,
 /// a `switch`, whose arms' values are no `?:` then (ADR 0629).
-pub(super) fn switched(test: &Expr, span: js::Span, switches: &[Vec<SwitchArm>]) -> bool {
-    let arm = |at: u32| switches.iter().flatten().any(|arm| within(at, arm.pattern));
+pub(super) fn switched(test: &Expr, span: js::Span, switches: &[Switch]) -> bool {
+    let arm = |at: u32| {
+        (switches.iter())
+            .flat_map(|s| &s.arms)
+            .any(|arm| within(at, arm.pattern))
+    };
     test_at(test, span).is_some_and(arm)
 }
 

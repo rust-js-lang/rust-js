@@ -27,7 +27,7 @@ pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
     bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, switches::switched, values::*,
 };
-use super::hints::SwitchArm;
+use super::hints::Switch;
 
 /// A body tidied, once its parameters are taken apart: its temporaries
 /// named, its drop flags too, and then, its temporaries named alike, each

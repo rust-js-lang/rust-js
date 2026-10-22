@@ -141,13 +141,21 @@ pub fn emit(
     // One inside an expression, after the JS of the code right before it,
     // its line's and column's (ADR 0630).
     let mut inside: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
+    let generated_lines: Vec<&str> = generated.code.lines().collect();
     if let Some(map) = &generated.map {
         for comment in &trailing {
+            // The nearest before it whose JS is a name, a number or a string.
             let before = comment.column.and_then(|column| {
-                (map.get_tokens())
+                let mut tokens: Vec<_> = (map.get_tokens())
                     .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < column)
-                    .max_by_key(|t| t.get_src_col())
+                    .collect();
+                tokens.sort_by_key(|t| std::cmp::Reverse(t.get_src_col()));
+                tokens
+                    .into_iter()
                     .map(|t| (t.get_dst_line(), t.get_dst_col()))
+                    .find(|&(line, column)| {
+                        (generated_lines.get(line as usize)).is_some_and(|text| word_end(text, column).is_some())
+                    })
             });
             match before {
                 Some((line, column)) => inside.entry(line).or_default().push((column, &comment.text)),
@@ -219,22 +227,24 @@ struct Trailing {
     text: String,
 }
 
+/// Where the name, number or string at `column` of `line` ends: none of
+/// another token, `(` or `{`.
+fn word_end(line: &str, column: u32) -> Option<usize> {
+    let start = column as usize;
+    let rest = line.get(start..)?;
+    let end = match rest.chars().next()? {
+        quote @ ('"' | '\'' | '`') => rest[1..].find(quote).map(|i| i + 2)?,
+        _ => (rest.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$' || c == '.'))).unwrap_or(rest.len()),
+    };
+    (end > 0).then_some(start + end)
+}
+
 /// `line` of the JS with each comment after the code that starts at its
 /// column: a name, a number or a string, `case 79 /* "O" */:` (ADR 0630).
 fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
     let mut out = line.to_string();
     let mut at: Vec<(usize, &str)> = (comments.iter())
-        .filter_map(|&(column, text)| {
-            let start = column as usize;
-            let rest = line.get(start..)?;
-            let end = match rest.chars().next()? {
-                quote @ ('"' | '\'' | '`') => rest[1..].find(quote).map(|i| i + 2)?,
-                _ => rest
-                    .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$' || c == '.'))
-                    .unwrap_or(rest.len()),
-            };
-            (end > 0).then_some((start + end, text))
-        })
+        .filter_map(|&(column, text)| Some((word_end(line, column)?, text)))
         .collect();
     // From the last, so each column is still where it was.
     at.sort_by_key(|&(end, _)| std::cmp::Reverse(end));

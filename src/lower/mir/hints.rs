@@ -26,7 +26,7 @@ pub(super) struct Written {
     pub comments: Vec<js::Span>,
     /// Each `match` the program wrote whose every arm tests constants, a
     /// `switch` (ADR 0629): its arms.
-    pub switches: Vec<Vec<SwitchArm>>,
+    pub switches: Vec<Switch>,
 }
 
 /// The fewest cases a `match` of constants is a `switch` of, each constant
@@ -34,6 +34,13 @@ pub(super) struct Written {
 /// .. } else { .. }`, as JS writes two ways, and as SonarJS's
 /// `no-small-switch` asks; of one arm of seven constants, a switch.
 const SWITCH_CASES: usize = 3;
+
+/// A `match` of constants (`Written::switches`): where it's written, its
+/// `switch`'s, and its arms (ADR 0629).
+pub(super) struct Switch {
+    pub span: js::Span,
+    pub arms: Vec<SwitchArm>,
+}
 
 /// An arm of a `match` of constants (`Written::switches`): where it and
 /// its pattern are written, and each constant its pattern names, `1 | 2`'s
@@ -225,7 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// binding, but for a last `_`, and whose value isn't read in place,
     /// which JS has no `switch` expression for (ADR 0629): its arms. The
     /// one answer to which `match` is a `switch`.
-    fn written_switches(&self) -> Vec<Vec<SwitchArm>> {
+    fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
         let mut seen = std::collections::HashSet::new();
         (self.thir.exprs.iter())
@@ -275,7 +282,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // are the `if` and `else`, or the `?:`, a person writes of two
                 // ways. Decided with the user.
                 let cases: usize = arms.iter().map(|arm| arm.constants.len().max(1)).sum();
-                (cases >= SWITCH_CASES).then_some(arms)
+                (cases >= SWITCH_CASES).then(|| Switch {
+                    span: self.js_span(e.span),
+                    arms,
+                })
             })
             .collect()
     }
