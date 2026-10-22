@@ -200,18 +200,15 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                     && !is_binding(tcx, def_id.to_def_id())
             }
             DefKind::Closure => true,
-            // A generic impl's constant, which rustc can't compute for every
-            // type at once: its initializer, lowered in its dictionary (ADR 0176).
-            // And a trait's default, which a library's dictionary reads as
-            // its initializer, never computed where no consumer reads it.
+            // A trait impl's constant: its initializer, lowered in its
+            // dictionary where rustc can't compute it for every type at once,
+            // a generic impl's, or can't say its value, a `String`'s (ADR
+            // 0176). And a trait's default, which a library's dictionary reads
+            // as its initializer, never computed where no consumer reads it.
             DefKind::AssocConst { .. } => {
-                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {
-                    tcx.generics_of(imp)
-                        .own_params
-                        .iter()
-                        .any(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. }))
-                }) || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()
-                    && tcx.hir_maybe_body_owned_by(def_id).is_some())
+                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()
+                    || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()
+                        && tcx.hir_maybe_body_owned_by(def_id).is_some())
             }
             _ => false,
         })
