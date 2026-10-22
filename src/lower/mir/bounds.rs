@@ -1,8 +1,10 @@
 //! What an index the body's ranges show in bounds is (ADRs 0292, 0576):
-//! an `Assert` not made, `v[i]` read as JS reads it, a `swap` JS's own.
+//! an `Assert` not made, `v[i]` read as JS reads it, and its place
+//! through `index_mut` unchecked, a `swap` JS's own.
 
 use super::*;
 use crate::lower::combinators::Comb;
+use rustc_hir::attrs::lang_items::LangItem;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an `Assert` at `span` checks an index THIR's facts know is in
@@ -31,22 +33,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Comb(Comb::Swap | Comb::SwapRemove) => true,
             _ => false,
         };
-        indexed
-            && self
-                .thir_call(def_id, span)
-                .is_some_and(|(fun, _)| self.body_facts.in_bounds.contains(&fun))
+        indexed && self.indexes_in_bounds(def_id, span)
     }
 
-    /// A call `call_in_bounds` knows, unchecked: `items[index]`; `[v[i],
-    /// v[j]] = [v[j], v[i]]`, JS's own swap; and of `v.swap_remove(i)`, the
-    /// last swapped in, then popped.
-    pub(super) fn unchecked_call(
+    /// Whether THIR's call of `def_id` at `span` has its indexes in bounds,
+    /// as the body's ranges show.
+    fn indexes_in_bounds(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+        (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.body_facts.in_bounds.contains(&fun))
+    }
+
+    /// Whether a call is `v[i]` through `index_mut`, of a value JS can't
+    /// change in place: the item's place, not its value (ADR 0099).
+    pub(super) fn index_mut_place(&self, known: Std, def_id: rustc_span::def_id::DefId, output: ty::Ty<'tcx>) -> bool {
+        known == Std::Index
+            && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::IndexMut))
+            && matches!(output.kind(), ty::Ref(_, item, _) if self.is_cell_pointee(*item))
+    }
+
+    /// An index's call: unchecked where `call_in_bounds` knows it,
+    /// `items[index]`; `[v[i], v[j]] = [v[j], v[i]]`, JS's own swap; and of
+    /// `v.swap_remove(i)`, the last swapped in, then popped. Of
+    /// `index_mut_place`'s, the item's place, checked first as `$index`
+    /// checks it where it isn't known.
+    pub(super) fn index_call(
         &mut self,
+        state: &mut State<'_, 'tcx>,
         known: Std,
+        (def_id, output): (rustc_span::def_id::DefId, ty::Ty<'tcx>),
         values: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        if self.index_mut_place(known, def_id, output) {
+            let checked = !self.indexes_in_bounds(def_id, span);
+            let mut exprs = (values.into_iter())
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let index = exprs.pop().expect("an index");
+            let items = exprs.pop().expect("the items");
+            self.flush(state, out)?;
+            let items = if items.reads_same() {
+                items
+            } else {
+                self.spill("items", items, out)
+            };
+            // A variable that reads the same wherever it's read, a parameter,
+            // read where it's set too.
+            let index = if index.is_constant()
+                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))
+            {
+                index
+            } else {
+                self.spill("index", index, out)
+            };
+            if checked {
+                let check = Expr::call(Expr::helper("$index"), vec![items.clone(), index.clone()]);
+                out.push(StmtKind::Expr(check).at(self.js_span(span)));
+            }
+            return Ok(Value::Ref(Expr::index(items, index)));
+        }
         let mut exprs = Vec::new();
         for (value, name) in values.into_iter().zip(["items", "i", "j"]) {
             let e = self.value_expr(value, span)?;

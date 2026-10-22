@@ -767,6 +767,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A nullable result is `null` where it's written** (ADR 0578): each
+  `return` of a `#[rust_js::nullable]` function gives what its branch
+  made, `return last;`, not a variable set in each and `return result ??
+  null;`. An item's place through `index_mut` known in bounds, `&mut
+  heap[0]` of a heap that isn't empty, has no `$index` check.
 - **A function only calls reach is what its calls give it** (ADR 0577):
   one no JS caller sees and nothing names as a value is walked from what
   each of its calls tells it of its parameters, so React's heap's

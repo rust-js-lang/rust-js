@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","static_fns"],
   },
   {
-    name: "mir-index-mut-a-value",
-    breaks: "`v[i] += 1` of numbers through `index_mut` changes a copy of the element",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            return Ok(Value::Ref(Expr::index(items, index)));\n",
-    replace: "            return Ok(Value::Expr(Expr::index(items, index)));\n",
-    tests: ["test/corpus.test.ts","-t","compound_assignment_order"],
-  },
-  {
     name: "mir-item-handles-skipped",
     breaks: "`iter_mut()` of strings gives the strings, not handles on them, so a write to one is lost",
     file: "src/lower/mir/dispatch.rs",
@@ -156,18 +148,6 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a call giving each variant its own name"
-    ]
-  },
-  {
-    "name": "mir-checked-index-copied",
-    "breaks": "a parameter MIR checks an element's place at is copied first, `const index = i;`",
-    "file": "src/lower/mir/dispatch.rs",
-    "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "checked element set is one statement"
     ]
   },
   {

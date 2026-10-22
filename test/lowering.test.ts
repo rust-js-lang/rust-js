@@ -5034,6 +5034,60 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   expect(() => lib.popped([1])).toThrow("index out of bounds");
 });
 
+// ADR 0578: a `#[rust_js::nullable]` function's result is `null` where it's
+// written, so each `return` gives it as written, `return last;`, not a
+// variable set in each branch and `return result ?? null;`. And an item's
+// place through `index_mut` the body's ranges show in bounds is unchecked:
+// React's heap's `pop`, `heap[0] = last`.
+test("a nullable result is written where it's made, and an index_mut known in bounds is unchecked", async () => {
+  const dir = fixture("nullable-written");
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::nullable]
+pub fn pop(heap: &mut Vec<u32>) -> Option<u32> {
+    let last = heap.pop()?;
+    if heap.is_empty() {
+        return Some(last);
+    }
+    let first = std::mem::replace(&mut heap[0], last);
+    Some(first)
+}
+
+#[rust_js::nullable]
+pub fn first(items: &[u32]) -> Option<&u32> {
+    items.first()
+}
+
+#[rust_js::nullable]
+pub fn found(items: &[u32], flag: bool) -> Option<&u32> {
+    let first = items.first();
+    if flag && first.is_some() {
+        return first;
+    }
+    items.last()
+}
+
+pub fn replaced(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
+    if i < items.len() { std::mem::replace(&mut items[i], x) } else { x }
+}
+
+pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
+    std::mem::replace(&mut items[i], x)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function pop(heap) {\n  const last = heap.pop();\n  if (last == null) {\n    return null;\n  }\n  if (heap.length === 0) {\n    return last;\n  }\n  const first = heap[0];\n  heap[0] = last;\n  return first;\n}");
+  expect(js).toContain("  return items[0] ?? null;\n");
+  expect(js).toContain("    return first ?? null;\n");
+  expect(js).toContain("export function replaced(items, i, x) {\n  if (i < items.length) {\n    const old = items[i];\n    items[i] = x;\n");
+  expect(js).toContain("export function replacedAny(items, i, x) {\n  $index(items, i);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const heap = [1, 2, 3];
+  expect([lib.pop(heap), heap, lib.pop([4]), lib.pop([]), lib.first([]), lib.first([5])]).toEqual([1, [3, 2], 4, null, null, 5]);
+  const items = [1, 2];
+  expect([lib.replaced(items, 1, 7), lib.replaced(items, 5, 8), items]).toEqual([2, 8, [1, 7]]);
+  expect(() => lib.replacedAny([1], 2, 0)).toThrow("index out of bounds");
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read
@@ -9870,7 +9924,8 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('    args[$at(args, 0)] = "HTML";\n');
+  // One the length's test shows in bounds is set as it is (ADR 0576).
+  expect(js).toContain('    args[0] = "HTML";\n');
   expect(js).toMatch(/  args\[\$at\(args, i\)\] = \w+;\n}/);
   const lib = await import(join(dir, "mir.js"));
   const args = [""];

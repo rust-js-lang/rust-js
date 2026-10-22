@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "            None\n",
     tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
   },
+  {
+    name: "index-mut-unasked",
+    breaks: "`index_mut` asks nothing of a `Vec`'s length, so `&mut heap[0]` where it isn't empty is checked",
+    file: "src/lower/recognition/types.rs",
+    find: "(tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))",
+    replace: "(tcx.is_lang_item(trait_, LangItem::Index) || false && tcx.is_lang_item(trait_, LangItem::IndexMut))",
+    tests: ["test/lowering.test.ts", "-t", "nullable result is written"],
+  },
 ];

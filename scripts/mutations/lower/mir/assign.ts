@@ -438,4 +438,20 @@ export const mutations: Mutation[] = [
     replace: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash))\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
+  {
+    name: "nullable-result-undefined",
+    breaks: "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
+    file: "src/lower/mir/assign.rs",
+    find: "            || !bindings::nullable_result(self.tcx, state.body.source.def_id())\n",
+    replace: "            || true\n",
+    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+  },
+  {
+    name: "nullable-result-at-return",
+    breaks: "a nullable result is a variable each branch sets, so `pop` returns `result ?? null` and its `return`s aren't where they're written",
+    file: "src/lower/mir/assign.rs",
+    find: "            _ => self.nullable_written(state, *place, value?, span)?,\n",
+    replace: "            _ => value?,\n",
+    tests: ["test/lowering.test.ts", "-t", "nullable result is written"],
+  },
 ];

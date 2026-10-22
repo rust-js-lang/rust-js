@@ -1,6 +1,7 @@
 # 0574. What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere
 
-Status: Accepted. Extends [0275](0275-nullable-writes-null.md), whose
+Status: Accepted; amended by [0578](0578-a-nullable-result-where-its-written.md),
+which writes `value ?? null` where the value is written. Extends [0275](0275-nullable-writes-null.md), whose
 `#[rust_js::nullable]` it puts on a function's result,
 [0051](0051-generic-options.md), whose box it leaves out where a bound
 says it's never needed, and [0307](0307-binding-trait-methods.md).

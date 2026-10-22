@@ -206,20 +206,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (None, true) => None,
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
-                // A `#[rust_js::nullable]` function's: a `None` it didn't make
-                // `null` already is `null` too, `heap[0] ?? null`.
-                let value = match value {
-                    Some(value)
-                        if bindings::nullable_result(self.tcx, state.body.source.def_id())
-                            && !state.options.null_nones.contains(&ret) =>
-                    {
-                        Some(match value.kind {
-                            js::ExprKind::Undefined => Expr::null(),
-                            _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-                        })
-                    }
-                    value => value,
-                };
                 self.flush(state, &mut out)?;
                 out.push(StmtKind::Return(value).at(self.js_span(span)));
             }
@@ -420,6 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 match target {
                     Some(target) => {
+                        let value = self.nullable_written(state, *destination, value, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns.
                         if !state.copy_backs.is_empty() {

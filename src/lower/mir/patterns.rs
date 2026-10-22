@@ -91,11 +91,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let result = bindings::nullable_result(self.tcx, body.source.def_id());
         (made.into_iter())
             .filter(|&(local, (writes, none))| {
-                let read = match local == mir::RETURN_PLACE && result {
+                // Of a function's result, each write: what isn't an
+                // `Option` it makes is `nullable_written`'s.
+                match local == mir::RETURN_PLACE && result {
                     true => true,
-                    false => given.get(&local) == Some(&locals.reads[local]),
-                };
-                none && writes == locals.writes[local] && read
+                    false => none && writes == locals.writes[local] && given.get(&local) == Some(&locals.reads[local]),
+                }
             })
             .map(|(local, _)| local)
             .collect()

@@ -770,7 +770,7 @@ pub(in crate::lower) fn slice_length<'tcx>(
     };
     if let Some(trait_) = tcx.trait_of_assoc(def_id) {
         let indexed = args.types().next().is_some_and(|ty| vec(ty.peel_refs()));
-        return (tcx.is_lang_item(trait_, LangItem::Index)
+        return ((tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))
             && indexed
             && args.types().nth(1).is_some_and(|i| i.is_usize()))
         .then_some(SliceLength::Index);

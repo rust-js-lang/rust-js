@@ -366,8 +366,8 @@ const owners: Record<string, string[]> = {
   "self.locals.mir": [
     "src/lower/mir.rs",
     "src/lower/mir/assign.rs",
+    "src/lower/mir/bounds.rs",
     "src/lower/mir/closures.rs",
-    "src/lower/mir/dispatch.rs",
     "src/lower/mir/places.rs",
     "src/lower/mir/rvalues.rs",
     "src/lower/mir/structure.rs",
@@ -445,7 +445,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["body", "branches", "locals", "options", "pending", "pointed", "ranges", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "options", "pending", "returns", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
@@ -603,7 +603,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 107],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 179],
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 375],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 757],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 294],

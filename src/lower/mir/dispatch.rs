@@ -782,43 +782,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is `mir_iter_call`'s, so none here does.
         self.check_takes_drops(known, def_id, arg_tys, span)?;
         self.keep_capacity(state, def_id, &mut values, span, out)?;
-        // What indexes the body's ranges show in bounds: unchecked.
-        if self.call_in_bounds(known, def_id, &values, span) {
-            return self.unchecked_call(known, values, span, out);
-        }
-        // `v[i]` through `index_mut`, of a value JS can't change in place: the
-        // element's place, checked as `$index` checks it (ADR 0099).
-        if known == Std::Index
-            && tcx
-                .trait_of_assoc(def_id)
-                .is_some_and(|t| tcx.is_lang_item(t, LangItem::IndexMut))
-            && let ty::Ref(_, item, _) = output.kind()
-            && self.is_cell_pointee(*item)
-        {
-            let mut exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            let index = exprs.pop().expect("an index");
-            let items = exprs.pop().expect("the items");
-            self.flush(state, out)?;
-            let items = if items.reads_same() {
-                items
-            } else {
-                self.spill("items", items, out)
-            };
-            // A variable that reads the same wherever it's read, a parameter,
-            // read where it's set too.
-            let index = if index.is_constant()
-                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))
-            {
-                index
-            } else {
-                self.spill("index", index, out)
-            };
-            let check = Expr::call(Expr::helper("$index"), vec![items.clone(), index.clone()]);
-            out.push(StmtKind::Expr(check).at(self.js_span(span)));
-            return Ok(Value::Ref(Expr::index(items, index)));
+        // An index's: unchecked where the body's ranges show it in bounds,
+        // and through `index_mut`, of a value JS can't change in place, the
+        // item's place.
+        if self.call_in_bounds(known, def_id, &values, span) || self.index_mut_place(known, def_id, output) {
+            return self.index_call(state, known, (def_id, output), values, span, out);
         }
         // `m.entry(k).or_insert(v)`: the value put in if the key's missing,
         // `$orInsert`, which is the value, an object; of a number,
