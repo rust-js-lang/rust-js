@@ -102,3 +102,9 @@ Implementing it found three gaps, each closed here:
   another crate, and accept the old ABI.
 - `Arc` follows the single-agent policy where it shares this machinery; no
   threads or cross-worker ABI are added.
+
+## Amendment: what a library hands a crate (ADR 0626)
+
+A crate using a library takes it to hand what the items of its the
+crate uses reach, its `impl Fn`, a `dyn Fn` or an `Rc` in what it exports,
+not anything: a library of a `bool` static hands none.

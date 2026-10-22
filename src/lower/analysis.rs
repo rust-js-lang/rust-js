@@ -658,10 +658,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
 
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
-    // destructor (ADR 0320); every one, in a library or a crate using one,
-    // which share their `Rc`s (ADR 0523).
+    // destructor (ADR 0320); every one, in a library or a crate a library
+    // hands one, which share their `Rc`s (ADRs 0523, 0626).
     let params_may_drop = crate::lower::traits::may_have_destructors(tcx, &foreign);
-    let shares_rcs = library || foreign.any();
+    let reached = foreign.reached(all_bodies);
+    let shares_rcs = library || reached.rcs;
     let recognition = Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -689,10 +690,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
+    // A `dyn Fn` a library hands the crate may hold one already (ADR 0626).
     if !closure_facts.fn_dyns_drop
-        && closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, foreign.any()), |ty| {
-            super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
-        })
+        && (reached.fn_dyns
+            || closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, reached.functions), |ty| {
+                super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
+            }))
     {
         closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts);

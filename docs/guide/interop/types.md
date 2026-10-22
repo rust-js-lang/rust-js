@@ -598,8 +598,13 @@ export function share(doc) {
 
 - **`Rc::ptr_eq` of a struct with fields counts nothing**: it's `a === b`
   ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
-- **A crate that is a rust-js library, or uses one, counts every `Rc`**, so
-  one handle crosses crates ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)).
+- **A crate that is a rust-js library, or uses one that hands it an
+  `Rc`, counts every `Rc`**, so one handle crosses crates
+  ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)): a
+  library hands what the items of its the crate uses reach, an `Rc` in
+  a function's parameters or result or a type's fields, not one of a
+  `bool` static's
+  ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
 
 ## Cell and RefCell
 

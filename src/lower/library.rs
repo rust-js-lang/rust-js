@@ -130,6 +130,20 @@ pub(super) fn exports(
 
 /// What this crate's dependencies export, looked up by the `DefId`s rustc
 /// gives their items here.
+/// What the libraries can hand this crate, through the items of theirs
+/// its bodies use: their parameters, results and fields (ADR 0626).
+#[derive(Default)]
+pub(super) struct Reached {
+    /// A function a library made, its `impl Fn`, the one way its closure
+    /// reaches the crate, which may hold a value with a destructor where the
+    /// crate makes it a `dyn Fn`.
+    pub(super) functions: bool,
+    /// A `dyn Fn` in what it exports, which may already hold one.
+    pub(super) fn_dyns: bool,
+    /// An `Rc` in what it exports, whose count they share (ADR 0523).
+    pub(super) rcs: bool,
+}
+
 pub(super) struct Foreign<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     dependencies: &'a Dependencies,
@@ -248,6 +262,87 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 .libraries
                 .get(self.tcx.crate_name(id.krate).as_str())
                 .is_some_and(|library| library.impls.contains(&key(self.tcx, id)))
+    }
+
+    /// Is `krate` a library's, one rust-js built for this crate to use, not
+    /// `@rust-js/std` (ADR 0100)?
+    pub(super) fn is_library(&self, krate: rustc_span::def_id::CrateNum) -> bool {
+        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str())).is_some_and(|library| !library.builtin)
+    }
+
+    /// What the libraries can hand this crate (ADR 0626): of each type its
+    /// bodies' values have, what a library's part of it reaches, a
+    /// library's function's signature, a library's type's fields. Not what
+    /// the crate's own types hold, which it sees.
+    pub(super) fn reached(&self, all_bodies: &[&super::Body<'tcx>]) -> Reached {
+        let mut reached = Reached::default();
+        if !self.any() {
+            return reached;
+        }
+        let mut seen = HashSet::new();
+        for body in all_bodies {
+            for expr in body.thir.exprs.iter() {
+                for part in expr.ty.walk().filter_map(|part| part.as_type()) {
+                    self.reach(part, false, &mut seen, &mut reached);
+                }
+            }
+        }
+        reached
+    }
+
+    /// What `ty` reaches of a library's, `exported` where it's in what a
+    /// library exports.
+    fn reach(
+        &self,
+        ty: rustc_middle::ty::Ty<'tcx>,
+        exported: bool,
+        seen: &mut HashSet<(rustc_middle::ty::Ty<'tcx>, bool)>,
+        reached: &mut Reached,
+    ) {
+        use rustc_middle::ty;
+        if !seen.insert((ty, exported)) {
+            return;
+        }
+        let tcx = self.tcx;
+        let library = |id: DefId| self.is_library(id.krate);
+        let mut parts = |tys: Vec<ty::Ty<'tcx>>, reached: &mut Reached| {
+            for t in tys {
+                for part in t.walk().filter_map(|part| part.as_type()) {
+                    self.reach(part, true, seen, reached);
+                }
+            }
+        };
+        match *ty.kind() {
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Opaque { def_id },
+                    ..
+                },
+            ) => reached.functions |= library(def_id),
+            ty::Dynamic(predicates, ..) if exported => {
+                reached.fn_dyns |= super::recognition::is_fn_dyn(tcx, predicates);
+            }
+            ty::FnDef(..)
+                if let Some((id, args)) = super::fn_def(ty)
+                    && library(id) =>
+            {
+                let sig = tcx.fn_sig(id).instantiate(tcx, args).skip_normalization().skip_binder();
+                parts(sig.inputs_and_output.to_vec(), reached);
+            }
+            ty::Adt(..)
+                if exported
+                    && (super::recognition::rc_pointee(tcx, ty).is_some()
+                        || super::recognition::weak_pointee(tcx, ty).is_some()) =>
+            {
+                reached.rcs = true;
+            }
+            ty::Adt(adt, args) if library(adt.did()) => {
+                let fields = adt.all_fields().map(|field| field.ty(tcx, args).skip_normalization());
+                parts(fields.collect(), reached);
+            }
+            _ => {}
+        }
     }
 
     /// Does this crate use a library?

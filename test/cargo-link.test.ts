@@ -1,6 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 import { parseManifest } from "../tooling/manifest.js";
 import { channel } from "../scripts/toolchain.ts";
@@ -87,3 +88,88 @@ test("a library's generic and aggregate functions link too, from a sibling outpu
   run(command);
   expect(result()).toBe("3");
 }, 120_000);
+
+// ADR 0626: a library gives a crate a function holding a value with a
+// destructor only through its own types: a closure or `impl Fn` it makes,
+// or a `dyn Fn` its exports reach. Of one whose items the crate uses are
+// plain, a `bool`'s, the crate's `dyn Fn`s drop only as its own closures
+// say: React's scheduler, of `shared`'s `__EXPERIMENTAL__`, moves an
+// `Rc<Task>` of a `Box<dyn FnMut>` into `with_borrow_mut`. Of one that hands
+// it an `impl FnMut` of its own, they may drop.
+test("a library gives a crate's dyn Fns a drop only through its own functions", () => {
+  const dir = fixture("cargo-library-functions");
+  const library = (name: string, source: string) => {
+    mkdirSync(join(dir, name), { recursive: true });
+    const manifest = join(dir, name, "manifest.json"), metadata = join(dir, name, `lib${name}.rmeta`);
+    writeFileSync(join(dir, name, "lib.rs"), source);
+    run([compiler, join(dir, name, "lib.rs"), "-o", join(dir, name, "lib.js"), "--library", "--manifest", manifest, "--", "--crate-name", name, `--emit=metadata=${metadata}`]);
+    return { manifest, metadata };
+  };
+  const plain = library("plain", "pub fn flag() -> bool {\n    true\n}\n");
+  const giving = library("giving", `pub struct Loud;
+
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+
+pub fn make() -> impl FnMut(bool) + 'static {
+    let held = Loud;
+    move |_| {
+        let _ = &held;
+    }
+}
+`);
+  const boxing = library("boxing", `pub struct Loud;
+
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+
+pub fn boxed() -> Box<dyn FnMut(bool)> {
+    let held = Loud;
+    Box::new(move |_| {
+        let _ = &held;
+    })
+}
+`);
+  const app = (name: string, from: { manifest: string; metadata: string }, made: string) => {
+    mkdirSync(join(dir, name), { recursive: true });
+    writeFileSync(join(dir, name, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Task {
+    pub callback: RefCell<Option<Box<dyn FnMut(bool)>>>,
+}
+
+thread_local! {
+    static TASK_QUEUE: RefCell<Vec<Rc<Task>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn queued(callback: Box<dyn FnMut(bool)>) -> usize {
+    let task = Rc::new(Task {
+        callback: RefCell::new(Some(callback)),
+    });
+    TASK_QUEUE.with_borrow_mut(|queue| queue.push(task));
+    TASK_QUEUE.with_borrow(Vec::len)
+}
+
+fn boxed<F: FnMut(bool) + 'static>(f: F) -> Box<dyn FnMut(bool)> {
+    Box::new(f)
+}
+
+pub fn run() -> usize {
+    queued(${made})
+}
+`);
+    return runSync([compiler, join(dir, name, "lib.rs"), "-o", join(dir, name, "app.js"), "--dependency", from.manifest, "--", "--crate-name", name, "--extern", `${name.replace("_app", "")}=${from.metadata}`], root, 120_000);
+  };
+  const ok = app("plain_app", plain, "boxed(|_| {\n        let _ = plain::flag();\n    })");
+  expect([ok.code, ok.stderr]).toEqual([0, ""]);
+  // Its `impl FnMut`, made a `dyn` through a type parameter.
+  const refused = app("giving_app", giving, "boxed(giving::make())");
+  expect([refused.code === 0, refused.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
+  // A `dyn Fn` its export gives, made of one of its own closures.
+  const given = app("boxing_app", boxing, "boxing::boxed()");
+  expect([given.code === 0, given.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
+});
+

@@ -61,3 +61,9 @@ draft](0523-libraries-share-one-counted-rc.md)'s trial found.
 - Mutations stop finding a `dyn Fn` that drops, a closure that carries its
   drop, the coercion's `$dropping`, the `dyn Fn`'s `$dispose`, and refuse
   what `Box::new` keeps.
+
+## Amendment: what a library hands a crate (ADR 0626)
+
+A crate using a library takes it to hand what the items of its the
+crate uses reach, its `impl Fn`, a `dyn Fn` or an `Rc` in what it exports,
+not anything: a library of a `bool` static hands none.
