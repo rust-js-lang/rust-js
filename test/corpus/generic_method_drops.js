@@ -39,17 +39,15 @@ function logStore() {
 }
 
 function logStore_put(log, item, TDebug, dropT) {
-  let result;
   try {
     const tmp = TDebug.fmt(item);
     log[0].push(tmp);
     const length = log[0].length;
     console.log(`put ${length}`);
-    result = log[0].length;
+    return log[0].length;
   } finally {
     dropT?.(item);
   }
-  return result;
 }
 
 function logStore_putAll(log, items, dropI, dropIIntoIter) {

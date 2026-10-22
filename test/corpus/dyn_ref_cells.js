@@ -79,13 +79,11 @@ function total(shapes) {
   return shapes
     .map((s) => {
       const receiver = $borrow(s, true);
-      let result;
       try {
-        result = receiver.impl.area(receiver.value);
+        return receiver.impl.area(receiver.value);
       } finally {
         $unborrow(receiver);
       }
-      return result;
     })
     .reduce((a, b) => a + b, -0);
 }

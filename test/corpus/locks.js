@@ -28,13 +28,11 @@ function record(stats, name) {
 
 function total(shared, f) {
   const value = $lock(shared, true);
-  let result;
   try {
-    result = f(value.value);
+    return f(value.value);
   } finally {
     $unborrow(value);
   }
-  return result;
 }
 
 function main() {

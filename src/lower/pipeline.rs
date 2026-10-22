@@ -574,6 +574,11 @@ pub fn lower_crate<'tcx>(
             .or_default()
             .insert((info.module, name, defaulted.contains(&id), local));
     }
+    // What another module than its own calls, which stays a function.
+    let called_elsewhere: HashSet<DefId> = (pass.references.iter())
+        .filter(|&&(from, id)| fns[&id].module != from)
+        .map(|&(_, id)| id)
+        .collect();
     let lowered = modules
         .into_iter()
         .map(|module| {
@@ -723,6 +728,21 @@ pub fn lower_crate<'tcx>(
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
             super::std_types::cell::plain_statics(&mut lowered.items, &quiet);
+            // A `Drop` impl's `drop` of this module no other module calls,
+            // which may be its body where its one drop is (ADR 0588).
+            let drop_trait = tcx.lang_items().drop_trait();
+            let drops: HashSet<String> = (fns.iter())
+                .filter(|&(&id, info)| {
+                    info.module == module
+                        && drop_trait.is_some_and(|t| {
+                            tcx.impl_of_assoc(id)
+                                .is_some_and(|imp| tcx.impl_opt_trait_id(imp) == Some(t))
+                        })
+                        && !called_elsewhere.contains(&id)
+                })
+                .map(|(_, info)| info.name.clone())
+                .collect();
+            super::drops::inlined_drops(&mut lowered.items, &drops);
             super::std_types::map::discarded_calls(&mut lowered.items);
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));

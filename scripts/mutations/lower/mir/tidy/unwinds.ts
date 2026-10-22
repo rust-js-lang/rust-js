@@ -46,4 +46,12 @@ export const mutations: Mutation[] = [
     tests: panics,
     snapshots: true,
   },
+  {
+    name: "result-not-returned-in-try",
+    breaks: "`let result; try { result = e; } finally { .. } return result;` stays, where it's `try { return e; } finally { .. }`",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        if found {\n            stmts.remove(i + 2);\n",
+    replace: "        if found && false {\n            stmts.remove(i + 2);\n",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
 ];

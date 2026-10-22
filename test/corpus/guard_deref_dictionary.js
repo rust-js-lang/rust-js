@@ -57,15 +57,13 @@ export function refMutStableDeref(dropT) {
 }
 
 function total(items, DStableDeref, dropD) {
-  let result;
   try {
-    result = DStableDeref.Deref()
+    return DStableDeref.Deref()
       .deref(items)
       .reduce((a, b) => (a + b) >>> 0, 0);
   } finally {
     dropD?.(items);
   }
-  return result;
 }
 
 function length(text, DStableDeref) {

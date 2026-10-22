@@ -482,10 +482,6 @@ pub fn close(connection: Connection) {
 ```
 
 ```js
-function connectionDrop_drop(connection) {
-  console.log(`closed ${connection.id}`);
-}
-
 export function open(id) {
   return { id };
 }
@@ -494,10 +490,18 @@ export function close(connection) {
   try {
     console.log(`closing ${connection.id}`);
   } finally {
-    connectionDrop_drop(connection);
+    console.log(`closed ${connection.id}`);
   }
 }
 ```
+
+- **A `Drop` dropped in one place is its body there**, as a `finally`
+  written by hand is; one dropped in several, `Guard`'s above, is a
+  function each drop calls
+  ([ADR 0589](../../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
+  A guard made only to be dropped, read only by its fields, is its fields:
+  `let _restore = Restore { previous: DEPTH.get() };` is `const previous =
+  depth;`, restored in the `finally`.
 
 - **A value JS holds is JS's.** `open(1)` gives JS a `Connection` that
   nothing drops until JS gives it to `close`.

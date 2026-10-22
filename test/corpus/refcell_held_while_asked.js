@@ -209,13 +209,11 @@ function main() {
   console.log(`[${asked.join(", ")}]`);
   const seen = ((s) => {
     const borrow = $borrow(s, true);
-    let result;
     try {
-      result = borrow.value.map(asksShared);
+      return borrow.value.map(asksShared);
     } finally {
       $unborrow(borrow);
     }
-    return result;
   })(shared);
   console.log(`[${seen.join(", ")}]`);
 

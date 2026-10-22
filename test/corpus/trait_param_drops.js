@@ -83,14 +83,12 @@ function wrapTakeNoisy(TDefault, dropT) {
 }
 
 function wrapTakeNoisy_make(a, TDefault, dropT) {
-  let result;
   try {
     console.log(`make ${a[0]}`);
-    result = [TDefault.default()];
+    return [TDefault.default()];
   } finally {
     noisyDrop_drop(a);
   }
-  return result;
 }
 
 function keepTakeA(dropA) {

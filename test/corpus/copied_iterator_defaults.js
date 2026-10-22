@@ -51,17 +51,15 @@ function tSkipping(TIterator, dropT, dropTItem) {
       tSkipping(TIterator, dropT, dropTItem).skipOne(self);
     },
     second: (self) => {
-      let result;
       try {
         const next = TIterator.next(self);
         if (next != null) {
           dropTItem?.($someValue(next));
         }
-        result = TIterator.next(self);
+        return TIterator.next(self);
       } finally {
         dropT?.(self);
       }
-      return result;
     },
     $drop: dropT,
   }));

@@ -17,13 +17,11 @@ function loudDrop_drop(loud) {
 }
 
 function twice(f, dropF) {
-  let result;
   try {
-    result = (f(1) + f(2)) >>> 0;
+    return (f(1) + f(2)) >>> 0;
   } finally {
     dropF?.(f);
   }
-  return result;
 }
 
 function every(f, dropF) {

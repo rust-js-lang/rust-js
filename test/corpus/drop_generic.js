@@ -57,15 +57,13 @@ function noisyDefault_default() {
 }
 
 function first(items, TClone, dropT) {
-  let result;
   try {
-    result = TClone.clone($index(items, 0));
+    return TClone.clone($index(items, 0));
   } finally {
     for (const item of items) {
       dropT?.(item);
     }
   }
-  return result;
 }
 
 function relay(value, dropU) {
@@ -76,13 +74,11 @@ function relay(value, dropU) {
 // Of an `impl Trait` argument, whose type parameter rustc names as it's
 // written: `dropDisplay`.
 function shown(x, Display, dropDisplay) {
-  let tmp;
   try {
-    tmp = `<${Display.fmt(x)}>`;
+    return `<${Display.fmt(x)}>`;
   } finally {
     dropDisplay?.(x);
   }
-  return tmp;
 }
 
 export function noisyDisplay() {

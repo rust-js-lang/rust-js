@@ -14,14 +14,12 @@ function take(value, dropT) {
 }
 
 function length(items, DDeref, dropD) {
-  let result;
   try {
     const tmp = DDeref.deref(items);
-    result = tmp.length;
+    return tmp.length;
   } finally {
     dropD?.(items);
   }
-  return result;
 }
 
 function shown(items, DDeref, dropD) {
@@ -34,14 +32,12 @@ function shown(items, DDeref, dropD) {
 }
 
 function firstOr(items, or, DDeref, dropD) {
-  let result;
   try {
     const first = DDeref.deref(items)[0];
-    result = first ?? or;
+    return first ?? or;
   } finally {
     dropD?.(items);
   }
-  return result;
 }
 
 export function holderDeref() {

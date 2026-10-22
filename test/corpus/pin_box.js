@@ -16,10 +16,6 @@ const Counter = {
   },
 };
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 export function anyPartialEq() {
   if ($anyPartialEq === undefined) {
     $anyPartialEq = { eq: anyPartialEq_eq };
@@ -70,7 +66,7 @@ function main() {
   try {
     console.log("pinned");
   } finally {
-    noisyDrop_drop(_noisy);
+    console.log(`drop ${_noisy[0]}`);
   }
   console.log(`${anyPartialEq_eq(undefined)} ${anyPartialEq_eq(undefined)}`);
   console.log("end");

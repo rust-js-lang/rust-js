@@ -31,13 +31,11 @@ function main() {
   console.log(
     `${count.value} [${((n) => {
       const borrow = $borrow(n, true);
-      let result;
       try {
-        result = borrow.value.slice();
+        return borrow.value.slice();
       } finally {
         $unborrow(borrow);
       }
-      return result;
     })(names)
       .map((item) => $debugStr(item))
       .join(", ")}]`,

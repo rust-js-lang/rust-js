@@ -3826,13 +3826,14 @@ test("a Some of a unit variant is tested as the variant, without a null test", a
 // moved after what may panic keeps them.
 test("a value moved before anything can leave needs no drop of its scope", async () => {
   const dir = fixture("moved-first");
-  writeFileSync(join(dir, "lib.rs"), 'pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub struct Holder {\n    pub l: Loud,\n}\npub fn hold(l: Loud) -> Holder {\n    Holder { l }\n}\npub fn checked(l: Loud, n: u32) -> Holder {\n    assert!(n > 0);\n    Holder { l }\n}\n');
+  writeFileSync(join(dir, "lib.rs"), 'pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!("drop {}", self.0);\n    }\n}\npub struct Holder {\n    pub l: Loud,\n}\npub fn hold(l: Loud) -> Holder {\n    Holder { l }\n}\npub fn checked(l: Loud, n: u32) -> Holder {\n    assert!(n > 0);\n    Holder { l }\n}\n');
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function hold(l) {\n  return { l };\n}");
   // Dropped where the assertion fails, then the panic: no flag, as it's
-  // known there, and no \`try\` of a \`throw\` (ADR 0372).
-  expect(js).toContain('  if (n <= 0) {\n    loudDrop_drop(l);\n    throw new Error("assertion failed: n > 0");\n  }\n  return { l };');
+  // known there, and no \`try\` of a \`throw\` (ADR 0372); its one drop its
+  // body (ADR 0589).
+  expect(js).toContain('  if (n <= 0) {\n    console.log(`drop ${l[0]}`);\n    throw new Error("assertion failed: n > 0");\n  }\n  return { l };');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
 });
@@ -5434,6 +5435,122 @@ pub fn checked(n: u32) -> Result<u32, String> {
   expect(lib.checked(2)).toEqual({ TAG: "Ok", _0: 4 });
 });
 
+// ADR 0589: a \`Drop\` impl dropped in one place is its body there, as React's
+// scheduler's \`flushWork\` restores its state in a \`finally\`; the guard made
+// only to be dropped, read only by its fields, is its fields. One dropped in
+// two places stays a function each calls; a guard read whole stays one.
+test("a Drop dropped once is its body where it's dropped", async () => {
+  const dir = fixture("drop-dropped-once");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+struct Restore {
+    previous: u32,
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        DEPTH.set(self.previous);
+    }
+}
+
+fn work(n: u32) -> u32 {
+    if n > 9 {
+        panic!("too deep");
+    }
+    n + DEPTH.get()
+}
+
+fn note(n: u32) {
+    println!("depth {n}");
+}
+
+pub fn run(n: u32) -> u32 {
+    let _restore = Restore { previous: DEPTH.get() };
+    DEPTH.set(n);
+    note(n);
+    work(n)
+}
+
+pub fn current() -> u32 {
+    DEPTH.get()
+}
+
+pub struct Loud {
+    name: &'static str,
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.name);
+    }
+}
+
+pub fn twice() {
+    let _a = Loud { name: "a" };
+    let _b = Loud { name: "b" };
+}
+
+struct Seen {
+    number: u32,
+}
+
+impl Drop for Seen {
+    fn drop(&mut self) {
+        println!("seen {}", self.number);
+    }
+}
+
+fn show(seen: &Seen) -> u32 {
+    seen.number
+}
+
+pub fn shown(id: u32) -> u32 {
+    let seen = Seen { number: id };
+    show(&seen)
+}
+
+pub mod lock {
+    pub struct Held {
+        pub name: &'static str,
+    }
+
+    impl Drop for Held {
+        fn drop(&mut self) {
+            println!("released {}", self.name);
+        }
+    }
+
+    pub fn here() {
+        let _held = Held { name: "here" };
+    }
+}
+
+pub fn there() {
+    let _held = lock::Held { name: "there" };
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  try {\n    note(n);\n    return work(n);\n  } finally {\n    depth = previous;\n  }\n}");
+  expect(js).not.toContain("restoreDrop_drop");
+  expect(js).toContain("loudDrop_drop(_b)");
+  expect(js).not.toContain("seenDrop_drop");
+  expect(js).toContain("const seen = { number: id };");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.run(2), lib.current()]).toEqual([4, 0]);
+  expect(() => lib.run(10)).toThrow("too deep");
+  expect(lib.current()).toBe(0);
+  expect(lib.shown(3)).toBe(3);
+  // Dropped once in its module and once in another: a function both call.
+  expect(readFileSync(join(dir, "lock.js"), "utf8")).toContain("export function heldDrop_drop(held)");
+  lib.there();
+  (await import(join(dir, "lock.js"))).here();
+});
+
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where
 // it may not be: React's scheduler asks for \`setImmediate\`, then
 // \`MessageChannel\`, then \`setTimeout\`.
@@ -6095,7 +6212,7 @@ pub fn guarded() -> u32 {
   // Made readable as a module's is: a `let mut` nothing sets again, a `const`.
   expect(js).toContain("  function listOf(n) {\n    const list = [];\n    list.push(n);");
   // Called before a destructor's `try`, it's written before it.
-  expect(js).toContain("  function later() {\n    return (three() + 4) >>> 0;\n  }\n  try {\n    result = (first + later()) >>> 0;\n  } finally {\n    noisyDrop_drop({ value: _noisy });");
+  expect(js).toContain("  function later() {\n    return (three() + 4) >>> 0;\n  }\n  try {\n    return (first + later()) >>> 0;\n  } finally {\n    noisyDrop_drop({ value: _noisy });");
   // One in another's body is a declaration there too.
   expect(js).toContain("  function outer() {\n    function inner() {");
   expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded(), lib.nested()]).toEqual([[[1, 3], 2], 10, 14, 4]);

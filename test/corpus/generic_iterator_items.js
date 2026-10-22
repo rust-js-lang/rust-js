@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function deltaDebug_fmt(delta) {
   return `Delta(${delta[0]})`;
 }
@@ -58,7 +54,7 @@ function main() {
   try {
     console.log(`${loud[0]}`);
   } finally {
-    noisyDrop_drop(loud);
+    console.log(`drop ${loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

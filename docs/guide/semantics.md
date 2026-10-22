@@ -394,6 +394,9 @@ What's refused of collections and iterators is in
 value moved away, on reassignment, at the end of a temporary, on an early
 `return`, and while a panic unwinds, each through a `try`/`finally`. Code
 with no `Drop` impl has no extra JS ([0098](../decisions/0098-destructors.md)).
+A `Drop` dropped in one place is its body there, its guard its fields,
+`const previous = depth; try { .. } finally { depth = previous; }`
+([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
 
 Differences: a value with a destructor that JS holds, given out by an
 exported generic function, is never dropped; a `drop` that panics while

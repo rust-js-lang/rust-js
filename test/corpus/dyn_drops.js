@@ -66,13 +66,11 @@ function loudDrop_drop(loud) {
 }
 
 function consume(shape) {
-  let result;
   try {
-    result = shape.impl.name(shape.value);
+    return shape.impl.name(shape.value);
   } finally {
     shape.impl.$drop?.(shape.value);
   }
-  return result;
 }
 
 function main() {

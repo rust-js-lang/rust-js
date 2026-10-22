@@ -201,13 +201,11 @@ function main() {
   pair$0$live = false;
   const check = (n) => {
     const noisy = make(n);
-    let result;
     try {
-      result = Noisy.big(noisy);
+      return Noisy.big(noisy);
     } finally {
       noisyDrop_drop(noisy);
     }
-    return result;
   };
   console.log(`check ${check(10)}`);
   const pair$1 = (stop) => {

@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function boom(n) {
   if (n > 1) {
     throw new Error(`boom at ${n}`);
@@ -21,7 +17,7 @@ function main() {
     const x = (boom(1) + boom(2)) >>> 0;
     console.log(`${x}`);
   } finally {
-    noisyDrop_drop(_a);
+    console.log(`drop ${_a[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

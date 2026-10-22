@@ -54,6 +54,37 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// `let result; try { ..; result = e; } finally { .. } return result;`, what
+/// a function gives made last in a `try` whose `finally` drops what's held:
+/// `try { ..; return e; } finally { .. }`, which runs the `finally` once `e`
+/// is made, as the original does (ADR 0588).
+pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        let found = match (&stmts[i].kind, &stmts[i + 1].kind, &stmts[i + 2].kind) {
+            (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => matches!(&value.kind, ExprKind::Var(v) if v == name)
+                && body.last().is_some_and(
+                    |s| matches!(&s.kind, StmtKind::Assign(t, _) if matches!(&t.kind, ExprKind::Var(v) if v == name)),
+                )
+                && js::mentions_in(body, name) == 1
+                && js::mentions_in(finally, name) == 0,
+            _ => false,
+        };
+        if found {
+            stmts.remove(i + 2);
+            stmts.remove(i);
+            let StmtKind::Try(body, _) = &mut stmts[i].kind else {
+                unreachable!("matched")
+            };
+            let last = body.last_mut().expect("matched");
+            if let StmtKind::Assign(_, value) = std::mem::replace(&mut last.kind, StmtKind::Return(None)) {
+                last.kind = StmtKind::Return(Some(value));
+            }
+        }
+        i += 1;
+    }
+}
+
 /// Of a run that starts at `stmts[start]`, a `try` whose `catch` drops a
 /// value last, then throws on: where the scope drops it, the statement
 /// written as that drop, if every statement before it that may throw drops

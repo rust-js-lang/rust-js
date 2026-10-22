@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function counterDrop_drop(counter) {
-  counter[0].value = (counter[0].value + 1) | 0;
-}
-
 function pick(takeFirst, a, b) {
   return takeFirst ? a : b;
 }
@@ -39,7 +35,7 @@ function main() {
         },
       },
     ];
-    counterDrop_drop(_c);
+    _c[0].value = (_c[0].value + 1) | 0;
   }
   console.log(`${drops}`);
 

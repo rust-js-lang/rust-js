@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "        let whole_body = true;\n",
     tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
   },
+  {
+    name: "named-call-never-applied",
+    breaks: "a `Drop`'s one drop calls its function, `restoreDrop_drop(_restore)`, where it's its body",
+    file: "src/js/applied.rs",
+    find: "    let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);\n    block_of(&call, whole, false)\n",
+    replace: "    let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);\n    block_of(&call, whole, false).filter(|_| false)\n",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
 ];

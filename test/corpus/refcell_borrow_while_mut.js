@@ -8,13 +8,11 @@ export function entry() {
 
 function total(cell) {
   const borrow = $borrow(cell, true);
-  let result;
   try {
-    result = borrow.value.reduce((a, b) => (a + b) | 0, 0);
+    return borrow.value.reduce((a, b) => (a + b) | 0, 0);
   } finally {
     $unborrow(borrow);
   }
-  return result;
 }
 
 function main() {

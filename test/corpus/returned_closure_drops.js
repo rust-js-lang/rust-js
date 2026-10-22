@@ -66,13 +66,11 @@ function smallest(items, cmp, TClone, dropF) {
       best = $some(item);
     }
   }
-  let result;
   try {
-    result = best == null ? best : $some(TClone.clone($someValue(best)));
+    return best == null ? best : $some(TClone.clone($someValue(best)));
   } finally {
     dropF?.(cmp);
   }
-  return result;
 }
 
 function byLen() {

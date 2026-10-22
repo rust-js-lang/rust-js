@@ -49,13 +49,11 @@ function mapped() {
     $closing($iter(louds), $dropEach(loudDrop_drop)).map((l) => {
       const value = l[0] > 0;
       const value$1 = () => l[0];
-      let result;
       try {
-        result = value ? value$1() : undefined;
+        return value ? value$1() : undefined;
       } finally {
         loudDrop_drop(l);
       }
-      return result;
     }),
     (item) => item != null,
   ).toArray();

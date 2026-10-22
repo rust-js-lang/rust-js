@@ -16,10 +16,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function tagDebug_fmt(tag, TDebug) {
   return `Tag(${TDebug.fmt(tag[0])})`;
 }
@@ -84,7 +80,7 @@ function main() {
       `${value$4 == null ? "None" : `Some(${tagDebug_fmt(value$4, { fmt: (value) => String(value) })})`}`,
     );
   } finally {
-    loudDrop_drop(loud);
+    console.log(`drop ${loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

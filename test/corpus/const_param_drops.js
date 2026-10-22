@@ -8,10 +8,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 const Buffer = {
   new(SIZE) {
     return { bytes: new Array(SIZE).fill(0), len: 0 };
@@ -49,7 +45,7 @@ function main() {
     console.log(`${tmp} ${tmp$1}`);
     console.log(`${loud[0]}`);
   } finally {
-    loudDrop_drop(loud);
+    console.log(`drop ${loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

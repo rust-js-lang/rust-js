@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function shared(value) {
   const one = value;
   return [one, one];
@@ -25,7 +21,7 @@ function main() {
     const c = tmp$1[0];
     console.log(`${c}`);
   } finally {
-    loudDrop_drop(loud);
+    console.log(`drop ${loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

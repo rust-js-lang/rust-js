@@ -37,6 +37,19 @@ pub fn applied_blocks(body: &mut Vec<Stmt>) {
     }
 }
 
+/// `f(arg);`, a call as a statement in `whole`, the function's body, of a
+/// function of `params` and `body`: its body in its place, where a closure
+/// of them called there would be; a `Drop` impl's, at its one drop (ADR
+/// 0588).
+pub fn applied_call(stmt: &Stmt, whole: &[Stmt], params: &[Pattern], body: &[Stmt]) -> Option<Vec<Stmt>> {
+    let StmtKind::Expr(e) = &stmt.kind else { return None };
+    let ExprKind::Call(_, args) = &e.kind else {
+        return None;
+    };
+    let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);
+    block_of(&call, whole, false)
+}
+
 /// The statements `stmt`, a call of a closure made there, is, in `whole`,
 /// the function's body; `tail`, the body's last, which a `return;` ends too.
 fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {

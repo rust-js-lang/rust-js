@@ -29,13 +29,11 @@ function drainDrop_drop(drain) {
 /** Its first, and the iterator dropped, with what it hasn't given. */
 function first(items, dropIIntoIter) {
   const it = $intoIter(items);
-  let result;
   try {
-    result = $nextSome(it);
+    return $nextSome(it);
   } finally {
     dropIIntoIter?.(it);
   }
-  return result;
 }
 
 /** Its own iterator given on, as smallvec's `insert_many` gives `extend`. */

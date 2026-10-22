@@ -90,14 +90,12 @@ function adversary(n, select) {
         candidate = y;
       }
     }
-    let result;
     try {
       const tmp = $index(v.value, x);
-      result = $cmp(tmp, $index(v.value, y));
+      return $cmp(tmp, $index(v.value, y));
     } finally {
       $unborrow(v);
     }
-    return result;
   };
   const items = $range(0, n);
   if (select != null) {

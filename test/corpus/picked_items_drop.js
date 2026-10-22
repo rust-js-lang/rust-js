@@ -19,24 +19,20 @@ function noisyDrop_drop(noisy) {
 }
 
 function third(it, dropI) {
-  let result;
   try {
-    result = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
+    return $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
   } finally {
     dropI?.(it);
   }
-  return result;
 }
 
 function named(it, name, dropI) {
   const value = (n) => n[0] === name;
-  let result;
   try {
-    result = $findDropping($lent(Iterator.from(it)), (item) => value(item), noisyDrop_drop, false);
+    return $findDropping($lent(Iterator.from(it)), (item) => value(item), noisyDrop_drop, false);
   } finally {
     dropI?.(it);
   }
-  return result;
 }
 
 function main() {

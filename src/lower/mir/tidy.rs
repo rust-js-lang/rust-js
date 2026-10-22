@@ -38,6 +38,7 @@ pub(super) fn named(
     flags::named_flags(body, flags);
     js::statement_lists(body, &mut unwinds::scoped_drops);
     bindings::declarations(body);
+    js::statement_lists(body, &mut unwinds::returned_through_finally);
 }
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.

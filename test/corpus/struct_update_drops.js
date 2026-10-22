@@ -44,14 +44,12 @@ function swapY(p) {
 }
 
 function keep(n) {
-  let result;
   try {
     console.log(`keep ${n[0]}`);
-    result = [(n[0] + 10) & 255];
+    return [(n[0] + 10) & 255];
   } finally {
     noisyDrop_drop(n);
   }
-  return result;
 }
 
 function rebuild(p, stop) {

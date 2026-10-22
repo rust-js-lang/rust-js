@@ -8,10 +8,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function holderShow(TCopy, TDisplay) {
   if ($holderShow === undefined) {
     $holderShow = new WeakMap();
@@ -32,7 +28,7 @@ function main() {
     const tmp = holderShow_show([3], { copy: (value) => value }, { fmt: String });
     console.log(`${tmp}`);
   } finally {
-    loudDrop_drop(_loud);
+    console.log(`drop ${_loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

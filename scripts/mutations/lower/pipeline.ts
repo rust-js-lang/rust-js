@@ -360,4 +360,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
     snapshots: true,
   },
+  {
+    name: "any-function-inlined",
+    breaks: "a function of the crate's called once, not a `Drop`'s, is inlined where it's called",
+    file: "src/lower/pipeline.rs",
+    find: "                                .is_some_and(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
+    replace: "                                .is_none_or(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
+  {
+    name: "drop-called-elsewhere-inlined",
+    breaks: "a `Drop` dropped once in its module and once in another is inlined in its own, and the other imports a function that's gone",
+    file: "src/lower/pipeline.rs",
+    find: "                        && !called_elsewhere.contains(&id)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
 ];

@@ -31,13 +31,11 @@ function mutexSequence(CSequence) {
 function mutexSequence_nextValue(mutex, CSequence) {
   const value = $lock(mutex, true);
   const value$1 = value.value;
-  let result;
   try {
-    result = CSequence.nextValue(value$1);
+    return CSequence.nextValue(value$1);
   } finally {
     $unborrow(value);
   }
-  return result;
 }
 
 function described(text, TToString, TClone) {
