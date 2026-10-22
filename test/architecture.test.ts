@@ -465,10 +465,10 @@ test("each module of mir/ reads only the fields of mir.rs's state it's listed fo
 // `Iterator.from`, and a range's `$iterator`, written and taken apart, were
 // in mir/iter.rs and tidy.rs too (the third architecture audit).
 const idioms: [string, RegExp, string[]][] = [
-  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|==\s*"Iterator"/, ["src/lower/iterators.rs"]],
-  ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs"]],
-  ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs"]],
-  ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators.rs"]],
+  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|==\s*"Iterator"/, ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
+  ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs"]],
+  ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs"]],
+  ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
   ["$someNone", /\$someNone/, ["src/lower/std_types/option.rs"]],
   // What a box, a cell or a handle holds, and a `dyn` pair's dictionary
   // (ADRs 0099, 0049): the JS tree's names of the fields, `js::HELD` and
@@ -936,7 +936,6 @@ test("tests find what they build through target", () => {
 // fails, and one brought under the cap leaves the list, so it only gets
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
-  "src/lower/iterators.rs": 2300,
   "src/runtime/from_json.js": 2009,
   "src/lower/display.rs": 1996,
   "src/lower/mir/tidy/jumps.rs": 1724,

@@ -136,3 +136,12 @@ method-name matches out of `traits.rs` holds over its parts too.
 expression is `js/make.rs`, and what walks one, `js/expr_walk.rs`, and a
 statement or a block, `js/stmt_walk.rs`, each re-exported, so `js::` is
 asked as it was. `js/` is owned output's, as `js.rs` is.
+
+## Amendment: iterators, by what's done to a chain (2026-10-22)
+
+`iterators.rs`, 2,300 lines, keeps what a value is as an iterator, held
+or given as it is, and the JS forms of one; its parts are `stepping.rs`,
+`knowing.rs` (its back, length and size), `dictionaries.rs`, `ends.rs`,
+`eager.rs` and `in_place.rs`, the largest 526 lines. `Iterator.from`,
+`$iterator`, `$iter` and `$lent` are written by the parts that write them,
+listed as their owners beside `iterators.rs`.

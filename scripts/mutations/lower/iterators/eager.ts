@@ -1,0 +1,343 @@
+// Mutations of src/lower/iterators/eager.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "collected-literal-copied",
+    breaks: "`std::iter::empty().collect()` is `[].slice()`, a copy of a new array",
+    file: "src/lower/iterators/eager.rs",
+    find: "    match &items.kind {\n        js::ExprKind::Array(_) => true,\n",
+    replace: "    match &items.kind {\n",
+    tests: ["test/corpus.test.ts","-t","iterator_sources"],
+    snapshots: true,
+  },
+  {
+    name: "iter-eager-two-doing",
+    breaks: "a chain two of whose closures do something runs as arrays, each stage over every item before the next",
+    file: "src/lower/iterators/eager.rs",
+    find: "        true => doing + usize::from(taker.is_some_and(does)) <= 1,\n",
+    replace: "        true => true,\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
+  {
+    name: "iter-eager-stopping-doing",
+    breaks: "a chain that stops early runs a stage that does something over every item",
+    file: "src/lower/iterators/eager.rs",
+    find: "        false => doing == 0,\n",
+    replace: "        false => true,\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
+  {
+    name: "iter-eager-collect-uncopied",
+    breaks: "`$iter(xs).toArray()` is `xs`, which changes with it, not a copy",
+    file: "src/lower/iterators/eager.rs",
+    find: "                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, \"slice\"), vec![])),\n",
+    replace: "                Some((items, 0)) if !fresh(&items) => Some(items),\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
+  {
+    name: "iter-eager-fresh-copied",
+    breaks: "collecting a `split` just made copies it, `.slice()`",
+    file: "src/lower/iterators/eager.rs",
+    find: "                Some((items, 0)) if !fresh(&items) =>",
+    replace: "                Some((items, 0)) if true =>",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "iter-eager-take-after-doing",
+    breaks: "a stage that does something before `take` runs over every item, as arrays",
+    file: "src/lower/iterators/eager.rs",
+    find: "        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))\n",
+    replace: "        && false\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
+  {
+    name: "iter-eager-take-kept",
+    breaks: "`take(2)` of an array stays a JS iterator's, not `slice(0, 2)`",
+    file: "src/lower/iterators/eager.rs",
+    find: "        \"take\" => Expr::call(Expr::member(items, \"slice\"), vec![Expr::int(0), f.clone()]),\n",
+    replace: "        \"take\" => Expr::call(Expr::member(items, \"take\"), vec![f.clone()]),\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "iter-eager-nth-kept",
+    breaks: "`nth(1)` of a string's parts stays `drop(1).take(1).toArray()[0]`",
+    file: "src/lower/iterators/eager.rs",
+    find: "            && zero.as_int() == Some(0)\n",
+    replace: "            && zero.as_int() == Some(0)\n            && false\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
+  {
+    name: "iter-chain-collected-lazily",
+    breaks: "a chain MIR collects stays `Iterator.from($lazyChain(a, b)).toArray()`, not `[...a, ...b]`",
+    file: "src/lower/iterators/eager.rs",
+    find: "            (\"toArray\", []) if let Some(parts) = chained(chain) => {\n",
+    replace: "            (\"toArray\", []) if let Some(parts) = chained(chain).filter(|_| false) => {\n",
+    tests: ["test/lowering.test.ts","-t","chain collected from MIR"],
+  },
+  {
+    "name": "position-of-lent-array-iterator",
+    "breaks": "`$position($lent($iter(ids)), ..)` of an iterator made for it, not `$position(ids, ..)`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "        if callee.helper_name() == Some(\"$position\")\n",
+    "replace": "        if false && callee.helper_name() == Some(\"$position\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a position of an array's own iterator"
+    ]
+  },
+  {
+    "name": "spread-chain-lazy",
+    "breaks": "a chain MIR makes for one spread stays `$iter(more).filter(..)`, not an array",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "            *value = items;\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once"
+    ]
+  },
+  {
+    "name": "some-of-literal-not-includes",
+    "breaks": "`any(|t| t == \"hidden\")` from MIR is `some((t) => t === \"hidden\")`, not `includes(\"hidden\")`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()\n",
+    "replace": "                    false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "negated matches, string methods"
+    ]
+  },
+  {
+    "name": "count-reduced",
+    "breaks": "`count()` of an array's items from MIR is `reduce((n) => n + 1, 0)`, not `length`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "init.as_int() == Some(0) && counts(f) =>",
+    "replace": "init.as_int() == Some(0) && false =>",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a count of an array's items from MIR"
+    ]
+  },
+  {
+    "name": "mir-next-stepped",
+    "breaks": "`next()` of an array's fresh iterator from MIR is `$next($iter(keys))`, not `keys[0]`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "        if callee.helper_name() == Some(\"$next\")\n",
+    "replace": "        if false && callee.helper_name() == Some(\"$next\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "next of a fresh iterator of an array"
+    ]
+  },
+  {
+    "name": "extreme-of-copy",
+    "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\", \"$maxByKey\", \"$minByKey\"].contains(&v.as_str())",
+    "replace": "[\"$none\"].contains(&v.as_str())",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "eager-flat-map-lazy",
+    "breaks": "`flat_map` collected from MIR stays `xs.values().flatMap(\u2026).toArray()`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        && let [f] = &args[..]",
+    "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")\n        && let [f] = &args[..]",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "eager-count-of-count-lazy",
+    "breaks": "`skip(2).take(3)` collected from MIR stays lazy, `drop`'s count read as a closure that does something",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "iter().any(|(name, f)| !counted(name) && does(f))",
+    "replace": "iter().any(|(_, f)| does(f))",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "eager-zip-lazy",
+    "breaks": "two arrays zipped and collected from MIR stay `Iterator.from($lazyZip($iter(a), $iter(b)))\u2026toArray()`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "zip.helper_name() == Some(\"$lazyZip\")",
+    "replace": "false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "fresh-set-algebra-copied",
+    "breaks": "a set's algebra collected is `$setAlgebra(a, b, op).slice()`, a copy of a new array",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "                \"$setAlgebra\",\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "sets and maps from MIR"
+    ]
+  },
+  {
+    "name": "chunks-exact-not-fresh",
+    "breaks": "`$chunksExact(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "                \"$chunksExact\",\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a chunks' remainder from MIR"
+    ]
+  },
+  {
+    "name": "chunks-exact-mut-not-fresh",
+    "breaks": "`$chunksExactMut(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "                \"$chunksExactMut\",\n",
+    "replace": "",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "slice_views"
+    ]
+  },
+  {
+    "name": "collected-runtime-arrayed",
+    "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
+    "replace": "                {}\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
+    "tests": [
+      "test/corpus.test.ts",
+      "-t",
+      "^(env_vars|text_edits).rs$"
+    ],
+    "snapshots": true
+  },
+  {
+    "name": "flat-of-arrays-flatmap",
+    "breaks": "arrays of arrays flattened eagerly are `flatMap((item) => item)`, not `flat()`",
+    "file": "src/lower/iterators/eager.rs",
+    "find": "            f if f.is_identity() => Expr::call(Expr::member(items, \"flat\"), Vec::new()),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays of arrays flattened"
+    ]
+  },
+  {
+    name: "args-copied",
+    breaks: "`env::args().collect()` copies the array `$args()` has just made, `$args().slice()`",
+    file: "src/lower/iterators/eager.rs",
+    find: "                \"$args\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "vars-copied",
+    breaks: "`env::vars().collect()` copies the array `$vars()` has just made",
+    file: "src/lower/iterators/eager.rs",
+    find: "                \"$vars\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "path-ancestors-not-fresh",
+    breaks: "a path's `ancestors()` collected are copied, `.slice()`, though the array is made for them",
+    file: "src/lower/iterators/eager.rs",
+    find: "                \"$pathAncestors\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "reduce-start-after-stages",
+    breaks: "`fold` of a chain whose stage does something, given a start that does too, runs the stage first, an array's",
+    file: "src/lower/iterators/eager.rs",
+    find: "                true => eager_items(chain, false, None),\n                false => eager_items(chain, true, Some(f)),\n",
+    replace: "                true => eager_items(chain, true, Some(f)),\n                false => eager_items(chain, true, Some(f)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_chains.rs$"],
+  },
+  {
+    name: "splice-not-fresh",
+    breaks: "what a heap's `drain()` takes out, collected, is copied, `heap.splice(0).slice()`, where it's a new array already",
+    file: "src/lower/iterators/eager.rs",
+    find: "                // What it takes out, a heap's `drain()`'s.\n                \"splice\",\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^heap_methods.rs$"],
+  },
+  {
+    name: "eager-closing-kept",
+    breaks: "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed",
+    file: "src/lower/iterators/eager.rs",
+    find: "                && whole\n                && stages.iter().all(|(name, _)| matches!(*name, \"map\" | \"filter\")) =>\n",
+    replace: "                && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_drops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "chain-spread-lost",
+    breaks: "a chain collected, `$lazyChain(a, b)`, isn't spread, `[...a, ...b]`",
+    file: "src/lower/iterators/eager.rs",
+    find: "    (callee.helper_name() == Some(\"$lazyChain\")).then(|| part(e))\n",
+    replace: "    (callee.helper_name() == Some(\"$lazyChained\")).then(|| part(e))\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_sources.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "zip-of-arrays-unfused",
+    breaks: "`$lazyZip` of two arrays' items, collected, isn't `$zip(a, b)`",
+    file: "src/lower/iterators/eager.rs",
+    find: "            if zip.helper_name() == Some(\"$lazyZip\")\n",
+    replace: "            if zip.helper_name() == Some(\"$lazyZipped\")\n",
+    tests: ["test/lowering.test.ts", "-t", "MIR"],
+  },
+  {
+    name: "generic-into-iter-js",
+    breaks: "a generic `into_iter()` of a `Vec` is JS's iterator of it, whose `len()` and clone concrete code can't read",
+    file: "src/lower/iterators/eager.rs",
+    find: "        false => Expr::call_helper(\"$intoIter\", vec![items]),\n",
+    replace: "        false => Expr::call(Expr::member(Expr::var(\"Iterator\"), \"from\"), vec![items]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_into_iter_values.rs$"],
+  },
+  {
+    name: "option-items-not-fresh",
+    breaks: "an `Option`'s items, an array made here, are copied again, `Array.from(o == null ? [] : [o])`",
+    file: "src/lower/iterators/eager.rs",
+    find: "        js::ExprKind::Cond(_, then, otherwise) => fresh(then) && fresh(otherwise),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "char-indices-not-fresh",
+    breaks: "a string's `char_indices()` collected, an array made there, is copied again, `$charIndices(s).slice()`",
+    file: "src/lower/iterators/eager.rs",
+    find: "                \"$charIndices\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
+    snapshots: true,
+  },
+];

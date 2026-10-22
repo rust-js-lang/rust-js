@@ -268,7 +268,7 @@ and answer. Each is checked to stay that way.
 | `plain.rs` | Plain data, numbers, `bool`s and `char`s in tuples, arrays and structs, at rustc's offsets for wasm32: `layout`, the one answer of a type's layout; a `transmute` of plain data, its bytes as another type's; a zeroed value (ADR 0408) |
 | `unions.rs` | A union, the object of the one field it holds: its fields read, written and copied, rust-js's error where one's read as another type's (ADR 0406) |
 | `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` and `slice.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs`, `heap.rs`, `text.rs`, `number.rs`, `option.rs`, `result.rs` (`?` and the `From` of its error), `cell.rs`, `rc.rs`, `cow.rs`, `once.rs`, `lazy.rs`, `range.rs`, `channel.rs`, `pin.rs`, `uninit.rs`, `any.rs`, `process.rs` (Node's process, the one list of what works in Node only, ADR 0391), `path.rs` (a path's methods, over its components, ADR 0405); and `values.rs`, which hands a std call to its type's module (ADR 0314). A rewrite tidy makes of a type's helpers is the type's module's, which tidy calls: a map's counted entry (`map::counted_entries`), a range made as stepped (`range::range_items`), a cell's borrow none can fail (`cell::unguarded`) |
-| `iterators.rs`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |
+| `iterators.rs`, `iterators/`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |
 | `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
 | `traits.rs`, `traits/`, `std_impls.rs`, `ordering.rs` | Traits: bounds and evidence (`traits.rs`), where a dictionary is (`routes.rs`), a dictionary built (`dictionaries.rs`) and an impl's lowered (`impls.rs`), `dyn` (`dyns.rs`), calls of an impl's method (`calls.rs`), what's given (`given.rs`, `drop_params.rs`) and the words of their names (`words.rs`); `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
@@ -353,8 +353,9 @@ the dispatcher.
 question, `iterators::is_js_iterator`, asked of the JS lowering from MIR
 makes: a chain stays a JS iterator, whose helpers are lazy as Rust's
 adapters are, until something ends it ([ADR 0139](decisions/0139-lazy-chains.md),
-[ADR 0364](decisions/0364-mir-lowering.md)). Only `iterators.rs` writes or
-takes apart `Iterator.from` and a range's `$iterator`.
+[ADR 0364](decisions/0364-mir-lowering.md)). Only `iterators.rs` and its
+parts, `iterators/`, write or take apart `Iterator.from` and a range's
+`$iterator`.
 
 **Runtime helpers.** The JS that generated code imports from
 `@rust-js/runtime`: each is a file, `src/runtime/<name>.js`, which
