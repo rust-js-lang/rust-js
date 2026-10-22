@@ -9,6 +9,7 @@ use core::marker::PhantomData;
 
 /// [`Symbol`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol):
 /// `symbol::new("id")` is a new one, `symbol::r#for("id")` the registry's.
+#[cfg_attr(rust_js, rust_js::types = "symbol")]
 pub struct Symbol(PhantomData<JsObject>);
 
 // A value, never `undefined`, and a property's key.

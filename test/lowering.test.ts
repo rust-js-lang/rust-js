@@ -6074,8 +6074,8 @@ pub fn pick() -> u32 {
   expect(js).toContain("} else if (Math.random() < 2) {\n  const n = 2;\n");
   // What it declares at its top would be the module's, and a loop's
   // `return` no branch's: each stays a closure called where it's made.
-  expect(js).toContain("const seen = (() => {\n  const at = Math.random();\n");
-  expect(js).toContain("const found = (() => {\n  while (true) {\n");
+  expect(js).toContain("const SEEN = (() => {\n  const at = Math.random();\n");
+  expect(js).toContain("const FOUND = (() => {\n  while (true) {\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.pick()).toBe(4);
 });
@@ -6178,6 +6178,41 @@ pub fn parsed() -> Vec<f64> {
   const lib = await import(join(dir, "lib.js"));
   globals.rustJsHook = () => -1;
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
+});
+
+// ADR 0619: a thread-local of a primitive, never written, keeps its name as a
+// const does, \`export const REACT_ELEMENT_TYPE = Symbol.for(..)\`, React's
+// symbols'; one of a function or an object, or a Cell, is a camelCase
+// variable.
+test("a thread-local of a primitive is named as a constant", async () => {
+  const dir = fixture("constant-thread-locals");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Symbol;
+
+thread_local! {
+    pub static REACT_ELEMENT_TYPE: &'static Symbol = js::symbol::r#for("react.transitional.element");
+    pub static FRAME_YIELD_MS: f64 = js::math::random() * 0.0 + 5.0;
+    pub static LOCAL_NOW: fn() -> f64 = js::date::now;
+    pub static CLICK_COUNT: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn is_element(s: &Symbol) -> bool {
+    REACT_ELEMENT_TYPE.with(|t| std::ptr::eq(*t, s))
+}
+
+pub fn yield_ms() -> f64 {
+    FRAME_YIELD_MS.with(|ms| *ms) + LOCAL_NOW.with(|now| now()) * 0.0 + f64::from(CLICK_COUNT.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export const REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");');
+  expect(js).toContain("export const FRAME_YIELD_MS = ");
+  expect(js).toContain("export const localNow = Date.now;");
+  expect(js).toContain("export const clickCount = { value: 0 };");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.isElement(Symbol.for("react.transitional.element")), lib.yieldMs()]).toEqual([true, 5]);
 });
 
 // ADR 0618: \`Array.isArray\` and \`Object.getPrototypeOf\` are the js crate's,

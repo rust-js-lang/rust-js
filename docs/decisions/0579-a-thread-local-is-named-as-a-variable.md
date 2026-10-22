@@ -1,6 +1,6 @@
 # 0579. A thread-local is named as its module's variable
 
-Status: Accepted. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
+Status: Accepted. Amended by [0619](0619-a-primitive-thread-local-is-a-constant.md): one of a primitive keeps its name, as a constant. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
 which left a name with no lowercase letter as it was; extends
 [0270](0270-module-variables.md), whose thread-locals are their module's
 variables.

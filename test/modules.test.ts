@@ -758,12 +758,12 @@ pub fn values() -> [u32; 4] {
     return index;
   };
   // Where the Rust has them.
-  expect(at("function twice(")).toBeLessThan(at("const first ="));
-  expect(at("const first =")).toBeLessThan(at("const seen ="));
-  expect(at("const later =")).toBeLessThan(at("function readLater("));
+  expect(at("function twice(")).toBeLessThan(at("const FIRST ="));
+  expect(at("const FIRST =")).toBeLessThan(at("const seen ="));
+  expect(at("const LATER =")).toBeLessThan(at("function readLater("));
   // After what they read: LATER, directly or through readLater; SEEN.
-  expect(at("const later =")).toBeLessThan(at("const after ="));
-  expect(at("const later =")).toBeLessThan(at("const called ="));
+  expect(at("const LATER =")).toBeLessThan(at("const AFTER ="));
+  expect(at("const LATER =")).toBeLessThan(at("const CALLED ="));
   expect(at("const seen =")).toBeLessThan(at(/seen(\$1)?\.value =/));
   const { values } = await import(join(dir, "lib.js"));
   expect(values()).toEqual([2, 11, 11, 1]);

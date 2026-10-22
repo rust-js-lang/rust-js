@@ -809,12 +809,16 @@ fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// `sort_index` as `sortIndex`, `use_clicks` as `useClicks`, as a
 /// variable's is (ADR 0038); a `thread_local!`'s, its module's variable
 /// (ADR 0270), too, `TASK_QUEUE` as `taskQueue` (`variable_case`), and
-/// capitalized where it holds a component; a `const`'s, as JS writes a
-/// constant, `MAX_SIZE`; a variant's and a JS class's, its name.
+/// capitalized where it holds a component, but one of a primitive, never
+/// written, a constant, as a `const` is (ADR 0619); a `const`'s, as JS
+/// writes a constant, `MAX_SIZE`; a variant's and a JS class's, its name.
 fn default_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     let name = tcx.item_name(def_id);
     match tcx.def_kind(def_id) {
         DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
+        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {
+            name.to_string()
+        }
         DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {
             let variable = variable_name(tcx, def_id);
             match another_named(tcx, def_id, &variable) {
@@ -872,6 +876,20 @@ fn thread_local_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>
         }
         _ => None,
     }
+}
+
+/// Whether a thread-local's value is a JS primitive, a number, text, a
+/// `bool` or a symbol, which nothing writes, as a `Cell` would be: React's
+/// `REACT_ELEMENT_TYPE = Symbol.for(..)` (ADR 0619). A function, an object,
+/// is a variable's, camelCase, `localSetTimeout`.
+fn primitive<'tcx>(tcx: TyCtxt<'tcx>, held: ty::Ty<'tcx>) -> bool {
+    let held = held.peel_refs();
+    super::representation::Num::of(held).is_some()
+        || held.is_bool()
+        || held.is_str()
+        || matches!(held.kind(), ty::Adt(adt, _)
+            if tcx.is_lang_item(adt.did(), LangItem::String)
+                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some("symbol"))
 }
 
 /// Whether a `thread_local!` holds a component, of a type React marks

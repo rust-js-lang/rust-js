@@ -9,7 +9,7 @@ export function entry() {
 /** A counter. */
 const count = { value: 0 };
 const names = { value: [] };
-const limit = 3;
+const LIMIT = 3;
 
 function bump() {
   return ((c) => {
@@ -19,7 +19,7 @@ function bump() {
 }
 
 function main() {
-  for (let i = 0; i < limit; i++) {
+  for (let i = 0; i < LIMIT; i++) {
     bump();
   }
   const borrowMut = $borrowMut(names, true);

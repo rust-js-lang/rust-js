@@ -291,6 +291,9 @@ export function last() {
   `THEME_CONTEXT` as `ThemeContext`. One named after another item of its
   module keeps its Rust name, `CACHE` beside `cache()`
   ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
+  One of a primitive, a number, text or a symbol, which nothing writes,
+  keeps its name as a constant does, `REACT_ELEMENT_TYPE`
+  ([ADR 0619](../../decisions/0619-a-primitive-thread-local-is-a-constant.md)).
 - **A `let` if it's set, a `const` otherwise.**
 - **A `const` is a constant, named as written**, `MAX_RECENT`.
 - **It's the cell, `{ value }`,** where the cell itself is handed out,

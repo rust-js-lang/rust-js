@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "primitive-thread-local-camel",
+    breaks: "`REACT_ELEMENT_TYPE` of a symbol is `reactElementType`",
+    file: "src/lower/bindings.rs",
+    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {\n",
+    replace: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => {\n",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local of a primitive is named"],
+  },
+  {
+    name: "symbol-not-primitive",
+    breaks: "a symbol isn't taken for a primitive, `reactElementType`",
+    file: "src/lower/bindings.rs",
+    find: "                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some(\"symbol\"))\n",
+    replace: "                || false)\n",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local of a primitive is named"],
+  },
+  {
     name: "default-never-declared",
     breaks: "`js::export_default! { fn noop() {} }` is `function noop() {} export default noop;`",
     file: "src/lower/bindings.rs",
