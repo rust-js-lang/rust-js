@@ -683,7 +683,22 @@ pub(super) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOpe
 /// reference reassigned, so a place through it isn't the one it was. A
 /// parameter's first value is its argument.
 pub(super) fn written_again(state: &State<'_, '_>, local: Local) -> bool {
-    state.locals.writes[local] + usize::from(state.body.args_iter().any(|a| a == local)) > 1
+    state.locals.writes[local] + usize::from(is_parameter(state, local)) > 1
+}
+
+/// Whether `local` may read differently where it's read: written again
+/// after its first value, a parameter's its argument; but for a variable
+/// the program names assigned once each way, as a `match`'s arms each
+/// assign `let variant = match ..`: not MIR's, a `vec!`'s box, say, filled
+/// through it after.
+pub(super) fn written_apart(state: &State<'_, '_>, local: Local) -> bool {
+    written_again(state, local)
+        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))
+}
+
+/// Whether `local` is a parameter, whose first value its caller gives.
+pub(super) fn is_parameter(state: &State<'_, '_>, local: Local) -> bool {
+    state.body.args_iter().any(|a| a == local)
 }
 
 /// Whether `place` names the same place wherever it's read: variables and

@@ -9,9 +9,10 @@ export function entry() {
 function sum(at) {
   let total = 0;
   while (at) {
-    const node = at.value;
-    total = (total + node.value) | 0;
-    at = node.next;
+    const node = at;
+    const node$1 = node.value;
+    total = (total + node$1.value) | 0;
+    at = node$1.next;
   }
   return total;
 }

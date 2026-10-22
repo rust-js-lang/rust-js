@@ -771,10 +771,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What reads the same wherever it's read.
         for (local, name) in state.locals.names.iter_enumerated() {
             if name.is_empty()
-                // A variable the program names, assigned once each way, as a
-                // `match`'s arms each assign `let variant = match ..`: not
-                // MIR's, a `vec!`'s box, say, filled through it after.
-                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))
+                || written_apart(&state, local)
                 || state.locals.borrowed[local]
                 || state.locals.changed[local]
             {
@@ -853,7 +850,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if mir_body.local_kind(local) != LocalKind::Arg
                 && !state.locals.declared[local]
                 && !state.locals.names[local].is_empty()
-                && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
+                && (queries::written_again(&state, local) || flagged[local.as_usize()])
             {
                 self.check_variable(&state, local, def_span)?;
                 let name = state.locals.names[local].clone();
