@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_type.rs$"],
   },
+  {
+    name: "transparent-order-refused",
+    breaks: "a derived order of a `#[repr(transparent)]` struct, uuid's `Uuid`, is refused, where it's its field's",
+    file: "src/lower/ordering.rs",
+    find: "        if let Some(field) = self.transparent(ty) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
+    replace: "        if let Some(field) = self.transparent(ty).filter(|_| false) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^transparent_ord.rs$"],
+  },
 ];

@@ -122,6 +122,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let cmp = trait_method(self.tcx, partial_ord, "partial_cmp");
             return self.impl_call(cmp, self.args_of(partial_ord, ty), vec![a, b], span);
         }
+        // Derived, of a `#[repr(transparent)]` struct, which is its field
+        // (ADR 0584): the field's order.
+        if let Some(field) = self.transparent(ty) {
+            return self.cmp_value(a, b, field, partial, span, out);
+        }
         // Derived. Each is read more than once below.
         let a = if a.reads_same() { a } else { self.spill("left", a, out) };
         let b = if b.reads_same() { b } else { self.spill("right", b, out) };

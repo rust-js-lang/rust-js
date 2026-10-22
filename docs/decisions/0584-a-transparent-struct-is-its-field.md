@@ -93,3 +93,12 @@ pointer, and smallvec's probe threw (#122, bisected to this ADR's
 commit). `constructor_value` makes it its field too: `.map(Meters)` gives
 what it's given. Held by `test/corpus/transparent_constructor_value.rs`
 and the mutation `transparent-constructor-value-shaped`.
+
+## Amendment: its derived order
+
+A derived `PartialOrd` or `Ord` of a transparent struct was refused,
+"comparing `Uuid`s": `cmp_value`'s derived order reads a struct's fields,
+and this one's value is its field. Its order is its field's now, as its
+`==` was. uuid 1.28's `Uuid` is one, and the crate corpus's probe, which
+compares two, was refused (#122). Held by `test/corpus/transparent_ord.rs`
+and the mutation `transparent-order-refused`.
