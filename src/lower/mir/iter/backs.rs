@@ -147,6 +147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match method {
             // One a struct holds, itself, which closing doesn't end (ADR 0542).
             Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),
+            // A range's, the range, whose `&mut` it is: what steps it after
+            // moves its start, `$rangeNext(it)`, as Rust's does, not a JS
+            // iterator of it, which would be stepped as a range again.
+            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }

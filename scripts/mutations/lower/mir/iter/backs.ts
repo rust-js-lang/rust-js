@@ -279,4 +279,12 @@ export const mutations: Mutation[] = [
     replace: "                let own = arg_tys.get(1)",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
+  {
+    name: "range-by-ref-a-js-iterator",
+    breaks: "`by_ref()` of a range is a JS iterator of it, which what steps it after steps as a range again: `take` gives nothing, and the range never moves",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
+  },
 ];

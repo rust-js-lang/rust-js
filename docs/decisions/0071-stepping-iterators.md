@@ -156,3 +156,23 @@ on:
   `next`, `position`, `filter` and `count`, each followed by what's left.
   Mutations make the chain eager or an array, miss a reborrow or a second
   stage, unhandle `next()`, and refuse each.
+
+## Amendment: a range's `by_ref()`, and a lent chain collected
+
+Two ways what's taken through `by_ref()` went missing from its lender
+(#102, #103):
+
+- `by_ref()` of a range was a lent JS iterator of it, `$lent($iterator(r,
+  $rangeNext))`, though a `&mut Range` is the range object, which
+  `$rangeNext` steps in place. What stepped it after stepped that iterator
+  as a range again: `take` gave nothing, `next()` gave `None`, a `for`
+  ran no turn, and the range never moved. A range's `by_ref()` is the
+  range itself now (`back_kept`), one form of a `&mut Range`.
+- A chain of a lent iterator, collected, was listed whole,
+  `Array.from($lent(i).filter(f)).slice(0, 2)`: every item of `i` read,
+  where `take(2)` stops and its lender goes on. `collected` doesn't list
+  a chain whose source is lent.
+
+ADR 0262's case: results would change, so Rust's. Held by
+`test/corpus/by_ref_steps.rs` and the mutations
+`range-by-ref-a-js-iterator` and `lent-chain-listed`.

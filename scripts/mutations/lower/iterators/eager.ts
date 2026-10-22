@@ -348,4 +348,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
     snapshots: true,
   },
+  {
+    name: "lent-chain-listed",
+    breaks: "a lent iterator's chain collected is listed whole, `Array.from($lent(it).filter(f)).slice(0, 2)`, so what `take` leaves of it is gone from its lender",
+    file: "src/lower/iterators/eager.rs",
+    find: "                if is_lent(chain_source(&list)) {\n",
+    replace: "                if false && is_lent(chain_source(&list)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
+  },
 ];
